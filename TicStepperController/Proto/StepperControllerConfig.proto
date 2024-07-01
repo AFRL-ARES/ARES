@@ -1,0 +1,18 @@
+﻿syntax = "proto3";
+
+package tic_stepper_controller.config;
+
+import "google/protobuf/wrappers.proto";
+import "StepMode.proto";
+
+message StepperControllerConfig {
+  string name = 1; // name of the controller
+  string port_name = 2; // the port name for the controller to connect to
+  google.protobuf.UInt32Value max_acceleration = 3; // microsteps per 100 s²
+  google.protobuf.UInt32Value max_deceleration = 4; // microsteps per 100 s²
+  google.protobuf.UInt32Value max_speed = 5; // microsteps per 10,000 s
+  google.protobuf.UInt32Value starting_speed = 6; // microsteps per 10,000 s
+  google.protobuf.UInt32Value custom_step_size = 7; // microsteps per user defined step (not the stepper motor step)
+  messaging.StepMode step_mode = 8; // microsteps per stepper defined step
+  bool simulated = 9; // whether or not this stepper controller is simulated or not
+}

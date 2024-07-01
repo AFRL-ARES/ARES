@@ -1,0 +1,63 @@
+﻿@using UI.Backend.ViewModels.DeviceStateLogging;
+@using UI.Backend.DeviceStateExport.ExportStreamProviders
+@inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<DeviceStateExporterViewModel>
+@inject IJSRuntime JS
+<div class="d-flex flex-column">
+  <DeviceStateFilterView ViewModel="@ViewModel!.FilterViewModel" />
+  <RadzenLabel Text="Export Provider" />
+  <RadzenDropDown Data="@ViewModel!.ExportProviders" TValue="IDeviceStateExportStreamProvider" TextProperty="Name" @bind-Value="@ViewModel!.SelectedExportProvider" Placeholder="Select an export provider" />
+
+@*  <select class="form-select">
+    @foreach (var provider in ViewModel!.ExportProviders)
+    {
+      <option selected="@(provider.Name == ViewModel!.SelectedExportProvider?.Name)" value="@provider.Name">@provider.Name</option>
+    }
+    @if (!ViewModel!.ExportProviders.Any())
+    {
+      <option disabled>No Export Providers Available</option>
+    }
+  </select>*@
+</div>
+<button class="btn btn-outline-primary my-2" disabled="@(ViewModel!.SelectedExportProvider is null || _exportInProgress)" @onclick="Export">
+  @if (_exportInProgress)
+  {
+    <LoadingSpinner SpinnerSize="SpinnerSize.Small" />
+  }
+  else
+  {
+    <span>Export</span>
+  }
+</button>
+@if (!string.IsNullOrEmpty(_error))
+{
+  <span class="text-danger">@_error</span>
+}
+
+@code {
+  private bool _exportInProgress;
+
+  private string _error = string.Empty;
+
+  private async Task Export()
+  {
+    _error = string.Empty;
+    _exportInProgress = true;
+    var fileStream = await ViewModel!.GetExportStream();
+    if (fileStream is null)
+    {
+      _error = "Unable to get a state stream. Maybe provider wasn't selected.";
+      _exportInProgress = false;
+      StateHasChanged();
+      return;
+    }
+    var fileName = $"{DateTime.Now}";
+    if (!string.IsNullOrEmpty(fileStream.FileExtension))
+      fileName = Path.ChangeExtension(fileName, fileStream.FileExtension);
+
+    using var streamRef = new DotNetStreamReference(stream: fileStream.Stream);
+
+    await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
+    _exportInProgress = false;
+    StateHasChanged();
+  }
+}

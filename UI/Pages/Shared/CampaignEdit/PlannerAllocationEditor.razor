@@ -1,0 +1,21 @@
+﻿@using Microsoft.EntityFrameworkCore.Metadata.Internal
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Backend.ViewModels.Automation.CampaignEdit.PlannerAllocationEditorViewModel>
+
+<div class="card border-primary rounded-1 p-2 m-1">
+  @ViewModel!.ParameterMetadata.Name
+  <select @bind="ViewModel!.PlannerInfoId">
+    @if (ViewModel!.PlannerInfoId is null)
+    {
+      <option value="" selected disabled>Select a planner</option>
+    }
+    @foreach (var plannerInfo in ViewModel!.Planners)
+    {
+      <option value="@plannerInfo.UniqueId">
+        @plannerInfo.Name (@plannerInfo.Version)
+      </option>
+    }
+  </select>
+</div>
+
+@code {
+}

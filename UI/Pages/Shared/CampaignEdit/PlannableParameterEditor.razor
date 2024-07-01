@@ -1,0 +1,70 @@
+﻿@using UI.Backend.ViewModels.Automation.CampaignEdit
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<ParameterEditorViewModel>
+<div class="card border-primary p-2 m-1">
+    <div class="row m-1">
+        <div class="col-10">
+            <input type="text" class="form-control" placeholder="Parameter Name" @bind-value="ViewModel!.Name" tooltip="Parameter Name">
+        </div>
+        <div class="col-1">
+            <button @onclick="DeleteParameterClick" type="button" class="btn-close m-1" />
+        </div>
+
+        </div>
+    <div class="row mx-1 my-2">
+        Unit
+    </div>
+    <div class="row">
+        <div class="col">
+            <select class="form-select" @bind="ViewModel.Category">
+                @foreach (var unitType in ViewModel.CategoryOptions)
+                {
+                    <option value="@unitType">@unitType</option>
+                }
+            </select>
+        </div>
+        <div class="col">
+            <select class="form-select" @bind="ViewModel.Unit">
+                @foreach (var suboption in ViewModel.UnitOptions)
+                {
+                    <option value="@suboption">@suboption</option>
+                }
+            </select>
+            </div>
+    </div>
+    <div class="row my-2">
+        <div class="col">
+            Minimum Value
+        </div>
+        <div class="col">
+            Maximum Value
+        </div>
+    </div>
+    <div class="row">
+        <div class="col">
+            <input type="number" class="form-control" @bind-value="ViewModel.Minimum">
+        </div>
+        <div class="col">
+            <input type="number" class="form-control" @bind-value="ViewModel.Maximum">
+        </div>
+    </div>
+</div>
+
+@code {
+
+    // [Parameter]
+    // public ParameterMetadata Param
+    // {
+    //     set => ViewModel!.ParameterMetadata = value;
+    // }
+
+    [Parameter]
+    public Action<ParameterEditorViewModel> DeleteParameterCallback { get; set; } = delegate {};
+
+    // private ParameterMetadata _parameter;
+
+    private void DeleteParameterClick()
+    {
+        DeleteParameterCallback(ViewModel!);
+    }
+
+}

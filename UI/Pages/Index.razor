@@ -1,0 +1,29 @@
+﻿@page "/"
+@using UI.Backend.ViewModels
+@using UI.Pages.Shared.Devices.DataLogger
+@using UI.Pages.Shared.Devices.Mfc
+@using UI.Pages.Shared.Devices.SyringePump
+@using UI.Pages.Shared.Devices.TubeFurnace
+@using UI.Pages.Shared.Devices.StepperController
+@using UI.Pages.Shared.Devices.ValveController
+@using UI.Pages.Shared.Devices.Servo
+@using UI.Pages.Shared.Misc
+
+@inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<IndexViewModel>
+
+<PageTitle>Dashboard</PageTitle>
+<div class="d-flex flex-column gap-2">
+  <div class="d-flex gap-2">
+    <ManualExecutionWidget />
+    <DataLoggerMultiView />
+  </div>
+  <MfcDirectorControl></MfcDirectorControl>
+  <SyringePumpWorkspaceControl></SyringePumpWorkspaceControl>
+  <TubeFurnaceMultiControl />
+  <ServoMultiView/>
+  <StepperControllerMultiView />
+  <ValveControllerMultiView />
+</div>
+
+@code {
+}

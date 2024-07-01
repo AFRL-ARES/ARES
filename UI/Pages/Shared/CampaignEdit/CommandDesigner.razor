@@ -1,0 +1,12 @@
+﻿@using Ares.Messaging
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Backend.ViewModels.Automation.CampaignEdit.CommandDesignerViewModel>
+
+<MetadataPicker ViewModel="@ViewModel!.MetadataPickerViewModel" @bind-CommandMetadata="ViewModel!.CommandMetadata"  />
+
+@foreach (var argumentDesigner in ViewModel!.ArgumentDesigners)
+{
+    <CommandParameterDesigner ViewModel="@argumentDesigner" />
+}
+
+<label for="experiment-output-check">Provides Experiment Output</label>
+<input id="experiment-output-check" type="checkbox" @bind="ViewModel!.ExperimentOutputProvider"/>

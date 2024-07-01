@@ -1,0 +1,21 @@
+﻿<div class="lds-spinner @(SpinnerSize == SpinnerSize.Large ? "lds-spinner-lg" : "lds-spinner-sm")">
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+</div>
+
+@code {
+
+  [Parameter]
+  public SpinnerSize SpinnerSize { get; set; } = SpinnerSize.Large;
+
+}

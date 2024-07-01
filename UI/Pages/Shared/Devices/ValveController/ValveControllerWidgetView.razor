@@ -1,0 +1,38 @@
+﻿@using UI.Backend.ViewModels.Devices.ValveController
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<ValveControllerUnitControlViewModel>
+@inject TooltipService tooltipService
+
+<RadzenCard Style="max-width: 260px">
+  <RadzenRow>
+    <RadzenText TextStyle="TextStyle.H6"> Valve Controller </RadzenText>
+  </RadzenRow>
+
+  <RadzenRow>
+    <RadzenRadioButtonList @bind-Value=@ViewModel!.RelaySelected Change="(args => ViewModel!.RelaySelected = args)" TValue="bool" class="mb-5">
+      <Items>
+        <RadzenColumn Style="width: auto">
+          <RadzenRadioButtonListItem Value="true" Text="Relay One"/>
+        </RadzenColumn>
+        <RadzenColumn Style="width: auto">
+          <RadzenRadioButtonListItem Value="false" Text="Relay Two"/>
+        </RadzenColumn>
+      </Items>
+    </RadzenRadioButtonList>
+  </RadzenRow>
+  
+  <RadzenRow>
+    <RadzenColumn>
+      <RadzenButton Click=@(args => ViewModel!.DisengageRelay()) Icon="lock_open" MouseEnter="@(args => ShowDisengageValveTip(args) )" Size="ButtonSize.Large" />
+    </RadzenColumn>
+    <RadzenColumn>
+      <RadzenButton Click="@(args => ViewModel!.EngageRelay())" Icon="lock" MouseEnter="@(args => ShowEngageValveTip(args) )" Size="ButtonSize.Large" />
+    </RadzenColumn>
+  </RadzenRow>
+
+
+</RadzenCard>
+
+@code {
+  void ShowEngageValveTip(ElementReference elementReference, TooltipOptions options = null) => tooltipService.Open(elementReference, "Engage Valve", options);
+  void ShowDisengageValveTip(ElementReference elementReference, TooltipOptions options = null) => tooltipService.Open(elementReference, "Disengage Valve", options);
+}

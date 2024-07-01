@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+option csharp_namespace = "DemoPlanner";
+
+import "Templates/ParameterMetadata.proto";
+import "Analysis.proto";
+
+package demo_planner;
+
+service DemoPlannerGrpc {
+  rpc Plan (PlanRequest) returns (PlanResultResponse);
+}
+
+message PlanResultResponse {
+  repeated PlanResult plan_results = 1;
+}
+
+message PlanResult {
+  ares.messaging.ParameterMetadata metadata = 1;
+  double value = 2;
+}
+
+message PlanRequest {
+  repeated ares.messaging.ParameterMetadata metadata = 1;
+  repeated ares.messaging.Analysis analyses = 2;
+}

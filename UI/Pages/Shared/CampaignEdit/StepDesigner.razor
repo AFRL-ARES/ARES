@@ -1,0 +1,165 @@
+﻿@inject DialogService DialogService
+@inject NotificationService NotificationService
+@using UI.Backend.ViewModels.Automation.CampaignEdit
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<StepDesignerViewModel>
+
+<div class="d-flex flex-column border rounded p-2 my-2">
+    <div class="d-flex my-1 align-items-center">
+
+        <button @onclick="() => CommandsExpanded = !CommandsExpanded" class="btn border-0">
+            <RadzenIcon Icon="@(CommandsExpanded ? "expand_less" : "expand_more")"></RadzenIcon>
+        </button>
+
+        <RadzenIcon Icon="@(ViewModel!.Parallel ? "view_week" : "view_stream")"/>
+        <span class="flex-grow-1 px-2">@ViewModel!.Name</span>
+        <span class="badge">@ViewModel!.CommandDesigners.Count</span>
+        <button @onclick="StepEditClick" class="btn btn-outline-light border-0">
+            <RadzenIcon Icon="edit"/>
+        </button>
+        <button class="btn btn-outline-light border-0" @onclick="StepDeleteClick">
+            <RadzenIcon Icon="delete"></RadzenIcon>
+        </button>
+    </div>
+    @if (CommandsExpanded)
+    {
+        <ul class="mx-2 list-group ">
+            @foreach (var designerViewModel in ViewModel!.CommandDesigners)
+            {
+                <li class="list-group-item d-flex align-items-center">
+
+                        <div class="d-flex flex-column me-2">
+                            <button @onclick="() => ViewModel!.MoveCommandDesignerUp(designerViewModel)" class="btn btn btn-outline-light border-0 p-0">
+                                <RadzenIcon Icon="arrow_drop_up"/>
+                            </button>
+                            <button @onclick="() => ViewModel!.MoveCommandDesignerDown(designerViewModel)" class="btn btn btn-outline-light border-0 p-0">
+                                <RadzenIcon Icon="arrow_drop_down"/>
+                            </button>
+                        </div>
+
+                        <RadzenIcon Icon="terminal"/>
+
+                        <div class="flex-grow-1 px-2">
+                            <CommandDesignerQuickView CommandDesignerViewModel="@designerViewModel"></CommandDesignerQuickView>
+                        </div>
+
+                        <button class="btn btn-outline-light border-0" @onclick="() => CommandEditClick(designerViewModel)">
+                            <RadzenIcon Icon="edit"/>
+                        </button>
+                        <button class="btn btn-outline-light border-0" @onclick="() => CommandDeleteClick(designerViewModel)">
+                            <RadzenIcon Icon="delete"></RadzenIcon>
+                        </button>
+                </li>
+            }
+
+            <button class="list-group-item btn-light" @onclick="AddCommandClick">
+                <RadzenIcon Icon="add"/>
+                <span class="btn-text">Add Command</span>
+            </button>
+        </ul>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public Action<StepDesignerViewModel> RemoveStepCallback { get; set; } = delegate {};
+
+    public bool CommandsExpanded { get; set; }
+
+    private async void AddCommandClick()
+    {
+        var commandDesigner = ViewModel!.AddCommandDesigner();
+        var result = await DialogService.OpenAsync("Command Create", ds =>
+            @<div class="d-flex flex-column">
+                <CommandDesigner ViewModel="@commandDesigner"/>
+                <div class="d-flex">
+                    <button class="btn btn-primary btn-outline-light" @onclick="() => ds.Close(true)">Create</button>
+                    <button class="btn btn-danger btn-outline-light" @onclick="() => ds.Close(false)">Cancel</button>
+                </div>
+            </div>
+            );
+        if (result ?? false)
+        {
+            commandDesigner.Save();
+        }
+        else
+        {
+            ViewModel!.RemoveCommandDesigner(commandDesigner);
+            StateHasChanged();
+        }
+    }
+
+    private async Task StepEditClick()
+    {
+        string name = ViewModel!.Name;
+        bool isParallel = ViewModel!.Parallel;
+        var result = await DialogService.OpenAsync("Step Edit", ds => 
+            @<div class="d-flex flex-column">
+                <StepPropertyEditor @bind-Name="name" @bind-IsParallel="isParallel"/>
+                <div class="d-flex">
+                    <button class="btn btn-primary btn-outline-light" @onclick="() => ds.Close(true)">Save</button>
+                    <button class="btn btn-danger btn-outline-light" @onclick="() => ds.Close(false)">Cancel</button>
+                </div>
+            </div>
+            );
+        if (result ?? false)
+        {
+            ViewModel!.Name = name;
+            ViewModel!.Parallel = isParallel;
+        }
+    }
+
+    private async void CommandEditClick(CommandDesignerViewModel commandDesigner)
+    {
+        var result = await DialogService.OpenAsync("Command Edit", ds =>
+            @<div class="d-flex flex-column">
+                <CommandDesigner ViewModel="@commandDesigner" />
+                <div class="d-flex">
+                    <button class="btn btn-primary btn-outline-light" @onclick="() => ds.Close(true)">Save</button>
+                    <button class="btn btn-danger btn-outline-light" @onclick="() => ds.Close(false)">Cancel</button>
+                </div>
+            </div>
+            );
+
+        if (result ?? false)
+        {
+            commandDesigner.Save();
+        }
+    }
+
+    private async void CommandDeleteClick(CommandDesignerViewModel vm)
+    {
+        var result = await DialogService.OpenAsync($"Delete command {vm.CommandMetadata?.DeviceName}:{vm.CommandMetadata?.Name}?", ds =>
+            @<div class="d-flex flex-column">
+                <div class="d-flex">
+                    <button class="btn btn-danger btn-outline-light" @onclick="() => ds.Close(true)">Delete</button>
+                    <button class="btn btn-secondary btn-outline-light" @onclick="() => ds.Close(false)">Cancel</button>
+                </div>
+            </div>
+            );
+        if (result ?? false)
+        {
+            ViewModel!.RemoveCommandDesigner(vm);
+        }
+    }
+
+    private async void StepDeleteClick()
+    {
+        var result = await DialogService.OpenAsync($"Delete step {ViewModel!.Name}?", ds =>
+            @<div class="d-flex flex-column">
+                <div class="d-flex">
+                    <button class="btn btn-danger btn-outline-light" @onclick="() => ds.Close(true)">Delete</button>
+                    <button class="btn btn-secondary btn-outline-light" @onclick="() => ds.Close(false)">Cancel</button>
+                </div>
+            </div>
+            );
+        if (result ?? false)
+        {
+            RemoveStepCallback(ViewModel!);
+        }
+    }
+}
+@code {
+}
+
+
+

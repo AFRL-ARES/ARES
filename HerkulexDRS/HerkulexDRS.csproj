@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Proto\DataModel.proto" />
+    <None Remove="Proto\Services.proto" />
+    <None Remove="Proto\ServoConfig.proto" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Ares.Device.Serial.dll" Version="2024.6.14.134257" />
+    <PackageReference Include="Google.Protobuf" Version="3.26.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.62.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="System.ComponentModel" Version="4.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="Proto\DataModel.proto" GrpcServices="None" />
+    <Protobuf Include="Proto\Services.proto" ProtoRoot="Proto" />
+    <Protobuf Include="Proto\ServoConfig.proto" GrpcServices="None" />
+  </ItemGroup>
+
+</Project>

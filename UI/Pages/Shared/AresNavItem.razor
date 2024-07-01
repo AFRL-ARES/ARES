@@ -1,0 +1,53 @@
+﻿<li class="nav-item w-100">
+    <NavLink Match="NavLinkMatch.All" class="nav-link ares-nav-link px-2" @onclick="ItemExpandClicked" href="@Path">
+        <div class="d-flex flex-row">
+
+                <RadzenIcon Icon="@Icon"/>
+
+            <span class="m-1 my-auto">@Text</span>
+            @if (ChildContent is not null)
+            {
+                <div class="m-1 d-flex flex-row my-auto flex-fill justify-content-end">
+                    @if (ExpandedSubNav)
+                    {
+                        //<RadzenIcon Icon="expand_less"/>
+                    }
+                    else
+                    {
+                        //<RadzenIcon Icon="expand_more"/>
+                    }
+                </div>
+            }
+        </div>
+    </NavLink>
+    @if (ExpandedSubNav)
+    {
+        <div style="margin-left: 10px">
+            @ChildContent
+        </div>
+    }
+</li>
+
+@code {
+
+    [Parameter]
+    public string Path { get; set; } = "/";
+
+    [Parameter]
+    public string? Icon { get; set; }
+
+    [Parameter]
+    public string? Text { get; set; }
+
+    private bool ExpandedSubNav { get; set; }
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    private void ItemExpandClicked()
+    {
+        ExpandedSubNav = !ExpandedSubNav;
+
+    }
+
+}

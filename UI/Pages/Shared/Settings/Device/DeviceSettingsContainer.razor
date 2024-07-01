@@ -1,0 +1,110 @@
+﻿@using Ares.Messaging.Device
+<div class="device-settings-grid">
+  <h5 class="device-settings-name">@Name</h5>
+  @if (DeviceStatusGetter is not null)
+  {
+    <div class="device-status d-flex">
+      <button class="btn btn-sm border-0 rounded-circle btn-outline-primary mx-1" @onclick="UpdateDeviceStatus">
+        <RadzenIcon Icon="refresh"/>
+      </button>
+      @if (_deviceStatus is not null)
+      {
+        <div class="d-flex flex-column">
+          <div class="device-status-@_deviceStatus.DeviceState.ToString().ToLower()">
+            @_deviceStatus.DeviceState.ToString()
+          </div>
+          <div>
+            @_deviceStatus.Message
+          </div>
+        </div>
+      }
+      else
+      {
+        <LoadingSpinner SpinnerSize="SpinnerSize.Small" />
+      }
+    </div>
+  }
+  <div class="d-flex device-settings-actions">
+    <button class="btn btn-sm btn-outline-primary rounded-2 device-action-button" type="button" disabled="@(ActivateCallback is null)" @onclick="ActivateClicked">
+      @if (_activateInProgress)
+      {
+        <LoadingSpinner SpinnerSize="SpinnerSize.Small" />
+      }
+      else
+      {
+        <RadzenIcon Icon="sync"/>
+      }
+    </button>
+    <vr />
+    <button class="btn btn-sm btn-outline-primary rounded-2 device-action-button" type="button" disabled="@(EditCallback is null)" @onclick="EditClicked"><RadzenIcon Icon="edit"/></button>
+    <button class="btn btn-sm btn-outline-danger rounded-2 device-action-button" type="button" disabled="@(RemoveCallback is null)" @onclick="RemoveClicked"><RadzenIcon Icon="delete_outline"/></button>
+  </div>
+  <hr class="device-settings-separator" />
+  <div class="device-settings-content">
+    @ChildContent
+  </div>
+</div>
+
+@code {
+  [Parameter]
+  public RenderFragment? ChildContent { get; set; }
+
+  [Parameter]
+  public Func<Task>? RemoveCallback { get; set; }
+
+  [Parameter]
+  public Func<Task>? EditCallback { get; set; }
+
+  [Parameter]
+  public Func<Task>? ActivateCallback { get; set; }
+
+  [Parameter]
+  public Func<Task<DeviceStatus?>>? DeviceStatusGetter { get; set; }
+
+  [Parameter]
+  public string Name { get; set; } = "No name?";
+
+  private DeviceStatus? _deviceStatus;
+
+  private bool _activateInProgress;
+
+  protected override async Task OnInitializedAsync()
+  {
+    if (DeviceStatusGetter is not null)
+    {
+      _deviceStatus = await DeviceStatusGetter();
+      StateHasChanged();
+    }
+  }
+
+  private Task EditClicked()
+  {
+    return EditCallback is not null ? EditCallback() : Task.CompletedTask;
+  }
+
+  private Task RemoveClicked()
+  {
+    return RemoveCallback is not null ? RemoveCallback() : Task.CompletedTask;
+  }
+
+  private async Task UpdateDeviceStatus()
+  {
+    if (DeviceStatusGetter is null)
+      return;
+
+    _deviceStatus = null;
+    _deviceStatus = await DeviceStatusGetter();
+  }
+
+  private async Task ActivateClicked()
+  {
+    if (ActivateCallback is null)
+      return;
+
+    _activateInProgress = true;
+    await ActivateCallback();
+    await UpdateDeviceStatus();
+    _activateInProgress = false;
+  }
+
+}

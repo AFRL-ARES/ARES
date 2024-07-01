@@ -1,0 +1,26 @@
+﻿@page "/automation/executionhistory"
+@inject ContextMenuService ContextMenuService
+@inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<UI.Backend.ViewModels.Automation.ExecutionHistoryViewModel>
+
+<PageTitle>Execution History</PageTitle>
+
+
+<RadzenButton Text="Placeholder for ExecutionHistory"  ContextMenu="@(ShowContextMenuWithItems)" ButtonStyle="ButtonStyle.Secondary"  />
+
+@code {
+    
+    void ShowContextMenuWithItems(MouseEventArgs args)
+    {
+        ContextMenuService.Open(args,
+            new List<ContextMenuItem> {
+                new(){ Text = "Context menu item 1", Value = 1 },
+                new(){ Text = "Context menu item 2", Value = 2 },
+                new(){ Text = "Context menu item 3", Value = 3 },
+            }, OnMenuItemClick);
+    }
+
+    void OnMenuItemClick(MenuItemEventArgs args)
+    {
+        ContextMenuService.Close();
+    }
+}

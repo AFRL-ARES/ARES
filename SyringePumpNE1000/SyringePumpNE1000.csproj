@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Proto\SyringePump.proto" />
+    <None Remove="Proto\SyringePumpConfig.proto" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Ares.Device.Serial.dll" Version="2024.6.14.134257" />
+    <PackageReference Include="Crc32.NET" Version="1.2.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.62.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="NullFX.CRC" Version="1.1.10" />
+    <PackageReference Include="UnitsNet" Version="5.49.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ARESMessaging\ARESMessaging.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="Proto\SyringePump.proto" ProtoRoot="Proto" />
+    <Protobuf Include="Proto\SyringePumpConfig.proto" GrpcServices="None" />
+  </ItemGroup>
+
+</Project>

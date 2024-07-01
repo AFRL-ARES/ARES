@@ -1,0 +1,13 @@
+﻿{
+  "profiles": {
+    "DemoAnalyzerSim": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
+      "applicationUrl": "http://localhost:5161;https://localhost:7086",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

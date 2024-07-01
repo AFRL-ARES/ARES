@@ -1,0 +1,22 @@
+﻿syntax = "proto3";
+
+package ares.messages.device_states.tic_stepper_controller;
+
+import "google/protobuf/empty.proto";
+import "DeviceStateLogging/TicStepperController/TicStepperControllerState.proto";
+import "DeviceStateLogging/StateRequest.proto";
+import "DeviceStateLogging/DevicesResponse.proto";
+
+service TicStepperControllerStateLogging {
+	rpc GetTicStepperControllerStates(StateRequest) returns (TicStepperControllerStateResponse);
+	rpc DeleteTicStepperControllerStates(StateRequest) returns (google.protobuf.Empty);
+	rpc GetAvailableDevices(google.protobuf.Empty) returns (DevicesResponse);
+}
+
+message TicStepperControllerStateResponse {
+	map<string, StateCollection> state_map = 1;
+}
+
+message StateCollection {
+	repeated TicStepperControllerState state_logs = 1;
+}

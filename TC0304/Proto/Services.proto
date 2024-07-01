@@ -1,0 +1,51 @@
+﻿syntax = "proto3";
+
+package tc0304.services;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/duration.proto";
+import "DataModel.proto";
+import "Tc0304Config.proto";
+
+service TC0304Rpc {
+  rpc GetData(DeviceRequest) returns (DataResponse);
+  rpc GetAllTc0304s(google.protobuf.Empty) returns (GetAllTc0304sResponse);
+  rpc Hold(DeviceRequest) returns (google.protobuf.Empty);
+  rpc StartStateUpdater(StartStateUpdaterRequest) returns (google.protobuf.Empty);
+  rpc StopStateUpdater(DeviceRequest) returns (google.protobuf.Empty);
+
+  rpc UpdateTc0304(config.Tc0304Config) returns (google.protobuf.Empty);
+	rpc RemoveTc0304(Tc0304Request) returns (google.protobuf.Empty);
+	rpc AddTc0304(config.Tc0304Config) returns (google.protobuf.Empty);
+  rpc GetProbeNames(Tc0304Request) returns (tc0304.data_model.ProbeNames);
+}
+
+message Tc0304Request {
+  string tc0304_name = 1;
+}
+
+message GetAllTc0304sResponse {
+  repeated string device_names = 1;
+}
+
+message DataResponse {
+  tc0304.data_model.Data data = 1;
+}
+
+message StartStateUpdaterRequest {
+  DeviceRequest device_request = 1;
+  google.protobuf.Duration interval = 2;
+}
+
+message ConnectRequest {
+  string device_name = 1; // name of the data logger
+  string port_name = 2; // name of the port
+}
+
+message ConnectResponse {
+  bool connected = 1; // whether or not the device successfully connected
+}
+
+message DeviceRequest {
+  string device_name = 1;
+}

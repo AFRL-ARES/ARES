@@ -1,0 +1,30 @@
+﻿@page "/device_states"
+@using Ares.Messages.DeviceStates.Mfc;
+@using Ares.Messages.DeviceStates;
+@using ARESMessaging.DeviceStateLogging;
+@using Ares.Messaging
+@using Google.Protobuf.WellKnownTypes;
+@using System.IO.Compression;
+@using UI.Backend.DeviceStateExport;
+@using UI.Backend.ViewModels.DeviceStateLogging;
+@using UI.Backend.ViewModels;
+@using UI.Pages.Shared.DeviceStateLogging;
+@using UnitsNet;
+@inject DialogService DialogService
+@inject AresAutomation.AresAutomationClient AutomationClient
+
+
+@inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<DeviceStatesViewModel>
+
+<button class="btn btn-outline-primary" @onclick="OpenExporter">
+  Export Device States
+</button>
+
+@code {
+  private async Task OpenExporter()
+  {
+    await DialogService.OpenAsync("State Export", dialog =>
+      @<DeviceStateExporter />
+    );
+  }
+}

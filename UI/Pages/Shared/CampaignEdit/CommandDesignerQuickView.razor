@@ -1,0 +1,43 @@
+﻿@using UI.Backend.ViewModels.Automation.CampaignEdit
+
+@if (CommandDesignerViewModel is not null)
+{
+    if (CommandDesignerViewModel.TemplateCommandName is not null)
+    {
+        <div class="d-flex align-items-center">
+          <div class="border border-2 border-primary rounded px-2 py-1 mx-2">
+                @CommandDesignerViewModel.TemplateDeviceName
+            </div>
+          <div class="border border-2 border-primary rounded px-2 py-1 mx-2">
+            @CommandDesignerViewModel.TemplateCommandName
+          </div>
+          @if (CommandDesignerViewModel.Arguments.Any())
+          {
+            <RadzenIcon Icon="arrow_back"/>
+          }
+          @foreach (var argument in CommandDesignerViewModel.Arguments)
+            {
+                @if (argument.PlanningMetadata is not null)
+                {
+                    <div class="border border-2 border-warning rounded px-2 py-1 mx-2">
+                        @argument.PlanningMetadata.Name
+                    </div>
+                }
+                else
+                {
+                    <div class="border border-2 rounded px-2 py-1 mx-2">
+                        @argument.Value.Value @argument.Metadata.Unit
+                    </div>
+                }
+            }
+        </div>
+    }
+    else
+    {
+        <span>Undefined Command :^(</span>
+    }
+}
+@code {
+    [Parameter]
+    public CommandDesignerViewModel? CommandDesignerViewModel { get; set; }
+}

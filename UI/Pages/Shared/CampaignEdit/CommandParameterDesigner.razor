@@ -1,0 +1,42 @@
+﻿@using Ares.Messaging
+@using Microsoft.AspNetCore.WebUtilities
+@using UI.Backend.ViewModels.Automation;
+@using UI.Backend.ViewModels.Automation.CampaignEdit
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<CommandParameterDesignerViewModel>
+
+<div class="d-flex flex-column">
+    <div class="input-group mb-3">
+        <div class="input-group-prepend">
+            <span class="input-group-text" id="inputGroup-sizing-default">@ViewModel!.Name</span>
+        </div>
+        @if (ViewModel!.IsPlanned)
+        {
+            <select @bind="ViewModel.SelectedPlannedParameterMetadataId" class="form-select align-self-stretch">
+                @if (ViewModel!.SelectedPlannedParameterMetadataId is null)
+                {
+                    <option value="" selected disabled>Select a Command</option>
+                }
+                @foreach (var metadata in ViewModel!.PlannedParameters)
+                {
+                    <option value="@metadata.UniqueId">
+                        @metadata.Name (@metadata.Unit)
+                    </option>
+                }
+            </select>
+        }
+        else
+        {
+          <CommandParameterValueDesigner ParameterValue="@ViewModel!.Value" Unit="@ViewModel!.Unit" />
+        }
+    </div>
+    
+    <div class="mb-2">
+        <input @bind="ViewModel!.IsPlanned" class="form-check-input" type="checkbox" id="flexCheckDefault">
+        <label class="form-check-label" for="flexCheckDefault">
+            Planned
+        </label>
+    </div>
+</div>
+
+@code {
+}

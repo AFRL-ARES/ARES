@@ -1,0 +1,11 @@
+﻿.filter-grid {
+  display: grid;
+  align-items: center;
+  grid-row-gap: 10px;
+  grid-gap: 10px;
+  grid-template-columns: auto auto 1fr;
+}
+
+.device-picker {
+  grid-column: 1 / span 3;
+}

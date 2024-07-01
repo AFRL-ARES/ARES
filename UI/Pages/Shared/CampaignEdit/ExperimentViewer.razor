@@ -1,0 +1,38 @@
+﻿@inject DialogService DialogService
+@using Ares.Messaging
+@using UI.Backend.ViewModels.Automation.CampaignEdit
+
+@if (ExperimentTemplate is not null)
+{
+  <div class="d-flex h-100">
+    <div class="d-flex flex-column flex-grow-1 overflow-auto">
+      <div class="d-flex flex-column">
+        @foreach (var stepTemplate in ExperimentTemplate.StepTemplates.OrderBy(t => t.Index))
+        {
+          <div class="d-flex" >
+            <div class="flex-grow-1">
+              <StepViewer StepTemplate="@stepTemplate"/>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  @*   <div class="d-flex flex-column">
+      <select @bind="ViewModel!.AnalyzerId">
+        @if (ViewModel!.AvailableAnalyzers is not null)
+        {
+          <option value="" selected="@(ViewModel!.Analyzer is null)" disabled>Select analyzer</option>
+          @foreach (var analyzer in ViewModel!.AvailableAnalyzers)
+          {
+            <option value="@analyzer.UniqueId" selected="@ViewModel!.Analyzer?.Equals(analyzer) ?? false">@analyzer.Name</option>
+          }
+        }
+      </select>
+    </div> *@
+  </div>
+}
+
+@code {
+  [Parameter]
+  public ExperimentTemplate? ExperimentTemplate { get; set; }
+}

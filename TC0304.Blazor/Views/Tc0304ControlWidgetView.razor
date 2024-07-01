@@ -1,0 +1,24 @@
+﻿@inherits ReactiveUI.Blazor.ReactiveComponentBase<TC0304.Blazor.ViewModels.Tc0304ControlWidgetViewModel>
+
+<div class="d-flex justify-content-between gap-5">
+  <div>
+    <div class="name-display">@ViewModel!.Probe1Name</div>
+    <div class="temperature-display">@(ViewModel!.T1Temp?.ToString() ?? "--")</div>
+  </div>
+  <div>
+    <div class="name-display">@ViewModel!.Probe1Name</div>
+    <div class="temperature-display">@(ViewModel!.T2Temp?.ToString() ?? "--")</div>
+  </div>
+  <div>
+    <div class="name-display">@ViewModel!.Probe1Name</div>
+    <div class="temperature-display">@(ViewModel!.T3Temp?.ToString() ?? "--")</div>
+  </div>
+  <div>
+    <div class="name-display">@ViewModel!.Probe1Name</div>
+    <div class="temperature-display">@(ViewModel!.T4Temp?.ToString() ?? "--")</div>
+  </div>
+</div>
+
+@code {
+
+}

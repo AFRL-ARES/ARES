@@ -1,0 +1,13 @@
+﻿@page "/"
+@namespace UI.Pages
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+    Layout = "_Layout";
+}
+<link rel="stylesheet" href="_content/Radzen.Blazor/css/dark-base.css" />
+<script src="_content/Radzen.Blazor/Radzen.Blazor.js"></script>
+
+<!--  Some more CSS to overwrite anything in default-base if needed  -->
+<link rel="stylesheet" href="css/moar-css.css" />
+
+<component type="typeof(App)" render-mode="Server" />

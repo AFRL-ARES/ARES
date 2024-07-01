@@ -1,0 +1,25 @@
+﻿@page "/profile"
+@inject ContextMenuService ContextMenuService
+@inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<UI.Backend.ViewModels.ProfileViewModel>
+
+<PageTitle>Project</PageTitle>
+
+
+<RadzenButton Text="Placeholder for profile"  ContextMenu="@(ShowContextMenuWithItems)" ButtonStyle="ButtonStyle.Secondary"  />
+
+@code {
+    void ShowContextMenuWithItems(MouseEventArgs args)
+    {
+        ContextMenuService.Open(args,
+            new List<ContextMenuItem> {
+                new(){ Text = "Context menu item 1", Value = 1 },
+                new(){ Text = "Context menu item 2", Value = 2 },
+                new(){ Text = "Context menu item 3", Value = 3 },
+            }, OnMenuItemClick);
+    }
+
+    void OnMenuItemClick(MenuItemEventArgs args)
+    {
+        ContextMenuService.Close();
+    }
+}

@@ -1,0 +1,15 @@
+﻿@inherits LayoutComponentBase
+@layout MainLayout
+
+<ul class="nav nav-tabs">
+  <li class="nav-item">
+    <NavLink Match="NavLinkMatch.Prefix" class="nav-link" href="settings/device">Device</NavLink>
+  </li>
+</ul>
+<div class="m-1 d-flex overflow-auto flex-fill">
+  @Body
+</div>
+
+@code {
+
+}

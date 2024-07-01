@@ -1,0 +1,35 @@
+﻿@inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<UI.Backend.ViewModels.Automation.Planning.ManualPlannerViewModel>
+
+<div class="d-flex border rounded-1 border-1 w-50">
+  <InputFile OnChange="FileChanged" />
+  <div>
+    @foreach (var s in ViewModel!.ManualPlannerSetCollection)
+    {
+      <ul>
+        @foreach (var plan in s.ParameterValues)
+        {
+          <li>
+            @plan.Name = @plan.Value
+          </li>
+        }
+      </ul>
+    }
+  </div>
+</div>
+
+@code {
+
+  [Parameter]
+  public string Name { get; set; } = "Manual Planner";
+
+  [Parameter]
+  public string Type { get; set; } = "ManualPlanner";
+
+  [Parameter]
+  public Version Version { get; set; } = new (1, 0);
+
+  private async void FileChanged(InputFileChangeEventArgs obj)
+  {
+    await ViewModel!.FileUploaded(obj.File);
+  }
+}

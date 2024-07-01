@@ -1,0 +1,65 @@
+﻿@using TicStepperController.Messaging;
+@using UI.Backend.ViewModels.Settings.Device.StepperController
+
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<StepperControllerConfigEditViewModel>
+
+<EditForm Model="@ViewModel" OnValidSubmit="OnValidSubmit">
+  <div class="stepper-config-grid">
+    <input type="text" placeholder="@(ViewModel!.Port is null ? "Port" : ViewModel!.Port)" list="port-list" @bind="ViewModel!.Port" class="form-select stepper-port" />
+    <datalist id="port-list">
+      @if (ViewModel!.AvailablePorts is not null)
+      {
+        @foreach (var port in ViewModel!.AvailablePorts)
+        {
+          <option value="@port">@port</option>
+        }
+      }
+    </datalist>
+    <input type="text" class="form-control stepper-name" disabled="@(!ViewModel!.NewConfig)" placeholder="Name" @bind="@ViewModel!.Name" />
+    <div class="stepper-simulated d-flex">
+      <label class="flex-fill" for="simulated-switch">Simulated</label>
+      <RadzenSwitch id="simulated-switch" @bind-Value="@ViewModel!.Simulated">Simulated</RadzenSwitch>
+    </div>
+    <div class="stepper-property-grid">
+      <div class="d-flex stepper-max-acceleration my-1">
+        <label for="max-acceleration" class="flex-fill">Max Acceleration</label>
+        <input name="max-acceleration" type="number" class="form-control form-control-sm" @bind="ViewModel!.MaxAcceleration" />
+      </div>
+      <div class="d-flex stepper-max-deceleration my-1">
+        <label for="max-deceleration" class="flex-fill">Max Deceleration</label>
+        <input name="max-deceleration" type="number" class="form-control form-control-sm" @bind="ViewModel!.MaxDeceleration" />
+      </div>
+      <div class="d-flex stepper-starting-speed my-1">
+        <label for="starting-speed" class="flex-fill">Starting Speed</label>
+        <input name="starting-speed" type="number" class="form-control form-control-sm" @bind="ViewModel!.StartingSpeed" />
+      </div>
+      <div class="d-flex stepper-max-speed my-1">
+        <label for="max-speed" class="flex-fill">Max Speed</label>
+        <input name="max-speed" type="number" class="form-control form-control-sm" @bind="ViewModel!.MaxSpeed" />
+      </div>
+      <div class="d-flex stepper-custom-step-size my-1">
+        <label for="custom-step-size" class="flex-fill">Custom Step Size</label>
+        <input name="custom-step-size" type="number" class="form-control form-control-sm" @bind="ViewModel!.CustomStepSize" />
+      </div>
+      <div class="d-flex stepper-step-mode my-1">
+        <label for="step-mode" class="flex-fill">Step Mode</label>
+        <select name="step-mode" class="form-select-sm" @bind="ViewModel.StepMode">
+          @foreach (var mode in Enum.GetNames<StepMode>())
+          {
+            <option selected="@ViewModel.StepMode.Equals(mode)" value="@mode">@mode</option>
+          }
+        </select>
+      </div>
+    </div>
+  </div>
+  <ValidationSummary />
+  <DataAnnotationsValidator />
+  <button type="submit" class="btn my-2 btn-outline-primary">Save</button>
+</EditForm>
+
+@code {
+  [Parameter]
+  public Action OnValidSubmit { get; set; } = delegate
+  {
+  };
+}

@@ -1,0 +1,124 @@
+﻿@page "/automation/campaigndesigner"
+@page "/automation/campaigndesigner/{CampaignId:guid}"
+@using UI.Backend.ViewModels.Automation.CampaignEdit;
+@using UI.Pages.Shared.CampaignEdit
+@inject NotificationService NotificationService
+@inject DialogService DialogService
+@inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<CampaignDesignerViewModel>
+
+<PageTitle>Campaign Designer</PageTitle>
+
+<div class="d-flex h-100 flex-column">
+    <div class="d-flex">
+        <h2>@ViewModel!.CampaignName</h2>
+        <button @onclick="TitleClicked" class="btn btn-outline-light border-0">
+            <RadzenIcon Icon="edit"/>
+        </button>
+    </div>
+    <div class="btn-group" role="group">
+        <input type="radio" class="btn-check m-1" name="btnradio" id="btnradio1" autocomplete="off" @onclick="SelectParam" checked/>
+        <label class="btn btn-outline-secondary" for="btnradio1">Parameter Designer</label>
+        <input type="radio" class="btn-check" name="btnradio" id="btnradio2" autocomplete="off" @onclick="SelectExp"/>
+        <label class="btn btn-outline-secondary" for="btnradio2">Experiment Template</label>
+        <input type="radio" class="btn-check" name="btnradio" id="btnradio3" autocomplete="off" @onclick="SelectPlan"/>
+        <label class="btn btn-outline-secondary" for="btnradio3">Planning</label>
+    </div>
+    <div class="my-2 flex-grow-1 overflow-auto">
+        @if (SelectedSubOption1)
+        {
+            <div class="w-50">
+                <PlannableParameterDesigner ViewModel="@ViewModel!.PlannableParameterDesigner"/>
+            </div>
+        }
+        @if (SelectedSubOption2)
+        {
+            <ExperimentDesigner ViewModel="@ViewModel!.ExperimentDesigner"/>
+        }
+        @if (SelectedSubOption3)
+        {
+            <Planning ViewModel="@ViewModel!.PlanningDesigner"/>
+        }
+    </div>
+    <div class="d-flex justify-content-end">
+        <button @onclick="SaveClick" class="btn btn-primary">Save</button>
+        <button class="btn btn-secondary">Cancel</button>
+    </div>
+</div>
+
+
+@code {
+
+  [Parameter]
+  public Guid? CampaignId { get; set; }
+
+  protected override async Task OnInitializedAsync()
+  {
+    if (CampaignId.HasValue)
+      await ViewModel!.SelectCampaignById(CampaignId.Value);
+  }
+
+  public bool SelectedSubOption1 { get; set; } = true;
+  public bool SelectedSubOption2 { get; set; }
+  public bool SelectedSubOption3 { get; set; }
+
+
+
+  public void SelectParam()
+  {
+    SelectedSubOption1 = true;
+    SelectedSubOption2 = false;
+    SelectedSubOption3 = false;
+  }
+
+  public void SelectExp()
+  {
+    SelectedSubOption2 = true;
+    SelectedSubOption1 = false;
+    SelectedSubOption3 = false;
+  }
+
+  public void SelectPlan()
+  {
+    SelectedSubOption2 = false;
+    SelectedSubOption1 = false;
+    SelectedSubOption3 = true;
+  }
+
+  private async Task SaveClick()
+  {
+    try
+    {
+      await ViewModel!.Update();
+      NotificationService.Notify(NotificationSeverity.Success, "Campaign has been saved");
+    }
+    catch (Exception e)
+    {
+      NotificationService.Notify(NotificationSeverity.Error, $"Failed to save campaign {e.Message}");
+    }
+  }
+
+    private async void TitleClicked(MouseEventArgs obj)
+    {
+        string newName = ViewModel!.CampaignName;
+        var result = await DialogService.OpenAsync("Campaign Name Edit", ds =>
+            @<div class="d-flex flex-column">
+                <div class="input-group mb-3">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text" id="inputGroup-sizing-default">Campaign Name</span>
+                    </div>
+                    <input @bind="newName" type="text" class="form-control" aria-label="Default" aria-describedby="inputGroup-sizing-default">
+                </div>
+                <div class="d-flex">
+                    <button class="btn btn-primary btn-outline-light" @onclick="() => ds.Close(true)">Save</button>
+                    <button class="btn btn-danger btn-outline-light" @onclick="() => ds.Close(false)">Cancel</button>
+                </div>
+            </div>
+            );
+
+        if (result ?? false)
+        {
+            ViewModel!.CampaignName = newName;
+        }
+    }
+
+}

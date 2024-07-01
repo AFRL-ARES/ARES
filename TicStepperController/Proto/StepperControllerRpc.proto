@@ -1,0 +1,108 @@
+﻿syntax = "proto3";
+
+package tic_stepper_controller.messaging;
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "StepperControllerConfig.proto";
+import "StepMode.proto";
+
+service StepperControllerRpc {
+  rpc GetState(TicRequest) returns (TicState);
+  rpc GetAllControllers(google.protobuf.Empty) returns (GetAllControllersResponse);
+
+  rpc Reset(TicRequest) returns (google.protobuf.Empty);
+  rpc Energize(TicRequest) returns (google.protobuf.Empty);
+  rpc DeEnergize(TicRequest) returns (google.protobuf.Empty);
+  rpc EnterSafeStart(TicRequest) returns (google.protobuf.Empty);
+  rpc ExitSafeStart(TicRequest) returns (google.protobuf.Empty);
+  rpc HaltAndHold(TicRequest) returns (google.protobuf.Empty);
+  rpc HaltAndSetPosition(PositionCommand) returns (google.protobuf.Empty);
+  rpc ResetCommandTimeout(TicRequest) returns (google.protobuf.Empty);
+  rpc SetMaxAcceleration(AccelerationCommand) returns (google.protobuf.Empty);
+  rpc SetMaxDeceleration(AccelerationCommand) returns (google.protobuf.Empty);
+  rpc SetMaxSpeed(UnsignedCommand) returns (google.protobuf.Empty);
+  rpc SetStartingSpeed(UnsignedCommand) returns (google.protobuf.Empty);
+  rpc SetStepMode(StepModeCommand) returns (google.protobuf.Empty);
+  rpc SetCustomStepSize(UnsignedCommand) returns (google.protobuf.Empty);
+  rpc NextStep(TicRequest) returns (google.protobuf.Empty);
+  rpc PreviousStep(TicRequest) returns (google.protobuf.Empty);
+
+  rpc SetTargetPosition(PositionCommand) returns (google.protobuf.Empty);
+
+  rpc AddStepperController(config.StepperControllerConfig) returns (google.protobuf.Empty);
+  rpc RemoveStepperController(TicRequest) returns (google.protobuf.Empty);
+  rpc UpdateStepperController(config.StepperControllerConfig) returns (google.protobuf.Empty);
+}
+
+message TicRequest {
+  string tic_name = 1;
+}
+
+message GetAllControllersResponse {
+  repeated string tic_controllers = 1;
+}
+
+message PositionCommand {
+  string tic_name = 1;
+  sint32 position = 2;
+}
+
+message AccelerationCommand {
+  string tic_name = 1;
+  uint32 acceleration = 2;
+}
+
+message UnsignedCommand {
+  string tic_name = 1;
+  uint32 argument = 2;
+}
+
+message StepModeCommand {
+  string tic_name = 1;
+  StepMode step_mode = 2;
+}
+
+message TicState {
+  uint32 max_acceleration = 1; // microsteps per 100 s²
+  uint32 max_deceleration = 2; // microsteps per 100 s²
+  uint32 max_speed = 3; // microsteps per 10,000 s
+  uint32 starting_speed = 4; // microsteps per 10,000 s
+  uint32 custom_step_size = 5; // microsteps per user defined step (not the stepper motor step)
+  StepMode step_mode = 6; // microsteps per stepper defined step
+  sint32 current_position = 7; // current assumed position in microsteps
+  sint32 target_position = 8; // currently set target position in microsteps
+  MiscFlags misc_flags = 9;
+  ErrorStatus error_status = 10;
+  ErrorsOccurred errors_occurred = 11;
+  bool valid = 12; // whether or not this state was actually built from the device
+}
+
+message MiscFlags {
+  bool Energized = 1;
+  bool PositionUncertain = 2;
+  bool ForwardLimitActive = 3;
+  bool ReverseLimitActive = 4;
+  bool HomingActive = 5;
+}
+
+message ErrorStatus {
+  bool IntentionallyDeEnergized = 1;
+  bool MotorDriverError = 2;
+  bool LowVin = 3;
+  bool KillSwitchActive = 4;
+  bool RequiredInputInvalid = 5;
+  bool SerialError = 6;
+  bool CommandTimeout = 7;
+  bool SafeStartViolation = 8;
+  bool ErrLineHigh = 9;
+}
+
+message ErrorsOccurred {
+  bool SerialFraming = 1;
+  bool SerialRxOverrun = 2;
+  bool SerialFormat = 3;
+  bool SerialCrc = 4;
+  bool EncoderSkip = 5;
+}
