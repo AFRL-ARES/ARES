@@ -1,5 +1,4 @@
 ﻿using Ares.Messages.DeviceStates;
-using ARESCore;
 using ARESMessaging.DeviceStateLogging;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;

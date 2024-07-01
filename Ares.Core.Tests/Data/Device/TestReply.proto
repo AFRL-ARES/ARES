@@ -1,0 +1,8 @@
+﻿syntax = "proto3";
+
+package ares.test;
+
+message TestReply {
+  float number = 1;
+  string message = 2;
+}

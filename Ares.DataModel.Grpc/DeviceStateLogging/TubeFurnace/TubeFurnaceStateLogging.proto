@@ -1,0 +1,22 @@
+﻿syntax = "proto3";
+
+package ares.messages.device_states.tube_furnace;
+
+import "google/protobuf/empty.proto";
+import "DeviceStateLogging/TubeFurnace/TubeFurnaceStateEntity.proto";
+import "StateRequest.proto";
+import "DeviceStateLogging/DevicesResponse.proto";
+
+service TubeFurnaceStateLogging {
+	rpc GetTubeFurnaceStates(StateRequest) returns (TubeFurnaceStateResponse);
+	rpc DeleteTubeFurnaceStates(StateRequest) returns (google.protobuf.Empty);
+	rpc GetAvailableDevices(google.protobuf.Empty) returns (DevicesResponse);
+}
+
+message TubeFurnaceStateResponse {
+	map<string, StateCollection> state_map = 1;
+}
+
+message StateCollection {
+	repeated TubeFurnaceStateEntity state_logs = 1;
+}

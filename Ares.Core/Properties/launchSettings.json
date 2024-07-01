@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Ares.Core": {
+      "commandName": "Project"
+    },
+    "MoleculeMaker": {
+      "commandName": "Executable",
+      "executablePath": "D:\\ARES\\MoleculeMakerRemasteredWpf\\MoleculeMakerService\\bin\\Debug\\net6.0\\MoleculeMakerService.exe",
+      "workingDirectory": "D:\\ARES\\MoleculeMakerRemasteredWpf\\MoleculeMakerService\\bin\\Debug\\net6.0"
+    }
+  }
+}

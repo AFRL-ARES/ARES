@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package ares.messaging;
+
+import "Templates/ParameterMetadata.proto";
+import "Templates/ParameterValue.proto";
+import "google/protobuf/wrappers.proto";
+
+message Parameter {
+	google.protobuf.StringValue unique_id = 1; // A unique id for this parameter
+	ParameterMetadata metadata = 2; // Non-volatile information about the command argument/parameter
+	ParameterValue value = 3; // Value of the argument/parameter used for execution
+	bool planned = 4; // Indicated whether or not the parameter needs to be planned for
+	ParameterMetadata planning_metadata = 5; // metadata containing the info needed for planning
+	int64 index = 6; // Index of the collection in which executed this template
+}

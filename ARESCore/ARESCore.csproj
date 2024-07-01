@@ -10,7 +10,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Ares.Core" Version="2024.6.14.134311" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="6.0.28">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -22,14 +21,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AlicatMFC\AlicatMFC.csproj" />
-    <ProjectReference Include="..\DemoAnalyzer\DemoAnalyzer.csproj" />
-    <ProjectReference Include="..\DemoPlanner\DemoPlanner.csproj" />
-    <ProjectReference Include="..\ARESMessaging\ARESMessaging.csproj" />
+    <ProjectReference Include="..\Ares.Core\Ares.Core.csproj" />
+    <ProjectReference Include="..\Ares.DataModel.Grpc\Ares.DataModel.Grpc.csproj" />
+    <ProjectReference Include="..\Ares.DataModel\Ares.DataModel.csproj" />
     <ProjectReference Include="..\HerkulexDRS\HerkulexDRS.csproj" />
     <ProjectReference Include="..\LindbergFurnace\LindbergFurnace.csproj" />
     <ProjectReference Include="..\SyringePumpNE1000\SyringePumpNE1000.csproj" />
     <ProjectReference Include="..\TC0304\TC0304.csproj" />
-    <ProjectReference Include="..\TestDevice\DemoDevice.csproj" />
     <ProjectReference Include="..\TicStepperController\TicStepperController.csproj" />
     <ProjectReference Include="..\ValveController\ValveController.csproj" />
   </ItemGroup>

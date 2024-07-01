@@ -5,7 +5,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Authentication.proto" />
     <None Remove="DeviceStateLogging\DevicesResponse.proto" />
     <None Remove="DeviceStateLogging\MfcStateLogging.proto" />
     <None Remove="DeviceStateLogging\StateRequest.proto" />
@@ -18,12 +17,9 @@
     <None Remove="DeviceStateLogging\TubeFurnace\TubeFurnaceStateEntity.proto" />
     <None Remove="DeviceStateLogging\TubeFurnace\TubeFurnaceStateLogging.proto" />
     <None Remove="MfcState.proto" />
-    <None Remove="SerialConnectivity.proto" />
-    <None Remove="UserManagement.proto" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Ares.DataModel.Grpc" Version="2024.6.14.134224" />
     <PackageReference Include="Grpc.Tools" Version="2.62.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -45,9 +41,6 @@
     <Protobuf Include="DeviceStateLogging\TicStepperController\TicStepperControllerState.proto" GrpcServices="None" />
     <Protobuf Include="DeviceStateLogging\TubeFurnace\TubeFurnaceStateEntity.proto" GrpcServices="None" />
     <Protobuf Include="DeviceStateLogging\TubeFurnace\TubeFurnaceStateLogging.proto" />
-    <Protobuf Include="SerialConnectivity.proto" />
-    <Protobuf Include="UserManagement.proto" />
-    <Protobuf Include="Authentication.proto" />
   </ItemGroup>
 
 </Project>

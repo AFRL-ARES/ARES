@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Authors>Infoscitex</Authors>
+    <Company>Infoscitex</Company>
+    <Description>Library containing the command compilation and execution logic for campaigns.</Description>
+    <LangVersion>default</LangVersion>
+  </PropertyGroup>
+
+	<Target Name="NugetPackAutoVersioning" AfterTargets="Build">
+		<Exec Command="dotnet pack -p:PackageVersion=$([System.DateTime]::Now.ToString(&quot;yyyy.MM.dd.HHmmss&quot;)) --no-build --configuration $(Configuration) --output &quot;$(SolutionDir)nuget&quot;" />
+	</Target>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>$(ProjectName).Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+
+  <ItemGroup>
+	  <PackageReference Include="DynamicData" Version="7.14.2" />
+	  <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="6.0.11" />
+	  <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.11" />
+	  <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.1" />
+	</ItemGroup>
+
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ares.DataModel\Ares.DataModel.csproj" />
+    <ProjectReference Include="..\CoreDevice\CoreDevice.csproj" />
+  </ItemGroup>
+
+</Project>

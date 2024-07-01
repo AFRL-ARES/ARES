@@ -1,0 +1,16 @@
+﻿syntax = "proto3";
+
+package ares.messaging.device;
+
+message DeviceStatus
+{
+	DeviceState device_state = 1; // the current state of the device
+	string message = 2; // if the used needs to be clarified for why the state is the way it is, this message field can be used
+}
+
+enum DeviceState
+{
+	INACTIVE = 0; // device cannot be used as it's not connected/turned on/etc.
+	ACTIVE = 1; // device is ready for action
+	ERROR = 2; // device is in some error state, currently more of a placeholder until functionality is created to handle the errored devices
+}

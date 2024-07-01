@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Ares.Core.Grpc": {
+      "commandName": "Project"
+    },
+    "FC2": {
+      "commandName": "Executable",
+      "executablePath": "D:\\ARES\\FC2\\FC2Service\\bin\\Debug\\net6.0\\FC2Service.exe",
+      "workingDirectory": "D:\\ARES\\FC2\\FC2Service\\bin\\Debug\\net6.0"
+    }
+  }
+}

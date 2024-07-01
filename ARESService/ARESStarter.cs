@@ -6,9 +6,6 @@ using Ares.Device;
 using Ares.Messaging;
 using ARESCore;
 using ARESCore.DeviceDbLoaders;
-using DemoAnalyzer;
-using DemoDevice;
-using DemoPlanner;
 using Microsoft.EntityFrameworkCore;
 using SyringePumpNE1000;
 using System;
@@ -42,9 +39,6 @@ public class ARESStarter
 
   public async Task Start()
   {
-    await AddDemoDevice(new Uri("https://localhost:7037"));
-    await AddDemoPlanner(new Uri("https://localhost:7069"));
-    await AddDemoAnalyzer(new Uri("https://localhost:7086"));
     foreach (var deviceLoader in _deviceLoaders)
       await deviceLoader.Load();
 
@@ -53,31 +47,6 @@ public class ARESStarter
       .Subscribe(_ => ServerStatusHelper.ServerStatusSubject.OnNext(new ServerStatusResponse { ServerStatus = ServerStatus.Error, StatusMessage = "This is a test error from server." }));
   }
 
-
-  public Task AddDemoDevice(Uri address)
-  {
-    var testDevice = new AresDemoDevice("DemoDevice", address);
-    testDevice.Activate();
-    var testDeviceInterpreter = new DemoDeviceInterpreter(testDevice);
-    _deviceCommandInterpreterRepo.Add(testDeviceInterpreter);
-    return Task.CompletedTask;
-  }
-
-  public Task AddDemoPlanner(Uri address)
-  {
-    var demoPlanner = new AresDemoPlanner("Demo Planner", address);
-    demoPlanner.Init();
-    _plannerManager.RegisterPlanner(demoPlanner);
-    return Task.CompletedTask;
-  }
-
-  public Task AddDemoAnalyzer(Uri address)
-  {
-    var demoAnalyzer = new AresDemoAnalyzer("Demo Analyzer", address);
-    demoAnalyzer.Init();
-    _analyzerManager.RegisterAnalyzer(demoAnalyzer);
-    return Task.CompletedTask;
-  }
 
   public void RemoveSyringePumpInterpreter(IDeviceCommandInterpreter<ISyringePump> syringePumpInterpreter)
   {

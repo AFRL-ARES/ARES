@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package ares.messaging;
+
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/any.proto";
+
+message DeviceCommandResult {
+	google.protobuf.StringValue unique_id = 1;
+	google.protobuf.Any result = 2;
+	bool success = 3; // Whether or not the execution was successful
+	string error = 4; // Error message assuming the success is false
+}

@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package ares.messaging;
+
+import "google/protobuf/wrappers.proto";
+
+message AnalyzerInfo {
+	google.protobuf.StringValue unique_id = 1; // A unique id for this analyzer
+	string name = 2; // name of the analyzer
+	string type = 3; // type name of the analyzer
+	string version = 4; // version of the analyzer
+}

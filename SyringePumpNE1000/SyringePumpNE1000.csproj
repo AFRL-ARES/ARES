@@ -12,7 +12,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Ares.Device.Serial.dll" Version="2024.6.14.134257" />
     <PackageReference Include="Crc32.NET" Version="1.2.0" />
     <PackageReference Include="Grpc.Tools" Version="2.62.0">
       <PrivateAssets>all</PrivateAssets>
@@ -23,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ARESMessaging\ARESMessaging.csproj" />
+    <ProjectReference Include="..\Ares.Device.Serial\AresSerial\Ares.Device.Serial.csproj" />
   </ItemGroup>
 
   <ItemGroup>

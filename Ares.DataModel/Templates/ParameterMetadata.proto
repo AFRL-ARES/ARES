@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package ares.messaging;
+
+import "Limits.proto";
+import "google/protobuf/wrappers.proto";
+
+message ParameterMetadata {
+	google.protobuf.StringValue unique_id = 1; // A unique id for this metadata
+	string name = 2; // Name descriptor of the argument/parameter
+	string unit = 3; // Unit descriptor, if applicable, of the argument/parameter
+	repeated Limits constraints = 4; // Collection of limits for the argument/parameter formatted to be easily converted into planner requests.
+	int64 index = 5; // Index of the collection in which executed this template
+}

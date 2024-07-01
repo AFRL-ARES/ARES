@@ -1,0 +1,49 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>Infoscitex</Authors>
+    <Company>Infoscitex</Company>
+    <Product>Ares.DataModel</Product>
+    <PackageId>Ares.DataModel.dll</PackageId>
+    <Description>ARES data model in the form of protobuf messages
+    </Description>
+    <RootNamespace>Ares.Messaging</RootNamespace>
+  </PropertyGroup>
+	
+  <Target Name="NugetPackAutoVersioning" AfterTargets="Build">
+    <Exec Command="dotnet pack -p:PackageVersion=$([System.DateTime]::Now.ToString(&quot;yyyy.MM.dd.HHmmss&quot;)) --no-build --configuration $(Configuration) --output &quot;$(SolutionDir)nuget&quot;" />
+  </Target>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <OutputPath>bin\</OutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(SolutionDir)Proto\Cs\Generated\Source\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" Version="3.24.3" />
+    <PackageReference Include="Grpc" Version="2.46.6" />
+    <PackageReference Include="Grpc.Tools" Version="2.58.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup Label="Nuget Packaging">
+    <_Asset PackagePath="\Proto\" Include="**\*.proto" />
+  </ItemGroup>
+
+  <ItemGroup Label="Protobuf Compile">
+    <_Asset Include="**\*.proto" />
+    <None Remove="StateRequest.proto" />
+    <_Asset Remove="StateRequest.proto" />
+    <Protobuf Include="@(_Asset)" Visible="True" GrpcServices="None" />
+    <Protobuf Include="StateRequest.proto" GrpcServices="None" />
+  </ItemGroup>
+</Project>

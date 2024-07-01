@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package ares.messaging;
+
+import "Templates/CommandTemplate.proto";
+import "google/protobuf/wrappers.proto";
+
+message StepTemplate {
+  google.protobuf.StringValue unique_id = 1; // A unique id for this template
+	string name = 2; // Name identification
+	bool is_parallel = 3; // Flag indicating whether or not commands are to be executed sequentially or in parallel
+	repeated CommandTemplate command_templates = 4; // Collection of (unqualified) command templates used to generate executable (device qualified) commands
+	int64 index = 5; // Index of the collection in which executed this template
+}

@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package ares.messaging;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+import "CompletedExperiment.proto";
+import "DeviceCommandResult.proto";
+
+message ExecutionInfo {
+  google.protobuf.StringValue unique_id = 1;
+  google.protobuf.Timestamp time_started = 2;
+  google.protobuf.Timestamp time_finished = 3;
+}
+
+message CampaignResult {
+  google.protobuf.StringValue unique_id = 1;
+  string campaign_id = 2;
+  repeated ExperimentResult experiment_results = 3;
+  ExecutionInfo execution_info = 4;
+}
+
+message ExperimentResult {
+  google.protobuf.StringValue unique_id = 1;
+  string experiment_id = 2;
+  repeated StepResult step_results = 3;
+  ExecutionInfo execution_info = 4;
+  CompletedExperiment completed_experiment = 5;
+}
+
+message StepResult {
+  google.protobuf.StringValue unique_id = 1;
+  string step_id = 2;
+  repeated CommandResult command_results = 3;
+  ExecutionInfo execution_info = 4;
+}
+
+message CommandResult {
+  google.protobuf.StringValue unique_id = 1;
+  string command_id = 2;
+  ExecutionInfo execution_info = 3;
+  DeviceCommandResult result = 4;
+}

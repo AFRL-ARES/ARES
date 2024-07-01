@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package ares.messaging;
+
+message CampaignExecutionStatus {
+  string campaign_id = 1;
+  ExecutionState state = 2;
+  repeated ExperimentExecutionStatus experiment_execution_statuses = 3;
+}
+
+message ExperimentExecutionStatus {
+  string experiment_id = 1;
+  repeated StepExecutionStatus step_execution_statuses = 2;
+}
+
+message StepExecutionStatus {
+  string step_id = 1;
+  repeated CommandExecutionStatus command_execution_statuses = 2;
+}
+
+message CommandExecutionStatus {
+  string command_id = 1;
+  // since a command is technically the only executable entity, it makes sense for it to have an execution state
+  // and since step/experiment statuses all contain a command status at verying degrees of depth,
+  // they can extrapolate the state that they should be in. Campaign is a bit special so it gets its own state so that
+  // it's easier to check its status during runtime.
+  ExecutionState state = 2;
+}
+
+// the higher number has higher priority on the status of a container holding an entity with this state
+// ex.: A step that has an idle task, a succeeded task, and a failed task would be considered a failed step
+//      which would propagate to the experiment status and thus campaign status
+//      If, however, the failed task was suceeded, then the whole step would be idle as idle takes priority
+//      over success
+enum ExecutionState {
+  UNDEFINED = 0;
+  SUCCEEDED = 1;
+  WAITING = 2;
+  RUNNING = 3;
+  PAUSED = 4;
+  FAILED = 5;
+}

@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package ares.messaging;
+
+import "google/protobuf/wrappers.proto";
+
+message Project {
+	google.protobuf.StringValue unique_id = 1; // A unique id for this project
+	string name = 2; // The name of the project
+	string description = 3; // The description for the project
+}

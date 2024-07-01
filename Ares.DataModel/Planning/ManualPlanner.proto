@@ -1,0 +1,27 @@
+﻿syntax = "proto3";
+
+package ares.messaging.planning;
+
+message ManualPlannerSeed {
+	oneof planner_stuff {
+		ManualPlannerSetCollection planner_values = 1;
+		ManualPlannerFileLines file_lines = 2;
+	}
+}
+
+message ManualPlannerSet {
+	repeated ParameterNameValuePair parameter_values = 1;
+}
+
+message ParameterNameValuePair {
+	string name = 1; // name of the parameter
+	double value = 2; // value for the parameter
+}
+
+message ManualPlannerFileLines {
+	repeated string planner_values = 1;
+}
+
+message ManualPlannerSetCollection {
+	repeated ManualPlannerSet planned_values = 1;
+}
