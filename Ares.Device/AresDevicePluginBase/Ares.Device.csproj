@@ -3,8 +3,8 @@
   <PropertyGroup>
     <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <Authors>Infoscitex</Authors>
-    <Company>Infoscitex</Company>
+    <Authors>DCS</Authors>
+    <Company>DCS</Company>
     <Product>Ares.Device</Product>
     <PackageId>Ares.Device.dll</PackageId>
     <Description>
@@ -14,12 +14,9 @@
 	<AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
 	<LangVersion>default</LangVersion>
 	<Nullable>enable</Nullable>
-	<TargetFramework>net6.0</TargetFramework>
+	<TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
 
-  <Target Name="NugetPackAutoVersioning" AfterTargets="Build">
-    <Exec Command="dotnet pack -p:PackageVersion=$([System.DateTime]::Now.ToString(&quot;yyyy.MM.dd.HHmmss&quot;)) --no-build --configuration $(Configuration) --output &quot;$(SolutionDir)nuget&quot;" />
-  </Target>
   <ItemGroup>
     <!-- Make assembly visible to test assembly -->
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
@@ -38,11 +35,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Reactive" Version="6.0.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\Ares.DataModel\Ares.DataModel.csproj" />
+    <PackageReference Include="Ares.DataModel.dll" Version="2025.8.5.92857" />
+    <PackageReference Include="System.Reactive" Version="6.0.1" />
   </ItemGroup>
 
 </Project>

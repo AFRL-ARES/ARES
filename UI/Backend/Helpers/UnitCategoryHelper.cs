@@ -16,16 +16,16 @@ public class UnitCategoryHelper
 
   private void BuildLookup()
   {
-    foreach (var quantityInfo in Quantity.Infos)
-    foreach (var unit in quantityInfo.UnitInfos)
-      // var humanUnit = unit.Name.Humanize();
-      _cachedLookups.TryAdd(unit.Name, quantityInfo);
+    foreach(var quantityInfo in Quantity.Infos)
+      foreach(var unit in quantityInfo.UnitInfos)
+        // var humanUnit = unit.Name.Humanize();
+        _cachedLookups.TryAdd(unit.Name, quantityInfo);
   }
 
   public static string[] GetTypes(string unitCategory)
   {
     var selection = Quantity.Infos.FirstOrDefault(i => i.Name.Equals(unitCategory));
-    if (selection == null)
+    if(selection == null)
       return Array.Empty<string>();
 
     var units = selection.UnitInfos;
@@ -33,5 +33,11 @@ public class UnitCategoryHelper
   }
 
   public string GetCategoryForUnit(string unit)
-    => _cachedLookups.ContainsKey(unit) ? _cachedLookups[unit].Name : "";
+  {
+    if(unit == "None")
+      return unit;
+
+    else
+      return _cachedLookups.ContainsKey(unit) ? _cachedLookups[unit].Name : string.Empty;
+  }
 }

@@ -1,5 +1,6 @@
 ﻿using Ares.Core.Planning;
 using Ares.Messaging;
+using Ares.Messaging.Analyzing;
 using Ares.Messaging.Planning;
 
 namespace Ares.Core.Tests;
@@ -53,7 +54,7 @@ internal class ManualPlannerTests
     plannerSeed.FileLines = new ManualPlannerFileLines();
     plannerSeed.FileLines.PlannerValues.AddRange(_fileLines);
     await _manualPlanner.Seed(plannerSeed);
-    var results = await _manualPlanner.Plan(_parameterMetadatas, Array.Empty<Analysis>(), CancellationToken.None);
+    var results = await _manualPlanner.Plan(_parameterMetadatas, Array.Empty<CompletedExperiment>(), Array.Empty<Analysis>(), CancellationToken.None);
     Assert.That(results, Has.Exactly(3).Items);
   }
 }

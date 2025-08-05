@@ -1,24 +1,24 @@
-﻿using UI.Services;
-using UI.Services.ServerHealth;
-using UI.Services.ServerHealthNotification;
+﻿using UI.Services.Notification;
 
 namespace UI;
 
-internal class ServiceStarter : ILocalService
+public class ServiceStarter : IHostedService
 {
-  private readonly ServerHealthService _healthService;
-  private readonly ServerHealthNotificationService _serverHealthNotificationService;
+  private readonly INotificationReceivingService _notificationReceivingService;
 
-  public ServiceStarter(ServerHealthService healthService,
-    ServerHealthNotificationService serverHealthNotificationService)
+  public ServiceStarter(INotificationReceivingService notificationReceivingService, IServiceProvider serviceProvider)
   {
-    _healthService = healthService;
-    _serverHealthNotificationService = serverHealthNotificationService;
+    _notificationReceivingService = notificationReceivingService;
   }
 
-  public async Task Start()
+  public Task StartAsync(CancellationToken cancellationToken)
   {
-    await _healthService.Start();
-    await _serverHealthNotificationService.Start();
+    _notificationReceivingService.StartNotificationStream();
+    return Task.CompletedTask;
+  }
+
+  public Task StopAsync(CancellationToken cancellationToken)
+  {
+    throw new NotImplementedException();
   }
 }

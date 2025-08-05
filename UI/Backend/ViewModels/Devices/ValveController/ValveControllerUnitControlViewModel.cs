@@ -11,32 +11,6 @@ public class ValveControllerUnitControlViewModel : SerialDeviceUnitViewModel
     _client = client;
   }
 
-  public void EngageRelay()
-  {
-    if (RelaySelected == true)
-    {
-      EngageRelayOne();
-    }
-
-    else
-    {
-      EngageRelayTwo();
-    }
-  }
-
-  public void DisengageRelay()
-  {
-    if (RelaySelected == true)
-    {
-      DisengageRelayOne();
-    }
-
-    else
-    {
-      DisengageRelayTwo();
-    }
-  }
-
   public void EngageRelayOne()
   {
     _client.EngageRelayOne(new DeviceRequest { DeviceName = DeviceName });
@@ -56,7 +30,4 @@ public class ValveControllerUnitControlViewModel : SerialDeviceUnitViewModel
   {
     _client.DisengageRelayTwo(new DeviceRequest { DeviceName = DeviceName });
   }
-
-  //True when relay one is selected, false when relay two is
-  public bool RelaySelected { get; set; } = true;
 }

@@ -1,10 +1,9 @@
-﻿using System.Globalization;
-using System.Reactive.Linq;
-using System.Reactive.Subjects;
-using System.Runtime.Intrinsics.Arm;
-using Ares.Device.Serial;
+﻿using Ares.Device.Serial;
 using LindbergFurnace.Commands;
 using LindbergFurnace.Commands.Requests;
+using System.Globalization;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using TubeFurnace.Messaging;
 using UnitsNet;
 
@@ -58,11 +57,16 @@ public class TubeFurnace : SerialDevice<ITubeFurnaceConnection>, ITubeFurnace
 
   public IObservable<TubeFurnaceState> StateStream { get; }
 
-  protected override Task<DeviceValidationResult> Validate()
+  protected override Task<SerialDeviceValidationResult> Validate()
   {
     // TODO
-    var result = new DeviceValidationResult(true, "TODO: Dont cheat");
+    var result = new SerialDeviceValidationResult(true, "TODO: Dont cheat");
     return Task.FromResult(result);
+  }
+
+  public override async Task EnterSafeMode()
+  {
+    await SetSetpoint(Temperature.FromDegreesCelsius(25.0));
   }
 
   public void Dispose()

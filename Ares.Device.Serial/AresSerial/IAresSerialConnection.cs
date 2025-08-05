@@ -4,10 +4,8 @@ using Ares.Device.Serial.Commands;
 
 namespace Ares.Device.Serial;
 
-public interface IAresSerialConnection : IDisposable
+public interface IAresSerialConnection : IAresDeviceConnection
 {
-  string? Name { get; }
-  bool IsOpen { get; }
   void AttemptOpen();
   Task<T> Send<T>(SerialCommandWithResponse<T> command) where T : SerialResponse;
   Task<T> Send<T>(SerialCommandWithResponse<T> command, TimeSpan timeout) where T : SerialResponse;

@@ -2,7 +2,8 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Ares.Core.Device;
-using ARESCore;
+using AresService.DeviceManagers;
+using AresService;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
 using Google.Protobuf.WellKnownTypes;
@@ -14,20 +15,19 @@ using System.Reactive.Threading.Tasks;
 using Ares.SyringePump.Ne1000.Messaging;
 using SyringePumpNE1000;
 using UnitsNet;
-using ARESCore.DeviceManagers;
 
-namespace ARESService.Services.Devices;
+namespace AresService.Services.Devices;
 
 public class TubeFurnaceService : TubeFurnaceRpc.TubeFurnaceRpcBase
 {
   private readonly IDeviceCommandInterpreterRepo _deviceCommandInterpreterRepo;
   private readonly IDeviceManager<TubeFurnaceConfig, ITubeFurnace> _tubeFurnaceManager;
-  private readonly IDbContextFactory<ARESDbContext> _dbContextFactory;
+  private readonly IDbContextFactory<AresDbContext> _dbContextFactory;
   private readonly IDeviceConfigManager<TubeFurnaceConfig> _configManager;
 
   public TubeFurnaceService(IDeviceCommandInterpreterRepo deviceCommandInterpreterRepo,
     IDeviceManager<TubeFurnaceConfig, ITubeFurnace> tubeFurnaceManager,
-    IDbContextFactory<ARESDbContext> dbContextFactory,
+    IDbContextFactory<AresDbContext> dbContextFactory,
     IDeviceConfigManager<TubeFurnaceConfig> configManager)
   {
     _deviceCommandInterpreterRepo = deviceCommandInterpreterRepo;
@@ -43,7 +43,7 @@ public class TubeFurnaceService : TubeFurnaceRpc.TubeFurnaceRpcBase
       .Select(interpreter => interpreter.Device)
       .OfType<ITubeFurnace>()
       .Select(device => device.StateStream.Take(1).ToTask().Result)
-      .Select(deviceState => new TubeFurnaceDeviceDescription { AssumedAddress = deviceState.AssumedAddress, Name = deviceState.Name });
+      .Select(deviceState => new TubeFurnaceDeviceDescription { AssumedAddress = (int)deviceState.AssumedAddress, Name = deviceState.Name });
 
     var response = new GetAllTubeFurnacesResponse();
     response.TubeFurnaces.AddRange(tubeFurnaceDescriptions);

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Ares.Device.Serial.Commands;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Concurrency;
@@ -7,7 +8,6 @@ using System.Reactive.Subjects;
 using System.Reactive.Threading.Tasks;
 using System.Threading;
 using System.Threading.Tasks;
-using Ares.Device.Serial.Commands;
 
 namespace Ares.Device.Serial;
 
@@ -189,7 +189,7 @@ public abstract class AresSerialConnection : IAresSerialConnection
         while (!_listenerCancellationTokenSource.Token.IsCancellationRequested)
           ProcessBufferCore();
       }
-      // TODO maybe there's a cleaner way to do this
+      // TODO maybe there's a cleaner way to do this 
       catch (ObjectDisposedException)
       {
       }

@@ -1,24 +1,36 @@
-﻿@inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<UI.Backend.ViewModels.Automation.Planning.ManualPlannerViewModel>
+﻿@using Ares.Messaging
+@using Ares.Messaging.Planning
+@using Ares.Tools
+@inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<UI.Backend.ViewModels.Automation.Planning.ManualPlannerViewModel>
 
-<div class="d-flex border rounded-1 border-1 w-50">
-  <InputFile OnChange="FileChanged" />
+<div class="d-flex border rounded-1 border-1">
   <div>
-    @foreach (var s in ViewModel!.ManualPlannerSetCollection)
-    {
-      <ul>
-        @foreach (var plan in s.ParameterValues)
-        {
-          <li>
-            @plan.Name = @plan.Value
-          </li>
-        }
-      </ul>
-    }
+    <RadzenUpload Change="@FileChanged" Accept=".csv,.txt" Multiple=false ChooseText="Select Planning Data" Icon="upload" />
   </div>
+
+  @if(ViewModel!.PlannerValueHeaders.Any())
+  {
+    <RadzenDataGrid Data="DataGridDisplayObjects" ColumnWidth="100px" FilterPopupRenderMode="PopupRenderMode.OnDemand" AllowPaging="true" PageSize="5" >
+      <Columns>
+        <RadzenDataGridColumn Title="Experiment">
+          <Template>
+            @(context.ExperimentNumber)
+          </Template>
+        </RadzenDataGridColumn>
+        @foreach (var data in ViewModel!.PlannerValueHeaders)
+        {
+          <RadzenDataGridColumn Title="@data">
+            <Template>
+              @(@context.Parameters.ParameterValues.FirstOrDefault(valuePair => valuePair.Name == data)?.Value ?? AresValueHelper.CreateString("Error!"))
+            </Template>
+          </RadzenDataGridColumn>
+        }
+      </Columns>
+    </RadzenDataGrid>
+  }
 </div>
 
 @code {
-
   [Parameter]
   public string Name { get; set; } = "Manual Planner";
 
@@ -28,8 +40,43 @@
   [Parameter]
   public Version Version { get; set; } = new (1, 0);
 
-  private async void FileChanged(InputFileChangeEventArgs obj)
+  public List<DataGridDisplayObject> DataGridDisplayObjects { get; set; } = new();
+
+  public class DataGridDisplayObject
   {
-    await ViewModel!.FileUploaded(obj.File);
+    public string ExperimentNumber { get; set; } = string.Empty;
+
+    public ManualPlannerSet Parameters { get; set; } = new();
+  }
+
+  private async void FileChanged(UploadChangeEventArgs obj)
+  {
+    if (!obj.Files.Any())
+      return;
+
+    var file = obj.Files.First();
+    await ViewModel!.FileUploaded(file);
+    CreateDisplayData();
+  }
+
+  protected override async Task OnAfterRenderAsync(bool firstRender)
+  {
+    await ViewModel!.UpdatePlannerValues();
+  }
+
+  private void CreateDisplayData()
+  {
+    DataGridDisplayObjects = new();
+    var experimentNumber = 1;
+    foreach(var item in ViewModel!.ManualPlannerValues)
+    {
+      var displayObject = new DataGridDisplayObject();
+      displayObject.ExperimentNumber = $"{experimentNumber}";
+      displayObject.Parameters = item;
+      DataGridDisplayObjects.Add(displayObject);
+      experimentNumber++;
+    }
+
+    StateHasChanged();
   }
 }

@@ -1,24 +1,23 @@
 ﻿using System.Windows.Input;
-using Ares.Messages.DeviceStates;
+using Ares.Messages.DeviceState;
 using Ares.Messaging.Device;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
-using UI.Backend.DeviceStateExport.ExportStreamProviders;
 
 namespace UI.Backend.ViewModels.Misc;
 
 public class ManualExecutionWidgetViewModel : ReactiveObject
 {
-  private IDeviceStateExportStreamProvider _streamProvider;
+  private readonly StateExportService.StateExportServiceClient _stateExportClient;
   readonly AresDevices.AresDevicesClient _devicesClient;
   private IEnumerable<string> _activeDevices = Array.Empty<string>();
 
-  public ManualExecutionWidgetViewModel(IEnumerable<IDeviceStateExportStreamProvider> streamProviders, AresDevices.AresDevicesClient devicesClient)
+  public ManualExecutionWidgetViewModel(StateExportService.StateExportServiceClient stateExportClient, AresDevices.AresDevicesClient devicesClient)
   {
+    _stateExportClient = stateExportClient;
     _devicesClient = devicesClient;
     StartDataCollectionCommand = ReactiveCommand.CreateFromTask(StartDataCollection);
     StopDataCollectionCommand = ReactiveCommand.Create(StopDataCollection);
-    _streamProvider = streamProviders.OfType<CombinedDeviceStateExportStreamProvider>().First();
   }
 
   public ICommand StartDataCollectionCommand { get; }
@@ -44,14 +43,19 @@ public class ManualExecutionWidgetViewModel : ReactiveObject
     HasData = true;
   }
 
-  public Task<ExportStateStream> GetExportStream()
+  public async Task<byte[]> GetExportData()
   {
-    var req = new StateRequest
+    var reqFilter = new StateRequestFilter
     {
       Start = CollectionStarted.ToTimestamp(),
       End = CollectionFinished.ToTimestamp()
     };
-    req.DeviceIds.AddRange(_activeDevices);
-    return _streamProvider.Export(req);
+
+    reqFilter.DeviceIds.AddRange(_activeDevices);
+    var stateReq = new StateRequest { Filter = reqFilter, ExportType = ExportType.Combined };
+
+    var result = await _stateExportClient.GetStateExportAsync(stateReq);
+
+    return result.Data.ToArray();
   }
 }

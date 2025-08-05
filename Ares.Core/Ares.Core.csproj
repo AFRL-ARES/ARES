@@ -1,18 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Authors>Infoscitex</Authors>
-    <Company>Infoscitex</Company>
+    <Authors>DCS</Authors>
+    <Company>DCS</Company>
     <Description>Library containing the command compilation and execution logic for campaigns.</Description>
     <LangVersion>default</LangVersion>
   </PropertyGroup>
-
-	<Target Name="NugetPackAutoVersioning" AfterTargets="Build">
-		<Exec Command="dotnet pack -p:PackageVersion=$([System.DateTime]::Now.ToString(&quot;yyyy.MM.dd.HHmmss&quot;)) --no-build --configuration $(Configuration) --output &quot;$(SolutionDir)nuget&quot;" />
-	</Target>
 
   <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
@@ -22,16 +18,22 @@
 
 
   <ItemGroup>
+	  <PackageReference Include="Ares.DataModel.dll" Version="2025.8.5.92857" />
+	  <PackageReference Include="Ares.Tools" Version="2025.8.4.112732" />
 	  <PackageReference Include="DynamicData" Version="7.14.2" />
+	  <PackageReference Include="Grpc.Net.Client" Version="2.71.0" />
 	  <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="6.0.11" />
-	  <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.11" />
-	  <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.1" />
+	  <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.19" />
+	  <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.8" />
+	  <PackageReference Include="Protobuf.System.Text.Json" Version="1.4.0" />
+	  <PackageReference Include="System.Runtime" Version="4.3.1" />
+	  <PackageReference Include="System.ServiceModel.Primitives" Version="8.1.2" />
+	  <PackageReference Include="UnitsNet" Version="5.75.0" />
 	</ItemGroup>
 
 
   <ItemGroup>
-    <ProjectReference Include="..\Ares.DataModel\Ares.DataModel.csproj" />
-    <ProjectReference Include="..\CoreDevice\CoreDevice.csproj" />
+    <ProjectReference Include="..\Ares.Device\AresDevicePluginBase\Ares.Device.csproj" />
   </ItemGroup>
 
 </Project>

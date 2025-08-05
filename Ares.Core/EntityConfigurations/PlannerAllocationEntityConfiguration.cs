@@ -12,8 +12,8 @@ internal class PlannerAllocationEntityConfiguration : AresEntityTypeBaseConfigur
     builder.ToTable("PlannerAllocations");
 
     builder.HasOne(planner => planner.Planner)
-      .WithOne()
-      .HasForeignKey<PlannerInfo>("PlannerAllocationId")
+      .WithMany()
+      .HasForeignKey("PlannerId")
       .OnDelete(DeleteBehavior.ClientCascade);
 
     builder.Navigation(allocation => allocation.Parameter).AutoInclude();

@@ -9,7 +9,7 @@ internal class MfcUnitParser
 
   static MfcUnitParser()
   {
-    var mfcUnitCache = new UnitAbbreviationsCache();
+    var mfcUnitCache = UnitAbbreviationsCache.CreateDefault();
     mfcUnitCache.MapUnitToAbbreviation(TemperatureUnit.DegreeCelsius, "C");
     mfcUnitCache.MapUnitToAbbreviation(TemperatureUnit.DegreeCelsius, "`C");
     mfcUnitCache.MapUnitToAbbreviation(TemperatureUnit.DegreeFahrenheit, "F");

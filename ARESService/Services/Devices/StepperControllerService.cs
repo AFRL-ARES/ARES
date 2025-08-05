@@ -1,6 +1,6 @@
 ﻿using Ares.Core.Device;
-using ARESCore.DeviceManagers;
-using ARESCore;
+using AresService;
+using AresService.DeviceManagers;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
@@ -13,18 +13,18 @@ using TicStepperController.Config;
 using TicStepperController.Messaging;
 using TicStepperController.Proto.Extensions;
 
-namespace ARESService.Services.Devices;
+namespace AresService.Services.Devices;
 
 public class StepperControllerService : StepperControllerRpc.StepperControllerRpcBase
 {
   private readonly IDeviceCommandInterpreterRepo _deviceCommandInterpreterRepo;
   private readonly IDeviceManager<StepperControllerConfig, IStepperController> _stepperManager;
-  private readonly IDbContextFactory<ARESDbContext> _dbContextFactory;
+  private readonly IDbContextFactory<AresDbContext> _dbContextFactory;
   private readonly IDeviceConfigManager<StepperControllerConfig> _configManager;
 
   public StepperControllerService(IDeviceCommandInterpreterRepo deviceCommandInterpreterRepo,
     IDeviceManager<StepperControllerConfig, IStepperController> stepperManager,
-    IDbContextFactory<ARESDbContext> dbContextFactory,
+    IDbContextFactory<AresDbContext> dbContextFactory,
     IDeviceConfigManager<StepperControllerConfig> configManager)
   {
     _deviceCommandInterpreterRepo = deviceCommandInterpreterRepo;
@@ -136,6 +136,14 @@ public class StepperControllerService : StepperControllerRpc.StepperControllerRp
     return new Empty();
   }
 
+  public override async Task<Empty> HalfStep(TicRequest request, ServerCallContext context)
+  {
+    var controller = GetStepperController(request.TicName);
+    await controller.HalfStep();
+
+    return new Empty();
+  }
+
   public override async Task<Empty> RemoveStepperController(TicRequest request, ServerCallContext context)
   {
     await _stepperManager.Remove(request.TicName);
@@ -172,6 +180,14 @@ public class StepperControllerService : StepperControllerRpc.StepperControllerRp
   {
     var controller = GetStepperController(request.TicName);
     await controller.SetMaxAcceleration(request.Acceleration);
+
+    return new Empty();
+  }
+
+  public override async Task<Empty> SetCurrentLimit(CurrentLimitCommand request, ServerCallContext context)
+  {
+    var controller = GetStepperController(request.TicName);
+    await controller.SetCurrentLimit(request.Limit);
 
     return new Empty();
   }
@@ -244,7 +260,7 @@ public class StepperControllerService : StepperControllerRpc.StepperControllerRp
       .OfType<IStepperController>()
       .FirstOrDefault(sc => sc.Name == name);
 
-    if (controller is null)
+    if(controller is null)
       throw new InvalidOperationException($"Could not find TIC Stepper Controller ({name})");
 
     return controller;

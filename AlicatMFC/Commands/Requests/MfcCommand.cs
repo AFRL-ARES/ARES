@@ -1,5 +1,5 @@
-﻿using System.Text;
-using Ares.Device.Serial.Commands;
+﻿using Ares.Device.Serial.Commands;
+using System.Text;
 
 namespace AlicatMFC.Commands.Requests;
 
@@ -9,16 +9,16 @@ public abstract class MfcCommand : SerialCommand
   public MfcCommand(char id, string firmware)
   {
     _firmware = firmware;
-    Id = id;
+    MfcId = id;
   }
 
-  public char Id { get; init; }
+  public char MfcId { get; init; }
 
   protected abstract string SerializeToString();
 
   protected override byte[] Serialize()
   {
-    var id = _firmware.StartsWith("GP", StringComparison.InvariantCultureIgnoreCase) ? $"{Id}$$" : $"{Id}";
+    var id = _firmware.StartsWith("GP", StringComparison.InvariantCultureIgnoreCase) ? $"{MfcId}$$" : $"{MfcId}";
     var serialString = $"{id}{SerializeToString()}\r";
     //serialString = serialString.Insert(serialString.Length - 1, "$$");
     var serialData = Encoding.ASCII.GetBytes(serialString.ToCharArray());

@@ -2,9 +2,7 @@
 
 package tube_furnace.messaging;
 
-import "google/protobuf/duration.proto";
 import "google/protobuf/empty.proto";
-import "google/protobuf/timestamp.proto";
 
 import "TubeFurnaceConfig.proto";
 

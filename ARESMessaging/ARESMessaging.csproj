@@ -1,13 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Authentication.proto" />
     <None Remove="DeviceStateLogging\DevicesResponse.proto" />
+    <None Remove="DeviceStateLogging\LaserChiller\ChillerState.proto" />
+    <None Remove="DeviceStateLogging\LaserChiller\ChillerStateLogging.proto" />
     <None Remove="DeviceStateLogging\MfcStateLogging.proto" />
-    <None Remove="DeviceStateLogging\StateRequest.proto" />
+    <None Remove="DeviceState\StateExportService.proto" />
+    <None Remove="DeviceState\StateRequestFilter.proto" />
     <None Remove="DeviceStateLogging\SyringePump\SyringePumpState.proto" />
     <None Remove="DeviceStateLogging\SyringePump\SyringePumpStateLogging.proto" />
     <None Remove="DeviceStateLogging\Tc0304\Tc0304State.proto" />
@@ -17,30 +21,68 @@
     <None Remove="DeviceStateLogging\TubeFurnace\TubeFurnaceStateEntity.proto" />
     <None Remove="DeviceStateLogging\TubeFurnace\TubeFurnaceStateLogging.proto" />
     <None Remove="MfcState.proto" />
+		<None Remove="DeviceStateLogging\RestDevice\RestDeviceStateEntity.proto" />
+		<None Remove="DeviceStateLogging\RestDevice\RestDeviceStateLogging" />
+    <None Remove="SerialConnectivity.proto" />
+    <None Remove="UserManagement.proto" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Grpc.Tools" Version="2.62.0">
+    <PackageReference Include="Grpc.Tools" Version="2.72.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Ares.DataModel.Grpc\Ares.DataModel.Grpc.csproj" />
+  </ItemGroup>
+
 	<ItemGroup>
+    <Protobuf Include="DeviceStateLogging\LaserChiller\ChillerState.proto" GrpcServices="None" />
+    <Protobuf Include="DeviceStateLogging\LaserChiller\ChillerStateLogging.proto" />
     <Protobuf Include="DeviceStateLogging\Mfc\MfcStateLogging.proto" GrpcServices="Both" />
     <Protobuf Include="DeviceStateLogging\DevicesResponse.proto" GrpcServices="None" />
-    <Protobuf Include="DeviceStateLogging\StateRequest.proto" GrpcServices="None" />
+    <Protobuf Include="DeviceStateLogging\RestSerialDevice\RestSerialDeviceStateEntity.proto">
+      <GrpcServices>None</GrpcServices>
+      <Access>Public</Access>
+      <ProtoCompile>True</ProtoCompile>
+      <CompileOutputs>True</CompileOutputs>
+      <OutputDir>obj\Debug/net6.0/</OutputDir>
+      <Generator>MSBuild:Compile</Generator>
+    </Protobuf>
+    <Protobuf Include="DeviceStateLogging\RestSerialDevice\RestSerialDeviceStateLogging.proto">
+      <GrpcServices>Both</GrpcServices>
+      <Access>Public</Access>
+      <ProtoCompile>True</ProtoCompile>
+      <CompileOutputs>True</CompileOutputs>
+      <OutputDir>obj\Debug/net6.0/</OutputDir>
+      <Generator>MSBuild:Compile</Generator>
+    </Protobuf>
+
+    <Protobuf Include="DeviceState\StateRequestFilter.proto" GrpcServices="None" />
     <Protobuf Include="DeviceStateLogging\Mfc\MfcState.proto" GrpcServices="None" />
     <Protobuf Include="DeviceStateLogging\SyringePump\SyringePumpState.proto">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Protobuf>
     <Protobuf Include="DeviceStateLogging\SyringePump\SyringePumpStateLogging.proto" GrpcServices="Both" />
+
     <Protobuf Include="DeviceStateLogging\Tc0304\Tc0304State.proto" GrpcServices="None" />
     <Protobuf Include="DeviceStateLogging\Tc0304\Tc0304StateLogging.proto" />
+
     <Protobuf Include="DeviceStateLogging\TicStepperController\TicStepperControllerStateLogging.proto" GrpcServices="Both" />
     <Protobuf Include="DeviceStateLogging\TicStepperController\TicStepperControllerState.proto" GrpcServices="None" />
-    <Protobuf Include="DeviceStateLogging\TubeFurnace\TubeFurnaceStateEntity.proto" GrpcServices="None" />
+
+		<Protobuf Include="DeviceStateLogging\RestDevice\RestDeviceStateEntity.proto" GrpcServices="None" />
+		<Protobuf Include="DeviceStateLogging\RestDevice\RestDeviceStateLogging.proto" />
+
+		<Protobuf Include="DeviceStateLogging\TubeFurnace\TubeFurnaceStateEntity.proto" GrpcServices="None" />
     <Protobuf Include="DeviceStateLogging\TubeFurnace\TubeFurnaceStateLogging.proto" />
+    
+    <Protobuf Include="DeviceState\StateExportService.proto" />
+    <Protobuf Include="SerialConnectivity.proto" />
+    <Protobuf Include="UserManagement.proto" />
+    <Protobuf Include="Authentication.proto" />
   </ItemGroup>
 
 </Project>

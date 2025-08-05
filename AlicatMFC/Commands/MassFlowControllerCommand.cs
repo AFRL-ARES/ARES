@@ -11,7 +11,7 @@ public enum MassFlowControllerCommand
   StopStreamingData,// @@=[desired unit ID]
   SetStreamingInterval,// [unit ID]w91=[# of ms]
   NewSetpoint,
-
+  GetSetpoint,
   // NewSetpointFloat, // [unit ID]s[floating point #]
   // NewSetpointInteger, // [unit ID][integer]
   HoldValvesAtCurrentPosition,// [unit ID]hp

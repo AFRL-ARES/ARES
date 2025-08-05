@@ -1,51 +1,47 @@
 ﻿using Ares.Core.Analyzing;
 using Ares.Messaging;
-using Google.Protobuf.WellKnownTypes;
+using Ares.Messaging.Analyzing;
+using Microsoft.EntityFrameworkCore;
+using Moq;
 
 namespace Ares.Core.Tests;
 
 internal class AnalyzerManagerTests
 {
-  private IAnalyzerManager _analyzerManager = new AnalyzerManager(new AnalysisRepo());
+  private IAnalyzerRepo _analyzerRepo;
+
 
   [SetUp]
   public void SetUp()
   {
-    _analyzerManager = new AnalyzerManager(new AnalysisRepo());
+    var dbCtxFactory = new Mock<IDbContextFactory<CoreDatabaseContext>>();
+    _analyzerRepo = new AnalyzerRepo();
   }
 
-  [Test]
-  public void Manager_Should_Get_Typed_Analyzer_By_Version()
+  private class TempAnalyzer : AnalyzerBase
   {
-    var analyzer = new TempAnalyzer("Test", new Version(1, 0));
-    _analyzerManager.RegisterAnalyzer(analyzer);
-    var returnedAnalyzer = _analyzerManager.GetAnalyzer<TempAnalyzer>(new Version(1, 0));
-    Assert.That(analyzer, Is.SameAs(returnedAnalyzer));
-  }
-
-  [Test]
-  public void Manager_Should_Throw_When_No_Analyzer_By_Version()
-  {
-    Assert.Throws<KeyNotFoundException>(() => _analyzerManager.GetAnalyzer<TempAnalyzer>(new Version(1, 0)));
-  }
-
-  private class TempAnalyzer : IAnalyzer
-  {
-    public TempAnalyzer(string name, Version version)
+    public TempAnalyzer(string name, string version) : base(name, "TempAnalyzer", version)
     {
-      Name = name;
-      Version = version;
     }
 
-    public string Name { get; }
-    public Version Version { get; }
-    public IObservable<AnalyzerState> AnalyzerStateObservable { get; }
-    public AnalyzerState AnalyzerState { get; }
+    public override Task<Analysis> Analyze(AresStruct inputs, CancellationToken cancellationToken)
+    {
+      throw new NotImplementedException();
+    }
 
-    public bool InputSupported(string fullTypeName)
-      => throw new NotImplementedException();
+    public override Task<Analysis> Analyze(AresStruct inputs, AresStruct settings, CancellationToken cancellationToken)
+    {
+      throw new NotImplementedException();
+    }
 
-    public Task<Analysis> Analyze(Any input, CancellationToken cancellationToken)
-      => throw new NotImplementedException();
+    public override Task<AnalyzerCapabilities> GetCapabilities(CancellationToken cancellationToken)
+    {
+      throw new NotImplementedException();
+    }
+
+    public override Task<AresDataSchema> GetParameters(CancellationToken cancellationToken)
+    {
+      throw new NotImplementedException();
+    }
   }
 }

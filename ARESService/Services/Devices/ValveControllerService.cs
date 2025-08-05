@@ -1,5 +1,5 @@
 ﻿using Ares.Core.Device;
-using ARESCore.DeviceManagers;
+using AresService.DeviceManagers;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using System;
@@ -9,7 +9,7 @@ using ValveController;
 using ValveController.Config;
 using ValveController.Services;
 
-namespace ARESService.Services.Devices;
+namespace AresService.Services.Devices;
 
 public class ValveControllerService : ValveControllerRpc.ValveControllerRpcBase
 {
@@ -97,7 +97,7 @@ public class ValveControllerService : ValveControllerRpc.ValveControllerRpcBase
 
   public override Task<GetAllValveControllersResponse> GetAllValveControllers(Empty request, ServerCallContext context)
   {
-    var deviceNames = _deviceCommandInterpreterRepo.Select(deviceInterpreter => deviceInterpreter.Device).OfType<IValveController>().Select(servoDood => servoDood.Name);
+    var deviceNames = _deviceCommandInterpreterRepo.Select(deviceInterpreter => deviceInterpreter.Device).OfType<IValveController>().Select(valveController => valveController.Name);
     var response = new GetAllValveControllersResponse();
     response.DeviceNames.AddRange(deviceNames);
     return Task.FromResult(response);

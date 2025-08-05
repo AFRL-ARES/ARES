@@ -20,4 +20,14 @@ internal class ExecutionReporter : IExecutionReporter
   {
     _reportStore.ExperimentExecutionStatus = status;
   }
+
+  public void Report(CampaignStartupStatus status)
+  {
+    _reportStore.CampaignStartupStatus = status;
+  }
+
+  public void Report(CampaignCloseoutStatus status)
+  {
+    _reportStore.CampaignCloseoutStatus = status;
+  }
 }

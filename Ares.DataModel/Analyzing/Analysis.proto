@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package ares.messaging.analyzing;
+
+import "google/protobuf/wrappers.proto";
+
+message Analysis {
+	float result = 1; // Result of the analysis performed on the given inputs
+	bool success = 2; // Whether or not the analysis was successful
+	google.protobuf.StringValue error_string = 3; // A string that should be populated when the analysis was not successful
+}

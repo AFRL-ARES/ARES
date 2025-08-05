@@ -1,6 +1,5 @@
 ﻿using Ares.Messaging;
-using Ares.Test;
-using Google.Protobuf.WellKnownTypes;
+using Ares.Tools;
 
 namespace Ares.Device.Tests.Device;
 
@@ -10,19 +9,17 @@ public class TestDeviceInterpreter : DeviceCommandInterpreter<TestDevice, TestDe
   {
   }
 
-  protected override Task<DeviceCommandResult> ParseAndPerformDeviceAction(TestDeviceCommand deviceCommandEnum, Parameter[] parameters, CancellationToken cancellationToken)
+  protected override Task<DeviceCommandResult> ParseAndPerformDeviceAction(TestDeviceCommand deviceCommandEnum, Parameter[] parameters, CommandMetadata metadata, CancellationToken cancellationToken)
   {
-    switch (deviceCommandEnum)
+    switch(deviceCommandEnum)
     {
       case TestDeviceCommand.Record:
       case TestDeviceCommand.Record2:
       case TestDeviceCommand.Record3:
         var result = new DeviceCommandResult();
-        var reply = new TestReply();
         var param = parameters.First(parameter => parameter.Metadata.Name == TestDeviceCommandParameter.ReplyParameter.ToString());
-        reply.Message = $"Device received {param.Value.Value}";
-        reply.Number = param.Value.Value;
-        result.Result = Any.Pack(reply);
+        result = AresDeviceHelpers.ParseStringCommandParameterToDouble(param, out var parsedParam);
+        result.Result = AresStructHelper.CreateNumberStruct("Test", parsedParam);
         result.Success = true;
         result.UniqueId = Guid.NewGuid().ToString();
         return Task.FromResult(result);
@@ -48,7 +45,7 @@ public class TestDeviceInterpreter : DeviceCommandInterpreter<TestDevice, TestDe
       OutputMetadata = new OutputMetadata
       {
         UniqueId = Guid.NewGuid().ToString(),
-        FullName = typeof(TestReply).FullName,
+        DataSchema = AresSchemaHelper.CreateSchema("TestDeviceInterpreter", AresDataType.Number),
         Description = "A test response for the test command",
         Index = idx
       }

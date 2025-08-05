@@ -1,5 +1,5 @@
-﻿using Ares.Messaging;
-using Google.Protobuf.WellKnownTypes;
+﻿using Ares.Core.EntityConfigurations.Helpers;
+using Ares.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -12,24 +12,29 @@ internal class CompletedExperimentEntityConfiguration : AresEntityTypeBaseConfig
     base.Configure(builder);
     builder.ToTable("CompletedExperiments");
 
-    builder.HasOne(experiment => experiment.Template)
-      .WithOne()
-      .HasForeignKey<ExperimentTemplate>("CompletedExperimentId")
-      .OnDelete(DeleteBehavior.ClientCascade);
+    //builder.HasOne(experiment => experiment.Template)
+    //  .WithOne()
+    //  .HasForeignKey<ExperimentTemplate>("CompletedExperimentId")
+    //  .OnDelete(DeleteBehavior.ClientCascade);
 
-    builder.HasMany(experiment => experiment.PlannerTransactions)
-      .WithOne()
-      .OnDelete(DeleteBehavior.Cascade);
+    //builder.HasMany(experiment => experiment.Parameters)
+    //  .WithMany()
+    //  .UsingEntity(j => j.ToTable("CompletedExperimentParameters"));
 
-    builder.Navigation(experiment => experiment.PlannerTransactions)
-      .AutoInclude();
+    //builder.HasMany(experiment => experiment.PlannerTransactions)
+    //  .WithOne()
+    //  .OnDelete(DeleteBehavior.Cascade);
 
-    builder.Navigation(experiment => experiment.Template)
-      .AutoInclude();
+    //builder.Navigation(experiment => experiment.PlannerTransactions)
+    //  .AutoInclude();
 
-    builder.HasOne(experiment => experiment.Result)
-      .WithOne()
-      .HasForeignKey<Any>("CompletedExperimentId")
-      .OnDelete(DeleteBehavior.ClientCascade);
+    //builder.Navigation(experiment => experiment.Template)
+    //  .AutoInclude();
+
+    //builder.Navigation(experiment => experiment.Parameters)
+    //  .AutoInclude();
+
+    builder.Property(experiment => experiment.Result).HasAresStruct();
+
   }
 }

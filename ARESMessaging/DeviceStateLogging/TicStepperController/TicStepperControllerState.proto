@@ -3,7 +3,6 @@
 package ares.messages.device_states.tic_stepper_controller;
 
 import "google/protobuf/timestamp.proto";
-import "google/protobuf/wrappers.proto";
 
 message TicStepperControllerState {
   string unique_id = 1; // unique id for this state

@@ -1,8 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations;
-using Ares.Messaging.Device;
+﻿using Ares.Messaging.Device;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
+using System.ComponentModel.DataAnnotations;
 using TicStepperController.Config;
 using TicStepperController.Messaging;
 
@@ -32,7 +32,7 @@ public class StepperControllerConfigEditViewModel : ReactiveObject
     _config = config;
     _ = UpdateAvailableSerialPorts();
     LoadConfig(config);
-    }
+  }
 
   public bool NewConfig { get; private set; }
 
@@ -42,7 +42,7 @@ public class StepperControllerConfigEditViewModel : ReactiveObject
     get => _name;
     set
     {
-      if (!NewConfig)
+      if(!NewConfig)
       {
         return;
       }
@@ -60,8 +60,14 @@ public class StepperControllerConfigEditViewModel : ReactiveObject
     StartingSpeed = config.StartingSpeed;
     CustomStepSize = config.CustomStepSize;
     MaxSpeed = config.MaxSpeed;
+    CurrentLimit = config.CurrentLimit;
     StepMode = config.StepMode;
     Simulated = config.Simulated;
+    DynamicStepCalculation = config.DynamicStepCalculation;
+    InitialSpoolRadius = config.SpoolRadius;
+    FilterPaperThickness = config.FilterPaperThickness;
+    LinearStepSize = config.IdealLinearStepSize;
+    StepAngle = config.StepAngle;
   }
 
   [Reactive]
@@ -100,10 +106,29 @@ public class StepperControllerConfigEditViewModel : ReactiveObject
   public uint? MaxSpeed { get; set; }
 
   [Reactive]
+  [Range(0, 64, ErrorMessage = "Current Limit must be between 0 and 64")]
+  public uint? CurrentLimit { get; set; }
+
+  [Reactive]
   public StepMode StepMode { get; set; }
 
   [Reactive]
   public bool Simulated { get; set; }
+
+  [Reactive]
+  public bool DynamicStepCalculation { get; set; } //Determines whether a spool is set to dynamically calculate its steps
+
+  [Reactive]
+  public double? InitialSpoolRadius { get; set; }
+
+  [Reactive]
+  public double? FilterPaperThickness { get; set; }
+
+  [Reactive]
+  public double? LinearStepSize { get; set; }
+
+  [Reactive]
+  public double? StepAngle { get; set; } = 1.8;
 
   public bool Modified => _config.Name != Name
         || _config.PortName != Port
@@ -112,8 +137,14 @@ public class StepperControllerConfigEditViewModel : ReactiveObject
         || _config.StartingSpeed != StartingSpeed
         || _config.CustomStepSize != CustomStepSize
         || _config.MaxSpeed != MaxSpeed
+        || _config.CurrentLimit != CurrentLimit
         || _config.StepMode != StepMode
-        || _config.Simulated != Simulated;
+        || _config.Simulated != Simulated
+        || _config.DynamicStepCalculation != DynamicStepCalculation
+        || _config.SpoolRadius != InitialSpoolRadius
+        || _config.FilterPaperThickness != FilterPaperThickness
+        || _config.IdealLinearStepSize != LinearStepSize
+        || _config.StepAngle != StepAngle;
 
   public StepperControllerConfig Save()
   {
@@ -125,8 +156,14 @@ public class StepperControllerConfigEditViewModel : ReactiveObject
       CustomStepSize = CustomStepSize,
       MaxAcceleration = MaxAcceleration,
       MaxDeceleration = MaxDeceleration,
+      CurrentLimit = CurrentLimit,
       StartingSpeed = StartingSpeed,
       MaxSpeed = MaxSpeed,
+      IdealLinearStepSize = LinearStepSize,
+      SpoolRadius = InitialSpoolRadius,
+      FilterPaperThickness = FilterPaperThickness,
+      StepAngle = StepAngle,
+      DynamicStepCalculation = DynamicStepCalculation,
       PortName = Port
     } : _config;
   }

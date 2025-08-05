@@ -1,5 +1,5 @@
 ﻿using System;
 
-namespace ARESService.Services.Authentication;
+namespace AresService.Services.Authentication;
 
 public record InternalToken(string Token, DateTime Expiration);

@@ -1,0 +1,76 @@
+﻿@page "/settings/planning"
+@using Ares.Messaging
+@using Google.Protobuf.WellKnownTypes
+@using UI.Backend.ViewModels.Settings.Planning
+@using UI.Pages.Shared.Settings.Planning.Layout
+@inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<PlannerSettingsListViewModel>
+@layout PlannerSettingsLayout
+
+@inject DialogService DialogService
+
+@if (ViewModel!.SettingsViewModels is null)
+{
+  <LoadingSpinner />
+}
+else
+{
+  <div class="d-flex flex-column">
+    @foreach (var vm in ViewModel!.SettingsViewModels)
+    {
+      <div class="m-2">
+        <PlannerSettingsView ViewModel="vm"/>
+      </div>
+    }
+    <button class="m-2 align-self-end btn btn-outline-light" disabled="@SavingInProgress" @onclick="AddPlannerClick">
+      @if (SavingInProgress)
+      {
+        <LoadingSpinner SpinnerSize="SpinnerSize.Small" />
+      }
+      else
+      {
+        <RadzenIcon Icon="add"/> 
+      }
+    </button>
+  </div>
+}
+
+@code {
+  private async Task AddPlannerClick()
+  {
+    var viewModel = ViewModel!.GetNewConfigEditViewModel();
+    var result = await DialogService.OpenAsync("New Planner", ds =>
+      @<PlannerConfigEditView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)" />);
+
+    if (result is true)
+    {
+      SavingInProgress = true;
+      StateHasChanged();
+      try
+      {
+        await ViewModel!.AddNewPlanner(viewModel.Save());
+        var notification = new AresNotification();
+        notification.Message = $"ARES successfully updated the planner {viewModel.Name} utilizing the address {viewModel.Address}.";
+        notification.Title = $"Successfully Updated Planner {viewModel.Name}!";
+        notification.NotificationSeverity = Severity.Success;
+        notification.Timestamp = DateTime.UtcNow.ToTimestamp();
+        ViewModel!.PushNotification(notification);
+      }
+      catch (Grpc.Core.RpcException e)
+      {
+        var notification = new AresNotification();
+        notification.Message = $"ARES failed to update the planner {viewModel.Name} utilizing the address {viewModel.Address}.";
+        notification.Title = $"Planner Update Failed for {viewModel.Name}!";
+        notification.NotificationSeverity = Severity.Error;
+        notification.Timestamp = DateTime.UtcNow.ToTimestamp();
+        ViewModel!.PushNotification(notification);
+      }
+      finally
+      {
+        SavingInProgress = false;
+        StateHasChanged();
+      }
+    }
+  }
+
+  private bool SavingInProgress { get; set; }
+}

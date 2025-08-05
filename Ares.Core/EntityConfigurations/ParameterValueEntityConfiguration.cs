@@ -1,4 +1,5 @@
-﻿using Ares.Messaging;
+﻿using Ares.Core.EntityConfigurations.Helpers;
+using Ares.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -10,5 +11,6 @@ internal class ParameterValueEntityConfiguration : AresEntityTypeBaseConfigurati
   {
     base.Configure(builder);
     builder.ToTable("ParameterValues");
+    builder.Property(v => v.Value).HasAresValue();
   }
 }

@@ -3,5 +3,6 @@
 public enum DataLoggerCommand
 {
   GetData,
+  GetTemperatures,
   Hold
 }

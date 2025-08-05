@@ -4,7 +4,7 @@
 
 @if (ViewModel!.ConnectedSerialDeviceUnitControlVms.Any())
 {
-  <div class="d-flex flex-wrap">
+  <div class="d-flex gap-2 flex-wrap">
     @foreach (var syringePumpUnitControlVm in @ViewModel!.ConnectedSerialDeviceUnitControlVms)
     {
       <DashboardWidget>

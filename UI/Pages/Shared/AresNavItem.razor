@@ -1,8 +1,9 @@
 ﻿<li class="nav-item w-100">
-    <NavLink Match="NavLinkMatch.All" class="nav-link ares-nav-link px-2" @onclick="ItemExpandClicked" href="@Path">
+  <div @onclick="ItemExpandClicked">
+    <NavLink Match="@Match" class="nav-link ares-nav-link px-2" @onclick:preventDefault="Expandable" href="@Path">
         <div class="d-flex flex-row">
 
-                <RadzenIcon Icon="@Icon"/>
+            <RadzenIcon Icon="@Icon"/>
 
             <span class="m-1 my-auto">@Text</span>
             @if (ChildContent is not null)
@@ -20,6 +21,7 @@
             }
         </div>
     </NavLink>
+  </div>
     @if (ExpandedSubNav)
     {
         <div style="margin-left: 10px">
@@ -29,25 +31,28 @@
 </li>
 
 @code {
+  [Parameter]
+  public string? Path { get; set; }
 
-    [Parameter]
-    public string Path { get; set; } = "/";
+  [Parameter]
+  public string? Icon { get; set; }
 
-    [Parameter]
-    public string? Icon { get; set; }
+  [Parameter]
+  public string? Text { get; set; }
 
-    [Parameter]
-    public string? Text { get; set; }
+  [Parameter]
+  public NavLinkMatch Match { get; set; } = NavLinkMatch.All;
 
-    private bool ExpandedSubNav { get; set; }
+  [Parameter]
+  public bool Expandable { get; set; }
 
-    [Parameter]
-    public RenderFragment? ChildContent { get; set; }
+  private bool ExpandedSubNav { get; set; }
 
-    private void ItemExpandClicked()
-    {
-        ExpandedSubNav = !ExpandedSubNav;
+  [Parameter]
+  public RenderFragment? ChildContent { get; set; }
 
-    }
-
+  private void ItemExpandClicked(MouseEventArgs _)
+  {
+    ExpandedSubNav = !ExpandedSubNav;
+  }
 }

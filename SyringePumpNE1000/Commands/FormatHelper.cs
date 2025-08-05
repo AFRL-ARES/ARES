@@ -1,45 +1,34 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Ares.SyringePump.Ne1000.Messaging;
-using UnitsNet;
+﻿using Ares.SyringePump.Ne1000.Messaging;
 using UnitsNet.Units;
 using VolumeUnit = UnitsNet.Units.VolumeUnit;
 
 namespace SyringePumpNE1000.Commands;
 
-
-
 internal static class FormatHelper
 {
-  private static string _functionNameIdentifier = "FUN";
-  private static readonly string referenceFloatString = "####.";
+  private static readonly string _referenceFloatString = "####.";
 
   public static string FormatToFloatString(double input)
   {
     // Maximum of 4 digits and 1 '.'. Maximum of 3 floating point digits (after '.')
     var inputMod = Math.Round(input, 3);
     var floatStr = $"{inputMod:0.###}";// 123.456 is 6 digits, invalid (unsafe)
-    if (!floatStr.Contains('.'))
+    if(!floatStr.Contains('.'))
       floatStr += ".0";
 
-    if (floatStr.Length <= referenceFloatString.Length)
+    if(floatStr.Length <= _referenceFloatString.Length)
       return floatStr;
 
     var decimalIndex = floatStr.IndexOf('.');
-    if (decimalIndex >= referenceFloatString.Length - 1)
+    if(decimalIndex >= _referenceFloatString.Length - 1)
     {
-      throw new Exception(
-        $"Tried formatting a floating point number greater than 999.9 for a Syringe Pump (incompatible). Value: {input}, Rounded: {inputMod}");
-
-      var maxFloat = 999.9f;
-      floatStr = $"{maxFloat:###.0}";
-      return floatStr;
+      throw new Exception($"Tried formatting a floating point number greater than 999.9 for a Syringe Pump (incompatible). Value: {input}, Rounded: {inputMod}");
+      //var maxFloat = 999.9f;
+      //floatStr = $"{maxFloat:###.0}";
+      //return floatStr;
     }
 
-    var decimalsToTruncate = floatStr.Length - referenceFloatString.Length;
+    var decimalsToTruncate = floatStr.Length - _referenceFloatString.Length;
     var decimalsToRound = 3 - decimalsToTruncate;
     inputMod = Math.Round(inputMod, decimalsToRound);
     floatStr = $"{inputMod:0.###}";

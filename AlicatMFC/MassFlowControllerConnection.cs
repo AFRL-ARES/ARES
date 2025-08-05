@@ -1,4 +1,5 @@
 ﻿using Ares.Device.Serial;
+using Ares.Device.Serial.Commands;
 using System.Collections.ObjectModel;
 using System.IO.Ports;
 

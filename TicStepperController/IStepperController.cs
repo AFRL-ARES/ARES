@@ -12,6 +12,7 @@ public interface IStepperController : ISerialDevice<IStepperControllerConnection
   Task<ErrorStatus> GetErrorStatus();
   Task<MaxAcceleration> GetMaxAcceleration();
   Task<MaxDeceleration> GetMaxDeceleration();
+  Task<CurrentLimit> GetCurrentLimit();
   Task<MaxSpeed> GetMaxSpeed();
   Task<MiscFlags> GetMiscFlags();
   Task<StartingSpeed> GetStartingSpeed();
@@ -38,6 +39,7 @@ public interface IStepperController : ISerialDevice<IStepperControllerConnection
 
   Task SetMaxAcceleration(uint acceleration);
   Task SetMaxDeceleration(uint deceleration);
+  Task SetCurrentLimit(uint limit);
   Task SetMaxSpeed(uint speed);
   Task SetStartingSpeed(uint speed);
   Task SetStepMode(StepMode stepMode);
@@ -48,9 +50,14 @@ public interface IStepperController : ISerialDevice<IStepperControllerConnection
 
   Task NextStep(TimeSpan? timeout = null);
   Task PreviousStep(TimeSpan? timeout = null);
+  Task HalfStep(TimeSpan? timeout = null);
 
   IObservable<Messaging.TicState> StateStream { get; }
   uint UserStepSize { get; set; }
   Task Start();
   Task Stop();
+  public double? InitialSpoolRadius { get; }
+  public double? FilterPaperThickness { get; }
+  public double? IdealLinearStepSize { get; }
+  public bool SmartStepCalculation { get; }
 }

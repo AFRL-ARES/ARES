@@ -3,8 +3,9 @@ syntax = "proto3";
 package ares.messaging;
 
 import "google/protobuf/wrappers.proto";
+import "AresStruct.proto";
 
 message ParameterValue {
 	google.protobuf.StringValue unique_id = 1; // A unique id for this value
-	float value = 2; // the value of this optional parameter
+	AresValue value = 2; // the value of this optional parameter
 }

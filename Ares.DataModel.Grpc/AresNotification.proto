@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package ares.messaging;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+service AresNotificationRpc {
+	rpc Subscribe(SubscriptionRequest) returns (stream AresNotification);
+	rpc GetUpdatedNotificationList(google.protobuf.Empty) returns (NotificationsList);
+}
+
+message SubscriptionRequest {
+	string clientId = 1;
+}
+
+message NotificationsList {
+	repeated AresNotification notifications = 1;
+}
+
+message AresNotification {
+	string title = 1;
+	string message = 2;
+	Severity notification_severity = 3;
+	google.protobuf.Timestamp timestamp = 4;
+	bool loiter = 5;
+}
+
+enum Severity {
+	UNSPECIFIED = 0;
+	INFO = 1;
+	WARNING = 2;
+	ERROR = 3;
+	DANGER = 4;
+	SUCCESS = 5;
+}

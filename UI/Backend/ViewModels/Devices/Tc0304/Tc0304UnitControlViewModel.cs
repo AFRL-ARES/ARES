@@ -45,7 +45,8 @@ public class Tc0304UnitControlViewModel : SerialDeviceUnitViewModel, IAsyncDispo
   {
     _stateListener = Task.Factory.StartNew(async _ =>
     {
-      while (!_stateUpdateTokenSource.Token.IsCancellationRequested)
+      Thread.CurrentThread.Name = "Datalogger State Listener View Model Thread";
+      while(!_stateUpdateTokenSource.Token.IsCancellationRequested)
       {
         await UpdateState();
         await Task.Delay(TimeSpan.FromMilliseconds(500));
@@ -62,17 +63,15 @@ public class Tc0304UnitControlViewModel : SerialDeviceUnitViewModel, IAsyncDispo
 
   private async Task UpdateState()
   {
-    var response = await _client.GetDataAsync(new DeviceRequest { DeviceName = DeviceName });
-    if (response.Data is null)
+    var response = await _client.GetTemperaturesAsync(new DeviceRequest { DeviceName = DeviceName });
+    if(response.Temperatures is null)
       return;
 
-    var result = response.Data;
-    T1Temp = result.T1Probe is null ? null : Temperature.FromDegreesCelsius(result.T1Probe.Value);
-    T2Temp = result.T2Probe is null ? null : Temperature.FromDegreesCelsius(result.T2Probe.Value);
-    T3Temp = result.T3Probe is null ? null : Temperature.FromDegreesCelsius(result.T3Probe.Value);
-    T4Temp = result.T4Probe is null ? null : Temperature.FromDegreesCelsius(result.T4Probe.Value);
-    HoldActive = result.Hold;
-    BatteryLow = result.BatteryLow;
+    var result = response.Temperatures;
+    T1Temp = result[0] is null ? null : Temperature.FromDegreesCelsius((double)result[0]!);
+    T2Temp = result[1] is null ? null : Temperature.FromDegreesCelsius((double)result[1]!);
+    T3Temp = result[2] is null ? null : Temperature.FromDegreesCelsius((double)result[2]!);
+    T4Temp = result[3] is null ? null : Temperature.FromDegreesCelsius((double)result[3]!);
   }
 
   public void Hold()

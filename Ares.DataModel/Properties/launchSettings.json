@@ -1,0 +1,13 @@
+{
+  "profiles": {
+    "Ares.DataModel": {
+      "commandName": "Project"
+    },
+    "FC2": {
+      "commandName": "Executable",
+      "executablePath": "C:\\ARES\\FC2\\FC2Service\\bin\\Debug\\net8.0\\FC2Service.exe",
+      "commandLineArgs": "--urls \"http://localhost:5000;https://localhost:5001\"",
+      "workingDirectory": "C:\\ARES\\FC2\\FC2Service\\bin\\Debug\\net8.0"
+    }
+  }
+}

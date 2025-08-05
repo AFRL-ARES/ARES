@@ -6,13 +6,13 @@ namespace Ares.Core.Validation.Campaign;
 
 public class GoodAnalyzerCampaignValidator : ICampaignValidator
 {
-  private readonly IAnalyzerManager _analyzerManager;
+  private readonly IAnalyzerRepo _analyzerManager;
 
-  public GoodAnalyzerCampaignValidator(IAnalyzerManager analyzerManager)
+  public GoodAnalyzerCampaignValidator(IAnalyzerRepo analyzerManager)
   {
     _analyzerManager = analyzerManager;
   }
 
-  public ValidationResult Validate(CampaignTemplate template)
+  public Task<ValidationResult> Validate(CampaignTemplate template)
     => GoodAnalyzerValidator.Validate(template.ExperimentTemplates, _analyzerManager);
 }

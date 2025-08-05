@@ -1,6 +1,6 @@
-﻿using System;
+﻿using Ares.Messaging.Device;
+using System;
 using System.Threading.Tasks;
-using Ares.Messaging.Device;
 
 namespace Ares.Device.Serial;
 
@@ -61,5 +61,5 @@ public abstract class SerialDevice<TConnection> : AresDevice, ISerialDevice<TCon
     return true;
   }
 
-  protected abstract Task<DeviceValidationResult> Validate();
+  protected abstract Task<SerialDeviceValidationResult> Validate();
 }

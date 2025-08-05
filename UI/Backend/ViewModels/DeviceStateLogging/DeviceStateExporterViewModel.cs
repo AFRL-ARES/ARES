@@ -1,37 +1,54 @@
-﻿using Ares.Messaging.Device;
+﻿using Ares.Messages.DeviceState;
+using Microsoft.OpenApi.Extensions;
 using ReactiveUI;
-using UI.Backend.DeviceStateExport.ExportStreamProviders;
 
 namespace UI.Backend.ViewModels.DeviceStateLogging;
 
 public class DeviceStateExporterViewModel : ReactiveObject
 {
-  readonly AresDevices.AresDevicesClient _devicesClient;
+  readonly StateExportService.StateExportServiceClient _stateExportServiceClient;
 
   public DeviceStateExporterViewModel(DeviceStateFilterViewModelFactory vmFactory,
-    AresDevices.AresDevicesClient devicesClient,
-    IEnumerable<IDeviceStateExportStreamProvider> exportStreamProviders)
+    StateExportService.StateExportServiceClient stateExportServiceClient)
   {
-    ExportProviders = exportStreamProviders;
-    _devicesClient = devicesClient;
+    _stateExportServiceClient = stateExportServiceClient;
     FilterViewModel = vmFactory.Create();
-    SelectedExportProvider = ExportProviders.FirstOrDefault();
   }
 
   public string Error { get; private set; } = string.Empty;
 
-  public IEnumerable<IDeviceStateExportStreamProvider> ExportProviders { get; set; }
-
-  public IDeviceStateExportStreamProvider? SelectedExportProvider { get; set; }
+  public ExportTypeWrapper SelectedExportType { get; set; }
 
   public DeviceStateFilterViewModel FilterViewModel { get; }
 
-  public async Task<ExportStateStream?> GetExportStream()
-  {
-    var request = FilterViewModel.GetStateRequest();
-    if (SelectedExportProvider is null)
-      return null;
+  public IEnumerable<ExportTypeWrapper> AvailableExportTypes { get; } = Enum.GetValues<ExportType>().Select(t => new ExportTypeWrapper(t));
 
-    return await SelectedExportProvider.Export(request);
+  public async Task<byte[]> GetExportStream()
+  {
+    if(SelectedExportType.ExportType == ExportType.Unspecified)
+      return Array.Empty<byte>();
+
+    var filter = FilterViewModel.GetStateRequestFilter();
+    var request = new StateRequest()
+    {
+      Filter = filter,
+      ExportType = SelectedExportType.ExportType
+    };
+
+    var result = await _stateExportServiceClient.GetStateExportAsync(request);
+
+    return result.Data.ToArray();
   }
+}
+
+public readonly struct ExportTypeWrapper
+{
+  public ExportTypeWrapper(ExportType type)
+  {
+    ExportType = type;
+    Name = type.GetDisplayName();
+  }
+
+  public string Name { get; }
+  public ExportType ExportType { get; }
 }

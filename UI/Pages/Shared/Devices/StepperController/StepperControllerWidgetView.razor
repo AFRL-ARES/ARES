@@ -41,6 +41,7 @@
 
   <div class="d-flex flex-column">
     <RadzenButton Variant="Variant.Outlined" Click="@NextStep" Text="Next Step" />
+    <RadzenButton Variant="Variant.Outlined" Click="@HalfStep" Text="Half Step" />
     <RadzenButton Variant="Variant.Outlined" Click="@PreviousStep" Text="Previous Step" />
     <RadzenButton Variant="Variant.Outlined" Click="@GoToPosition" Text="Go To Position" />
     <RadzenButton Variant="Variant.Outlined" Click="@ViewModel!.ExitSafeStart" Text="Exit Safe Start" />
@@ -59,6 +60,11 @@
   Task PreviousStep()
   {
     return ViewModel!.PreviousStep();
+  }
+
+  Task HalfStep()
+  {
+    return ViewModel!.HalfStep();
   }
 
   void ShowErrorToolTip()

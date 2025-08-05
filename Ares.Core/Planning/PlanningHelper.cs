@@ -1,4 +1,7 @@
 using Ares.Messaging;
+using Ares.Messaging.Analyzing;
+using Ares.Tools;
+using Google.Protobuf.WellKnownTypes;
 
 namespace Ares.Core.Planning;
 
@@ -14,37 +17,42 @@ public class PlanningHelper : IPlanningHelper
   public async Task<bool> TryResolveParameters(IEnumerable<PlannerAllocation> plannerAllocations,
     IEnumerable<Parameter> parameters,
     IEnumerable<Analysis> seedAnalyses,
+    IEnumerable<CompletedExperiment> seedExperiments,
     CancellationToken cancellationToken)
   {
     var parameterArray = parameters.ToArray();
     var plannerToMetadataMaps = new List<(IPlanner Planner, ParameterMetadata Metadata)>();
-    foreach (var plannerAllocation in plannerAllocations)
+    foreach(var plannerAllocation in plannerAllocations)
     {
       var hasVersion = Version.TryParse(plannerAllocation.Planner.Version, out var version);
       var planner = hasVersion
-        ? _plannerManager.GetPlanner(plannerAllocation.Planner.Type, plannerAllocation.Planner.Name, version!)
-        : _plannerManager.GetPlanner(plannerAllocation.Planner.Type, plannerAllocation.Planner.Name);
+        ? _plannerManager.GetPlanner(plannerAllocation.Planner.Type, plannerAllocation.Planner.AdapterName, version!)
+        : _plannerManager.GetPlanner(plannerAllocation.Planner.Type, plannerAllocation.Planner.AdapterName);
 
       plannerToMetadataMaps.Add((planner, plannerAllocation.Parameter));
     }
 
     var planGroup = plannerToMetadataMaps.GroupBy(pair => pair.Planner);
     var seedAnalysesArr = seedAnalyses.ToArray();
-    foreach (var grouping in planGroup)
+    foreach(var grouping in planGroup)
     {
       var planner = grouping.Key;
-      var resultsEnumerable = await planner.Plan(grouping.Select(pair => pair.Metadata), seedAnalysesArr, cancellationToken);
+      var resultsEnumerable = await planner.Plan(grouping.Select(pair => pair.Metadata), seedExperiments, seedAnalysesArr, cancellationToken);
       var results = resultsEnumerable.ToArray();
-      if (!results.Any())
+      if(!results.Any())
         return false;
 
-      foreach (var result in results)
+      foreach(var result in results)
       {
-        var parameterPlanTarget = parameterArray.First(parameter => parameter.PlanningMetadata.UniqueId == result.Metadata.UniqueId);
+        var parameterPlanTarget = parameterArray.FirstOrDefault(parameter => parameter.PlanningMetadata.UniqueId == result.Metadata.UniqueId);
+
+        if(parameterPlanTarget is null)
+          continue;
+
         var val = new ParameterValue
         {
           UniqueId = Guid.NewGuid().ToString(),
-          Value = Convert.ToSingle(result.Value)
+          Value = result.Value
         };
 
         parameterPlanTarget.Value = val;

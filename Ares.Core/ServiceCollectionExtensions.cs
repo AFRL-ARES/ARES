@@ -1,4 +1,5 @@
 ﻿using Ares.Core.Analyzing;
+using Ares.Core.AresEnvironment;
 using Ares.Core.Device;
 using Ares.Core.Execution;
 using Ares.Core.Execution.Executors;
@@ -25,7 +26,7 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<IPlannerManager, PlannerManager>();
     services.AddSingleton<IExecutionReporter, ExecutionReporter>();
     services.AddSingleton<IExecutionReportStore, ExecutionReportStore>();
-    services.AddSingleton<IAnalyzerManager, AnalyzerManager>();
+    services.AddSingleton<IAnalyzerRepo, AnalyzerRepo>();
     services.AddTransient<INumExperimentsRunFactory, NumExperimentsRunFactory>();
     services.AddSingleton<IActiveCampaignTemplateStore, ActiveCampaignTemplateStore>();
     services.AddSingleton<ICampaignValidatorRepository, CampaignValidatorRepository>();
@@ -33,8 +34,11 @@ public static class ServiceCollectionExtensions
     services.AddTransient<ICampaignValidator, GoodAnalyzerCampaignValidator>();
     services.AddTransient<ICampaignValidator, RequiredDeviceInterpretersValidator>();
     services.AddSingleton<IDeviceCommandInterpreterRepo, DeviceCommandInterpreterRepo>();
-
+    services.AddSingleton<IRemoteAnalyzerManager, RemoteAnalyzerManager>();
+    services.AddSingleton<IAnalyzerCache, AnalyzerCache>();
+    services.AddSingleton<AresVariableManager>();
     services.AddSingleton<AnalysisRepo>();
+    services.AddSingleton<AnalysisHelper>();
     services.AddSingleton<IDesiredAnalysisResultFactory, DesiredAnalysisResultFactory>();
 
     services.BindComposers();
@@ -47,12 +51,15 @@ public static class ServiceCollectionExtensions
     services.AddTransient<IStartCondition, AllPlannersAssignedStartCondition>();
     services.AddTransient<IStartCondition, GoodAnalyzerForExperimentOutputCondition>();
     services.AddTransient<IStartCondition, RequiredDeviceInterpretersStartCondition>();
+    services.AddTransient<IStartCondition, AssignedPlannersActiveStartCondition>();
   }
 
   private static void BindComposers(this IServiceCollection services)
   {
     services.AddSingleton<ICommandComposer<StepTemplate, StepExecutor>, StepComposer>();
     services.AddSingleton<ICommandComposer<ExperimentTemplate, ExperimentExecutor>, ExperimentComposer>();
+    services.AddSingleton<ICommandComposer<ExperimentTemplate, StartupScriptExecutor>, StartupComposer>();
+    services.AddSingleton<ICommandComposer<ExperimentTemplate, CloseoutScriptExecutor>, CloseoutComposer>();
     services.AddSingleton<ICommandComposer<CampaignTemplate, ICampaignExecutor>, CampaignComposer>();
   }
 }

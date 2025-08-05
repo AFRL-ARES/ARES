@@ -7,6 +7,5 @@ public interface IAresDevice
 {
   string Name { get; }
   DeviceStatus Status { get; }
-
   Task<bool> Activate();
 }

@@ -4,12 +4,12 @@ package ares.messages.device_states.syringe_pump;
 
 import "google/protobuf/empty.proto";
 import "DeviceStateLogging/SyringePump/SyringePumpState.proto";
-import "DeviceStateLogging/StateRequest.proto";
+import "DeviceState/StateRequestFilter.proto";
 import "DeviceStateLogging/DevicesResponse.proto";
 
 service SyringePumpStateLogging {
-	rpc GetSyringePumpStates(StateRequest) returns (SyringePumpStateResponse);
-	rpc DeleteSyringePumpStates(StateRequest) returns (google.protobuf.Empty);
+	rpc GetSyringePumpStates(device_state.StateRequestFilter) returns (SyringePumpStateResponse);
+	rpc DeleteSyringePumpStates(device_state.StateRequestFilter) returns (google.protobuf.Empty);
 	rpc GetAvailableDevices(google.protobuf.Empty) returns (DevicesResponse);
 }
 

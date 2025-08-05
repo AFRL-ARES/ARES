@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Proto\DataModel.proto" />
+    <None Remove="Proto\RestDeviceConfig.proto" />
+    <None Remove="Proto\Services.proto" />
+  </ItemGroup>
+
+	<PropertyGroup>
+		<DataModelProtoPath>$(PkgAres_DataModel_dll)\Proto\</DataModelProtoPath>
+	</PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Ares.DataModel.dll" Version="2025.8.5.92857" GeneratePathProperty="True" />
+    <PackageReference Include="Ares.Tools" Version="2025.8.4.112732" />
+    <PackageReference Include="Grpc.Tools" Version="2.72.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ares.Device.Rest\Ares.Device.Rest.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="Proto\DataModel.proto" GrpcServices="None" />
+    <Protobuf Include="Proto\RestDeviceConfig.proto" GrpcServices="None" />
+    <Protobuf Include="Proto\Services.proto" ProtoRoot="Proto" AdditionalImportDirs="$(DataModelProtoPath)" />
+  </ItemGroup>
+
+</Project>

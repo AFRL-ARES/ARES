@@ -4,22 +4,22 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
-using ARESCore;
+using AresService;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
-namespace ARESService.Services.Authentication;
+namespace AresService.Services.Authentication;
 
 public class JwtTokenGenerator
 {
   private readonly RoleManager<IdentityRole> _roleManager;
-  private readonly SignInManager<ARESUser> _signInManager;
+  private readonly SignInManager<AresUser> _signInManager;
   private readonly IOptions<TokensConfig> _tokensOptions;
-  private readonly UserManager<ARESUser> _userManager;
+  private readonly UserManager<AresUser> _userManager;
 
-  public JwtTokenGenerator(UserManager<ARESUser> userManager,
-    SignInManager<ARESUser> signInManager,
+  public JwtTokenGenerator(UserManager<AresUser> userManager,
+    SignInManager<AresUser> signInManager,
     RoleManager<IdentityRole> roleManager,
     IOptions<TokensConfig> tokensOptions)
   {

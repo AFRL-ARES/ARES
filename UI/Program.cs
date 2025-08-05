@@ -1,21 +1,30 @@
+using System.Net;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using UI;
 using UI.Backend.Helpers;
 using UI.Data;
 using UI.Services.Grpc;
+using UI.Services.Notification;
 using UI.Settings;
+
+
+
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+if(connectionString is null)
+  throw new InvalidOperationException("Connection string was null!");
+
 builder.Services.AddDbContext<ApplicationDbContext>
 (
   options =>
     options.UseSqlServer(connectionString)
 );
-
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddDefaultIdentity<IdentityUser>(options =>
 {
@@ -38,16 +47,19 @@ builder.Services.Configure<RemoteServiceSettings>(builder.Configuration.GetSecti
 builder.Services.Configure<CertificateSettings>(builder.Configuration.GetSection(nameof(CertificateSettings)));
 
 builder.Services.AddScoped<IClientManager, ClientManager>();
-builder.Services.LoadARESModules();
+builder.Services.LoadAresModules();
 builder.Services.BindClients();
+builder.Services.AddSingleton<INotificationReceivingService, NotificationReceivingService>();
 
 builder.Services.AddOptions();
 builder.Services.AddAuthorizationCore();
 
+builder.Services.AddHostedService<ServiceStarter>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if(app.Environment.IsDevelopment())
 {
   app.UseMigrationsEndPoint();
 }

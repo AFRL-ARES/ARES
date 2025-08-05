@@ -34,6 +34,20 @@ public class DataloggerThermometer : SerialDevice<IDataloggerThermometerConnecti
     return response;
   }
 
+  public async Task<double[]> GetTemperatures()
+  {
+    var response = await GetAndUpdateState();
+    var temperatures = new double[]
+    {
+      response.T1Probe.Value.DegreesCelsius,
+      response.T2Probe.Value.DegreesCelsius,
+      response.T3Probe.Value.DegreesCelsius,
+      response.T4Probe.Value.DegreesCelsius
+    };
+
+    return temperatures;
+  }
+
   public DataResponse? GetState()
     => StateStream.Take(1).Wait();
 
@@ -53,7 +67,7 @@ public class DataloggerThermometer : SerialDevice<IDataloggerThermometerConnecti
   public async Task StopStateUpdater()
   {
     _internalStateUpdateTokenSource.Cancel();
-    if (_stateUpdater is not null)
+    if(_stateUpdater is not null)
       await _stateUpdater;
   }
 
@@ -65,7 +79,7 @@ public class DataloggerThermometer : SerialDevice<IDataloggerThermometerConnecti
   public async ValueTask DisposeAsync()
   {
     _internalStateUpdateTokenSource.Cancel();
-    if (_stateUpdater is not null)
+    if(_stateUpdater is not null)
       await _stateUpdater;
     _internalStateUpdateTokenSource.Dispose();
     _stateSubject.OnCompleted();
@@ -74,11 +88,17 @@ public class DataloggerThermometer : SerialDevice<IDataloggerThermometerConnecti
   public override async Task<bool> Activate()
   {
     var activated = await base.Activate();
-    if (!activated)
+    if(!activated)
       return false;
 
     await StartStateUpdater();
     return true;
+  }
+
+  public override Task EnterSafeMode()
+  {
+    //No real safety concerns here
+    return Task.CompletedTask;
   }
 
   public void ToggleTemperatureUnit()
@@ -90,21 +110,22 @@ public class DataloggerThermometer : SerialDevice<IDataloggerThermometerConnecti
   {
     _stateUpdater = Task.Factory.StartNew(async _ =>
     {
+      Thread.CurrentThread.Name = "Datalogger State Updater Thread";
       try
       {
-        while (!token.IsCancellationRequested)
+        while(!token.IsCancellationRequested)
         {
           try
           {
             var response = await Connection.Send(new DataRequest(), TimeSpan.FromSeconds(5));
             _stateSubject.OnNext(response);
           }
-          catch (TimeoutException)
+          catch(TimeoutException)
           { }
           await Task.Delay(interval, token);
         }
       }
-      catch (ObjectDisposedException)
+      catch(ObjectDisposedException)
       {
       }
     },
@@ -112,16 +133,16 @@ public class DataloggerThermometer : SerialDevice<IDataloggerThermometerConnecti
       TaskCreationOptions.LongRunning);
   }
 
-  protected override async Task<DeviceValidationResult> Validate()
+  protected override async Task<SerialDeviceValidationResult> Validate()
   {
     try
     {
       await Connection.Send(new DataRequest(), TimeSpan.FromSeconds(5));
-      return new DeviceValidationResult(true);
+      return new SerialDeviceValidationResult(true);
     }
-    catch (Exception e)
+    catch(Exception e)
     {
-      return new DeviceValidationResult(false, e.Message);
+      return new SerialDeviceValidationResult(false, e.Message);
     }
   }
 }

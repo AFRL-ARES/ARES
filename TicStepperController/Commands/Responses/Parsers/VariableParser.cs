@@ -10,7 +10,7 @@ public abstract class VariableParser<T> : SerialResponseParser<T> where T : Seri
 
   public override bool TryParseResponse(byte[] buffer, out T? response, out ArraySegment<byte>? dataToRemove)
   {
-    if (buffer.Length < ExpectedBits)
+    if(buffer.Length < ExpectedBits)
     {
       response = default;
       dataToRemove = default;
@@ -23,7 +23,7 @@ public abstract class VariableParser<T> : SerialResponseParser<T> where T : Seri
       dataToRemove = new ArraySegment<byte>(buffer, 0, ExpectedBits);
       return true;
     }
-    catch (Exception)
+    catch(Exception)
     {
       response = default;
       dataToRemove = default;

@@ -1,18 +1,18 @@
-﻿using System;
+﻿using Ares.Core.Device;
+using AresService.DeviceManagers;
+using Google.Protobuf.WellKnownTypes;
+using Grpc.Core;
+using System;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
-using Ares.Core.Device;
-using ARESCore.DeviceManagers;
-using Google.Protobuf.WellKnownTypes;
-using Grpc.Core;
 using Tc0304.Config;
 using Tc0304.DataModel;
 using Tc0304.Services;
 using TC0304;
 using TC0304.Extensions;
 
-namespace ARESService.Services.Devices;
+namespace AresService.Services.Devices;
 
 public class Tc0304Service : TC0304Rpc.TC0304RpcBase
 {
@@ -27,15 +27,12 @@ public class Tc0304Service : TC0304Rpc.TC0304RpcBase
     _deviceManager = tc0304DeviceManager;
   }
 
-  private IDataloggerThermometer GetDataLogger(string name)
+  private IDataloggerThermometer? GetDataLogger(string name)
   {
     var dataLogger = _deviceCommandInterpreterRepo
       .Select(interpreter => interpreter.Device)
       .OfType<IDataloggerThermometer>()
       .FirstOrDefault(device => device.Name == name);
-
-    if (dataLogger is null)
-      throw new InvalidOperationException($"Could not find DataLogger Thermometer: {name}");
 
     return dataLogger;
   }
@@ -43,7 +40,9 @@ public class Tc0304Service : TC0304Rpc.TC0304RpcBase
   public override Task<Empty> Hold(DeviceRequest request, ServerCallContext context)
   {
     var dataLogger = GetDataLogger(request.DeviceName);
-    dataLogger.Hold();
+
+    if(dataLogger is not null)
+      dataLogger.Hold();
 
     return Task.FromResult(new Empty());
   }
@@ -52,15 +51,22 @@ public class Tc0304Service : TC0304Rpc.TC0304RpcBase
   {
     var response = new DataResponse();
     var dataLogger = GetDataLogger(request.DeviceName);
-    var data = dataLogger.StateStream.Take(1).Wait();
-    response.Data = data?.ToProto();
+    if(dataLogger is not null)
+    {
+      var data = dataLogger.StateStream.Take(1).Wait();
+      response.Data = data?.ToProto();
+      return Task.FromResult(response);
+    }
+
     return Task.FromResult(response);
   }
 
   public override Task<Empty> StartStateUpdater(StartStateUpdaterRequest request, ServerCallContext context)
   {
     var dataLogger = GetDataLogger(request.DeviceRequest.DeviceName);
-    dataLogger.StartStateUpdater(request.Interval?.ToTimeSpan() ?? TimeSpan.FromMilliseconds(250));
+
+    if(dataLogger is not null)
+      dataLogger.StartStateUpdater(request.Interval?.ToTimeSpan() ?? TimeSpan.FromMilliseconds(250));
 
     return Task.FromResult(new Empty());
   }
@@ -68,7 +74,9 @@ public class Tc0304Service : TC0304Rpc.TC0304RpcBase
   public override Task<Empty> StopStateUpdater(DeviceRequest request, ServerCallContext context)
   {
     var dataLogger = GetDataLogger(request.DeviceName);
-    dataLogger.StopStateUpdater();
+
+    if(dataLogger is not null)
+      dataLogger.StopStateUpdater();
 
     return Task.FromResult(new Empty());
   }

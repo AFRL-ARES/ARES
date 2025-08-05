@@ -16,6 +16,9 @@ namespace LindbergFurnace.Commands.Responses.Parsers
     protected override bool TryParseResponse(byte[] data, out ReadMultipleRegistersResponse? response)
     {
       var str = Encoding.UTF8.GetString(data);
+      if (str.StartsWith(':'))
+        data = data[1..];
+
       var dataStream = new MemoryStream(data);
       var dataReader = new BinaryReader(dataStream);
 

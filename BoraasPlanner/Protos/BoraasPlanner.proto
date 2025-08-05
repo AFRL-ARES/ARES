@@ -1,0 +1,26 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "BoraasPlanner";
+
+import "Templates/ParameterMetadata.proto";
+import "Analyzing/Analysis.proto";
+
+package BoraasPlanner;
+
+service BoraasPlannerGrpc {
+  rpc Plan (PlanRequest) returns (PlanResultResponse);
+}
+
+message PlanResultResponse {
+  repeated PlanResult plan_results = 1;
+}
+
+message PlanResult {
+  ares.messaging.ParameterMetadata metadata = 1;
+  string value = 2;
+}
+
+message PlanRequest {
+  repeated ares.messaging.ParameterMetadata metadata = 1;
+  repeated ares.messaging.analyzing.Analysis analyses = 2;
+}

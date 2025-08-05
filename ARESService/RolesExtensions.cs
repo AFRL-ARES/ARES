@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using Ares.Messaging;
 using Microsoft.AspNetCore.Identity;
 
-namespace ARESService;
+namespace AresService;
 
 public static class RolesExtensions
 {

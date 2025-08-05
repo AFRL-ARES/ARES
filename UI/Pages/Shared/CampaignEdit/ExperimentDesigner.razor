@@ -5,18 +5,6 @@
 
 
 <div class="d-flex flex-column h-100">
-  <div class="d-flex flex-column">
-    <select class="form-select" @bind="ViewModel!.AnalyzerId">
-      @if (ViewModel!.AvailableAnalyzers is not null)
-      {
-        <option value="" selected="@(ViewModel!.Analyzer is null)" disabled>Select analyzer</option>
-        @foreach (var analyzer in ViewModel!.AvailableAnalyzers)
-        {
-          <option value="@analyzer.UniqueId" selected="@ViewModel!.Analyzer?.Equals(analyzer) ?? false">@analyzer.Name</option>
-        }
-      }
-    </select>
-  </div>
   <div class="d-flex flex-column flex-grow-1 overflow-auto">
     <div class="d-flex flex-column">
       @foreach (var stepDesigner in ViewModel!.StepDesigners)

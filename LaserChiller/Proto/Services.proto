@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package chiller.services;
+
+import "google/protobuf/empty.proto";
+import "DataModel.proto";
+import "ChillerConfig.proto";
+
+service ChillerRpc {
+	rpc SetChillerTemperature(SetChillerTemperatureRequest) returns (google.protobuf.Empty);
+	rpc SetChillerRunMode(ChillerRequest) returns (google.protobuf.Empty);
+	rpc SetChillerStandbyMode(ChillerRequest) returns (google.protobuf.Empty);
+	rpc GetManifoldTemperature(ChillerRequest) returns (ManifoldTemperatureResponse);
+
+	rpc UpdateChiller(config.ChillerConfig) returns (google.protobuf.Empty);
+	rpc RemoveChiller(ChillerRequest) returns (google.protobuf.Empty);
+	rpc AddChiller(config.ChillerConfig) returns (google.protobuf.Empty);
+	rpc GetAllChillers(google.protobuf.Empty) returns (GetAllChillersResponse);
+}
+
+message ChillerRequest {
+	string chiller_name = 1;
+}
+
+message SetChillerTemperatureRequest {
+	string chiller_name = 1;
+	double desired_temperature = 2;
+}
+
+message ManifoldTemperatureResponse {
+	double manifold_temperature = 1;
+}
+
+message GetAllChillersResponse {
+	repeated string device_names = 1;
+}
+

@@ -9,19 +9,24 @@ public class SequentialStepExecutor : StepExecutor
   {
   }
 
-  public override async Task<StepResult> Execute(ExecutionControlToken token)
+  public override async Task<StepExecutionSummary> Execute(ExecutionControlToken token)
   {
     var startTime = DateTime.UtcNow;
-    var commandResults = new List<CommandResult>();
+    var commandSummaries = new List<CommandExecutionSummary>();
     foreach (var command in CommandExecutors)
     {
-      if (token.IsCancelled)
+      if(token.IsCancelled)
         break;
 
-      var commandResult = await command.Execute(token);
-      commandResults.Add(commandResult);
+      var commandExecutionSummary = await command.Execute(token);
+
+      if(commandExecutionSummary.Result.Success)
+        commandSummaries.Add(commandExecutionSummary);
+
+      else
+        return ExecutorSummaryHelpers.CreateEmptyStepExecutionSummary(startTime, DateTime.UtcNow);
     }
 
-    return ExecutorResultHelpers.CreateStepResult(Template.UniqueId, startTime, DateTime.UtcNow, commandResults);
+    return ExecutorSummaryHelpers.CreateStepExecutionSummary(startTime, DateTime.UtcNow, commandSummaries);
   }
 }

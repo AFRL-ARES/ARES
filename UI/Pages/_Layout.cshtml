@@ -44,5 +44,65 @@
         URL.revokeObjectURL(url);
     }
   </script>
+
+  <script>
+        window.downloadJsonFile = async (fileName, jsonData) => {
+        try {
+            // Convert JSON data to a string
+            //const jsonString = JSON.stringify(jsonData, null, 2); // Use null, 2 for pretty printing (optional)
+
+            // Create a Blob with the correct MIME type
+            const blob = new Blob([jsonData], { type: 'application/json' });
+
+            // Create a URL for the Blob
+            const url = URL.createObjectURL(blob);
+
+            // Create a temporary anchor element
+            const anchorElement = document.createElement('a');
+            anchorElement.href = url;
+            anchorElement.download = fileName ?? 'data.json'; // Default filename if not provided
+
+            // Simulate a click to trigger the download
+            anchorElement.click();
+
+            // Clean up
+            anchorElement.remove();
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Error downloading JSON:", error);
+            // Handle the error appropriately, e.g., display an error message to the user
+        }
+    };
+  </script>
+
+
+  <script>
+    window.downloadByteArray = async (fileName, byteArray) => {
+      try {
+        // Create a Blob from the byte array with the correct MIME type for an image
+        // You'll need to determine the correct MIME type based on your image format
+        // Examples: 'image/png', 'image/jpeg', 'image/gif', etc.
+        const blob = new Blob([new Uint8Array(byteArray)], { type: 'image/tif' });
+
+        // Create a URL for the Blob
+        const url = URL.createObjectURL(blob);
+
+        // Create a temporary anchor element
+        const anchorElement = document.createElement('a');
+        anchorElement.href = url;
+        anchorElement.download = fileName ?? 'image.tif'; // Default filename if not provided
+
+        // Simulate a click to trigger the download
+        anchorElement.click();
+
+        // Clean up
+        anchorElement.remove();
+        URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error("Error downloading byte array:", error);
+        // Handle the error appropriately, e.g., display an error message to the user
+      }
+    };
+  </script>
 </body>
 </html>

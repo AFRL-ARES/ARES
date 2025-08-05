@@ -37,7 +37,7 @@
 
   @if (ViewModel?.Campaigns is not null)
   {
-    <RadzenListBox class="experiments-picker" TValue="string" Data=@ViewModel.Campaigns TextProperty="CampaignName" AllowFiltering="true" ValueProperty="ResultId" Change="@(args => ViewModel.UpdateExperiments(args.ToString()))" />
+    <RadzenListBox class="experiments-picker" TValue="string" Data=@ViewModel.Campaigns TextProperty="CampaignName" AllowFiltering="true" ValueProperty="SummaryId" Change="@(args => ViewModel.UpdateExperiments(args.ToString()))" />
   }
   else
   {

@@ -1,32 +1,28 @@
-﻿using Ares.Device.Serial.Commands;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Ares.Device.Serial;
+﻿using Ares.Device.Serial;
+using Ares.Device.Serial.Commands;
 using Ares.SyringePump.Ne1000.Messaging;
+using System.Text;
 
 namespace SyringePumpNE1000.Commands.Responses.Parsers;
-internal abstract class ResponseParser<TResponse> : SerialResponseParser<TResponse> where TResponse : Response
+public abstract class ResponseParser<T> : SerialResponseParser<T> where T : Response
 {
   public ResponseParser(int address)
   {
     Address = address;
   }
 
-  private bool TryParseResponse(string[] bufferLines, out TResponse? response, out int parsedLineIndex)
+  private bool TryParseResponse(string[] bufferLines, out T? response, out int parsedLineIndex)
   {
-    for (var i = 0; i < bufferLines.Length; i++)
+    for(var i = 0; i < bufferLines.Length; i++)
     {
       var fullStringResponse = bufferLines[i];
       var ignorableResponseData = fullStringResponse.Substring(0, fullStringResponse.IndexOf((char)SpecialAsciiCharacter.STX));
-      var considerableStringResponse = fullStringResponse.Substring(ignorableResponseData.Length+1);
-      if (considerableStringResponse.Length < "##S".Length)
+      var considerableStringResponse = fullStringResponse.Substring(ignorableResponseData.Length + 1);
+      if(considerableStringResponse.Length < "##S".Length)
       {
         continue;
       }
-      if (!int.TryParse(considerableStringResponse[..2], out var address))
+      if(!int.TryParse(considerableStringResponse[..2], out var address))
       {
         continue;
       }
@@ -37,38 +33,40 @@ internal abstract class ResponseParser<TResponse> : SerialResponseParser<TRespon
       }
 
       var statusPromptStr = $"Prompt{considerableStringResponse[2]}";
-      if (!Enum.TryParse<StatusPrompt>(statusPromptStr, true, out var status))
+      if(!Enum.TryParse<StatusPrompt>(statusPromptStr, true, out var status))
       {
         continue;
       }
 
-      if (considerableStringResponse.Length < 4)
-      {
-        response = (TResponse) Activator.CreateInstance(typeof(TResponse), address, status)!;
-        parsedLineIndex = i;
-        return true;
-      }
+      //if(considerableStringResponse.Length < 4)
+      //{
+      //  response = (T)Activator.CreateInstance(typeof(T), address, status)!;
+      //  parsedLineIndex = i;
+      //  return true;
+      //}
+      //if(content[0] == '?')
+      //{
+      //  var errorContent = content[1..];
+      //  if(!errorContent.Any())
+      //  {
+      //    response = (T)Activator.CreateInstance(typeof(T), address, status, CommandError.UnrecognizedCommand)!;
+      //    parsedLineIndex = i;
+      //    return true;
+      //  }
+      //  if(!Enum.TryParse<CommandError>(errorContent, true, out var error))
+      //  {
+      //    response = (T)new Response(address, status, CommandError.UndefinedError);
+      //    parsedLineIndex = i;
+      //    return true;
+      //  }
+      //  response = (T)Activator.CreateInstance(typeof(T), address, status, error)!;
+      //  parsedLineIndex = i;
+      //  return true;
+      //}
+
       var content = considerableStringResponse[3..];
-      if (content[0] == '?')
-      {
-        var errorContent = content[1..];
-        if (!errorContent.Any())
-        {
-          response = (TResponse)Activator.CreateInstance(typeof(TResponse), address, status, CommandError.UnrecognizedCommand)!;
-          parsedLineIndex = i;
-          return true;
-        }
-        if(!Enum.TryParse<CommandError>(errorContent, true, out var error))
-        {
-          response = (TResponse)new Response(address, status, CommandError.UndefinedError);
-          parsedLineIndex = i;
-          return true;
-        }
-        response = (TResponse)Activator.CreateInstance(typeof(TResponse), address, status, error)!;
-        parsedLineIndex = i;
-        return true;
-      }
-      if (TryParseResponse(address, status, content, out response))
+
+      if(TryParseResponse(address, status, content, out response))
       {
         parsedLineIndex = i;
         return true;
@@ -80,20 +78,20 @@ internal abstract class ResponseParser<TResponse> : SerialResponseParser<TRespon
     return false;
   }
 
-  protected abstract bool TryParseResponse(int address, StatusPrompt status, string content, out TResponse? response);
+  protected abstract bool TryParseResponse(int address, StatusPrompt status, string content, out T? response);
 
-  public override bool TryParseResponse(byte[] buffer, out TResponse? response, out ArraySegment<byte>? dataToRemove)
+  public override bool TryParseResponse(byte[] buffer, out T? response, out ArraySegment<byte>? dataToRemove)
   {
     var asciiBufferProxy = Encoding.ASCII.GetString(buffer);
     var useLast = asciiBufferProxy.EndsWith((char)SpecialAsciiCharacter.ETX);
-    var availablePackets = 
+    var availablePackets =
       asciiBufferProxy
         .Split(new[] { (char)SpecialAsciiCharacter.ETX }, StringSplitOptions.RemoveEmptyEntries)
         .SkipLast(useLast ? 0 : 1)
         .ToArray();
 
 
-    if (!TryParseResponse(availablePackets, out response, out var parsedLineIndex))
+    if(!TryParseResponse(availablePackets, out response, out var parsedLineIndex))
     {
       response = null;
       dataToRemove = null;

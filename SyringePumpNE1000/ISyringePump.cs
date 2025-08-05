@@ -1,32 +1,32 @@
 ﻿using Ares.Device.Serial;
 using Ares.SyringePump.Ne1000.Messaging;
+using SyringePumpNE1000.Commands.Responses;
 using UnitsNet;
 
 namespace SyringePumpNE1000;
 
-public interface ISyringePump : ISerialDevice<ISyringePumpConnection>, IDisposable
+public interface ISyringePump : ISerialDevice<ISyringePumpConnection>, IAsyncDisposable
 {
   Task SetPhase(int phase);
   Task SetPhaseFunction(Ares.SyringePump.Ne1000.Messaging.Commands function);
   Task SetDiameter(Length diameter);
-  Task GetDiameter();
-  Task QueryPhaseFunction();
+  Task<Length> GetDiameter();
+  Task<PhaseFunctionResponse> QueryPhaseFunction();
   Task SetProgramFunctionRate(Speed rate);
-  Task GetProgramFunctionRate();
+  Task<PhaseFunctionRateResponse> GetProgramFunctionRate();
   Task SetProgramFunctionVolumeToBeDispensed(Volume volume);
   Task GetProgramFunctionVolumeToBeDispensed();
   Task SetProgramFunctionPumpingDirection(Direction direction);
-  Task GetProgramFunctionPumpingDirection();
+  Task<Direction> GetProgramFunctionPumpingDirection();
   Task StartPumpingProgram();
   Task PurgePump();
   Task StopPumpingProgram();
-  Task GetVolumeDispensed();
+  Task<VolumeDispensedResponse> GetVolumeDispensed();
   Task ClearVolumeDispensed(Direction direction);
   Task SetAddress(int address);
-  Task GetAddress();
-  Task QueryPhase();
-  StateResponse GetCurrentState();
-  StateResponse GetUpdatedState();
+  Task<int> GetAddress();
+  Task<int> QueryPhase();
+  Task<StateResponse> GetCurrentState();
   uint AssumedAddress { get; }
   IObservable<StateResponse> StateStream { get; }
 }

@@ -1,0 +1,22 @@
+﻿.ares-notification {
+	align-content: center;
+	width: max-content;
+	border: solid 3px #444;
+	margin: 1rem;
+}
+
+.error-notification {
+	background-color: #b2242e;
+}
+
+.warning-notification {
+	background-color: #fac152;
+}
+
+.info-notification {
+	background-color: #026969;
+}
+
+.success_notification {
+	background-color: #0f6c23;
+}

@@ -1,8 +1,8 @@
-﻿using System.Reactive.Linq;
-using System.Reactive.Subjects;
-using Ares.Device.Serial;
+﻿using Ares.Device.Serial;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using TicStepperController.Commands;
 using TicStepperController.Commands.Enums;
 using TicStepperController.Commands.Responses;
@@ -20,7 +20,7 @@ public class StepperController : SerialDevice<IStepperControllerConnection>, ISt
   public StepperController(string name, IStepperControllerConnection connection, ILogger<IStepperController>? logger = null) : base(name, connection)
   {
     StateStream = _stateSubject.AsObservable();
-    if (logger is not null)
+    if(logger is not null)
       _logger = logger;
     else
       _logger = NullLogger<IStepperController>.Instance;
@@ -37,17 +37,22 @@ public class StepperController : SerialDevice<IStepperControllerConnection>, ISt
     return Connection.Send(new CurrentPositionRequest());
   }
 
-  protected override async Task<DeviceValidationResult> Validate()
+  protected override async Task<SerialDeviceValidationResult> Validate()
   {
     try
     {
       var operationResponse = await GetOperationState();
-      return new DeviceValidationResult(true);
+      return new SerialDeviceValidationResult(true);
     }
-    catch (Exception e)
+    catch(Exception e)
     {
-      return new DeviceValidationResult(false, e.Message);
+      return new SerialDeviceValidationResult(false, e.Message);
     }
+  }
+
+  public override async Task EnterSafeMode()
+  {
+    await EnterSafeStart();
   }
 
   public Task<ErrorsOccurred> GetErrorsOccurred()
@@ -68,6 +73,11 @@ public class StepperController : SerialDevice<IStepperControllerConnection>, ISt
   public Task<MaxDeceleration> GetMaxDeceleration()
   {
     return Connection.Send(new MaxDecelerationRequest());
+  }
+
+  public Task<CurrentLimit> GetCurrentLimit()
+  {
+    return Connection.Send(new CurrentLimitRequest());
   }
 
   public Task<MaxSpeed> GetMaxSpeed()
@@ -141,6 +151,11 @@ public class StepperController : SerialDevice<IStepperControllerConnection>, ISt
     return Connection.Send(new SetMaxDecelerationCommand(deceleration));
   }
 
+  public Task SetCurrentLimit(uint limit)
+  {
+    return Connection.Send(new SetCurrentLimitCommand(limit));
+  }
+
   public Task SetMaxSpeed(uint speed)
   {
     return Connection.Send(new SetMaxSpeedCommand(speed));
@@ -168,22 +183,83 @@ public class StepperController : SerialDevice<IStepperControllerConnection>, ISt
 
   public async Task Init(StepperControllerConfig config)
   {
-    if (config.MaxAcceleration.HasValue)
+    if(config.MaxAcceleration.HasValue)
       await SetMaxAcceleration(config.MaxAcceleration.Value);
 
-    if (config.MaxDeceleration.HasValue)
+    if(config.MaxDeceleration.HasValue)
       await SetMaxDeceleration(config.MaxDeceleration.Value);
 
-    if (config.MaxSpeed.HasValue)
+    if(config.MaxSpeed.HasValue)
       await SetMaxSpeed(config.MaxSpeed.Value);
 
-    if (config.StartingSpeed.HasValue)
+    if(config.StartingSpeed.HasValue)
       await SetStartingSpeed(config.StartingSpeed.Value);
 
-    if (config.StepMode != Messaging.StepMode.Undefined)
+    if(config.StepMode != Messaging.StepMode.Undefined)
       await SetStepMode(config.StepMode.ToInternal());
 
+    if(config.CurrentLimit.HasValue)
+      await SetCurrentLimit(config.CurrentLimit.Value);
+
     UserStepSize = config.CustomStepSize ?? 1;
+    SmartStepCalculation = config.DynamicStepCalculation;
+
+    if(SmartStepCalculation)
+    {
+      //These are values we need only if the user requested that the device dynamically calculated the number of steps being taken
+      InitialSpoolRadius = config.SpoolRadius;
+      FilterPaperThickness = config.FilterPaperThickness;
+      IdealLinearStepSize = config.IdealLinearStepSize;
+      StepAngle = config.StepAngle;
+      CalculateMicroStepAngle(config.StepMode.ToInternal());
+    }
+  }
+
+  private void CalculateMicroStepAngle(StepMode stepMode)
+  {
+    if(StepAngle is null)
+      return;
+
+    double angle = (double)StepAngle;
+
+    switch(stepMode)
+    {
+      case StepMode.Step1_2:
+        MicroStepAngle = angle / 2.0;
+        return;
+
+      case StepMode.Step1_4:
+        MicroStepAngle = angle / 4.0;
+        break;
+
+      case StepMode.Step1_8:
+        MicroStepAngle = angle / 8.0;
+        return;
+
+      case StepMode.Step1_16:
+        MicroStepAngle = angle / 16.0;
+        return;
+
+      case StepMode.Step1_32:
+        MicroStepAngle = angle / 32;
+        return;
+
+      case StepMode.Step1_2_100:
+        //Not supported
+        break;
+
+      case StepMode.Step1_64:
+        MicroStepAngle = angle / 64;
+        break;
+
+      case StepMode.Step1_128:
+        MicroStepAngle = angle / 128;
+        break;
+
+      case StepMode.Step1_256:
+        MicroStepAngle = angle / 256;
+        break;
+    }
   }
 
   public async Task Start()
@@ -206,7 +282,8 @@ public class StepperController : SerialDevice<IStepperControllerConnection>, ISt
     _stateUpdaterCancellation = new CancellationTokenSource();
     _stateUpdater = Task.Factory.StartNew(async _ =>
     {
-      while (!_stateUpdaterCancellation.IsCancellationRequested)
+      Thread.CurrentThread.Name = "Stepper Controller State Updater Thread";
+      while(!_stateUpdaterCancellation.IsCancellationRequested)
       {
         await UpdateState();
         await Task.Delay(interval);
@@ -231,6 +308,7 @@ public class StepperController : SerialDevice<IStepperControllerConnection>, ISt
     var maxAccel = await GetMaxAcceleration();
     var maxDecel = await GetMaxDeceleration();
     var maxSpeed = await GetMaxSpeed();
+    var limit = await GetCurrentLimit();
     var startingSpeed = await GetStartingSpeed();
     var stepMode = await GetStepMode();
     var currentPosition = await GetCurrentPosition();
@@ -243,6 +321,7 @@ public class StepperController : SerialDevice<IStepperControllerConnection>, ISt
       MaxAcceleration = maxAccel.Acceleration,
       MaxDeceleration = maxDecel.Deceleration,
       MaxSpeed = maxSpeed.Speed,
+      CurrentLimit = limit.Limit,
       StartingSpeed = startingSpeed.Speed,
       CustomStepSize = UserStepSize,
       StepMode = stepMode.ToProto(),
@@ -260,24 +339,93 @@ public class StepperController : SerialDevice<IStepperControllerConnection>, ISt
   public async Task NextStep(TimeSpan? timeout)
   {
     var state = await StateStream.Take(1);
-    if (state is null)
+    if(state is null)
       return;
 
-    var currentPos = state.CurrentPosition;
-    var targetPos = currentPos + UserStepSize;
-    await SetTargetPosition((int)targetPos);
-    //await WaitForTargetPosition(timeout ?? TimeSpan.FromSeconds(10));
+    var currentPosition = state.CurrentPosition;
+    long targetPosition;
+
+    if(SmartStepCalculation)
+    {
+      CalculateCurrentRadius();
+      var angularDisplacement = 180 * IdealLinearStepSize / (Math.PI * CurrentSpoolRadius);
+      var numberOfSteps = angularDisplacement / MicroStepAngle;
+      if(numberOfSteps is null)
+        return;
+
+      targetPosition = (long)(currentPosition + numberOfSteps);
+      TotalSpoolDisplacementInMicrosteps += (int)numberOfSteps;
+    }
+
+    else
+      targetPosition = currentPosition + UserStepSize;
+
+    await SetTargetPosition((int)targetPosition);
+  }
+
+  public async Task HalfStep(TimeSpan? timeout)
+  {
+    var state = await StateStream.Take(1);
+    if(state is null)
+      return;
+
+    var currentPosition = state.CurrentPosition;
+    long targetPosition;
+
+    if(SmartStepCalculation)
+    {
+      CalculateCurrentRadius();
+      var angularDisplacement = 180 * IdealLinearStepSize / (Math.PI * CurrentSpoolRadius);
+      var numberOfSteps = angularDisplacement / MicroStepAngle;
+      if(numberOfSteps is null)
+        return;
+
+      numberOfSteps /= 2;
+      targetPosition = (long)(currentPosition + numberOfSteps);
+      TotalSpoolDisplacementInMicrosteps += (int)numberOfSteps;
+    }
+
+    else
+      targetPosition = currentPosition + (UserStepSize / 2);
+
+    await SetTargetPosition((int)targetPosition);
+  }
+
+  private void CalculateCurrentRadius()
+  {
+    if(InitialSpoolRadius is not null && FilterPaperThickness is not null)
+    {
+      //Convert our displacement to degrees from microsteps to perform our calculations
+      var displacementInDegrees = TotalSpoolDisplacementInMicrosteps * MicroStepAngle;
+      CurrentSpoolRadius = InitialSpoolRadius + (FilterPaperThickness * Math.Floor(displacementInDegrees / 360.0)) ?? 0.0;
+    }
   }
 
   public async Task PreviousStep(TimeSpan? timeout)
   {
     var state = await StateStream.Take(1);
-    if (state is null)
+    if(state is null)
       return;
 
-    var currentPos = state.CurrentPosition;
-    var targetPos = currentPos - UserStepSize;
-    await SetTargetPosition((int)targetPos);
+    var currentPosition = state.CurrentPosition;
+    long targetPosition;
+
+    if(SmartStepCalculation)
+    {
+      CalculateCurrentRadius();
+      var angularDisplacement = 180 * IdealLinearStepSize / (Math.PI * CurrentSpoolRadius);
+      var numberOfSteps = angularDisplacement / MicroStepAngle;
+      if(numberOfSteps is null)
+        return;
+
+      targetPosition = (long)(currentPosition - numberOfSteps);
+      TotalSpoolDisplacementInMicrosteps += (int)numberOfSteps;
+    }
+
+    else
+      targetPosition = currentPosition - UserStepSize;
+
+    await SetTargetPosition((int)targetPosition);
     //await WaitForTargetPosition(timeout ?? TimeSpan.FromSeconds(10));
   }
 
@@ -286,10 +434,10 @@ public class StepperController : SerialDevice<IStepperControllerConnection>, ISt
     var startTime = DateTime.UtcNow;
     var state = await StateStream.Take(1);
     var targetPosition = state.TargetPosition;
-    while (DateTime.UtcNow - startTime < timeout)
+    while(DateTime.UtcNow - startTime < timeout)
     {
       var currentPosition = await GetCurrentPosition();
-      if (currentPosition.Position == targetPosition)
+      if(currentPosition.Position == targetPosition)
         return;
     }
 
@@ -302,4 +450,14 @@ public class StepperController : SerialDevice<IStepperControllerConnection>, ISt
     await _stateUpdater;
     _stateSubject.OnCompleted();
   }
+
+  public double? InitialSpoolRadius { get; set; }
+  public double? FilterPaperThickness { get; set; }
+  public double? IdealLinearStepSize { get; set; }
+  public bool SmartStepCalculation { get; set; }
+  public double CurrentSpoolRadius { get; set; }
+  public double TotalSpoolDisplacementInMicrosteps { get; set; } = 0;
+  public double? StepAngle { get; set; }
+  public double MicroStepAngle { get; set; }
+
 }

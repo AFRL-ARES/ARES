@@ -5,27 +5,26 @@ using HerkulexDRS.Responses;
 namespace HerkulexDRS;
 public class Servo : SerialDevice<IServoConnection>, IServo
 {
-
   public Servo(string name, IServoConnection connection) : base(name, connection)
   {
 
   }
 
-  public void PistonDown()
+  public async Task PistonDown()
   {
     PistonRaised = false;
-    Connection.Send(new PistonDownCommand());
+    await Connection.Send(new PistonDownCommand());
   }
 
-  public void PistonUp()
+  public async Task PistonUp()
   {
     PistonRaised = true;
-    Connection.Send(new PistonUpCommand());
+    await Connection.Send(new PistonUpCommand());
   }
 
-  public void ResetServo()
+  public async Task ResetServo()
   {
-    Connection.Send(new RebootCommand());
+    await Connection.Send(new RebootCommand());
   }
 
   public async Task<GetPositionResponse> GetPosition()
@@ -39,17 +38,23 @@ public class Servo : SerialDevice<IServoConnection>, IServo
     return ValueTask.CompletedTask;
   }
 
-  protected override async Task<DeviceValidationResult> Validate()
+  protected override async Task<SerialDeviceValidationResult> Validate()
   {
     try
     {
-      await Connection.Send(new PistonDownCommand());
-      return new DeviceValidationResult(true);
+      await Connection.Send(new RebootCommand());
+      return new SerialDeviceValidationResult(true);
     }
-    catch (Exception e)
+    catch(Exception e)
     {
-      return new DeviceValidationResult(false, e.Message);
+      return new SerialDeviceValidationResult(false, e.Message);
     }
+  }
+
+  public override async Task EnterSafeMode()
+  {
+    //Disengage Servo
+    await PistonDown();
   }
 
   public bool PistonRaised { get; set; } = false;

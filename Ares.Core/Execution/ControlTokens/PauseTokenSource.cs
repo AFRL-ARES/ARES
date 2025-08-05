@@ -41,7 +41,7 @@ internal class PauseTokenSource : IDisposable
 
   private void ThrowIfDisposed()
   {
-    if (_disposed)
+    if(_disposed)
       ThrowObjectDisposedException(GetType().Name);
   }
 

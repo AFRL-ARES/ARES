@@ -15,6 +15,16 @@ public interface IExecutionReportStore
   IObservable<ExperimentExecutionStatus?> ExperimentStatusObservable { get; }
 
   /// <summary>
+  /// Provides status updates for a currently running startup script
+  /// </summary>
+  IObservable<CampaignStartupStatus?> CampaignStartupStatusObservable { get; }
+  
+  /// <summary>
+  /// Provides status updates for a currently running closeout script
+  /// </summary>
+  IObservable<CampaignCloseoutStatus?> CampaignCloseoutStatusObservable { get; }
+
+  /// <summary>
   /// The current campaign execution status
   /// </summary>
   CampaignExecutionStatus? CampaignExecutionStatus { get; set; }
@@ -23,4 +33,14 @@ public interface IExecutionReportStore
   /// The current experiment execution status
   /// </summary>
   ExperimentExecutionStatus? ExperimentExecutionStatus { get; set; }
+
+  /// <summary>
+  /// The current campaign startup status
+  /// </summary>
+  CampaignStartupStatus? CampaignStartupStatus { get; set; }
+
+  /// <summary>
+  /// The current campaign closeout status
+  /// </summary>
+  CampaignCloseoutStatus? CampaignCloseoutStatus { get; set; }
 }

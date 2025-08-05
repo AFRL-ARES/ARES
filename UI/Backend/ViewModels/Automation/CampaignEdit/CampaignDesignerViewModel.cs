@@ -1,6 +1,7 @@
 ﻿using Ares.Messaging;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
+using UI.Backend.ViewModels.Automation.CampaignEdit.Factories;
 using UI.Backend.ViewModels.Factories;
 using UI.Services.CampaignEdit;
 
@@ -14,14 +15,18 @@ public class CampaignDesignerViewModel : ReactiveObject
   private readonly PlannableParameterDesignerFactory _plannableParameterDesignerFactory;
   private readonly PlanningDesignerFactory _planningDesignerFactory;
   private CampaignTemplate _campaignTemplate = null!;
+  readonly AnalyzerInputDesignerVmFactory _analyzerInputDesignerFactory;
 
   public CampaignDesignerViewModel(
     AresAutomation.AresAutomationClient automationClient,
     ExperimentDesignerFactory experimentDesignerFactory,
     PlanningDesignerFactory planningDesignerFactory,
+    AnalyzerInputDesignerVmFactory analyzingDesignerFactory,
     PlannableParameterDesignerFactory plannableParameterDesignerFactory,
-    CampaignEditContext editContext)
+    CampaignEditContext editContext,
+    IConfiguration configuration)
   {
+    _analyzerInputDesignerFactory = analyzingDesignerFactory;
     _automationClient = automationClient;
     _experimentDesignerFactory = experimentDesignerFactory;
     _planningDesignerFactory = planningDesignerFactory;
@@ -36,6 +41,7 @@ public class CampaignDesignerViewModel : ReactiveObject
       Name = Placeholder,
       UniqueId = Guid.NewGuid().ToString()
     };
+    CampaignTemplate.ExperimentTemplates.Add(new ExperimentTemplate() { UniqueId = Guid.NewGuid().ToString(), Name = "New Experiment" });
   }
 
   [Reactive] public bool IsCreatingCampaign { get; set; }
@@ -49,6 +55,12 @@ public class CampaignDesignerViewModel : ReactiveObject
   public ExperimentDesignerViewModel? ExperimentDesigner { get; private set; }
 
   public PlanningViewModel? PlanningDesigner { get; private set; }
+
+  public ExperimentDesignerViewModel? CampaignCloseoutDesigner { get; private set; }
+
+  public ExperimentDesignerViewModel? CampaignStartupDesigner { get; private set; }
+
+  public AnalyzerDesignerViewModel? AnalyzerDesignerViewModel { get; private set; }
 
   public string CampaignName { get; set; } = "Unnamed Campaign";
 
@@ -74,6 +86,11 @@ public class CampaignDesignerViewModel : ReactiveObject
     PlannableParameterDesigner = _plannableParameterDesignerFactory.Create(campaignTemplate.PlannableParameters);
     ExperimentDesigner = _experimentDesignerFactory.Create(campaignTemplate.ExperimentTemplates.FirstOrDefault());
     PlanningDesigner = await _planningDesignerFactory.Create(campaignTemplate);
+    var commandDesigners = ExperimentDesigner?.StepDesigners?.SelectMany(sd => sd.CommandDesigners) ?? [];
+    if(CampaignTemplate.ExperimentTemplates.Any())
+    {
+      AnalyzerDesignerViewModel = _analyzerInputDesignerFactory.Create(campaignTemplate.ExperimentTemplates.First(), commandDesigners);
+    }
   }
 
   public CampaignTemplate Save()
@@ -82,11 +99,13 @@ public class CampaignDesignerViewModel : ReactiveObject
     CampaignTemplate.PlannableParameters.Clear();
     CampaignTemplate.PlannableParameters.AddRange(PlannableParameterDesigner?.Save() ?? Array.Empty<ParameterMetadata>());
     CampaignTemplate.ExperimentTemplates.Clear();
-    if (ExperimentDesigner is not null)
+    if(ExperimentDesigner is not null)
       CampaignTemplate.ExperimentTemplates.Add(ExperimentDesigner.Save());
 
+    //Try Save Instead?
     PlannableParameterDesigner?.Save();
     PlanningDesigner?.Save();
+    AnalyzerDesignerViewModel?.Save();
     return CampaignTemplate;
   }
 
@@ -94,7 +113,7 @@ public class CampaignDesignerViewModel : ReactiveObject
   {
     var request = new CampaignRequest
     {
-      UniqueId = campaignId.ToString()
+      UniqueId = campaignId.ToString(),
     };
 
     CampaignTemplate = await _automationClient.GetSingleCampaignAsync(request);
@@ -102,16 +121,16 @@ public class CampaignDesignerViewModel : ReactiveObject
 
   public async Task Update()
   {
-    if (string.IsNullOrEmpty(CampaignName))
+    if(string.IsNullOrEmpty(CampaignName))
       CampaignName = Placeholder;
 
     var isUpdating = await _automationClient.CampaignExistsAsync(new CampaignRequest { UniqueId = CampaignTemplate.UniqueId });
 
     var nameChanged = CampaignTemplate.Name != CampaignName;
-    if (nameChanged)
+    if(nameChanged)
     {
       var campaignExists = await _automationClient.CampaignExistsAsync(new CampaignRequest { CampaignName = CampaignName });
-      if (campaignExists.Value)
+      if(campaignExists.Value)
       {
         CreationErrorText = "Campaign Name " + CampaignName + " Already Exists!";
         CreationIsErrorFree = false;
@@ -120,9 +139,10 @@ public class CampaignDesignerViewModel : ReactiveObject
     }
 
     var template = Save();
-    if (isUpdating.Value)
-      await _automationClient.UpdateCampaignAsync(template);
+    if(isUpdating.Value)
+      await _automationClient.UpdateCampaignAsync(new AddOrUpdateCampaignRequest() { Template = template });
+
     else
-      await _automationClient.AddCampaignAsync(template);
+      await _automationClient.AddCampaignAsync(new AddOrUpdateCampaignRequest() { Template = template });
   }
 }

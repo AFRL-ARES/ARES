@@ -18,17 +18,23 @@
     <div class="btn-group" role="group">
         <input type="radio" class="btn-check m-1" name="btnradio" id="btnradio1" autocomplete="off" @onclick="SelectParam" checked/>
         <label class="btn btn-outline-secondary" for="btnradio1">Parameter Designer</label>
-        <input type="radio" class="btn-check" name="btnradio" id="btnradio2" autocomplete="off" @onclick="SelectExp"/>
-        <label class="btn btn-outline-secondary" for="btnradio2">Experiment Template</label>
-        <input type="radio" class="btn-check" name="btnradio" id="btnradio3" autocomplete="off" @onclick="SelectPlan"/>
-        <label class="btn btn-outline-secondary" for="btnradio3">Planning</label>
+        <input type="radio" class="btn-check m-1" name="btnradio" id="btnradio2" autocomplete="off" @onclick="SelectStartup"/>
+        <label class="btn btn-outline-secondary" for="btnradio2">Startup Script</label>
+        <input type="radio" class="btn-check" name="btnradio" id="btnradio3" autocomplete="off" @onclick="SelectExp"/>
+        <label class="btn btn-outline-secondary" for="btnradio3">Experiment Template</label>
+        <input type="radio" class="btn-check m-1" name="btnradio" id="btnradio4" autocomplete="off" @onclick="SelectCloseout" />
+        <label class="btn btn-outline-secondary" for="btnradio4">Closeout Script</label>
+        <input type="radio" class="btn-check" name="btnradio" id="btnradio5" autocomplete="off" @onclick="SelectPlan"/>
+        <label class="btn btn-outline-secondary" for="btnradio5">Planning</label>
+        <input type="radio" class="btn-check" name="btnradio" id="btnradio6" autocomplete="off" @onclick="SelectAnalyzer"/>
+        <label class="btn btn-outline-secondary" for="btnradio6">Analyzer Inputs</label>
     </div>
     <div class="my-2 flex-grow-1 overflow-auto">
         @if (SelectedSubOption1)
         {
-            <div class="w-50">
-                <PlannableParameterDesigner ViewModel="@ViewModel!.PlannableParameterDesigner"/>
-            </div>
+          <div class="w-50">
+            <PlannableParameterDesigner ViewModel="@ViewModel!.PlannableParameterDesigner"/>
+          </div>
         }
         @if (SelectedSubOption2)
         {
@@ -38,7 +44,19 @@
         {
             <Planning ViewModel="@ViewModel!.PlanningDesigner"/>
         }
-    </div>
+        @if (SelectedSubOption4)
+        {
+            <StartupScriptDesigner ViewModel="@ViewModel!.ExperimentDesigner"/>
+        }
+        @if (SelectedSubOption5)
+        {
+            <CloseoutScriptDesigner ViewModel="@ViewModel!.ExperimentDesigner"/>
+        }
+        @if (SelectedSubOption6)
+        {
+          <AnalyzerInputDesigner ViewModel="@ViewModel!.AnalyzerDesignerViewModel" /> 
+        }
+  </div>
     <div class="d-flex justify-content-end">
         <button @onclick="SaveClick" class="btn btn-primary">Save</button>
         <button class="btn btn-secondary">Cancel</button>
@@ -60,30 +78,72 @@
   public bool SelectedSubOption1 { get; set; } = true;
   public bool SelectedSubOption2 { get; set; }
   public bool SelectedSubOption3 { get; set; }
+  public bool SelectedSubOption4 { get; set; }
+  public bool SelectedSubOption5 { get; set; }
+  public bool SelectedSubOption6 { get; set; }
 
 
 
-  public void SelectParam()
+  public void SelectParam() 
   {
     SelectedSubOption1 = true;
     SelectedSubOption2 = false;
     SelectedSubOption3 = false;
+    SelectedSubOption4 = false;
+    SelectedSubOption5 = false;
+    SelectedSubOption6 = false;
   }
 
-  public void SelectExp()
-  {
-    SelectedSubOption2 = true;
-    SelectedSubOption1 = false;
-    SelectedSubOption3 = false;
-  }
+    public void SelectExp()
+    {
+        SelectedSubOption2 = true;
+        SelectedSubOption1 = false;
+        SelectedSubOption3 = false;
+        SelectedSubOption4 = false;
+        SelectedSubOption5 = false;
+        SelectedSubOption6 = false;
+    }
 
-  public void SelectPlan()
-  {
-    SelectedSubOption2 = false;
-    SelectedSubOption1 = false;
-    SelectedSubOption3 = true;
-  }
+    public void SelectPlan()
+    {
+        SelectedSubOption2 = false;
+        SelectedSubOption1 = false;
+        SelectedSubOption3 = true;
+        SelectedSubOption4 = false;
+        SelectedSubOption5 = false;
+        SelectedSubOption6 = false;
+    }
 
+    public void SelectStartup()
+    {
+        SelectedSubOption1 = false;
+        SelectedSubOption2 = false;
+        SelectedSubOption3 = false;
+        SelectedSubOption4 = true;
+        SelectedSubOption5 = false;
+        SelectedSubOption6 = false;
+    }
+
+    public void SelectCloseout()
+    {
+        SelectedSubOption1 = false;
+        SelectedSubOption2 = false;
+        SelectedSubOption3 = false;
+        SelectedSubOption4 = false;
+        SelectedSubOption5 = true;
+        SelectedSubOption6 = false;
+    }
+
+    public void SelectAnalyzer()
+    {
+        SelectedSubOption1 = false;
+        SelectedSubOption2 = false;
+        SelectedSubOption3 = false;
+        SelectedSubOption4 = false;
+        SelectedSubOption5 = false;
+        SelectedSubOption6 = true;
+    }
+    
   private async Task SaveClick()
   {
     try

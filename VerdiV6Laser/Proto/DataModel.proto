@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package VerdiV6.data_model;
+
+import "google/protobuf/wrappers.proto";
+
+message Data {
+	google.protobuf.DoubleValue position = 1;
+}

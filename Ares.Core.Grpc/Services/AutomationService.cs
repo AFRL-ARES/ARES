@@ -1,14 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Ares.Core.Analyzing;
+using Ares.Core.EntityConfigurations.Helpers;
 using Ares.Core.Execution;
 using Ares.Core.Execution.StartConditions;
 using Ares.Core.Execution.StopConditions;
-using Ares.Core.Grpc.Helpers;
+using Ares.Core.Notifications;
 using Ares.Messaging;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
@@ -19,28 +22,33 @@ namespace Ares.Core.Grpc.Services;
 public class AutomationService : AresAutomation.AresAutomationBase
 {
   private readonly IActiveCampaignTemplateStore _activeCampaignTemplateStore;
-  private readonly IAnalyzerManager _analyzerManager;
   private readonly IDbContextFactory<CoreDatabaseContext> _coreContextFactory;
   private readonly IExecutionManager _executionManager;
   private readonly IExecutionReportStore _executionReportStore;
   private readonly IEnumerable<IStartCondition> _startConditions;
+  private readonly IEnumerable<INotificationHandler> _notificationHandlers;
   readonly IDesiredAnalysisResultFactory _desiredAnalysisResultFactory;
+  private JsonSerializerOptions _serializerSettings;
+  readonly IAnalyzerRepo _analyzerRepo;
 
   public AutomationService(IDbContextFactory<CoreDatabaseContext> coreContextFactory,
     IExecutionManager executionManager,
     IExecutionReportStore executionReportStore,
     IActiveCampaignTemplateStore activeCampaignTemplateStore,
     IEnumerable<IStartCondition> startConditions,
-    IAnalyzerManager analyzerManager,
+    IAnalyzerRepo analyzerRepo,
+    IEnumerable<INotificationHandler> notificationHandlers,
     IDesiredAnalysisResultFactory desiredAnalysisResultFactory)
   {
+    _analyzerRepo = analyzerRepo;
     _desiredAnalysisResultFactory = desiredAnalysisResultFactory;
     _coreContextFactory = coreContextFactory;
     _executionManager = executionManager;
     _executionReportStore = executionReportStore;
     _activeCampaignTemplateStore = activeCampaignTemplateStore;
     _startConditions = startConditions;
-    _analyzerManager = analyzerManager;
+    _serializerSettings = SerializerSettingsHelper.CreateCustomSerializationSettings();
+    _notificationHandlers = notificationHandlers;
   }
 
 
@@ -53,45 +61,82 @@ public class AutomationService : AresAutomation.AresAutomationBase
     return response;
   }
 
-  public override async Task<CampaignsResponse> GetAllCampaigns(Empty request, ServerCallContext context)
+  public override async Task<CampaignsResponse> GetAllCampaigns(GetAllCampaignsRequest request, ServerCallContext context)
   {
-    await using var dbContext = _coreContextFactory.CreateDbContext();
-    var campaignsResponse = new CampaignsResponse();
-    var campaigns = await dbContext.CampaignTemplates.AsNoTracking().ToArrayAsync(context.CancellationToken);
-    campaignsResponse.CampaignTemplates.Add(campaigns);
-    return campaignsResponse;
+    var campaignResponse = new CampaignsResponse();
+    foreach(var file in Directory.EnumerateFiles(AresConfig.TemplatePath, "*.json"))
+    {
+      try
+      {
+        var contents = await File.ReadAllTextAsync(file);
+        var campaignTemplate = JsonSerializer.Deserialize<CampaignTemplate>(contents, _serializerSettings);
+        if(campaignTemplate is not null)
+          campaignResponse.CampaignTemplates.Add(campaignTemplate);
+
+        else
+          throw new Exception("Deserialization of campaign template failed");
+      }
+
+      catch(Exception ex)
+      {
+        HandleNotification("Error Loading Campaign Template", $"{file} - {ex.Message}", NotificationSeverityEnum.Error);
+      }
+    }
+
+    return campaignResponse;
   }
 
-  public override async Task<BoolValue> CampaignExists(CampaignRequest request, ServerCallContext context)
+  public override Task<BoolValue> CampaignExists(CampaignRequest request, ServerCallContext context)
   {
-    await using var dbContext = _coreContextFactory.CreateDbContext();
-    await dbContext.Database.OpenConnectionAsync();
-    bool exists;
-    if (!string.IsNullOrEmpty(request.UniqueId))
-      exists = await dbContext.CampaignTemplates.AsNoTracking().AnyAsync(template => template.UniqueId == request.UniqueId, context.CancellationToken);
-    else
-      exists = await dbContext.CampaignTemplates.AsNoTracking().AnyAsync(template => template.Name == request.CampaignName, context.CancellationToken);
+    if(request.HasUniqueId)
+      return Task.FromResult(FindCampaignById(request));
 
-    return new BoolValue { Value = exists };
+    else
+      return Task.FromResult(FindCampaignByName(request));
+  }
+
+  private BoolValue FindCampaignById(CampaignRequest request)
+  {
+    var directoryFiles = Directory.EnumerateFiles(AresConfig.TemplatePath, "*.json");
+
+    if(directoryFiles.Any(file => file.Contains(request.UniqueId)))
+      return new BoolValue { Value = true };
+
+    return new BoolValue { Value = false };
+  }
+
+  private BoolValue FindCampaignByName(CampaignRequest request)
+  {
+    var directoryFiles = Directory.EnumerateFiles(AresConfig.TemplatePath, "*.json");
+
+    foreach(var file in directoryFiles)
+    {
+      var jsonString = File.ReadAllText(Path.Combine(AresConfig.TemplatePath, file));
+      var templateObject = JsonSerializer.Deserialize<CampaignTemplate>(jsonString, _serializerSettings);
+      if(templateObject is not null && templateObject.Name == request.CampaignName)
+        return new BoolValue { Value = true };
+    }
+
+    return new BoolValue { Value = false };
+  }
+
+  public override Task<CampaignTemplate?> GetSingleCampaign(CampaignRequest request, ServerCallContext context)
+  => GetCampaignTemplate(request, context);
+
+  public override Task<Empty> RemoveCampaign(CampaignRequest request, ServerCallContext context)
+  {
+    var desiredCampaign = Directory.EnumerateFiles(AresConfig.TemplatePath, "*.json").FirstOrDefault(campaign => campaign.Contains(request.UniqueId));
+
+    if(desiredCampaign is not null)
+      File.Delete(Path.Combine(AresConfig.TemplatePath, desiredCampaign));
+
+    return Task.FromResult(new Empty());
   }
 
   public override async Task<Project> GetProject(ProjectRequest request, ServerCallContext context)
   {
     await using var dbContext = _coreContextFactory.CreateDbContext();
     return await dbContext.Projects.AsNoTracking().FirstAsync(project => project.Name == request.ProjectName, context.CancellationToken);
-  }
-
-  public override Task<CampaignTemplate> GetSingleCampaign(CampaignRequest request, ServerCallContext context)
-    => GetCampaignTemplate(request, context);
-
-  public override async Task<Empty> RemoveCampaign(CampaignRequest request, ServerCallContext context)
-  {
-    var campaignTemplate = await GetCampaignTemplate(request, context);
-    await using var dbContext = _coreContextFactory.CreateDbContext();
-    dbContext.CampaignTemplates.Remove(campaignTemplate);
-    await dbContext.SaveChangesAsync(context.CancellationToken);
-
-    return new Empty();
   }
 
   public override async Task<Empty> RemoveProject(ProjectRequest request, ServerCallContext context)
@@ -106,7 +151,7 @@ public class AutomationService : AresAutomation.AresAutomationBase
 
   public override async Task<Empty> AddProject(Project request, ServerCallContext context)
   {
-    await using var dbContext = _coreContextFactory.CreateDbContext();
+    using var dbContext = _coreContextFactory.CreateDbContext();
     dbContext.Projects.Add(request);
     await dbContext.SaveChangesAsync(context.CancellationToken);
     return new Empty();
@@ -119,53 +164,53 @@ public class AutomationService : AresAutomation.AresAutomationBase
   /// </param>
   /// <param name="context"></param>
   /// <returns></returns>
-  public override async Task<Empty> AddCampaign(CampaignTemplate request, ServerCallContext context)
+  public override Task<Empty> AddCampaign(AddOrUpdateCampaignRequest request, ServerCallContext context)
   {
-    await using var dbContext = _coreContextFactory.CreateDbContext();
-    dbContext.CampaignTemplates.Add(request);
-    await dbContext.SaveChangesAsync(context.CancellationToken);
-    return new Empty();
+    //Save to data directory
+    var directoryFiles = Directory.EnumerateFiles(AresConfig.TemplatePath, "*.json");
+    var jsonString = JsonSerializer.Serialize(request.Template, _serializerSettings);
+    var fullFilePath = Path.Combine(AresConfig.TemplatePath, $"{request.Template.UniqueId}.json");
+    File.WriteAllText(fullFilePath, jsonString);
+    return Task.FromResult(new Empty());
   }
 
-  public override async Task<CampaignTemplate> UpdateCampaign(CampaignTemplate request, ServerCallContext context)
+  public override Task<CampaignTemplate> UpdateCampaign(AddOrUpdateCampaignRequest request, ServerCallContext context)
   {
-    await using var dbContext = _coreContextFactory.CreateDbContext();
+    var directoryFiles = Directory.EnumerateFiles(AresConfig.TemplatePath, "*.json");
+    var campaignToUpdate = directoryFiles.FirstOrDefault(file => file.Contains(request.Template.UniqueId));
 
-    var existingCampaign = await dbContext.CampaignTemplates.FirstAsync(template => template.UniqueId == request.UniqueId);
-    dbContext.CampaignTemplates.Remove(existingCampaign);
-    await dbContext.SaveChangesAsync();
-    dbContext.ChangeTracker.Clear();
-    request.ConsolidatePlannedParameterMetadata();
-    try
+    if(campaignToUpdate is null)
     {
-      dbContext.CampaignTemplates.Add(request);
+      var title = "Error Updating Campaign";
+      var message = $"Attempted to update a campaign that didn't exist. {request.Template.Name} couldn't be found in your list of available campaign templates.";
+      HandleNotification(title, message, NotificationSeverityEnum.Error);
+      return Task.FromResult(request.Template);
     }
-    catch (Exception ex)
-    {
-      dbContext.CampaignTemplates.Add(existingCampaign);
-      Console.WriteLine(ex.ToString());
-    }
-    // existingCampaign.UpdateCampaignTemplate(request, dbContext);
-    // await dbContext.SaveChangesAsync();
-    // dbContext.ChangeTracker.Clear();
-    // dbContext.CampaignTemplates.Update(request);
-    await dbContext.SaveChangesAsync();
-    // var currentTemplate = await dbContext.CampaignTemplates.FirstAsync(template => template.Name == request.CampaignName, context.CancellationToken);
-    // currentTemplate.Name = request.CampaignTemplate.Name;
-    // currentTemplate.PlannableParameters.Clear();
-    // currentTemplate.PlannableParameters.Add(request.CampaignTemplate.PlannableParameters);
-    // currentTemplate.ExperimentTemplates.Clear();
-    // currentTemplate.ExperimentTemplates.Add(request.CampaignTemplate.ExperimentTemplates);
-    return request;
+
+    var jsonString = JsonSerializer.Serialize(request.Template, _serializerSettings);
+    var fullPath = Path.Combine(AresConfig.TemplatePath, $"{request.Template.UniqueId}.json");
+    File.WriteAllText(fullPath, jsonString);
+    return Task.FromResult(request.Template);
   }
 
-  private async Task<CampaignTemplate> GetCampaignTemplate(CampaignRequest request, ServerCallContext context)
+  private async Task<CampaignTemplate?> GetCampaignTemplate(CampaignRequest request, ServerCallContext context)
   {
-    await using var dbContext = _coreContextFactory.CreateDbContext();
-    if (!string.IsNullOrEmpty(request.UniqueId))
-      return await dbContext.CampaignTemplates.AsNoTracking().FirstAsync(template => template.UniqueId == request.UniqueId, context.CancellationToken);
+    var directoryFiles = Directory.EnumerateFiles(AresConfig.TemplatePath, "*.json");
+    var campaignFile = directoryFiles.FirstOrDefault(file => file.Contains(request.UniqueId));
 
-    return await dbContext.CampaignTemplates.AsNoTracking().FirstAsync(template => template.Name == request.CampaignName);
+    if(campaignFile is not null)
+    {
+      var jsonString = await File.ReadAllTextAsync(Path.Combine(AresConfig.TemplatePath, campaignFile));
+      var campaignObject = JsonSerializer.Deserialize<CampaignTemplate>(jsonString, _serializerSettings);
+
+      if(campaignObject is not null)
+        return campaignObject;
+    }
+
+    var title = "Error Fetching Campaign Template";
+    var message = $"Attempted to fetch a campaign that didn't exist. {request.CampaignName}'s UUID did not match any of the existing campaigns in your data directory";
+    HandleNotification(title, message, NotificationSeverityEnum.Error);
+    return null;
   }
 
   public override Task<CampaignResponse> GetCurrentlySelectedCampaign(Empty request, ServerCallContext context)
@@ -175,15 +220,19 @@ public class AutomationService : AresAutomation.AresAutomationBase
     return Task.FromResult(response);
   }
 
-  public override Task<Empty> StartExecution(Empty request, ServerCallContext context)
+  public override Task<Empty> StartExecution(StartCampaignRequest request, ServerCallContext context)
   {
-    _executionManager.Start();
+    _executionManager.Start(request.UserNotes, request.CampaignTags.ToList());
     return Task.FromResult(new Empty());
   }
 
   public override async Task<CampaignTemplate> SetCampaignForExecution(CampaignRequest request, ServerCallContext context)
   {
     var template = await GetCampaignTemplate(request, context);
+    if(template is null)
+    {
+      throw new InvalidOperationException($"No campaign template found for request. Name: {request.CampaignName}");
+    }
     _activeCampaignTemplateStore.CampaignTemplate = template;
     return template;
   }
@@ -194,6 +243,18 @@ public class AutomationService : AresAutomation.AresAutomationBase
     return observable.Where(status => status is not null).Do(status => responseStream.WriteAsync(status!)).ToTask(context.CancellationToken);
   }
 
+  public override Task GetStartupExecutionStatusStream(Empty request, IServerStreamWriter<CampaignStartupStatus> responseStream, ServerCallContext context)
+  {
+    var observable = _executionReportStore.CampaignStartupStatusObservable;
+    return observable.Where(status => status is not null).Do(status => responseStream.WriteAsync(status!)).ToTask(context.CancellationToken);
+  }
+
+  public override Task GetCloseoutExecutionStatusStream(Empty request, IServerStreamWriter<CampaignCloseoutStatus> responseStream, ServerCallContext context)
+  {
+    var observable = _executionReportStore.CampaignCloseoutStatusObservable;
+    return observable.Where(status => status is not null).Do(status => responseStream.WriteAsync(status!)).ToTask(context.CancellationToken);
+  }
+
   public override Task<CampaignExecutionStatusResponse> GetCampaignExecutionStatus(Empty request, ServerCallContext context)
   {
     var status = _executionReportStore.CampaignExecutionStatus;
@@ -201,6 +262,16 @@ public class AutomationService : AresAutomation.AresAutomationBase
     {
       Status = status
     });
+  }
+
+  public override Task GetCampaignExecutionStateStream(Empty request, IServerStreamWriter<CampaignExecutionState> responseStream, ServerCallContext context)
+  {
+    var observable = _executionReportStore.CampaignStatusObservable;
+    return observable!
+      .OfType<CampaignExecutionStatus>()
+      .Select(status => new CampaignExecutionState { CampaignId = status.CampaignId, State = status.State })
+      .Do(state => responseStream.WriteAsync(state))
+      .ToTask(context.CancellationToken);
   }
 
   public override Task<Empty> StopExecution(Empty request, ServerCallContext context)
@@ -231,77 +302,51 @@ public class AutomationService : AresAutomation.AresAutomationBase
     return Task.FromResult(response);
   }
 
-  public override Task<StartStopConditionsResponse> GetFailedStartConditions(Empty request, ServerCallContext context)
+  public override async Task<StartStopConditionsResponse> GetFailedStartConditions(Empty request, ServerCallContext context)
   {
     var response = new StartStopConditionsResponse();
-    var conditions = _startConditions.Select(condition => condition.CanStart()).Where(result => result is not null && !result.Success).Select(condition => new StartStopCondition { Message = string.Join(Environment.NewLine, condition!.Messages), Name = condition.GetType().Name });
+    var conditionResults = await Task.WhenAll(_startConditions.Select(condition => condition.CanStart()));
+    var conditions = conditionResults.Where(result => result is not null && !result.Success).Select(condition => new StartStopCondition { Message = string.Join(Environment.NewLine, condition!.Messages), Name = condition.GetType().Name });
     response.StartStopConditions.AddRange(conditions);
 
-    return Task.FromResult(response);
+    return response;
   }
 
   public override Task<Empty> RemoveStopCondition(StartStopCondition request, ServerCallContext context)
   {
     var stopConditions = _executionManager.CampaignStopConditions;
-    if (stopConditions is null)
+    if(stopConditions is null)
       return Task.FromResult(new Empty());
 
     var condition = stopConditions.FirstOrDefault(condition => condition.GetType().Name.Equals(request.Name));
-    if (condition is not null)
+    if(condition is not null)
       stopConditions.Remove(condition);
 
     return Task.FromResult(new Empty());
   }
 
-  public override async Task<AvailableCampaignResultsResponse> GetAvailableCampaignResults(Empty request, ServerCallContext context)
+  public override async Task<StartStopConditionsResponse> GetPreliminaryFailedStartConditions(CampaignTemplate request, ServerCallContext context)
   {
-    await using var dbContext = _coreContextFactory.CreateDbContext();
-    var results = dbContext.CampaignResults.Select(result => new CampaignResultMetadata
-    {
-      CompletionTime = result.ExecutionInfo.TimeFinished,
-      ResultId = result.UniqueId
-    }).ToArray();
-
-    var response = new AvailableCampaignResultsResponse();
-    response.AvailableCampaignResults.AddRange(results);
+    var response = new StartStopConditionsResponse();
+    var conditionResults = await Task.WhenAll(_startConditions.Select(condition => condition.CanStart()));
+    var conditions = conditionResults.Where(result => result is not null && !result.Success).Select(condition => new StartStopCondition { Message = string.Join(Environment.NewLine, condition!.Messages), Name = condition.GetType().Name });
+    response.StartStopConditions.AddRange(conditions);
 
     return response;
   }
 
-  public override async Task<CampaignResult> GetCampaignResult(CampaignResultRequest request, ServerCallContext context)
+  private async Task<IEnumerable<StartConditionResult>> GetFailedStartConditionResults()
   {
-    await using var dbContext = _coreContextFactory.CreateDbContext();
-    var result = dbContext.CampaignResults.First(campaignResult => campaignResult.UniqueId == request.ResultId);
-
-    return result;
-  }
-
-  public override Task<GetAllAnalyzersResponse> GetAllAnalyzers(Empty request, ServerCallContext context)
-  {
-    var response = new GetAllAnalyzersResponse();
-    var analyzers = _analyzerManager.AvailableAnalyzers.Select(analyzer => new AnalyzerInfo { Name = analyzer.Name, Type = analyzer.GetType().Name, Version = analyzer.Version.ToString(), UniqueId = Guid.NewGuid().ToString() });
-    response.Analyzers.AddRange(analyzers);
-    return Task.FromResult(response);
-  }
-
-  public override Task<StartStopConditionsResponse> GetPreliminaryFailedStartConditions(CampaignTemplate request, ServerCallContext context)
-  {
-    var response = new StartStopConditionsResponse();
-    var conditions = _startConditions.Select(condition => condition.CanStart()).Where(result => result is not null && !result.Success).Select(condition => new StartStopCondition { Message = string.Join(Environment.NewLine, condition!.Messages), Name = condition.GetType().Name });
-    response.StartStopConditions.AddRange(conditions);
-
-    return Task.FromResult(response);
+    var conditionTasks = _startConditions.Select(condition => condition.CanStart());
+    var conditions = await Task.WhenAll(conditionTasks);
+    return conditions;
   }
 
   public override Task<Empty> SetNumExperimentsStopCondition(NumExperimentsCondition request, ServerCallContext context)
   {
     var stopConditions = _executionManager.CampaignStopConditions;
-    if (stopConditions is null)
+    if(stopConditions is null)
       return Task.FromResult(new Empty());
-
-    //var existingStopCondition = stopConditions.FirstOrDefault(condition => condition.GetType().Name.Equals(nameof(NumExperimentsCondition)));
-    //if (existingStopCondition is not null)
-    //  stopConditions.Remove(existingStopCondition);
 
     stopConditions.Clear();
 
@@ -311,10 +356,21 @@ public class AutomationService : AresAutomation.AresAutomationBase
     return Task.FromResult(new Empty());
   }
 
+  public override Task<Empty> SetReplanRate(ReplanRate request, ServerCallContext context)
+  {
+    _executionManager.UpdateReplanRate(request.ReplanRate_);
+    return Task.FromResult(new Empty());
+  }
+
+  public override Task<GetReplanRateResponse> GetReplanRate(Empty request, ServerCallContext context)
+  {
+    return Task.FromResult(new GetReplanRateResponse { ReplanRate = _executionManager.ReplanRate });
+  }
+
   public override Task<Empty> SetAnalysisResultStopCondition(AnalysisResultCondition request, ServerCallContext context)
   {
     var stopConditions = _executionManager.CampaignStopConditions;
-    if (stopConditions is null)
+    if(stopConditions is null)
       return Task.FromResult(new Empty());
 
     stopConditions.Clear();
@@ -328,7 +384,7 @@ public class AutomationService : AresAutomation.AresAutomationBase
   public override Task<ExperimentStopConditionResponse> GetActiveStopCondition(Empty request, ServerCallContext context)
   {
     var stopConditions = _executionManager.CampaignStopConditions;
-    if (stopConditions is null || !stopConditions.Any())
+    if(stopConditions is null || !stopConditions.Any())
     {
       return Task.FromResult(
         new ExperimentStopConditionResponse
@@ -345,5 +401,103 @@ public class AutomationService : AresAutomation.AresAutomationBase
         ActiveCondition = condition.GetType().Name,
         Description = condition.Description
       });
+  }
+
+  public override async Task<CheckExecutionEligibilityResponse> CheckExecutionEligibility(Empty request, ServerCallContext context)
+  {
+    var eligbilityError = await _executionManager.CheckCampaignStartPrerequisites();
+
+    if(string.IsNullOrEmpty(eligbilityError))
+      return new CheckExecutionEligibilityResponse { Error = string.Empty, IsEligible = true };
+
+    else
+      return new CheckExecutionEligibilityResponse { Error = eligbilityError, IsEligible = false };
+  }
+
+  public override async Task<TagsResponse> GetAllTags(Empty request, ServerCallContext context)
+  {
+    await using var dbContext = await _coreContextFactory.CreateDbContextAsync();
+    var existingTags = await dbContext.CampaignTags.ToArrayAsync();
+    var response = new TagsResponse();
+    response.AvailableTags.AddRange(existingTags);
+    return response;
+  }
+
+  public override async Task<TagsResponse> AddTag(TagRequest request, ServerCallContext context)
+  {
+    await using var dbContext = await _coreContextFactory.CreateDbContextAsync();
+    var existingTags = await dbContext.CampaignTags.ToArrayAsync();
+    if(existingTags.Any(t => t.UniqueId == request.Tag.UniqueId))
+      //Duplicate tag, don't do it plz
+      throw new InvalidOperationException();
+
+    dbContext.CampaignTags.Add(request.Tag);
+    await dbContext.SaveChangesAsync();
+
+    var response = new TagsResponse();
+    response.AvailableTags.AddRange(existingTags);
+    response.AvailableTags.Add(request.Tag);
+    return response;
+  }
+
+  public override async Task<TagsResponse> RemoveTag(TagRequest request, ServerCallContext context)
+  {
+    await using var dbContext = await _coreContextFactory.CreateDbContextAsync();
+    var existingTags = await dbContext.CampaignTags.ToArrayAsync();
+    var match = existingTags.FirstOrDefault(tag => tag.UniqueId == request.Tag.UniqueId);
+    
+    if(match is not null)
+    {
+      dbContext.Remove(match);
+      await dbContext.SaveChangesAsync();
+    }
+
+    var response = new TagsResponse();
+    response.AvailableTags.AddRange(await dbContext.CampaignTags.ToArrayAsync());
+    return response;
+  }
+
+  public override async Task<AvailableCampaignExecutionSummariesResponse> GetAvailableCampaignExecutionSummaries(Empty request, ServerCallContext context)
+  {
+    await using var dbContext = await _coreContextFactory.CreateDbContextAsync();
+    var summaries = await dbContext.CampaignExecutionSummaries
+      .AsNoTracking()
+      .AsSplitQuery()
+      .ToArrayAsync(context.CancellationToken);
+    var response = new AvailableCampaignExecutionSummariesResponse();
+    response.AvailableCampaignSummaries
+      .AddRange(summaries
+      .Select(summary => new CampaignExecutionSummaryMetadata
+      {
+        CampaignName = summary.CampaignName,
+        CompletionTime = summary.ExecutionInfo.TimeFinished,
+        SummaryId = summary.UniqueId,
+        NumExperiments = summary.ExperimentSummaries.Count
+      }));
+
+    return response;
+  }
+
+  public override async Task<CampaignExecutionSummary> GetCampaignSummary(CampaignExecutionSummaryRequest request, ServerCallContext context)
+  {
+    await using var dbContext = await _coreContextFactory.CreateDbContextAsync();
+    var summary = await dbContext.CampaignExecutionSummaries
+      .AsNoTracking()
+      .AsSplitQuery()
+      .FirstOrDefaultAsync(s => s.UniqueId == request.SummaryId, context.CancellationToken);
+
+    if(summary is null)
+      //TODO: Figure out what to do here..?
+      throw new InvalidOperationException("Couldn't locate a matching campaign summary!");
+
+    return summary;
+  }
+
+  private void HandleNotification(string title, string message, NotificationSeverityEnum severity)
+  {
+    foreach(var handler in _notificationHandlers)
+    {
+      handler.HandleNotification(title, message, severity);
+    }
   }
 }

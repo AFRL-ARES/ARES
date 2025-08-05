@@ -1,31 +1,31 @@
-﻿using AlicatMFC;
+﻿using System;
+using System.Linq;
+using System.Reactive.Linq;
+using System.Threading.Tasks;
+using AlicatMFC;
 using AlicatMFC.Commands.Requests;
 using Ares.Alicat.Mfc.Config;
 using Ares.Alicat.Mfc.Messaging;
 using Ares.Core.Device;
-using ARESCore;
-using ARESCore.DeviceManagers;
+using AresService;
+using AresService.DeviceManagers;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Linq;
-using System.Reactive.Linq;
-using System.Threading.Tasks;
 using UnitsNet;
 
-namespace ARESService.Services.Devices;
+namespace AresService.Services.Devices;
 
 public class MfcService : MfcRpc.MfcRpcBase
 {
   private readonly IDeviceConfigManager<MfcConfig> _configManager;
-  private readonly IDbContextFactory<ARESDbContext> _dbContextFactory;
+  private readonly IDbContextFactory<AresDbContext> _dbContextFactory;
   private readonly IDeviceCommandInterpreterRepo _deviceCommandInterpreterRepo;
   private readonly IDeviceManager<MfcConfig, IMassFlowController> _mfcManager;
 
   public MfcService(IDeviceCommandInterpreterRepo deviceCommandInterpreterRepo,
     IDeviceManager<MfcConfig, IMassFlowController> mfcManager,
-    IDbContextFactory<ARESDbContext> dbContextFactory,
+    IDbContextFactory<AresDbContext> dbContextFactory,
     IDeviceConfigManager<MfcConfig> configManager)
   {
     _deviceCommandInterpreterRepo = deviceCommandInterpreterRepo;

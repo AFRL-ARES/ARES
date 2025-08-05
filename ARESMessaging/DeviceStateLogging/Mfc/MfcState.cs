@@ -1,4 +1,4 @@
-﻿using ARESMessaging.DeviceStateLogging;
+﻿using AresMessaging.DeviceStateLogging;
 
 namespace Ares.Messages.DeviceStates.Mfc;
 

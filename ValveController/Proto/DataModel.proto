@@ -2,8 +2,6 @@
 
 package ValveController.data_model;
 
-import "google/protobuf/wrappers.proto";
-
 message Data {
   bool RelayOneOn = 1;
   bool RelayTwoOn = 2;

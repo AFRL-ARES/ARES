@@ -9,4 +9,5 @@ public enum StepperControllerCommand
   SetTargetPosition,
   NextStep,
   PreviousStep,
+  HalfStep
 }

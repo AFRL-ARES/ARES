@@ -2,7 +2,7 @@
 using Ares.Messages;
 using Microsoft.AspNetCore.Identity;
 
-namespace ARESService.Services.UserManagement;
+namespace AresService.Services.UserManagement;
 
 public static class IdentityResultExtensions
 {

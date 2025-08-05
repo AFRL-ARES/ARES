@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Ares.Device.Serial;
+﻿using Ares.Device.Serial;
 using Ares.Device.Serial.Commands;
+using System.Text;
 
 namespace LindbergFurnace.Commands.Responses.Parsers;
 
@@ -23,11 +19,12 @@ internal abstract class ResponseParser<TResponse> : SerialResponseParser<TRespon
     response = null;
     return false;
   }
+
   public override bool TryParseResponse(byte[] buffer, out TResponse? response, out ArraySegment<byte>? dataToRemove)
   {
     var asciiBufferProxy = Encoding.ASCII.GetString(buffer);
     var useLast = asciiBufferProxy.EndsWith($"{(char)SpecialAsciiCharacter.CR}{(char)SpecialAsciiCharacter.LF}");
-    var asciiPackets = asciiBufferProxy.Split(new[] { ':', (char)SpecialAsciiCharacter.CR, (char)SpecialAsciiCharacter.LF }, StringSplitOptions.RemoveEmptyEntries).SkipLast(useLast ?0:1).ToArray();
+    var asciiPackets = asciiBufferProxy.Split(new[] { (char)SpecialAsciiCharacter.CR, (char)SpecialAsciiCharacter.LF }, StringSplitOptions.RemoveEmptyEntries).SkipLast(useLast ? 0 : 1).ToArray();
     var availablePackets = asciiPackets.Select(Encoding.ASCII.GetBytes).ToArray();
 
     if (!TryParseResponse(availablePackets, out response, out var parsedLineIndex))

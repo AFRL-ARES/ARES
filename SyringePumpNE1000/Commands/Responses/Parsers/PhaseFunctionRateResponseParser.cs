@@ -1,9 +1,9 @@
-﻿using System;
+﻿using Ares.SyringePump.Ne1000.Messaging;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Ares.SyringePump.Ne1000.Messaging;
 using UnitsNet;
 using UnitsNet.Units;
 
@@ -19,20 +19,20 @@ namespace SyringePumpNE1000.Commands.Responses.Parsers
     {
       var unitStr = content[^2..];
       var floatStr = content[..^2];
-      if (!Enum.TryParse<RateUnit>(unitStr, true, out var pumpRateUnit))
+      if(!Enum.TryParse<RateUnit>(unitStr, true, out var pumpRateUnit))
       {
         response = null;
         return false;
       }
-      if (!float.TryParse(floatStr, out var rateInPumpUnit))
+      if(!float.TryParse(floatStr, out var rateInPumpUnit))
       {
         response = null;
         return false;
       }
 
       var unit = pumpRateUnit.ToUnitsNet();
-
       var rate = Speed.From(rateInPumpUnit, unit);
+
       response = new PhaseFunctionRateResponse(address, status, rate, pumpRateUnit);
       return true;
     }

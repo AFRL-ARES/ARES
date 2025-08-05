@@ -16,7 +16,7 @@ public class ValveController : SerialDevice<IValveControllerConnection>, IValveC
   {
     await Connection.Send(new EnterCommandModeCommand());
     var response = await Connection.Send(new GetRelayStatusCommand());
-    if (response != null)
+    if(response != null)
     {
       RelayOneEngaged = response.RelayOneOn;
       RelayTwoEngaged = response.RelayTwoOn;
@@ -30,52 +30,58 @@ public class ValveController : SerialDevice<IValveControllerConnection>, IValveC
     return response;
   }
 
-  protected override async Task<DeviceValidationResult> Validate()
+  protected override async Task<SerialDeviceValidationResult> Validate()
   {
     try
     {
       //Activate the relay, then send our status request to confirm proper activation
-      EnableRelays();
+      await EnableRelays();
       await GetRelayStatus();
 
-      return new DeviceValidationResult(true);
+      return new SerialDeviceValidationResult(true);
     }
 
-    catch (Exception ex)
+    catch(Exception ex)
     {
-      return new DeviceValidationResult(false, ex.Message);
+      return new SerialDeviceValidationResult(false, ex.Message);
     }
   }
 
-  public async void EngageRelayOne()
+  public override async Task EnterSafeMode()
+  {
+    await DisengageRelayOne();
+    await DisengageRelayTwo();
+  }
+
+  public async Task EngageRelayOne()
   {
     await Connection.Send(new EnterCommandModeCommand());
     await Connection.Send(new EngageRelayOneCommand());
     RelayOneEngaged = true;
   }
 
-  public async void EngageRelayTwo()
+  public async Task EngageRelayTwo()
   {
     await Connection.Send(new EnterCommandModeCommand());
     await Connection.Send(new EngageRelayTwoCommand());
     RelayTwoEngaged = true;
   }
 
-  public async void DisengageRelayOne()
+  public async Task DisengageRelayOne()
   {
     await Connection.Send(new EnterCommandModeCommand());
     await Connection.Send(new DisengageRelayOneCommand());
     RelayOneEngaged = false;
   }
 
-  public async void DisengageRelayTwo()
+  public async Task DisengageRelayTwo()
   {
     await Connection.Send(new EnterCommandModeCommand());
     await Connection.Send(new DisengageRelayTwoCommand());
     RelayOneEngaged = false;
   }
 
-  public async void EnableRelays()
+  public async Task EnableRelays()
   {
     await Connection.Send(new EnterCommandModeCommand());
     await Connection.Send(new EnableAllDevicesCommand());

@@ -4,7 +4,7 @@
 
 @foreach (var device in ViewModel!.ConnectedSerialDeviceUnitControlVms)
 {
-  <div class="m-2 d-flex flex-wrap">
+  <div class="d-flex flex-wrap">
     <DashboardWidget>
       <ValveControllerWidgetView ViewModel="@device" />
     </DashboardWidget>

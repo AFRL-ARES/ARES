@@ -1,10 +1,10 @@
-﻿using System.IO.Ports;
-using Ares.Device.Serial;
+﻿using Ares.Device.Serial;
 using Ares.Device.Serial.Simulation;
+using System.IO.Ports;
 
 namespace TC0304;
 
-public class SimDataloggerThermometerConnection : AresSimConnection, IDataloggerThermometerConnection
+public class SimDataloggerThermometerConnection : AresSerialSimConnection, IDataloggerThermometerConnection
 {
   private readonly SimulatedDataLogger _dataLogger;
 

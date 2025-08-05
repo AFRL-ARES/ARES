@@ -1,12 +1,44 @@
 ﻿@using Ares.Messaging
-@inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Backend.ViewModels.Automation.CampaignEdit.CommandDesignerViewModel>
+@using UI.Backend.ViewModels.Automation.CampaignEdit
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<CommandDesignerViewModel>
 
 <MetadataPicker ViewModel="@ViewModel!.MetadataPickerViewModel" @bind-CommandMetadata="ViewModel!.CommandMetadata"  />
 
 @foreach (var argumentDesigner in ViewModel!.ArgumentDesigners)
 {
-    <CommandParameterDesigner ViewModel="@argumentDesigner" />
+	<CommandParameterDesigner ViewModel="@argumentDesigner" />
 }
 
-<label for="experiment-output-check">Provides Experiment Output</label>
-<input id="experiment-output-check" type="checkbox" @bind="ViewModel!.ExperimentOutputProvider"/>
+<div class="mb-2">
+	<RadzenCheckBox @bind-Value="ViewModel!.ExperimentOutputProvider" id="experiment-output-check"/>
+	<label for="experiment-output-check">Provides Experiment Output</label>
+</div>
+
+<div hidden="@(!ViewModel!.ExperimentOutputProvider)">
+  <RadzenDataGrid TItem="UserOutputSelection" Data="@ViewModel.OutputKeyMap" Editable="true" EditMode="DataGridEditMode.Single" RowUpdate="@OnRowUpdate" ColumnWidth="200px">
+      <Columns>
+          <RadzenDataGridColumn Property="@(nameof(UserOutputSelection.DeviceOutputName))" Title="Device Output Name" />
+          <RadzenDataGridColumn Property="@(nameof(UserOutputSelection.CustomName))" Title="Experiment Output Name">
+              <Template Context="item">
+                  <RadzenTextBox Style="width:100%" @bind-Value="item.CustomName" />
+              </Template>
+          </RadzenDataGridColumn>
+          @* <RadzenDataGridColumn TItem="KeyValuePair<string, string>" Context="item">
+              <Template Context="item">
+                  <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" Click="@(() => grid.EditRow(item))" />
+              </Template>
+              <EditTemplate Context="item">
+                  <RadzenButton Icon="save" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.Small" Click="@(() => grid.UpdateRow(item))" />
+                  <RadzenButton Icon="cancel" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(() => grid.CancelEditRow(item))" />
+              </EditTemplate>
+          </RadzenDataGridColumn> *@
+      </Columns>
+  </RadzenDataGrid>
+</div>
+
+@code {
+  public void OnRowUpdate()
+  {
+    Console.WriteLine("Ayylmao");
+  }
+}

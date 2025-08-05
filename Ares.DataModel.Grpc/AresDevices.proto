@@ -3,8 +3,6 @@ syntax = "proto3";
 package ares.messaging.device;
 
 import "google/protobuf/empty.proto";
-import "google/protobuf/timestamp.proto";
-import "google/protobuf/any.proto";
 import "Templates/CommandMetadata.proto";
 import "Templates/CommandTemplate.proto";
 import "DeviceCommandResult.proto";
@@ -18,9 +16,6 @@ service AresDevices {
 	rpc GetCommandMetadatas(CommandMetadatasRequest) returns (CommandMetadatasResponse);
 	rpc ExecuteCommand(CommandTemplate) returns (DeviceCommandResult);
 	rpc GetAllDeviceConfigs(DeviceConfigRequest) returns (DeviceConfigResponse);
-	// rpc AddDeviceConfig(ares.messaging.device.DeviceConfig) returns (google.protobuf.Empty);
-	// rpc UpdateDeviceConfig(ares.messaging.device.DeviceConfig) returns (google.protobuf.Empty);
-	// rpc RemoveDeviceConfig(.ares.messaging.device.RemoveDeviceConfigRequest) returns (google.protobuf.Empty);
 	rpc Activate(DeviceActivateRequest) returns (google.protobuf.Empty);
 }
 

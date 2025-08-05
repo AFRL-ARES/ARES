@@ -18,8 +18,8 @@ public abstract class SerialDeviceConnectorViewModel<TDeviceUnitVm> : ReactiveOb
   {
     _devicesClient = devicesClient;
 
-    _connectedSerialDeviceUnitControlVmsSource.Connect().Bind(out var connectedSyringePumpUnitControlVms).Subscribe();
-    ConnectedSerialDeviceUnitControlVms = connectedSyringePumpUnitControlVms;
+    _connectedSerialDeviceUnitControlVmsSource.Connect().Bind(out var connectedSerialDeviceUnitControlVms).Subscribe();
+    ConnectedSerialDeviceUnitControlVms = connectedSerialDeviceUnitControlVms;
   }
 
   protected abstract Task<IEnumerable<string>> GetDeviceNames();

@@ -2,37 +2,34 @@
 
 package ares.syringe_pump.ne1000.messaging;
 
-import "google/protobuf/duration.proto";
 import "google/protobuf/empty.proto";
-import "google/protobuf/timestamp.proto";
 import "SyringePumpConfig.proto";
 
 service SyringePumpRpc {
 	rpc Connect(ConnectRequest) returns (ConnectResponse);
 	rpc Disconnect(DeviceRequest) returns (google.protobuf.Empty);
 
-	rpc GetCurrentState(.ares.syringe_pump.ne1000.messaging.GetCurrentStateRequest) returns (.ares.syringe_pump.ne1000.messaging.StateResponse);
-	rpc GetUpdatedState(.ares.syringe_pump.ne1000.messaging.GetCurrentStateRequest) returns (.ares.syringe_pump.ne1000.messaging.StateResponse);
+	rpc GetCurrentState(DeviceRequest) returns (StateResponse);
 
-	rpc SetDiameter(.ares.syringe_pump.ne1000.messaging.SetDiameterMmRequest) returns (google.protobuf.Empty);
-	rpc GetDiameter(.ares.syringe_pump.ne1000.messaging.GetDiameterRequest) returns (google.protobuf.Empty);
-	rpc SetProgramFunctionRate(.ares.syringe_pump.ne1000.messaging.SetProgramFunctionRateMmpmRequest) returns (google.protobuf.Empty);
-	rpc GetProgramFunctionRate(.ares.syringe_pump.ne1000.messaging.GetProgramFunctionRateRequest) returns (google.protobuf.Empty);
-	rpc SetProgramFunctionVolumeToBeDispensed(.ares.syringe_pump.ne1000.messaging.SetProgramFunctionVolumeToBeDispensedRequest) returns (google.protobuf.Empty);
-	rpc GetProgramFunctionVolumeToBeDispensed(.ares.syringe_pump.ne1000.messaging.GetProgramFunctionVolumeToBeDispensedRequest) returns (google.protobuf.Empty);
-	rpc SetProgramFunctionPumpingDirection(.ares.syringe_pump.ne1000.messaging.SetProgramFunctionPumpingDirectionRequest) returns (google.protobuf.Empty);
-	rpc GetProgramFunctionPumpingDirection(.ares.syringe_pump.ne1000.messaging.GetProgramFunctionPumpingDirectionRequest) returns (google.protobuf.Empty);
-	rpc StartPumpingProgram(.ares.syringe_pump.ne1000.messaging.StartPumpingProgramRequest) returns (google.protobuf.Empty);
-	rpc PurgePump(.ares.syringe_pump.ne1000.messaging.PurgePumpRequest) returns (google.protobuf.Empty);
-	rpc StopPumpingProgram(.ares.syringe_pump.ne1000.messaging.StopPumpingProgramRequest) returns (google.protobuf.Empty);
-	rpc GetVolumeDispensed(.ares.syringe_pump.ne1000.messaging.GetVolumeDispensedRequest) returns (google.protobuf.Empty);
-	rpc ClearVolumeDispensed(.ares.syringe_pump.ne1000.messaging.ClearVolumeDispensedRequest) returns (google.protobuf.Empty);
-	rpc SetAddress(.ares.syringe_pump.ne1000.messaging.SetAddressRequest) returns (google.protobuf.Empty);
-	rpc GetAddress(.ares.syringe_pump.ne1000.messaging.GetAddressRequest) returns (google.protobuf.Empty);
-	rpc QueryPhase(.ares.syringe_pump.ne1000.messaging.QueryPhaseRequest) returns (google.protobuf.Empty);
-	rpc QueryPhaseFunction(.ares.syringe_pump.ne1000.messaging.QueryPhaseFunctionRequest) returns (google.protobuf.Empty);
-	rpc SetPhase(.ares.syringe_pump.ne1000.messaging.SetPhaseNumberRequest) returns (google.protobuf.Empty);
-	rpc SetPhaseFunction(.ares.syringe_pump.ne1000.messaging.SetPhaseFunctionRequest) returns (google.protobuf.Empty);
+	rpc SetDiameter(SetDiameterMmRequest) returns (google.protobuf.Empty);
+	rpc GetDiameter(DeviceRequest) returns (google.protobuf.Empty);
+	rpc SetProgramFunctionRate(SetProgramFunctionRateMmpmRequest) returns (google.protobuf.Empty);
+	rpc GetProgramFunctionRate(DeviceRequest) returns (google.protobuf.Empty);
+	rpc SetProgramFunctionVolumeToBeDispensed(SetProgramFunctionVolumeToBeDispensedRequest) returns (google.protobuf.Empty);
+	rpc GetProgramFunctionVolumeToBeDispensed(DeviceRequest) returns (google.protobuf.Empty);
+	rpc SetProgramFunctionPumpingDirection(SetProgramFunctionPumpingDirectionRequest) returns (google.protobuf.Empty);
+	rpc GetProgramFunctionPumpingDirection(GetProgramFunctionPumpingDirectionRequest) returns (google.protobuf.Empty);
+	rpc StartPumpingProgram(DeviceRequest) returns (google.protobuf.Empty);
+	rpc PurgePump(DeviceRequest) returns (google.protobuf.Empty);
+	rpc StopPumpingProgram(DeviceRequest) returns (google.protobuf.Empty);
+	rpc GetVolumeDispensed(DeviceRequest) returns (google.protobuf.Empty);
+	rpc ClearVolumeDispensed(ClearVolumeDispensedRequest) returns (google.protobuf.Empty);
+	rpc SetAddress(SetAddressRequest) returns (google.protobuf.Empty);
+	rpc GetAddress(DeviceRequest) returns (google.protobuf.Empty);
+	rpc QueryPhase(DeviceRequest) returns (google.protobuf.Empty);
+	rpc QueryPhaseFunction(DeviceRequest) returns (google.protobuf.Empty);
+	rpc SetPhase(SetPhaseNumberRequest) returns (google.protobuf.Empty);
+	rpc SetPhaseFunction(SetPhaseFunctionRequest) returns (google.protobuf.Empty);
 
 	rpc AddSyringePump(SyringePumpConfig) returns (google.protobuf.Empty);
 	rpc RemoveSyringePump(SyringePumpRemoveRequest) returns (google.protobuf.Empty);
@@ -57,17 +54,10 @@ message ConnectResponse {
 message DeviceRequest {
 	string device_name = 1;
 }
-message GetCurrentStateRequest {
-	DeviceRequest device_request = 1;
-}
 
 message SetDiameterMmRequest {
 	DeviceRequest device_request = 1;
 	float diameter_mm = 2;
-}
-
-message GetDiameterRequest {
-	DeviceRequest device_request = 1;
 }
 
 message SetProgramFunctionRateMmpmRequest {
@@ -75,17 +65,9 @@ message SetProgramFunctionRateMmpmRequest {
 	float rate_mmpm = 2;
 }
 
-message GetProgramFunctionRateRequest {
-	DeviceRequest device_request = 1;
-}
-
 message SetProgramFunctionVolumeToBeDispensedRequest {
 	DeviceRequest device_request = 1;
 	float volume_ml = 2;
-}
-
-message GetProgramFunctionVolumeToBeDispensedRequest {
-	DeviceRequest device_request = 1;
 }
 
 message SetProgramFunctionPumpingDirectionRequest {
@@ -97,21 +79,6 @@ message GetProgramFunctionPumpingDirectionRequest {
 	DeviceRequest device_request = 1;
 }
 
-message StartPumpingProgramRequest {
-	DeviceRequest device_request = 1;
-}
-
-message PurgePumpRequest {
-	DeviceRequest device_request = 1;
-}
-
-message StopPumpingProgramRequest {
-	DeviceRequest device_request = 1;
-}
-
-message GetVolumeDispensedRequest {
-	DeviceRequest device_request = 1;
-}
 
 message ClearVolumeDispensedRequest {
 	DeviceRequest device_request = 1;
@@ -121,17 +88,6 @@ message ClearVolumeDispensedRequest {
 message SetAddressRequest {
 	DeviceRequest device_request = 1;
 	int32 address = 2;
-}
-
-message GetAddressRequest {
-	DeviceRequest device_request = 1;
-}
-
-message QueryPhaseRequest {
-	DeviceRequest device_request = 1;
-}
-message QueryPhaseFunctionRequest {
-	DeviceRequest device_request = 1;
 }
 
 message SetPhaseNumberRequest {
@@ -220,7 +176,6 @@ enum Commands {
 	// FUN_BEP = 18; // Sound short beep 'BEEP'
 	// FUN_OUT = 19; // <TTL level> Set programmable output pin 'OUT.n'
 
-
 	// Diameter
 	DIA = 20; // [ <float> ]
 
@@ -254,13 +209,14 @@ enum Commands {
 	ADR = 30; // [ <address> [ B { 19200 | 9600 | 2400 | 1200 | 300 } ] ] [DUAL | RECP | ALTR ]
 	RESET = 31; // Resets Pump, clears program memory and resets setup.
 	FUN = 32; // Set/Query current phase function
+	VER = 33; //Query the firmware version of the syringe pump
 }
 
 message Phase {
 	int32 number = 1;
 	Commands function = 2;
-	float volume = 3;
-	float rate = 4;
+	float rate = 3;
+	string unit = 4;
 	Direction direction = 5;
 }
 
@@ -275,6 +231,7 @@ message StateResponse {
 	float diameter_mm = 8;
 	Phase phase = 9;
 	StatusPrompt status = 10;
+	string deviceId = 11;
 }
 
 message SyringePumpDeviceDescription {

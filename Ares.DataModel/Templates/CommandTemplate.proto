@@ -11,4 +11,5 @@ message CommandTemplate {
 	CommandMetadata metadata = 2; // Non-volatile information about the command to be generated for execution
 	repeated Parameter parameters = 3; // Collection of command parameters used for generating an executable (device qualified) command
 	int64 index = 4; // Index of the collection in which executed this template
+	map<string, string> user_output_key_map = 5; // A map of user defined output keys to defined command output keys
 }

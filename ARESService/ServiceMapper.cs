@@ -1,15 +1,16 @@
-﻿using ARESService.Services.Authentication;
-using ARESService.Services.Devices;
-using ARESService.Services.DeviceStateLogging;
-using ARESService.Services.UserManagement;
+﻿using AresService.Services.Authentication;
+using AresService.Services.Devices;
+using AresService.Services.DeviceState;
+using AresService.Services.DeviceStateLogging;
+using AresService.Services.UserManagement;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 
-namespace ARESService;
+namespace AresService;
 
 public static class ServiceMapper
 {
-  public static void MapARESServices(this IEndpointRouteBuilder routeBuilder)
+  public static void MapAresServices(this IEndpointRouteBuilder routeBuilder)
   {
     routeBuilder.MapGrpcService<MfcService>();
     routeBuilder.MapGrpcService<SyringePumpService>();
@@ -18,12 +19,19 @@ public static class ServiceMapper
     routeBuilder.MapGrpcService<Tc0304Service>();
     routeBuilder.MapGrpcService<HerkulexService>();
     routeBuilder.MapGrpcService<TubeFurnaceService>();
-    routeBuilder.MapGrpcService<TubeFurnaceStateLoggingService>();
+    routeBuilder.MapGrpcService<FlirCM3CameraService>();
+    routeBuilder.MapGrpcService<TubeFurnaceStateService>();
     routeBuilder.MapGrpcService<StepperControllerService>();
-    routeBuilder.MapGrpcService<StepperControllerStateLoggingService>();
-    routeBuilder.MapGrpcService<MfcStateLoggingService>();
-    routeBuilder.MapGrpcService<Tc0304StateLoggingService>();
-    routeBuilder.MapGrpcService<SyringePumpStateLoggingService>();
+    routeBuilder.MapGrpcService<StepperControllerStateService>();
+    routeBuilder.MapGrpcService<MfcStateService>();
+    routeBuilder.MapGrpcService<Tc0304StateService>();
+    routeBuilder.MapGrpcService<LaserChillerStateService>();
+    routeBuilder.MapGrpcService<SyringePumpStateService>();
     routeBuilder.MapGrpcService<ValveControllerService>();
+    routeBuilder.MapGrpcService<VerdiV6LaserService>();
+    routeBuilder.MapGrpcService<LaserChillerService>();
+    routeBuilder.MapGrpcService<RestDeviceService>();
+    routeBuilder.MapGrpcService<RestSerialDeviceService>();
+    routeBuilder.MapGrpcService<DeviceStateExportService>();
   }
 }

@@ -10,16 +10,16 @@ internal abstract class CommandWithStreamedResponse<T> : SerialCommandWithStream
   public CommandWithStreamedResponse(char id, SerialResponseParser<T> parser, string firmware) : base(parser)
   {
     _firmware = firmware;
-    Id = id;
+    AlicatId = id;
   }
 
-  public char Id { get; }
+  public char AlicatId { get; }
 
   protected abstract string SerializeToString();
 
   protected override byte[] Serialize()
   {
-    var id = _firmware.StartsWith("GP", StringComparison.InvariantCultureIgnoreCase) ? $"{Id}$$" : $"{Id}";
+    var id = _firmware.StartsWith("GP", StringComparison.InvariantCultureIgnoreCase) ? $"{AlicatId}$$" : $"{AlicatId}";
     var serialString = $"{id}{SerializeToString()}\r";
     //serialString = serialString.Insert(serialString.Length - 1, "$$");
     var serialData = Encoding.ASCII.GetBytes(serialString.ToCharArray());

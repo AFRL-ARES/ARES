@@ -1,4 +1,5 @@
-﻿using Ares.Messaging;
+﻿using Ares.Core.EntityConfigurations.Helpers;
+using Ares.Messaging;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Ares.Core.EntityConfigurations;
@@ -11,6 +12,8 @@ internal class ParameterMetadataEntityConfiguration : AresEntityTypeBaseConfigur
     builder.HasMany(parameterMetadata => parameterMetadata.Constraints)
       .WithOne()
       .IsRequired();
+
+    builder.Property(parameterMetadata => parameterMetadata.Schema).HasAresSchemaEntry();
 
     builder.Navigation(parameterMetadata => parameterMetadata.Constraints)
       .AutoInclude();

@@ -1,7 +1,7 @@
 ﻿using Ares.Messages;
 using Google.Protobuf.WellKnownTypes;
 
-namespace ARESService.Services.Authentication;
+namespace AresService.Services.Authentication;
 
 public static class InternalTokenExtensions
 {

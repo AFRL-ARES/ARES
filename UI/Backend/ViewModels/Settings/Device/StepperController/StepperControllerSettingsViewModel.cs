@@ -40,7 +40,7 @@ public class StepperControllerSettingsViewModel : ReactiveObject
       DeviceActive = status.DeviceState is DeviceState.Active;
       return status;
     }
-    catch (RpcException)
+    catch(RpcException)
     {
       return new DeviceStatus { DeviceState = DeviceState.Error, Message = $"Unable to find a registered stepper controller with a name {StepperControllerConfig.Name}" };
     }
@@ -64,13 +64,14 @@ public class StepperControllerSettingsViewModel : ReactiveObject
   public async Task Init()
   {
     var status = await GetDeviceStatus();
-    if (status.DeviceState != DeviceState.Active)
+    if(status.DeviceState != DeviceState.Active)
       return;
 
     var deviceState = await _stepperControllerClient.GetStateAsync(new TicRequest { TicName = _deviceConfig.DeviceName });
 
     MaxAcceleration = deviceState.MaxAcceleration;
     MaxDeceleration = deviceState.MaxDeceleration;
+    CurrentLimit = deviceState.CurrentLimit;
     StartingSpeed = deviceState.StartingSpeed;
     CustomStepSize = deviceState.CustomStepSize;
     MaxSpeed = deviceState.MaxSpeed;
@@ -82,6 +83,7 @@ public class StepperControllerSettingsViewModel : ReactiveObject
 
   public uint MaxAcceleration { get; private set; }
   public uint MaxDeceleration { get; private set; }
+  public uint CurrentLimit { get; private set; }
   public uint StartingSpeed { get; private set; }
   public uint CustomStepSize { get; private set; }
   public uint MaxSpeed { get; private set; }

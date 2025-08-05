@@ -18,7 +18,7 @@ public abstract class DeviceConfigManagerBase<TConfig, TDevice> : IDeviceConfigM
   {
     await using var context = _dbContextFactory.CreateDbContext();
     var existingDeviceConfig = await context.DeviceConfigs.FirstOrDefaultAsync(deviceConfig => deviceConfig.DeviceName == id);
-    if (existingDeviceConfig is not null)
+    if(existingDeviceConfig is not null)
       throw new InvalidOperationException($"A device with id {id} already exists in the configuration database");
 
     var newConfig = new DeviceConfig
@@ -37,7 +37,7 @@ public abstract class DeviceConfigManagerBase<TConfig, TDevice> : IDeviceConfigM
   {
     await using var context = _dbContextFactory.CreateDbContext();
     var genericConfig = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.DeviceName == id);
-    if (genericConfig is null)
+    if(genericConfig is null)
       return;
 
     context.DeviceConfigs.Remove(genericConfig);
@@ -48,10 +48,12 @@ public abstract class DeviceConfigManagerBase<TConfig, TDevice> : IDeviceConfigM
   {
     await using var context = _dbContextFactory.CreateDbContext();
     var genericConfig = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.DeviceName == id);
-    if (genericConfig is null)
+    if(genericConfig is null)
       return;
 
-    genericConfig.ConfigData = Any.Pack(config);
+    var packed = Any.Pack(config);
+    genericConfig.ConfigData.Value = packed.Value;
+    genericConfig.ConfigData.TypeUrl = packed.TypeUrl;
     await context.SaveChangesAsync();
   }
 
@@ -59,7 +61,7 @@ public abstract class DeviceConfigManagerBase<TConfig, TDevice> : IDeviceConfigM
   {
     await using var context = _dbContextFactory.CreateDbContext();
     var genericConfig = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.DeviceName == id);
-    if (genericConfig is null)
+    if(genericConfig is null)
       return default;
 
     var config = genericConfig.ConfigData.Unpack<TConfig>();

@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package ares.messaging.analyzing;
+
+import "google/protobuf/wrappers.proto";
+import "AresStruct.proto";
+
+message AnalyzerSettings {
+	string analyzer_id = 1; // The id of the analyzer that these settings are for
+	AresStruct settings = 2; // The actual setting values
+}

@@ -1,28 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Ares.SyringePump.Ne1000.Messaging;
+﻿using Ares.SyringePump.Ne1000.Messaging;
 using UnitsNet;
 
-namespace SyringePumpNE1000.Commands.Responses
+namespace SyringePumpNE1000.Commands.Responses;
+
+public class VolumeDispensedResponse : Response
 {
-  internal class VolumeDispensedResponse : Response
+  public VolumeDispensedResponse(int address, StatusPrompt status, CommandError? error) : base(address, status, error)
   {
-    public Volume Infused { get; }
-    public Volume Withdrawn { get; }
-    public VolumeUnit SystemVolumeUnit { get; }
-
-    public VolumeDispensedResponse(int address, StatusPrompt status, CommandError? error) : base(address, status, error)
-    {
-    }
-
-    public VolumeDispensedResponse(int address, StatusPrompt status, Volume infused, Volume withdrawn, VolumeUnit systemVolumeUnit) : base(address, status)
-    {
-      Infused = infused;
-      Withdrawn = withdrawn;
-      SystemVolumeUnit = systemVolumeUnit;
-    }
   }
+
+  public VolumeDispensedResponse(int address, StatusPrompt status, Volume infused, Volume withdrawn, VolumeUnit systemVolumeUnit) : base(address, status)
+  {
+    Infused = infused;
+    Withdrawn = withdrawn;
+    SystemVolumeUnit = systemVolumeUnit;
+  }
+
+  public Volume Infused { get; }
+  public Volume Withdrawn { get; }
+  public VolumeUnit SystemVolumeUnit { get; }
 }
+
+

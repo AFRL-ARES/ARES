@@ -20,6 +20,7 @@ internal class SimulatedDataLogger
   {
     var random = new Random();
     Task.Factory.StartNew(() => {
+      Thread.CurrentThread.Name = "Sim Datalogger Temperture Randomizer Thread";
         while (true)
         {
           _probe1Temperature = random.Next(100, 900);

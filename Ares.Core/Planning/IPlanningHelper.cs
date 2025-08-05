@@ -1,4 +1,5 @@
 ﻿using Ares.Messaging;
+using Ares.Messaging.Analyzing;
 
 namespace Ares.Core.Planning;
 
@@ -18,5 +19,6 @@ public interface IPlanningHelper
   Task<bool> TryResolveParameters(IEnumerable<PlannerAllocation> plannerAllocations,
     IEnumerable<Parameter> parameters,
     IEnumerable<Analysis> seedAnalyses,
+    IEnumerable<CompletedExperiment> seedExperiments,
     CancellationToken cancellationToken);
 }

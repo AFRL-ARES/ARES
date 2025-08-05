@@ -23,8 +23,8 @@ public class SyringePumpUnitControlViewModel : SerialDeviceUnitViewModel, IAsync
     Status = CurrentState.Status switch
     {
       StatusPrompt.UndefinedStatusPrompt => "Error",
-      StatusPrompt.PromptI => $"Infusing {CurrentState.Phase.Volume:F} {CurrentState.VolumeUnits}",
-      StatusPrompt.PromptW => $"Withdrawing {CurrentState.Phase.Volume:F} {CurrentState.VolumeUnits}",
+      StatusPrompt.PromptI => $"Infusing {CurrentState.Phase.Rate:F} mL/minute",
+      StatusPrompt.PromptW => $"Withdrawing {CurrentState.Phase.Rate:F} mL/minute",
       StatusPrompt.PromptS => "Stopped",
       StatusPrompt.PromptP => "Paused",
       StatusPrompt.PromptT => "Timed Pause Phase",
@@ -36,122 +36,75 @@ public class SyringePumpUnitControlViewModel : SerialDeviceUnitViewModel, IAsync
 
   private void Initialize()
   {
-    var getCurrentStateRequest = new GetCurrentStateRequest { DeviceRequest = _deviceRequest };
-    CurrentState = _syringePumpClient.GetCurrentState(getCurrentStateRequest);
+    CurrentState = _syringePumpClient.GetCurrentState(_deviceRequest);
     _stateListener = Task.Run(async () =>
     {
-      while (!_stateCts.IsCancellationRequested)
+      Thread.CurrentThread.Name = "Syringe Pump UI State Listener Thread";
+      while(!_stateCts.IsCancellationRequested)
       {
-        CurrentState = await _syringePumpClient.GetCurrentStateAsync(getCurrentStateRequest);
-        await Task.Delay(TimeSpan.FromMilliseconds(250));
+        CurrentState = await _syringePumpClient.GetCurrentStateAsync(_deviceRequest);
+        UpdateValues();
+        await Task.Delay(TimeSpan.FromSeconds(2));
       }
     }, _stateCts.Token);
   }
 
-  public void GetAddress()
-  {
-    var request = new GetAddressRequest { DeviceRequest = _deviceRequest };
-    _syringePumpClient.GetAddress(request);
-  }
-
-  public Task QueryPhase()
-  {
-    var request = new QueryPhaseRequest { DeviceRequest = _deviceRequest };
-    return _syringePumpClient.QueryPhaseAsync(request).ResponseAsync;
-  }
-
-  public Task QueryPhaseFunction()
-  {
-    var request = new QueryPhaseFunctionRequest { DeviceRequest = _deviceRequest };
-    return _syringePumpClient.QueryPhaseFunctionAsync(request).ResponseAsync;
-  }
-
-  public Task SetAddress()
-  {
-    var request = new SetAddressRequest { Address = TargetAddress, DeviceRequest = _deviceRequest };
-    return _syringePumpClient.SetAddressAsync(request).ResponseAsync;
-  }
-
-  public Task GetDiameter()
-  {
-    var request = new GetDiameterRequest { DeviceRequest = _deviceRequest };
-    return _syringePumpClient.GetDiameterAsync(request).ResponseAsync;
-  }
-
-  public Task SetDiameter()
+  public async Task SetDiameter()
   {
     var request = new SetDiameterMmRequest { DeviceRequest = _deviceRequest, DiameterMm = TargetDiameterMm };
-    return _syringePumpClient.SetDiameterAsync(request).ResponseAsync;
+    await _syringePumpClient.SetDiameterAsync(request);
   }
 
-  public Task GetPhaseFunctionRate()
+  public async Task SetAddress()
   {
-    var request = new GetProgramFunctionRateRequest { DeviceRequest = _deviceRequest };
-    return _syringePumpClient.GetProgramFunctionRateAsync(request).ResponseAsync;
+    var request = new SetAddressRequest() { DeviceRequest = _deviceRequest, Address = TargetAddress };
+    await _syringePumpClient.SetAddressAsync(request);
   }
 
-  public Task SetPhaseFunctionRate()
+  public async Task SetPhaseFunctionRate()
   {
     var request = new SetProgramFunctionRateMmpmRequest
     { DeviceRequest = _deviceRequest, RateMmpm = TargetRateMmpm };
-    return _syringePumpClient.SetProgramFunctionRateAsync(request).ResponseAsync;
-  }
-  public Task GetPhaseFunctionVolume()
-  {
-    var request = new GetProgramFunctionVolumeToBeDispensedRequest { DeviceRequest = _deviceRequest };
-    return _syringePumpClient.GetProgramFunctionVolumeToBeDispensedAsync(request).ResponseAsync;
-  }
-  public Task SetPhaseFunctionVolume()
-  {
-    var request = new SetProgramFunctionVolumeToBeDispensedRequest { DeviceRequest = _deviceRequest, VolumeMl = TargetVolumeMl };
-    return _syringePumpClient.SetProgramFunctionVolumeToBeDispensedAsync(request).ResponseAsync;
+    await _syringePumpClient.SetProgramFunctionRateAsync(request);
   }
 
-  public Task GetPhaseFunctionDirection()
-  {
-    var request = new GetProgramFunctionPumpingDirectionRequest { DeviceRequest = _deviceRequest };
-    return _syringePumpClient.GetProgramFunctionPumpingDirectionAsync(request).ResponseAsync;
-  }
-  public Task SetPhaseFunctionDirection()
+  public async Task SetPhaseFunctionDirection()
   {
     var request = new SetProgramFunctionPumpingDirectionRequest { DeviceRequest = _deviceRequest, Direction = TargetDirection };
-    return _syringePumpClient.SetProgramFunctionPumpingDirectionAsync(request).ResponseAsync;
+    await _syringePumpClient.SetProgramFunctionPumpingDirectionAsync(request);
   }
 
-  public Task SetPhase()
+  public async Task SetPhase()
   {
     var request = new SetPhaseNumberRequest { DeviceRequest = _deviceRequest, Phase = TargetPhase };
-    return _syringePumpClient.SetPhaseAsync(request).ResponseAsync;
+    await _syringePumpClient.SetPhaseAsync(request);
   }
 
-  public Task SetPhaseFunction()
+  public async Task SetPhaseFunction()
   {
     var request = new SetPhaseFunctionRequest { DeviceRequest = _deviceRequest, Function = TargetFunction };
-    return _syringePumpClient.SetPhaseFunctionAsync(request).ResponseAsync;
+    await _syringePumpClient.SetPhaseFunctionAsync(request);
   }
 
-  public Task ClearVolumeDispensed()
+  public async Task ClearVolumeDispensed()
   {
     var request = new ClearVolumeDispensedRequest { DeviceRequest = _deviceRequest, Direction = CurrentState.Phase.Direction };
-    return _syringePumpClient.ClearVolumeDispensedAsync(request).ResponseAsync;
+    await _syringePumpClient.ClearVolumeDispensedAsync(request);
   }
 
-  public Task Purge()
+  public async Task Purge()
   {
-    var request = new PurgePumpRequest { DeviceRequest = _deviceRequest };
-    return _syringePumpClient.PurgePumpAsync(request).ResponseAsync;
+    await _syringePumpClient.PurgePumpAsync(_deviceRequest);
   }
 
-  public Task Start()
+  public async Task Start()
   {
-    var request = new StartPumpingProgramRequest { DeviceRequest = _deviceRequest };
-    return _syringePumpClient.StartPumpingProgramAsync(request).ResponseAsync;
+    await _syringePumpClient.StartPumpingProgramAsync(_deviceRequest);
   }
 
-  public Task Stop()
+  public async Task Stop()
   {
-    var request = new StopPumpingProgramRequest { DeviceRequest = _deviceRequest };
-    return _syringePumpClient.StopPumpingProgramAsync(request).ResponseAsync;
+    await _syringePumpClient.StopPumpingProgramAsync(_deviceRequest);
   }
 
   public async ValueTask DisposeAsync()
@@ -161,6 +114,15 @@ public class SyringePumpUnitControlViewModel : SerialDeviceUnitViewModel, IAsync
     _stateCts.Dispose();
 
     GC.SuppressFinalize(this);
+  }
+
+  private void UpdateValues()
+  {
+    if(CurrentState.Phase is null)
+      return;
+
+    TargetAddress = CurrentState.Address;
+    ActiveDirection = CurrentState.Phase.Direction;
   }
 
   [Reactive]
@@ -174,9 +136,11 @@ public class SyringePumpUnitControlViewModel : SerialDeviceUnitViewModel, IAsync
   [Reactive]
   public int TargetPhase { get; set; }
   [Reactive]
-  public Ares.SyringePump.Ne1000.Messaging.Commands TargetFunction { get; set; }
+  public Commands TargetFunction { get; set; }
   [Reactive]
-  public Ares.SyringePump.Ne1000.Messaging.Direction TargetDirection { get; set; }
+  public Direction TargetDirection { get; set; }
+  [Reactive]
+  public Direction ActiveDirection { get; set; }
   [Reactive]
   public StateResponse CurrentState { get; private set; }
   [Reactive]

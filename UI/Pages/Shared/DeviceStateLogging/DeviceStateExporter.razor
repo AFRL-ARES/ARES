@@ -1,11 +1,13 @@
 ﻿@using UI.Backend.ViewModels.DeviceStateLogging;
-@using UI.Backend.DeviceStateExport.ExportStreamProviders
+@using Ares.Messages.DeviceState;
+@using UI.Backend.Extensions;
+
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<DeviceStateExporterViewModel>
 @inject IJSRuntime JS
 <div class="d-flex flex-column">
   <DeviceStateFilterView ViewModel="@ViewModel!.FilterViewModel" />
   <RadzenLabel Text="Export Provider" />
-  <RadzenDropDown Data="@ViewModel!.ExportProviders" TValue="IDeviceStateExportStreamProvider" TextProperty="Name" @bind-Value="@ViewModel!.SelectedExportProvider" Placeholder="Select an export provider" />
+  <RadzenDropDown Data="@ViewModel!.AvailableExportTypes" TValue="ExportTypeWrapper" TextProperty="Name" @bind-Value="@ViewModel!.SelectedExportType" Placeholder="Select an export type" />
 
 @*  <select class="form-select">
     @foreach (var provider in ViewModel!.ExportProviders)
@@ -18,7 +20,7 @@
     }
   </select>*@
 </div>
-<button class="btn btn-outline-primary my-2" disabled="@(ViewModel!.SelectedExportProvider is null || _exportInProgress)" @onclick="Export">
+<button class="btn btn-outline-primary my-2" disabled="@(ViewModel!.SelectedExportType.ExportType == ExportType.Unspecified || _exportInProgress)" @onclick="Export">
   @if (_exportInProgress)
   {
     <LoadingSpinner SpinnerSize="SpinnerSize.Small" />
@@ -50,11 +52,11 @@
       StateHasChanged();
       return;
     }
+    var selectedExportType = ViewModel!.SelectedExportType.ExportType;
     var fileName = $"{DateTime.Now}";
-    if (!string.IsNullOrEmpty(fileStream.FileExtension))
-      fileName = Path.ChangeExtension(fileName, fileStream.FileExtension);
-
-    using var streamRef = new DotNetStreamReference(stream: fileStream.Stream);
+    fileName = Path.ChangeExtension(fileName, selectedExportType.ToFileExtension());
+    using var stream = new MemoryStream(fileStream);
+    using var streamRef = new DotNetStreamReference(stream: stream);
 
     await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
     _exportInProgress = false;

@@ -4,7 +4,7 @@
 
 @foreach (var device in ViewModel!.ConnectedSerialDeviceUnitControlVms)
 {
-  <div class="m-2 d-flex flex-wrap">
+  <div class="d-flex flex-wrap">
     <DashboardWidget>
       <ServoControlWidgetView ViewModel="@device" />
     </DashboardWidget>
@@ -18,5 +18,4 @@
     ViewModel.Start(TimeSpan.FromSeconds(5));
     return base.OnInitializedAsync();
   }
-
 }

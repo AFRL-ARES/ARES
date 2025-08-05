@@ -1,12 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <LangVersion>default</LangVersion>
     <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <Authors>Infoscitex</Authors>
-    <Company>Infoscitex</Company>
+    <Authors>DCS</Authors>
+    <Company>DCS</Company>
     <Product>Ares.Device.Serial</Product>
     <PackageId>Ares.Device.Serial.dll</PackageId>
     <Description>
@@ -16,10 +16,6 @@
 	<AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
 	<Nullable>enable</Nullable>
   </PropertyGroup>
-
-  <Target Name="NugetPackAutoVersioning" AfterTargets="Build">
-    <Exec Command="dotnet pack -p:PackageVersion=$([System.DateTime]::Now.ToString(&quot;yyyy.MM.dd.HHmmss&quot;)) --no-build --configuration $(Configuration) --output &quot;$(SolutionDir)nuget&quot;" />
-  </Target>
 
   <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
@@ -34,8 +30,8 @@
   </PropertyGroup>
   
 	<ItemGroup>
-    <PackageReference Include="System.IO.Ports" Version="7.0.0" />
-    <PackageReference Include="System.Reactive" Version="6.0.0" />
+    <PackageReference Include="System.IO.Ports" Version="8.0.0" />
+    <PackageReference Include="System.Reactive" Version="6.0.1" />
   </ItemGroup>
   
 	<ItemGroup>

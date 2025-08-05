@@ -13,7 +13,7 @@ public class StepComposer : ICommandComposer<StepTemplate, StepExecutor>
   }
 
   public StepExecutor Compose(StepTemplate template)
-  {
+  { 
     var executables =
       template
         .CommandTemplates
@@ -41,5 +41,10 @@ public class StepComposer : ICommandComposer<StepTemplate, StepExecutor>
     return template.IsParallel
       ? new ParallelStepExecutor(template, executables)
       : new SequentialStepExecutor(template, executables);
+  }
+
+  public StepExecutor Compose(StepTemplate template, ExperimentExecutionStatus experimentExecutionStatus)
+  {
+    throw new NotImplementedException();
   }
 }

@@ -1,6 +1,6 @@
 ﻿using Ares.Device.Serial.Commands;
-using HerkulexDRS.ResponseParsers;
 using HerkulexDRS.Responses;
+using HerkulexDRS.Responses.Parsers;
 
 namespace HerkulexDRS.Commands;
 public class GetPositionCommand : SerialCommandWithResponse<GetPositionResponse>

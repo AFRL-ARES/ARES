@@ -6,22 +6,25 @@ namespace Ares.Core.Execution.StartConditions;
 internal class GoodAnalyzerForExperimentOutputCondition : IStartCondition
 {
   private readonly IActiveCampaignTemplateStore _activeCampaignTemplateStore;
-  private readonly IAnalyzerManager _analyzerManager;
-  private readonly ICampaignValidator _analyzerValidator;
+  private readonly IAnalyzerRepo _analyzerManager;
+  private readonly ICampaignValidator _campaignAnalyzerValidator;
 
-  public GoodAnalyzerForExperimentOutputCondition(IActiveCampaignTemplateStore activeCampaignTemplateStore, IAnalyzerManager analyzerManager, IEnumerable<ICampaignValidator> validators)
+  public GoodAnalyzerForExperimentOutputCondition(IActiveCampaignTemplateStore activeCampaignTemplateStore, IAnalyzerRepo analyzerManager, IEnumerable<ICampaignValidator> validators)
   {
     _activeCampaignTemplateStore = activeCampaignTemplateStore;
     _analyzerManager = analyzerManager;
-    _analyzerValidator = validators.OfType<GoodAnalyzerCampaignValidator>().First();
+    _campaignAnalyzerValidator = validators.OfType<GoodAnalyzerCampaignValidator>().First();
   }
 
-  public StartConditionResult? CanStart()
+  public async Task<StartConditionResult> CanStart()
   {
-    if (_activeCampaignTemplateStore.CampaignTemplate?.ExperimentTemplates.All(template => template is null) ?? true)
-      return null;
+    var campaignTemplate = _activeCampaignTemplateStore.CampaignTemplate;
+    if(campaignTemplate is null)
+      return new StartConditionResult(false, "No campaign template set, can't check for analyzers.");
+    if(!campaignTemplate.ExperimentTemplates.Any())
+      return new StartConditionResult(false, "No experiment templates in the campaign, can't check for analyzers.");
 
-    var validation = _analyzerValidator.Validate(_activeCampaignTemplateStore.CampaignTemplate);
+    var validation = await _campaignAnalyzerValidator.Validate(campaignTemplate);
 
     return new StartConditionResult(validation.Success, validation.Messages);
   }

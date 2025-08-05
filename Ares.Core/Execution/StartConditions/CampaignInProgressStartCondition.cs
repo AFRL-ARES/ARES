@@ -14,15 +14,16 @@ internal class CampaignInProgressStartCondition : IStartCondition
     _executionReportStore = executionReportStore;
   }
 
-  public StartConditionResult? CanStart()
+  public Task<StartConditionResult> CanStart()
   {
     var state = _executionReportStore.CampaignExecutionStatus?.State;
-    if (state is null)
-      return null;
+    if(state is null)
+      // No campaign execution status means nothing has been run yet.
+      return Task.FromResult(new StartConditionResult(true));
 
-    if (state != ExecutionState.Running && state != ExecutionState.Paused)
-      return new StartConditionResult(true);
+    if(state != ExecutionState.Running && state != ExecutionState.Paused)
+      return Task.FromResult(new StartConditionResult(true));
 
-    return new StartConditionResult(false, $"Campaign with id {_executionReportStore.CampaignExecutionStatus?.CampaignId} is currently in progress.");
+    return Task.FromResult(new StartConditionResult(false, $"Campaign with id {_executionReportStore.CampaignExecutionStatus?.CampaignId} is currently in progress."));
   }
 }

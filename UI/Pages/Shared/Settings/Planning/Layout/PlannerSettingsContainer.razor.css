@@ -1,0 +1,52 @@
+﻿.planner-settings-grid {
+	display: grid;
+	background: rgba(224, 255, 255, 0.1);
+	padding: 10px;
+	/*border: 1px solid rgba(224, 255, 255, 0.3);*/
+	border-radius: 5px;
+	grid-template:
+		"name status actions" auto
+		"separator separator separator" auto
+		"content content content" auto
+		/ 1fr 1fr auto;
+	box-shadow: 5px 5px 5px rgba(10, 10, 10, 0.7);
+}
+
+.planner-settings-content {
+	grid-area: content;
+}
+
+.planner-status {
+	grid-area: status;
+	font-size: 0.75em;
+}
+
+	.planner-status .planner-status-active {
+		color: green;
+	}
+
+	.planner-status .planner-status-inactive {
+		color: grey;
+	}
+
+	.planner-status .planner-status-error {
+		color: darkred;
+	}
+
+.planner-settings-name {
+	grid-area: name;
+}
+
+.planner-settings-actions {
+	grid-area: actions;
+	justify-self: right;
+}
+
+.planner-settings-separator {
+	grid-area: separator;
+	margin: 5px;
+}
+
+.planner-action-button {
+	margin: 0 2px;
+}

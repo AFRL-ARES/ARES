@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package rest_device.services;
+
+import "google/protobuf/empty.proto";
+import "DataModel.proto";
+import "RestDeviceConfig.proto";
+import "AresStruct.proto";
+
+service RestDeviceRpc {
+	rpc GetData(DeviceRequest) returns (DataResponse);
+	rpc CallDeviceMethod(DeviceMethodRequest) returns (ares.messaging.AresValue);
+	rpc GetDeviceCapabilities(DeviceRequest) returns (DeviceCapabilitiesResponse);
+	
+	rpc GetAllRestDevices(google.protobuf.Empty) returns (GetAllRestDevicesResponse);
+	rpc UpdateRestDevice(config.RestDeviceConfig) returns (google.protobuf.Empty);
+	rpc RemoveRestDevice(DeviceRequest) returns (google.protobuf.Empty);
+	rpc AddRestDevice(config.RestDeviceConfig) returns (google.protobuf.Empty);
+}
+
+message DeviceRequest {
+	string device_name = 1;
+}
+
+message DeviceCapabilitiesResponse {
+	string device_name = 1;
+	repeated DeviceMethodInfo device_methods = 2;
+}
+
+message DataResponse {
+	rest_device.data_model.Data data = 1;
+}
+
+message GetAllRestDevicesResponse {
+	repeated string device_names = 1;
+}
+
+message DeviceMethodRequest {
+	string device_name = 1;
+	string method_name = 2;
+	repeated string parameter_names = 3;
+	repeated string parameter_values = 4;  
+}
+
+message DeviceMethodInfo {
+	string method_name = 1;
+	repeated string parameters = 2;
+}

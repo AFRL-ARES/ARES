@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -13,21 +13,22 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Grpc.Tools" Version="2.62.0">
+    <PackageReference Include="Ares.Tools" Version="2025.8.4.112732" />
+    <PackageReference Include="Grpc.Tools" Version="2.72.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="UnitsNet" Version="5.49.0" />
+    <PackageReference Include="UnitsNet" Version="5.75.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ares.Device.Serial\AresSerial\Ares.Device.Serial.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Protobuf Include="Proto\*.proto">
       <ProtoRoot>Proto</ProtoRoot>
     </Protobuf>
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Ares.Device.Serial\AresSerial\Ares.Device.Serial.csproj" />
   </ItemGroup>
 
 </Project>

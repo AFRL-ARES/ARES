@@ -1,0 +1,52 @@
+﻿.analyzer-settings-grid {
+	display: grid;
+	background: rgba(224, 255, 255, 0.1);
+	padding: 10px;
+	/*border: 1px solid rgba(224, 255, 255, 0.3);*/
+	border-radius: 5px;
+	grid-template:
+		"name status actions" auto
+		"separator separator separator" auto
+		"content content content" auto
+		/ 1fr 1fr auto;
+	box-shadow: 5px 5px 5px rgba(10, 10, 10, 0.7);
+}
+
+.analyzer-settings-content {
+	grid-area: content;
+}
+
+.analyzer-status {
+	grid-area: status;
+	font-size: 0.75em;
+}
+
+	.analyzer-status .analyzer-status-active {
+		color: green;
+	}
+
+	.analyzer-status .analyzer-status-inactive {
+		color: grey;
+	}
+
+	.analyzer-status .analyzer-status-error {
+		color: darkred;
+	}
+
+.analyzer-settings-name {
+	grid-area: name;
+}
+
+.analyzer-settings-actions {
+	grid-area: actions;
+	justify-self: right;
+}
+
+.analyzer-settings-separator {
+	grid-area: separator;
+	margin: 5px;
+}
+
+.analyzer-action-button {
+	margin: 0 2px;
+}

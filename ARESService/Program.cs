@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 
-namespace ARESService;
+namespace AresService;
 
-public class Program
+public class Program 
 {
   public static void Main(string[] args)
   {
@@ -15,8 +15,7 @@ public class Program
   public static IHostBuilder CreateHostBuilder(string[] args)
   {
     return Host.CreateDefaultBuilder(args)
-      .ConfigureWebHostDefaults(webBuilder =>
-      {
+      .ConfigureWebHostDefaults(webBuilder => {
         webBuilder.UseStartup<Startup>();
       });
   }

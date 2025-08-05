@@ -1,5 +1,5 @@
-﻿using Ares.Messaging.Device;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using Ares.Messaging.Device;
 
 namespace Ares.Device;
 
@@ -9,11 +9,11 @@ public abstract class AresDevice : IAresDevice
   {
     Name = name;
     Status = new DeviceStatus
-    { DeviceState = DeviceState.Inactive, Message = $"{Name} constructed. Activation has not been called yet." };
+      { DeviceState = DeviceState.Inactive, Message = $"{Name} constructed. Activation has not been called yet." };
   }
 
   public string Name { get; }
   public DeviceStatus Status { get; protected set; }
-
   public abstract Task<bool> Activate();
+  public abstract Task EnterSafeMode();
 }

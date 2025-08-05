@@ -2,18 +2,17 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Ares.Messaging;
-using ARESCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
-namespace ARESService;
+namespace AresService;
 
 public class UserInitializer
 {
   private readonly RoleManager<IdentityRole> _roleManager;
-  private readonly UserManager<ARESUser> _userManager;
+  private readonly UserManager<AresUser> _userManager;
 
-  public UserInitializer(UserManager<ARESUser> userManager, RoleManager<IdentityRole> roleManager)
+  public UserInitializer(UserManager<AresUser> userManager, RoleManager<IdentityRole> roleManager)
   {
     _userManager = userManager;
     _roleManager = roleManager;
@@ -32,7 +31,7 @@ public class UserInitializer
     if (await _userManager.Users.AnyAsync(user => user.UserName == username))
       return;
 
-    var user = new ARESUser
+    var user = new AresUser
     {
       UserName = username,
       Email = "test@testmail.com"

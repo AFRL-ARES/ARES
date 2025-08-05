@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageId>Ares.Device.USB.dll</PackageId>
+    <Company>DCS</Company>
+    <Product>DCS</Product>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Ares.Device\AresDevicePluginBase\Ares.Device.csproj" />
+  </ItemGroup>
+
+</Project>

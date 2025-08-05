@@ -1,5 +1,0 @@
-1. Run the MakeCerts.ps1 script in order to generate three certificates
-2. Open up the certificate manager (certmgr) and go open Personal/Certificates
-	There should now be three new certificates (ARESClient, ARESService, ARESRoot)
-3. Within certmgr move the ARESRoot certificate into "'Trusted Root Certification Authorities'/Certificates"
-4. In the ARES solution folder, move the ARESClient.pfx certificate into the UI project folder and the ARESService.pfx into ARESService project folder.

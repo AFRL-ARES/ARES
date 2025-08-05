@@ -51,7 +51,7 @@ public class StepDesignerViewModel : ReactiveObject
 
   public StepTemplate StepTemplate
   {
-    private get => _stepTemplate;
+    get => _stepTemplate;
 
     set
     {
@@ -96,7 +96,7 @@ public class StepDesignerViewModel : ReactiveObject
 
   public void MoveCommandDesignerUp(CommandDesignerViewModel vm)
   {
-    if (vm.Index == 0)
+    if(vm.Index == 0)
       return;
 
     CommandDesigners.RemoveAt(vm.Index);
@@ -106,7 +106,7 @@ public class StepDesignerViewModel : ReactiveObject
 
   public void MoveCommandDesignerDown(CommandDesignerViewModel vm)
   {
-    if (vm.Index == CommandDesigners.Count - 1)
+    if(vm.Index == CommandDesigners.Count - 1)
       return;
 
     CommandDesigners.RemoveAt(vm.Index);
@@ -117,7 +117,7 @@ public class StepDesignerViewModel : ReactiveObject
   private void ReindexCommands()
   {
     var idx = 0;
-    foreach (var commandDesigner in CommandDesigners)
+    foreach(var commandDesigner in CommandDesigners)
       commandDesigner.Index = idx++;
   }
 }

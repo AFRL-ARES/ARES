@@ -1,0 +1,53 @@
+﻿@using Ares.Messaging.Planning
+@using UI.Backend.ViewModels.Automation.CampaignEdit
+
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<PlannerAllocationEditorViewModel>
+
+<EditForm Model="@ViewModel" OnValidSubmit="OnValidSubmit">
+  <RadzenStack Orientation="Orientation.Vertical" Gap="5px">
+    <RadzenText Text="@($"{ViewModel!.SelectedService!.AdapterName} Settings")"/>
+
+    @foreach(var setting in ViewModel!.PlannerSettings)
+    {
+      <RadzenFormField Text="@setting.SettingName" Variant="Variant.Flat">
+        @if(setting.SettingValue.HasStringValue)
+        {
+          <RadzenTextBox @bind-Value="setting.SettingValue.StringValue"/>
+        }
+
+        @if(setting.SettingValue.HasInt32Value)
+        {
+          <RadzenNumeric @bind-Value="setting.SettingValue.Int32Value"/>
+        }
+
+        @if(setting.SettingValue.HasInt64Value)
+        {
+          <RadzenNumeric @bind-Value="setting.SettingValue.Int64Value"/>
+        }
+
+        @if(setting.SettingValue.HasDoubleValue)
+        {
+          <RadzenNumeric @bind-Value="setting.SettingValue.DoubleValue" />
+        }
+
+        @if(setting.SettingValue.HasFloatValue)
+        {
+          <RadzenNumeric @bind-Value="setting.SettingValue.FloatValue" />
+        }
+
+        @if(setting.SettingValue.HasBoolValue)
+        {
+          <RadzenSwitch @bind-Value="setting.SettingValue.BoolValue"/>
+        }
+
+      </RadzenFormField>
+    }
+
+    <button @onclick="OnValidSubmit" class="btn btn-primary">Save</button>
+  </RadzenStack>
+</EditForm>
+
+@code {
+  [Parameter]
+  public Action OnValidSubmit { get; set; } = delegate { };
+}

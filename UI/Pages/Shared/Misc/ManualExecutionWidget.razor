@@ -1,6 +1,9 @@
 ﻿@using ReactiveUI.Blazor;
 @using System.Diagnostics;
 @using UI.Backend.ViewModels.Misc;
+@using Ares.Messages.DeviceState;
+@using UI.Backend.Extensions;
+
 @inherits ReactiveInjectableComponentBase<ManualExecutionWidgetViewModel>
 
 <DashboardWidget>
@@ -64,19 +67,20 @@
   {
     _error = string.Empty;
     _exportInProgress = true;
-    var fileStream = await ViewModel!.GetExportStream();
-    if (fileStream is null)
+    var fileData = await ViewModel!.GetExportData();
+    if (fileData is null)
     {
       _error = "Unable to get a state stream. Maybe provider wasn't selected.";
       _exportInProgress = false;
       StateHasChanged();
       return;
     }
-    var fileName = $"{DateTime.Now}";
-    if (!string.IsNullOrEmpty(fileStream.FileExtension))
-      fileName = Path.ChangeExtension(fileName, fileStream.FileExtension);
 
-    using var streamRef = new DotNetStreamReference(stream: fileStream.Stream);
+    var fileName = $"{DateTime.Now}";
+    fileName = Path.ChangeExtension(fileName, ExportType.Combined.ToFileExtension());
+
+    using var stream = new MemoryStream(fileData);
+    using var streamRef = new DotNetStreamReference(stream: stream);
 
     await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
     _exportInProgress = false;

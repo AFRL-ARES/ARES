@@ -3,7 +3,7 @@
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Backend.ViewModels.SyringePump.SyringePumpUnitControlViewModel>
 
 <div class="d-block container m-0 p-0">
-  <h2 class="text-center">@ViewModel.DeviceName</h2>
+  <h2 class="text-center">@ViewModel!.DeviceName</h2>
   <div class="text-center">
     <h3>@ViewModel.Status</h3>
   </div>
@@ -45,12 +45,7 @@
         <td class="d-table-cell">@ViewModel.CurrentState.Phase?.Function</td>
         <td class="d-table-cell">
           <div class="d-flex">
-            <select @bind="ViewModel.TargetFunction" class="form-select bg-dark text-light">
-              @foreach (var function in Enum.GetValues<Commands>().Skip(1))
-              {
-                <option value="@function">@($"{function:G}".ToUpperInvariant())</option>
-              }
-            </select>
+            <RadzenDropDown @bind-Value="@ViewModel!.TargetFunction" Data="@(Enum.GetValues<Commands>().Skip(1))" class="form-select bg-dark text-light" />
             <input class="btn-secondary d-inline-flex" type="submit" @onclick="ViewModel.SetPhaseFunction" value="Set"/>
           </div>
         </td>
@@ -59,7 +54,6 @@
         <td class="d-table-cell">Rate (@($"{ViewModel.CurrentState.RateUnits:G}"))</td>
         <td class="d-table-cell">@ViewModel.CurrentState.Phase?.Rate</td>
         <td class="d-table-cell">
-
           <div class="d-flex">
             <input type="number" class="input-group bg-dark" @bind="ViewModel.TargetRateMmpm"/>
             <input class="btn-secondary" type="submit" @onclick="ViewModel.SetPhaseFunctionRate" value="Set"/>
@@ -67,28 +61,12 @@
         </td>
       </tr>
       <tr class="d-table-row">
-          <td class="d-table-cell">Volume (@($"{ ViewModel.CurrentState.VolumeUnits:G}"))</td>
-        <td class="d-table-cell">@ViewModel.CurrentState.Phase?.Volume</td>
-        <td class="d-table-cell">
-
-          <div class="d-flex">
-            <input type="number" class="input-group bg-dark" @bind="ViewModel.TargetVolumeMl"/>
-            <input class="btn-secondary" type="submit" @onclick="ViewModel.SetPhaseFunctionVolume" value="Set"/>
-          </div>
-        </td>
-      </tr>
-      <tr class="d-table-row">
         <td class="d-table-cell">Direction</td>
-        <td class="d-table-cell">@($"{ViewModel.CurrentState.Phase?.Direction}" ?? "")</td>
+        <td class="d-table-cell">@ViewModel.ActiveDirection</td>
         <td class="d-table-cell">
           <div class="d-flex">
-            <select @bind="ViewModel.TargetDirection" class="form-select bg-dark text-light">
-              @foreach (var direction in Enum.GetValues<Direction>().Skip(1))
-              {
-                <option value="@direction">@($"{direction:G}".ToUpperInvariant())</option>
-              }
-            </select>
-            <input class="btn-secondary d-inline-flex" type="submit" @onclick="ViewModel.SetPhaseFunctionDirection" value="Set"/>
+            <RadzenDropDown @bind-Value="@ViewModel!.TargetDirection" Data="@(Enum.GetValues<Direction>().Skip(1))" class="form-select bg-dark text-light"/>
+            <input class="btn-secondary" type="submit" @onclick="ViewModel.SetPhaseFunctionDirection" value="Set" />
           </div>
         </td>
       </tr>

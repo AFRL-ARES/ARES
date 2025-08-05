@@ -1,28 +1,29 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
 	<UserSecretsId>aspnet-UI-87962D8C-B573-4F3B-852F-E1DA10F52308</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CsvHelper" Version="31.0.2" />
-    <PackageReference Include="Grpc.AspNetCore.HealthChecks" Version="2.61.0" />
-    <PackageReference Include="Grpc.Net.Client" Version="2.61.0" />
+    <PackageReference Include="CsvHelper" Version="33.1.0" />
+    <PackageReference Include="Grpc.AspNetCore.HealthChecks" Version="2.71.0" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.71.0" />
     <PackageReference Include="Humanizer" Version="2.14.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="6.0.28" />
-    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="6.0.28" />
-    <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="6.0.28" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="6.0.28" />
-    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="6.0.16" />
-    <PackageReference Include="Radzen.Blazor" Version="4.28.2" />
-    <PackageReference Include="ReactiveUI.Blazor" Version="19.5.72" />
+    <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="8.0.19" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.19" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="8.0.17" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.19" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.19" />
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.7" />
+    <PackageReference Include="Radzen.Blazor" Version="7.1.7" />
+    <PackageReference Include="ReactiveUI.Blazor" Version="20.4.1" />
     <PackageReference Include="ReactiveUI.Fody" Version="19.5.41" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.4" />
     <PackageReference Include="System.IO.Compression.ZipFile" Version="4.3.0" />
-    <PackageReference Include="UnitsNet" Version="5.49.0" />
+    <PackageReference Include="UnitsNet" Version="5.75.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -31,17 +32,23 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AlicatMFC\AlicatMFC.csproj" />
-    <ProjectReference Include="..\Ares.DataModel.Grpc\Ares.DataModel.Grpc.csproj" />
+    <ProjectReference Include="..\AresMessaging\AresMessaging.csproj" />
+    <ProjectReference Include="..\FlirCM3\FlirCM3.csproj" />
+    <ProjectReference Include="..\FlirCM3\FlirCM3.csproj" />
     <ProjectReference Include="..\HerkulexDRS\HerkulexDRS.csproj" />
+    <ProjectReference Include="..\LaserChiller\LaserChiller.csproj" />
     <ProjectReference Include="..\LindbergFurnace\LindbergFurnace.csproj" />
+    <ProjectReference Include="..\RestDevice\RestDevice.csproj" />
+    <ProjectReference Include="..\RestSerialDevice\RestSerialDevice.csproj" />
     <ProjectReference Include="..\SyringePumpNE1000\SyringePumpNE1000.csproj" />
     <ProjectReference Include="..\TC0304\TC0304.csproj" />
     <ProjectReference Include="..\TicStepperController\TicStepperController.csproj" />
     <ProjectReference Include="..\ValveController\ValveController.csproj" />
+    <ProjectReference Include="..\VerdiV6Laser\VerdiV6Laser.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="ARESClientCert.pfx">
+    <None Update="FC2ClientCert.pfx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

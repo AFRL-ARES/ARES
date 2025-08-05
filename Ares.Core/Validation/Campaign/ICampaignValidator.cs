@@ -9,5 +9,5 @@ public interface ICampaignValidator
   /// </summary>
   /// <param name="template"></param>
   /// <returns></returns>
-  ValidationResult Validate(CampaignTemplate template);
+  Task<ValidationResult> Validate(CampaignTemplate template);
 }

@@ -1,6 +1,7 @@
-﻿using Ares.Device;
+﻿using System.Reactive.Linq;
+using Ares.Device;
 using Ares.Messaging;
-using System.Reactive.Linq;
+using Ares.Tools;
 
 namespace TicStepperController;
 public class StepperControllerInterpreter : DeviceCommandInterpreter<IStepperController, StepperControllerCommand>
@@ -50,38 +51,47 @@ public class StepperControllerInterpreter : DeviceCommandInterpreter<IStepperCon
         DeviceName = Device.Name,
         Name = StepperControllerCommand.HaltAndSetPosition.ToString(),
         Description = "This command stops the motor abruptly without respecting the deceleration limit and sets the “Current position” variable, which represents what position the Tic currently thinks the motor is in. Besides stopping the motor and setting the current position, this command also clears the “position uncertain” flag, sets the input state to “halt”, and clears the “input after scaling” variable.",
-        ParameterMetadatas = { new ParameterMetadata { Index = 0, Name = StepperControllerCommandParameter.Position.ToString() } }
+        ParameterMetadatas = { new ParameterMetadata { Index = 0, Name = StepperControllerCommandParameter.Position.ToString() , Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.Number, true) } }
       },
       new()
       {
         DeviceName = Device.Name,
         Name = StepperControllerCommand.SetTargetPosition.ToString(),
         Description = "This command sets the target position of the Tic, in microsteps.",
-        ParameterMetadatas = { new ParameterMetadata { Index = 0, Name = StepperControllerCommandParameter.Position.ToString() } }
+        ParameterMetadatas = { new ParameterMetadata { Index = 0, Name = StepperControllerCommandParameter.Position.ToString(), Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.Number, true) } }
       },
       new()
       {
         DeviceName = Device.Name,
         Name = StepperControllerCommand.NextStep.ToString(),
-        Description = "Goes to the next step in user defined microsteps"
+        Description = "Goes to the next step in user defined microsteps."
       },
       new()
       {
         DeviceName = Device.Name,
         Name = StepperControllerCommand.PreviousStep.ToString(),
-        Description = "Goes to the previous step in user defined microsteps"
+        Description = "Goes to the previous step in user defined microsteps."
+      },
+      new()
+      {
+        DeviceName = Device.Name,
+        Name = StepperControllerCommand.HalfStep.ToString(),
+        Description = "Advances the controller forward half of it's defined step size."
       }
     };
   }
 
-  protected override async Task<DeviceCommandResult> ParseAndPerformDeviceAction(StepperControllerCommand deviceCommandEnum, Parameter[] parameters, CancellationToken cancellationToken)
+  protected override async Task<DeviceCommandResult> ParseAndPerformDeviceAction(StepperControllerCommand deviceCommandEnum,
+    Parameter[] parameters,
+    CommandMetadata metadata,
+    CancellationToken cancellationToken)
   {
     var result = new DeviceCommandResult();
     result.Success = true;
 
     var timeout = TimeSpan.FromSeconds(10);
 
-    switch (deviceCommandEnum)
+    switch(deviceCommandEnum)
     {
       case StepperControllerCommand.Reset:
         await Device.Reset();
@@ -96,17 +106,33 @@ public class StepperControllerInterpreter : DeviceCommandInterpreter<IStepperCon
         await Device.HaltAndHold();
         break;
       case StepperControllerCommand.HaltAndSetPosition:
-        var position = parameters.First().Value.Value;
-        await Device.HaltAndSetPosition((int)position);
+        var positionParam = parameters.First().Value.Value;
+
+        if(!positionParam.HasNumberValue)
+        {
+          result.Success = false;
+          result.Error = "The Stepper Controller command HaltAndSetPosition requires a number as a parameter, but none was provided!";
+          break;
+        }
+
+        await Device.HaltAndSetPosition((int)positionParam.NumberValue);
         break;
       case StepperControllerCommand.SetTargetPosition:
         var targetPosition = parameters.First().Value.Value;
-        await Device.SetTargetPosition((int)targetPosition);
+
+        if(!targetPosition.HasNumberValue)
+        {
+          result.Success = false;
+          result.Error = "The Stepper Controller command SetTargetPosition requires a number as a parameter, but none was provided!";
+          break;
+        }
+       
+        await Device.SetTargetPosition((int)targetPosition.NumberValue);
         try
         {
           await Device.WaitForTargetPosition(timeout);
         }
-        catch (TimeoutException)
+        catch(TimeoutException)
         {
           var state = await Device.StateStream.FirstAsync();
           result.Success = false;
@@ -118,7 +144,7 @@ public class StepperControllerInterpreter : DeviceCommandInterpreter<IStepperCon
         {
           await Device.NextStep();
         }
-        catch (TimeoutException)
+        catch(TimeoutException)
         {
           var state = await Device.StateStream.FirstAsync();
           result.Success = false;
@@ -130,7 +156,19 @@ public class StepperControllerInterpreter : DeviceCommandInterpreter<IStepperCon
         {
           await Device.PreviousStep();
         }
-        catch (TimeoutException)
+        catch(TimeoutException)
+        {
+          var state = await Device.StateStream.FirstAsync();
+          result.Success = false;
+          result.Error = $"Stepper Motor {Device.Name} did not achieve target position of {state.TargetPosition} within {timeout}. Current position: {state.CurrentPosition}";
+        }
+        break;
+      case StepperControllerCommand.HalfStep:
+        try
+        {
+          await Device.HalfStep();
+        }
+        catch(TimeoutException)
         {
           var state = await Device.StateStream.FirstAsync();
           result.Success = false;

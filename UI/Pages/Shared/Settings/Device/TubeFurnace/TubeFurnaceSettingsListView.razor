@@ -36,28 +36,29 @@ else
   private async Task AddConfigClick()
   {
     var viewModel = ViewModel!.GetNewConfigEditViewModel();
-    var result = await DialogService.OpenAsync("New Tube Furnace", ds =>
-      @<TubeFurnaceConfigEditView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)" />);
+    await DialogService.OpenAsync("New Tube Furnace", ds =>
+      @<TubeFurnaceConfigEditView ViewModel="@viewModel" OnValidSubmit="async () => await HandleSave(viewModel)" />);
+  }
 
-    if (result is true)
+  private async Task HandleSave(TubeFurnaceConfigEditViewModel viewModel)
+  {
+    SavingInProgress = true;
+    StateHasChanged();
+    var config = viewModel.Save();
+    try
     {
-      SavingInProgress = true;
+      await ViewModel!.AddNewConfig(viewModel.Save());
+      DialogService.Close();
+      NotificationService.Notify(NotificationSeverity.Success, $"Successfully added MFC {viewModel.Name}");
+    }
+    catch(Grpc.Core.RpcException e)
+    {
+      NotificationService.Notify(NotificationSeverity.Error, e.InnerException?.Message ?? e.Message);
+    }
+    finally
+    {
+      SavingInProgress = false;
       StateHasChanged();
-      var config = viewModel.Save();
-      try
-      {
-        await ViewModel!.AddNewConfig(viewModel.Save());
-        NotificationService.Notify(NotificationSeverity.Success, $"Successfully added MFC {viewModel.Name}");
-      }
-      catch (Grpc.Core.RpcException e)
-      {
-        NotificationService.Notify(NotificationSeverity.Error, e.InnerException?.Message ?? e.Message);
-      }
-      finally
-      {
-        SavingInProgress = false;
-        StateHasChanged();
-      }
     }
   }
 

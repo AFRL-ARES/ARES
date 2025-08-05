@@ -1,23 +1,22 @@
-﻿using Ares.Core.Grpc;
+﻿using System.Linq;
+using System.Threading.Tasks;
+using Ares.Core.Grpc;
 using Ares.Messages;
 using Ares.Messaging;
-using ARESCore;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace ARESService.Services.UserManagement;
+namespace AresService.Services.UserManagement;
 
 public class UserManagementService : Ares.Messages.UserManagement.UserManagementBase
 {
   private readonly RoleManager<IdentityRole> _roleManager;
-  private readonly SignInManager<ARESUser> _signInManager;
-  private readonly UserManager<ARESUser> _userManager;
+  private readonly SignInManager<AresUser> _signInManager;
+  private readonly UserManager<AresUser> _userManager;
 
-  public UserManagementService(SignInManager<ARESUser> signInManager, UserManager<ARESUser> userManager, RoleManager<IdentityRole> roleManager)
+  public UserManagementService(SignInManager<AresUser> signInManager, UserManager<AresUser> userManager, RoleManager<IdentityRole> roleManager)
   {
     _signInManager = signInManager;
     _userManager = userManager;
@@ -65,10 +64,10 @@ public class UserManagementService : Ares.Messages.UserManagement.UserManagement
     if (!requestingUser.IsInRole(AresUserType.AresAdmin.ToString()))
       users = users.Where(user => user.UserName == requestingUser.Identity?.Name).ToArray();
 
-    foreach (var aresUser in users)
+    foreach (var AresUser in users)
     {
-      var userInfo = new UserInfo { UserName = aresUser.UserName, Email = aresUser.Email };
-      var roles = await _userManager.GetRolesAsync(aresUser);
+      var userInfo = new UserInfo { UserName = AresUser.UserName, Email = AresUser.Email };
+      var roles = await _userManager.GetRolesAsync(AresUser);
       userInfo.Roles.AddRange(roles);
       response.Users.Add(userInfo);
     }
@@ -102,7 +101,7 @@ public class UserManagementService : Ares.Messages.UserManagement.UserManagement
 
   private async Task<ManagementResponse> RegisterNewUser(RegistrationRequest request, bool isAdminRequest)
   {
-    var newUser = new ARESUser
+    var newUser = new AresUser
     {
       UserName = request.UserInfo.UserName,
       Email = request.UserInfo.Email
@@ -135,7 +134,7 @@ public class UserManagementService : Ares.Messages.UserManagement.UserManagement
     return new ManagementResponse { Success = true };
   }
 
-  private async Task<ManagementResponse> UpdateExistingUser(RegistrationRequest request, ARESUser user, bool isAdminRequest)
+  private async Task<ManagementResponse> UpdateExistingUser(RegistrationRequest request, AresUser user, bool isAdminRequest)
   {
     var serverRoles = await _roleManager.Roles.Select(role => role.Name).ToArrayAsync();
     var nonexistentRoles = request.UserInfo.Roles.Except(serverRoles).ToArray();
@@ -206,10 +205,10 @@ public class UserManagementService : Ares.Messages.UserManagement.UserManagement
     return result.ToManagementResponse();
   }
 
-  private Task<IdentityResult> ChangeEmail(ARESUser user, string email)
+  private Task<IdentityResult> ChangeEmail(AresUser user, string email)
     => _userManager.SetEmailAsync(user, email);
 
-  private async Task<IdentityResult> UpdateRoles(ARESUser user, string[] roles)
+  private async Task<IdentityResult> UpdateRoles(AresUser user, string[] roles)
   {
     var existingRoles = await _userManager.GetRolesAsync(user);
     var rolesToAdd = roles.Except(existingRoles).ToArray();
@@ -238,21 +237,21 @@ public class UserManagementService : Ares.Messages.UserManagement.UserManagement
     return IdentityResult.Success;
   }
 
-  private async Task<bool> AnyAdmins(ARESUser[] users)
+  private async Task<bool> AnyAdmins(AresUser[] users)
   {
-    foreach (var aresUser in users)
-      if (await _userManager.IsInRoleAsync(aresUser, AresUserType.AresAdmin.ToString()))
+    foreach (var AresUser in users)
+      if (await _userManager.IsInRoleAsync(AresUser, AresUserType.AresAdmin.ToString()))
         return true;
 
     return false;
   }
 
-  private async Task<IdentityResult> ChangePasswordAdmin(ARESUser user, string password)
+  private async Task<IdentityResult> ChangePasswordAdmin(AresUser user, string password)
   {
     var changeToken = await _userManager.GeneratePasswordResetTokenAsync(user);
     return await _userManager.ResetPasswordAsync(user, changeToken, password);
   }
 
-  private Task<IdentityResult> ChangePasswordUser(ARESUser user, string currentPassword, string newPassword)
+  private Task<IdentityResult> ChangePasswordUser(AresUser user, string currentPassword, string newPassword)
     => _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
 }

@@ -1,0 +1,275 @@
+﻿@using Google.Protobuf.WellKnownTypes
+@using Ares.Messaging
+
+<RadzenFormField Text="@GetFormFieldName()" Variant="Variant.Outlined" Style="width: 100%">
+  @if(Schema?.Type is AresDataType.String)
+  {
+    @if(HasStringChoices)
+    {
+      <RadzenDropDown TValue="string" Data="@Schema.StringChoices.Strings" @bind-Value="_stringValue" Change="OnChanged" Style="width: 100%" />
+    }
+    else
+    {
+      <RadzenTextBox @bind-Value="_stringValue" Change="OnChanged" Style="width: 100%" />
+    }
+  }
+  else if(Schema?.Type is AresDataType.Number)
+  {
+    @if(HasNumberChoices)
+    {
+      <RadzenDropDown TValue="double" Data="@Schema.NumberChoices.Numbers" @bind-Value="_numberValue" Change="@OnNumberChanged" Style="width: 100%" />
+    }
+    else
+    {
+      <RadzenNumeric TValue="double" @bind-Value="_numberValue" Change="@OnNumericChanged" Style="width: 100%" />
+    }
+  }
+  else if(Schema?.Type is AresDataType.Boolean)
+  {
+    <RadzenCheckBox TValue="bool" @bind-Value="_boolValue" Change="@OnBoolChanged" />
+  }
+  else if(Schema?.Type is AresDataType.StringArray)
+  {
+    @for(var i = 0; i < _stringArray.Count; i++)
+    {
+      var index = i;
+      <div class="mb-2 flex items-center">
+        @if(HasStringChoices)
+        {
+          <RadzenDropDown TValue="string" Data="@Schema.StringChoices.Strings" Value="@_stringArray[index]" Change="@(value => OnStringArrayItemChanged(value, index))" Style="width: 90%" />
+        }
+        else
+        {
+          <RadzenTextBox Value="@_stringArray[index]" Change="@(value => OnStringArrayItemChanged(value, index))" Style="width: 90%" />
+        }
+        <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(() => RemoveStringItem(index))" />
+      </div>
+    }
+    <RadzenButton Text="Add Item" Click="AddStringItem" />
+  }
+  else if(Schema?.Type is AresDataType.NumberArray)
+  {
+    @for(var i = 0; i < _numberArray.Count; i++)
+    {
+      var index = i;
+      <div class="mb-2 flex items-center">
+        @if(HasNumberChoices)
+        {
+          <RadzenDropDown TValue="double" Data="@Schema.NumberChoices.Numbers" Value="@_numberArray[index]" Change="@(value => OnNumberArrayItemChanged(value, index))" Style="width: 90%" />
+        }
+        else
+        {
+          <RadzenNumeric TValue="double" Value="@_numberArray[index]" Change="@(value => OnNumberArrayItemChanged(value, index))" Style="width: 90%" />
+        }
+        <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(() => RemoveNumberItem(index))" />
+      </div>
+    }
+    <RadzenButton Text="Add Item" Click="AddNumberItem" />
+  }
+  else if(Schema?.Type is AresDataType.BoolArray)
+  {
+    @for(var i = 0; i < _boolArray.Count; i++)
+    {
+      var index = i;
+      <div class="mb-2 flex items-center">
+        <RadzenCheckBox TValue="bool" Value="@_boolArray[index]" Change="@(value => OnBoolArrayItemChanged(value, index))" />
+        <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(() => RemoveBoolItem(index))" />
+      </div>
+    }
+    <RadzenButton Text="Add Item" Click="AddBoolItem" />
+  }
+  else
+  {
+    <span>Unsupported type: @Schema?.Type</span>
+  }
+</RadzenFormField>
+
+@code {
+  [Parameter] public AresValue? Value { get; set; }
+  [Parameter] public SchemaEntry? Schema { get; set; }
+  [Parameter] public string? Unit { get; set; }
+  [Parameter] public string? Name { get; set; }
+  [Parameter] public Func<AresValue, Task>? ValueEditCallback { get; set; }
+
+  private string _stringValue = string.Empty;
+  private double _numberValue;
+  private bool _boolValue;
+  private List<string> _stringArray = [];
+  private List<double> _numberArray = [];
+  private List<bool> _boolArray = [];
+
+  // Helper properties to check for available choices
+  private bool HasStringChoices => Schema?.StringChoices?.Strings?.Any() ?? false;
+  private bool HasNumberChoices => Schema?.NumberChoices?.Numbers?.Any() ?? false;
+
+  protected override Task OnInitializedAsync()
+  {
+    if(Value is not null)
+    {
+      switch(Schema?.Type)
+      {
+        case AresDataType.String:
+          _stringValue = Value.StringValue ?? "";
+          break;
+        case AresDataType.Number:
+          _numberValue = Value.NumberValue;
+          break;
+        case AresDataType.Boolean:
+          _boolValue = Value.BoolValue;
+          break;
+        case AresDataType.StringArray:
+          _stringArray = Value.StringArrayValue?.Strings?.ToList() ?? [];
+          break;
+        case AresDataType.NumberArray:
+          _numberArray = Value.NumberArrayValue?.Numbers?.ToList() ?? [];
+          break;
+        case AresDataType.BoolArray:
+          _boolArray = Value.BoolArrayValue?.Bools?.ToList() ?? [];
+          break;
+      }
+    }
+
+    return base.OnInitializedAsync();
+  }
+
+  private string GetFormFieldName() => string.IsNullOrEmpty(Unit) ? $"{Name}" : $"{Name} - {Unit}";
+
+  // Handler for single string, which is already correctly bound
+  private Task OnChanged(object? _ = null)
+  {
+    return UpdateAresValue();
+  }
+
+  // Handler for single number from RadzenDropDown (takes object)
+  private Task OnNumberChanged(object value)
+  {
+    _numberValue = (double)value;
+    return UpdateAresValue();
+  }
+
+  // Handler for single number from RadzenNumeric (takes double)
+  private Task OnNumericChanged(double value)
+  {
+    _numberValue = value;
+    return UpdateAresValue();
+  }
+
+  // Handler for single boolean
+  private Task OnBoolChanged(bool value)
+  {
+    _boolValue = value;
+    return UpdateAresValue();
+  }
+
+  // Handler for bool array items
+  private Task OnBoolArrayItemChanged(bool value, int index)
+  {
+    if (index >= 0 && index < _boolArray.Count)
+    {
+      _boolArray[index] = value;
+    }
+    return UpdateAresValue();
+  }
+
+  // Handler for string array items
+  private Task OnStringArrayItemChanged(object value, int index)
+  {
+    if (index >= 0 && index < _stringArray.Count)
+    {
+      _stringArray[index] = (string)value;
+    }
+    return UpdateAresValue();
+  }
+
+  // Handler for number array items
+  private Task OnNumberArrayItemChanged(object value, int index)
+  {
+    if (index >= 0 && index < _numberArray.Count)
+    {
+      _numberArray[index] = Convert.ToDouble(value);
+    }
+    return UpdateAresValue();
+  }
+
+  // Common method to create and invoke the callback
+  private Task UpdateAresValue()
+  {
+    var aresValue = new AresValue();
+    switch(Schema?.Type)
+    {
+      case AresDataType.String:
+        aresValue.StringValue = _stringValue;
+        break;
+      case AresDataType.Number:
+        aresValue.NumberValue = _numberValue;
+        break;
+      case AresDataType.Boolean:
+        aresValue.BoolValue = _boolValue;
+        break;
+      case AresDataType.StringArray:
+        var strArray = new StringArray();
+        strArray.Strings.AddRange(_stringArray);
+        aresValue.StringArrayValue = strArray;
+        break;
+      case AresDataType.NumberArray:
+        var numArray = new NumberArray();
+        numArray.Numbers.AddRange(_numberArray);
+        aresValue.NumberArrayValue = numArray;
+        break;
+      case AresDataType.BoolArray:
+        var bArray = new BoolArray();
+        bArray.Bools.AddRange(_boolArray);
+        aresValue.BoolArrayValue = bArray;
+        break;
+    }
+    // Invoke the callback with the newly constructed AresValue object.
+    return ValueEditCallback?.Invoke(aresValue) ?? Task.CompletedTask;
+  }
+
+  private void AddStringItem()
+  {
+    // If there are string choices, add the first one by default. Otherwise, add an empty string.
+    _stringArray.Add(HasStringChoices && Schema is not null ? Schema.StringChoices.Strings.First() : "");
+    UpdateAresValue();
+  }
+
+  private void RemoveStringItem(int index)
+  {
+    if(index >= 0 && index < _stringArray.Count)
+    {
+      _stringArray.RemoveAt(index);
+      UpdateAresValue();
+    }
+  }
+
+  private void AddNumberItem()
+  {
+    // If there are number choices, add the first one by default. Otherwise, add 0.0.
+    _numberArray.Add(HasNumberChoices && Schema is not null ? Schema.NumberChoices.Numbers.First() : 0.0);
+    UpdateAresValue();
+  }
+
+  private void RemoveNumberItem(int index)
+  {
+    if(index >= 0 && index < _numberArray.Count)
+    {
+      _numberArray.RemoveAt(index);
+      UpdateAresValue();
+    }
+  }
+
+  private void AddBoolItem()
+  {
+    _boolArray.Add(false);
+    UpdateAresValue();
+  }
+
+  private void RemoveBoolItem(int index)
+  {
+    if(index >= 0 && index < _boolArray.Count)
+    {
+      _boolArray.RemoveAt(index);
+      UpdateAresValue();
+    }
+  }
+}

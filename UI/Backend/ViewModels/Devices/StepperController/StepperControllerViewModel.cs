@@ -67,6 +67,11 @@ public class StepperControllerViewModel : SerialDeviceUnitViewModel, IAsyncDispo
     return _client.PreviousStepAsync(new TicRequest { TicName = DeviceName }).ResponseAsync;
   }
 
+  public Task HalfStep()
+  {
+    return _client.HalfStepAsync(new TicRequest { TicName = DeviceName }).ResponseAsync;
+  }
+
   public Task SetTargetPosition(int position)
   {
     return _client.SetTargetPositionAsync(new PositionCommand { TicName = DeviceName, Position = position }).ResponseAsync;
@@ -78,13 +83,14 @@ public class StepperControllerViewModel : SerialDeviceUnitViewModel, IAsyncDispo
   {
     _stateListener = Task.Factory.StartNew(async _ =>
     {
+      Thread.CurrentThread.Name = "Stepper Controller State Listener View Model Thread";
       var cancelled = false;
-      lock(_stateUpdateTokenSource) { cancelled = _stateUpdateTokenSource.IsCancellationRequested; }
+      lock (_stateUpdateTokenSource) { cancelled = _stateUpdateTokenSource.IsCancellationRequested; }
       while (!cancelled)
       {
         await UpdateState();
         await Task.Delay(TimeSpan.FromMilliseconds(500));
-      lock(_stateUpdateTokenSource) { cancelled = _stateUpdateTokenSource.IsCancellationRequested; }
+        lock (_stateUpdateTokenSource) { cancelled = _stateUpdateTokenSource.IsCancellationRequested; }
       }
     },
       _stateUpdateTokenSource.Token,

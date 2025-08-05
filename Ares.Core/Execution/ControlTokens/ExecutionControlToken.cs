@@ -13,14 +13,17 @@ public readonly struct ExecutionControlToken
 
   public bool IsCancelled => _tokenSource.CancellationToken.IsCancellationRequested;
 
-  /// <summary>
-  /// This is here so that the cancellation token can be grabbed separately so it can be passed into things
-  /// like Task.Run
-  /// </summary>
   public CancellationToken CancellationToken => _tokenSource.CancellationToken;
+
+  public PauseToken PauseToken => _tokenSource.PauseToken;
 
   public void WaitForResume(CancellationToken ct)
   {
     _tokenSource.WaitForResume(ct);
+  }
+
+  public void Pause()
+  {
+    _tokenSource.Pause();
   }
 }

@@ -1,10 +1,10 @@
-﻿using System.Reflection;
-using Ares.Core.Device;
+﻿using Ares.Core.Device;
 using Ares.Core.Execution.Executors;
 using Ares.Core.Execution.Executors.Composers;
 using Ares.Device;
 using Ares.Messaging;
 using Moq;
+using System.Reflection;
 
 namespace Ares.Core.Tests.Execution.Composers;
 
@@ -60,7 +60,7 @@ internal class StepComposerTests
   {
     var interpreterMock = new Mock<IDeviceCommandInterpreter<IAresDevice>>();
     interpreterMock.SetupGet(interpreter => interpreter.Device.Name).Returns("TestName");
-    _commandInterpreters = new DeviceCommandInterpreterRepo
+    _commandInterpreters = new DeviceCommandInterpreterRepo()
     {
       interpreterMock.Object
     };

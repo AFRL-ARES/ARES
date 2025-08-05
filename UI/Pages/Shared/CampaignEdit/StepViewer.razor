@@ -2,17 +2,24 @@
 @using UI.Backend.ViewModels.Automation.CampaignEdit
 
 <div class="d-flex flex-column border rounded p-2 my-2">
-    <div class="d-flex my-1 align-items-center">
+  <div class="container">
+    <div class="row">
+      <div class="col d-flex my-1 align-items-center">
 
-        <button @onclick="() => CommandsExpanded = !CommandsExpanded" class="btn border-0">
-            <RadzenIcon Icon="@(CommandsExpanded ? "expand_less" : "expand_more")"></RadzenIcon>
-        </button>
+          <button @onclick="() => CommandsExpanded = !CommandsExpanded" class="btn border-0">
+              <RadzenIcon Icon="@(CommandsExpanded ? "expand_less" : "expand_more")"></RadzenIcon>
+          </button>
 
-        <RadzenIcon Icon="@(Parallel ? "view_week" : "view_stream")"/>
-        <span class="flex-grow-1 px-2">@Name</span>
-        <span class="badge">@CommandTemplates.Count</span>
+          <RadzenIcon Icon="@(Parallel ? "view_week" : "view_stream")"/>
+          <span class="flex-grow-1 px-2">@Name</span>
+          <span class="badge">@CommandTemplates.Count</span>
+      </div>
+      <div class="col">
+        <UI.Pages.Resources.ExperimentOutputIcon />
+      </div>
     </div>
-    @if (CommandsExpanded)
+  </div>
+  @if (CommandsExpanded)
     {
         <ul class="mx-2 list-group ">
             @foreach (var template in CommandTemplates)
@@ -50,6 +57,8 @@
     }
   }
 
+  private bool HasExperimentOutputs { get; set; }
+
   public IList<CommandTemplate> CommandTemplates { get; private set; } = Array.Empty<CommandTemplate>();
 
   private void Init(StepTemplate? existingTemplate)
@@ -61,6 +70,7 @@
     Parallel = existingTemplate.IsParallel;
     Index = Convert.ToInt32(existingTemplate.Index);
     CommandTemplates = existingTemplate.CommandTemplates.OrderBy(t => t.Index).ToList();
+    HasExperimentOutputs = CommandTemplates.Any(ct => ct.UserOutputKeyMap.Any());
   }
 }
 

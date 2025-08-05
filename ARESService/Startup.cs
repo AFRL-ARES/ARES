@@ -1,20 +1,22 @@
 ﻿using Ares.Core;
 using Ares.Core.Grpc;
 using Ares.Messaging;
-using ARESCore;
-using ARESService.Services.Authentication;
+using AresService;
+using AresService.Services.Authentication;
 using Microsoft.AspNetCore.Authentication.Certificate;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using System;
+using System.IO;
 using System.Linq;
 using System.Net.Security;
 using System.Reflection;
@@ -22,11 +24,10 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ARESService;
+namespace AresService;
 
 public class Startup
 {
-
   public Startup(IConfiguration configuration)
   {
     Configuration = configuration;
@@ -39,25 +40,50 @@ public class Startup
   public void ConfigureServices(IServiceCollection services)
   {
     services.AddGrpc(options => options.EnableDetailedErrors = true);
-
     services.Configure<TokensConfig>(Configuration.GetSection(nameof(TokensConfig)));
-
     services.AddLogging(builder => builder.AddConsole());
 
     var sqlConnectionString = Configuration.GetConnectionString("CoreDatabase");
+    var provider = string.Empty;
 
-    services.AddDbContextFactory<ARESDbContext>(builder =>
+    if(Configuration is null)
+      throw new InvalidOperationException("Configuration cannot be null!");
+
+    provider = Configuration.Get<AppSettings>()!.DatabaseProvider;
+
+    if(provider == "SqlServer")
     {
-      builder.UseSqlServer(Configuration.GetConnectionString("CoreDatabase"));
-      builder.EnableSensitiveDataLogging();
-    });
+      services.AddDbContextFactory<AresDbContext>(builder =>
+      {
+        builder.UseSqlServer(Configuration!.GetConnectionString("CoreDatabase"));
+        builder.EnableSensitiveDataLogging();
+      });
 
-    services.AddDbContextFactory<ARESIdentityContext>(builder => builder.UseSqlServer(sqlConnectionString), ServiceLifetime.Transient);
+      services.AddDbContextFactory<AresIdentityContext>(builder => builder.UseSqlServer(sqlConnectionString), ServiceLifetime.Transient);
+    }
 
-    services.AddTransient<IDbContextFactory<CoreDatabaseContext>>(provider
-      => new CovariantCoreDbContextFactory<CoreDatabaseContext, ARESDbContext>(provider.GetRequiredService<IDbContextFactory<ARESDbContext>>()));
+    else if(provider == "Sqlite")
+    {
+      services.AddDbContextFactory<AresDbContext>(builder =>
+      {
+        builder.UseSqlite(Configuration!.GetConnectionString("CoreDatabase"));
+        builder.EnableSensitiveDataLogging();
+      });
 
-    var identityBuilder = services.AddIdentityCore<ARESUser>(o =>
+      services.AddDbContextFactory<AresIdentityContext>(builder => builder.UseSqlite(sqlConnectionString), ServiceLifetime.Transient);
+    }
+
+    else
+    {
+      throw new InvalidOperationException("FIX MEEEEE");
+    }
+
+
+
+      services.AddTransient<IDbContextFactory<CoreDatabaseContext>>(provider
+        => new CovariantCoreDbContextFactory<CoreDatabaseContext, AresDbContext>(provider.GetRequiredService<IDbContextFactory<AresDbContext>>()));
+
+    var identityBuilder = services.AddIdentityCore<AresUser>(o =>
       o.Password = new PasswordOptions
       {
         RequireDigit = false,
@@ -69,10 +95,10 @@ public class Startup
       });// TODO maybe make password requirements more stringent?
 
     identityBuilder = new IdentityBuilder(identityBuilder.UserType, typeof(IdentityRole), identityBuilder.Services);
-    identityBuilder.AddEntityFrameworkStores<ARESIdentityContext>();
+    identityBuilder.AddEntityFrameworkStores<AresIdentityContext>();
     identityBuilder.AddRoleValidator<RoleValidator<IdentityRole>>();
     identityBuilder.AddRoleManager<RoleManager<IdentityRole>>();
-    identityBuilder.AddSignInManager<SignInManager<ARESUser>>();
+    identityBuilder.AddSignInManager<SignInManager<AresUser>>();
     identityBuilder.AddDefaultTokenProviders();
 
     var token = Configuration.Get<AppSettings>().TokensConfig?.Key ?? "DefaultKey";
@@ -111,39 +137,49 @@ public class Startup
 
     services.AddAuthorization(o => o.AddPolicy("AresPolicy", builder => builder.RequireRole(Enum.GetNames<AresUserType>())));
 
-    services.AddARES();
+    services.AddAres(Configuration);
 
     services.AddTransient<UserInitializer>();
     services.AddTransient<JwtTokenGenerator>();
+  }
+
+  private void PopulateAresConfig()
+  {
+    var basePath = Configuration.Get<AppSettings>().AresDataPath;
+
+    AresConfig.ResultsPath = Path.Combine(basePath, AppSettings.ResultsFolder);
+    AresConfig.TemplatePath = Path.Combine(basePath, AppSettings.TemplatesFolder);
+    AresConfig.DevicesPath = Path.Combine(basePath, AppSettings.DevicesFolder);
+    AresConfig.TagsPath = Path.Combine(basePath, AppSettings.ExperimentTagsFile);
   }
 
   private bool ClientCertificateValidation(X509Certificate2 arg1, X509Chain? arg2, SslPolicyErrors arg3)
   {
     // TODO this might need to be revisited?
     return true;
-    var subjectData = arg1.SubjectName.Name.Trim().Split(',', StringSplitOptions.RemoveEmptyEntries);
-    if (!subjectData.Contains("CN=ARESClient"))
-      return false;
+    //var subjectData = arg1.SubjectName.Name.Trim().Split(',', StringSplitOptions.RemoveEmptyEntries);
+    //if (!subjectData.Contains("CN=FC2Client"))
+    //  return false;
 
-    var issuerSubjectData = arg1.IssuerName.Name.Trim().Split(',', StringSplitOptions.RemoveEmptyEntries);
-    if (!issuerSubjectData.Contains("CN=ARESRoot"))
-      return false;
+    //var issuerSubjectData = arg1.IssuerName.Name.Trim().Split(',', StringSplitOptions.RemoveEmptyEntries);
+    //if (!issuerSubjectData.Contains("CN=FC2Root"))
+    //  return false;
 
-    var certPath = Configuration.GetSection("CertificateSettings")["Path"];
-    var certPassword = Configuration.GetSection("CertificateSettings")["Password"];
+    //var certPath = Configuration.GetSection("CertificateSettings")["Path"];
+    //var certPassword = Configuration.GetSection("CertificateSettings")["Password"];
 
-    var serviceCert = new X509Certificate2(certPath, certPassword);
-    var issuerServiceCert = GetIssuerCert(serviceCert);
-    var issuerClientCert = GetIssuerCert(arg1, arg2);
+    //var serviceCert = new X509Certificate2(certPath, certPassword);
+    //var issuerServiceCert = GetIssuerCert(serviceCert);
+    //var issuerClientCert = GetIssuerCert(arg1, arg2);
 
-    // even if self-signed, as long as the client and the server certificates were signed by the same cert
-    // we can go ahead and say that they're valid for authentication
-    return issuerClientCert?.Thumbprint == issuerServiceCert?.Thumbprint;
+    //// even if self-signed, as long as the client and the server certificates were signed by the same cert
+    //// we can go ahead and say that they're valid for authentication
+    //return issuerClientCert?.Thumbprint == issuerServiceCert?.Thumbprint;
   }
 
   private static X509Certificate2? GetIssuerCert(X509Certificate2 cert, X509Chain? chain = null)
   {
-    if (chain is null)
+    if(chain is null)
     {
       chain = new X509Chain();
       chain.Build(cert);
@@ -157,11 +193,13 @@ public class Startup
   public void Configure(IApplicationBuilder app,
     IWebHostEnvironment env,
     IHostApplicationLifetime applicationLifetime,
-    ARESStarter starter,
+    AresStarter starter,
     UserInitializer userInitializer,
     RoleManager<IdentityRole> roleManager)
   {
-    if (env.IsDevelopment())
+    PopulateAresConfig();
+
+    if(env.IsDevelopment())
       app.UseDeveloperExceptionPage();
     else
       app.UseHsts();
@@ -176,7 +214,7 @@ public class Startup
     app.UseEndpoints(endpoints =>
     {
       endpoints.MapCoreAresServices();
-      endpoints.MapARESServices();
+      endpoints.MapAresServices();
 
       endpoints.MapGet("/",
         async context =>
@@ -191,7 +229,7 @@ public class Startup
     roleManager.InitializeAsync().Wait();
     userInitializer.Init().GetAwaiter().GetResult();// must be synchronous, otherwise db context gets disposed ¯\_(ツ)_/¯
     SetupExceptionHandling();
-    starter.Start();
+    _ = starter.Start();
   }
 
   private void OnStopping()
@@ -227,7 +265,7 @@ public class Startup
       message += exception.Message;
       ServerStatusHelper.ServerStatusSubject.OnNext(new ServerStatusResponse { ServerStatus = ServerStatus.Error, StatusMessage = message });
     }
-    catch (Exception)
+    catch(Exception)
     {
       // _logger.Error(ex, "Exception in LogUnhandledException");
     }

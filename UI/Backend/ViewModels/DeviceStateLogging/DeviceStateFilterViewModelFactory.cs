@@ -5,9 +5,9 @@ namespace UI.Backend.ViewModels.DeviceStateLogging;
 public class DeviceStateFilterViewModelFactory
 {
   private readonly AresAutomation.AresAutomationClient _automationClient;
-  readonly ICombinedDeviceStateIdGetter _deviceIdGetter;
+  readonly ICombinedDeviceIdGetter _deviceIdGetter;
 
-  public DeviceStateFilterViewModelFactory(AresAutomation.AresAutomationClient automationClient, ICombinedDeviceStateIdGetter deviceIdGetter)
+  public DeviceStateFilterViewModelFactory(AresAutomation.AresAutomationClient automationClient, ICombinedDeviceIdGetter deviceIdGetter)
   {
     _deviceIdGetter = deviceIdGetter;
     _automationClient = automationClient;

@@ -1,7 +1,10 @@
-﻿using Ares.Device.Serial.Commands;
-
-namespace HerkulexDRS.Responses;
-internal class StatusResponse : SerialResponse
+﻿namespace HerkulexDRS.Responses;
+public class StatusResponse : CommandResponse
 {
+  public StatusResponse(int servoId) : base(servoId)
+  {
+    ServoId = servoId;
+  }
 
+  public bool ServoHasError { get; set; }
 }

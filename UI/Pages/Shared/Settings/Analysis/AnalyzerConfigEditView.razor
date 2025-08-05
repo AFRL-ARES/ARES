@@ -1,0 +1,27 @@
+﻿@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Web
+@using Radzen.Blazor
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Backend.ViewModels.Settings.Analysis.AnalyzerConfigEditViewModel>
+
+<EditForm Model="@ViewModel" OnValidSubmit="OnValidSubmit">
+  <div class="d-flex flex-column">
+    <RadzenFormField Text="Analyzer Name" Variant="Variant.Flat">
+      <RadzenTextBox @bind-Value=ViewModel!.Name Disabled="@(!ViewModel!.NewConfig)"/>
+    </RadzenFormField>
+
+    <RadzenFormField Text="Address" Variant="Variant.Flat" >
+      <RadzenTextBox @bind-Value=ViewModel!.Address />
+    </RadzenFormField>
+  </div>
+  <ValidationSummary />
+  <DataAnnotationsValidator />
+  <button type="submit" class="btn my-2 btn-outline-primary">Save</button>
+</EditForm>
+
+@code {
+
+  [Parameter]
+  public Action OnValidSubmit { get; set; } = delegate
+  {
+  };
+}

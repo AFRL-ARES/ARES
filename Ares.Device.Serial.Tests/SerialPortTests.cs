@@ -17,7 +17,7 @@ internal class SerialPortTests
     var response = await port.Send(new SomeCommandWithResponse(stringToTest));
     // Assert.That(await port.DataBufferState.FirstAsync(), Is.Empty);
     Assert.That(response, Is.Not.Null);
-    StringAssert.AreEqualIgnoringCase(stringToTest, response.Response);
+    Assert.That(response.Response, Is.EqualTo(stringToTest));
     // var currentBuffer = await port.DataBufferState.FirstAsync();
     // Assert.That(currentBuffer, Is.Empty);
   }
@@ -31,7 +31,7 @@ internal class SerialPortTests
     var response = await port.Send(new SomeCommandWithResponse(stringToTest));
     // Assert.That(await port.DataBufferState.FirstAsync(), Is.Empty);
     Assert.That(response, Is.Not.Null);
-    StringAssert.AreEqualIgnoringCase(stringToTest, response.Response);
+    Assert.That(response.Response, Is.EqualTo(stringToTest));
     // var currentBuffer = await port.DataBufferState.FirstAsync();
     // Assert.That(currentBuffer, Is.Empty);
   }
@@ -59,9 +59,9 @@ internal class SerialPortTests
 
     Assert.Multiple(() =>
     {
-      StringAssert.AreEqualIgnoringCase(stringToTest, test1.Response);
-      StringAssert.AreEqualIgnoringCase(stringToTest2, test2.Response);
-      StringAssert.AreEqualIgnoringCase(stringToTest3, test3.Response);
+      Assert.That(test1.Response, Is.EqualTo(stringToTest));
+      Assert.That(test2.Response, Is.EqualTo(stringToTest2));
+      Assert.That(test3.Response, Is.EqualTo(stringToTest3));
     });
 
     // Assert.That(await port.DataBufferState.FirstAsync(), Is.Empty);
@@ -94,10 +94,10 @@ internal class SerialPortTests
 
     Assert.Multiple(() =>
     {
-      StringAssert.AreEqualIgnoringCase(stringToTest, test1.Response);
-      StringAssert.AreEqualIgnoringCase(stringToTest2, test2.OtherResponse);
-      StringAssert.AreEqualIgnoringCase(stringToTest3, test3.Response);
-      StringAssert.AreEqualIgnoringCase(stringToTest4, test4.OtherResponse);
+      Assert.That(test1.Response, Is.EqualTo(stringToTest));
+      Assert.That(test2.OtherResponse, Is.EqualTo(stringToTest2));
+      Assert.That(test3.Response, Is.EqualTo(stringToTest3));
+      Assert.That(test4.OtherResponse, Is.EqualTo(stringToTest4));
     });
 
     // var currentBuffer = await port.DataBufferState.FirstAsync();
@@ -134,10 +134,10 @@ internal class SerialPortTests
     // so the result may not match.
     Assert.Multiple(() =>
     {
-      StringAssert.StartsWith("<-", test1.Result.Response);
-      StringAssert.StartsWith("!-", test2.Result.OtherResponse);
-      StringAssert.StartsWith("<-", test3.Result.Response);
-      StringAssert.StartsWith("!-", test4.Result.OtherResponse);
+      Assert.That(test1.Result.Response, Is.EqualTo("<-"));
+      Assert.That(test2.Result.OtherResponse, Is.EqualTo("!-"));
+      Assert.That(test3.Result.Response, Is.EqualTo("<-"));
+      Assert.That(test4.Result.OtherResponse, Is.EqualTo("!-"));
     });
 
     // var currentBuffer = await port.DataBufferState.FirstAsync();
@@ -168,9 +168,9 @@ internal class SerialPortTests
     var test1ObservableSecondResponse = await secondResponseWaiter;
     Assert.Multiple(() =>
     {
-      StringAssert.AreEqualIgnoringCase(stringToTest, test1ObservableFirstResponse.Response.Response);
-      StringAssert.AreEqualIgnoringCase(stringToTest2, test2ObservableFirestResponse.Response.Response);
-      StringAssert.AreEqualIgnoringCase(stringToTest2, test1ObservableSecondResponse.Response.Response);
+      Assert.That(test1ObservableFirstResponse.Response.Response, Is.EqualTo(stringToTest));
+      Assert.That(test2ObservableFirestResponse.Response.Response, Is.EqualTo(stringToTest2));
+      Assert.That(test1ObservableSecondResponse.Response.Response, Is.EqualTo(stringToTest2));
     });
 
     // var currentBuffer = await port.DataBufferState.FirstAsync();
@@ -206,9 +206,9 @@ internal class SerialPortTests
     var test1ObservableSecondResponse2 = await test1ObservableResponseWaiter2;
     Assert.Multiple(() =>
     {
-      StringAssert.AreEqualIgnoringCase(stringToTest, test1ObservableSecondResponse2.Response.Response);
-      StringAssert.AreEqualIgnoringCase(stringToTest2, test2ObservableFirstResponse.Response.Response);
-      StringAssert.AreEqualIgnoringCase(stringToTest2, test1ObservableSecondResponse.Response.Response);
+      Assert.That(test1ObservableSecondResponse2.Response.Response, Is.EqualTo(stringToTest));
+      Assert.That(test2ObservableFirstResponse.Response.Response, Is.EqualTo(stringToTest2));
+      Assert.That(test1ObservableSecondResponse.Response.Response, Is.EqualTo(stringToTest2));
     });
 
     Assert.That(port.BufferEmpty, Is.True);
@@ -326,7 +326,7 @@ internal class SomeCommandWithResponse2 : SerialCommandWithResponse<SomeResponse
   protected override byte[] Serialize()
     => Encoding.ASCII.GetBytes(OtherMessage);
 }
-public class TestConnection : AresSimConnection
+public class TestConnection : AresSerialSimConnection
 {
   private bool _isProcessing;
 
@@ -350,7 +350,7 @@ public class TestConnection : AresSimConnection
     });
   }
 }
-public class TestPort2 : AresSimConnection
+public class TestPort2 : AresSerialSimConnection
 {
 
   public TestPort2(SerialPortConnectionInfo connectionInfo) : base(connectionInfo, "SIM2")

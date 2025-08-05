@@ -8,17 +8,18 @@ import "google/protobuf/timestamp.proto";
 import "Templates/CampaignTemplate.proto";
 import "Project.proto";
 import "ExecutionStatusMessages.proto";
-import "AnalyzerInfo.proto";
-import "ExecutionResultMessages.proto";
+import "ExecutionSummaryMessages.proto";
+import "AresCampaignTag.proto";
 
 service AresAutomation {
 	// Campaigns
-	rpc GetAllCampaigns(google.protobuf.Empty) returns (CampaignsResponse);
+	rpc GetAllCampaigns(GetAllCampaignsRequest) returns (CampaignsResponse);
 	rpc GetSingleCampaign(CampaignRequest) returns (CampaignTemplate);
 	rpc RemoveCampaign(CampaignRequest) returns (google.protobuf.Empty);
 	rpc CampaignExists(CampaignRequest) returns (google.protobuf.BoolValue);
-	rpc AddCampaign(CampaignTemplate) returns (google.protobuf.Empty);
-	rpc UpdateCampaign(CampaignTemplate) returns (CampaignTemplate);
+	rpc AddCampaign(AddOrUpdateCampaignRequest) returns (google.protobuf.Empty);
+	rpc UpdateCampaign(AddOrUpdateCampaignRequest) returns (CampaignTemplate);
+	rpc CheckExecutionEligibility(google.protobuf.Empty) returns (CheckExecutionEligibilityResponse);
 
 	// Projects
 	rpc GetAllProjects(google.protobuf.Empty) returns (ProjectsResponse); 
@@ -26,37 +27,53 @@ service AresAutomation {
 	rpc RemoveProject(ProjectRequest) returns (google.protobuf.Empty);
 	rpc AddProject(Project) returns (google.protobuf.Empty);
 
-	// Execution
+	//Tags
+	rpc GetAllTags(google.protobuf.Empty) returns (TagsResponse);
+	rpc AddTag(TagRequest) returns (TagsResponse);
+	rpc RemoveTag(TagRequest) returns (TagsResponse);
 
-	// informs the execution system of what campaign needs to be executed
-	// takes in a campaign request instead of a template as the campaigns need to come from an internal
-	// persistence layer as opposed to any template that can be passed in.
-	// Returns a campaign template that was selected
+	// Execution
 	rpc SetCampaignForExecution(CampaignRequest) returns (CampaignTemplate);
 	rpc GetCurrentlySelectedCampaign(google.protobuf.Empty) returns (CampaignResponse);
 
-	rpc StartExecution(google.protobuf.Empty) returns (google.protobuf.Empty);
+	rpc StartExecution(StartCampaignRequest) returns (google.protobuf.Empty);
 	rpc StopExecution(google.protobuf.Empty) returns (google.protobuf.Empty);
 	rpc PauseExecution(google.protobuf.Empty) returns (google.protobuf.Empty);
 	rpc ResumeExecution(google.protobuf.Empty) returns (google.protobuf.Empty);
 	rpc GetAssignedStopConditions(google.protobuf.Empty) returns (StartStopConditionsResponse);
+	rpc GetReplanRate(google.protobuf.Empty) returns (GetReplanRateResponse);
 	rpc GetFailedStartConditions(google.protobuf.Empty) returns (StartStopConditionsResponse);
 	rpc GetPreliminaryFailedStartConditions(CampaignTemplate) returns (StartStopConditionsResponse);
 	rpc SetNumExperimentsStopCondition(NumExperimentsCondition) returns (google.protobuf.Empty);
+	rpc SetReplanRate(ReplanRate) returns (google.protobuf.Empty);
 	rpc SetAnalysisResultStopCondition(AnalysisResultCondition) returns (google.protobuf.Empty);
 	rpc GetActiveStopCondition(google.protobuf.Empty) returns (ExperimentStopConditionResponse);
 	rpc RemoveStopCondition(StartStopCondition) returns (google.protobuf.Empty);
 	// Gets a stream of experiment execution statuses that can be observed in real time as experiment is running
 	// Works best after grabbing all the execution statuses which then lets you know how many experiments have been run
 	rpc GetExecutionStatusStream(google.protobuf.Empty) returns (stream ExperimentExecutionStatus);
+	rpc GetStartupExecutionStatusStream(google.protobuf.Empty) returns (stream CampaignStartupStatus);
+	rpc GetCloseoutExecutionStatusStream(google.protobuf.Empty) returns (stream CampaignCloseoutStatus);
 	// Gets the current status of a campaign execution assuming one is running
 	rpc GetCampaignExecutionStatus(google.protobuf.Empty) returns (CampaignExecutionStatusResponse);
+	rpc GetCampaignExecutionStateStream(google.protobuf.Empty) returns (stream CampaignExecutionState);
+	
 
-	// Results
-	rpc GetAvailableCampaignResults(google.protobuf.Empty) returns (AvailableCampaignResultsResponse);
-	rpc GetCampaignResult(CampaignResultRequest) returns (CampaignResult);
+	// Summaries
+	rpc GetAvailableCampaignExecutionSummaries(google.protobuf.Empty) returns (AvailableCampaignExecutionSummariesResponse);
+	rpc GetCampaignSummary(CampaignExecutionSummaryRequest) returns (CampaignExecutionSummary);
+}
 
-	rpc GetAllAnalyzers(google.protobuf.Empty) returns (GetAllAnalyzersResponse);
+message TagRequest {
+	AresCampaignTag tag = 1;
+}
+
+message TagsResponse {
+	repeated AresCampaignTag available_tags = 1;
+}
+
+message AddOrUpdateCampaignRequest {
+	CampaignTemplate template = 1;
 }
 
 message RequestById {
@@ -71,6 +88,10 @@ message CampaignRequest {
 	}
 }
 
+message GetAllCampaignsRequest {
+	string file_path = 1;
+}
+
 message CampaignsResponse {
 	repeated CampaignTemplate campaign_templates = 1; // list of campaign templates for a requested campaign name
 }
@@ -78,6 +99,11 @@ message CampaignsResponse {
 message CampaignResponse {
 	bool has_value = 1;
 	CampaignTemplate value = 2;
+}
+
+message StartCampaignRequest {
+	string user_notes = 1;
+	repeated AresCampaignTag campaign_tags = 2;
 }
 
 message ProjectRequest {
@@ -90,16 +116,24 @@ message ProjectsResponse {
 
 // separate response so that the status can be null
 message CampaignExecutionStatusResponse {
-	CampaignExecutionStatus Status = 1;
+	CampaignExecutionStatus status = 1;
 }
 
 message StartStopConditionsResponse {
 	repeated StartStopCondition start_stop_conditions = 1;
 }
 
+message GetReplanRateResponse {
+	int32 ReplanRate = 1;
+}
+
 message StartStopCondition {
 	string name = 1;
 	string message = 2;
+}
+
+message ReplanRate {
+	int32 ReplanRate = 1;
 }
 
 message NumExperimentsCondition {
@@ -116,20 +150,22 @@ message AnalysisResultCondition {
 	double leeway = 2;
 }
 
-message AvailableCampaignResultsResponse {
-	repeated CampaignResultMetadata available_campaign_results = 1;
+message AvailableCampaignExecutionSummariesResponse {
+	repeated CampaignExecutionSummaryMetadata available_campaign_summaries = 1;
 }
 
-message CampaignResultMetadata {
+message CampaignExecutionSummaryMetadata {
 	string campaign_name = 1;
 	google.protobuf.Timestamp completion_time = 2;
-	string result_id = 3;
+	string summary_id = 3;
+	int64 num_experiments = 4;
 }
 
-message CampaignResultRequest {
-	string result_id = 1;
+message CampaignExecutionSummaryRequest {
+	string summary_id = 1;
 }
 
-message GetAllAnalyzersResponse {
-	repeated AnalyzerInfo analyzers = 1;
+message CheckExecutionEligibilityResponse {
+	bool is_eligible = 1;
+	string error = 2;
 }

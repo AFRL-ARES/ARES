@@ -1,6 +1,6 @@
-﻿using System.Text;
-using AlicatMFC.Commands.Responses;
+﻿using AlicatMFC.Commands.Responses;
 using Ares.Device.Serial.Commands;
+using System.Text;
 
 namespace AlicatMFC.Commands.Requests;
 
@@ -10,17 +10,17 @@ public abstract class MfcCommandExpectingResponse<T> : SerialCommandWithResponse
   protected MfcCommandExpectingResponse(char id, SerialResponseParser<T> parser, string firmware) : base(parser)
   {
     _firmware = firmware;
-    Id = id;
+    MfcId = id;
   }
 
-  public char Id { get; }
+  public char MfcId { get; }
 
   protected abstract string SerializeToString();
 
   protected override byte[] Serialize()
   {
     //var id = _firmware.StartsWith("GP", StringComparison.InvariantCultureIgnoreCase) ? $"{Id}$$" : $"{Id}";
-    var serialString = $"{Id}{SerializeToString()}\r";
+    var serialString = $"{MfcId}{SerializeToString()}\r";
     //serialString = serialString.Insert(serialString.Length - 1, "$$");
     var serialData = Encoding.ASCII.GetBytes(serialString.ToCharArray());
     return serialData;

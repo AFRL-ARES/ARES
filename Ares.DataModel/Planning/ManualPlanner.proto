@@ -1,5 +1,7 @@
 ﻿syntax = "proto3";
 
+import "AresStruct.proto";
+
 package ares.messaging.planning;
 
 message ManualPlannerSeed {
@@ -15,7 +17,7 @@ message ManualPlannerSet {
 
 message ParameterNameValuePair {
 	string name = 1; // name of the parameter
-	double value = 2; // value for the parameter
+	AresValue value = 2; // value for the parameter
 }
 
 message ManualPlannerFileLines {

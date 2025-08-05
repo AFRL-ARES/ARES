@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace LindbergFurnace.Commands;
 
-namespace LindbergFurnace.Commands
+public enum TubeFurnaceCommand
 {
-    public enum TubeFurnaceCommand
-    {
-    }
+  GetSetpoint,
+  SetSetpoint,
+  GetCurrentTemperature
 }

@@ -31,7 +31,7 @@ internal class LiveDataParser : ResponseParser<LiveDataResponse>
 
   private bool TryParse(string message, out LiveDataResponse? response)
   {
-    if (!FormatEntries.Any() || !IsValid(message))
+    if(!FormatEntries.Any() || !IsValid(message))
     {
       response = null;
       return false;
@@ -41,7 +41,7 @@ internal class LiveDataParser : ResponseParser<LiveDataResponse>
 
     // TODO If we get more tokens than we know what to expect, that means we should either
     // request the data format more often or add some missing formats
-    if (tokens.Length > FormatEntries.Length + 1)
+    if(tokens.Length > FormatEntries.Length + 1)
     {
       response = null;
       return false;
@@ -61,19 +61,19 @@ internal class LiveDataParser : ResponseParser<LiveDataResponse>
     StandardVolumeFlow? totalizedMassFlow = default;
     string? gas = default;
     List<StatusCode> statusCodes = new();
-    for (var i = 0; i < tokens.Length; i++)
+    for(var i = 0; i < tokens.Length; i++)
     {
       var format = FormatEntries.First(fe => fe.EntryNumber == i + 1);
       //var format = FormatEntries[i];
       var token = tokens[i];
       _ = double.TryParse(token, out var value);
-      switch (format.Field)
+      switch(format.Field)
       {
         case DataFormatField.Unknown:
           break;
         case DataFormatField.UnitId:
           id = token[0];
-          if (id != FormatEntries.First().Id)
+          if(id != FormatEntries.First().Id)
           {
             response = null;
             return false;
@@ -121,7 +121,7 @@ internal class LiveDataParser : ResponseParser<LiveDataResponse>
         case DataFormatField.Error:
         case DataFormatField.Status:
           var foundCode = Enum.TryParse<StatusCode>(token, true, out var code);
-          if (foundCode)
+          if(foundCode)
             statusCodes.Add(code);
 
           break;
@@ -135,7 +135,7 @@ internal class LiveDataParser : ResponseParser<LiveDataResponse>
     // that this message was not parsable by the live parser
     // also check that the second token doesn't start with one of the common response line indicators
     // (ex.: G** for gas, D** for data format...
-    if (string.IsNullOrEmpty(gas) || tokens[1].StartsWith('D') || tokens[1].StartsWith('G') || tokens[1].StartsWith('M'))
+    if(string.IsNullOrEmpty(gas) || tokens[1].StartsWith('D') || tokens[1].StartsWith('G') || tokens[1].StartsWith('M'))
     {
       response = null;
       return false;
@@ -165,10 +165,10 @@ internal class LiveDataParser : ResponseParser<LiveDataResponse>
   {
     try
     {
-      if (TryParse(line, out response))
+      if(TryParse(line, out response))
         return true;
     }
-    catch (Exception e)
+    catch(Exception)
     {
       response = null;
     }

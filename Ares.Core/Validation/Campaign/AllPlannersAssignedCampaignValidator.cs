@@ -6,10 +6,9 @@ namespace Ares.Core.Validation.Campaign;
 
 public class AllPlannersAssignedCampaignValidator : ICampaignValidator
 {
-  public ValidationResult Validate(CampaignTemplate template)
+  public Task<ValidationResult> Validate(CampaignTemplate template)
   {
     var parameters = template.ExperimentTemplates.SelectMany(experimentTemplate => experimentTemplate.GetAllPlannedParameters());
-    return AllPlannersAssignedValidator.Validate(parameters, template.PlannerAllocations);
+    return Task.FromResult(AllPlannersAssignedValidator.Validate(parameters, template.PlannerAllocations));
   }
-
 }

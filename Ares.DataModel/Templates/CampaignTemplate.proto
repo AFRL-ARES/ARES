@@ -5,6 +5,7 @@ package ares.messaging;
 import "Templates/ExperimentTemplate.proto";
 import "Templates/ParameterMetadata.proto";
 import "Templates/PlannerAllocation.proto";
+import "Templates/VariableAllocation.proto";
 import "google/protobuf/wrappers.proto";
 
 message CampaignTemplate {

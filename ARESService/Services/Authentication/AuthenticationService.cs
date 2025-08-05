@@ -1,12 +1,12 @@
-﻿using Ares.Messages;
+﻿using System;
+using System.Threading.Tasks;
+using Ares.Messages;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Threading.Tasks;
 
-namespace ARESService.Services.Authentication;
+namespace AresService.Services.Authentication;
 
 public class AuthenticationService : Ares.Messages.Authentication.AuthenticationBase
 {

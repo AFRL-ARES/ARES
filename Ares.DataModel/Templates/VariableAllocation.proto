@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package ares.messaging;
+
+import "google/protobuf/wrappers.proto";
+
+message VariableAllocation {
+	google.protobuf.StringValue unqiue_id = 1; // a unique id for this entity
+	VariableType variable_type = 2; // the assigned variable type 
+	string parameter_name = 3; // the paraeter to be assigned this environment variable
+}
+
+enum VariableType {
+	VAR_UNSPECIFIED = 0;
+	CAMPAIGN_RESULT_PATH= 1;
+  EXPERIMENT_RESULT_PATH = 2;
+	PREVIOUS_EXPERIMENT_PATH = 3;
+  CAMPAIGN_MISC_FOLDER = 4;
+	CAMPAIGN_STARTUP_FOLDER = 5;
+}

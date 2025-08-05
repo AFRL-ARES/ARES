@@ -21,9 +21,9 @@
                         </button>
                         <AresNavMenu ExpandedMainNav="@SidebarExpanded">
                             <MainNavContent>
-                                <AresNavItem Text="Dashboard" Icon="dvr" Path="#"/>
+                                <AresNavItem Text="Dashboard" Icon="dvr" Path="/"/>
                                 <AresNavItem Text="Project" Icon="space_dashboard" Path="project"/>
-                                <AresNavItem Icon="science" Text="Automation">
+                                <AresNavItem Match="NavLinkMatch.Prefix" Expandable="true" Icon="science" Text="Automation" Path="automation">
                                     <AresNavItem Icon="brush" Text="Campaign Designer" Path="automation/campaignlist"/>
                                     <AresNavItem Icon="stairs" Text="Custom Step Builder" Path="automation/customstepbuilder"/>
                                     <AresNavItem Icon="directions_run" Text="Execution" Path="automation/execution"/>
@@ -31,6 +31,7 @@
                                 </AresNavItem>
                                 <AresNavItem Icon="assessment" Text="Data Viewer" Path="dataviewer"/>
                                 <AresNavItem Icon="assessment" Text="Device States" Path="device_states"/>
+                                <AresNavItem Icon="detector" Text="Safety" Path="/safety"/>
                             </MainNavContent>
 
                             <FooterContent>

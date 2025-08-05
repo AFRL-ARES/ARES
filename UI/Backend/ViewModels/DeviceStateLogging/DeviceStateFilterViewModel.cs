@@ -1,4 +1,4 @@
-﻿using Ares.Messages.DeviceStates;
+﻿using Ares.Messages.DeviceState;
 using Ares.Messaging;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
@@ -12,10 +12,10 @@ public class DeviceStateFilterViewModel : ReactiveObject
 
   public DeviceStateFilterViewModel(
     AresAutomation.AresAutomationClient automationClient,
-    ICombinedDeviceStateIdGetter idGetter)
+    ICombinedDeviceIdGetter idGetter)
   {
     _automationClient = automationClient;
-    _automationClient.GetAvailableCampaignResultsAsync(new Empty()).ResponseAsync
+    _automationClient.GetAvailableCampaignExecutionSummariesAsync(new Empty()).ResponseAsync
       .ContinueWith(task => UpdateCampaigns(task.Result));
     idGetter.GetAvailableIds()
       .ContinueWith(task => AvailableDevices = task.Result);
@@ -27,9 +27,9 @@ public class DeviceStateFilterViewModel : ReactiveObject
     EndTime = truncatedTime;
   }
 
-  private void UpdateCampaigns(AvailableCampaignResultsResponse response)
+  private void UpdateCampaigns(AvailableCampaignExecutionSummariesResponse response)
   {
-    Campaigns = response.AvailableCampaignResults.Select(result => new CampaignResultMetadata { ResultId = result.ResultId, CampaignName = $"result.CampaignName-{result.CompletionTime}", CompletionTime = result.CompletionTime });
+    Campaigns = response.AvailableCampaignSummaries.Select(result => new CampaignExecutionSummaryMetadata { SummaryId = result.SummaryId, CampaignName = $"result.CampaignName-{result.CompletionTime}", CompletionTime = result.CompletionTime });
   }
 
   [Reactive]
@@ -38,18 +38,18 @@ public class DeviceStateFilterViewModel : ReactiveObject
   public IEnumerable<string>? SelectedDevices { get; set; }
 
   [Reactive]
-  public IEnumerable<CampaignResultMetadata>? Campaigns { get; private set; }
+  public IEnumerable<CampaignExecutionSummaryMetadata>? Campaigns { get; private set; }
 
   public async Task UpdateExperiments(string? campaignResultId)
   {
     Experiments = null;
-    var campaignResult = await _automationClient.GetCampaignResultAsync(
-      new CampaignResultRequest { ResultId = campaignResultId });
-    Experiments = campaignResult.ExperimentResults;
+    var campaignResult = await _automationClient.GetCampaignSummaryAsync(
+      new CampaignExecutionSummaryRequest { SummaryId = campaignResultId });
+    Experiments = campaignResult.ExperimentSummaries;
   }
 
   [Reactive]
-  public IEnumerable<ExperimentResult>? Experiments { get; private set; }
+  public IEnumerable<ExperimentExecutionSummary>? Experiments { get; private set; }
 
   public string? SelectedExperimentId { get; set; }
 
@@ -63,9 +63,9 @@ public class DeviceStateFilterViewModel : ReactiveObject
   public bool UseEndTime { get; set; }
   public bool UseExperiment { get; set; }
 
-  public StateRequest GetStateRequest()
+  public StateRequestFilter GetStateRequestFilter()
   {
-    var request = new StateRequest
+    var request = new StateRequestFilter
     {
       Start = UseStartTime ? StartTime.ToUniversalTime().ToTimestamp() : default,
       End = UseEndTime ? EndTime.ToUniversalTime().ToTimestamp() : default,
@@ -73,7 +73,7 @@ public class DeviceStateFilterViewModel : ReactiveObject
       Interval = Interval.ToDuration()
     };
 
-    if (SelectedDevices is not null)
+    if(SelectedDevices is not null)
       request.DeviceIds.AddRange(SelectedDevices);
 
     return request;

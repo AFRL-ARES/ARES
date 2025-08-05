@@ -37,7 +37,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
   public async Task<bool> QueryManufacturerInfo()
   {
     var currentState = GetCurrentState();
-    if (currentState is null)
+    if(currentState is null)
       return false;
 
     // for now we just get entry 4 from the manufacturer info as that contains the model number we need to
@@ -53,7 +53,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
       UpdatePotentialMaxValue(response);
       endMarkerReached = response.IsEndMarker;
     }
-    catch (TimeoutException e)
+    catch(TimeoutException e)
     {
       Trace.WriteLine($"Timed out while trying to get manufacturer info: {e.Message}");
       endMarkerReached = true;
@@ -68,17 +68,17 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
   /// </summary>
   private void UpdatePotentialMaxValue(ManufacturerInfoEntry entry)
   {
-    if (entry.EntryNumber != 4)
+    if(entry.EntryNumber != 4)
       return;
 
     var currentState = GetCurrentState();
     var dataFrameFormat = currentState?.DataFrameFormatEntries?.FirstOrDefault(entry => entry.Field == DataFormatField.SetPoint);
-    if (dataFrameFormat is not null)
+    if(dataFrameFormat is not null)
     {
-      if (dataFrameFormat.MaxVal is null)
+      if(dataFrameFormat.MaxVal is null)
       {
         var modelNumber = entry.Data.Split('-').Skip(1).FirstOrDefault();
-        if (modelNumber is null)
+        if(modelNumber is null)
         {
           _logger.LogWarning("Failed to get max value for MFC {Name} with model number {Model}", Name, entry.Data);
           return;
@@ -93,12 +93,12 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
   public async Task ChangeHardwareUnitId(char targetId)
   {
     await StopUpdateLoop();
-    if (Connection is null)
+    if(Connection is null)
       throw new InvalidOperationException("Connection was null when trying to change hardware id");
 
     var reservedId = Connection.ReserveId(targetId);
 
-    if (!reservedId)
+    if(!reservedId)
       throw new InvalidOperationException($"ID {targetId} is already in use by another Alicat");
 
     var command = new ChangeIdCommand(AssumedId, targetId, FirmwareVersion);
@@ -107,11 +107,11 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     {
       result = await Connection.Send(command, TimeSpan.FromSeconds(5), response => response.Id == targetId);
     }
-    catch (TimeoutException)
+    catch(TimeoutException)
     {
     }
 
-    if (result is null)
+    if(result is null)
     {
       Connection.ReleaseId(targetId);
       throw new InvalidOperationException("Could not get a response for the newly changed id");
@@ -123,7 +123,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     {
       await Initialize();
     }
-    catch (TimeoutException e)
+    catch(TimeoutException e)
     {
       Status = new DeviceStatus { DeviceState = DeviceState.Error, Message = $"Failed to initialize: {e.Message}" };
     }
@@ -145,12 +145,12 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
   public async Task<bool> QueryGasListInfo()
   {
     var currentState = GetCurrentState();
-    if (currentState is null)
+    if(currentState is null)
       return false;
 
     var gasIdx = 0;
     var endMarkerReached = false;
-    while (!endMarkerReached)
+    while(!endMarkerReached)
     {
       var command = new QueryGasCommand(currentState.Id, FirmwareVersion, gasIdx);
       try
@@ -159,7 +159,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
         UpdateState(response);
         endMarkerReached = response.IsEndMarker;
       }
-      catch (TimeoutException e)
+      catch(TimeoutException e)
       {
         Trace.WriteLine($"Timed out while trying to get gas info entry: {e.Message}");
         endMarkerReached = true;
@@ -180,11 +180,11 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
       var response = await Send(request, TimeSpan.FromSeconds(3));
       FirmwareVersion = response.FirmwareVersion;
     }
-    catch (OperationCanceledException)
+    catch(OperationCanceledException)
     {
       FirmwareVersion = string.Empty;
     }
-    catch (TimeoutException)
+    catch(TimeoutException)
     {
       FirmwareVersion = string.Empty;
     }
@@ -193,12 +193,12 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
   public async Task<bool> QueryDataFrameFormat()
   {
     var currentState = GetCurrentState();
-    if (currentState is null)
+    if(currentState is null)
       return false;
 
     var formatIdx = 0;
     var endMarkerReached = false;
-    while (!endMarkerReached)
+    while(!endMarkerReached)
     {
       var command = new DataFormatRequest(currentState.Id, FirmwareVersion, formatIdx);
       try
@@ -207,7 +207,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
         UpdateState(response);
         endMarkerReached = response.EntryType == DataFrameFormatEntryType.EndMarker;
       }
-      catch (TimeoutException e)
+      catch(TimeoutException e)
       {
         Trace.WriteLine($"Timed out while trying to get data frame entry: {e.Message}");
         //throw;
@@ -280,13 +280,13 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
   public override async Task<bool> Activate()
   {
     var activated = await base.Activate();
-    if (activated)
+    if(activated)
     {
       try
       {
         await Initialize();
       }
-      catch (TimeoutException e)
+      catch(TimeoutException e)
       {
         Status = new DeviceStatus { DeviceState = DeviceState.Error, Message = $"Failed to initialize: {e.Message}" };
         activated = false;
@@ -294,6 +294,12 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     }
 
     return activated;
+  }
+
+  public override async Task EnterSafeMode()
+  {
+    //Set the setpoint to zero, effectively shutting off the MFC.. I think
+    await NewSetpoint(StandardVolumeFlow.FromStandardCubicCentimetersPerMinute(0.0));
   }
 
   public async ValueTask DisposeAsync()
@@ -308,7 +314,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
   public Task<LiveDataResponse> GetLiveData()
   {
     var currentState = GetCurrentState();
-    if (currentState is null || currentState.DataFrameFormatEntries?.Count() < _expectedDataFormatEntryCount)
+    if(currentState is null || currentState.DataFrameFormatEntries?.Count() < _expectedDataFormatEntryCount)
       throw new InvalidOperationException(
         $"Cannot request live data without knowing format entries. Number of currently known formats: {currentState?.DataFrameFormatEntries?.Count() ?? 0}, Expected at least {_expectedDataFormatEntryCount}");
 
@@ -321,7 +327,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
 
   private async Task Initialize()
   {
-    if (Connection is null)
+    if(Connection is null)
       throw new NullReferenceException("Initialize was called, but Connection was not set");
 
     await StopUpdateLoop();
@@ -335,7 +341,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     var cs = GetCurrentState();
 
     var importantEntries = Enumerable.Range(1, 7);
-    if (!importantEntries.All(entryNum => cs!.DataFrameFormatEntries?.Any(entry => entry.EntryNumber == entryNum) ?? false))
+    if(!importantEntries.All(entryNum => cs!.DataFrameFormatEntries?.Any(entry => entry.EntryNumber == entryNum) ?? false))
     {
       Status = new DeviceStatus { DeviceState = DeviceState.Error, Message = "Did not receive Data Frame Entries 1-7. Could be missing one, could be missing all." };
       return;
@@ -347,19 +353,20 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
   public async Task StartUpdateLoop(TimeSpan interval)
   {
     await StopUpdateLoop();
-    Task.Run(() => Task.Delay(150)).Wait();
+    await Task.Delay(150);
     _stateGetterLoopTokenSource = new CancellationTokenSource();
     _stateUpdater = Task.Factory.StartNew(async _ =>
     {
+      Thread.CurrentThread.Name = $"MFC {AssumedId} State Update Loop Thread";
       try
       {
-        while (!_stateGetterLoopTokenSource.IsCancellationRequested)
+        while(!_stateGetterLoopTokenSource.IsCancellationRequested)
         {
           try
           {
             var liveData = await GetLiveData();
           }
-          catch (TimeoutException)
+          catch(TimeoutException)
           {
             Status = new DeviceStatus { DeviceState = DeviceState.Active, Message = $"Get Live Data timed out at {DateTime.Now}" };
           }
@@ -367,10 +374,10 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
           await Task.Delay(interval);
         }
       }
-      catch (ObjectDisposedException)
+      catch(ObjectDisposedException)
       {
       }
-      catch (Exception e)
+      catch(Exception e)
       {
         Status = new DeviceStatus { DeviceState = DeviceState.Error, Message = $"{e.Message}" };
       }
@@ -384,22 +391,22 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     await _stateUpdater;
   }
 
-  protected override async Task<DeviceValidationResult> Validate()
+  protected override async Task<SerialDeviceValidationResult> Validate()
   {
     var request = new GenericLineRequest(AssumedId);
     try
     {
       var response = await GetResponseWithRetry<GenericLineResponse, GenericLineRequest>(request, 5, TimeSpan.FromSeconds(1));
-      if (response.Id == AssumedId)
-        return new DeviceValidationResult(true);
+      if(response.Id == AssumedId)
+        return new SerialDeviceValidationResult(true);
 
       // This should never happen, but in case it does lets throw an exception as it's important to figure out
       // why the response id did not match.
       throw new InvalidOperationException($"Requested a live data line for MFC with id of {AssumedId} but got a response with id of {response.Id}");
     }
-    catch (TimeoutException)
+    catch(TimeoutException)
     {
-      return new DeviceValidationResult(false, $"Could not get a valid response for MFC {Name} with an id of {AssumedId} within allotted time.");
+      return new SerialDeviceValidationResult(false, $"Could not get a valid response for MFC {Name} with an id of {AssumedId} within allotted time.");
     }
   }
 
@@ -407,26 +414,26 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     where TResult : CommandResponse
     where TRequest : MfcCommandExpectingResponse<TResult>
   {
-    while (retries >= 0)
+    while(retries >= 0)
     {
       try
       {
         var response = await Send(request, timeout);
         return response;
       }
-      catch (TimeoutException)
+      catch(TimeoutException)
       {
       }
       retries--;
     }
 
-    throw new TimeoutException($"Timed out while trying to get {request.GetType().Name}. Id : {request.Id}");
+    throw new TimeoutException($"Timed out while trying to get {request.GetType().Name}. Id : {request.MfcId}");
   }
 
   private void UpdateState(LiveDataResponse liveResponse)
   {
     var currentState = GetCurrentState();
-    if (currentState is null || liveResponse.Id != AssumedId)
+    if(currentState is null || liveResponse.Id != AssumedId)
     {
       return;
     }
@@ -436,17 +443,17 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
 
   private void UpdateState(DataFrameFormatEntry formatEntry)
   {
-    if (formatEntry.EntryType is not DataFrameFormatEntryType.Entry)
+    if(formatEntry.EntryType is not DataFrameFormatEntryType.Entry)
       return;
 
     var currentState = GetCurrentState();
-    if (formatEntry.Id != AssumedId || currentState is null)
+    if(formatEntry.Id != AssumedId || currentState is null)
     {
       return; // TODO: Throw exception? This is causing issues.
     }
     var staleEntries = currentState.DataFrameFormatEntries?.Where(entry => entry.EntryNumber >= formatEntry.EntryNumber).ToArray() ?? Array.Empty<DataFrameFormatEntry>();
     var existingEntries = new List<DataFrameFormatEntry>(currentState.DataFrameFormatEntries ?? Array.Empty<DataFrameFormatEntry>());
-    foreach (var staleEntry in staleEntries)
+    foreach(var staleEntry in staleEntries)
       existingEntries.Remove(staleEntry);
 
     existingEntries.Add(formatEntry);
@@ -457,13 +464,13 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
   private void UpdateState(ManufacturerInfoEntry manufactureEntry)
   {
     var currentState = GetCurrentState();
-    if (manufactureEntry.Id != AssumedId || currentState is null)
+    if(manufactureEntry.Id != AssumedId || currentState is null)
     {
       return; // TODO: Throw exception? This is causing issues.
     }
     var staleEntries = currentState.ManufacturerInfo?.Where(entry => entry.EntryNumber >= manufactureEntry.EntryNumber).ToArray() ?? Array.Empty<ManufacturerInfoEntry>();
     var existingEntries = new List<ManufacturerInfoEntry>(currentState.ManufacturerInfo ?? Array.Empty<ManufacturerInfoEntry>());
-    foreach (var staleEntry in staleEntries)
+    foreach(var staleEntry in staleEntries)
       existingEntries.Remove(staleEntry);
 
     existingEntries.Add(manufactureEntry);
@@ -473,16 +480,16 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
 
   private void UpdateState(GasInfoEntry gasEntry)
   {
-    if (gasEntry.IsEndMarker)
+    if(gasEntry.IsEndMarker)
       return;
 
     var currentState = GetCurrentState();
-    if (currentState is null)
+    if(currentState is null)
       return;
 
     var staleEntries = currentState.Gases?.Where(entry => entry.Index >= gasEntry.Index) ?? Array.Empty<GasInfoEntry>();
     var existingEntries = new List<GasInfoEntry>(currentState.Gases ?? Array.Empty<GasInfoEntry>());
-    foreach (var staleEntry in staleEntries)
+    foreach(var staleEntry in staleEntries)
       existingEntries.Remove(staleEntry);
 
     existingEntries.Add(gasEntry);
@@ -512,17 +519,15 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
   private Task<T> Send<T>(MfcCommandExpectingResponse<T> command) where T : CommandResponse
   {
     return Connection.Send(command, TimeSpan.FromSeconds(5));
-    //return Connection.Send(command, response => response.Id == AssumedId);
   }
 
   private Task<T> Send<T>(MfcCommandExpectingResponse<T> command, TimeSpan timeout) where T : CommandResponse
   {
-    if (command.Id != AssumedId)
+    if(command.MfcId != AssumedId)
     {
-      throw new InvalidOperationException($"Attempting to send command improperly. {command.Id} != {AssumedId}");
+      throw new InvalidOperationException($"Attempting to send command improperly. {command.MfcId} != {AssumedId}");
     }
     return Connection.Send(command, timeout);
-    //return Connection.Send(command, timeout, response => response.Id == AssumedId);
   }
 
   public async Task Start()

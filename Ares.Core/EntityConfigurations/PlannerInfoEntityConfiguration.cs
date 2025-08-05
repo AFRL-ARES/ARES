@@ -4,9 +4,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Ares.Core.EntityConfigurations;
 
-public class PlannerInfoEntityConfiguration : AresEntityTypeBaseConfiguration<PlannerInfo>
+public class PlannerInfoEntityConfiguration : AresEntityTypeBaseConfiguration<PlannerAdapterInfo>
 {
-  public override void Configure(EntityTypeBuilder<PlannerInfo> builder)
+  public override void Configure(EntityTypeBuilder<PlannerAdapterInfo> builder)
   {
     base.Configure(builder);
     builder.ToTable("Planners");

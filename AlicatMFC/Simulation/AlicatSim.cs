@@ -1,6 +1,6 @@
-﻿using System.Diagnostics;
+﻿using AlicatMFC.Commands.Responses;
+using System.Diagnostics;
 using System.Text;
-using AlicatMFC.Commands.Responses;
 using UnitsNet;
 using UnitsNet.Units;
 
@@ -15,17 +15,6 @@ public class AlicatSim : IDisposable
   private readonly bool _showTemperature;
   private readonly DataFrameInfoLine[] _formatLines;
   private readonly string[] _mfgResponse;
-  private readonly string[] _formats =
-    {
-    $"{DataFormatField.UnitId}",
-    $"{DataFormatField.Pressure} {UnitAbbreviationsCache.Default.GetDefaultAbbreviation(PressureUnit.Atmosphere)}",
-    $"{DataFormatField.Temperature} {UnitAbbreviationsCache.Default.GetDefaultAbbreviation(TemperatureUnit.DegreeCelsius)}",
-    $"{DataFormatField.Volumetric} {UnitAbbreviationsCache.Default.GetDefaultAbbreviation(VolumeFlowUnit.MilliliterPerSecond)}",
-    $"{DataFormatField.Mass} {UnitAbbreviationsCache.Default.GetDefaultAbbreviation(MassFlowUnit.GramPerSecond)}",
-    $"{DataFormatField.SetPoint} {UnitAbbreviationsCache.Default.GetDefaultAbbreviation(MassFlowUnit.GramPerSecond)}",
-    $"{DataFormatField.Gas}",
-    $"{DataFormatField.Status}"
-  };
   private readonly CancellationTokenSource _generalCancellationTokenSource = new();
   private readonly MassFlow _massFlowBase = MassFlow.FromGramsPerSecond(8000);
   private readonly ISet<StatusCode> _statusCodes = new HashSet<StatusCode>();
@@ -109,7 +98,7 @@ public class AlicatSim : IDisposable
   public void SendCommand(byte[] command)
   {
     // simulating the mfc ignoring commands when it's busy processing existing ones
-    if (_processingCommand)
+    if(_processingCommand)
       return;
 
     _processingCommand = true;
@@ -125,22 +114,22 @@ public class AlicatSim : IDisposable
 
   private void ProcessCommand(string input)
   {
-    if (!input.EndsWith('\r'))
+    if(!input.EndsWith('\r'))
       return;
 
     input = input.TrimEnd('\r');
     Trace.WriteLine($"{GetType().Name} {DeviceId} Received {input}");
     var deviceId = input.FirstOrDefault();
-    if (deviceId is < 'A' or > 'Z' && deviceId != '*' && deviceId != '@')
+    if(deviceId is < 'A' or > 'Z' && deviceId != '*' && deviceId != '@')
       return;
 
-    if (deviceId is '*' or '@')
+    if(deviceId is '*' or '@')
     {
       StopDataStream();
       return;
     }
 
-    if (deviceId != DeviceId)
+    if(deviceId != DeviceId)
       return;
 
     ProcessQualifiedCommand(input[1..]);
@@ -148,7 +137,7 @@ public class AlicatSim : IDisposable
 
   private void Send(string simulatedResponse)
   {
-    if (!simulatedResponse.EndsWith('\r'))
+    if(!simulatedResponse.EndsWith('\r'))
       simulatedResponse += '\r';
 
     var serialData = Encoding.ASCII.GetBytes(simulatedResponse.ToCharArray());
@@ -156,7 +145,7 @@ public class AlicatSim : IDisposable
     var blah = random.Next(1, 10);
     Task.Run(() =>
     {
-      if (serialData.Length < 10)
+      if(serialData.Length < 10)
       {
         _byteSender(serialData);
         return;
@@ -174,14 +163,14 @@ public class AlicatSim : IDisposable
   /// <param name="command"></param>
   private void ProcessQualifiedCommand(string command)
   {
-    if (string.IsNullOrEmpty(command))
+    if(string.IsNullOrEmpty(command))
       SendDataInfo();
 
-    command = command.Replace("$$", "");
-    if (command.StartsWith("@="))
+    command = command.Replace("$$", string.Empty);
+    if(command.StartsWith("@="))
     {
       DeviceId = command["@=".Length..].First();
-      if (DeviceId == '@')
+      if(DeviceId == '@')
         StartDataStream();
       else
         SendDataInfo();
@@ -189,32 +178,32 @@ public class AlicatSim : IDisposable
       return;
     }
 
-    if (command.StartsWith("??"))
+    if(command.StartsWith("??"))
     {
       ProcessQuery(command["??".Length..]);
       return;
     }
 
-    if (command.StartsWith("VE", StringComparison.InvariantCultureIgnoreCase))
+    if(command.StartsWith("VE", StringComparison.InvariantCultureIgnoreCase))
     {
       SendFirmwareVersion();
       return;
     }
 
-    if (command.StartsWith("H", StringComparison.InvariantCultureIgnoreCase))
+    if(command.StartsWith("H", StringComparison.InvariantCultureIgnoreCase))
     {
       ProcessHold(command["H".Length..]);
       return;
     }
 
-    if (command.StartsWith("C", StringComparison.InvariantCultureIgnoreCase))
+    if(command.StartsWith("C", StringComparison.InvariantCultureIgnoreCase))
     {
       _statusCodes.Remove(StatusCode.Hld);
       SendDataInfo();
       return;
     }
 
-    if (command.StartsWith("G", StringComparison.InvariantCultureIgnoreCase))
+    if(command.StartsWith("G", StringComparison.InvariantCultureIgnoreCase))
     {
       var gasNumString = command["G".Length..];
       var gasNum = Convert.ToInt32(gasNumString);
@@ -223,14 +212,14 @@ public class AlicatSim : IDisposable
       return;
     }
 
-    if (command.StartsWith("S", StringComparison.InvariantCultureIgnoreCase))
+    if(command.StartsWith("S", StringComparison.InvariantCultureIgnoreCase))
     {
       ProcessSetpoint(command["S".Length..]);
       return;
     }
 
     var numeric = double.TryParse(command, out var setpoint);
-    if (numeric)
+    if(numeric)
       Trace.WriteLine($"{GetType().Name} does not support setpoints based on full scale yet.");
   }
 
@@ -245,7 +234,7 @@ public class AlicatSim : IDisposable
   private void ProcessSetpoint(string query)
   {
     var numeric = double.TryParse(query, out var setpoint);
-    if (!numeric)
+    if(!numeric)
       return;
 
     _setpoint = MassFlow.FromGramsPerSecond(setpoint);
@@ -254,18 +243,18 @@ public class AlicatSim : IDisposable
 
   private void ProcessQuery(string query)
   {
-    if (query.StartsWith("G", StringComparison.InvariantCultureIgnoreCase))
+    if(query.StartsWith("G", StringComparison.InvariantCultureIgnoreCase))
       SendAvailableGasResponse(query[1..]);
-    else if (query.StartsWith("M", StringComparison.InvariantCultureIgnoreCase))
+    else if(query.StartsWith("M", StringComparison.InvariantCultureIgnoreCase))
       SendManufacturerInfoResponse(query[1..]);
-    else if (query.StartsWith("D", StringComparison.InvariantCultureIgnoreCase))
+    else if(query.StartsWith("D", StringComparison.InvariantCultureIgnoreCase))
       SendDataFrameInfoResponse(query[1..]);
   }
 
   private void SendAvailableGasResponse(string idx)
   {
     var gasResponses = new List<string>();
-    foreach (var gas in _availableGases)
+    foreach(var gas in _availableGases)
     {
       var response = $"{DeviceId} G{gasResponses.Count:D2}   {gas}";
       gasResponses.Add(response);
@@ -273,7 +262,7 @@ public class AlicatSim : IDisposable
 
     var hasIdx = int.TryParse(idx, out var resultIdx);
 
-    if (!hasIdx)
+    if(!hasIdx)
     {
       Send(string.Join('\r', gasResponses));
       return;
@@ -287,7 +276,7 @@ public class AlicatSim : IDisposable
   {
     var hasIdx = int.TryParse(idx, out var resultIdx);
 
-    if (!hasIdx)
+    if(!hasIdx)
     {
       Send(string.Join('\r', _mfgResponse));
       return;
@@ -306,7 +295,7 @@ public class AlicatSim : IDisposable
 
     var hasIdx = int.TryParse(idx, out var resultIdx);
 
-    if (!hasIdx)
+    if(!hasIdx)
     {
       Send(string.Join('\r', responseLines));
       return;
@@ -326,7 +315,8 @@ public class AlicatSim : IDisposable
     Task.Factory.StartNew(_ =>
     {
       Thread.CurrentThread.IsBackground = true;
-      while (!_generalCancellationTokenSource.IsCancellationRequested)
+      Thread.CurrentThread.Name = $"Alicat MFC {DeviceId} Data Randomization Thread";
+      while(!_generalCancellationTokenSource.IsCancellationRequested)
       {
         RandomizeData();
         Thread.Sleep(TimeSpan.FromMilliseconds(200));
@@ -344,14 +334,6 @@ public class AlicatSim : IDisposable
     _volumetricFlow = VolumeFlow.FromMillilitersPerSecond(_volumetricFlowBase.MillilitersPerSecond + random.Next(-10, 10));
     _massFlow = MassFlow.FromGramsPerSecond(_massFlowBase.GramsPerSecond + random.Next(-10, 10));
     return;
-    var rand = new Random();
-    if (rand.Next(30) == 10)
-    {
-      if (_statusCodes.Contains(StatusCode.Mov))
-        _statusCodes.Remove(StatusCode.Mov);
-      else
-        _statusCodes.Add(StatusCode.Mov);
-    }
   }
 
   private void StartDataStream()
@@ -360,7 +342,8 @@ public class AlicatSim : IDisposable
     var combinedSource = CancellationTokenSource.CreateLinkedTokenSource(_streamingTokenSource.Token, _generalCancellationTokenSource.Token);
     Task.Factory.StartNew(_ =>
     {
-      while (!combinedSource.Token.IsCancellationRequested)
+      Thread.CurrentThread.Name = $"Alicat MFC {DeviceId} Data Stream Thread";
+      while(!combinedSource.Token.IsCancellationRequested)
       {
         SendDataInfo();
         Task.Delay(50, combinedSource.Token).Wait(combinedSource.Token);
@@ -383,16 +366,16 @@ public class AlicatSim : IDisposable
       AbsolutePressureString
     };
 
-    if (_showTemperature)
+    if(_showTemperature)
       data.Add(TemperatureString);
-    if (_showVolumetric)
+    if(_showVolumetric)
       data.Add(VolumetricFlowString);
     data.Add(MassFlowString);
     data.Add(SetpointString);
     data.Add(_currentGas);
 
     var dataString = string.Join(' ', data);
-    if (_statusCodes.Any())
+    if(_statusCodes.Any())
       dataString += $" {string.Join(' ', _statusCodes)}";
 
     Send(dataString);

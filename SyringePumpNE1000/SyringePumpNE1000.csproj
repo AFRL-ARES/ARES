@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -12,13 +12,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Ares.Tools" Version="2025.8.4.112732" />
     <PackageReference Include="Crc32.NET" Version="1.2.0" />
-    <PackageReference Include="Grpc.Tools" Version="2.62.0">
+    <PackageReference Include="Grpc.Tools" Version="2.72.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="NullFX.CRC" Version="1.1.10" />
-    <PackageReference Include="UnitsNet" Version="5.49.0" />
+    <PackageReference Include="UnitsNet" Version="5.75.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -28,6 +29,7 @@
   <ItemGroup>
     <Protobuf Include="Proto\SyringePump.proto" ProtoRoot="Proto" />
     <Protobuf Include="Proto\SyringePumpConfig.proto" GrpcServices="None" />
+    <Protobuf Include="Proto\DataModel.proto" GrpcServices="None" />
   </ItemGroup>
 
 </Project>

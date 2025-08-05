@@ -4,7 +4,7 @@ using System.IO.Ports;
 
 namespace AlicatMFC.Simulation;
 
-public class SimMassFlowControllerConnection : AresSimConnection, IMfcConnection
+public class SimMassFlowControllerConnection : AresSerialSimConnection, IMfcConnection
 {
   private readonly IList<AlicatSim> _alicatSims = new List<AlicatSim>();
 

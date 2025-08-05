@@ -1,85 +1,79 @@
-﻿using System.Collections.ObjectModel;
-using Ares.Messaging;
+﻿using Ares.Messaging;
+using Ares.Messaging.Analyzing;
 using DynamicData;
 using Google.Protobuf.WellKnownTypes;
+using Radzen;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
+using System.Collections.ObjectModel;
 using UI.Backend.Extensions;
-using UI.Backend.Helpers;
+using UI.Services.Notification;
 
 namespace UI.Backend.ViewModels.Automation;
 
 public class ExecutionViewModel : ReactiveObject
 {
-
   private readonly AresAutomation.AresAutomationClient _automationClient;
-
+  private readonly AresAnalyzerManagementService.AresAnalyzerManagementServiceClient _analyzerService;
   public readonly ObservableCollection<CampaignTemplate> Templates = new();
+  private readonly INotificationReceivingService _notificationService;
+  private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+  private Task _campaignStatusListener = Task.CompletedTask;
 
-  public ExecutionViewModel(AresAutomation.AresAutomationClient automationClient)
+  public ExecutionViewModel(AresAutomation.AresAutomationClient automationClient,
+    IConfiguration configuration,
+    INotificationReceivingService notificationService,
+    AresAnalyzerManagementService.AresAnalyzerManagementServiceClient analyzerService)
   {
     _automationClient = automationClient;
+    _notificationService = notificationService;
+    _analyzerService = analyzerService;
   }
 
-  [Reactive]
-  public CampaignTemplate? CampaignTemplate { get; set; }
-
-  [Reactive]
-  public ExperimentExecutionStatus? ExperimentStatus { get; private set; }
-
-  public HashSet<PlannerInfo?> PlannerInfos { get; set; } = new();
-
-  public uint ExperimentsToRun { get; set; }
-
-  public CampaignResult? TestCampaignResult { get; private set; }
-  public IEnumerable<CampaignResultMetadata>? TestCampaignResultMetadata { get; private set; }
+  public async Task<bool> EnsureStopConditionSet()
+  {
+    await GetCurrentStopCondition();
+    return CurrentStopCondition is not null;
+  }
 
   public async Task RefreshCampaigns()
   {
-    var campaigns = await _automationClient.GetAllCampaignsAsync(new Empty());
+    var campaigns = await _automationClient.GetAllCampaignsAsync(new GetAllCampaignsRequest());
     Templates.Clear();
     Templates.AddRange(campaigns.CampaignTemplates);
   }
 
-  public void SelectCampaignTemplate(object template)
+  public async Task SelectCampaignTemplate(object? template)
   {
-    if (template is not CampaignTemplate campaignTemplate)
+    if(template is null || template is not CampaignTemplate campaignTemplate)
       return;
 
     CampaignTemplate = campaignTemplate;
-    _automationClient.SetCampaignForExecution(new CampaignRequest { UniqueId = campaignTemplate.UniqueId });
+    await _automationClient.SetCampaignForExecutionAsync(new CampaignRequest { UniqueId = campaignTemplate.UniqueId });
     _ = UpdateCurrentTemplate();
-  }
-
-  [Reactive]
-  public bool CampaignActive { get; set; }
-  [Reactive]
-  public bool CampaignPaused { get; set; }
-
-  public bool IsCampaignActive()
-  {
-    if (ExperimentStatus is null)
-      return false;
-
-    return ExperimentStatus.IsActive();
-  }
-
-  public bool IsCampaignPaused()
-  {
-    if (ExperimentStatus is null)
-      return false;
-
-    return ExperimentStatus.IsPaused();
   }
 
   public async Task UpdateCurrentTemplate()
   {
     var currentTemplateOpt = await _automationClient.GetCurrentlySelectedCampaignAsync(new Empty());
     CampaignTemplate = currentTemplateOpt.Value;
-    if (CampaignTemplate is null)
+    if(CampaignTemplate is null)
       return;
 
-    PlannerInfos = CampaignTemplate.ExperimentTemplates.First().GetAllPlannedParameters().Select(parameter => parameter.PlanningMetadata).Select(metadata => CampaignTemplate.PlannerAllocations.FirstOrDefault(allocation => allocation.Parameter.Equals(metadata))?.Planner).ToHashSet();
+    PlannerAdapterInfos = CampaignTemplate.ExperimentTemplates.First().GetAllPlannedParameters()
+    .Select(parameter => parameter.PlanningMetadata)
+    .Select(metadata => CampaignTemplate.PlannerAllocations
+    .FirstOrDefault(allocation => allocation.Parameter.Equals(metadata))?.Planner).ToHashSet();
+    
+    var analyzerId = CampaignTemplate.ExperimentTemplates.First().AnalyzerId;
+    
+    if(analyzerId is not null)
+    {
+      var request = new AnalyzerInfoRequest();
+      request.AnalyzerId = analyzerId;
+      var response = await _analyzerService.GetInfoAsync(request);
+      AnalyzerInfo = response.Info;
+    }
   }
 
   public async Task SetDesiredAnalysis()
@@ -94,12 +88,10 @@ public class ExecutionViewModel : ReactiveObject
     return _automationClient.GetActiveStopConditionAsync(new Empty()).ResponseAsync;
   }
 
-  [Reactive]
-  public ExperimentStopConditionResponse? CurrentStopCondition { get; set; }
-
-  public double DesiredResult { get; set; }
-
-  public double DesiredLeeway { get; set; }
+  public Task<GetReplanRateResponse> GetCurrentReplanRate()
+  {
+    return _automationClient.GetReplanRateAsync(new Empty()).ResponseAsync;
+  }
 
   public async Task<CampaignExecutionStatus?> GetCampaignExecutionStatus()
   {
@@ -113,6 +105,13 @@ public class ExecutionViewModel : ReactiveObject
     CurrentStopCondition = await GetCurrentStopCondition();
   }
 
+  public async Task SetReplanRate()
+  {
+    await _automationClient.SetReplanRateAsync(new ReplanRate { ReplanRate_ = DesiredReplanRate });
+    var blah = await GetCurrentReplanRate();
+    DesiredReplanRate = blah.ReplanRate;
+  }
+
   public Task StopCampaign()
     => _automationClient.StopExecutionAsync(new Empty()).ResponseAsync;
 
@@ -122,20 +121,134 @@ public class ExecutionViewModel : ReactiveObject
   public Task ResumeCampaign()
     => _automationClient.ResumeExecutionAsync(new Empty()).ResponseAsync;
 
-  public async Task GetAvailableCampaignResults()
+  public async Task ExecutionNotesUploaded(UploadChangeEventArgs args)
   {
-    var response = await _automationClient.GetAvailableCampaignResultsAsync(new Empty());
-    TestCampaignResultMetadata = response.AvailableCampaignResults.ToArray();
+    var maxFileSize = 100;
+    var file = args.Files.First();
+
+    using(var stream = file.OpenReadStream(maxFileSize))
+    using(var reader = new StreamReader(stream))
+    {
+      try
+      {
+        ExecutionNotes = await reader.ReadToEndAsync();
+      }
+
+      catch(Exception ex)
+      {
+        var notification = new AresNotification();
+        notification.NotificationSeverity = Severity.Error;
+        notification.Title = "Failed to Upload Experiment Notes";
+        notification.Message = $"ARES failed to read the uploaded experiment notes file. {ex.Message}";
+        notification.Timestamp = DateTime.UtcNow.ToTimestamp();
+
+        _notificationService.PushNotification(notification);
+      }
+    }
   }
 
-  public async Task GetRandomCampaignResult()
+  public Task ReqeustUserConfirmation()
   {
-    var response = await _automationClient.GetAvailableCampaignResultsAsync(new Empty());
-    if (!response.AvailableCampaignResults.Any())
+    var notification = new AresNotification();
+    notification.NotificationSeverity = Severity.Info;
+    notification.Title = "User Confirmation Required to Proceed";
+    notification.Message = $"ARES has paused it's current experiment awaiting user input. Press the play button to continue experimenting.";
+    notification.Timestamp = DateTime.UtcNow.ToTimestamp();
+    notification.Loiter = true;
+
+    _notificationService.PushNotification(notification);
+
+    return Task.CompletedTask;
+  }
+
+  public async Task AddTag()
+  {
+    if(NewTagName is not null && AvailableTags.Any(t => t.TagName == NewTagName))
+    {
+      var notification = new AresNotification();
+      notification.NotificationSeverity = Severity.Info;
+      notification.Title = $"Could Not Add {NewTagName} Tag";
+      notification.Message = "ARES could not add a new experiment tag because it matched one that already existed!";
+      notification.Timestamp = DateTime.UtcNow.ToTimestamp();
+      _notificationService.PushNotification(notification);
+      return;
+    }
+
+    var newProtoTag = new AresCampaignTag { TagName = NewTagName, UniqueId = Guid.NewGuid().ToString() };
+    var currentTagCount = AvailableTags.Count;
+    var request = new TagRequest();
+    request.Tag = newProtoTag;
+    var tags = await _automationClient.AddTagAsync(request);
+
+    if(tags.AvailableTags.Count == currentTagCount + 1)
+    {
+      var notification = new AresNotification();
+      notification.NotificationSeverity = Severity.Success;
+      notification.Title = $"Successfully Added {NewTagName} Tag";
+      notification.Message = "ARES has successfully added a new experiment tag, and it is now available for use";
+      notification.Timestamp = DateTime.UtcNow.ToTimestamp();
+      _notificationService.PushNotification(notification);
+    }
+
+    else
+    {
+      var notification = new AresNotification();
+      notification.NotificationSeverity = Severity.Error;
+      notification.Title = $"Failed to Add {NewTagName} Tag";
+      notification.Message = "ARES failed to add a new experiment tag";
+      notification.Timestamp = DateTime.UtcNow.ToTimestamp();
+      _notificationService.PushNotification(notification);
+    }
+
+    AvailableTags = tags.AvailableTags.ToList();
+    NewTagName = string.Empty;
+  }
+
+  public async Task RemoveTag(AresCampaignTag? aresTag)
+  {
+    if(aresTag is null)
       return;
 
-    var idx = Random.Shared.Next(response.AvailableCampaignResults.Count - 1);
-    var result = response.AvailableCampaignResults.ElementAt(idx);
-    TestCampaignResult = await _automationClient.GetCampaignResultAsync(new CampaignResultRequest { ResultId = result.ResultId });
+    var request = new TagRequest() { Tag = aresTag };
+    var tags = await _automationClient.RemoveTagAsync(request);
+
+    AvailableTags = tags.AvailableTags.ToList();
+
+    if(SelectedTags.Contains(aresTag))
+      SelectedTags.Remove(aresTag);
   }
+
+  public async Task GetAllTags()
+  {
+    var tags = await _automationClient.GetAllTagsAsync(new Empty());
+    AvailableTags = tags.AvailableTags.ToList();
+  }
+
+  [Reactive]
+  public ExperimentStopConditionResponse? CurrentStopCondition { get; set; }
+  public double DesiredResult { get; set; }
+  public double DesiredLeeway { get; set; }
+  public int DesiredReplanRate { get; set; } = 1;
+  [Reactive]
+  public bool CampaignActive { get; set; }
+  [Reactive]
+  public bool CampaignPaused { get; set; }
+  [Reactive]
+  public CampaignTemplate? CampaignTemplate { get; set; }
+  [Reactive]
+  public ExecutionState? CampaignExecutionState { get; set; }
+  [Reactive]
+  public ExperimentExecutionStatus? ExperimentStatus { get; private set; }
+  [Reactive]
+  public HashSet<PlannerAdapterInfo?> PlannerAdapterInfos { get; set; } = new();
+  [Reactive]
+  public AnalyzerInfo? AnalyzerInfo { get; set; }
+  public uint ExperimentsToRun { get; set; }
+  public string ExecutionNotes { get; set; } = string.Empty;
+  public CampaignExecutionSummary? TestCampaignExecutionSummary { get; private set; }
+  public IEnumerable<CampaignExecutionSummaryMetadata>? TestCampaignResultMetadata { get; private set; }
+  public bool DisplayExecutionSummary { get; set; }
+  public List<AresCampaignTag> AvailableTags { get; set; } = new();
+  public List<AresCampaignTag> SelectedTags { get; set; } = new();
+  public string? NewTagName { get; set; }
 }

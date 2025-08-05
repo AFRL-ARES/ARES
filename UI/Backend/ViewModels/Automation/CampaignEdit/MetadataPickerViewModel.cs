@@ -26,7 +26,6 @@ public class MetadataPickerViewModel : ReactiveObject
     _existingGuid = Guid.Parse(existingMetadata.UniqueId);
     _selectedDeviceName = existingMetadata.DeviceName;
     _selectedMetadataName = existingMetadata.Name;
-    _ = RetrieveInfoForExistingMeta();
   }
 
   public IEnumerable<AresDeviceInfo> AvailableDevices { get; private set; } = Array.Empty<AresDeviceInfo>();
@@ -40,11 +39,21 @@ public class MetadataPickerViewModel : ReactiveObject
 
     set
     {
-      _selectedDeviceName = value;
-      SelectedDevice = AvailableDevices.FirstOrDefault(info => info.Name == value);
-      if (SelectedDevice is null)
+      if(_selectedDeviceName == value && SelectedDeviceName == value)
         return;
 
+      //Reset command choice, as we changed devices
+      SelectedMetadataName = null;
+
+      SelectedDevice = AvailableDevices.FirstOrDefault(info => info.Name == value);
+      if(SelectedDevice is null)
+      {
+        _selectedDevice = null;
+        _selectedDeviceName = null;
+        return;
+      }
+
+      _selectedDeviceName = value;
       _ = RefreshMetadata();
     }
   }
@@ -60,7 +69,7 @@ public class MetadataPickerViewModel : ReactiveObject
     set
     {
       _selectedMetadataName = value;
-      if (string.IsNullOrEmpty(value))
+      if(string.IsNullOrEmpty(value))
       {
         SelectedCommandMetadata = null;
         SelectedMetadataDescription = null;
@@ -69,7 +78,7 @@ public class MetadataPickerViewModel : ReactiveObject
 
 
       var selectedCommandMetadata = AvailableMetadata.FirstOrDefault(metadata => metadata.DeviceName == SelectedDevice?.Name && metadata.Name == value);
-      if (selectedCommandMetadata is not null)
+      if(selectedCommandMetadata is not null)
         selectedCommandMetadata.UniqueId = _existingGuid.ToString();
 
       SelectedCommandMetadata = selectedCommandMetadata;
@@ -84,7 +93,7 @@ public class MetadataPickerViewModel : ReactiveObject
     {
       _selectedCommandMetadata = value;
       this.RaisePropertyChanged();
-      if (value is null)
+      if(value is null)
         return;
 
       SelectedMetadataDescription = value.Description;
@@ -101,11 +110,12 @@ public class MetadataPickerViewModel : ReactiveObject
   public CommandMetadata? Save()
     => SelectedCommandMetadata;
 
-  public Task Reset()
+  public async Task Reset()
   {
     AvailableMetadata = Array.Empty<CommandMetadata>();
     AvailableDevices = Array.Empty<AresDeviceInfo>();
-    return RefreshDevices();
+    await RefreshDevices();
+    await RetrieveInfoForExistingMeta();
   }
 
   public async Task RefreshDevices()
@@ -116,7 +126,7 @@ public class MetadataPickerViewModel : ReactiveObject
 
   public async Task RefreshMetadata()
   {
-    if (SelectedDevice is null)
+    if(SelectedDevice is null)
     {
       AvailableMetadata = Array.Empty<CommandMetadata>();
       return;
@@ -131,13 +141,17 @@ public class MetadataPickerViewModel : ReactiveObject
   {
     //await _deviceRefreshTask;
     var device = AvailableDevices.FirstOrDefault(info => info.Name == SelectedDeviceName);
-    if (device is null)
+    if(device is null)
+    {
+      SelectedDeviceName = null;
+      SelectedMetadataName = null;
       return;
+    }
 
     SelectedDevice = device;
     await RefreshMetadata();
     var metadata = AvailableMetadata.FirstOrDefault(info => info.Name == SelectedMetadataName);
-    if (metadata is null)
+    if(metadata is null)
       return;
 
     SelectedCommandMetadata = metadata;

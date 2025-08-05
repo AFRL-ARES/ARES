@@ -13,12 +13,12 @@ internal class AllPlannersAssignedStartCondition : IStartCondition
     _allPlannersValidator = campaignValidators.OfType<AllPlannersAssignedCampaignValidator>().First();
   }
 
-  public StartConditionResult? CanStart()
+  public async Task<StartConditionResult> CanStart()
   {
-    if (_activeCampaignTemplateStore.CampaignTemplate is null)
-      return null;
+    if(_activeCampaignTemplateStore.CampaignTemplate is null)
+      return new StartConditionResult(false, "No campaign template selected, cannot check for planners.");
 
-    var validation = _allPlannersValidator.Validate(_activeCampaignTemplateStore.CampaignTemplate);
+    var validation = await _allPlannersValidator.Validate(_activeCampaignTemplateStore.CampaignTemplate);
     return new StartConditionResult(validation.Success, validation.Messages);
   }
 }

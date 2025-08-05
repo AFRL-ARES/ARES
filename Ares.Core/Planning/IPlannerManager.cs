@@ -1,6 +1,4 @@
-﻿using DynamicData;
-
-namespace Ares.Core.Planning;
+﻿namespace Ares.Core.Planning;
 
 public interface IPlannerManager
 {
@@ -11,7 +9,7 @@ public interface IPlannerManager
   /// <returns>Planner of the given type</returns>
   /// <exception cref="KeyNotFoundException">Thrown if the planner is not found</exception>
   T GetPlanner<T>() where T : IPlanner;
-  
+
   /// <summary>
   /// Gets a planner with a specific version from the registry
   /// </summary>
@@ -66,6 +64,36 @@ public interface IPlannerManager
   /// <returns>Planner of the given type and name</returns>
   /// <exception cref="KeyNotFoundException">Thrown if the planner is not found</exception>
   IPlanner GetPlanner(string type, string name);
-  void RegisterPlanner(IPlanner planner);
+
+  /// <summary>
+  /// Gets the first planner available matching a given name.
+  /// </summary>
+  /// <param name="name"></param>
+  /// <returns>Planner of the given name</returns>
+  IPlanner? GetPlannerByName(string name);
+
+  /// <summary>
+  /// Registers a planner with the planner manager.
+  /// </summary>
+  /// <param name="planner">The planner to be registered.</param>
+  /// <returns></returns>
+  Task RegisterPlanner(IPlanner planner);
+
+  /// <summary>
+  /// Unregisters a planner with the planner manager.
+  /// </summary>
+  /// <param name="planner">Planner to be unregistered.</param>
+  /// <returns></returns>
+  Task UnregisterPlanner(IPlanner planner);
+
+  /// <summary>
+  /// Initializes the planner manager, loading all stored planners from the database
+  /// </summary>
+  /// <returns></returns>
+  Task Init();
+
+  /// <summary>
+  /// The list of planners currently registers with the planner manager.
+  /// </summary>
   IEnumerable<IPlanner> AvailablePlanners { get; }
 }

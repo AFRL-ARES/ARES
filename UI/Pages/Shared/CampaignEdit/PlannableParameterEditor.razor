@@ -18,7 +18,7 @@
             <select class="form-select" @bind="ViewModel.Category">
                 @foreach (var unitType in ViewModel.CategoryOptions)
                 {
-                    <option value="@unitType">@unitType</option>
+                  <option value="@unitType">@unitType</option>
                 }
             </select>
         </div>
@@ -26,7 +26,7 @@
             <select class="form-select" @bind="ViewModel.Unit">
                 @foreach (var suboption in ViewModel.UnitOptions)
                 {
-                    <option value="@suboption">@suboption</option>
+                  <option value="@suboption">@suboption</option>
                 }
             </select>
             </div>
@@ -51,20 +51,12 @@
 
 @code {
 
-    // [Parameter]
-    // public ParameterMetadata Param
-    // {
-    //     set => ViewModel!.ParameterMetadata = value;
-    // }
-
     [Parameter]
     public Action<ParameterEditorViewModel> DeleteParameterCallback { get; set; } = delegate {};
 
-    // private ParameterMetadata _parameter;
-
     private void DeleteParameterClick()
     {
-        DeleteParameterCallback(ViewModel!);
+      DeleteParameterCallback(ViewModel!);
     }
 
 }

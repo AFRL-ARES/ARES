@@ -1,5 +1,5 @@
 ﻿using Ares.Messaging;
-using Google.Protobuf.WellKnownTypes;
+using Ares.Messaging.Analyzing;
 
 namespace Ares.Core.Analyzing;
 
@@ -7,30 +7,38 @@ namespace Ares.Core.Analyzing;
 /// Analyzer that returns a 0 as its analysis result.
 /// Used as a default analyzer in case no actual analyzers are present
 /// </summary>
-internal class NoneAnalyzer : AnalyzerBase<Any>
+internal class NoneAnalyzer : AnalyzerBase
 {
-
-  public NoneAnalyzer() : base("NONE", new Version(1, 0))
+  public NoneAnalyzer() : base("NONE", "NONE :)", "1.0.0")
   {
+    UniqueId = "NONE-ANALYZER";
   }
 
-  protected override Task<Analysis> AnalyzeMessage(Any _, CancellationToken __)
+  public override Task<Analysis> Analyze(AresStruct inputs, CancellationToken cancellationToken)
   {
     var analysis = new Analysis
     {
-      UniqueId = Guid.NewGuid().ToString(),
-      Analyzer = new AnalyzerInfo
-      {
-        Name = Name,
-        UniqueId = Guid.NewGuid().ToString(),
-        Version = Version.ToString()
-      },
+      Success = true,
       Result = 0
     };
 
     return Task.FromResult(analysis);
   }
 
-  public override bool InputSupported(string fullTypeName)
-    => true;
+  public override Task<Analysis> Analyze(AresStruct inputs, AresStruct _settings, CancellationToken cancellationToken)
+  {
+    return Analyze(inputs, cancellationToken);
+  }
+
+  public override Task<AnalyzerCapabilities> GetCapabilities(CancellationToken cancellationToken)
+  {
+    var capability = new AnalyzerCapabilities { TimeoutSeconds = long.MaxValue };
+
+    return Task.FromResult(capability);
+  }
+
+  public override Task<AresDataSchema> GetParameters(CancellationToken cancellationToken)
+  {
+    return Task.FromResult(new AresDataSchema());
+  }
 }

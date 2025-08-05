@@ -12,18 +12,12 @@
 </div>
 
 @code {
-    // [Parameter]
-    // public IList<ParameterMetadata> Parameters
-    // {
-    //     set => ViewModel!.ParameterMetadata = value;
-    // }
-
     private void NewParameterClick() => ViewModel!.Create();
 
     private void DeleteParameterCallback(ParameterEditorViewModel paramEditor)
     {
-        ViewModel!.Remove(paramEditor);
-        StateHasChanged();
+      ViewModel!.Remove(paramEditor);
+      StateHasChanged();
     }
 
 }

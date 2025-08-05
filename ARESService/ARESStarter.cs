@@ -2,59 +2,103 @@
 using Ares.Core.Device;
 using Ares.Core.Grpc;
 using Ares.Core.Planning;
-using Ares.Device;
 using Ares.Messaging;
-using ARESCore;
-using ARESCore.DeviceDbLoaders;
+using DemoDevice;
+using AresService.DeviceDbLoaders;
 using Microsoft.EntityFrameworkCore;
-using SyringePumpNE1000;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
+using BoraasPlanner;
 
-namespace ARESService;
+namespace AresService;
 
-public class ARESStarter
+public class AresStarter
 {
-  private readonly IAnalyzerManager _analyzerManager;
-  private readonly IDbContextFactory<ARESDbContext> _dbContextFactory;
+  private readonly IRemoteAnalyzerManager _analyzerManager;
+  private readonly IDbContextFactory<AresDbContext> _dbContextFactory;
   private readonly IDeviceCommandInterpreterRepo _deviceCommandInterpreterRepo;
   private readonly IEnumerable<IDeviceDbLoader> _deviceLoaders;
   private readonly IPlannerManager _plannerManager;
+  private readonly IConfiguration _configuration;
+  private readonly string _dataPath;
+  private readonly string _resultsPath;
+  private readonly string _templatesPath;
+  private readonly string _devicesPath;
 
-  public ARESStarter(
+  public AresStarter(
     IDeviceCommandInterpreterRepo deviceCommandInterpreterRepo,
-    IDbContextFactory<ARESDbContext> dbContextFactory,
+    IDbContextFactory<AresDbContext> dbContextFactory,
     IPlannerManager plannerManager,
-    IAnalyzerManager analyzerManager,
-    IEnumerable<IDeviceDbLoader> deviceLoaders)
+    IRemoteAnalyzerManager analyzerManager,
+    IEnumerable<IDeviceDbLoader> deviceLoaders,
+    IConfiguration configuration)
   {
     _deviceCommandInterpreterRepo = deviceCommandInterpreterRepo;
     _dbContextFactory = dbContextFactory;
     _plannerManager = plannerManager;
     _analyzerManager = analyzerManager;
     _deviceLoaders = deviceLoaders;
+    _configuration = configuration;
+    _dataPath = _configuration.Get<AppSettings>().AresDataPath;
+    _resultsPath = Path.Combine(_dataPath, AppSettings.ResultsFolder);
+    _templatesPath = Path.Combine(_dataPath, AppSettings.TemplatesFolder);
+    _devicesPath = Path.Combine(_dataPath, AppSettings.DevicesFolder);
   }
 
   public async Task Start()
   {
-    foreach (var deviceLoader in _deviceLoaders)
+    await EnsureDataPathsExist();
+    await AddDemoDevice(new Uri("https://localhost:7038"));
+    //await AddCustomAnalyzer(new Uri("http://localhost:7356"));
+    await AddBoraasPlanner(new Uri("https://boraas.osu.edu/new_design"));
+
+    foreach(var deviceLoader in _deviceLoaders)
       await deviceLoader.Load();
+
+    await _plannerManager.Init();
+    await _analyzerManager.LoadAnalyzers();
 
     Observable.Interval(TimeSpan.FromSeconds(20))
       .Take(1)
       .Subscribe(_ => ServerStatusHelper.ServerStatusSubject.OnNext(new ServerStatusResponse { ServerStatus = ServerStatus.Error, StatusMessage = "This is a test error from server." }));
   }
 
-
-  public void RemoveSyringePumpInterpreter(IDeviceCommandInterpreter<ISyringePump> syringePumpInterpreter)
+  public Task EnsureDataPathsExist()
   {
-    // TODO:
-    // Cancel running tasks
-    // Stop listening
-    // Close port
-    // syringePumpInterpreter.Device.Disconnect();
-    _deviceCommandInterpreterRepo.Remove(syringePumpInterpreter);
+    Directory.CreateDirectory(_devicesPath);
+    Directory.CreateDirectory(_resultsPath);
+    Directory.CreateDirectory(_templatesPath);
+
+    return Task.CompletedTask;
+  }
+
+  //public Task AddCustomAnalyzer(Uri address)
+  //{
+  //  var resultsPath = Path.Combine(_configuration.Get<AppSettings>().AresDataPath, string.Empty);
+  //  var customAnalyzer = new AresCustomAnalyzer(address);
+  //  customAnalyzer.Init();
+  //  _analyzerManager.(customAnalyzer);
+  //  return Task.CompletedTask;
+  //}
+
+  public Task AddDemoDevice(Uri address)
+  {
+    var testDevice = new AresDemoDevice(address);
+    testDevice.Activate();
+    var testDeviceInterpreter = new DemoDeviceInterpreter(testDevice);
+    _deviceCommandInterpreterRepo.Add(testDeviceInterpreter);
+    return Task.CompletedTask;
+  }
+
+  public Task AddBoraasPlanner(Uri address)
+  {
+    var boraasPlanner = new BoraasPlanner.BoraasPlanner(address, "BORAAS Planner");
+    boraasPlanner.Init();
+    _plannerManager.RegisterPlanner(boraasPlanner);
+    return Task.CompletedTask;
   }
 }

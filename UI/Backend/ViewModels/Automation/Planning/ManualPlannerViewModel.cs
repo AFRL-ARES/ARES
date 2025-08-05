@@ -1,5 +1,6 @@
 ﻿using Ares.Messaging;
 using Ares.Messaging.Planning;
+using Ares.Tools;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.AspNetCore.Components.Forms;
 using ReactiveUI;
@@ -14,39 +15,40 @@ public class ManualPlannerViewModel : ReactiveObject
   public ManualPlannerViewModel(AresPlanning.AresPlanningClient client)
   {
     _client = client;
-    _ = Init();
+    _ = UpdatePlannerValues();
   }
 
-  [Reactive]
-  public IEnumerable<ManualPlannerSet> ManualPlannerSetCollection { get; private set; } = Array.Empty<ManualPlannerSet>();
-
-  private async Task Init()
+  public async Task UpdatePlannerValues()
   {
     var collection = await _client.GetManualPlannerSeedAsync(new Empty());
-    ManualPlannerSetCollection = collection.PlannedValues;
+    ManualPlannerValues = collection.PlannedValues;
   }
 
   public async Task<bool> FileUploaded(IBrowserFile file)
   {
+    NumberOfPlannedExperiments = 0;
     var collection = new ManualPlannerSetCollection();
     var stream = file.OpenReadStream();
     var reader = new StreamReader(stream);
     var result = await reader.ReadLineAsync();
     var header = result?.Split(',', StringSplitOptions.TrimEntries);
-    if (header is null)
+    if(header is null)
       return false;
 
+    PlannerValueHeaders = header.ToList();
+
     result = await reader.ReadLineAsync();
-    while (result is not null)
+    while(result is not null)
     {
       try
       {
         var splitResult = result.Split(',');
         var plannerSet = new ManualPlannerSet();
-        plannerSet.ParameterValues.AddRange(splitResult.Select((s, i) => new ParameterNameValuePair { Name = header[i], Value = double.Parse(s) }));
+        plannerSet.ParameterValues.AddRange(splitResult.Select((s, i) => new ParameterNameValuePair { Name = header[i], Value = AresValueHelper.CreateString(s) }));
         collection.PlannedValues.Add(plannerSet);
+        NumberOfPlannedExperiments += 1;
       }
-      catch (Exception)
+      catch(Exception)
       {
         return false;
       }
@@ -54,12 +56,19 @@ public class ManualPlannerViewModel : ReactiveObject
       result = await reader.ReadLineAsync();
     }
 
-    if (!collection.PlannedValues.Any())
+    if(!collection.PlannedValues.Any())
       return true;
 
     await _client.SeedManualPlannerAsync(new ManualPlannerSeed { PlannerValues = collection });
-    await Init();
+    await UpdatePlannerValues();
 
     return true;
   }
+
+  [Reactive]
+  public IEnumerable<ManualPlannerSet> ManualPlannerValues { get; private set; } = Array.Empty<ManualPlannerSet>();
+
+  public List<string> PlannerValueHeaders { get; set; } = new List<string>();
+
+  public int NumberOfPlannedExperiments { get; set; } = 0;
 }

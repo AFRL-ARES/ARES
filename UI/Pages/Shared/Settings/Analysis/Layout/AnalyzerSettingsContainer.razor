@@ -1,0 +1,75 @@
+﻿@using Ares.Messaging.Analyzing
+
+<div class="analyzer-settings-grid">
+  <h5 class="analyzer-settings-name">@Name</h5>
+  <div class="analyzer-status d-flex">
+    <button class="btn btn-sm border-0 rounded-circle btn-outline-primary mx-1" @onclick="UpdateAnalyzerState">
+      <RadzenIcon Icon="refresh" />
+    </button>
+    @if (UpdatingInProgress)
+    {
+      <LoadingSpinner SpinnerSize="SpinnerSize.Small" />
+    }
+    else 
+    {
+      <div class="d-flex flex-column">
+        <div class="analyzer-status-@State.ToString().ToLower()">
+          @State.ToString()
+        </div>
+        <div>
+          @StateMessage
+        </div>
+      </div>
+    }
+  </div>
+  <div class="d-flex analyzer-settings-actions">
+    <vr />
+    <button class="btn btn-sm btn-outline-primary rounded-2 analyzer-action-button" type="button" disabled="@(EditCallback is null)" @onclick="EditClicked"><RadzenIcon Icon="edit" /></button>
+    <button class="btn btn-sm btn-outline-danger rounded-2 analyzer-action-button" type="button" disabled="@(RemoveCallback is null)" @onclick="RemoveClicked"><RadzenIcon Icon="delete_outline" /></button>
+  </div>
+  <hr class="analyzer-settings-separator" />
+  <div class="analyzer-settings-content">
+    @ChildContent
+  </div>
+</div>
+
+@code {
+  [Parameter]
+  public bool UpdatingInProgress { get; set; }
+
+  [Parameter]
+  public RenderFragment? ChildContent { get; set; }
+
+  [Parameter]
+  public Func<Task>? RemoveCallback { get; set; }
+
+  [Parameter]
+  public Func<Task>? EditCallback { get; set; }
+
+  [Parameter]
+  public Func<Task>? StateUpdateCallback { get; set; }
+
+  [Parameter]
+  public string Name { get; set; } = "No name?";
+
+  [Parameter]
+  public AnalyzerState State { get; set; }
+
+  [Parameter]
+  public string StateMessage { get; set; } = "";
+
+  private Task UpdateAnalyzerState()
+  {
+    return StateUpdateCallback is not null ? StateUpdateCallback() : Task.CompletedTask;
+  }
+
+  private Task EditClicked()
+  {
+    return EditCallback is not null ? EditCallback() : Task.CompletedTask;
+  }
+
+  private Task RemoveClicked()
+  {
+    return RemoveCallback is not null ? RemoveCallback() : Task.CompletedTask;
+  }
+}

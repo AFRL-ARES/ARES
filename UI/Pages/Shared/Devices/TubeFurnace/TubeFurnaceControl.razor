@@ -52,7 +52,7 @@
     if (TargetTemperatureValue is null)
       return Task.CompletedTask;
 
-    return ViewModel.SetTargetTemperature(TargetTemperatureValue.Value);
+    return ViewModel!.SetTargetTemperature(TargetTemperatureValue.Value);
   }
 
   private int? TargetTemperatureValue { get; set; }
@@ -65,15 +65,15 @@
 
   private string[] TemperatureUnits
   {
-    get => Temperature.Units.Select(unit => UnitAbbreviationsCache.Default.GetDefaultAbbreviation(unit)).ToArray();
+    get => Temperature.Units.Select(unit => UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(unit)).ToArray();
   }
 
   private string TemperatureUnit
   {
-    get => UnitAbbreviationsCache.Default.GetDefaultAbbreviation(ViewModel!.TemperatureUnit);
+    get => UnitsNetSetup.Default.UnitAbbreviations.GetDefaultAbbreviation(ViewModel!.TemperatureUnit);
     set
     {
-      if(UnitParser.Default.TryParse<TemperatureUnit>(value, out var tempUnit))
+      if(UnitsNetSetup.Default.UnitParser.TryParse<TemperatureUnit>(value, out var tempUnit))
       {
         ViewModel!.TemperatureUnit = tempUnit;
       }

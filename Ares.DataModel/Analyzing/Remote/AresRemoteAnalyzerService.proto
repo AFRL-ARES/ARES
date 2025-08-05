@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+package ares.messaging.analyzing.remote;
+
+import "Analyzing/Analysis.proto";
+import "AresStruct.proto";
+import "Analyzing/AnalyzerState.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/wrappers.proto";
+import "Analyzing/AnalyzerCapabilities.proto";
+import "AresDataSchema.proto";
+
+// defines a contract for ares to use in order to talk to a remote analyzer
+// designed to be similar to the internal ARES analyzer implementation
+service AresRemoteAnalyzerService {
+	rpc ValidateInputs(ParameterValidationRequest) returns (ParameterValidationResult);
+	rpc Analyze(AnalysisRequest) returns (Analysis);
+
+	rpc GetAnalysisParameters(google.protobuf.Empty) returns (AnalysisParametersResponse);
+	rpc GetConnectionStatus(google.protobuf.Empty) returns (ConnectionStatusResponse);
+	rpc GetState(google.protobuf.Empty) returns (AnalyzerStateResponse);
+	rpc GetInfo(google.protobuf.Empty) returns (InfoResponse);
+	rpc GetAnalyzerCapabilities(google.protobuf.Empty) returns (AnalyzerCapabilities);
+}
+
+message ParameterValidationRequest {
+	AresDataSchemaSimplified input_schema = 1;
+}
+
+message ParameterValidationResult {
+  bool success = 1;
+  repeated string messages = 2;
+}
+
+message AnalysisRequest {
+	AresStruct inputs = 1;
+	AresStruct settings = 2;
+}
+
+message AnalysisParametersResponse {
+	AresDataSchema parameter_schema = 1;
+}
+
+enum ConnectionStatus {
+	UNKNOWN_CONNECTION_STATUS = 0;
+	CONNECTED = 1;
+	DISCONNECTED = 2;
+}
+
+message ConnectionStatusResponse {
+	ConnectionStatus status = 1;
+	// in case we want to provide reasoning for why it's disconnected
+	string info = 2;
+}
+
+message AnalyzerStateResponse {
+	AnalyzerState state = 1;
+	string state_message = 2;
+}
+
+message InfoResponse {
+	string name = 1;
+	string version = 2;
+	google.protobuf.StringValue description = 3;
+}

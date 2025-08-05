@@ -84,6 +84,7 @@ public class MfcUnitControlViewModel : SerialDeviceUnitViewModel, IAsyncDisposab
     {
       _stateListener = Task.Run(async () =>
       {
+        Thread.CurrentThread.Name = $"Mass Flow Controller {DeviceName} State Listener Thread";
         var state = await _mfcClient.GetStateAsync(_deviceRequest);
         UpdateState(state);
         CapturingLiveData = true;
@@ -98,6 +99,11 @@ public class MfcUnitControlViewModel : SerialDeviceUnitViewModel, IAsyncDisposab
         }
         catch (Exception ex) when (ex is ObjectDisposedException or OperationCanceledException)
         {
+          Console.WriteLine($"~~~~~~~ Exception Getting State, Thread will live probably? ~~~~~~~");
+        }
+        catch (Exception ex)
+        {
+          Console.WriteLine($"~~~~~~~ Exception Getting State, Thread will die probably? ~~~~~~~");
         }
 
         CapturingLiveData = false;

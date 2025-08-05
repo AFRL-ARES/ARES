@@ -1,29 +1,79 @@
 ﻿using Ares.Device;
 using Ares.Messaging;
+using Ares.Tools;
 using LindbergFurnace.Commands;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using UnitsNet;
 
-namespace LindbergFurnace
+namespace LindbergFurnace;
+
+public class TubeFurnaceInterpreter : DeviceCommandInterpreter<ITubeFurnace, TubeFurnaceCommand>
 {
-  public class TubeFurnaceInterpreter : DeviceCommandInterpreter<ITubeFurnace, TubeFurnaceCommand>
+  public TubeFurnaceInterpreter(ITubeFurnace device) : base(device)
   {
-    public TubeFurnaceInterpreter(ITubeFurnace device) : base(device)
+  }
+
+  protected override async Task<DeviceCommandResult> ParseAndPerformDeviceAction(TubeFurnaceCommand deviceCommandEnum,
+    Parameter[] parameters,
+    CommandMetadata metadata,
+    CancellationToken cancellationToken)
+  {
+    var result = new DeviceCommandResult();
+    result.Success = true;
+
+    switch(deviceCommandEnum)
     {
+      case TubeFurnaceCommand.SetSetpoint:
+        var setpoint = parameters[0];
+        if(!setpoint.Value.Value.HasNumberValue)
+        {
+          result.Success = false;
+          result.Error = "The furnace command SetSetpoint requires a number as a parameter, but none was provided!";
+          break;
+        }  
+
+        var tempSetPoint = new Temperature(setpoint.Value.Value.NumberValue, UnitsNet.Units.TemperatureUnit.DegreeCelsius);
+        await Device.SetSetpoint(tempSetPoint);
+        break;
+
+      case TubeFurnaceCommand.GetSetpoint:
+        await Device.GetSetpoint();
+        break;
+
+      case TubeFurnaceCommand.GetCurrentTemperature:
+        await Device.GetCurrentTemperature();
+        break;
+
+      default:
+        throw new InvalidOperationException("Received an unknown command type for the Tube Furnace!");
     }
 
-    protected override Task<DeviceCommandResult> ParseAndPerformDeviceAction(TubeFurnaceCommand deviceCommandEnum, Parameter[] parameters,
-      CancellationToken cancellationToken)
-    {
-      throw new NotImplementedException();
-    }
+    return result;
+  }
 
-    protected override CommandMetadata[] CommandsToMetadatas()
+  protected override CommandMetadata[] CommandsToMetadatas()
+  {
+    return new CommandMetadata[]
     {
-      return Array.Empty<CommandMetadata>() ;
-    }
+      new()
+      {
+        DeviceName = Device.Name,
+        Name = TubeFurnaceCommand.GetSetpoint.ToString(),
+        Description = "Get's the updated set point for the tube furnace."
+      },
+
+      new()
+      {
+        DeviceName = Device.Name,
+        Name = TubeFurnaceCommand.SetSetpoint.ToString(),
+        Description = "Set's an updated set point for the tube furnace, defined by the user.",
+        ParameterMetadatas = { new ParameterMetadata { Index = 0, Name = "Setpoint", Unit = "Degrees Celsius", Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.Number, true) } }
+      },
+
+      new() {
+        DeviceName = Device.Name,
+        Name = TubeFurnaceCommand.GetCurrentTemperature.ToString(),
+        Description = "Get's the current temperature of the tube furnace."
+      }
+    };
   }
 }

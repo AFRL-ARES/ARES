@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package VerdiV6.services;
+
+import "google/protobuf/empty.proto";
+import "VerdiConfig.proto";
+import "DataModel.proto";
+
+service VerdiV6Rpc {
+	rpc GetLaserShutter(DeviceRequest) returns (GetShutterResponse);
+	rpc SetLaserShutter(SetShutterRequest) returns (google.protobuf.Empty);
+	rpc GetLaserPower(DeviceRequest) returns (GetLaserPowerResponse);
+	rpc SetLaserPower(SetLaserPowerRequest) returns (google.protobuf.Empty);
+	rpc ActivateLaser(DeviceRequest) returns (google.protobuf.Empty);
+	rpc DeactivateLaser(DeviceRequest) returns (google.protobuf.Empty);
+
+	rpc AddLaser(config.VerdiConfig) returns (google.protobuf.Empty);
+	rpc RemoveLaser(DeviceRequest) returns (google.protobuf.Empty);
+	rpc GetAllLasers(google.protobuf.Empty) returns (GetAllLasersResponse);
+	rpc UpdateLaser(config.VerdiConfig) returns (google.protobuf.Empty);
+}
+
+message DeviceRequest {
+	string device_name = 1;
+}
+
+message GetShutterResponse {
+	bool shutter = 1;
+}
+
+message SetShutterRequest {
+	string device_name = 1;
+	bool shutter = 2;
+}
+
+message SetLaserPowerRequest {
+	string device_name = 1;
+	double laser_power = 2;
+}
+
+message GetLaserPowerResponse {
+	double laser_power = 1;
+}
+
+message GetAllLasersResponse {
+	repeated string device_names = 1;
+}

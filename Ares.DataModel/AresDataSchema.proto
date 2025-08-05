@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package ares.messaging;
+
+import "AresDataType.proto";
+import "AresStruct.proto";
+
+// This is a key value pair that should be used when data is requested in order to describe the data.
+// ex.: {"TemperatureValue": AresDataType.NUMBER, "TestPhoto": AresDataType.BYTE_ARRAY}
+message AresDataSchema {
+	map<string, SchemaEntry> fields = 1;
+}
+
+// This is an simpler schema without the need of any extra metadata. Just simple key and type
+message AresDataSchemaSimplified {
+	map<string, AresDataType> fields = 1;
+}
+
+message SchemaEntry {
+	AresDataType type = 1; // the type of data
+	bool optional = 2; // is the data optional
+	// an optional list of either available string or number choices in case the input needs to be constrained.
+	// the list of choices should match the specified type
+	oneof available_choices {
+		StringArray string_choices = 5;
+		NumberArray number_choices = 6;
+	}
+}

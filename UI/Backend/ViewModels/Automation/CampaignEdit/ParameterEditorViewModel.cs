@@ -57,19 +57,23 @@ public class ParameterEditorViewModel : ReactiveObject
     {
       var changed = _category != value;
       this.RaiseAndSetIfChanged(ref _category, value);
-      if (value is null || !changed)
+      if(value is null || !changed)
         return;
 
-      UnitOptions = UnitCategoryHelper.GetTypes(value.Dehumanize()).Select(s => s.Humanize());
+      UnitOptions = UnitCategoryHelper.GetTypes(value.Dehumanize()).Select(s => s.Humanize()).ToList();
+
+      if(value == "None" || UnitOptions.Count == 0)
+        UnitOptions.Add("None");
+
       Unit = UnitOptions.First();
     }
   }
 
   [Reactive]
-  public IEnumerable<string> CategoryOptions { get; private set; } = Array.Empty<string>();
+  public List<string> CategoryOptions { get; private set; } = new();
 
-  [Reactive] public IEnumerable<string> UnitOptions { get; private set; } = Array.Empty<string>();
-
+  [Reactive]
+  public List<string> UnitOptions { get; private set; } = new();
 
   public string Unit
   {
@@ -78,12 +82,12 @@ public class ParameterEditorViewModel : ReactiveObject
     set
     {
       this.RaiseAndSetIfChanged(ref _unit, value);
-      if (value == null) return;
+      if(value == null)
+        return;
 
       Category = _unitHelper.GetCategoryForUnit(_unit.Dehumanize()).Humanize();
     }
   }
-
 
   public string? Name
   {
@@ -92,14 +96,12 @@ public class ParameterEditorViewModel : ReactiveObject
     set => this.RaiseAndSetIfChanged(ref _name, value);
   }
 
-
   public double Minimum
   {
     get => _minimum;
 
     set => this.RaiseAndSetIfChanged(ref _minimum, value);
   }
-
 
   public double Maximum
   {
@@ -112,7 +114,7 @@ public class ParameterEditorViewModel : ReactiveObject
   {
     LockInParams(meta);
     Name = meta.Name;
-    foreach (var metaConstraint in meta.Constraints)
+    foreach(var metaConstraint in meta.Constraints)
     {
       Minimum = metaConstraint.Minimum;
       Maximum = metaConstraint.Maximum;
@@ -121,22 +123,26 @@ public class ParameterEditorViewModel : ReactiveObject
 
   public ParameterMetadata Save()
   {
-    if (ParameterMetadata.Constraints.Count == 0) ParameterMetadata.Constraints.Add(new Limits());
+    if(ParameterMetadata.Constraints.Count == 0)
+      ParameterMetadata.Constraints.Add(new Limits());
 
     ParameterMetadata.Constraints[0].Maximum = (float)Maximum;
     ParameterMetadata.Constraints[0].Minimum = (float)Minimum;
     ParameterMetadata.Unit = Unit.Dehumanize();
     ParameterMetadata.Name = Name;
 
+
     return ParameterMetadata;
   }
 
   private void LockInParams(ParameterMetadata meta)
   {
-    CategoryOptions = _unitHelper.UnitCategories.Select(s => s.Humanize());
+    var categories = _unitHelper.UnitCategories.Select(s => s.Humanize()).ToList();
+    categories.Add("None");
+    CategoryOptions = categories;
     var unit = meta.Unit;
     var cat = _unitHelper.GetCategoryForUnit(unit);
-    UnitOptions = UnitCategoryHelper.GetTypes(cat).Select(s => s.Humanize());
+    UnitOptions = UnitCategoryHelper.GetTypes(cat).Select(s => s.Humanize()).ToList();
     Category = cat.Humanize();
     Unit = unit.Humanize();
   }

@@ -7,8 +7,7 @@ public interface IExecutor<TResult, out TStatus>
   where TResult : IMessage
   where TStatus : IMessage
 {
-  IObservable<TStatus> StatusObservable { get; }
+  IObservable<TStatus> ExperimentStatusObservable { get; }
   TStatus Status { get; }
-
   Task<TResult> Execute(ExecutionControlToken executionToken);
 }

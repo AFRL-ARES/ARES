@@ -4,18 +4,18 @@ package ares.messaging;
 
 import "Templates/CampaignTemplate.proto";
 import "google/protobuf/empty.proto";
-import "AnalyzerInfo.proto";
-import "Templates/CommandMetadata.proto";
+import "Analyzing/AnalyzerInfo.proto";
+import "Templates/ExperimentTemplate.proto";
 
 service AresValidation {
 	rpc ValidateFullCampaign(CampaignTemplate) returns (ValidationResponse);
 	rpc ValidateAnalyzerSelection(AnalyzerValidationRequest) returns (ValidationResponse);
-	rpc VlidateRegisteredDevices(google.protobuf.Empty) returns (.ares.messaging.ValidationResponse);
+	rpc ValidateRegisteredDevices(google.protobuf.Empty) returns (.ares.messaging.ValidationResponse);
 }
 
 message AnalyzerValidationRequest {
-	AnalyzerInfo analyzer = 1;
-	CommandMetadata output_command_metadata = 2;
+	string analyzer_id = 1;
+	ExperimentTemplate experiment_template = 2;
 }
 
 message ValidationResponse {

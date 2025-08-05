@@ -1,56 +1,33 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net6.0</TargetFramework>
+        <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
   <Target Name="NugetPackAutoVersioning" AfterTargets="Build">
-    <Exec Command="dotnet pack -p:PackageVersion=$([System.DateTime]::Now.ToString(&quot;yyyy.MM.dd.HHmmss&quot;)) --no-build --configuration $(Configuration) --output &quot;$(SolutionDir)nuget&quot;" />
+    <Exec Command="dotnet pack -p:PackageVersion=$([System.DateTime]::Now.ToString(&quot;yyyy.MM.dd.HHmmss&quot;)) --no-build --configuration $(Configuration) --output &quot;$(ProjectDir)..\nuget&quot;" />
   </Target>
 
   <ItemGroup Label="Nuget Packaging">
     <_Asset PackagePath="Proto/" Include="**\*.proto" />
-    <None Remove="Authentication.proto" />
-    <None Remove="DeviceStateLogging\DevicesResponse.proto" />
-    <None Remove="DeviceStateLogging\Mfc\MfcState.proto" />
-    <None Remove="DeviceStateLogging\Mfc\MfcStateLogging.proto" />
-    <None Remove="DeviceStateLogging\SyringePump\SyringePumpState.proto" />
-    <None Remove="DeviceStateLogging\SyringePump\SyringePumpStateLogging.proto" />
-    <None Remove="DeviceStateLogging\Tc0304\Tc0304State.proto" />
-    <None Remove="DeviceStateLogging\Tc0304\Tc0304StateLogging.proto" />
-    <None Remove="DeviceStateLogging\TicStepperController\TicStepperControllerState.proto" />
-    <None Remove="DeviceStateLogging\TicStepperController\TicStepperControllerStateLogging.proto" />
-    <None Remove="DeviceStateLogging\TubeFurnace\TubeFurnaceStateEntity.proto" />
-    <None Remove="DeviceStateLogging\TubeFurnace\TubeFurnaceStateLogging.proto" />
-    <None Remove="UserManagement.proto" />
-    <_Asset Remove="Authentication.proto" />
-    <_Asset Remove="DeviceStateLogging\DevicesResponse.proto" />
-    <_Asset Remove="DeviceStateLogging\Mfc\MfcState.proto" />
-    <_Asset Remove="DeviceStateLogging\Mfc\MfcStateLogging.proto" />
-    <_Asset Remove="DeviceStateLogging\SyringePump\SyringePumpState.proto" />
-    <_Asset Remove="DeviceStateLogging\SyringePump\SyringePumpStateLogging.proto" />
-    <_Asset Remove="DeviceStateLogging\Tc0304\Tc0304State.proto" />
-    <_Asset Remove="DeviceStateLogging\Tc0304\Tc0304StateLogging.proto" />
-    <_Asset Remove="DeviceStateLogging\TicStepperController\TicStepperControllerState.proto" />
-    <_Asset Remove="DeviceStateLogging\TicStepperController\TicStepperControllerStateLogging.proto" />
-    <_Asset Remove="DeviceStateLogging\TubeFurnace\TubeFurnaceStateEntity.proto" />
-    <_Asset Remove="DeviceStateLogging\TubeFurnace\TubeFurnaceStateLogging.proto" />
-    <_Asset Remove="UserManagement.proto" />
     <None Include="@(_Asset)" Pack="true" Visible="False" />
   </ItemGroup>
 
   <PropertyGroup>
-    <DataModelProtoPath>..\Ares.DataModel</DataModelProtoPath>
+    <DataModelProtoPath>$(PkgAres_DataModel_dll)\Proto\</DataModelProtoPath>
   </PropertyGroup>
   <ItemGroup>
     <Protobuf Include="AresAutomation.proto" GrpcServices="Both" AdditionalImportDirs="$(DataModelProtoPath)">
-        <Generator>MSBuild:Compile</Generator>
-      </Protobuf>
+      <Generator>MSBuild:Compile</Generator>
+    </Protobuf>
       <Protobuf Include="AresDevices.proto" GrpcServices="Both" AdditionalImportDirs="$(DataModelProtoPath)">
         <Generator>MSBuild:Compile</Generator>
       </Protobuf>
+		<Protobuf Include="AresNotification.proto" GrpcServices="Both" AdditionalImportDirs="$(DataModelProtoPath)">
+			<Generator>MSBuild:Compile</Generator>
+		</Protobuf>
       <Protobuf Include="AresPlanning.proto" GrpcServices="Both" AdditionalImportDirs="$(DataModelProtoPath)">
         <Generator>MSBuild:Compile</Generator>
       </Protobuf>
@@ -60,32 +37,20 @@
     <Protobuf Include="AresValidation.proto" GrpcServices="Both" AdditionalImportDirs="$(DataModelProtoPath)">
         <Generator>MSBuild:Compile</Generator>
       </Protobuf>
-    <Protobuf Include="Authentication.proto" />
-    <Protobuf Include="DeviceStateLogging\DevicesResponse.proto" GrpcServices="None" />
-    <Protobuf Include="DeviceStateLogging\Mfc\MfcState.proto" GrpcServices="None" />
-    <Protobuf Include="DeviceStateLogging\Mfc\MfcStateLogging.proto" GrpcServices="Both" AdditionalImportDirs="$(DataModelProtoPath)"/>
-    <Protobuf Include="DeviceStateLogging\SyringePump\SyringePumpState.proto">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </Protobuf>
-    <Protobuf Include="DeviceStateLogging\SyringePump\SyringePumpStateLogging.proto" GrpcServices="Both" AdditionalImportDirs="$(DataModelProtoPath)"/>
-    <Protobuf Include="DeviceStateLogging\Tc0304\Tc0304State.proto" GrpcServices="None" />
-    <Protobuf Include="DeviceStateLogging\Tc0304\Tc0304StateLogging.proto" AdditionalImportDirs="$(DataModelProtoPath)"/>
-    <Protobuf Include="DeviceStateLogging\TicStepperController\TicStepperControllerState.proto" GrpcServices="None" />
-    <Protobuf Include="DeviceStateLogging\TicStepperController\TicStepperControllerStateLogging.proto" GrpcServices="Both" AdditionalImportDirs="$(DataModelProtoPath)" />
-    <Protobuf Include="DeviceStateLogging\TubeFurnace\TubeFurnaceStateEntity.proto" GrpcServices="None" />
-    <Protobuf Include="DeviceStateLogging\TubeFurnace\TubeFurnaceStateLogging.proto" AdditionalImportDirs="$(DataModelProtoPath)" />
-    <Protobuf Include="UserManagement.proto" />
+		<Protobuf Include="AresAnalyzerManagementService.proto" GrpcServices="Both" AdditionalImportDirs="$(DataModelProtoPath)">
+			<Generator>MSBuild:Compile</Generator>
+		</Protobuf>
+		<Protobuf Include="AresAnalysisService.proto" GrpcServices="Both" AdditionalImportDirs="$(DataModelProtoPath)">
+			<Generator>MSBuild:Compile</Generator>
+		</Protobuf>
   </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Grpc.Tools" Version="2.58.0">
+      <PackageReference Include="Ares.DataModel.dll" Version="2025.8.5.92857" GeneratePathProperty="True" />
+      <PackageReference Include="Grpc.Tools" Version="2.72.0">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
-    </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\Ares.DataModel\Ares.DataModel.csproj" />
     </ItemGroup>
 
 </Project>

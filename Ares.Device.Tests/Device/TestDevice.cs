@@ -7,6 +7,9 @@ public class TestDevice : AresDevice
   {
   }
 
+  public override Task EnterSafeMode()
+    => Task.CompletedTask;
+
   public override Task<bool> Activate()
     => Task.FromResult(true);
 }

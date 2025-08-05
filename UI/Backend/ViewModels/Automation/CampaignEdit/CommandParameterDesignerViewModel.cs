@@ -17,6 +17,8 @@ public class CommandParameterDesignerViewModel : ReactiveObject
     : this(unitCategoryHelper, plannedParameters)
   {
     Parameter = param;
+    IsEnvironmentBased = param.EnvironmentBased;
+    SelectedVariableType = param.VariableType;
   }
 
   public CommandParameterDesignerViewModel(ParameterMetadata meta, UnitCategoryHelper unitCategoryHelper, IEnumerable<ParameterMetadata>? plannedParameters = null)
@@ -54,6 +56,8 @@ public class CommandParameterDesignerViewModel : ReactiveObject
 
   public string Unit => Parameter.Metadata.Unit;
 
+  public SchemaEntry Schema => Parameter.Metadata.Schema;
+
   public ParameterValue? Value
   {
     get => _value;
@@ -61,7 +65,7 @@ public class CommandParameterDesignerViewModel : ReactiveObject
     set
     {
       this.RaiseAndSetIfChanged(ref _value, value);
-      if (value is null)
+      if(value is null || value.Value is null)
         return;
 
       Valid = IsValid(value.Value);
@@ -83,6 +87,10 @@ public class CommandParameterDesignerViewModel : ReactiveObject
 
   public string? SelectedPlannedParameterMetadataId { get; set; }
 
+  public VariableType? SelectedVariableType { get; set; }
+
+  public VariableType[] VariableTypes { get; private set; } = System.Enum.GetValues<VariableType>().Skip(1).ToArray();
+
   public bool IsPlanned
   {
     get => _isPlanned;
@@ -94,15 +102,19 @@ public class CommandParameterDesignerViewModel : ReactiveObject
     }
   }
 
+  public bool IsEnvironmentBased { get; set; }
+
+  public int PastExperimentNumber { get; set; }
+
   private IEnumerable<ParameterMetadata> FilterParameterMetadata(UnitCategoryHelper helper, IEnumerable<ParameterMetadata>? allMetadata)
   {
-    if (allMetadata is null)
+    if(allMetadata is null)
       return Array.Empty<ParameterMetadata>();
 
-    if (string.IsNullOrEmpty(Unit))
+    if(string.IsNullOrEmpty(Unit))
       return allMetadata;
 
-    return allMetadata.Where(metadata => helper.GetCategoryForUnit(metadata.Unit) == helper.GetCategoryForUnit(Unit));
+    return allMetadata;
   }
 
   private void Init(Parameter existingParameter)
@@ -111,22 +123,44 @@ public class CommandParameterDesignerViewModel : ReactiveObject
     IsPlanned = existingParameter.Planned;
     SelectedPlannedParameterMetadataId = existingParameter.PlanningMetadata?.UniqueId;
     PlannedParameters = FilterParameterMetadata(_unitCategoryHelper, _plannedParameters);
+    PastExperimentNumber = DeterminePastExperimentNumber(existingParameter.VariableArgument);
+  }
+
+  private int DeterminePastExperimentNumber(string arg)
+  {
+    var parsed = int.TryParse(arg, out var intValue);
+
+    if(parsed)
+      return intValue;
+
+    return 0;
   }
 
   public Parameter Save()
   {
     Parameter.Value = Value;
     Parameter.Planned = IsPlanned;
-    Parameter.PlanningMetadata = Parameter.Planned ? PlannedParameters.FirstOrDefault(metadata => metadata.UniqueId == SelectedPlannedParameterMetadataId) : null;
+    Parameter.EnvironmentBased = IsEnvironmentBased;
+    Parameter.VariableArgument = PastExperimentNumber.ToString();
+    Parameter.VariableType = SelectedVariableType ?? VariableType.VarUnspecified;
+    Parameter.PlanningMetadata = Parameter.Planned ? 
+      PlannedParameters.FirstOrDefault(metadata => metadata.UniqueId == SelectedPlannedParameterMetadataId) : null;
 
     return Parameter;
   }
 
-  private bool IsValid(float val)
+  private bool IsValid(AresValue value)
   {
-    if (Parameter.Metadata.Constraints.Count == 0)
+    //TODO: Ensure this is more robust!!
+    var parsed = float.TryParse(value.StringValue, out var floatValue);
+
+    //TODO: "And we'll deal with that later!"
+    if(!parsed)
       return true;
 
-    return Parameter.Metadata.Constraints.Any(limits => val >= limits.Minimum && val <= limits.Maximum);
+    if(Parameter.Metadata.Constraints.Count == 0)
+      return true;
+
+    return Parameter.Metadata.Constraints.Any(limits => floatValue >= limits.Minimum && floatValue <= limits.Maximum);
   }
 }

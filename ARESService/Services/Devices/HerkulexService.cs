@@ -1,5 +1,5 @@
 ﻿using Ares.Core.Device;
-using ARESCore.DeviceManagers;
+using AresService.DeviceManagers;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using HerkulexDRS;
@@ -9,7 +9,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace ARESService.Services.Devices;
+namespace AresService.Services.Devices;
 
 public class HerkulexService : HerkulexDRSRpc.HerkulexDRSRpcBase
 {
@@ -30,34 +30,33 @@ public class HerkulexService : HerkulexDRSRpc.HerkulexDRSRpcBase
       .OfType<IServo>()
       .FirstOrDefault(device => device.Name == name);
 
-    if (servo is null)
-      throw new InvalidOperationException($"Could not find Servo >:(: {name}");
+    if(servo is null)
+      throw new InvalidOperationException($"Could not find Servo: {name}");
 
     return servo;
   }
 
-  public override Task<Empty> PistonUp(DeviceRequest request, ServerCallContext context)
+  public override async Task<Empty> PistonUp(DeviceRequest request, ServerCallContext context)
   {
     var servo = GetServo(request.DeviceName);
-    servo.PistonUp();
-
-    return Task.FromResult(new Empty());
+    await servo.PistonUp();
+    return new Empty();
   }
 
-  public override Task<Empty> PistonDown(DeviceRequest request, ServerCallContext context)
+  public override async Task<Empty> PistonDown(DeviceRequest request, ServerCallContext context)
   {
     var servo = GetServo(request.DeviceName);
-    servo.PistonDown();
+    await servo.PistonDown();
 
-    return Task.FromResult(new Empty());
+    return new Empty();
   }
 
-  public override Task<Empty> ResetServo(DeviceRequest request, ServerCallContext context)
+  public override async Task<Empty> ResetServo(DeviceRequest request, ServerCallContext context)
   {
     var servo = GetServo(request.DeviceName);
-    servo.ResetServo();
+    await servo.ResetServo();
 
-    return Task.FromResult(new Empty());
+    return new Empty();
   }
 
   public override async Task<Empty> AddServo(ServoConfig request, ServerCallContext context)
