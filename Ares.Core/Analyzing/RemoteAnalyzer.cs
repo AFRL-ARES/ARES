@@ -1,7 +1,7 @@
-﻿using Ares.Messaging;
-using Ares.Messaging.Analyzing;
-using Ares.Messaging.Analyzing.Remote;
-using Ares.Tools;
+﻿using Ares.Datamodel;
+using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Analyzing.Remote;
+using Ares.Datamodel.Extensions;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Grpc.Net.Client;

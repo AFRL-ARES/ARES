@@ -1,5 +1,5 @@
-﻿using Ares.Messaging;
-using Ares.Messaging.Analyzing;
+﻿using Ares.Datamodel;
+using Ares.Datamodel.Analyzing;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ares.Core.Analyzing;

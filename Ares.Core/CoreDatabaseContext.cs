@@ -1,7 +1,8 @@
 ﻿using System.Reflection;
-using Ares.Messaging;
-using Ares.Messaging.Analyzing;
-using Ares.Messaging.Device;
+using Ares.Datamodel;
+using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Device;
+using Ares.Datamodel.Templates;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ares.Core;

@@ -1,7 +1,7 @@
 ﻿using Ares.Core.Device;
 using Ares.Device;
-using Ares.Messaging;
-using Ares.Messaging.Device;
+using Ares.Datamodel.Device;
+using Ares.Datamodel.Templates;
 
 namespace Ares.Core.Validation.Campaign;
 

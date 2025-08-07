@@ -9,8 +9,9 @@ using Ares.Core.Execution.StopConditions;
 using Ares.Core.Notifications;
 using Ares.Core.Output;
 using Ares.Core.Planning;
-using Ares.Messaging;
-using Ares.Messaging.Analyzing;
+using Ares.Datamodel;
+using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Templates;
 using Google.Protobuf.WellKnownTypes;
 
 namespace Ares.Core.Execution.Executors;

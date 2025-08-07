@@ -1,6 +1,7 @@
 ﻿using System.Reactive.Linq;
 using Ares.Core.Execution.ControlTokens;
-using Ares.Messaging;
+using Ares.Datamodel;
+using Ares.Datamodel.Templates;
 using Google.Protobuf.WellKnownTypes;
 
 namespace Ares.Core.Execution.Executors;

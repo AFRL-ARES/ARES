@@ -1,7 +1,8 @@
 ﻿using Ares.Device;
-using Ares.Messaging;
-using Ares.Tools;
+using Ares.Datamodel;
 using UnitsNet.Units;
+using Ares.Datamodel.Templates;
+using Ares.Datamodel.Extensions;
 
 namespace Ares.Core.CoreDevice;
 

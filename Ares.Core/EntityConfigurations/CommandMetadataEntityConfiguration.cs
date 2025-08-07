@@ -1,4 +1,4 @@
-﻿using Ares.Messaging;
+﻿using Ares.Datamodel.Templates;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

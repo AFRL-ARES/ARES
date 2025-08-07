@@ -2,7 +2,7 @@
 using Ares.Core.AresEnvironment;
 using Ares.Core.Notifications;
 using Ares.Core.Planning;
-using Ares.Messaging;
+using Ares.Datamodel.Templates;
 
 namespace Ares.Core.Execution.Executors.Composers;
 

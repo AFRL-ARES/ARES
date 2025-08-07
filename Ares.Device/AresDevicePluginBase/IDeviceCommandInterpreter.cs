@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Ares.DataModel;
-using Ares.DataModel.Templates;
+using Ares.Datamodel;
+using Ares.Datamodel.Templates;
 
 namespace Ares.Device;
 

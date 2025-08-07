@@ -8,7 +8,7 @@ using Ares.Core.Execution.StartConditions;
 using Ares.Core.Execution.StopConditions;
 using Ares.Core.Planning;
 using Ares.Core.Validation.Campaign;
-using Ares.Messaging;
+using Ares.Datamodel.Templates;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Ares.Core;

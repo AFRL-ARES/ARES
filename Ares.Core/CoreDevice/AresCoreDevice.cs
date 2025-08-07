@@ -1,5 +1,5 @@
 ﻿using Ares.Device;
-using Ares.Messaging.Device;
+using Ares.Datamodel.Device;
 
 namespace Ares.Core.CoreDevice;
 

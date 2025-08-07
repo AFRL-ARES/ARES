@@ -1,5 +1,5 @@
 ﻿using System.Threading.Tasks;
-using Ares.DataModel.Device;
+using Ares.Datamodel.Device;
 
 namespace Ares.Device;
 

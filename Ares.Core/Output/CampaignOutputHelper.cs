@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using Ares.Core.Analyzing;
-using Ares.Messaging;
+using Ares.Datamodel;
+using Ares.Datamodel.Templates;
 
 namespace Ares.Core.Output;
 

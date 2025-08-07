@@ -1,4 +1,4 @@
-﻿using Ares.Messaging.Device;
+﻿using Ares.Datamodel.Device;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
