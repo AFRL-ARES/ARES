@@ -1,4 +1,5 @@
-﻿using Ares.Messaging;
+﻿using Ares.DataModel;
+using Ares.DataModel.Templates;
 
 namespace Ares.Device;
 
