@@ -1,4 +1,4 @@
-﻿using Ares.Messaging;
+﻿using Ares.Datamodel.Templates;
 using BoraasPlanner.BoraasTypes;
 
 namespace BoraasPlanner;

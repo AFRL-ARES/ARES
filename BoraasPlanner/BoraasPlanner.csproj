@@ -11,11 +11,11 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <DataModelProtoPath>$(PkgAres_DataModel_dll)\Proto\</DataModelProtoPath>
+    <DataModelProtoPath>$(PkgARES_Datamodel)\Proto\datamodel\</DataModelProtoPath>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Ares.DataModel.dll" Version="2025.8.5.92857" GeneratePathProperty="True" />
+    <PackageReference Include="ARES.Datamodel" Version="0.3.0-alpha.1" GeneratePathProperty="True" />
     <PackageReference Include="Grpc.Net.Client" Version="2.71.0" />
     <PackageReference Include="Grpc.Tools" Version="2.72.0">
       <PrivateAssets>all</PrivateAssets>
