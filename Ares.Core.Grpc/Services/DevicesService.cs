@@ -1,15 +1,17 @@
-﻿using Ares.Core.Device;
-using Ares.Device;
-using Ares.Messaging;
-using Ares.Messaging.Device;
-using Google.Protobuf.WellKnownTypes;
-using Grpc.Core;
-using Microsoft.EntityFrameworkCore;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO.Ports;
 using System.Linq;
 using System.Threading.Tasks;
+using Ares.Core.Device;
+using Ares.Datamodel;
+using Ares.Datamodel.Device;
+using Ares.Datamodel.Templates;
+using Ares.Device;
+using Ares.Services.Device;
+using Google.Protobuf.WellKnownTypes;
+using Grpc.Core;
+using Microsoft.EntityFrameworkCore;
 
 namespace Ares.Core.Grpc.Services;
 
@@ -40,7 +42,7 @@ public class DevicesService : AresDevices.AresDevicesBase
   public override async Task<Empty> Activate(DeviceActivateRequest request, ServerCallContext context)
   {
     var device = GetAresDevice(request.DeviceName);
-    if (device.Status.DeviceState == DeviceState.Active)
+    if(device.Status.DeviceState == DeviceState.Active)
       return new Empty();
 
     await device.Activate();
@@ -69,7 +71,7 @@ public class DevicesService : AresDevices.AresDevicesBase
 
       return Task.FromResult(aresDevice.Status);
     }
-    catch (InvalidOperationException e)
+    catch(InvalidOperationException e)
     {
       return Task.FromResult(new DeviceStatus { DeviceState = DeviceState.Error, Message = e.Message });
     }
@@ -99,7 +101,7 @@ public class DevicesService : AresDevices.AresDevicesBase
       var result = await deviceCommandTask(context.CancellationToken);
       return result;
     }
-    catch (Exception e)
+    catch(Exception e)
     {
       return new DeviceCommandResult { Success = false, Error = e.ToString() };
     }
@@ -111,7 +113,7 @@ public class DevicesService : AresDevices.AresDevicesBase
       .Select(interpreter => interpreter.Device)
       .FirstOrDefault(device => device.Name == name);
 
-    if (aresDevice is null)
+    if(aresDevice is null)
       throw new InvalidOperationException($"Could not find ARES device: {name}");
 
     return aresDevice;
@@ -121,7 +123,7 @@ public class DevicesService : AresDevices.AresDevicesBase
   {
     await using var dbContext = _dbContextFactory.CreateDbContext();
     var configQuery = dbContext.DeviceConfigs.AsQueryable();
-    if (!string.IsNullOrEmpty(request.DeviceType))
+    if(!string.IsNullOrEmpty(request.DeviceType))
       configQuery = configQuery.Where(config => config.DeviceType == request.DeviceType);
 
     var configs = await configQuery.ToArrayAsync();

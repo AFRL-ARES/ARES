@@ -1,5 +1,5 @@
 ﻿using System.Linq;
-using Ares.Messaging;
+using Ares.Datamodel;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Ares.Core.Grpc;

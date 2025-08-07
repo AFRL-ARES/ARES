@@ -1,7 +1,8 @@
 ﻿using System.Threading.Tasks;
 using Ares.Core.Analyzing;
 using Ares.Core.Exceptions;
-using Ares.Messaging;
+using Ares.Datamodel;
+using Ares.Services;
 using Grpc.Core;
 
 namespace Ares.Core.Grpc.Services;

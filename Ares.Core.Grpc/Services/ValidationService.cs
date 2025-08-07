@@ -1,14 +1,15 @@
-﻿using Ares.Core.Analyzing;
-using Ares.Core.Execution.Extensions;
-using Ares.Core.Validation.Campaign;
-using Ares.Core.Validation.Validators;
-using Ares.Messaging;
-using Google.Protobuf.WellKnownTypes;
-using Grpc.Core;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Ares.Core.Analyzing;
+using Ares.Core.Execution.Extensions;
+using Ares.Core.Validation.Campaign;
+using Ares.Core.Validation.Validators;
+using Ares.Datamodel.Templates;
+using Ares.Services;
+using Google.Protobuf.WellKnownTypes;
+using Grpc.Core;
 
 namespace Ares.Core.Grpc.Services;
 

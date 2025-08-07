@@ -2,7 +2,8 @@
 using System.Reactive.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using Ares.Messaging;
+using Ares.Datamodel;
+using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.AspNetCore.Authorization;

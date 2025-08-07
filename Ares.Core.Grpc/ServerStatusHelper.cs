@@ -1,5 +1,5 @@
 ﻿using System.Reactive.Subjects;
-using Ares.Messaging;
+using Ares.Services;
 
 namespace Ares.Core.Grpc;
 
