@@ -7,9 +7,6 @@ using UI.Services.Grpc;
 using UI.Services.Notification;
 using UI.Settings;
 
-
-
-
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -18,11 +15,27 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 if(connectionString is null)
   throw new InvalidOperationException("Connection string was null!");
 
-builder.Services.AddDbContext<ApplicationDbContext>
-(
-  options =>
-    options.UseSqlServer(connectionString)
-);
+var provider = builder.Configuration.Get<AppSettings>()!.DatabaseProvider;
+
+switch (provider)
+{
+  case "SqlServer":
+    builder.Services.AddDbContextFactory<ApplicationDbContext>(dbBuilder =>
+    {
+      dbBuilder.UseSqlServer(builder.Configuration!.GetConnectionString("DefaultConnection"));
+      dbBuilder.EnableSensitiveDataLogging();
+    });
+    break;
+  case "Sqlite":
+    builder.Services.AddDbContextFactory<ApplicationDbContext>(dbBuilder =>
+    {
+      dbBuilder.UseSqlite(builder.Configuration!.GetConnectionString("DefaultConnection"));
+      dbBuilder.EnableSensitiveDataLogging();
+    });
+    break;
+  default:
+    throw new InvalidOperationException("FIX MEEEEE");
+}
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddDefaultIdentity<IdentityUser>(options =>
 {

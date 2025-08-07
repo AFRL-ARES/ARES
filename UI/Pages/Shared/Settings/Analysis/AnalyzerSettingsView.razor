@@ -1,4 +1,5 @@
 ﻿@using Ares.Datamodel
+@using Microsoft.EntityFrameworkCore.Metadata.Internal
 @using UI.Pages.Shared.Settings.Analysis.Layout
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Backend.ViewModels.Settings.Analysis.AnalyzerSettingsViewModel>
 @inject DialogService DialogService
@@ -6,7 +7,8 @@
 <AnalyzerSettingsContainer EditCallback="EditCallback" RemoveCallback="RemoveCallback" StateUpdateCallback="UpdateStateCallback" Name="@ViewModel!.Name" State="@ViewModel!.AnalyzerState" StateMessage="@ViewModel!.StateMessage" UpdatingInProgress="@UpdateInProgress">
   <div style="display: flex; flex-direction: column">
     <span>Address: @ViewModel!.Address</span>
-    <span>Type: @ViewModel!.Type : @ViewModel!.Version</span>
+    <span>Type: @ViewModel!.Type</span>
+    <span>Version: @ViewModel!.Version</span>
     <span>@ViewModel!.Description</span>
     <div style="display: flex; flex-direction: column">
       @foreach (var settingField in ViewModel!.Settings.Fields)
