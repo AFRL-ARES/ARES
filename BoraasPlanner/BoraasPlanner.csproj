@@ -15,7 +15,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ARES.Datamodel" Version="0.3.0-alpha.2" GeneratePathProperty="True" />
+    <PackageReference Include="ARES.Datamodel" Version="0.3.0-rc1" GeneratePathProperty="True" />
     <PackageReference Include="Grpc.Net.Client" Version="2.71.0" />
     <PackageReference Include="Grpc.Tools" Version="2.72.0">
       <PrivateAssets>all</PrivateAssets>
