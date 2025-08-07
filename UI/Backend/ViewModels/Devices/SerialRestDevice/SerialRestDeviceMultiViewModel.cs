@@ -33,11 +33,9 @@ public class SerialRestDeviceMultiViewModel : UsbDeviceConnectorViewModel<Serial
 }
 */
 
-using Ares.Messaging.Device;
 using Google.Protobuf.WellKnownTypes;
 using RestSerialDevice.Services;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+using Ares.Services.Device;
 
 namespace UI.Backend.ViewModels.Devices.SerialRestDevice;
 

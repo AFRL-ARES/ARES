@@ -1,12 +1,10 @@
-﻿using Ares.Device;
-using Ares.Messaging;
-using Google.Protobuf.WellKnownTypes;
+﻿using Ares.Datamodel;
+using Ares.Device;
 using RestSerialDevice.Enums;
-using RestSerialDevice.Extensions;
 using RestSerialDevice.Structure;
-using RestSerialDevice.Services;
 using RestSerialDevice.Generics;
-using Ares.Tools;
+using Ares.Datamodel.Extensions;
+using Ares.Datamodel.Templates;
 
 namespace RestSerialDevice;
 

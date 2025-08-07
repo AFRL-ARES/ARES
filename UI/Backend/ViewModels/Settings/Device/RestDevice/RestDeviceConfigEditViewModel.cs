@@ -1,8 +1,8 @@
-﻿using Ares.Messaging.Device;
-using ReactiveUI;
+﻿using ReactiveUI;
+using System.ComponentModel.DataAnnotations;
+using Ares.Services.Device;
 using RestDevice.Config;
 using RestDevice.Services;
-using System.ComponentModel.DataAnnotations;
 
 namespace UI.Backend.ViewModels.Settings.Device.RestDevice;
 

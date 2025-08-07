@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Ares.Messages.DeviceState;
-using Ares.Messages.DeviceStates;
 
 namespace AresService.DeviceStateExport.ExportDataProviders;
 

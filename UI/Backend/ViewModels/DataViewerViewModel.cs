@@ -1,4 +1,5 @@
-﻿using Ares.Messaging;
+﻿using Ares.Datamodel;
+using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using Radzen;
 using ReactiveUI;

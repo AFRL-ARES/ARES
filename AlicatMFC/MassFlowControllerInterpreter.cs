@@ -1,8 +1,9 @@
 ﻿using System.Reactive.Linq;
 using AlicatMFC.Commands;
+using Ares.Datamodel;
+using Ares.Datamodel.Extensions;
+using Ares.Datamodel.Templates;
 using Ares.Device;
-using Ares.Messaging;
-using Ares.Tools;
 using UnitsNet;
 using UnitsNet.Units;
 

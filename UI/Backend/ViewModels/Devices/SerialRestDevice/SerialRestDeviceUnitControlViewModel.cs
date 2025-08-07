@@ -66,11 +66,6 @@ public class SerialRestDeviceUnitControlViewModel : UsbDeviceUnitViewModel
 
 
 using RestSerialDevice.Services;
-using System.Linq;
-using DynamicData;
-using ReactiveUI.Fody.Helpers;
-using UnitsNet;
-using UnitsNet.Units;
 
 namespace UI.Backend.ViewModels.Devices.SerialRestDevice;
 

@@ -1,4 +1,4 @@
-﻿using Ares.Messaging;
+﻿using Ares.Services;
 
 namespace UI.Backend.ViewModels.DeviceStateLogging;
 

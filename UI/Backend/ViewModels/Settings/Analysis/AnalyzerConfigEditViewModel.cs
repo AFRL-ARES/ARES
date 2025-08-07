@@ -1,5 +1,5 @@
-﻿using Ares.Messaging;
-using Ares.Messaging.Analyzing;
+﻿using Ares.Datamodel.Analyzing;
+using Ares.Services;
 using ReactiveUI;
 
 namespace UI.Backend.ViewModels.Settings.Analysis;

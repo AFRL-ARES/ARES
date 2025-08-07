@@ -1,6 +1,6 @@
-﻿using Ares.Messaging;
-using Ares.Messaging.Planning;
-using Ares.Tools;
+﻿using Ares.Messaging.Planning;
+using Ares.Datamodel.Extensions;
+using Ares.Datamodel.Planning;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.AspNetCore.Components.Forms;
 using ReactiveUI;

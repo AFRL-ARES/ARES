@@ -1,10 +1,10 @@
 ﻿using Ares.Alicat.Mfc.Config;
 using Ares.Alicat.Mfc.Messaging;
-using Ares.Messaging.Device;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using System.ComponentModel.DataAnnotations;
+using Ares.Services.Device;
 
 namespace UI.Backend.ViewModels.Settings.Device.Mfc;
 

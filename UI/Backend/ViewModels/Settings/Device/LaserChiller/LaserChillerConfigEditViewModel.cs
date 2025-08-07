@@ -1,11 +1,10 @@
-﻿using Ares.Messaging.Device;
-using Chiller.Config;
+﻿using Chiller.Config;
 using Chiller.Services;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using System.ComponentModel.DataAnnotations;
-using VerdiV6.Config;
+using Ares.Services.Device;
 
 namespace UI.Backend.ViewModels.Settings.Device.LaserChiller;
 

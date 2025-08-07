@@ -1,5 +1,6 @@
-using Ares.Messaging.Analyzing;
-using Ares.Messaging.Analyzing.Remote;
+using Ares.Datamodel;
+using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Analyzing.Remote;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 
@@ -54,11 +55,15 @@ public class DemoAnalyzerService : AresRemoteAnalyzerService.AresRemoteAnalyzerS
     Console.WriteLine("Analysis parameters requested");
     var response = new AnalysisParametersResponse
     {
-      ParameterSchema = new Ares.Messaging.AresDataSchema()
+      ParameterSchema = new AresDataSchema
+      {
+        Fields =
+        {
+          [DemoDataTypes.InputNumber.Key] = DemoDataTypes.InputNumber.Value,
+          [DemoDataTypes.Operand.Key] = DemoDataTypes.Operand.Value
+        }
+      }
     };
-
-    response.ParameterSchema.Fields[DemoDataTypes.InputNumber.Key] = DemoDataTypes.InputNumber.Value;
-    response.ParameterSchema.Fields[DemoDataTypes.Operand.Key] = DemoDataTypes.Operand.Value;
 
     return Task.FromResult(response);
   }
@@ -68,11 +73,16 @@ public class DemoAnalyzerService : AresRemoteAnalyzerService.AresRemoteAnalyzerS
     Console.WriteLine("Capabilities requested");
     var capabilities = new AnalyzerCapabilities
     {
-      SettingsSchema = new Ares.Messaging.AresDataSchema()
+      SettingsSchema = new AresDataSchema
+      {
+        Fields =
+        {
+          [DemoDataTypes.Operation.Key] = DemoDataTypes.Operation.Value,
+          [DemoDataTypes.RandomTags.Key] = DemoDataTypes.RandomTags.Value,
+          [DemoDataTypes.PreselectedTags.Key] = DemoDataTypes.PreselectedTags.Value
+        }
+      }
     };
-    capabilities.SettingsSchema.Fields[DemoDataTypes.Operation.Key] = DemoDataTypes.Operation.Value;
-    capabilities.SettingsSchema.Fields[DemoDataTypes.RandomTags.Key] = DemoDataTypes.RandomTags.Value;
-    capabilities.SettingsSchema.Fields[DemoDataTypes.PreselectedTags.Key] = DemoDataTypes.PreselectedTags.Value;
 
 
     return Task.FromResult(capabilities);

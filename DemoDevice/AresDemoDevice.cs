@@ -1,7 +1,7 @@
 ﻿using Ares.Device;
 using Google.Protobuf.WellKnownTypes;
-using System.Data;
 using System.Diagnostics;
+using Ares.Datamodel.Device;
 
 namespace DemoDevice;
 
@@ -19,9 +19,9 @@ public class AresDemoDevice : AresDevice
     try
     {
       ClientStore.CreateClient(_address);
-      Status = new Ares.Messaging.Device.DeviceStatus
+      Status = new DeviceStatus
       {
-        DeviceState = Ares.Messaging.Device.DeviceState.Active,
+        DeviceState = DeviceState.Active,
         Message = $"Activated: {Name}"
       };
     }

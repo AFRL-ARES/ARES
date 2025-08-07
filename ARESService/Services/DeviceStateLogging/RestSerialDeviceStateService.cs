@@ -1,7 +1,6 @@
 ﻿using Ares.Messages.DeviceState;
 using Ares.Messages.DeviceStates;
 using Ares.Messages.DeviceStates.RestSerialDevice;
-using AresService;
 using AresService.DeviceStateLoggers;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;

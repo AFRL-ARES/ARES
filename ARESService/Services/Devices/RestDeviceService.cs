@@ -1,15 +1,14 @@
 ﻿using Ares.Core.Device;
-using Ares.Messaging;
-using Ares.Tools;
+using Ares.Datamodel.Extensions;
 using AresService.DeviceManagers;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using RestDevice;
-using RestDevice.Config;
-using RestDevice.Services;
 using System.Linq;
 using System.Threading.Tasks;
-
+using Ares.Datamodel;
+using RestDevice.Config;
+using RestDevice.Services;
 namespace AresService.Services.Devices;
 
 public class RestDeviceService : RestDeviceRpc.RestDeviceRpcBase

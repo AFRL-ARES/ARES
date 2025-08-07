@@ -1,4 +1,4 @@
-﻿using Ares.Messaging.Device;
+﻿using Ares.Services.Device;
 using Chiller.Services;
 using Google.Protobuf.WellKnownTypes;
 

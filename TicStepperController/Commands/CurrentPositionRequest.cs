@@ -1,5 +1,4 @@
-﻿using Ares.Device.Serial.Commands;
-using TicStepperController.Commands.Responses;
+﻿using TicStepperController.Commands.Responses;
 using TicStepperController.Commands.Responses.Parsers;
 
 namespace TicStepperController.Commands;

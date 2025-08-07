@@ -1,6 +1,6 @@
 ﻿using System.Windows.Input;
 using Ares.Messages.DeviceState;
-using Ares.Messaging.Device;
+using Ares.Services.Device;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 

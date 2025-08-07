@@ -1,8 +1,8 @@
-﻿using Ares.Messaging.Device;
-using FlirCM3.Config;
+﻿using FlirCM3.Config;
 using FlirCM3.Services;
 using ReactiveUI;
 using System.ComponentModel.DataAnnotations;
+using Ares.Services.Device;
 
 namespace UI.Backend.ViewModels.Settings.Device.CM3Camera
 {

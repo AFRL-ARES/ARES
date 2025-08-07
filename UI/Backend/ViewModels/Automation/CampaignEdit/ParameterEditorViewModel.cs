@@ -1,4 +1,5 @@
-﻿using Ares.Messaging;
+﻿using Ares.Datamodel;
+using Ares.Datamodel.Templates;
 using Humanizer;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;

@@ -1,4 +1,4 @@
-﻿using Ares.Messaging;
+﻿using Ares.Services;
 using ReactiveUI;
 using UI.Backend.Notifications;
 

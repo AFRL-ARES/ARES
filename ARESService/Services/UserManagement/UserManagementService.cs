@@ -1,8 +1,8 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
 using Ares.Core.Grpc;
+using Ares.Datamodel;
 using Ares.Messages;
-using Ares.Messaging;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.AspNetCore.Identity;

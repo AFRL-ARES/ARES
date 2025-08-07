@@ -1,6 +1,6 @@
 ﻿using Ares.Device.Tests.Device;
-using Ares.Messaging;
-using Ares.Tools;
+using Ares.Datamodel.Extensions;
+using Ares.Datamodel.Templates;
 using Moq;
 using Moq.Protected;
 

@@ -1,4 +1,5 @@
-﻿using Ares.Messaging.Device;
+﻿using Ares.Datamodel.Device;
+using Ares.Services.Device;
 using Ares.SyringePump.Ne1000.Messaging;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;

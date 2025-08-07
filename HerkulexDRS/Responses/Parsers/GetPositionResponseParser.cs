@@ -1,5 +1,4 @@
 ﻿using Ares.Device.Serial.Commands;
-using HerkulexDRS.Responses;
 
 namespace HerkulexDRS.Responses.Parsers;
 public class GetPositionResponseParser : SerialResponseParser<GetPositionResponse>

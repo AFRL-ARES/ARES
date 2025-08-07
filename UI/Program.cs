@@ -1,6 +1,4 @@
-using System.Net;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using UI;
 using UI.Backend.Helpers;

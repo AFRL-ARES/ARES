@@ -1,6 +1,4 @@
-﻿
-using Ares.Device.Serial.Commands;
-using Ares.SyringePump.Ne1000.Messaging;
+﻿using Ares.SyringePump.Ne1000.Messaging;
 using UnitsNet;
 
 namespace SyringePumpNE1000.Commands.Responses.Parsers

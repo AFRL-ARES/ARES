@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Ares.SyringePump.Ne1000.Messaging;
+﻿using Ares.SyringePump.Ne1000.Messaging;
 using UnitsNet;
 
 namespace SyringePumpNE1000.Commands.Responses.Parsers

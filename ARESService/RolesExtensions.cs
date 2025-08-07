@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Ares.Messaging;
+using Ares.Datamodel;
 using Microsoft.AspNetCore.Identity;
 
 namespace AresService;

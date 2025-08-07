@@ -1,19 +1,19 @@
-﻿using Ares.Messaging.Device;
+﻿using Ares.Datamodel.Device;
+using Ares.Services.Device;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using ValveController;
 using ValveController.Config;
 using ValveController.Services;
-using static Ares.Messaging.Device.AresDevices;
 
 namespace UI.Backend.ViewModels.Settings.Device.ValveController;
 
 public class ValveControllerSettingsListViewModel : ReactiveObject
 {
   private readonly ValveControllerRpc.ValveControllerRpcClient _valveControllerClient;
-  private readonly AresDevicesClient _devicesClient;
+  private readonly AresDevices.AresDevicesClient _devicesClient;
 
-  public ValveControllerSettingsListViewModel(AresDevicesClient devicesClient, ValveControllerRpc.ValveControllerRpcClient valveControllerRpcClient)
+  public ValveControllerSettingsListViewModel(AresDevices.AresDevicesClient devicesClient, ValveControllerRpc.ValveControllerRpcClient valveControllerRpcClient)
   {
     _devicesClient = devicesClient;
     _valveControllerClient = valveControllerRpcClient;

@@ -61,7 +61,8 @@ public class SerialRestDeviceSettingsListViewModel : ReactiveObject
 */
 
 
-using Ares.Messaging.Device;
+using Ares.Datamodel.Device;
+using Ares.Services.Device;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using RestSerialDevice;

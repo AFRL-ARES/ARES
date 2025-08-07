@@ -2,7 +2,7 @@
 using System.Reactive.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
-using Ares.Messaging;
+using Ares.Services;
 using DynamicData.Binding;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Net.Client;

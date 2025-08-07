@@ -1,7 +1,6 @@
-﻿using Ares.Messaging.Device;
+﻿using Ares.Datamodel.Device;
 using FlirCM3.Config;
 using FlirCM3.Services;
-using Google.Protobuf.WellKnownTypes;
 
 namespace FlirCM3.Simulation
 {

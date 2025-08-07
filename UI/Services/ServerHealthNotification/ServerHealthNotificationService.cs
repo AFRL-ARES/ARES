@@ -1,4 +1,4 @@
-﻿using Ares.Messaging;
+﻿using Ares.Services;
 using Radzen;
 using UI.Services.ServerHealth;
 

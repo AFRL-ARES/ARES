@@ -1,4 +1,5 @@
-﻿using Ares.Messaging;
+﻿using Ares.Datamodel.Templates;
+using Ares.Services;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using UI.Backend.ViewModels.Automation.CampaignEdit.Factories;

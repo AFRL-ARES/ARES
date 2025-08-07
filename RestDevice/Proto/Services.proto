@@ -5,11 +5,11 @@ package rest_device.services;
 import "google/protobuf/empty.proto";
 import "DataModel.proto";
 import "RestDeviceConfig.proto";
-import "AresStruct.proto";
+import "ares_struct.proto";
 
 service RestDeviceRpc {
 	rpc GetData(DeviceRequest) returns (DataResponse);
-	rpc CallDeviceMethod(DeviceMethodRequest) returns (ares.messaging.AresValue);
+	rpc CallDeviceMethod(DeviceMethodRequest) returns (ares.datamodel.AresValue);
 	rpc GetDeviceCapabilities(DeviceRequest) returns (DeviceCapabilitiesResponse);
 	
 	rpc GetAllRestDevices(google.protobuf.Empty) returns (GetAllRestDevicesResponse);

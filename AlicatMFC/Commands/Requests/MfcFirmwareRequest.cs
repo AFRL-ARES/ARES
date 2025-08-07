@@ -1,7 +1,5 @@
 ﻿using AlicatMFC.Commands.Responses;
 using AlicatMFC.Commands.Responses.Parsers;
-using System;
-using System.Linq;
 
 namespace AlicatMFC.Commands.Requests
 {

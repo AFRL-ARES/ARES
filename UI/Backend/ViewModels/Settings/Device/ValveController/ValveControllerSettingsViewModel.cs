@@ -1,9 +1,9 @@
-﻿using Ares.Messaging.Device;
+﻿using Ares.Datamodel.Device;
+using Ares.Services.Device;
 using Grpc.Core;
 using ReactiveUI;
 using ValveController.Config;
 using ValveController.Services;
-using static Ares.Messaging.Device.AresDevices;
 
 namespace UI.Backend.ViewModels.Settings.Device.ValveController;
 
@@ -11,11 +11,11 @@ public class ValveControllerSettingsViewModel : ReactiveObject
 {
   private readonly ValveControllerRpc.ValveControllerRpcClient _valveControllerClient;
   private readonly DeviceConfig _deviceConfig;
-  private readonly AresDevicesClient _devicesClient;
+  private readonly AresDevices.AresDevicesClient _devicesClient;
 
   public ValveControllerSettingsViewModel(DeviceConfig deviceConfig,
     ValveControllerRpc.ValveControllerRpcClient valveControllerClient,
-    AresDevicesClient devicesClient,
+    AresDevices.AresDevicesClient devicesClient,
     Func<Task> onRemoveCallback)
   {
     _valveControllerClient = valveControllerClient;

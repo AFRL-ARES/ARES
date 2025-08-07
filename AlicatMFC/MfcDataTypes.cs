@@ -1,4 +1,4 @@
-﻿using Ares.Messaging;
+﻿using Ares.Datamodel;
 
 namespace AlicatMFC;
 public static class MfcDataTypes

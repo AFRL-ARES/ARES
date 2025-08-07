@@ -1,4 +1,4 @@
-﻿using Ares.Messaging;
+﻿using Ares.Datamodel;
 using Ares.Messaging.Planning;
 using ReactiveUI;
 

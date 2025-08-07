@@ -1,7 +1,6 @@
 ﻿using Ares.Alicat.Mfc.Messaging;
-using Ares.Messaging.Device;
 using Google.Protobuf.WellKnownTypes;
-using System.Reactive.Linq;
+using Ares.Services.Device;
 
 namespace UI.Backend.ViewModels.Devices.Mfc;
 

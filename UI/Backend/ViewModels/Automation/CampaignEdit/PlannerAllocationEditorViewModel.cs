@@ -1,4 +1,6 @@
-﻿using Ares.Messaging;
+﻿using Ares.Datamodel;
+using Ares.Datamodel.Planning;
+using Ares.Datamodel.Templates;
 using Ares.Messaging.Planning;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;

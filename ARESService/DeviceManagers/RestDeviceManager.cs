@@ -1,9 +1,9 @@
 ﻿using Ares.Core.Device;
 using RestDevice;
-using RestDevice.Config;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using RestDevice.Config;
 
 namespace AresService.DeviceManagers;
 

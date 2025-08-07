@@ -1,5 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using Ares.Messaging.Device;
+using Ares.Services.Device;
 using Ares.SyringePump.Ne1000.Messaging;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;

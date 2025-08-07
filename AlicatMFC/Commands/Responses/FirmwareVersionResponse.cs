@@ -1,7 +1,4 @@
-﻿using System;
-using System.Linq;
-
-namespace AlicatMFC.Commands.Responses
+﻿namespace AlicatMFC.Commands.Responses
 {
   internal class FirmwareVersionResponse : CommandResponse
   {

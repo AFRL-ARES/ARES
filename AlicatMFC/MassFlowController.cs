@@ -2,13 +2,13 @@
 using AlicatMFC.Commands.Responses;
 using AlicatMFC.Commands.Responses.Streamed;
 using Ares.Device.Serial;
-using Ares.Messaging.Device;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Text.RegularExpressions;
+using Ares.Datamodel.Device;
 using UnitsNet;
 
 namespace AlicatMFC;

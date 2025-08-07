@@ -1,8 +1,9 @@
 ﻿using Ares.Core.Analyzing;
 using Ares.Core.Tests.Data.Device;
-using Ares.Messaging;
+using Ares.Datamodel;
 using Ares.Test;
-using Ares.Tools;
+using Ares.Datamodel.Extensions;
+using Ares.Datamodel.Templates;
 
 namespace Ares.Core.Tests.Data;
 

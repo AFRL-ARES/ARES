@@ -1,4 +1,4 @@
-﻿using Ares.Messaging.Device;
+﻿using Ares.Services.Device;
 using Google.Protobuf.WellKnownTypes;
 using Tc0304.Services;
 

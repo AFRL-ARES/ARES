@@ -3,7 +3,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Ares.Core.Device;
 using AresService.DeviceManagers;
-using AresService;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
 using Google.Protobuf.WellKnownTypes;
@@ -12,8 +11,6 @@ using LindbergFurnace;
 using TubeFurnace.Config;
 using TubeFurnace.Messaging;
 using System.Reactive.Threading.Tasks;
-using Ares.SyringePump.Ne1000.Messaging;
-using SyringePumpNE1000;
 using UnitsNet;
 
 namespace AresService.Services.Devices;

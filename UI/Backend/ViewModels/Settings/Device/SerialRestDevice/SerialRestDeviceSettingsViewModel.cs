@@ -5,7 +5,8 @@ public class SerialRestDeviceSettingsViewModel
 
 }*/
 
-using Ares.Messaging.Device;
+using Ares.Datamodel.Device;
+using Ares.Services.Device;
 using Grpc.Core;
 using RestSerialDevice.Config;
 using RestSerialDevice.Services;

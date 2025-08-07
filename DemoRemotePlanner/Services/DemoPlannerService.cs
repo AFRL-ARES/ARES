@@ -1,8 +1,8 @@
-using Ares.Messaging.Planning;
+using Ares.Datamodel.Planning;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 
-namespace DemoRemoteAnalyzer.Services;
+namespace DemoRemotePlanner.Services;
 public class DemoPlannerService : AresPlannerGrpc.AresPlannerGrpcBase
 {
   private readonly Random _random;
@@ -21,26 +21,30 @@ public class DemoPlannerService : AresPlannerGrpc.AresPlannerGrpcBase
 
     foreach(var parameter in inputs)
     {
-      if(parameter.PlannerName == "Random Planner")
+      switch (parameter.PlannerName)
       {
-        var plannedParam = await RandomPlanner(parameter);
-        response.ParameterNames.Add(plannedParam.ParameterName);
-        response.ParameterValues.Add((float)plannedParam.ParameterValue);
-      }
-
-      else if(parameter.PlannerName == "Gradual Planner")
-      {
-        var gradualPlannedParam = await GradualPlanner(parameter);
-        response.ParameterNames.Add(gradualPlannedParam.ParameterName);
-        response.ParameterValues.Add((float)gradualPlannedParam.ParameterValue);
-      }
-
-      else
-      {
-        Console.WriteLine("Unrecognized Planned Requested! Defaulting to random planner...");
-        var plannedParam = await RandomPlanner(parameter);
-        response.ParameterNames.Add(plannedParam.ParameterName);
-        response.ParameterValues.Add((float)plannedParam.ParameterValue);
+        case "Random Planner":
+        {
+          var plannedParam = await RandomPlanner(parameter);
+          response.ParameterNames.Add(plannedParam.ParameterName);
+          response.ParameterValues.Add(plannedParam.ParameterValue);
+          break;
+        }
+        case "Gradual Planner":
+        {
+          var gradualPlannedParam = await GradualPlanner(parameter);
+          response.ParameterNames.Add(gradualPlannedParam.ParameterName);
+          response.ParameterValues.Add(gradualPlannedParam.ParameterValue);
+          break;
+        }
+        default:
+        {
+          Console.WriteLine("Unrecognized Planned Requested! Defaulting to random planner...");
+          var plannedParam = await RandomPlanner(parameter);
+          response.ParameterNames.Add(plannedParam.ParameterName);
+          response.ParameterValues.Add(plannedParam.ParameterValue);
+          break;
+        }
       }
     }
 
@@ -91,7 +95,7 @@ public class DemoPlannerService : AresPlannerGrpc.AresPlannerGrpcBase
     var randomDouble = _random.NextDouble();
     var plannedParam = new PlannedParameter();
     plannedParam.ParameterName = aresParameter.ParameterName;
-    plannedParam.ParameterValue = aresParameter.MinimumValue + (randomDouble * (aresParameter.MaximumValue - aresParameter.MinimumValue));
+    plannedParam.ParameterValue = (float)(aresParameter.MinimumValue + (randomDouble * (aresParameter.MaximumValue - aresParameter.MinimumValue)));
     return Task.FromResult(plannedParam);
   }
 
@@ -101,7 +105,7 @@ public class DemoPlannerService : AresPlannerGrpc.AresPlannerGrpcBase
     response.ParameterName = aresParameter.ParameterName;
 
     if(aresParameter.ParameterHistory.Count == 0)
-      response.ParameterValue = aresParameter.MinimumValue;
+      response.ParameterValue = (float)aresParameter.MinimumValue;
 
     else
     {
@@ -109,10 +113,10 @@ public class DemoPlannerService : AresPlannerGrpc.AresPlannerGrpcBase
       var incrementedValue = previousValue + 5;
 
       if(incrementedValue > aresParameter.MaximumValue)
-        response.ParameterValue = aresParameter.MaximumValue;
+        response.ParameterValue = (float)aresParameter.MaximumValue;
 
       else
-        response.ParameterValue = incrementedValue;
+        response.ParameterValue = (float)incrementedValue;
     }
 
     return Task.FromResult(response);

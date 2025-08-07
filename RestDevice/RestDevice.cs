@@ -1,14 +1,13 @@
 ﻿using Ares.Device.Rest;
-using Ares.Messaging;
-using Ares.Messaging.Device;
-using Ares.Tools;
+using Ares.Datamodel.Extensions;
 using RestDevice.Commands.Responses.JsonResponses;
-using RestDevice.Services;
 using RestDevice.Structure;
 using System.Diagnostics;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Text.Json;
+using Ares.Datamodel;
+using Ares.Datamodel.Device;
 
 namespace RestDevice;
 

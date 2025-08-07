@@ -1,9 +1,8 @@
-﻿using Ares.Device.USB;
-using Ares.Messaging.Device;
+﻿using Ares.Datamodel.Device;
+using Ares.Device.USB;
 using FlirCM3.Config;
 using FlirCM3.Services;
 using Google.Protobuf;
-using Google.Protobuf.WellKnownTypes;
 using SpinnakerNET;
 
 namespace FlirCM3;

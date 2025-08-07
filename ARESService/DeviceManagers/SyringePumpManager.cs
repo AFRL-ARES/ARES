@@ -6,7 +6,6 @@ using AresService.DeviceStateLoggers;
 using AresService.DeviceStateLoggers.SyringePump;
 using SyringePumpNE1000;
 using SyringePumpNE1000.Simulation;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;

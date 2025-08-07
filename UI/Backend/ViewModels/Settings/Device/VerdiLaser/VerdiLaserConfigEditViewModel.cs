@@ -1,8 +1,8 @@
-﻿using Ares.Messaging.Device;
-using Google.Protobuf.WellKnownTypes;
+﻿using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using System.ComponentModel.DataAnnotations;
+using Ares.Services.Device;
 using VerdiV6.Config;
 using VerdiV6.Services;
 

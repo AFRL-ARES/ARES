@@ -1,4 +1,5 @@
-﻿using Ares.Messaging.Device;
+﻿using Ares.Datamodel.Device;
+using Ares.Services.Device;
 using FlirCM3;
 using FlirCM3.Config;
 using FlirCM3.Services;

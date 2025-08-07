@@ -5,7 +5,6 @@ using AresService.DeviceStateLoggers;
 using AresService.DeviceStateLoggers.TubeFurnace;
 using LindbergFurnace;
 using SyringePumpNE1000;
-using SyringePumpNE1000.Simulation;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;

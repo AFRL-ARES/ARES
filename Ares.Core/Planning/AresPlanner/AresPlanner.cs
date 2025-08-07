@@ -5,7 +5,6 @@ using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
 using DynamicData;
 using Google.Protobuf.WellKnownTypes;
-using System.Reactive.Linq;
 
 namespace Ares.Core.Planning.AresPlanner;
 

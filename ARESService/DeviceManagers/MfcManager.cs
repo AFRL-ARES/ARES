@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Ares.Datamodel.Device;
 
 namespace AresService.DeviceManagers;
 
@@ -65,7 +66,7 @@ public class MfcManager : IDeviceManager<MfcConfig, IMassFlowController>
 
     foreach (var device in devices)
     {
-      if (device.Status.DeviceState == Ares.Messaging.Device.DeviceState.Active)
+      if (device.Status.DeviceState == DeviceState.Active)
         await device.Start();
     }
 

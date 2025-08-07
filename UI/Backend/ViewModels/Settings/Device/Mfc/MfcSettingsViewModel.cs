@@ -1,6 +1,7 @@
 ﻿using Ares.Alicat.Mfc.Config;
 using Ares.Alicat.Mfc.Messaging;
-using Ares.Messaging.Device;
+using Ares.Datamodel.Device;
+using Ares.Services.Device;
 using DynamicData;
 using Grpc.Core;
 using ReactiveUI;

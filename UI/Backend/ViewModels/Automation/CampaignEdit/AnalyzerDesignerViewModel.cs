@@ -1,5 +1,7 @@
-﻿using Ares.Messaging;
-using Ares.Messaging.Analyzing;
+﻿using Ares.Datamodel;
+using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Templates;
+using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using NuGet.Packaging;
 using ReactiveUI;

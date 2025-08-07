@@ -1,14 +1,7 @@
 ﻿@page "/device_states"
-@using Ares.Messages.DeviceStates.Mfc;
-@using Ares.Messages.DeviceStates;
-@using AresMessaging.DeviceStateLogging;
-@using Ares.Messaging
-@using Google.Protobuf.WellKnownTypes;
-@using System.IO.Compression;
-@using UI.Backend.ViewModels.DeviceStateLogging;
+@using Ares.Services
 @using UI.Backend.ViewModels;
 @using UI.Pages.Shared.DeviceStateLogging;
-@using UnitsNet;
 @inject DialogService DialogService
 @inject AresAutomation.AresAutomationClient AutomationClient
 

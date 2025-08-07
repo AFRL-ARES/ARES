@@ -1,5 +1,4 @@
 ﻿using Ares.Core.Device;
-using AresService;
 using AresService.DeviceManagers;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;

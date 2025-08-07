@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Ares.Core.Device;
 using AresService.DeviceManagers;
 using Google.Protobuf.WellKnownTypes;

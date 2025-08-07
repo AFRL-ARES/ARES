@@ -1,6 +1,6 @@
 ﻿using Ares.Core.Analyzing;
-using Ares.Messaging;
-using Ares.Messaging.Analyzing;
+using Ares.Datamodel;
+using Ares.Datamodel.Analyzing;
 
 namespace Ares.Core.Tests.Data.Analyzer;
 

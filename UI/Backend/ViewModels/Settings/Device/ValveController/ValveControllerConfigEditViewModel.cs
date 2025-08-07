@@ -2,9 +2,9 @@
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using System.ComponentModel.DataAnnotations;
+using Ares.Services.Device;
 using ValveController.Config;
 using ValveController.Services;
-using static Ares.Messaging.Device.AresDevices;
 
 namespace UI.Backend.ViewModels.Settings.Device.ValveController;
 
@@ -12,10 +12,10 @@ public class ValveControllerConfigEditViewModel : ReactiveObject
 {
   private readonly ValveControllerRpc.ValveControllerRpcClient _client;
   private readonly ValveControllerConfig _config;
-  private readonly AresDevicesClient _devicesClient;
+  private readonly AresDevices.AresDevicesClient _devicesClient;
   private string? _deviceName;
 
-  public ValveControllerConfigEditViewModel(ValveControllerRpc.ValveControllerRpcClient client, AresDevicesClient devicesClient)
+  public ValveControllerConfigEditViewModel(ValveControllerRpc.ValveControllerRpcClient client, AresDevices.AresDevicesClient devicesClient)
   {
     _client = client;
     _devicesClient = devicesClient;
@@ -24,7 +24,7 @@ public class ValveControllerConfigEditViewModel : ReactiveObject
     _ = UpdateAvailableSerialPorts();
   }
 
-  public ValveControllerConfigEditViewModel(ValveControllerRpc.ValveControllerRpcClient client, AresDevicesClient devicesClient, ValveControllerConfig config)
+  public ValveControllerConfigEditViewModel(ValveControllerRpc.ValveControllerRpcClient client, AresDevices.AresDevicesClient devicesClient, ValveControllerConfig config)
   {
     _client = client;
     _devicesClient = devicesClient;
