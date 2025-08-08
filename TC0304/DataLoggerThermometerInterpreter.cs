@@ -1,8 +1,8 @@
-﻿using Ares.Device;
-using Ares.Messaging;
-using Ares.Tools;
+﻿using Ares.Datamodel;
+using Ares.Device;
+using Ares.Datamodel.Extensions;
+using Ares.Datamodel.Templates;
 using TC0304.Commands;
-using Tc0304.DataModel;
 
 namespace TC0304;
 

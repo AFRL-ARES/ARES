@@ -2,7 +2,6 @@
 using Ares.Core.Device;
 using Ares.Core.Grpc;
 using Ares.Core.Planning;
-using Ares.Messaging;
 using DemoDevice;
 using AresService.DeviceDbLoaders;
 using Microsoft.EntityFrameworkCore;
@@ -12,7 +11,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
-using BoraasPlanner;
+using Ares.Services;
 
 namespace AresService;
 

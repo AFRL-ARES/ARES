@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using Ares.Messages.DeviceState;
 using Ares.Messages.DeviceStates;
 using Ares.Messages.DeviceStates.Mfc;
-using AresService;
 using AresService.DeviceStateLoggers;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;

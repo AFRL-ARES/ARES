@@ -1,6 +1,6 @@
-﻿using Ares.Messaging;
-using Ares.Messaging.Analyzing;
-using Ares.Messaging.Analyzing.Remote;
+﻿using Ares.Datamodel;
+using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Analyzing.Remote;
 
 namespace Ares.Core.Analyzing;
 

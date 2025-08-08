@@ -1,4 +1,5 @@
-﻿using Ares.Messaging;
+﻿using Ares.Datamodel.Templates;
+using Ares.Services;
 using Radzen;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;

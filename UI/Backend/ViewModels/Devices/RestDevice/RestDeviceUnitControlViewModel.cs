@@ -50,7 +50,7 @@ public class RestDeviceUnitControlViewModel : UsbDeviceUnitViewModel
     }
 
 
-    var response = await _client.CallDeviceMethodAsync(request);
+    await _client.CallDeviceMethodAsync(request);
   }
 
   public Dictionary<string, List<string>> DeviceMethods { get; set; } = new();

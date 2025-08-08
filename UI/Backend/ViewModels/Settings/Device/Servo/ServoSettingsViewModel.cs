@@ -1,4 +1,5 @@
-﻿using Ares.Messaging.Device;
+﻿using Ares.Datamodel.Device;
+using Ares.Services.Device;
 using Grpc.Core;
 using HerkulexDRS.Config;
 using HerkulexDRS.Services;

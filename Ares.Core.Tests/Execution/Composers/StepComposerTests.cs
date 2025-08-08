@@ -2,9 +2,9 @@
 using Ares.Core.Execution.Executors;
 using Ares.Core.Execution.Executors.Composers;
 using Ares.Device;
-using Ares.Messaging;
 using Moq;
 using System.Reflection;
+using Ares.Datamodel.Templates;
 
 namespace Ares.Core.Tests.Execution.Composers;
 

@@ -1,7 +1,8 @@
-﻿using Ares.Messaging;
-using Ares.Messaging.Planning;
+﻿using Ares.Messaging.Planning;
 using ReactiveUI;
 using System.Collections.ObjectModel;
+using Ares.Datamodel;
+using Ares.Datamodel.Templates;
 
 namespace UI.Backend.ViewModels.Automation.CampaignEdit;
 

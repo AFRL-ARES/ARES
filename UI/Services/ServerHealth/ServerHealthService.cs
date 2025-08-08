@@ -1,6 +1,6 @@
 ﻿using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using Ares.Messaging;
+using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Grpc.Health.V1;
@@ -16,7 +16,7 @@ internal class ServerHealthService : ILocalService
   private readonly AresServerInfo.AresServerInfoClient _aresServerInfo;
   private readonly Health.HealthClient _healthClient;
   private readonly ILogger<ServerHealthService> _logger;
-  private readonly ISubject<ServerStatusResponse> _serverStatusSubject = new BehaviorSubject<ServerStatusResponse>(new ServerStatusResponse { ServerStatus = Ares.Messaging.ServerStatus.Idle, StatusMessage = "Not Connected" });
+  private readonly ISubject<ServerStatusResponse> _serverStatusSubject = new BehaviorSubject<ServerStatusResponse>(new ServerStatusResponse { ServerStatus = Ares.Services.ServerStatus.Idle, StatusMessage = "Not Connected" });
 
   public readonly IObservable<ServerStatusResponse> ServerStatus;
   private Task _heartbeatListener = Task.CompletedTask;
@@ -115,7 +115,7 @@ internal class ServerHealthService : ILocalService
     AresConnectionStatus = AresConnectionStatus.Disconnected;
     _serverStatusSubject.OnNext(new ServerStatusResponse
     {
-      ServerStatus = Ares.Messaging.ServerStatus.Error,
+      ServerStatus = Ares.Services.ServerStatus.Error,
       StatusMessage = $"Server is offline: {message}"
     });
 

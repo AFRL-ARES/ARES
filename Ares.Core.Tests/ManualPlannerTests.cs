@@ -1,7 +1,8 @@
 ﻿using Ares.Core.Planning;
-using Ares.Messaging;
-using Ares.Messaging.Analyzing;
-using Ares.Messaging.Planning;
+using Ares.Datamodel;
+using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Planning;
+using Ares.Datamodel.Templates;
 
 namespace Ares.Core.Tests;
 

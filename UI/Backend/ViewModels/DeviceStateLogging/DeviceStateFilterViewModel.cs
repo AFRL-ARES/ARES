@@ -1,5 +1,6 @@
-﻿using Ares.Messages.DeviceState;
-using Ares.Messaging;
+﻿using Ares.Datamodel;
+using Ares.Messages.DeviceState;
+using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;

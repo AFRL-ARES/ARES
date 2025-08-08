@@ -1,8 +1,8 @@
-using Ares.Messaging;
-using Ares.Messaging.Analyzing;
-using Ares.Messaging.Planning;
-using Ares.Tools;
-using System.Reactive.Linq;
+using Ares.Datamodel;
+using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Extensions;
+using Ares.Datamodel.Planning;
+using Ares.Datamodel.Templates;
 
 namespace Ares.Core.Planning;
 

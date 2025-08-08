@@ -1,4 +1,4 @@
-﻿using Ares.Messaging.Analyzing;
+﻿using Ares.Datamodel.Analyzing;
 
 namespace Ares.Core.Analyzing;
 /// <summary>

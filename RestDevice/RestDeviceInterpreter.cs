@@ -1,7 +1,7 @@
-﻿using Ares.Device;
-using Ares.Messaging;
-using Ares.Tools;
-using Google.Protobuf.WellKnownTypes;
+﻿using Ares.Datamodel;
+using Ares.Device;
+using Ares.Datamodel.Extensions;
+using Ares.Datamodel.Templates;
 using RestDevice.Enums;
 using RestDevice.Generics;
 using RestDevice.Structure;

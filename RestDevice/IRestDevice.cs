@@ -1,5 +1,5 @@
-﻿using Ares.Device.Rest;
-using Ares.Messaging;
+﻿using Ares.Datamodel;
+using Ares.Device.Rest;
 using RestDevice.Structure;
 
 namespace RestDevice;

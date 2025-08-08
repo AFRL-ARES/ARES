@@ -1,4 +1,4 @@
-﻿using Ares.Messaging;
+﻿using Ares.Datamodel.Templates;
 using Ares.Messaging.Planning;
 using Google.Protobuf.WellKnownTypes;
 using UI.Backend.ViewModels.Automation.CampaignEdit;

@@ -1,14 +1,13 @@
-using System.Reactive.Linq;
-﻿using Ares.Core.Planning;
-using Ares.Device;
-using Ares.Messaging;
-using BoraasPlanner.BoraasTypes;
 using System.Text;
 using System.Text.Json;
-
-using Ares.Messaging.Analyzing;
-using Ares.Tools;
-using Ares.Messaging.Planning;
+using Ares.Core.Planning;
+using Ares.Datamodel;
+using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Extensions;
+using Ares.Datamodel.Planning;
+using Ares.Datamodel.Templates;
+using Ares.Device;
+using BoraasPlanner.BoraasTypes;
 
 namespace BoraasPlanner;
 public class BoraasPlanner : IPlanner

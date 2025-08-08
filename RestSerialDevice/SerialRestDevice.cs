@@ -1,16 +1,13 @@
 ﻿using Ares.Device.Serial;
-using GenericSerialDevice;
 using GenericSerialDevice.Commands;
 using GenericSerialDevice.Commands.Responses;
 using RestSerialDevice.Commands;
 using RestSerialDevice.Structure;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using System.Threading.Tasks;
 using RestSerialDevice.Services;
 using System.Text.Json;
 using System.Diagnostics;
-using GenericSerialDevice.Commands.Responses.JsonResponses;
 
 namespace RestSerialDevice;
 

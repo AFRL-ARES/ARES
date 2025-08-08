@@ -1,6 +1,6 @@
-﻿using Ares.Messaging.Device;
-using System;
+﻿using System;
 using System.Threading.Tasks;
+using Ares.Datamodel.Device;
 
 namespace Ares.Device.Serial;
 

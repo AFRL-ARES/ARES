@@ -1,6 +1,6 @@
 ﻿using Ares.Core.Analyzing;
 using Ares.Core.Validation.Validators;
-using Ares.Messaging;
+using Ares.Datamodel.Templates;
 
 namespace Ares.Core.Validation.Campaign;
 

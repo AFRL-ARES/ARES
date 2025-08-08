@@ -1,10 +1,10 @@
-using Ares.Messaging;
-using Ares.Messaging.Analyzing;
-using Ares.Messaging.Planning;
-using Ares.Tools;
+using Ares.Datamodel;
+using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Extensions;
+using Ares.Datamodel.Planning;
+using Ares.Datamodel.Templates;
 using DynamicData;
 using Google.Protobuf.WellKnownTypes;
-using System.Reactive.Linq;
 
 namespace Ares.Core.Planning.AresPlanner;
 

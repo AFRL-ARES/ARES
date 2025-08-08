@@ -1,9 +1,9 @@
 #!/bin/zsh
 
-dotnet ef database drop --context AresDbContext -f --no-build
-dotnet ef migrations remove --context FC2IdentityContext --no-build --project ../FC2Core/FC2Core.csproj
-dotnet ef migrations remove --context AresDbContext --no-build --project ../FC2Core/FC2Core.csproj
-dotnet ef migrations add DatabaseInit --context AresDbContext --project ../FC2Core/FC2Core.csproj
-dotnet ef migrations add DatabaseInit --context FC2IdentityContext --project ../FC2Core/FC2Core.csproj
-dotnet ef database update --context AresDbContext
-dotnet ef database update --context FC2IdentityContext
+dotnet ef database drop --context AresDbContext -f --no-build --project ../AresService.csproj
+dotnet ef migrations remove --context AresIdentityContext --no-build --project ../AresService.csproj
+dotnet ef migrations remove --context AresDbContext --no-build --project ../AresService.csproj
+dotnet ef migrations add DatabaseInit --context AresDbContext --project ../AresService.csproj
+dotnet ef migrations add DatabaseInit --context AresIdentityContext --project ../AresService.csproj
+dotnet ef database update --context AresDbContext --project ../AresService.csproj
+dotnet ef database update --context AresIdentityContext --project ../AresService.csproj

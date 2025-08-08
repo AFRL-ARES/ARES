@@ -1,6 +1,6 @@
-﻿using Google.Protobuf.WellKnownTypes;
+﻿using Ares.Services.Device;
+using Google.Protobuf.WellKnownTypes;
 using ValveController.Services;
-using static Ares.Messaging.Device.AresDevices;
 
 namespace UI.Backend.ViewModels.Devices.ValveController;
 
@@ -8,7 +8,7 @@ public class ValveControllerMultiViewModel : SerialDeviceConnectorViewModel<Valv
 {
   private readonly ValveControllerRpc.ValveControllerRpcClient _client;
 
-  public ValveControllerMultiViewModel(ValveControllerRpc.ValveControllerRpcClient client, AresDevicesClient devicesClient) : base(devicesClient)
+  public ValveControllerMultiViewModel(ValveControllerRpc.ValveControllerRpcClient client, AresDevices.AresDevicesClient devicesClient) : base(devicesClient)
   {
     _client = client;
   }

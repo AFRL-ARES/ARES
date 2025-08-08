@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-package ares.messaging;
-
-message ValidationResult {
-  bool success = 1;
-  repeated string messages = 2;
-}

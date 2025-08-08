@@ -1,5 +1,5 @@
-﻿using Ares.Messaging;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using Ares.Services;
 
 namespace Ares.Core.Grpc.Services.Notifications;
 

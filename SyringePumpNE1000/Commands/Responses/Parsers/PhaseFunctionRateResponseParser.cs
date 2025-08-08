@@ -1,11 +1,5 @@
 ﻿using Ares.SyringePump.Ne1000.Messaging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnitsNet;
-using UnitsNet.Units;
 
 namespace SyringePumpNE1000.Commands.Responses.Parsers
 {

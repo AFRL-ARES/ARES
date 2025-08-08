@@ -1,4 +1,4 @@
-﻿using Ares.Messaging;
+﻿using Ares.Datamodel.Templates;
 using UI.Backend.ViewModels.Automation.CampaignEdit;
 
 namespace UI.Backend.ViewModels.Factories;

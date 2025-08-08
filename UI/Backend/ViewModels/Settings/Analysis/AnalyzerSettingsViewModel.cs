@@ -1,5 +1,6 @@
-﻿using Ares.Messaging;
-using Ares.Messaging.Analyzing;
+﻿using Ares.Datamodel;
+using Ares.Datamodel.Analyzing;
+using Ares.Services;
 using Grpc.Core;
 using ReactiveUI;
 using UI.Services.Notification;

@@ -5,7 +5,6 @@ using SyringePumpNE1000;
 using System;
 using System.Diagnostics;
 using System.Reactive.Disposables;
-using System.Reactive.Linq;
 using System.Threading.Tasks;
 
 namespace AresService.DeviceStateLoggers.SyringePump;

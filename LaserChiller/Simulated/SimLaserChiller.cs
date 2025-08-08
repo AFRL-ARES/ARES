@@ -1,6 +1,4 @@
-﻿using System.Text;
-
-namespace LaserChiller.Simulated;
+﻿namespace LaserChiller.Simulated;
 
 public class SimLaserChiller
 {

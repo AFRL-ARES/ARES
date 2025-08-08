@@ -1,5 +1,6 @@
-﻿using Ares.Device;
-using Ares.Messaging;
+﻿using Ares.Datamodel;
+using Ares.Datamodel.Templates;
+using Ares.Device;
 
 namespace VerdiV6Laser
 {

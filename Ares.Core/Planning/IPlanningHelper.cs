@@ -1,5 +1,6 @@
-﻿using Ares.Messaging;
-using Ares.Messaging.Analyzing;
+﻿using Ares.Datamodel;
+using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Templates;
 
 namespace Ares.Core.Planning;
 

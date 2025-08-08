@@ -32,7 +32,7 @@ public class SerialRestDeviceConfigEditViewModel : ReactiveObject
 }
 **/
 
-using Ares.Messaging.Device;
+using Ares.Services.Device;
 using Google.Protobuf.WellKnownTypes;
 using RestSerialDevice.Config;
 using RestSerialDevice.Services;

@@ -3,8 +3,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using Ares.Core.Analyzing;
 using Ares.Core.Exceptions;
-using Ares.Messaging;
-using Ares.Messaging.Analyzing;
+using Ares.Datamodel;
+using Ares.Datamodel.Analyzing;
+using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 

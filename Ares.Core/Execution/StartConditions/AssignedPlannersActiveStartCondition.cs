@@ -1,5 +1,5 @@
 ﻿using Ares.Core.Planning;
-using Ares.Messaging.Planning;
+using Ares.Datamodel.Planning;
 
 namespace Ares.Core.Execution.StartConditions;
 

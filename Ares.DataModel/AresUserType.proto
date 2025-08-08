@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-package ares.messaging;
-
-enum AresUserType {
-	AresAdmin = 0; // Can add/remove other users and assign admin
-	AresUser = 1; // Regular ares user
-}

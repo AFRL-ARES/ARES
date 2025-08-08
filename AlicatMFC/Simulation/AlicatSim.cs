@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.Text;
 using UnitsNet;
-using UnitsNet.Units;
 
 namespace AlicatMFC.Simulation;
 

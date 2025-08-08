@@ -1,6 +1,7 @@
-﻿using Ares.Device;
-using Ares.Messaging;
-using Ares.Tools;
+﻿using Ares.Datamodel;
+using Ares.Device;
+using Ares.Datamodel.Extensions;
+using Ares.Datamodel.Templates;
 
 namespace ValveController;
 public class ValveControllerInterpreter : DeviceCommandInterpreter<ValveController, ValveControllerCommand>

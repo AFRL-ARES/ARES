@@ -1,5 +1,5 @@
-﻿using Ares.Messaging;
-using DynamicData;
+﻿using Ares.Datamodel;
+using Ares.Datamodel.Templates;
 using ReactiveUI;
 using UI.Backend.ViewModels.Factories;
 

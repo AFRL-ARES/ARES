@@ -12,7 +12,9 @@ using Ares.Core.Execution;
 using Ares.Core.Execution.StartConditions;
 using Ares.Core.Execution.StopConditions;
 using Ares.Core.Notifications;
-using Ares.Messaging;
+using Ares.Datamodel;
+using Ares.Datamodel.Templates;
+using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
@@ -445,7 +447,7 @@ public class AutomationService : AresAutomation.AresAutomationBase
     await using var dbContext = await _coreContextFactory.CreateDbContextAsync();
     var existingTags = await dbContext.CampaignTags.ToArrayAsync();
     var match = existingTags.FirstOrDefault(tag => tag.UniqueId == request.Tag.UniqueId);
-    
+
     if(match is not null)
     {
       dbContext.Remove(match);

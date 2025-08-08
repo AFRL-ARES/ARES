@@ -1,7 +1,8 @@
 ﻿using AlicatMFC;
 using Ares.Alicat.Mfc.Config;
 using Ares.Alicat.Mfc.Messaging;
-using Ares.Messaging.Device;
+using Ares.Datamodel.Device;
+using Ares.Services.Device;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 

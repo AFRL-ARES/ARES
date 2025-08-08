@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace VerdiV6Laser.Commands.Responses.Parsers
+﻿namespace VerdiV6Laser.Commands.Responses.Parsers
 {
   internal class LaserShutterParser : ResponseParser<LaserShutterResponse>
   {

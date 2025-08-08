@@ -1,6 +1,7 @@
 ﻿using Ares.Core.Notifications;
 using Ares.Core.Planning;
-using Ares.Messaging;
+using Ares.Datamodel;
+using Ares.Datamodel.Planning;
 using Ares.Messaging.Planning;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;

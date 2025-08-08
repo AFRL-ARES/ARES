@@ -6,11 +6,11 @@
 @if (ViewModel!.ConnectedSerialDeviceUnitControlVms.Any())
 {
   <div class="d-flex gap-2 overflow-auto">
-  @foreach (var restSerialUnitControlVm in ViewModel!.ConnectedSerialDeviceUnitControlVms)
+  @foreach (var mfcControlVm in ViewModel!.ConnectedSerialDeviceUnitControlVms)
   {
     <div class="flex-shrink-0">
       <DashboardWidget>
-        <RestSerialDeviceUnitControl ViewModel="restSerialUnitControlVm"></RestSerialDeviceUnitControl>
+        <MfcUnitControl ViewModel="mfcControlVm"></MfcUnitControl>
       </DashboardWidget>
     </div>
   }

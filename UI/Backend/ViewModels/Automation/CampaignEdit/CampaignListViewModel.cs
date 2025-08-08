@@ -1,9 +1,8 @@
-﻿using Ares.Messaging;
-using DynamicData;
-using Google.Protobuf.WellKnownTypes;
+﻿using DynamicData;
 using ReactiveUI;
 using System.Collections.ObjectModel;
-using UI.Settings;
+using Ares.Datamodel.Templates;
+using Ares.Services;
 
 namespace UI.Backend.ViewModels.Automation.CampaignEdit;
 

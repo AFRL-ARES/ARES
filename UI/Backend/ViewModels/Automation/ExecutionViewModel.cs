@@ -1,11 +1,13 @@
-﻿using Ares.Messaging;
-using Ares.Messaging.Analyzing;
-using DynamicData;
+﻿using DynamicData;
 using Google.Protobuf.WellKnownTypes;
 using Radzen;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using System.Collections.ObjectModel;
+using Ares.Datamodel;
+using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Templates;
+using Ares.Services;
 using UI.Backend.Extensions;
 using UI.Services.Notification;
 

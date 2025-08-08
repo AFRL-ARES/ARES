@@ -1,7 +1,9 @@
 ﻿using Ares.Core.Analyzing;
 using Ares.Core.Execution.Extensions;
-using Ares.Messaging;
-using Ares.Tools;
+using Ares.Datamodel;
+using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Extensions;
+using Ares.Datamodel.Templates;
 
 namespace Ares.Core.Validation.Validators;
 
@@ -16,7 +18,7 @@ public static class GoodAnalyzerValidator
     if(analyzer is null)
       return new ValidationResult(false, $"Unable to find analyzer with id of {experimentTemplate.AnalyzerId}");
 
-    if(analyzer.AnalyzerState != Messaging.Analyzing.AnalyzerState.Active)
+    if(analyzer.AnalyzerState != AnalyzerState.Active)
     {
       return new ValidationResult(false, $"Unable to use analyzer {analyzer.Name} as it is is not currently active.\n{analyzer.StateMessage}");
     }

@@ -1,4 +1,4 @@
-﻿using Ares.Messaging;
+﻿using Ares.Datamodel.Templates;
 using ReactiveUI;
 using UI.Backend.ViewModels.Factories;
 

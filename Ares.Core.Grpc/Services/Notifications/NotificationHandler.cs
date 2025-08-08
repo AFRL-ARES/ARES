@@ -1,5 +1,5 @@
 ﻿using Ares.Core.Notifications;
-using Ares.Messaging;
+using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using System;
 using System.Threading.Tasks;

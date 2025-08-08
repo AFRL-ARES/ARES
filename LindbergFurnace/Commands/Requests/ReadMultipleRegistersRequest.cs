@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Ares.Device.Serial.Commands;
-using LindbergFurnace.Commands.Responses;
+﻿using LindbergFurnace.Commands.Responses;
 using LindbergFurnace.Commands.Responses.Parsers;
 
 namespace LindbergFurnace.Commands.Requests

@@ -1,7 +1,6 @@
-using Ares.Messaging.Device;
 using Ares.SyringePump.Ne1000.Messaging;
 using Google.Protobuf.WellKnownTypes;
-using System.Reactive.Linq;
+using Ares.Services.Device;
 
 namespace UI.Backend.ViewModels.SyringePump;
 

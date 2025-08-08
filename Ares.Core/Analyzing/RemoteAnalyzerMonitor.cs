@@ -1,5 +1,4 @@
-﻿using Ares.Messaging.Analyzing;
-using Microsoft.EntityFrameworkCore;
+﻿using Ares.Datamodel.Analyzing;
 
 namespace Ares.Core.Analyzing;
 internal class RemoteAnalyzerMonitor : IDisposable

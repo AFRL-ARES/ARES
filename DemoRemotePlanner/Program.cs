@@ -1,4 +1,4 @@
-using DemoRemoteAnalyzer.Services;
+using DemoRemotePlanner.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 

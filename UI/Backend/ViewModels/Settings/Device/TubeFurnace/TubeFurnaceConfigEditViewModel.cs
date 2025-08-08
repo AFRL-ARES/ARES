@@ -1,9 +1,8 @@
-﻿using Ares.Messaging.Device;
-using Google.Protobuf.WellKnownTypes;
+﻿using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using System.ComponentModel.DataAnnotations;
-using TicStepperController.Messaging;
+using Ares.Services.Device;
 using TubeFurnace.Config;
 using TubeFurnace.Messaging;
 

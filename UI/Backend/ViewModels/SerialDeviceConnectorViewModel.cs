@@ -1,9 +1,10 @@
-﻿using Ares.Messaging.Device;
-using DynamicData;
+﻿using DynamicData;
 using ReactiveUI;
 using System.Collections.ObjectModel;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
+using Ares.Datamodel.Device;
+using Ares.Services.Device;
 
 namespace UI.Backend.ViewModels;
 

@@ -1,5 +1,4 @@
-﻿using HerkulexDRS;
-using System;
+﻿using System;
 using System.Linq;
 using VerdiV6Laser;
 using VerdiV6Laser.Simulated;
