@@ -300,6 +300,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
   {
     //Set the setpoint to zero, effectively shutting off the MFC.. I think
     await NewSetpoint(StandardVolumeFlow.FromStandardCubicCentimetersPerMinute(0.0));
+    await HoldValvesClosed();
   }
 
   public async ValueTask DisposeAsync()

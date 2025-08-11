@@ -107,6 +107,7 @@ internal static class ServiceCollectionExtensions
     services.AddScoped(_ => clientManager.GetClient<StateExportService.StateExportServiceClient>());
     services.AddScoped(_ => clientManager.GetClient<AresAnalyzerManagementService.AresAnalyzerManagementServiceClient>());
     services.AddScoped(_ => clientManager.GetClient<AresAnalysisService.AresAnalysisServiceClient>());
+    services.AddScoped(_ => clientManager.GetClient<AresSafetyService.AresSafetyServiceClient>());
     services.AddSingleton(_ => clientManager.GetClient<AresNotificationRpc.AresNotificationRpcClient>());
 
     //Device Clients
@@ -189,11 +190,8 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<ManualPlannerViewModel>();
     services.AddScoped<ManualExecutionWidgetViewModel>();
     services.AddScoped<RestDeviceMultiViewModel>();
-    services.AddScoped<SerialRestDeviceMultiViewModel>();
-    
-    
+    services.AddScoped<SerialRestDeviceMultiViewModel>(); 
   }
-
   private static void BindViewModelFactories(this IServiceCollection services)
   {
     services.AddScoped<CommandDesignerFactory>();

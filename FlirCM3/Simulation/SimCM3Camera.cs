@@ -79,6 +79,11 @@ namespace FlirCM3.Simulation
       RedBalance = config.RedBalance;
     }
 
+    public Task EnterSafeMode()
+    {
+      throw new NotImplementedException();
+    }
+
     public string Name { get; set; }
     public DeviceStatus Status { get; set; }
     public double Width { get; set; }

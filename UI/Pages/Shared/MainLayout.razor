@@ -1,4 +1,11 @@
-﻿@inherits LayoutComponentBase
+﻿@using Ares.Services
+@using Google.Protobuf.WellKnownTypes
+@using UI.Services.Notification
+@inherits LayoutComponentBase
+
+@inject DialogService dialogService
+@inject AresSafetyService.AresSafetyServiceClient safetyServiceClient
+@inject INotificationReceivingService notificationService
 
 <HeadContent>
     <link rel="icon" type="image/png" href="images/ARESLogo.png">
@@ -62,10 +69,13 @@
                     </div>
                     <div class="ares-footer">
                       <AresFooter>
-                        <div class="d-flex flex-row justify-content-end">
+                      <div class="d-flex flex-row justify-content-between align-items-center">
+                        <div>
                           <span>Logged in as @context.User.Identity?.Name</span>
                           <a href="Identity/Account/Logout" class="mx-2">Logout</a>
                         </div>
+                        <RadzenButton Click="@ShowEmergencyStopDialog" Text="Emergency Stop" Icon="report" ButtonStyle="ButtonStyle.Danger" />
+                      </div>
                       </AresFooter>
                     </div>
                 </div>
@@ -80,13 +90,52 @@
 </div>
 
 @code {
-    public bool SidebarExpanded { get; set; } = true;
-    public bool BodyExpanded { get; set; }
+  public bool SidebarExpanded { get; set; } = true;
+  public bool BodyExpanded { get; set; }
 
-    private void SidebarExpandClick()
+  private void SidebarExpandClick()
+  {
+    SidebarExpanded = !SidebarExpanded;
+    BodyExpanded = !BodyExpanded;
+  }
+
+  async Task ShowEmergencyStopDialog()
+  {
+    var confirmDialogOptions = new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" };
+    var result = await dialogService.Confirm("Are you sure you want to trigger an emergency stop?", "Emergency Stop Confirmation", confirmDialogOptions);
+
+    if(result.GetValueOrDefault())
     {
-        SidebarExpanded = !SidebarExpanded;
-        BodyExpanded = !BodyExpanded;
+      var emergencyStopResponse = await safetyServiceClient.RequestEmergencyStopAsync(new EmergencyStopRequest());
+      AresNotification notification;
+
+      if(emergencyStopResponse.Status == EmergencyStopStatus.Success)
+      {
+        notification = new AresNotification
+        {
+          Loiter = true,
+          Message = emergencyStopResponse.StatusMessage,
+          Title = "Successfully Processed Emergency Shutdown Request",
+          NotificationSeverity = Severity.Success,
+          Timestamp = DateTime.UtcNow.ToTimestamp()
+        };
+      }
+
+      else
+      {
+        notification = new AresNotification
+        {
+          Loiter = true,
+          Message = emergencyStopResponse.StatusMessage,
+          Title = "Failed to Process Emergency Shutdown Request!",
+          NotificationSeverity = Severity.Danger,
+          Timestamp = DateTime.UtcNow.ToTimestamp()
+        };
+      }
+
+      notificationService.PushNotification(notification);
     }
+
+  }
 
 }

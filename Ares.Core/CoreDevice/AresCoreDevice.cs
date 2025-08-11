@@ -18,6 +18,11 @@ public class AresCoreDevice : IAresDevice
     return Task.FromResult(true);
   }
 
+  public Task EnterSafeMode()
+  {
+    return Task.CompletedTask;
+  }
+
   public Task Sleep(TimeSpan timeSpan)
   {
     return Task.Delay(timeSpan);
