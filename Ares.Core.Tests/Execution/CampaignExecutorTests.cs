@@ -52,10 +52,8 @@ internal class CampaignExecutorTests
     };
     var stepComposer = new StepComposer(repo);
     var experimentComposer = new ExperimentComposer(stepComposer, _analyzerRepo);
-    var startupScriptComposer = new StartupComposer(stepComposer);
-    var closeoutScriptComposer = new CloseoutComposer(stepComposer);
 
-    _campaignComposer = new CampaignComposer(_analysisHelper, experimentComposer, startupScriptComposer, closeoutScriptComposer, _planningHelper, _executionReporter, _resultHandlers, _analysisRepo, _analyzerRepo, Array.Empty<INotificationHandler>(), _variableManager);
+    _campaignComposer = new CampaignComposer(_analysisHelper, experimentComposer, _planningHelper, _executionReporter, _resultHandlers, _analysisRepo, _analyzerRepo, Array.Empty<INotificationHandler>(), _variableManager);
   }
 
   [SetUp]

@@ -3,12 +3,12 @@ using ReactiveUI;
 using System.Collections.ObjectModel;
 using Ares.Datamodel;
 using Ares.Datamodel.Templates;
+using UI.Backend.Extensions;
 
 namespace UI.Backend.ViewModels.Automation.CampaignEdit;
 
 public class PlanningViewModel : ReactiveObject
 {
-  // private readonly IEnumerable<PlannerAllocationEditorViewModel> _plannerAllocations;
   private readonly CampaignTemplate _template;
   private readonly AresPlanning.AresPlanningClient _client;
 
@@ -20,21 +20,9 @@ public class PlanningViewModel : ReactiveObject
     PlannerAllocationEditors = template.PlannableParameters.Select(metadata => new PlannerAllocationEditorViewModel(metadata, template.PlannerAllocations.FirstOrDefault(allocation => allocation.Parameter.Equals(metadata))?.Planner, PlannerAdapters, client)).ToArray();
   }
 
-  // public IEnumerable<ParameterMetadata> ParameterMetadatas => new ObservableCollection<ParameterMetadata>(_template.PlannableParameters);
-
   public IEnumerable<PlannerAllocationEditorViewModel> PlannerAllocationEditors { get; private set; }
 
   public IEnumerable<PlannerAdapterInfo> PlannerAdapters { get; }
-
-  public void UpdateParameters()
-  {
-    // var needsPlanning = _template.ExperimentTemplates
-    //   .SelectMany(template => template.StepTemplates)
-    //   .SelectMany(template => template.CommandTemplates)
-    //   .SelectMany(template => template.Arguments)
-    //   .Where(parameter => parameter.Planned)
-    //   .Select(parameter => parameter.PlanningMetadata);
-  }
 
   public void Save()
   {

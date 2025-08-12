@@ -24,15 +24,6 @@ public class ExperimentComposer : ICommandComposer<ExperimentTemplate, Experimen
         .Select(_stepComposer.Compose)
         .ToArray();
 
-    var closeoutExecutors = 
-      template
-      .CloseoutStepTemplates
-      .OrderBy(t => t.Index)
-      .Select(_stepComposer.Compose)
-      .ToArray();
-
-
-
     return new ExperimentExecutor(template, stepExecutors);
   }
 

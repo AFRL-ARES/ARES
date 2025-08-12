@@ -6,7 +6,7 @@ namespace Ares.Core.Execution.Executors;
 
 internal static class ExecutorSummaryHelpers
 {
-  public static ExperimentExecutionSummary CreateExperimentExecutionSummary(CompletedExperiment completedExperiment,
+  public static ExperimentExecutionSummary CreateExperimentExecutionSummary(ExperimentOverview experimentOverview,
     DateTime startTime,
     DateTime endTime,
     IEnumerable<StepExecutionSummary> StepSummaries)
@@ -15,8 +15,8 @@ internal static class ExecutorSummaryHelpers
     {
       UniqueId = Guid.NewGuid().ToString(),
       ExecutionInfo = MakeExecutionInfo(startTime, endTime),
-      ExperimentId = completedExperiment.Template.UniqueId,
-      CompletedExperiment = completedExperiment,
+      ExperimentId = experimentOverview.Template.UniqueId,
+      ExperimentOverview = experimentOverview,
     };
 
     experimentSummary.StepSummaries.AddRange(StepSummaries);

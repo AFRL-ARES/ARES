@@ -21,11 +21,11 @@ public class AresPlanner : IPlanner
     UniqueId = Guid.NewGuid().ToString();
   }
 
-  public async Task<IEnumerable<PlanResult>> Plan(IEnumerable<ParameterMetadata> plannableParameters, IEnumerable<CompletedExperiment> completedExperiments, IEnumerable<Analysis> _experimentAnalyses, CancellationToken cancellationToken)
+  public async Task<IEnumerable<PlanResult>> Plan(IEnumerable<ParameterMetadata> plannableParameters, IEnumerable<ExperimentOverview> experimentOverviews, IEnumerable<Analysis> _experimentAnalyses, CancellationToken cancellationToken)
   {
     var client = ClientStore.AresPlanningClient ?? throw new InvalidOperationException($"Failed to plan as the remote client has not been established yet.");
     var planRequest = new PlanRequest();
-    planRequest.PlanningParameters.AddRange(plannableParameters.Select(parameter => ConvertToPlanningParameter(parameter, completedExperiments)));
+    planRequest.PlanningParameters.AddRange(plannableParameters.Select(parameter => ConvertToPlanningParameter(parameter, experimentOverviews)));
     var result = await client.PlanAsync(planRequest, deadline: DateTime.UtcNow.AddSeconds(30));
     return ToPlanResults(result, plannableParameters);
   }
@@ -56,7 +56,7 @@ public class AresPlanner : IPlanner
     return planResults;
   }
 
-  public PlanningParameter ConvertToPlanningParameter(ParameterMetadata metadata, IEnumerable<CompletedExperiment> experimentHistory)
+  public PlanningParameter ConvertToPlanningParameter(ParameterMetadata metadata, IEnumerable<ExperimentOverview> experimentHistory)
   {
     var relevantInfo = experimentHistory.SelectMany(experiment => experiment.Parameters.Where(param => param.PlanningMetadata.Name == metadata.Name));
     var parameter = new PlanningParameter

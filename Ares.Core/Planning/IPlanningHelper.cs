@@ -20,6 +20,6 @@ public interface IPlanningHelper
   Task<bool> TryResolveParameters(IEnumerable<PlannerAllocation> plannerAllocations,
     IEnumerable<Parameter> parameters,
     IEnumerable<Analysis> seedAnalyses,
-    IEnumerable<CompletedExperiment> seedExperiments,
+    IEnumerable<ExperimentOverview> seedExperiments,
     CancellationToken cancellationToken);
 }

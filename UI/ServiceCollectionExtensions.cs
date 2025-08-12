@@ -197,6 +197,8 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<CommandDesignerFactory>();
     services.AddScoped<CommandParameterDesignerFactory>();
     services.AddScoped<ExperimentDesignerFactory>();
+    services.AddScoped<StartupDesignerFactory>();
+    services.AddScoped<CloseoutDesignerFactory>();
     services.AddScoped<MetadataPickerFactory>();
     services.AddScoped<ParameterEditorFactory>();
     services.AddScoped<PlannableParameterDesignerFactory>();

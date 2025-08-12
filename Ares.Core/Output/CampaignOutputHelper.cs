@@ -84,7 +84,7 @@ public static class CampaignOutputHelper
   {
     var versionedItems = new Dictionary<string, string>();
     var path = Path.Combine(campaignPath, "Version.txt");
-    var experimentTemplate = template.ExperimentTemplates.First();
+    var experimentTemplate = template.ExperimentTemplate;
 
     if(analyzer is not null)
       versionedItems.Add(analyzer.Name, analyzer.Version);

@@ -56,9 +56,9 @@ public class ExperimentExecutor : IExecutor<ExperimentExecutionSummary, Experime
     return ExecutorSummaryHelpers.CreateExperimentExecutionSummary(completedExperiment, startTime, DateTime.UtcNow, stepSummaries);
   }
 
-  public Task<CompletedExperiment> PopulateExperimentSummary(List<StepExecutionSummary> stepSummaries)
+  public Task<ExperimentOverview> PopulateExperimentSummary(List<StepExecutionSummary> stepSummaries)
   {
-    var completedExperiment = new CompletedExperiment
+    var completedExperiment = new ExperimentOverview
     {
       Template = Template.AssignNewUniquePlanningIds(),
       Result = ResultGenerator.GenerateExperimentResult(stepSummaries, Template.StepTemplates)

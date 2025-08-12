@@ -15,21 +15,7 @@ internal class ExperimentTemplateEntityConfiguration : AresEntityTypeBaseConfigu
       .WithOne()
       .OnDelete(DeleteBehavior.Cascade);
 
-    builder.HasMany(experimentTemplate => experimentTemplate.StartupStepTemplates)
-      .WithOne()
-      .OnDelete(DeleteBehavior.ClientCascade);
-
-    builder.HasMany(experimentTemplate => experimentTemplate.CloseoutStepTemplates)
-      .WithOne()
-      .OnDelete(DeleteBehavior.ClientCascade);
-
     builder.Navigation(experimentTemplate => experimentTemplate.StepTemplates)
-      .AutoInclude();
-
-    builder.Navigation(experimentTemplate => experimentTemplate.StartupStepTemplates)
-      .AutoInclude();
-
-    builder.Navigation(experimentTemplate => experimentTemplate.CloseoutStepTemplates)
       .AutoInclude();
   }
 }

@@ -161,10 +161,7 @@
           @if (ViewModel!.CampaignTemplate is not null)
           {
             <div class="d-flex flex-column">
-              @foreach (var experimentTemplate in ViewModel!.CampaignTemplate.ExperimentTemplates)
-              {
-                <ExperimentViewer ExperimentTemplate="@experimentTemplate" />
-              }
+                <ExperimentViewer CampaignTemplate="@ViewModel!.CampaignTemplate" />
             </div>
           }
         }

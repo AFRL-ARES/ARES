@@ -14,16 +14,16 @@ internal class ExperimentExecutionSummaryEntityConfiguration : AresEntityTypeBas
       .WithOne()
       .OnDelete(DeleteBehavior.Cascade);
 
-    builder.HasOne(result => result.CompletedExperiment)
+    builder.HasOne(result => result.ExperimentOverview)
       .WithOne()
-      .HasForeignKey<CompletedExperiment>("ExperimentResultId");
+      .HasForeignKey<ExperimentOverview>("ExperimentResultId");
 
     builder.HasOne(result => result.ExecutionInfo)
       .WithOne()
       .HasForeignKey<ExecutionInfo>("ExperimentResultId")
       .OnDelete(DeleteBehavior.ClientCascade);
 
-    builder.Navigation(result => result.CompletedExperiment)
+    builder.Navigation(result => result.  ExperimentOverview)
       .AutoInclude();
 
     builder.Navigation(result => result.ExecutionInfo)

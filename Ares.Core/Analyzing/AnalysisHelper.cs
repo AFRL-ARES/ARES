@@ -17,11 +17,11 @@ public class AnalysisHelper
   {
     var analyzer = GetAnalyzer(template.AnalyzerId);
     var analyzerInputs = ExperimentOutputToAnalyzerInputs(
-      experimentSummary.CompletedExperiment.Result,
+      experimentSummary.ExperimentOverview.Result,
       template.AnalyzerMaps);
     // TODO: Add support for settings
     var analysis = await analyzer.Analyze(analyzerInputs, cancellationToken);
-    experimentSummary.CompletedExperiment.AnalysisResult = analysis.Result;
+    experimentSummary.ExperimentOverview.AnalysisResult = analysis.Result;
     return analysis;
   }
 

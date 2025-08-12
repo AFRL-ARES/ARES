@@ -47,7 +47,7 @@ internal class ExecutionManagerTests
   {
     var expTemplate = new ExperimentTemplate();
     var campaignTemplate = new CampaignTemplate();
-    campaignTemplate.ExperimentTemplates.Add(expTemplate);
+    campaignTemplate.ExperimentTemplate = expTemplate;
     var mockTemplateStore = new Mock<IActiveCampaignTemplateStore>();
     mockTemplateStore.Setup(store => store.CampaignTemplate).Returns(campaignTemplate);
     var executionManager = new ExecutionManager(Array.Empty<IStartCondition>(), _contextFactory, mockTemplateStore.Object, _campaignComposer);

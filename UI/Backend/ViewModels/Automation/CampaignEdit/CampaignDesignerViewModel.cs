@@ -13,6 +13,8 @@ public class CampaignDesignerViewModel : ReactiveObject
   private readonly AresAutomation.AresAutomationClient _automationClient;
   private readonly CampaignEditContext _editContext;
   private readonly ExperimentDesignerFactory _experimentDesignerFactory;
+  private readonly StartupDesignerFactory _startupDesignerFactory;
+  private readonly CloseoutDesignerFactory _closeoutDesignerFactory;
   private readonly PlannableParameterDesignerFactory _plannableParameterDesignerFactory;
   private readonly PlanningDesignerFactory _planningDesignerFactory;
   private CampaignTemplate _campaignTemplate = null!;
@@ -21,6 +23,8 @@ public class CampaignDesignerViewModel : ReactiveObject
   public CampaignDesignerViewModel(
     AresAutomation.AresAutomationClient automationClient,
     ExperimentDesignerFactory experimentDesignerFactory,
+    StartupDesignerFactory startupDesignerFactory,
+    CloseoutDesignerFactory closeoutDesignerFactory,
     PlanningDesignerFactory planningDesignerFactory,
     AnalyzerInputDesignerVmFactory analyzingDesignerFactory,
     PlannableParameterDesignerFactory plannableParameterDesignerFactory,
@@ -30,6 +34,8 @@ public class CampaignDesignerViewModel : ReactiveObject
     _analyzerInputDesignerFactory = analyzingDesignerFactory;
     _automationClient = automationClient;
     _experimentDesignerFactory = experimentDesignerFactory;
+    _startupDesignerFactory = startupDesignerFactory;
+    _closeoutDesignerFactory = closeoutDesignerFactory;
     _planningDesignerFactory = planningDesignerFactory;
     _plannableParameterDesignerFactory = plannableParameterDesignerFactory;
     _editContext = editContext;
@@ -42,7 +48,8 @@ public class CampaignDesignerViewModel : ReactiveObject
       Name = Placeholder,
       UniqueId = Guid.NewGuid().ToString()
     };
-    CampaignTemplate.ExperimentTemplates.Add(new ExperimentTemplate() { UniqueId = Guid.NewGuid().ToString(), Name = "New Experiment" });
+
+    CampaignTemplate.ExperimentTemplate = new ExperimentTemplate() { UniqueId = Guid.NewGuid().ToString(), Name = "New Experiment" };
   }
 
   [Reactive] public bool IsCreatingCampaign { get; set; }
@@ -55,11 +62,11 @@ public class CampaignDesignerViewModel : ReactiveObject
 
   public ExperimentDesignerViewModel? ExperimentDesigner { get; private set; }
 
+  public StartupDesignerViewModel? StartupDesigner { get; private set; }
+
+  public CloseoutDesignerViewModel? CloseoutDesigner { get; private set; }
+
   public PlanningViewModel? PlanningDesigner { get; private set; }
-
-  public ExperimentDesignerViewModel? CampaignCloseoutDesigner { get; private set; }
-
-  public ExperimentDesignerViewModel? CampaignStartupDesigner { get; private set; }
 
   public AnalyzerDesignerViewModel? AnalyzerDesignerViewModel { get; private set; }
 
@@ -85,12 +92,14 @@ public class CampaignDesignerViewModel : ReactiveObject
   {
     CampaignName = campaignTemplate.Name;
     PlannableParameterDesigner = _plannableParameterDesignerFactory.Create(campaignTemplate.PlannableParameters);
-    ExperimentDesigner = _experimentDesignerFactory.Create(campaignTemplate.ExperimentTemplates.FirstOrDefault());
+    ExperimentDesigner = _experimentDesignerFactory.Create(campaignTemplate.ExperimentTemplate);
+    StartupDesigner = _startupDesignerFactory.Create(campaignTemplate.StartupTemplate);
+    CloseoutDesigner = _closeoutDesignerFactory.Create(campaignTemplate.CloseoutTemplate);
     PlanningDesigner = await _planningDesignerFactory.Create(campaignTemplate);
     var commandDesigners = ExperimentDesigner?.StepDesigners?.SelectMany(sd => sd.CommandDesigners) ?? [];
-    if(CampaignTemplate.ExperimentTemplates.Any())
+    if(CampaignTemplate.ExperimentTemplate is not null)
     {
-      AnalyzerDesignerViewModel = _analyzerInputDesignerFactory.Create(campaignTemplate.ExperimentTemplates.First(), commandDesigners);
+      AnalyzerDesignerViewModel = _analyzerInputDesignerFactory.Create(campaignTemplate.ExperimentTemplate, commandDesigners);
     }
   }
 
@@ -99,9 +108,16 @@ public class CampaignDesignerViewModel : ReactiveObject
     CampaignTemplate.Name = CampaignName;
     CampaignTemplate.PlannableParameters.Clear();
     CampaignTemplate.PlannableParameters.AddRange(PlannableParameterDesigner?.Save() ?? Array.Empty<ParameterMetadata>());
-    CampaignTemplate.ExperimentTemplates.Clear();
+    CampaignTemplate.ExperimentTemplate = null;
+
+    if(StartupDesigner is not null)
+      CampaignTemplate.StartupTemplate = StartupDesigner.Save();
+
     if(ExperimentDesigner is not null)
-      CampaignTemplate.ExperimentTemplates.Add(ExperimentDesigner.Save());
+      CampaignTemplate.ExperimentTemplate = ExperimentDesigner.Save();
+
+    if(CloseoutDesigner is not null)
+      CampaignTemplate.CloseoutTemplate = CloseoutDesigner.Save();
 
     //Try Save Instead?
     PlannableParameterDesigner?.Save();

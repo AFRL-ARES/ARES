@@ -55,5 +55,5 @@ public interface IPlanner
   /// <param name="plannableParameters">Collection of parameter metadata to plan for</param>
   /// <param name="analysisHistory">The experiment results to use as a seed for planning</param>
   /// <returns>Collection of plan <see cref="PlanResult" /> which has the metadata and the value</returns>
-  Task<IEnumerable<PlanResult>> Plan(IEnumerable<ParameterMetadata> plannableParameters, IEnumerable<CompletedExperiment> previousExperiments, IEnumerable<Analysis> analysisHistory, CancellationToken cancellationToken = default);
+  Task<IEnumerable<PlanResult>> Plan(IEnumerable<ParameterMetadata> plannableParameters, IEnumerable<ExperimentOverview> previousExperiments, IEnumerable<Analysis> analysisHistory, CancellationToken cancellationToken = default);
 }

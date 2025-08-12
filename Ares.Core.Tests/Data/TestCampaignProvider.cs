@@ -26,7 +26,7 @@ internal class TestCampaignProvider
     return campaignTemplate;
   }
 
-  public static CampaignTemplate GetCampaignTemplate(string name, params ExperimentTemplate[] experimentTemplates)
+  public static CampaignTemplate GetCampaignTemplate(string name, ExperimentTemplate experimentTemplate)
   {
     var campaignTemplate = new CampaignTemplate
     {
@@ -34,7 +34,7 @@ internal class TestCampaignProvider
       UniqueId = Guid.NewGuid().ToString()
     };
 
-    campaignTemplate.ExperimentTemplates.AddRange(experimentTemplates);
+    campaignTemplate.ExperimentTemplate = experimentTemplate;
 
     return campaignTemplate;
   }

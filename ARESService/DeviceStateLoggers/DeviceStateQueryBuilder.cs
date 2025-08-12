@@ -32,7 +32,7 @@ public static class DeviceStateQueryBuilder
     {
       var completedExperiment = await dbContext.CampaignExecutionSummaries
         .SelectMany(result => result.ExperimentSummaries)
-        .FirstOrDefaultAsync(result => result.CompletedExperiment.UniqueId == request.CompletedExperimentId);
+        .FirstOrDefaultAsync(result => result.ExperimentOverview.UniqueId == request.CompletedExperimentId);
 
       if(completedExperiment is not null)
         statesQuery = statesQuery.Where(state => state.Timestamp >= completedExperiment.ExecutionInfo.TimeStarted && state.Timestamp <= completedExperiment.ExecutionInfo.TimeFinished);

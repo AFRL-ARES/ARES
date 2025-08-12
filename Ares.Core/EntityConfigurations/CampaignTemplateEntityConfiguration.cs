@@ -13,20 +13,37 @@ internal class CampaignTemplateEntityConfiguration : AresEntityTypeBaseConfigura
 
     builder.HasIndex(template => template.Name).IsUnique();
 
-    builder.HasMany(campaignTemplate => campaignTemplate.ExperimentTemplates)
+    builder.HasOne(campaignTemplate => campaignTemplate.StartupTemplate)
       .WithOne()
+      .HasForeignKey<ExperimentTemplate>(st => st.UniqueId)
+      .OnDelete(DeleteBehavior.Cascade);
+
+    builder.HasOne(campaignTemplate => campaignTemplate.ExperimentTemplate)
+      .WithOne()
+      .HasForeignKey<ExperimentTemplate>(et => et.UniqueId)
+      .OnDelete(DeleteBehavior.Cascade);
+
+    builder.HasOne(campaignTemplate => campaignTemplate.CloseoutTemplate)
+      .WithOne()
+      .HasForeignKey<ExperimentTemplate>(ct => ct.UniqueId)
       .OnDelete(DeleteBehavior.Cascade);
 
     builder.HasMany(campaignTemplate => campaignTemplate.PlannerAllocations)
       .WithOne()
-      .IsRequired();// remove requirement if planners should exist separately from campaign templates
+      .IsRequired();
 
     builder.HasMany(campaignTemplate => campaignTemplate.PlannableParameters)
       .WithOne()
       .OnDelete(DeleteBehavior.ClientCascade)
       .IsRequired(false);
 
-    builder.Navigation(campaignTemplate => campaignTemplate.ExperimentTemplates)
+    builder.Navigation(campaignTemplate => campaignTemplate.StartupTemplate)
+      .AutoInclude();
+
+    builder.Navigation(campaignTemplate => campaignTemplate.ExperimentTemplate)
+      .AutoInclude();
+
+    builder.Navigation(campaignTemplate => campaignTemplate.CloseoutTemplate)
       .AutoInclude();
 
     builder.Navigation(template => template.PlannableParameters)

@@ -27,10 +27,8 @@ public class ExperimentDesignerViewModel : ReactiveObject
     ExperimentTemplate = new ExperimentTemplate
     {
       UniqueId = Guid.NewGuid().ToString(),
-      Name = "Experiment Template "
+      Name = "Experiment Template"
     };
-
-
   }
 
   public ExperimentDesignerViewModel(ExperimentTemplate existingTemplate,
@@ -46,8 +44,7 @@ public class ExperimentDesignerViewModel : ReactiveObject
   {
     Name = existingTemplate.Name;
     StepDesigners = existingTemplate.StepTemplates.Select(template => _stepDesignerFactory.Create(template)).OrderBy(model => model.Index).ToList();
-    StartupStepDesigners = existingTemplate.StartupStepTemplates.Select(template => _stepDesignerFactory.Create(template)).OrderBy(model => model.Index).ToList();
-    CloseoutStepDesigners = existingTemplate.CloseoutStepTemplates.Select(template => _stepDesignerFactory.Create(template)).OrderBy(model => model.Index).ToList();
+    //CloseoutStepDesigners = existingTemplate.CloseoutStepTemplates.Select(template => _stepDesignerFactory.Create(template)).OrderBy(model => model.Index).ToList();
     if(existingTemplate.StepTemplates.Select(step => step.CommandTemplates.Select(cmd => cmd.UserOutputKeyMap)).Any())
     {
       var commandDesigners = StepDesigners.SelectMany(model => model.CommandDesigners).Where(model => model.CommandTemplate.UserOutputKeyMap.Any());
@@ -62,7 +59,7 @@ public class ExperimentDesignerViewModel : ReactiveObject
 
   public ExperimentTemplate Save()
   {
-    if(StartupStepDesigners is null || CloseoutStepDesigners is null || StepDesigners is null)
+    if(StepDesigners is null)
     {
       _notificationService.Notify(NotificationSeverity.Error, "A Step Designer was null! No data saved.");
       return ExperimentTemplate;
@@ -71,10 +68,6 @@ public class ExperimentDesignerViewModel : ReactiveObject
     ExperimentTemplate.Name = Name;
     ExperimentTemplate.StepTemplates.Clear();
     ExperimentTemplate.StepTemplates.AddRange(StepDesigners.Select(designer => designer.Save()));
-    ExperimentTemplate.StartupStepTemplates.Clear();
-    ExperimentTemplate.StartupStepTemplates.AddRange(StartupStepDesigners.Select(designer => designer.Save()));
-    ExperimentTemplate.CloseoutStepTemplates.Clear();
-    ExperimentTemplate.CloseoutStepTemplates.AddRange(CloseoutStepDesigners.Select(designer => designer.Save()));
     return ExperimentTemplate;
   }
 
@@ -86,45 +79,11 @@ public class ExperimentDesignerViewModel : ReactiveObject
     return stepDesigner;
   }
 
-  public StepDesignerViewModel AddStartupStep()
-  {
-    var stepDesigner = _stepDesignerFactory.Create();
-    stepDesigner.Index = StartupStepDesigners.Count;
-    StartupStepDesigners.Add(stepDesigner);
-    return stepDesigner;
-  }
-
-  public StepDesignerViewModel AddCloseoutStep()
-  {
-    var stepDesigner = _stepDesignerFactory.Create();
-    stepDesigner.Index = CloseoutStepDesigners.Count;
-    CloseoutStepDesigners.Add(stepDesigner);
-    return stepDesigner;
-  }
-
   public void RemoveStep(StepDesignerViewModel vm)
   {
     if(StepDesigners is not null)
     {
       StepDesigners.Remove(vm);
-      ReindexSteps();
-    }
-  }
-
-  public void RemoveStartupStep(StepDesignerViewModel vm)
-  {
-    if(StartupStepDesigners is not null)
-    {
-      StartupStepDesigners.Remove(vm);
-      ReindexSteps();
-    }
-  }
-
-  public void RemoveCloseoutStep(StepDesignerViewModel vm)
-  {
-    if(CloseoutStepDesigners is not null)
-    {
-      CloseoutStepDesigners.Remove(vm);
       ReindexSteps();
     }
   }
@@ -149,46 +108,6 @@ public class ExperimentDesignerViewModel : ReactiveObject
     ReindexSteps();
   }
 
-  public void MoveStartupStepUp(StepDesignerViewModel vm)
-  {
-    if(StartupStepDesigners is null || vm.Index == 0)
-      return;
-
-    StartupStepDesigners.RemoveAt(vm.Index);
-    StartupStepDesigners.Insert(vm.Index - 1, vm);
-    ReindexStartupSteps();
-  }
-
-  public void MoveStartupStepDown(StepDesignerViewModel vm)
-  {
-    if(StartupStepDesigners is null || vm.Index == StartupStepDesigners.Count - 1)
-      return;
-
-    StartupStepDesigners.RemoveAt(vm.Index);
-    StartupStepDesigners.Insert(vm.Index + 1, vm);
-    ReindexStartupSteps();
-  }
-
-  public void MoveCloseoutStepUp(StepDesignerViewModel vm)
-  {
-    if(CloseoutStepDesigners is null || vm.Index == 0)
-      return;
-
-    CloseoutStepDesigners.RemoveAt(vm.Index);
-    CloseoutStepDesigners.Insert(vm.Index - 1, vm);
-    ReindexCloseoutSteps();
-  }
-
-  public void MoveCloseoutStepDown(StepDesignerViewModel vm)
-  {
-    if(CloseoutStepDesigners is null || vm.Index == CloseoutStepDesigners.Count - 1)
-      return;
-
-    CloseoutStepDesigners.RemoveAt(vm.Index);
-    CloseoutStepDesigners.Insert(vm.Index + 1, vm);
-    ReindexCloseoutSteps();
-  }
-
   private void ReindexSteps()
   {
     if(StepDesigners is not null)
@@ -196,26 +115,6 @@ public class ExperimentDesignerViewModel : ReactiveObject
       var idx = 0;
       foreach(var stepDesigner in StepDesigners)
         stepDesigner.Index = idx++;
-    }
-  }
-
-  private void ReindexStartupSteps()
-  {
-    if(StartupStepDesigners is not null)
-    {
-      var idx = 0;
-      foreach(var startupStep in StartupStepDesigners)
-        startupStep.Index = idx++;
-    }
-  }
-
-  private void ReindexCloseoutSteps()
-  {
-    if(CloseoutStepDesigners is not null)
-    {
-      var idx = 0;
-      foreach(var closeoutStep in CloseoutStepDesigners)
-        closeoutStep.Index = idx++;
     }
   }
 
@@ -234,10 +133,6 @@ public class ExperimentDesignerViewModel : ReactiveObject
   public string Name { get; set; } = "Unnamed Template";
 
   public IList<StepDesignerViewModel>? StepDesigners { get; private set; }
-
-  public IList<StepDesignerViewModel>? StartupStepDesigners { get; private set; }
-
-  public IList<StepDesignerViewModel>? CloseoutStepDesigners { get; private set; }
 
   public IEnumerable<CommandTemplate>? ExperimentOutputProviderCommand { get; set; }
 }

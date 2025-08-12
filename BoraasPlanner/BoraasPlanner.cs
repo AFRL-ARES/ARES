@@ -44,7 +44,7 @@ public class BoraasPlanner : IPlanner
   }
 
   public async Task<IEnumerable<Ares.Core.Planning.PlanResult>> Plan(IEnumerable<ParameterMetadata> plannableParameters,
-    IEnumerable<CompletedExperiment> completedExperiments,
+    IEnumerable<ExperimentOverview> completedExperiments,
     IEnumerable<Analysis> experimentAnalyses,
     CancellationToken cancellationToken)
   {
@@ -118,7 +118,7 @@ public class BoraasPlanner : IPlanner
   private void AddExperimentHistory(BoraasPlanRequest request,
     IEnumerable<Analysis> analyses,
     IEnumerable<ParameterMetadata> plannableParameters,
-    IEnumerable<CompletedExperiment> completedExperiments)
+    IEnumerable<ExperimentOverview> completedExperiments)
   {
     request.History = new List<List<double>>();
 

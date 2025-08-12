@@ -23,7 +23,7 @@ public class ManualPlanner : IPlanner
 
 
   public Task<IEnumerable<PlanResult>> Plan(IEnumerable<ParameterMetadata> plannableParameters, 
-    IEnumerable<CompletedExperiment> experiments, 
+    IEnumerable<ExperimentOverview> experiments, 
     IEnumerable<Analysis> _, 
     CancellationToken __)
   {

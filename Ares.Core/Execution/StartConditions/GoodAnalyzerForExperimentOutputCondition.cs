@@ -21,7 +21,7 @@ internal class GoodAnalyzerForExperimentOutputCondition : IStartCondition
     var campaignTemplate = _activeCampaignTemplateStore.CampaignTemplate;
     if(campaignTemplate is null)
       return new StartConditionResult(false, "No campaign template set, can't check for analyzers.");
-    if(!campaignTemplate.ExperimentTemplates.Any())
+    if(campaignTemplate.ExperimentTemplate is null)
       return new StartConditionResult(false, "No experiment templates in the campaign, can't check for analyzers.");
 
     var validation = await _campaignAnalyzerValidator.Validate(campaignTemplate);

@@ -10,8 +10,6 @@ public class CampaignComposer : ICommandComposer<CampaignTemplate, ICampaignExec
 {
   private readonly IExecutionReporter _executionReporter;
   private readonly ICommandComposer<ExperimentTemplate, ExperimentExecutor> _experimentComposer;
-  private readonly ICommandComposer<ExperimentTemplate, StartupScriptExecutor> _startupScriptComposer;
-  private readonly ICommandComposer<ExperimentTemplate, CloseoutScriptExecutor> _closeoutScriptComposer;
   private readonly IPlanningHelper _planningHelper;
   private readonly IEnumerable<IExecutionSummaryHandler> _resultHandlers;
   private readonly IEnumerable<INotificationHandler> _notificationHandlers;
@@ -22,8 +20,6 @@ public class CampaignComposer : ICommandComposer<CampaignTemplate, ICampaignExec
 
   public CampaignComposer(AnalysisHelper analysisHelper,
     ICommandComposer<ExperimentTemplate, ExperimentExecutor> experimentComposer,
-    ICommandComposer<ExperimentTemplate, StartupScriptExecutor> startupScriptComposer,
-    ICommandComposer<ExperimentTemplate, CloseoutScriptExecutor> closeoutScriptComposer,
     IPlanningHelper planningHelper,
     IExecutionReporter executionReporter,
     IEnumerable<IExecutionSummaryHandler> resultHandlers,
@@ -37,8 +33,6 @@ public class CampaignComposer : ICommandComposer<CampaignTemplate, ICampaignExec
     _analysisHelper = analysisHelper;
     _variableManager = variableManager;
     _experimentComposer = experimentComposer;
-    _startupScriptComposer = startupScriptComposer;
-    _closeoutScriptComposer = closeoutScriptComposer;
     _planningHelper = planningHelper;
     _executionReporter = executionReporter;
     _resultHandlers = resultHandlers;
@@ -46,5 +40,5 @@ public class CampaignComposer : ICommandComposer<CampaignTemplate, ICampaignExec
   }
 
   public ICampaignExecutor Compose(CampaignTemplate template)
-    => new CampaignExecutor(_experimentComposer, _startupScriptComposer, _closeoutScriptComposer, _planningHelper, _executionReporter, _analysisHelper, template, _resultHandlers, _analysisRepo, _notificationHandlers, _analyzerRepo, _variableManager);
+    => new CampaignExecutor(_experimentComposer, _planningHelper, _executionReporter, _analysisHelper, template, _resultHandlers, _analysisRepo, _notificationHandlers, _analyzerRepo, _variableManager);
 }

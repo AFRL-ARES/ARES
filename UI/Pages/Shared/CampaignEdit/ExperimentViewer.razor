@@ -1,22 +1,21 @@
 ﻿@inject DialogService DialogService
 @using Ares.Datamodel.Templates
 
-@if (ExperimentTemplate is not null)
+@if (CampaignTemplate is not null)
 {
   <div class="d-flex h-100">
     <div class="d-flex flex-column flex-grow-1 overflow-auto">
       <div class="d-flex flex-column">
-        @foreach(var startupStep in ExperimentTemplate.StartupStepTemplates.OrderBy(t => t.Index))
-        {
+       @foreach(var startupStep in CampaignTemplate.StartupTemplate.StepTemplates.OrderBy(t => t.Index))
+       {
           <div class="d-flex">
             <div class="flex-grow-1">
-              
               <StepViewer StepTemplate="@startupStep" />
             </div>
           </div>
         }
 
-        @foreach (var stepTemplate in ExperimentTemplate.StepTemplates.OrderBy(t => t.Index))
+        @foreach (var stepTemplate in CampaignTemplate.ExperimentTemplate.StepTemplates.OrderBy(t => t.Index))
         {
           <div class="d-flex" >
             <div class="flex-grow-1">
@@ -26,7 +25,7 @@
           </div>
         }
 
-        @foreach(var closeoutStep in ExperimentTemplate.CloseoutStepTemplates.OrderBy(t => t.Index))
+        @foreach(var closeoutStep in CampaignTemplate.CloseoutTemplate.StepTemplates.OrderBy(t => t.Index))
         {
           <div class="d-flex">
             <div class="flex-grow-1">
@@ -41,5 +40,5 @@
 
 @code {
   [Parameter]
-  public ExperimentTemplate? ExperimentTemplate { get; set; }
+  public CampaignTemplate? CampaignTemplate { get; set; }
 }

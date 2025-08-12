@@ -25,16 +25,6 @@ public static class ExperimentTemplateExtensions
     .Where(command => command.UserOutputKeyMap.Any()).ToArray();
 
   /// <summary>
-  /// Gets all the <see cref="Parameter" />s from an <see cref="ExperimentTemplate"/>
-  /// </summary>
-  /// <param name="template"></param>
-  /// <returns></returns>
-  public static IEnumerable<Parameter> GetAllStartupParameters(this ExperimentTemplate template)
-    => template.StartupStepTemplates
-    .SelectMany(step => step.CommandTemplates)
-    .SelectMany(command => command.Parameters);
-
-  /// <summary>
   /// Gets all the parameters that need to be planned from a given <see cref="ExperimentTemplate" />
   /// </summary>
   /// <param name="template">The template to check for parameters</param>

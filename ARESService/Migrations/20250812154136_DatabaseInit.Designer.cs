@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AresService.Migrations
 {
     [DbContext(typeof(AresDbContext))]
-    [Migration("20250805222051_DatabaseInit")]
+    [Migration("20250812154136_DatabaseInit")]
     partial class DatabaseInit
     {
         /// <inheritdoc />
@@ -24,6 +24,1181 @@ namespace AresService.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("Ares.Datamodel.Analyzing.Analysis", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("ErrorString")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<float>("Result")
+                        .HasColumnType("real");
+
+                    b.Property<bool>("Success")
+                        .HasColumnType("bit");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("Analyses", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Analyzing.AnalyzerCapabilities", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("AnalyzerInfoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("SettingsSchema")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long>("TimeoutSeconds")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("AnalyzerInfoId")
+                        .IsUnique()
+                        .HasFilter("[AnalyzerInfoId] IS NOT NULL");
+
+                    b.ToTable("AnalyzerCapabilities");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Analyzing.AnalyzerConfig", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Url")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("Analyzers", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Analyzing.AnalyzerInfo", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Type")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Url")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Version")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("AnalyzerInfos");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Analyzing.AnalyzerSettings", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AnalyzerId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Settings")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("AnalyzerSettings");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.AresCampaignTag", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("TagName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("CampaignTags");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.CampaignExecutionStatus", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CampaignId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<int>("State")
+                        .HasColumnType("int");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("CampaignExecutionStatuses", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.CampaignExecutionSummary", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CampaignId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CampaignName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CampaignNotes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CampaignTags")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("CampaignExecutionSummaries", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.CommandExecutionStatus", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CommandId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CommandName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("DeviceName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("StepExecutionStatusUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("StepExecutionStatusUniqueId");
+
+                    b.ToTable("CommandExecutionStatuses", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.CommandExecutionSummary", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CommandDescription")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CommandId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CommandName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<Guid?>("StepExecutionSummaryUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("StepExecutionSummaryUniqueId");
+
+                    b.ToTable("CommandExecutionSummaries", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Device.DeviceConfig", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("DeviceName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DeviceType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("DeviceConfigs", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.DeviceCommandResult", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("AwaitUserInput")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("CommandExecutionSummaryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Error")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Result")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("Success")
+                        .HasColumnType("bit");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("CommandExecutionSummaryId")
+                        .IsUnique()
+                        .HasFilter("[CommandExecutionSummaryId] IS NOT NULL");
+
+                    b.ToTable("DeviceCommandResults", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.ExecutionInfo", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CampaignExecutionSummaryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CommandExecutionSummaryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<Guid?>("ExperimentResultId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("LocaltimeOffset")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("StepExecutionSummaryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("TimeFinished")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("TimeStarted")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Timezone")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("CampaignExecutionSummaryId")
+                        .IsUnique()
+                        .HasFilter("[CampaignExecutionSummaryId] IS NOT NULL");
+
+                    b.HasIndex("CommandExecutionSummaryId")
+                        .IsUnique()
+                        .HasFilter("[CommandExecutionSummaryId] IS NOT NULL");
+
+                    b.HasIndex("ExperimentResultId")
+                        .IsUnique()
+                        .HasFilter("[ExperimentResultId] IS NOT NULL");
+
+                    b.HasIndex("StepExecutionSummaryId")
+                        .IsUnique()
+                        .HasFilter("[StepExecutionSummaryId] IS NOT NULL");
+
+                    b.ToTable("ExecutionInfos", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.ExperimentExecutionStatus", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CampaignExecutionStatusUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("ExperimentId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("CampaignExecutionStatusUniqueId");
+
+                    b.ToTable("ExperimentExecutionStatuses", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.ExperimentExecutionSummary", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CampaignExecutionSummaryUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("ExperimentId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("ResultOutputPath")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("CampaignExecutionSummaryUniqueId");
+
+                    b.ToTable("ExperimentExecutionSummaries", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.ExperimentOverview", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<double>("AnalysisResult")
+                        .HasColumnType("float");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<Guid?>("ExperimentResultId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Result")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("TemplateUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("ExperimentResultId")
+                        .IsUnique()
+                        .HasFilter("[ExperimentResultId] IS NOT NULL");
+
+                    b.HasIndex("TemplateUniqueId");
+
+                    b.ToTable("ExperimentOverviews", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Limits", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<long>("Index")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<float>("Maximum")
+                        .HasColumnType("real");
+
+                    b.Property<float>("Minimum")
+                        .HasColumnType("real");
+
+                    b.Property<Guid>("ParameterMetadataUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("ParameterMetadataUniqueId");
+
+                    b.ToTable("Limits");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.PlannerAdapterInfo", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AdapterName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Address")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Type")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Version")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("Planners", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.PlannerRequest", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("PlannerRequests", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.PlannerResponse", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("PlannerResponses", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.PlannerTransaction", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<Guid?>("ExperimentOverviewUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<Guid?>("PlannerInfoUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("RequestUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("ResponseUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("ExperimentOverviewUniqueId");
+
+                    b.HasIndex("PlannerInfoUniqueId");
+
+                    b.HasIndex("RequestUniqueId");
+
+                    b.HasIndex("ResponseUniqueId");
+
+                    b.ToTable("PlannerTransactions", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Project", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("Projects", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.StepExecutionStatus", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<Guid?>("ExperimentExecutionStatusUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("StepId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("StepName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("ExperimentExecutionStatusUniqueId");
+
+                    b.ToTable("StepExecutionStatuses", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.StepExecutionSummary", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<Guid?>("ExperimentExecutionSummaryUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("StepId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("ExperimentExecutionSummaryUniqueId");
+
+                    b.ToTable("StepExecutionSummaries", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Templates.CampaignTemplate", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<Guid?>("ExperimentTemplateUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<Guid?>("StartupTemplateUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("ExperimentTemplateUniqueId");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasFilter("[Name] IS NOT NULL");
+
+                    b.HasIndex("StartupTemplateUniqueId");
+
+                    b.ToTable("CampaignTemplates", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Templates.CommandMetadata", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CommandTemplateId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DeviceName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DeviceType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("CommandTemplateId")
+                        .IsUnique();
+
+                    b.ToTable("CommandMetadata");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Templates.CommandTemplate", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<long>("Index")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<Guid>("StepTemplateUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("StepTemplateUniqueId");
+
+                    b.ToTable("CommandTemplates", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Templates.ExperimentTemplate", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AnalyzerId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("Resolved")
+                        .HasColumnType("bit");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("ExperimentTemplates", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Templates.OutputMetadata", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("DataSchema")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long>("Index")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("OutputMetadata");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Templates.Parameter", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CommandTemplateUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<bool>("EnvironmentBased")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("ExperimentOverviewUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long>("Index")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<bool>("Planned")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("PlannerResponseUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("PlanningMetadataUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("VariableArgument")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("VariableType")
+                        .HasColumnType("int");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("CommandTemplateUniqueId");
+
+                    b.HasIndex("ExperimentOverviewUniqueId");
+
+                    b.HasIndex("PlannerResponseUniqueId");
+
+                    b.HasIndex("PlanningMetadataUniqueId");
+
+                    b.ToTable("Parameters", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Templates.ParameterMetadata", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CampaignTemplateUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CommandMetadataUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<Guid?>("ExtraInfoUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long>("Index")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("NotPlannable")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("ParameterId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("PlannerDescription")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PlannerName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("PlannerRequestUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Schema")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Unit")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("UseDefault")
+                        .HasColumnType("bit");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("CampaignTemplateUniqueId");
+
+                    b.HasIndex("CommandMetadataUniqueId");
+
+                    b.HasIndex("ExtraInfoUniqueId");
+
+                    b.HasIndex("ParameterId")
+                        .IsUnique()
+                        .HasFilter("[ParameterId] IS NOT NULL");
+
+                    b.HasIndex("PlannerRequestUniqueId");
+
+                    b.ToTable("ParameterMetadata");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Templates.ParameterValue", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<Guid?>("ParameterId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Value")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("ParameterId")
+                        .IsUnique()
+                        .HasFilter("[ParameterId] IS NOT NULL");
+
+                    b.ToTable("ParameterValues", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Templates.PlannerAllocation", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CampaignTemplateUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<Guid?>("ParameterUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("PlannerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("CampaignTemplateUniqueId");
+
+                    b.HasIndex("ParameterUniqueId");
+
+                    b.HasIndex("PlannerId");
+
+                    b.ToTable("PlannerAllocations", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Templates.StepTemplate", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<Guid?>("ExperimentTemplateUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long>("Index")
+                        .HasColumnType("bigint");
+
+                    b.Property<bool>("IsParallel")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("ExperimentTemplateUniqueId");
+
+                    b.ToTable("StepTemplates", (string)null);
+                });
 
             modelBuilder.Entity("Ares.Messages.DeviceStates.Chiller.ChillerState", b =>
                 {
@@ -332,1192 +1507,6 @@ namespace AresService.Migrations
                     b.ToTable("TubeFurnaceStateEntities", (string)null);
                 });
 
-            modelBuilder.Entity("Ares.Messaging.Analyzing.Analysis", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("ErrorString")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<float>("Result")
-                        .HasColumnType("real");
-
-                    b.Property<bool>("Success")
-                        .HasColumnType("bit");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("Analyses", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messaging.Analyzing.AnalyzerCapabilities", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("AnalyzerInfoId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("SettingsSchema")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<long>("TimeoutSeconds")
-                        .HasColumnType("bigint");
-
-                    b.HasKey("UniqueId");
-
-                    b.HasIndex("AnalyzerInfoId")
-                        .IsUnique()
-                        .HasFilter("[AnalyzerInfoId] IS NOT NULL");
-
-                    b.ToTable("AnalyzerCapabilities");
-                });
-
-            modelBuilder.Entity("Ares.Messaging.Analyzing.AnalyzerConfig", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Url")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("Analyzers", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messaging.Analyzing.AnalyzerInfo", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Type")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Url")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Version")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("AnalyzerInfos");
-                });
-
-            modelBuilder.Entity("Ares.Messaging.Analyzing.AnalyzerSettings", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("AnalyzerId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("Settings")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("AnalyzerSettings");
-                });
-
-            modelBuilder.Entity("Ares.Messaging.AresCampaignTag", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("TagName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("CampaignTags");
-                });
-
-            modelBuilder.Entity("Ares.Messaging.CampaignExecutionStatus", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("CampaignId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<int>("State")
-                        .HasColumnType("int");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("CampaignExecutionStatuses", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messaging.CampaignExecutionSummary", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("CampaignId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CampaignName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CampaignNotes")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CampaignTags")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("CampaignExecutionSummaries", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messaging.CampaignTemplate", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<long>("Index")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("UniqueId");
-
-                    b.HasIndex("Name")
-                        .IsUnique()
-                        .HasFilter("[Name] IS NOT NULL");
-
-                    b.ToTable("CampaignTemplates", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messaging.CommandExecutionStatus", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("CommandId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CommandName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("DeviceName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("State")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid?>("StepExecutionStatusUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("UniqueId");
-
-                    b.HasIndex("StepExecutionStatusUniqueId");
-
-                    b.ToTable("CommandExecutionStatuses", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messaging.CommandExecutionSummary", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("CommandDescription")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CommandId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CommandName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<Guid?>("StepExecutionSummaryUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("UniqueId");
-
-                    b.HasIndex("StepExecutionSummaryUniqueId");
-
-                    b.ToTable("CommandExecutionSummaries", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messaging.CommandMetadata", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("CommandTemplateId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("DeviceName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("DeviceType")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("UniqueId");
-
-                    b.HasIndex("CommandTemplateId")
-                        .IsUnique();
-
-                    b.ToTable("CommandMetadata");
-                });
-
-            modelBuilder.Entity("Ares.Messaging.CommandTemplate", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<long>("Index")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<Guid>("StepTemplateUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("UniqueId");
-
-                    b.HasIndex("StepTemplateUniqueId");
-
-                    b.ToTable("CommandTemplates", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messaging.CompletedExperiment", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<double>("AnalysisResult")
-                        .HasColumnType("float");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<Guid?>("ExperimentResultId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("Result")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid?>("TemplateUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("UniqueId");
-
-                    b.HasIndex("ExperimentResultId")
-                        .IsUnique()
-                        .HasFilter("[ExperimentResultId] IS NOT NULL");
-
-                    b.HasIndex("TemplateUniqueId");
-
-                    b.ToTable("CompletedExperiments", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messaging.Device.DeviceConfig", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("DeviceName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("DeviceType")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("DeviceConfigs", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messaging.DeviceCommandResult", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<bool>("AwaitUserInput")
-                        .HasColumnType("bit");
-
-                    b.Property<Guid?>("CommandExecutionSummaryId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("Error")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("Result")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("Success")
-                        .HasColumnType("bit");
-
-                    b.HasKey("UniqueId");
-
-                    b.HasIndex("CommandExecutionSummaryId")
-                        .IsUnique()
-                        .HasFilter("[CommandExecutionSummaryId] IS NOT NULL");
-
-                    b.ToTable("DeviceCommandResults", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messaging.ExecutionInfo", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("CampaignExecutionSummaryId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("CommandExecutionSummaryId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<Guid?>("ExperimentResultId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("LocaltimeOffset")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid?>("StepExecutionSummaryId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("TimeFinished")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("TimeStarted")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Timezone")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("UniqueId");
-
-                    b.HasIndex("CampaignExecutionSummaryId")
-                        .IsUnique()
-                        .HasFilter("[CampaignExecutionSummaryId] IS NOT NULL");
-
-                    b.HasIndex("CommandExecutionSummaryId")
-                        .IsUnique()
-                        .HasFilter("[CommandExecutionSummaryId] IS NOT NULL");
-
-                    b.HasIndex("ExperimentResultId")
-                        .IsUnique()
-                        .HasFilter("[ExperimentResultId] IS NOT NULL");
-
-                    b.HasIndex("StepExecutionSummaryId")
-                        .IsUnique()
-                        .HasFilter("[StepExecutionSummaryId] IS NOT NULL");
-
-                    b.ToTable("ExecutionInfos", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messaging.ExperimentExecutionStatus", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("CampaignExecutionStatusUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("ExperimentId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.HasKey("UniqueId");
-
-                    b.HasIndex("CampaignExecutionStatusUniqueId");
-
-                    b.ToTable("ExperimentExecutionStatuses", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messaging.ExperimentExecutionSummary", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("CampaignExecutionSummaryUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("ExperimentId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("ResultOutputPath")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("UniqueId");
-
-                    b.HasIndex("CampaignExecutionSummaryUniqueId");
-
-                    b.ToTable("ExperimentExecutionSummaries", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messaging.ExperimentTemplate", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("AnalyzerId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid?>("CampaignTemplateUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<long>("Index")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("Resolved")
-                        .HasColumnType("bit");
-
-                    b.HasKey("UniqueId");
-
-                    b.HasIndex("CampaignTemplateUniqueId");
-
-                    b.ToTable("ExperimentTemplates", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messaging.Limits", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<long>("Index")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<float>("Maximum")
-                        .HasColumnType("real");
-
-                    b.Property<float>("Minimum")
-                        .HasColumnType("real");
-
-                    b.Property<Guid>("ParameterMetadataUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("UniqueId");
-
-                    b.HasIndex("ParameterMetadataUniqueId");
-
-                    b.ToTable("Limits");
-                });
-
-            modelBuilder.Entity("Ares.Messaging.OutputMetadata", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("DataSchema")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<long>("Index")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("OutputMetadata");
-                });
-
-            modelBuilder.Entity("Ares.Messaging.Parameter", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("CommandTemplateUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("CompletedExperimentUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<bool>("EnvironmentBased")
-                        .HasColumnType("bit");
-
-                    b.Property<long>("Index")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<bool>("Planned")
-                        .HasColumnType("bit");
-
-                    b.Property<Guid?>("PlannerResponseUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("PlanningMetadataUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("VariableArgument")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("VariableType")
-                        .HasColumnType("int");
-
-                    b.HasKey("UniqueId");
-
-                    b.HasIndex("CommandTemplateUniqueId");
-
-                    b.HasIndex("CompletedExperimentUniqueId");
-
-                    b.HasIndex("PlannerResponseUniqueId");
-
-                    b.HasIndex("PlanningMetadataUniqueId");
-
-                    b.ToTable("Parameters", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messaging.ParameterMetadata", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("CampaignTemplateUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("CommandMetadataUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<Guid?>("ExtraInfoUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<long>("Index")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("NotPlannable")
-                        .HasColumnType("bit");
-
-                    b.Property<Guid?>("ParameterId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("PlannerDescription")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PlannerName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid?>("PlannerRequestUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Schema")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Unit")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("UseDefault")
-                        .HasColumnType("bit");
-
-                    b.HasKey("UniqueId");
-
-                    b.HasIndex("CampaignTemplateUniqueId");
-
-                    b.HasIndex("CommandMetadataUniqueId");
-
-                    b.HasIndex("ExtraInfoUniqueId");
-
-                    b.HasIndex("ParameterId")
-                        .IsUnique()
-                        .HasFilter("[ParameterId] IS NOT NULL");
-
-                    b.HasIndex("PlannerRequestUniqueId");
-
-                    b.ToTable("ParameterMetadata");
-                });
-
-            modelBuilder.Entity("Ares.Messaging.ParameterValue", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<Guid?>("ParameterId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Value")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("UniqueId");
-
-                    b.HasIndex("ParameterId")
-                        .IsUnique()
-                        .HasFilter("[ParameterId] IS NOT NULL");
-
-                    b.ToTable("ParameterValues", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messaging.PlannerAdapterInfo", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("AdapterName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Address")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("Type")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Version")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("Planners", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messaging.PlannerAllocation", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("CampaignTemplateUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<Guid?>("ParameterUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("PlannerId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("UniqueId");
-
-                    b.HasIndex("CampaignTemplateUniqueId");
-
-                    b.HasIndex("ParameterUniqueId");
-
-                    b.HasIndex("PlannerId");
-
-                    b.ToTable("PlannerAllocations", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messaging.PlannerRequest", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("PlannerRequests", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messaging.PlannerResponse", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("PlannerResponses", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messaging.PlannerTransaction", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("CompletedExperimentUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<Guid?>("PlannerInfoUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("RequestUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("ResponseUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("UniqueId");
-
-                    b.HasIndex("CompletedExperimentUniqueId");
-
-                    b.HasIndex("PlannerInfoUniqueId");
-
-                    b.HasIndex("RequestUniqueId");
-
-                    b.HasIndex("ResponseUniqueId");
-
-                    b.ToTable("PlannerTransactions", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messaging.Project", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("Projects", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messaging.StepExecutionStatus", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<Guid?>("ExperimentExecutionStatusUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("StepId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("StepName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("UniqueId");
-
-                    b.HasIndex("ExperimentExecutionStatusUniqueId");
-
-                    b.ToTable("StepExecutionStatuses", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messaging.StepExecutionSummary", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<Guid?>("ExperimentExecutionSummaryUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("StepId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("UniqueId");
-
-                    b.HasIndex("ExperimentExecutionSummaryUniqueId");
-
-                    b.ToTable("StepExecutionSummaries", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messaging.StepTemplate", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<Guid?>("ExperimentTemplateUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("ExperimentTemplateUniqueId1")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("ExperimentTemplateUniqueId2")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<long>("Index")
-                        .HasColumnType("bigint");
-
-                    b.Property<bool>("IsParallel")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("UniqueId");
-
-                    b.HasIndex("ExperimentTemplateUniqueId");
-
-                    b.HasIndex("ExperimentTemplateUniqueId1");
-
-                    b.HasIndex("ExperimentTemplateUniqueId2");
-
-                    b.ToTable("StepTemplates", (string)null);
-                });
-
             modelBuilder.Entity("Google.Protobuf.WellKnownTypes.Any", b =>
                 {
                     b.Property<Guid>("UniqueId")
@@ -1552,230 +1541,114 @@ namespace AresService.Migrations
                     b.ToTable("Any");
                 });
 
-            modelBuilder.Entity("Ares.Messaging.Analyzing.AnalyzerCapabilities", b =>
+            modelBuilder.Entity("Ares.Datamodel.Analyzing.AnalyzerCapabilities", b =>
                 {
-                    b.HasOne("Ares.Messaging.Analyzing.AnalyzerInfo", null)
+                    b.HasOne("Ares.Datamodel.Analyzing.AnalyzerInfo", null)
                         .WithOne("Capabilities")
-                        .HasForeignKey("Ares.Messaging.Analyzing.AnalyzerCapabilities", "AnalyzerInfoId")
+                        .HasForeignKey("Ares.Datamodel.Analyzing.AnalyzerCapabilities", "AnalyzerInfoId")
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 
-            modelBuilder.Entity("Ares.Messaging.CommandExecutionStatus", b =>
+            modelBuilder.Entity("Ares.Datamodel.CommandExecutionStatus", b =>
                 {
-                    b.HasOne("Ares.Messaging.StepExecutionStatus", null)
+                    b.HasOne("Ares.Datamodel.StepExecutionStatus", null)
                         .WithMany("CommandExecutionStatuses")
                         .HasForeignKey("StepExecutionStatusUniqueId")
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 
-            modelBuilder.Entity("Ares.Messaging.CommandExecutionSummary", b =>
+            modelBuilder.Entity("Ares.Datamodel.CommandExecutionSummary", b =>
                 {
-                    b.HasOne("Ares.Messaging.StepExecutionSummary", null)
+                    b.HasOne("Ares.Datamodel.StepExecutionSummary", null)
                         .WithMany("CommandSummaries")
                         .HasForeignKey("StepExecutionSummaryUniqueId")
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 
-            modelBuilder.Entity("Ares.Messaging.CommandMetadata", b =>
+            modelBuilder.Entity("Ares.Datamodel.DeviceCommandResult", b =>
                 {
-                    b.HasOne("Ares.Messaging.CommandTemplate", null)
-                        .WithOne("Metadata")
-                        .HasForeignKey("Ares.Messaging.CommandMetadata", "CommandTemplateId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.HasOne("Ares.Datamodel.CommandExecutionSummary", null)
+                        .WithOne("Result")
+                        .HasForeignKey("Ares.Datamodel.DeviceCommandResult", "CommandExecutionSummaryId")
+                        .OnDelete(DeleteBehavior.ClientCascade);
                 });
 
-            modelBuilder.Entity("Ares.Messaging.CommandTemplate", b =>
+            modelBuilder.Entity("Ares.Datamodel.ExecutionInfo", b =>
                 {
-                    b.HasOne("Ares.Messaging.StepTemplate", null)
-                        .WithMany("CommandTemplates")
-                        .HasForeignKey("StepTemplateUniqueId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.HasOne("Ares.Datamodel.CampaignExecutionSummary", null)
+                        .WithOne("ExecutionInfo")
+                        .HasForeignKey("Ares.Datamodel.ExecutionInfo", "CampaignExecutionSummaryId")
+                        .OnDelete(DeleteBehavior.ClientCascade);
+
+                    b.HasOne("Ares.Datamodel.CommandExecutionSummary", null)
+                        .WithOne("ExecutionInfo")
+                        .HasForeignKey("Ares.Datamodel.ExecutionInfo", "CommandExecutionSummaryId")
+                        .OnDelete(DeleteBehavior.ClientCascade);
+
+                    b.HasOne("Ares.Datamodel.ExperimentExecutionSummary", null)
+                        .WithOne("ExecutionInfo")
+                        .HasForeignKey("Ares.Datamodel.ExecutionInfo", "ExperimentResultId")
+                        .OnDelete(DeleteBehavior.ClientCascade);
+
+                    b.HasOne("Ares.Datamodel.StepExecutionSummary", null)
+                        .WithOne("ExecutionInfo")
+                        .HasForeignKey("Ares.Datamodel.ExecutionInfo", "StepExecutionSummaryId")
+                        .OnDelete(DeleteBehavior.ClientCascade);
                 });
 
-            modelBuilder.Entity("Ares.Messaging.CompletedExperiment", b =>
+            modelBuilder.Entity("Ares.Datamodel.ExperimentExecutionStatus", b =>
                 {
-                    b.HasOne("Ares.Messaging.ExperimentExecutionSummary", null)
-                        .WithOne("CompletedExperiment")
-                        .HasForeignKey("Ares.Messaging.CompletedExperiment", "ExperimentResultId");
+                    b.HasOne("Ares.Datamodel.CampaignExecutionStatus", null)
+                        .WithMany("ExperimentExecutionStatuses")
+                        .HasForeignKey("CampaignExecutionStatusUniqueId")
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
 
-                    b.HasOne("Ares.Messaging.ExperimentTemplate", "Template")
+            modelBuilder.Entity("Ares.Datamodel.ExperimentExecutionSummary", b =>
+                {
+                    b.HasOne("Ares.Datamodel.CampaignExecutionSummary", null)
+                        .WithMany("ExperimentSummaries")
+                        .HasForeignKey("CampaignExecutionSummaryUniqueId")
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.ExperimentOverview", b =>
+                {
+                    b.HasOne("Ares.Datamodel.ExperimentExecutionSummary", null)
+                        .WithOne("ExperimentOverview")
+                        .HasForeignKey("Ares.Datamodel.ExperimentOverview", "ExperimentResultId");
+
+                    b.HasOne("Ares.Datamodel.Templates.ExperimentTemplate", "Template")
                         .WithMany()
                         .HasForeignKey("TemplateUniqueId");
 
                     b.Navigation("Template");
                 });
 
-            modelBuilder.Entity("Ares.Messaging.DeviceCommandResult", b =>
+            modelBuilder.Entity("Ares.Datamodel.Limits", b =>
                 {
-                    b.HasOne("Ares.Messaging.CommandExecutionSummary", null)
-                        .WithOne("Result")
-                        .HasForeignKey("Ares.Messaging.DeviceCommandResult", "CommandExecutionSummaryId")
-                        .OnDelete(DeleteBehavior.ClientCascade);
-                });
-
-            modelBuilder.Entity("Ares.Messaging.ExecutionInfo", b =>
-                {
-                    b.HasOne("Ares.Messaging.CampaignExecutionSummary", null)
-                        .WithOne("ExecutionInfo")
-                        .HasForeignKey("Ares.Messaging.ExecutionInfo", "CampaignExecutionSummaryId")
-                        .OnDelete(DeleteBehavior.ClientCascade);
-
-                    b.HasOne("Ares.Messaging.CommandExecutionSummary", null)
-                        .WithOne("ExecutionInfo")
-                        .HasForeignKey("Ares.Messaging.ExecutionInfo", "CommandExecutionSummaryId")
-                        .OnDelete(DeleteBehavior.ClientCascade);
-
-                    b.HasOne("Ares.Messaging.ExperimentExecutionSummary", null)
-                        .WithOne("ExecutionInfo")
-                        .HasForeignKey("Ares.Messaging.ExecutionInfo", "ExperimentResultId")
-                        .OnDelete(DeleteBehavior.ClientCascade);
-
-                    b.HasOne("Ares.Messaging.StepExecutionSummary", null)
-                        .WithOne("ExecutionInfo")
-                        .HasForeignKey("Ares.Messaging.ExecutionInfo", "StepExecutionSummaryId")
-                        .OnDelete(DeleteBehavior.ClientCascade);
-                });
-
-            modelBuilder.Entity("Ares.Messaging.ExperimentExecutionStatus", b =>
-                {
-                    b.HasOne("Ares.Messaging.CampaignExecutionStatus", null)
-                        .WithMany("ExperimentExecutionStatuses")
-                        .HasForeignKey("CampaignExecutionStatusUniqueId")
-                        .OnDelete(DeleteBehavior.Cascade);
-                });
-
-            modelBuilder.Entity("Ares.Messaging.ExperimentExecutionSummary", b =>
-                {
-                    b.HasOne("Ares.Messaging.CampaignExecutionSummary", null)
-                        .WithMany("ExperimentSummaries")
-                        .HasForeignKey("CampaignExecutionSummaryUniqueId")
-                        .OnDelete(DeleteBehavior.Cascade);
-                });
-
-            modelBuilder.Entity("Ares.Messaging.ExperimentTemplate", b =>
-                {
-                    b.HasOne("Ares.Messaging.CampaignTemplate", null)
-                        .WithMany("ExperimentTemplates")
-                        .HasForeignKey("CampaignTemplateUniqueId")
-                        .OnDelete(DeleteBehavior.Cascade);
-                });
-
-            modelBuilder.Entity("Ares.Messaging.Limits", b =>
-                {
-                    b.HasOne("Ares.Messaging.ParameterMetadata", null)
+                    b.HasOne("Ares.Datamodel.Templates.ParameterMetadata", null)
                         .WithMany("Constraints")
                         .HasForeignKey("ParameterMetadataUniqueId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Ares.Messaging.OutputMetadata", b =>
+            modelBuilder.Entity("Ares.Datamodel.PlannerTransaction", b =>
                 {
-                    b.HasOne("Ares.Messaging.CommandMetadata", null)
-                        .WithOne("OutputMetadata")
-                        .HasForeignKey("Ares.Messaging.OutputMetadata", "UniqueId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Ares.Messaging.Parameter", b =>
-                {
-                    b.HasOne("Ares.Messaging.CommandTemplate", null)
-                        .WithMany("Parameters")
-                        .HasForeignKey("CommandTemplateUniqueId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.HasOne("Ares.Messaging.CompletedExperiment", null)
-                        .WithMany("Parameters")
-                        .HasForeignKey("CompletedExperimentUniqueId");
-
-                    b.HasOne("Ares.Messaging.PlannerResponse", null)
-                        .WithMany("PlannedParameters")
-                        .HasForeignKey("PlannerResponseUniqueId");
-
-                    b.HasOne("Ares.Messaging.ParameterMetadata", "PlanningMetadata")
-                        .WithMany()
-                        .HasForeignKey("PlanningMetadataUniqueId");
-
-                    b.Navigation("PlanningMetadata");
-                });
-
-            modelBuilder.Entity("Ares.Messaging.ParameterMetadata", b =>
-                {
-                    b.HasOne("Ares.Messaging.CampaignTemplate", null)
-                        .WithMany("PlannableParameters")
-                        .HasForeignKey("CampaignTemplateUniqueId")
-                        .OnDelete(DeleteBehavior.ClientCascade);
-
-                    b.HasOne("Ares.Messaging.CommandMetadata", null)
-                        .WithMany("ParameterMetadatas")
-                        .HasForeignKey("CommandMetadataUniqueId")
-                        .OnDelete(DeleteBehavior.ClientCascade);
-
-                    b.HasOne("Google.Protobuf.WellKnownTypes.Any", "ExtraInfo")
-                        .WithMany()
-                        .HasForeignKey("ExtraInfoUniqueId");
-
-                    b.HasOne("Ares.Messaging.Parameter", null)
-                        .WithOne("Metadata")
-                        .HasForeignKey("Ares.Messaging.ParameterMetadata", "ParameterId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.HasOne("Ares.Messaging.PlannerRequest", null)
-                        .WithMany("ParameterMetas")
-                        .HasForeignKey("PlannerRequestUniqueId")
-                        .OnDelete(DeleteBehavior.ClientCascade);
-
-                    b.Navigation("ExtraInfo");
-                });
-
-            modelBuilder.Entity("Ares.Messaging.ParameterValue", b =>
-                {
-                    b.HasOne("Ares.Messaging.Parameter", null)
-                        .WithOne("Value")
-                        .HasForeignKey("Ares.Messaging.ParameterValue", "ParameterId")
-                        .OnDelete(DeleteBehavior.Cascade);
-                });
-
-            modelBuilder.Entity("Ares.Messaging.PlannerAllocation", b =>
-                {
-                    b.HasOne("Ares.Messaging.CampaignTemplate", null)
-                        .WithMany("PlannerAllocations")
-                        .HasForeignKey("CampaignTemplateUniqueId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Ares.Messaging.ParameterMetadata", "Parameter")
-                        .WithMany()
-                        .HasForeignKey("ParameterUniqueId");
-
-                    b.HasOne("Ares.Messaging.PlannerAdapterInfo", "Planner")
-                        .WithMany()
-                        .HasForeignKey("PlannerId")
-                        .OnDelete(DeleteBehavior.ClientCascade);
-
-                    b.Navigation("Parameter");
-
-                    b.Navigation("Planner");
-                });
-
-            modelBuilder.Entity("Ares.Messaging.PlannerTransaction", b =>
-                {
-                    b.HasOne("Ares.Messaging.CompletedExperiment", null)
+                    b.HasOne("Ares.Datamodel.ExperimentOverview", null)
                         .WithMany("PlannerTransactions")
-                        .HasForeignKey("CompletedExperimentUniqueId");
+                        .HasForeignKey("ExperimentOverviewUniqueId");
 
-                    b.HasOne("Ares.Messaging.PlannerAdapterInfo", "PlannerInfo")
+                    b.HasOne("Ares.Datamodel.PlannerAdapterInfo", "PlannerInfo")
                         .WithMany()
                         .HasForeignKey("PlannerInfoUniqueId");
 
-                    b.HasOne("Ares.Messaging.PlannerRequest", "Request")
+                    b.HasOne("Ares.Datamodel.PlannerRequest", "Request")
                         .WithMany()
                         .HasForeignKey("RequestUniqueId");
 
-                    b.HasOne("Ares.Messaging.PlannerResponse", "Response")
+                    b.HasOne("Ares.Datamodel.PlannerResponse", "Response")
                         .WithMany()
                         .HasForeignKey("ResponseUniqueId");
 
@@ -1786,165 +1659,283 @@ namespace AresService.Migrations
                     b.Navigation("Response");
                 });
 
-            modelBuilder.Entity("Ares.Messaging.StepExecutionStatus", b =>
+            modelBuilder.Entity("Ares.Datamodel.StepExecutionStatus", b =>
                 {
-                    b.HasOne("Ares.Messaging.ExperimentExecutionStatus", null)
+                    b.HasOne("Ares.Datamodel.ExperimentExecutionStatus", null)
                         .WithMany("StepExecutionStatuses")
                         .HasForeignKey("ExperimentExecutionStatusUniqueId")
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 
-            modelBuilder.Entity("Ares.Messaging.StepExecutionSummary", b =>
+            modelBuilder.Entity("Ares.Datamodel.StepExecutionSummary", b =>
                 {
-                    b.HasOne("Ares.Messaging.ExperimentExecutionSummary", null)
+                    b.HasOne("Ares.Datamodel.ExperimentExecutionSummary", null)
                         .WithMany("StepSummaries")
                         .HasForeignKey("ExperimentExecutionSummaryUniqueId")
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 
-            modelBuilder.Entity("Ares.Messaging.StepTemplate", b =>
+            modelBuilder.Entity("Ares.Datamodel.Templates.CampaignTemplate", b =>
                 {
-                    b.HasOne("Ares.Messaging.ExperimentTemplate", null)
-                        .WithMany("CloseoutStepTemplates")
-                        .HasForeignKey("ExperimentTemplateUniqueId")
+                    b.HasOne("Ares.Datamodel.Templates.ExperimentTemplate", "ExperimentTemplate")
+                        .WithMany()
+                        .HasForeignKey("ExperimentTemplateUniqueId");
+
+                    b.HasOne("Ares.Datamodel.Templates.ExperimentTemplate", "StartupTemplate")
+                        .WithMany()
+                        .HasForeignKey("StartupTemplateUniqueId");
+
+                    b.Navigation("ExperimentTemplate");
+
+                    b.Navigation("StartupTemplate");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Templates.CommandMetadata", b =>
+                {
+                    b.HasOne("Ares.Datamodel.Templates.CommandTemplate", null)
+                        .WithOne("Metadata")
+                        .HasForeignKey("Ares.Datamodel.Templates.CommandMetadata", "CommandTemplateId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Templates.CommandTemplate", b =>
+                {
+                    b.HasOne("Ares.Datamodel.Templates.StepTemplate", null)
+                        .WithMany("CommandTemplates")
+                        .HasForeignKey("StepTemplateUniqueId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Templates.ExperimentTemplate", b =>
+                {
+                    b.HasOne("Ares.Datamodel.Templates.CampaignTemplate", null)
+                        .WithOne("CloseoutTemplate")
+                        .HasForeignKey("Ares.Datamodel.Templates.ExperimentTemplate", "UniqueId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Templates.OutputMetadata", b =>
+                {
+                    b.HasOne("Ares.Datamodel.Templates.CommandMetadata", null)
+                        .WithOne("OutputMetadata")
+                        .HasForeignKey("Ares.Datamodel.Templates.OutputMetadata", "UniqueId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Templates.Parameter", b =>
+                {
+                    b.HasOne("Ares.Datamodel.Templates.CommandTemplate", null)
+                        .WithMany("Parameters")
+                        .HasForeignKey("CommandTemplateUniqueId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Ares.Datamodel.ExperimentOverview", null)
+                        .WithMany("Parameters")
+                        .HasForeignKey("ExperimentOverviewUniqueId");
+
+                    b.HasOne("Ares.Datamodel.PlannerResponse", null)
+                        .WithMany("PlannedParameters")
+                        .HasForeignKey("PlannerResponseUniqueId");
+
+                    b.HasOne("Ares.Datamodel.Templates.ParameterMetadata", "PlanningMetadata")
+                        .WithMany()
+                        .HasForeignKey("PlanningMetadataUniqueId");
+
+                    b.Navigation("PlanningMetadata");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Templates.ParameterMetadata", b =>
+                {
+                    b.HasOne("Ares.Datamodel.Templates.CampaignTemplate", null)
+                        .WithMany("PlannableParameters")
+                        .HasForeignKey("CampaignTemplateUniqueId")
                         .OnDelete(DeleteBehavior.ClientCascade);
 
-                    b.HasOne("Ares.Messaging.ExperimentTemplate", null)
-                        .WithMany("StartupStepTemplates")
-                        .HasForeignKey("ExperimentTemplateUniqueId1")
+                    b.HasOne("Ares.Datamodel.Templates.CommandMetadata", null)
+                        .WithMany("ParameterMetadatas")
+                        .HasForeignKey("CommandMetadataUniqueId")
                         .OnDelete(DeleteBehavior.ClientCascade);
 
-                    b.HasOne("Ares.Messaging.ExperimentTemplate", null)
+                    b.HasOne("Google.Protobuf.WellKnownTypes.Any", "ExtraInfo")
+                        .WithMany()
+                        .HasForeignKey("ExtraInfoUniqueId");
+
+                    b.HasOne("Ares.Datamodel.Templates.Parameter", null)
+                        .WithOne("Metadata")
+                        .HasForeignKey("Ares.Datamodel.Templates.ParameterMetadata", "ParameterId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Ares.Datamodel.PlannerRequest", null)
+                        .WithMany("ParameterMetas")
+                        .HasForeignKey("PlannerRequestUniqueId")
+                        .OnDelete(DeleteBehavior.ClientCascade);
+
+                    b.Navigation("ExtraInfo");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Templates.ParameterValue", b =>
+                {
+                    b.HasOne("Ares.Datamodel.Templates.Parameter", null)
+                        .WithOne("Value")
+                        .HasForeignKey("Ares.Datamodel.Templates.ParameterValue", "ParameterId")
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Templates.PlannerAllocation", b =>
+                {
+                    b.HasOne("Ares.Datamodel.Templates.CampaignTemplate", null)
+                        .WithMany("PlannerAllocations")
+                        .HasForeignKey("CampaignTemplateUniqueId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Ares.Datamodel.Templates.ParameterMetadata", "Parameter")
+                        .WithMany()
+                        .HasForeignKey("ParameterUniqueId");
+
+                    b.HasOne("Ares.Datamodel.PlannerAdapterInfo", "Planner")
+                        .WithMany()
+                        .HasForeignKey("PlannerId")
+                        .OnDelete(DeleteBehavior.ClientCascade);
+
+                    b.Navigation("Parameter");
+
+                    b.Navigation("Planner");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Templates.StepTemplate", b =>
+                {
+                    b.HasOne("Ares.Datamodel.Templates.ExperimentTemplate", null)
                         .WithMany("StepTemplates")
-                        .HasForeignKey("ExperimentTemplateUniqueId2")
+                        .HasForeignKey("ExperimentTemplateUniqueId")
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("Google.Protobuf.WellKnownTypes.Any", b =>
                 {
-                    b.HasOne("Ares.Messaging.Device.DeviceConfig", null)
+                    b.HasOne("Ares.Datamodel.Device.DeviceConfig", null)
                         .WithOne("ConfigData")
                         .HasForeignKey("Google.Protobuf.WellKnownTypes.Any", "DeviceConfigId")
                         .OnDelete(DeleteBehavior.ClientCascade);
                 });
 
-            modelBuilder.Entity("Ares.Messaging.Analyzing.AnalyzerInfo", b =>
+            modelBuilder.Entity("Ares.Datamodel.Analyzing.AnalyzerInfo", b =>
                 {
                     b.Navigation("Capabilities");
                 });
 
-            modelBuilder.Entity("Ares.Messaging.CampaignExecutionStatus", b =>
+            modelBuilder.Entity("Ares.Datamodel.CampaignExecutionStatus", b =>
                 {
                     b.Navigation("ExperimentExecutionStatuses");
                 });
 
-            modelBuilder.Entity("Ares.Messaging.CampaignExecutionSummary", b =>
+            modelBuilder.Entity("Ares.Datamodel.CampaignExecutionSummary", b =>
                 {
                     b.Navigation("ExecutionInfo");
 
                     b.Navigation("ExperimentSummaries");
                 });
 
-            modelBuilder.Entity("Ares.Messaging.CampaignTemplate", b =>
-                {
-                    b.Navigation("ExperimentTemplates");
-
-                    b.Navigation("PlannableParameters");
-
-                    b.Navigation("PlannerAllocations");
-                });
-
-            modelBuilder.Entity("Ares.Messaging.CommandExecutionSummary", b =>
+            modelBuilder.Entity("Ares.Datamodel.CommandExecutionSummary", b =>
                 {
                     b.Navigation("ExecutionInfo");
 
                     b.Navigation("Result");
                 });
 
-            modelBuilder.Entity("Ares.Messaging.CommandMetadata", b =>
+            modelBuilder.Entity("Ares.Datamodel.Device.DeviceConfig", b =>
                 {
-                    b.Navigation("OutputMetadata");
-
-                    b.Navigation("ParameterMetadatas");
+                    b.Navigation("ConfigData");
                 });
 
-            modelBuilder.Entity("Ares.Messaging.CommandTemplate", b =>
+            modelBuilder.Entity("Ares.Datamodel.ExperimentExecutionStatus", b =>
                 {
-                    b.Navigation("Metadata");
-
-                    b.Navigation("Parameters");
+                    b.Navigation("StepExecutionStatuses");
                 });
 
-            modelBuilder.Entity("Ares.Messaging.CompletedExperiment", b =>
+            modelBuilder.Entity("Ares.Datamodel.ExperimentExecutionSummary", b =>
+                {
+                    b.Navigation("ExecutionInfo");
+
+                    b.Navigation("ExperimentOverview");
+
+                    b.Navigation("StepSummaries");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.ExperimentOverview", b =>
                 {
                     b.Navigation("Parameters");
 
                     b.Navigation("PlannerTransactions");
                 });
 
-            modelBuilder.Entity("Ares.Messaging.Device.DeviceConfig", b =>
-                {
-                    b.Navigation("ConfigData");
-                });
-
-            modelBuilder.Entity("Ares.Messaging.ExperimentExecutionStatus", b =>
-                {
-                    b.Navigation("StepExecutionStatuses");
-                });
-
-            modelBuilder.Entity("Ares.Messaging.ExperimentExecutionSummary", b =>
-                {
-                    b.Navigation("CompletedExperiment");
-
-                    b.Navigation("ExecutionInfo");
-
-                    b.Navigation("StepSummaries");
-                });
-
-            modelBuilder.Entity("Ares.Messaging.ExperimentTemplate", b =>
-                {
-                    b.Navigation("CloseoutStepTemplates");
-
-                    b.Navigation("StartupStepTemplates");
-
-                    b.Navigation("StepTemplates");
-                });
-
-            modelBuilder.Entity("Ares.Messaging.Parameter", b =>
-                {
-                    b.Navigation("Metadata");
-
-                    b.Navigation("Value");
-                });
-
-            modelBuilder.Entity("Ares.Messaging.ParameterMetadata", b =>
-                {
-                    b.Navigation("Constraints");
-                });
-
-            modelBuilder.Entity("Ares.Messaging.PlannerRequest", b =>
+            modelBuilder.Entity("Ares.Datamodel.PlannerRequest", b =>
                 {
                     b.Navigation("ParameterMetas");
                 });
 
-            modelBuilder.Entity("Ares.Messaging.PlannerResponse", b =>
+            modelBuilder.Entity("Ares.Datamodel.PlannerResponse", b =>
                 {
                     b.Navigation("PlannedParameters");
                 });
 
-            modelBuilder.Entity("Ares.Messaging.StepExecutionStatus", b =>
+            modelBuilder.Entity("Ares.Datamodel.StepExecutionStatus", b =>
                 {
                     b.Navigation("CommandExecutionStatuses");
                 });
 
-            modelBuilder.Entity("Ares.Messaging.StepExecutionSummary", b =>
+            modelBuilder.Entity("Ares.Datamodel.StepExecutionSummary", b =>
                 {
                     b.Navigation("CommandSummaries");
 
                     b.Navigation("ExecutionInfo");
                 });
 
-            modelBuilder.Entity("Ares.Messaging.StepTemplate", b =>
+            modelBuilder.Entity("Ares.Datamodel.Templates.CampaignTemplate", b =>
+                {
+                    b.Navigation("CloseoutTemplate");
+
+                    b.Navigation("PlannableParameters");
+
+                    b.Navigation("PlannerAllocations");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Templates.CommandMetadata", b =>
+                {
+                    b.Navigation("OutputMetadata");
+
+                    b.Navigation("ParameterMetadatas");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Templates.CommandTemplate", b =>
+                {
+                    b.Navigation("Metadata");
+
+                    b.Navigation("Parameters");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Templates.ExperimentTemplate", b =>
+                {
+                    b.Navigation("StepTemplates");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Templates.Parameter", b =>
+                {
+                    b.Navigation("Metadata");
+
+                    b.Navigation("Value");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Templates.ParameterMetadata", b =>
+                {
+                    b.Navigation("Constraints");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Templates.StepTemplate", b =>
                 {
                     b.Navigation("CommandTemplates");
                 });

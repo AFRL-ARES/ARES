@@ -58,8 +58,6 @@ public static class ServiceCollectionExtensions
   {
     services.AddSingleton<ICommandComposer<StepTemplate, StepExecutor>, StepComposer>();
     services.AddSingleton<ICommandComposer<ExperimentTemplate, ExperimentExecutor>, ExperimentComposer>();
-    services.AddSingleton<ICommandComposer<ExperimentTemplate, StartupScriptExecutor>, StartupComposer>();
-    services.AddSingleton<ICommandComposer<ExperimentTemplate, CloseoutScriptExecutor>, CloseoutComposer>();
     services.AddSingleton<ICommandComposer<CampaignTemplate, ICampaignExecutor>, CampaignComposer>();
   }
 }

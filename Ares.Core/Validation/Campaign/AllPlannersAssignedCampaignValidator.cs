@@ -8,7 +8,7 @@ public class AllPlannersAssignedCampaignValidator : ICampaignValidator
 {
   public Task<ValidationResult> Validate(CampaignTemplate template)
   {
-    var parameters = template.ExperimentTemplates.SelectMany(experimentTemplate => experimentTemplate.GetAllPlannedParameters());
+    var parameters = template.ExperimentTemplate.GetAllPlannedParameters();
     return Task.FromResult(AllPlannersAssignedValidator.Validate(parameters, template.PlannerAllocations));
   }
 }

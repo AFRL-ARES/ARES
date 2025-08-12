@@ -62,12 +62,12 @@ public class ExecutionViewModel : ReactiveObject
     if(CampaignTemplate is null)
       return;
 
-    PlannerAdapterInfos = CampaignTemplate.ExperimentTemplates.First().GetAllPlannedParameters()
+    PlannerAdapterInfos = CampaignTemplate.ExperimentTemplate.GetAllPlannedParameters()
     .Select(parameter => parameter.PlanningMetadata)
     .Select(metadata => CampaignTemplate.PlannerAllocations
     .FirstOrDefault(allocation => allocation.Parameter.Equals(metadata))?.Planner).ToHashSet();
     
-    var analyzerId = CampaignTemplate.ExperimentTemplates.First().AnalyzerId;
+    var analyzerId = CampaignTemplate.ExperimentTemplate.AnalyzerId;
     
     if(analyzerId is not null)
     {

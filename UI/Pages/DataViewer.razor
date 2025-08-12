@@ -97,7 +97,7 @@
 
                       <RadzenTreeItem Text="Parameters">
                         <ChildContent>
-                          @foreach(var param in exp.CompletedExperiment.Parameters)
+                          @foreach(var param in exp.ExperimentOverview.Parameters)
                           {
                             <RadzenTreeItem Text="@param.PlanningMetadata.Name">
                               <ChildContent>
@@ -157,11 +157,11 @@
               <h4> Experiment Summary </h4>
               <b> Experiment Started: @ViewModel!.SelectedExperimentSummary.ExecutionInfo.TimeStarted.ToReadableTimestamp() </b>
               <b> Experiment Finished: @(ViewModel!.SelectedExperimentSummary.ExecutionInfo.TimeFinished.ToReadableTimestamp()) </b>
-              <b> Analysis Result: @ViewModel!.SelectedExperimentSummary.CompletedExperiment.AnalysisResult </b>
-              @if(ViewModel!.SelectedExperimentSummary.CompletedExperiment.Result.Fields.Any())
+              <b> Analysis Result: @ViewModel!.SelectedExperimentSummary.ExperimentOverview.AnalysisResult </b>
+              @if(ViewModel!.SelectedExperimentSummary.ExperimentOverview.Result.Fields.Any())
               {
                 <b> Experiment Results </b>
-                @foreach(var result in ViewModel!.SelectedExperimentSummary.CompletedExperiment.Result.Fields)
+                @foreach(var result in ViewModel!.SelectedExperimentSummary.ExperimentOverview.Result.Fields)
                 {
                   <b> @result.Key : @result.Value </b>
                 }

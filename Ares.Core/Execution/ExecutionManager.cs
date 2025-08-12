@@ -100,26 +100,26 @@ public class ExecutionManager : IExecutionManager
 
   public bool EnsureParameterAssignment()
   {
-    var startupCommandsInvalid = _activeCampaignTemplateStore.CampaignTemplate!.ExperimentTemplates.First().StartupStepTemplates
-    .SelectMany(step => step.CommandTemplates)
-    .Any(cmd => cmd.Parameters.Any(param => param.Planned && param.PlanningMetadata is null));
+    //var startupCommandsInvalid = _activeCampaignTemplateStore.CampaignTemplate!.ExperimentTemplate.StartupStepTemplates
+    //.SelectMany(step => step.CommandTemplates)
+    //.Any(cmd => cmd.Parameters.Any(param => param.Planned && param.PlanningMetadata is null));
 
-    if(startupCommandsInvalid)
-      return false;
+    //if(startupCommandsInvalid)
+    //  return false;
 
-    var experimentCommandsInvalid = _activeCampaignTemplateStore.CampaignTemplate!.ExperimentTemplates.First().StepTemplates
+    var experimentCommandsInvalid = _activeCampaignTemplateStore.CampaignTemplate!.ExperimentTemplate.StepTemplates
     .SelectMany(step => step.CommandTemplates)
     .Any(cmd => cmd.Parameters.Any(param => param.Planned && param.PlanningMetadata is null));
 
     if(experimentCommandsInvalid)
       return false;
 
-    var closeoutCommandsInvalid = _activeCampaignTemplateStore.CampaignTemplate!.ExperimentTemplates.First().CloseoutStepTemplates
-      .SelectMany(step => step.CommandTemplates)
-      .Any(cmd => cmd.Parameters.Any(param => param.Planned && param.PlanningMetadata is null));
+    //var closeoutCommandsInvalid = _activeCampaignTemplateStore.CampaignTemplate!.ExperimentTemplates.First().CloseoutStepTemplates
+    //  .SelectMany(step => step.CommandTemplates)
+    //  .Any(cmd => cmd.Parameters.Any(param => param.Planned && param.PlanningMetadata is null));
 
-    if(closeoutCommandsInvalid)
-      return false;
+    //if(closeoutCommandsInvalid)
+    //  return false;
 
     return true;
   }

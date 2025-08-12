@@ -16,7 +16,7 @@ public class PlanningHelper : IPlanningHelper
   public async Task<bool> TryResolveParameters(IEnumerable<PlannerAllocation> plannerAllocations,
     IEnumerable<Parameter> parameters,
     IEnumerable<Analysis> seedAnalyses,
-    IEnumerable<CompletedExperiment> seedExperiments,
+    IEnumerable<ExperimentOverview> seedExperiments,
     CancellationToken cancellationToken)
   {
     var parameterArray = parameters.ToArray();

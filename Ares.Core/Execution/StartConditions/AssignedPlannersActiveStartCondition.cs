@@ -16,8 +16,9 @@ public class AssignedPlannersActiveStartCondition : IStartCondition
 
   public Task<StartConditionResult> CanStart()
   {
-    if(_activeCampaignTemplateStore.CampaignTemplate?.ExperimentTemplates.All(template => template is null) ?? true)
-      return null;
+    if(_activeCampaignTemplateStore.CampaignTemplate?.ExperimentTemplate is null)
+      return Task.FromResult(new StartConditionResult(false, "The active campaign template store had a null experiment template."));
+
 
     var assignedPlanners = _activeCampaignTemplateStore.CampaignTemplate.PlannerAllocations.Select(allocation => allocation.Planner);
 
