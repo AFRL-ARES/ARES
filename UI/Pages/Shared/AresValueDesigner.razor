@@ -127,31 +127,6 @@
           _boolArray = Value.BoolArrayValue?.Bools?.ToList() ?? [];
           break;
       }
-    }
-
-    else
-    {
-      switch(Schema?.Type)
-      {
-        case AresDataType.String:
-          _stringValue = string.Empty;
-          break;
-        case AresDataType.Number:
-          _numberValue = 0;
-          break;
-        case AresDataType.Boolean:
-          _boolValue = false;
-          break;
-        case AresDataType.StringArray:
-          _stringArray = [];
-          break;
-        case AresDataType.NumberArray:
-          _numberArray = [];
-          break;
-        case AresDataType.BoolArray:
-          _boolArray = [];
-          break;
-      }
 
       UpdateAresValue();
     }

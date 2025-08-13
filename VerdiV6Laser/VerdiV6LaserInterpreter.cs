@@ -51,13 +51,13 @@ namespace VerdiV6Laser
       switch(deviceCommandEnum)
       {
         case VerdiV6LaserCommand.SetPower:
-          var power = parameters.First(param => param.Metadata.Name.Equals($"{VerdiV6LaserCommandParameter.LaserPower}")).Value.Value;
+          var power = parameters.First(param => param.Metadata.Name.Equals($"{VerdiV6LaserCommandParameter.LaserPower}")).Value;
           await Device.SetLaserPower(power.NumberValue);
           result.Success = true;
           break;
 
         case VerdiV6LaserCommand.SetShutter:
-          var shutter = parameters.First(param => param.Metadata.Name.Equals($"{VerdiV6LaserCommandParameter.Shutter}")).Value.Value;
+          var shutter = parameters.First(param => param.Metadata.Name.Equals($"{VerdiV6LaserCommandParameter.Shutter}")).Value;
           await Device.SetLaserShutter(shutter.NumberValue == 1);
           break;
 

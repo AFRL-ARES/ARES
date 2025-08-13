@@ -95,6 +95,35 @@
                       <RadzenTreeItem Text=@($"Experiment Finish Time: {exp.ExecutionInfo.TimeFinished.ToReadableTimestamp()}") />
                       <RadzenTreeItem Text=@($"Result Output Path: {exp.ResultOutputPath}") />
 
+                      <RadzenTreeItem Text="Analysis Overview">
+                        <ChildContent>
+                          <RadzenTreeItem Text=@($"Analyzer Name: {exp.ExperimentOverview.AnalysisOverview.AnalyzerInfo.Name}") />
+                          <RadzenTreeItem Text=@($"Analyzer Version: {exp.ExperimentOverview.AnalysisOverview.AnalyzerInfo.Version}") />
+                          <RadzenTreeItem Text=@($"Analyzer Result: {exp.ExperimentOverview.AnalysisOverview.Result}") />
+                          <RadzenTreeItem Text=@($"Analyzer Address: {exp.ExperimentOverview.AnalysisOverview.AnalyzerInfo.Url}") />
+                          <RadzenTreeItem Text=@($"Analyzer Type: {exp.ExperimentOverview.AnalysisOverview.AnalyzerInfo.Type}") />
+                          <RadzenTreeItem Text="Analyzer Settings">
+                            <ChildContent>
+                              @foreach(var setting in exp.ExperimentOverview.AnalysisOverview.AnalyzerInfo.Capabilities.SettingsSchema.Fields)
+                              {
+                                //TODO: Finish
+                                <RadzenTreeItem Text=@($"{setting.Key}")/>
+                              }
+                            </ChildContent>
+
+                            <Template>
+                              <RadzenIcon Icon="build"/>
+                              <b> @context.Text </b>
+                            </Template>
+                          </RadzenTreeItem>
+                        </ChildContent>
+
+                        <Template>
+                          <RadzenIcon Icon="troubleshoot"/>
+                          <b> @context.Text </b>
+                        </Template>
+                      </RadzenTreeItem>
+
                       <RadzenTreeItem Text="Parameters">
                         <ChildContent>
                           @foreach(var param in exp.ExperimentOverview.Parameters)
@@ -103,7 +132,7 @@
                               <ChildContent>
                                 <RadzenTreeItem Text=@($"Parameter Id: {param.UniqueId}") />
                                 <RadzenTreeItem Text=@($"Unit: {param.Metadata.Unit}") />
-                                <RadzenTreeItem Text=@(CreateAresValueDisplayString(param.Value.Value)) />
+                                <RadzenTreeItem Text=@(CreateAresValueDisplayString(param.Value)) />
                                 <RadzenTreeItem Text=@($"Is Environment Based: {param.EnvironmentBased}") />
                                 <RadzenTreeItem Text=@(GetLowerParameterConstraint(param.PlanningMetadata.Constraints.ToList())) />
                                 <RadzenTreeItem Text=@(GetHigherParameterConstraint(param.PlanningMetadata.Constraints.ToList())) />
@@ -157,7 +186,7 @@
               <h4> Experiment Summary </h4>
               <b> Experiment Started: @ViewModel!.SelectedExperimentSummary.ExecutionInfo.TimeStarted.ToReadableTimestamp() </b>
               <b> Experiment Finished: @(ViewModel!.SelectedExperimentSummary.ExecutionInfo.TimeFinished.ToReadableTimestamp()) </b>
-              <b> Analysis Result: @ViewModel!.SelectedExperimentSummary.ExperimentOverview.AnalysisResult </b>
+              <b> Analysis Result: @ViewModel!.SelectedExperimentSummary.ExperimentOverview.AnalysisOverview.Result </b>
               @if(ViewModel!.SelectedExperimentSummary.ExperimentOverview.Result.Fields.Any())
               {
                 <b> Experiment Results </b>

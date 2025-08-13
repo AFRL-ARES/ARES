@@ -1,5 +1,3 @@
-using System.Text;
-using System.Text.Json;
 using Ares.Core.Planning;
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
@@ -8,6 +6,9 @@ using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
 using Ares.Device;
 using BoraasPlanner.BoraasTypes;
+using DynamicData;
+using System.Text;
+using System.Text.Json;
 
 namespace BoraasPlanner;
 public class BoraasPlanner : IPlanner
@@ -138,9 +139,10 @@ public class BoraasPlanner : IPlanner
             if(matchingParam is null)
               throw new InvalidOperationException($"Couldn't find a matching parameter by the name of {parameter.Name}");
 
-            AresDeviceHelpers.ParseStringCommandParameterToDouble(matchingParam, out var parsedParam);
+            if(!matchingParam.Value.HasNumberValue)
+              continue;
 
-            historyList.Add(parsedParam);
+            historyList.Add(matchingParam.Value.NumberValue);
           }
         }
         request.History.Add(historyList);

@@ -60,7 +60,7 @@ public class FlirCM3CameraInterpreter : DeviceCommandInterpreter<IFlirCM3Camera,
     switch(deviceCommand)
     {
       case FlirCM3CommandType.CaptureImage:
-        var path = parameters.First(param => param.Metadata.Name.Equals($"{FlirCM3CommandParameter.SavePath}")).Value.Value;
+        var path = parameters.First(param => param.Metadata.Name.Equals($"{FlirCM3CommandParameter.SavePath}")).Value;
 
         var response = await Device.CaptureImage(path.StringValue);
         result.Success = true;
@@ -70,14 +70,14 @@ public class FlirCM3CameraInterpreter : DeviceCommandInterpreter<IFlirCM3Camera,
       case FlirCM3CommandType.SetExposureTime:
         var exposureTime = parameters.First(param => param.Metadata.Name.Equals($"{FlirCM3CommandParameter.ExposureTime}"));
 
-        if(!exposureTime.Value.Value.HasNumberValue)
+        if(!exposureTime.Value.HasNumberValue)
         {
           result.Success = false;
           result.Error = "The Flir CM3 Camera command SetExposureTime requires a number as a parameter, but none was provided!";
           break;
         }
 
-        await Device.SetExposureTime(exposureTime.Value.Value.NumberValue);
+        await Device.SetExposureTime(exposureTime.Value.NumberValue);
         break;
 
       case FlirCM3CommandType.GetLatestImage:

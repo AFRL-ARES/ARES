@@ -19,8 +19,15 @@ public class TestDeviceInterpreter : DeviceCommandInterpreter<TestDevice, TestDe
       case TestDeviceCommand.Record3:
         var result = new DeviceCommandResult();
         var param = parameters.First(parameter => parameter.Metadata.Name == TestDeviceCommandParameter.ReplyParameter.ToString());
-        result = AresDeviceHelpers.ParseStringCommandParameterToDouble(param, out var parsedParam);
-        result.Result = AresStructHelper.CreateNumberStruct("Test", parsedParam);
+        
+        if(!param.Value.HasNumberValue)
+        {
+          result.Success = false;
+          result.Error = "Test Device expected a number as it's parameter, but none was received!";
+          return Task.FromResult(result);
+        }
+
+        result.Result = AresStructHelper.CreateNumberStruct("Test", param.Value.NumberValue);
         result.Success = true;
         result.UniqueId = Guid.NewGuid().ToString();
         return Task.FromResult(result);

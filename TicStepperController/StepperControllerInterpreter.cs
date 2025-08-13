@@ -107,7 +107,7 @@ public class StepperControllerInterpreter : DeviceCommandInterpreter<IStepperCon
         await Device.HaltAndHold();
         break;
       case StepperControllerCommand.HaltAndSetPosition:
-        var positionParam = parameters.First().Value.Value;
+        var positionParam = parameters.First().Value;
 
         if(!positionParam.HasNumberValue)
         {
@@ -119,7 +119,7 @@ public class StepperControllerInterpreter : DeviceCommandInterpreter<IStepperCon
         await Device.HaltAndSetPosition((int)positionParam.NumberValue);
         break;
       case StepperControllerCommand.SetTargetPosition:
-        var targetPosition = parameters.First().Value.Value;
+        var targetPosition = parameters.First().Value;
 
         if(!targetPosition.HasNumberValue)
         {

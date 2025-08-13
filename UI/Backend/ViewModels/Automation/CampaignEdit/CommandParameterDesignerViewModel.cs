@@ -1,4 +1,5 @@
 ﻿using Ares.Datamodel;
+using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Templates;
 using ReactiveUI;
 using UI.Backend.Helpers;
@@ -12,7 +13,7 @@ public class CommandParameterDesignerViewModel : ReactiveObject
   private bool _isPlanned;
   private Parameter _parameter = null!;
   private bool _valid;
-  private ParameterValue? _value;
+  private AresValue? _value;
 
   public CommandParameterDesignerViewModel(Parameter param, UnitCategoryHelper unitCategoryHelper, IEnumerable<ParameterMetadata>? plannedParameters = null)
     : this(unitCategoryHelper, plannedParameters)
@@ -28,12 +29,10 @@ public class CommandParameterDesignerViewModel : ReactiveObject
     Parameter = new Parameter
     {
       UniqueId = Guid.NewGuid().ToString(),
-      Metadata = meta,
-      Value = new ParameterValue
-      {
-        UniqueId = Guid.NewGuid().ToString()
-      }
+      Metadata = meta
     };
+
+    Value = new AresValue();
   }
 
   private CommandParameterDesignerViewModel(UnitCategoryHelper unitCategoryHelper, IEnumerable<ParameterMetadata>? plannedParameters)
@@ -59,17 +58,17 @@ public class CommandParameterDesignerViewModel : ReactiveObject
 
   public SchemaEntry Schema => Parameter.Metadata.Schema;
 
-  public ParameterValue? Value
+  public AresValue? Value
   {
     get => _value;
 
     set
     {
       this.RaiseAndSetIfChanged(ref _value, value);
-      if(value is null || value.Value is null)
+      if(value is null)
         return;
 
-      Valid = IsValid(value.Value);
+      Valid = IsValid(value);
     }
   }
 
@@ -99,7 +98,7 @@ public class CommandParameterDesignerViewModel : ReactiveObject
     set
     {
       _isPlanned = value;
-      Value = value ? null : Parameter.Value ?? new ParameterValue { UniqueId = Guid.NewGuid().ToString() };
+      Value = value ? null : Parameter.Value ?? null;
     }
   }
 

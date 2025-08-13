@@ -28,7 +28,7 @@ public class SyringePumpInterpreter : DeviceCommandInterpreter<ISyringePump, Syr
         break;
 
       case SyringePumpCommand.SetPhase:
-        var phaseParam = parameters[0].Value.Value;
+        var phaseParam = parameters[0].Value;
         if(!phaseParam.HasNumberValue)
         {
           result.Success = false;
@@ -48,7 +48,7 @@ public class SyringePumpInterpreter : DeviceCommandInterpreter<ISyringePump, Syr
         break;
 
       case SyringePumpCommand.SetDiameter:
-        var desiredDiameterParam = parameters[0].Value.Value;
+        var desiredDiameterParam = parameters[0].Value;
 
         if(!desiredDiameterParam.HasNumberValue)
         {
@@ -66,7 +66,7 @@ public class SyringePumpInterpreter : DeviceCommandInterpreter<ISyringePump, Syr
         break;
 
       case SyringePumpCommand.SetProgramFunctionRate:
-        var functionRateParam = parameters[0].Value.Value;
+        var functionRateParam = parameters[0].Value;
         if(!functionRateParam.HasNumberValue)
         {
           result.Success = false;

@@ -118,17 +118,17 @@ public class RestDeviceInterpreter : DeviceCommandInterpreter<IRestDevice, RestD
 
     foreach(var parameter in parameters)
     {
-      if(!parameter.Value.Value.HasStringValue)
+      if(!parameter.Value.HasStringValue)
         continue;
       
       //TODO: VALIDATE AND FIX AHHH
-      paramList.Add(parameter.Value.Value.StringValue);
+      paramList.Add(parameter.Value.StringValue);
     }
 
     return paramList;
   }
 
-  private AresDataType ConvertGenericTypeToAresType(System.Type type)
+  private AresDataType ConvertGenericTypeToAresType(Type type)
   {
     if(type == typeof(string))
       return AresDataType.String;

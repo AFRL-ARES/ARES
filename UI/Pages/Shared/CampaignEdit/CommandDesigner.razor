@@ -5,13 +5,17 @@
 
 @foreach (var argumentDesigner in ViewModel!.ArgumentDesigners)
 {
-	<CommandParameterDesigner ViewModel="@argumentDesigner" />
+  <CommandParameterDesigner DisablePlanning=@DisablePlanningAndOutputCheck ViewModel="@argumentDesigner" />
 }
 
-<div class="mb-2">
-	<RadzenCheckBox @bind-Value="ViewModel!.ExperimentOutputProvider" id="experiment-output-check"/>
-	<label for="experiment-output-check">Provides Experiment Output</label>
-</div>
+@if(!DisablePlanningAndOutputCheck)
+{
+  <div class="mb-2">
+	  <RadzenCheckBox @bind-Value="ViewModel!.ExperimentOutputProvider" id="experiment-output-check"/>
+	  <label for="experiment-output-check">Provides Experiment Output</label>
+  </div>  
+}
+
 
 <div hidden="@(!ViewModel!.ExperimentOutputProvider)">
   <RadzenDataGrid TItem="UserOutputSelection" Data="@ViewModel.OutputKeyMap" Editable="true" EditMode="DataGridEditMode.Single" RowUpdate="@OnRowUpdate" ColumnWidth="200px">
@@ -22,20 +26,14 @@
                   <RadzenTextBox Style="width:100%" @bind-Value="item.CustomName" />
               </Template>
           </RadzenDataGridColumn>
-          @* <RadzenDataGridColumn TItem="KeyValuePair<string, string>" Context="item">
-              <Template Context="item">
-                  <RadzenButton Icon="edit" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" Click="@(() => grid.EditRow(item))" />
-              </Template>
-              <EditTemplate Context="item">
-                  <RadzenButton Icon="save" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.Small" Click="@(() => grid.UpdateRow(item))" />
-                  <RadzenButton Icon="cancel" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(() => grid.CancelEditRow(item))" />
-              </EditTemplate>
-          </RadzenDataGridColumn> *@
       </Columns>
   </RadzenDataGrid>
 </div>
 
 @code {
+  [Parameter]
+  public bool DisablePlanningAndOutputCheck { get; set; }
+
   public void OnRowUpdate()
   {
     Console.WriteLine("Ayylmao");

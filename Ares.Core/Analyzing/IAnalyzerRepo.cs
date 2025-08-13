@@ -5,6 +5,12 @@ public interface IAnalyzerRepo
   IEnumerable<IAnalyzer> AvailableAnalyzers { get; }
 
   /// <summary>
+  /// Gets the default "None" analyzer
+  /// </summary>
+  /// <returns>The None Analyzer</returns>
+  IAnalyzer GetDefaultAnalyzer();
+
+  /// <summary>
   /// Gets a named analyzer based on the given analyzer name/> object
   /// </summary>
   /// <param name="name">The name of the analyzer requested</param>

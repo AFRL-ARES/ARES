@@ -45,11 +45,7 @@ internal class TestCampaignProvider
     parameter.Index = idx;
     parameter.Planned = false;
     parameter.UniqueId = Guid.NewGuid().ToString();
-    parameter.Value = new ParameterValue
-    {
-      UniqueId = Guid.NewGuid().ToString(),
-      Value = AresValueHelper.CreateString(value)
-    };
+    parameter.Value = AresValueHelper.CreateString(value);
 
     parameter.Metadata = new ParameterMetadata
     {

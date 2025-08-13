@@ -40,26 +40,26 @@ public class MassFlowControllerInterpreter : DeviceCommandInterpreter<IMassFlowC
       case MassFlowControllerCommand.ChooseDifferentGas:
         var gasNumberParam = parameters.First(param => param.Metadata.Name.Equals($"{MassFlowControllerCommandParameter.GasNumber}"));
 
-        if(!gasNumberParam.Value.Value.HasNumberValue)
+        if(!gasNumberParam.Value.HasNumberValue)
         {
           result.Success = false;
           result.Error = "The MFC command ChooseDifferentGas requires a number value as a parameter, but none was provided!";
           break;
         }
 
-        await Device.ChooseDifferentGas((int)gasNumberParam.Value.Value.NumberValue);
+        await Device.ChooseDifferentGas((int)gasNumberParam.Value.NumberValue);
         break;
 
       case MassFlowControllerCommand.DeleteComposerMix:
         var mixParam = parameters.First(param => param.Metadata.Name.Equals($"{MassFlowControllerCommandParameter.MixNumber}"));
-        if(!mixParam.Value.Value.HasNumberValue)
+        if(!mixParam.Value.HasNumberValue)
         {
           result.Success = false;
           result.Error = "The MFC command DeleteComposerMix requires a number value as a parameter, but none was provided!";
           break;
         }
 
-        await Device.DeleteComposerMix((int)mixParam.Value.Value.NumberValue);
+        await Device.DeleteComposerMix((int)mixParam.Value.NumberValue);
         break;
 
       case MassFlowControllerCommand.HoldValvesAtCurrentPosition:
@@ -77,14 +77,14 @@ public class MassFlowControllerInterpreter : DeviceCommandInterpreter<IMassFlowC
 
       case MassFlowControllerCommand.NewSetpoint:
         var setpointParameter = parameters.First(param => param.Metadata.Name.Equals($"{MassFlowControllerCommandParameter.Setpoint}"));
-        if(!setpointParameter.Value.Value.HasNumberValue)
+        if(!setpointParameter.Value.HasNumberValue)
         {
           result.Success = false;
           result.Error = "The NewSetpoint command requires a number value as a parameter, but none was provided!";
           break;
         }
 
-        await Device.NewSetpoint(StandardVolumeFlow.FromStandardCubicCentimetersPerMinute(setpointParameter.Value.Value.NumberValue));
+        await Device.NewSetpoint(StandardVolumeFlow.FromStandardCubicCentimetersPerMinute(setpointParameter.Value.NumberValue));
         break;
 
       case MassFlowControllerCommand.GetSetpoint:

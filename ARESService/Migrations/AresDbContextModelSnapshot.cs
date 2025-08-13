@@ -22,6 +22,40 @@ namespace AresService.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("Ares.Datamodel.AnalysisOverview", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AnalyzerInfo")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<Guid?>("ExperimentOverviewId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<double>("Result")
+                        .HasColumnType("float");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("ExperimentOverviewId")
+                        .IsUnique()
+                        .HasFilter("[ExperimentOverviewId] IS NOT NULL");
+
+                    b.ToTable("AnalysisOverview");
+                });
+
             modelBuilder.Entity("Ares.Datamodel.Analyzing.Analysis", b =>
                 {
                     b.Property<Guid>("UniqueId")
@@ -245,6 +279,9 @@ namespace AresService.Migrations
                     b.Property<string>("CampaignTags")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<Guid?>("CloseoutExecutionSummaryUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
@@ -255,7 +292,14 @@ namespace AresService.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
 
+                    b.Property<Guid?>("StartupExecutionSummaryUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("UniqueId");
+
+                    b.HasIndex("CloseoutExecutionSummaryUniqueId");
+
+                    b.HasIndex("StartupExecutionSummaryUniqueId");
 
                     b.ToTable("CampaignExecutionSummaries", (string)null);
                 });
@@ -529,9 +573,6 @@ namespace AresService.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<double>("AnalysisResult")
-                        .HasColumnType("float");
-
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
@@ -628,89 +669,6 @@ namespace AresService.Migrations
                     b.HasKey("UniqueId");
 
                     b.ToTable("Planners", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Datamodel.PlannerRequest", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("PlannerRequests", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Datamodel.PlannerResponse", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("PlannerResponses", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Datamodel.PlannerTransaction", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<Guid?>("ExperimentOverviewUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<Guid?>("PlannerInfoUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("RequestUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("ResponseUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("UniqueId");
-
-                    b.HasIndex("ExperimentOverviewUniqueId");
-
-                    b.HasIndex("PlannerInfoUniqueId");
-
-                    b.HasIndex("RequestUniqueId");
-
-                    b.HasIndex("ResponseUniqueId");
-
-                    b.ToTable("PlannerTransactions", (string)null);
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Project", b =>
@@ -812,9 +770,6 @@ namespace AresService.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
 
-                    b.Property<Guid?>("ExperimentTemplateUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime2")
@@ -823,18 +778,11 @@ namespace AresService.Migrations
                     b.Property<string>("Name")
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<Guid?>("StartupTemplateUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.HasKey("UniqueId");
-
-                    b.HasIndex("ExperimentTemplateUniqueId");
 
                     b.HasIndex("Name")
                         .IsUnique()
                         .HasFilter("[Name] IS NOT NULL");
-
-                    b.HasIndex("StartupTemplateUniqueId");
 
                     b.ToTable("CampaignTemplates", (string)null);
                 });
@@ -916,6 +864,15 @@ namespace AresService.Migrations
                     b.Property<string>("AnalyzerId")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<Guid?>("CampaignCloseoutId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CampaignExperimentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CampaignStartupId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
@@ -933,6 +890,18 @@ namespace AresService.Migrations
                         .HasColumnType("bit");
 
                     b.HasKey("UniqueId");
+
+                    b.HasIndex("CampaignCloseoutId")
+                        .IsUnique()
+                        .HasFilter("[CampaignCloseoutId] IS NOT NULL");
+
+                    b.HasIndex("CampaignExperimentId")
+                        .IsUnique()
+                        .HasFilter("[CampaignExperimentId] IS NOT NULL");
+
+                    b.HasIndex("CampaignStartupId")
+                        .IsUnique()
+                        .HasFilter("[CampaignStartupId] IS NOT NULL");
 
                     b.ToTable("ExperimentTemplates", (string)null);
                 });
@@ -998,11 +967,11 @@ namespace AresService.Migrations
                     b.Property<bool>("Planned")
                         .HasColumnType("bit");
 
-                    b.Property<Guid?>("PlannerResponseUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<Guid?>("PlanningMetadataUniqueId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Value")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("VariableArgument")
                         .HasColumnType("nvarchar(max)");
@@ -1015,8 +984,6 @@ namespace AresService.Migrations
                     b.HasIndex("CommandTemplateUniqueId");
 
                     b.HasIndex("ExperimentOverviewUniqueId");
-
-                    b.HasIndex("PlannerResponseUniqueId");
 
                     b.HasIndex("PlanningMetadataUniqueId");
 
@@ -1066,9 +1033,6 @@ namespace AresService.Migrations
                     b.Property<string>("PlannerName")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid?>("PlannerRequestUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("Schema")
                         .HasColumnType("nvarchar(max)");
 
@@ -1090,40 +1054,7 @@ namespace AresService.Migrations
                         .IsUnique()
                         .HasFilter("[ParameterId] IS NOT NULL");
 
-                    b.HasIndex("PlannerRequestUniqueId");
-
                     b.ToTable("ParameterMetadata");
-                });
-
-            modelBuilder.Entity("Ares.Datamodel.Templates.ParameterValue", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<Guid?>("ParameterId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Value")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("UniqueId");
-
-                    b.HasIndex("ParameterId")
-                        .IsUnique()
-                        .HasFilter("[ParameterId] IS NOT NULL");
-
-                    b.ToTable("ParameterValues", (string)null);
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Templates.PlannerAllocation", b =>
@@ -1538,12 +1469,35 @@ namespace AresService.Migrations
                     b.ToTable("Any");
                 });
 
+            modelBuilder.Entity("Ares.Datamodel.AnalysisOverview", b =>
+                {
+                    b.HasOne("Ares.Datamodel.ExperimentOverview", null)
+                        .WithOne("AnalysisOverview")
+                        .HasForeignKey("Ares.Datamodel.AnalysisOverview", "ExperimentOverviewId")
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+
             modelBuilder.Entity("Ares.Datamodel.Analyzing.AnalyzerCapabilities", b =>
                 {
                     b.HasOne("Ares.Datamodel.Analyzing.AnalyzerInfo", null)
                         .WithOne("Capabilities")
                         .HasForeignKey("Ares.Datamodel.Analyzing.AnalyzerCapabilities", "AnalyzerInfoId")
                         .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.CampaignExecutionSummary", b =>
+                {
+                    b.HasOne("Ares.Datamodel.ExperimentExecutionSummary", "CloseoutExecutionSummary")
+                        .WithMany()
+                        .HasForeignKey("CloseoutExecutionSummaryUniqueId");
+
+                    b.HasOne("Ares.Datamodel.ExperimentExecutionSummary", "StartupExecutionSummary")
+                        .WithMany()
+                        .HasForeignKey("StartupExecutionSummaryUniqueId");
+
+                    b.Navigation("CloseoutExecutionSummary");
+
+                    b.Navigation("StartupExecutionSummary");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.CommandExecutionStatus", b =>
@@ -1631,31 +1585,6 @@ namespace AresService.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Ares.Datamodel.PlannerTransaction", b =>
-                {
-                    b.HasOne("Ares.Datamodel.ExperimentOverview", null)
-                        .WithMany("PlannerTransactions")
-                        .HasForeignKey("ExperimentOverviewUniqueId");
-
-                    b.HasOne("Ares.Datamodel.PlannerAdapterInfo", "PlannerInfo")
-                        .WithMany()
-                        .HasForeignKey("PlannerInfoUniqueId");
-
-                    b.HasOne("Ares.Datamodel.PlannerRequest", "Request")
-                        .WithMany()
-                        .HasForeignKey("RequestUniqueId");
-
-                    b.HasOne("Ares.Datamodel.PlannerResponse", "Response")
-                        .WithMany()
-                        .HasForeignKey("ResponseUniqueId");
-
-                    b.Navigation("PlannerInfo");
-
-                    b.Navigation("Request");
-
-                    b.Navigation("Response");
-                });
-
             modelBuilder.Entity("Ares.Datamodel.StepExecutionStatus", b =>
                 {
                     b.HasOne("Ares.Datamodel.ExperimentExecutionStatus", null)
@@ -1670,21 +1599,6 @@ namespace AresService.Migrations
                         .WithMany("StepSummaries")
                         .HasForeignKey("ExperimentExecutionSummaryUniqueId")
                         .OnDelete(DeleteBehavior.Cascade);
-                });
-
-            modelBuilder.Entity("Ares.Datamodel.Templates.CampaignTemplate", b =>
-                {
-                    b.HasOne("Ares.Datamodel.Templates.ExperimentTemplate", "ExperimentTemplate")
-                        .WithMany()
-                        .HasForeignKey("ExperimentTemplateUniqueId");
-
-                    b.HasOne("Ares.Datamodel.Templates.ExperimentTemplate", "StartupTemplate")
-                        .WithMany()
-                        .HasForeignKey("StartupTemplateUniqueId");
-
-                    b.Navigation("ExperimentTemplate");
-
-                    b.Navigation("StartupTemplate");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Templates.CommandMetadata", b =>
@@ -1709,9 +1623,18 @@ namespace AresService.Migrations
                 {
                     b.HasOne("Ares.Datamodel.Templates.CampaignTemplate", null)
                         .WithOne("CloseoutTemplate")
-                        .HasForeignKey("Ares.Datamodel.Templates.ExperimentTemplate", "UniqueId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("Ares.Datamodel.Templates.ExperimentTemplate", "CampaignCloseoutId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("Ares.Datamodel.Templates.CampaignTemplate", null)
+                        .WithOne("ExperimentTemplate")
+                        .HasForeignKey("Ares.Datamodel.Templates.ExperimentTemplate", "CampaignExperimentId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Ares.Datamodel.Templates.CampaignTemplate", null)
+                        .WithOne("StartupTemplate")
+                        .HasForeignKey("Ares.Datamodel.Templates.ExperimentTemplate", "CampaignStartupId")
+                        .OnDelete(DeleteBehavior.NoAction);
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Templates.OutputMetadata", b =>
@@ -1733,10 +1656,6 @@ namespace AresService.Migrations
                     b.HasOne("Ares.Datamodel.ExperimentOverview", null)
                         .WithMany("Parameters")
                         .HasForeignKey("ExperimentOverviewUniqueId");
-
-                    b.HasOne("Ares.Datamodel.PlannerResponse", null)
-                        .WithMany("PlannedParameters")
-                        .HasForeignKey("PlannerResponseUniqueId");
 
                     b.HasOne("Ares.Datamodel.Templates.ParameterMetadata", "PlanningMetadata")
                         .WithMany()
@@ -1766,20 +1685,7 @@ namespace AresService.Migrations
                         .HasForeignKey("Ares.Datamodel.Templates.ParameterMetadata", "ParameterId")
                         .OnDelete(DeleteBehavior.Cascade);
 
-                    b.HasOne("Ares.Datamodel.PlannerRequest", null)
-                        .WithMany("ParameterMetas")
-                        .HasForeignKey("PlannerRequestUniqueId")
-                        .OnDelete(DeleteBehavior.ClientCascade);
-
                     b.Navigation("ExtraInfo");
-                });
-
-            modelBuilder.Entity("Ares.Datamodel.Templates.ParameterValue", b =>
-                {
-                    b.HasOne("Ares.Datamodel.Templates.Parameter", null)
-                        .WithOne("Value")
-                        .HasForeignKey("Ares.Datamodel.Templates.ParameterValue", "ParameterId")
-                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Templates.PlannerAllocation", b =>
@@ -1865,19 +1771,9 @@ namespace AresService.Migrations
 
             modelBuilder.Entity("Ares.Datamodel.ExperimentOverview", b =>
                 {
+                    b.Navigation("AnalysisOverview");
+
                     b.Navigation("Parameters");
-
-                    b.Navigation("PlannerTransactions");
-                });
-
-            modelBuilder.Entity("Ares.Datamodel.PlannerRequest", b =>
-                {
-                    b.Navigation("ParameterMetas");
-                });
-
-            modelBuilder.Entity("Ares.Datamodel.PlannerResponse", b =>
-                {
-                    b.Navigation("PlannedParameters");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.StepExecutionStatus", b =>
@@ -1896,9 +1792,13 @@ namespace AresService.Migrations
                 {
                     b.Navigation("CloseoutTemplate");
 
+                    b.Navigation("ExperimentTemplate");
+
                     b.Navigation("PlannableParameters");
 
                     b.Navigation("PlannerAllocations");
+
+                    b.Navigation("StartupTemplate");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Templates.CommandMetadata", b =>
@@ -1923,8 +1823,6 @@ namespace AresService.Migrations
             modelBuilder.Entity("Ares.Datamodel.Templates.Parameter", b =>
                 {
                     b.Navigation("Metadata");
-
-                    b.Navigation("Value");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Templates.ParameterMetadata", b =>

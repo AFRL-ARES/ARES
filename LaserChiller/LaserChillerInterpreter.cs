@@ -49,8 +49,8 @@ public class LaserChillerInterpreter : DeviceCommandInterpreter<LaserChiller, La
       case LaserChillerCommand.SetStabilizedTemperature:
         var desiredTemp = parameters.First(param => param.Metadata.Name.Equals($"{LaserChillerCommandParameter.TargetTemperature}"));
 
-        if(desiredTemp.Value.Value.HasNumberValue)
-          await Device.SetStabilizedTemperature(desiredTemp.Value.Value.NumberValue);
+        if(desiredTemp.Value.HasNumberValue)
+          await Device.SetStabilizedTemperature(desiredTemp.Value.NumberValue);
 
         break;
 

@@ -23,10 +23,10 @@ public class DemoDeviceInterpreter : DeviceCommandInterpreter<AresDemoDevice, De
     {
       case DemoDeviceCommand.SetTemperature:
         var value = parameters.First();
-        if(!value.Value.Value.HasNumberValue)
+        if(!value.Value.HasNumberValue)
           throw new InvalidOperationException("The Demo Devices' SetTemperature command requires a number value as a parameter, but none was provided!");
 
-        await Device.SetTemperature(value.Value.Value.NumberValue);
+        await Device.SetTemperature(value.Value.NumberValue);
         break;
       case DemoDeviceCommand.GetTemperature:
         var temp = await Device.GetTemperature();

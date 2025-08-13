@@ -48,13 +48,7 @@ public class PlanningHelper : IPlanningHelper
         if(parameterPlanTarget is null)
           continue;
 
-        var val = new ParameterValue
-        {
-          UniqueId = Guid.NewGuid().ToString(),
-          Value = result.Value
-        };
-
-        parameterPlanTarget.Value = val;
+        parameterPlanTarget.Value = result.Value;
       }
     }
 

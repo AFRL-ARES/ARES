@@ -25,5 +25,11 @@ internal class CampaignExecutionSummaryEntityConfiguration : AresEntityTypeBaseC
 
     builder.Navigation(result => result.ExperimentSummaries)
       .AutoInclude();
+
+    builder.Navigation(result => result.StartupExecutionSummary)
+      .AutoInclude();
+
+    builder.Navigation(result => result.CloseoutExecutionSummary)
+      .AutoInclude();
   }
 }

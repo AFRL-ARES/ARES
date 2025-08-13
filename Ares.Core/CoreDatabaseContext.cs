@@ -18,7 +18,6 @@ public class CoreDatabaseContext : DbContext
   public DbSet<StepTemplate> StepTemplates => Set<StepTemplate>();
   public DbSet<ExperimentTemplate> ExperimentTemplates => Set<ExperimentTemplate>();
   public DbSet<CommandTemplate> CommandTemplates => Set<CommandTemplate>();
-  public DbSet<PlannerTransaction> PlannerTransactions => Set<PlannerTransaction>();
   public DbSet<CampaignExecutionSummary> CampaignExecutionSummaries => Set<CampaignExecutionSummary>();
   public DbSet<DeviceConfig> DeviceConfigs => Set<DeviceConfig>();
   public DbSet<AnalyzerConfig> Analyzers => Set<AnalyzerConfig>();

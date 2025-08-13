@@ -42,7 +42,7 @@
 
     else
     {
-      <AresValueDesigner ValueEditCallback="ValueEditCallback" Schema="ViewModel!.Schema" Value="@ViewModel!.Value?.Value" Unit="@ViewModel!.Unit" Name="@ViewModel!.Name" />
+      <AresValueDesigner ValueEditCallback="ValueEditCallback" Schema="ViewModel!.Schema" Value="@ViewModel!.Value" Unit="@ViewModel!.Unit" Name="@ViewModel!.Name" />
     }
   </div>
 
@@ -56,30 +56,37 @@
     </div>
   }
 
-  <div class="mb-2">
-    <RadzenCheckBox @bind-Value="ViewModel!.IsPlanned" id="flexCheckDefault" Disabled="ViewModel!.IsEnvironmentBased"/>
-    <label class="form-check-label" for="flexCheckDefault">
-      Planned
-    </label>
-  </div>
+  @if(!DisablePlanning)
+  {
+    <div class="mb-2">
+      <RadzenCheckBox @bind-Value="ViewModel!.IsPlanned" id="flexCheckDefault" Disabled="ViewModel!.IsEnvironmentBased" />
+      <label class="form-check-label" for="flexCheckDefault">
+        Planned
+      </label>
+    </div>
 
 
-  <div class="mb-2">
-    <RadzenCheckBox @bind-Value="ViewModel!.IsEnvironmentBased" id="flexCheckDefault" Disabled="ViewModel!.IsPlanned"/>
-    <label class="form-check-label" for="flexCheckDefault">
-      Environment Variable
-    </label>
-  </div>
+    <div class="mb-2">
+      <RadzenCheckBox @bind-Value="ViewModel!.IsEnvironmentBased" id="flexCheckDefault" Disabled="ViewModel!.IsPlanned" />
+      <label class="form-check-label" for="flexCheckDefault">
+        Environment Variable
+      </label>
+    </div>
+  }
+
 </div>
 
 @code {
+  [Parameter]
+  public bool DisablePlanning { get; set; }
+
   private Task ValueEditCallback(AresValue value)
   {
     //Not sure what scenario this would be to be honest
     if(ViewModel!.Value is null)
       return Task.CompletedTask;
 
-    ViewModel!.Value.Value = value;
+    ViewModel!.Value = value;
     return Task.CompletedTask;
   }
 }

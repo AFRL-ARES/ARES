@@ -66,6 +66,9 @@
     [Parameter]
     public Action<StepDesignerViewModel> RemoveStepCallback { get; set; } = delegate {};
 
+    [Parameter]
+    public bool IsCloseoutOrStartup { get; set; }
+
     public bool CommandsExpanded { get; set; }
 
     private bool ContainsExperimentOutput => ViewModel!.CommandDesigners.Any(cmd => cmd.TemplateExperimentOutputProvider);
@@ -75,7 +78,7 @@
         var commandDesigner = ViewModel!.AddCommandDesigner();
         var result = await DialogService.OpenAsync("Command Create", ds =>
             @<div class="d-flex flex-column">
-                <CommandDesigner ViewModel="@commandDesigner"/>
+                <CommandDesigner DisablePlanningAndOutputCheck=@IsCloseoutOrStartup ViewModel="@commandDesigner"/>
                 <div class="d-flex">
                     <button class="btn btn-primary btn-outline-light" @onclick="() => ds.Close(true)">Create</button>
                     <button class="btn btn-danger btn-outline-light" @onclick="() => ds.Close(false)">Cancel</button>
@@ -117,7 +120,7 @@
     {
         var result = await DialogService.OpenAsync("Command Edit", ds =>
             @<div class="d-flex flex-column">
-                <CommandDesigner ViewModel="@commandDesigner" />
+                <CommandDesigner DisablePlanningAndOutputCheck=@IsCloseoutOrStartup ViewModel="@commandDesigner" />
                 <div class="d-flex">
                     <button class="btn btn-primary btn-outline-light" @onclick="() => ds.Close(true)">Save</button>
                     <button class="btn btn-danger btn-outline-light" @onclick="() => ds.Close(false)">Cancel</button>

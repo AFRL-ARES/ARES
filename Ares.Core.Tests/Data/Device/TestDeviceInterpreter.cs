@@ -22,8 +22,8 @@ public class TestDeviceInterpreter : DeviceCommandInterpreter<TestDevice, TestDe
         var result = new DeviceCommandResult();
         var reply = new TestReply();
         var param = parameters.First(parameter => parameter.Metadata.Name == TestDeviceCommandParameter.ReplyParameter.ToString());
-        reply.Message = $"Device received {param.Value.Value}";
-        var parsed = float.TryParse(param.Value.Value.StringValue, out var floatValue);
+        reply.Message = $"Device received {param.Value}";
+        var parsed = float.TryParse(param.Value.StringValue, out var floatValue);
 
         if(!parsed)
         {

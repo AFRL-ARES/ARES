@@ -49,7 +49,7 @@ public class AresCoreDeviceCommandInterpreter : DeviceCommandInterpreter<AresCor
       case AresCoreDeviceCommand.Sleep:
         var durationParam = parameters[0];
 
-        var duration = UnitsNet.Duration.FromMilliseconds(durationParam.Value.Value.NumberValue);
+        var duration = UnitsNet.Duration.FromMilliseconds(durationParam.Value.NumberValue);
         await Device.Sleep(duration.ToTimeSpan());
         result.Success = true;
         return result;

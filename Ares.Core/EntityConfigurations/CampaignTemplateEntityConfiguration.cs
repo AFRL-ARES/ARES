@@ -15,18 +15,18 @@ internal class CampaignTemplateEntityConfiguration : AresEntityTypeBaseConfigura
 
     builder.HasOne(campaignTemplate => campaignTemplate.StartupTemplate)
       .WithOne()
-      .HasForeignKey<ExperimentTemplate>(st => st.UniqueId)
-      .OnDelete(DeleteBehavior.Cascade);
+      .HasForeignKey<ExperimentTemplate>("CampaignStartupId")
+      .OnDelete(DeleteBehavior.NoAction);
 
     builder.HasOne(campaignTemplate => campaignTemplate.ExperimentTemplate)
       .WithOne()
-      .HasForeignKey<ExperimentTemplate>(et => et.UniqueId)
+      .HasForeignKey<ExperimentTemplate>("CampaignExperimentId")
       .OnDelete(DeleteBehavior.Cascade);
 
     builder.HasOne(campaignTemplate => campaignTemplate.CloseoutTemplate)
       .WithOne()
-      .HasForeignKey<ExperimentTemplate>(ct => ct.UniqueId)
-      .OnDelete(DeleteBehavior.Cascade);
+      .HasForeignKey<ExperimentTemplate>("CampaignCloseoutId")
+      .OnDelete(DeleteBehavior.NoAction);
 
     builder.HasMany(campaignTemplate => campaignTemplate.PlannerAllocations)
       .WithOne()

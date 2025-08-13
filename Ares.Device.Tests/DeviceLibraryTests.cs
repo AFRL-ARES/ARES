@@ -34,11 +34,7 @@ internal class DeviceLibraryTests
     var parameter = new Parameter();
     parameter.Metadata = commandMeta.ParameterMetadatas.First(metadata => metadata.Name == TestDeviceCommandParameter.ReplyParameter.ToString());
     parameter.UniqueId = Guid.NewGuid().ToString();
-    parameter.Value = new ParameterValue
-    {
-      UniqueId = Guid.NewGuid().ToString(),
-      Value = AresValueHelper.CreateString("12345")
-    };
+    parameter.Value = AresValueHelper.CreateString("12345");
 
     command.Parameters.Add(parameter);
 

@@ -483,6 +483,7 @@ public class AutomationService : AresAutomation.AresAutomationBase
   public override async Task<CampaignExecutionSummary> GetCampaignSummary(CampaignExecutionSummaryRequest request, ServerCallContext context)
   {
     await using var dbContext = await _coreContextFactory.CreateDbContextAsync();
+    //Include.... EVERYTHING!
     var summary = await dbContext.CampaignExecutionSummaries
       .AsNoTracking()
       .AsSplitQuery()

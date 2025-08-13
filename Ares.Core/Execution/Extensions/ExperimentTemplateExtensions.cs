@@ -54,7 +54,7 @@ public static class ExperimentTemplateExtensions
 
     foreach(var para in parameters)
     {
-      if(para.Value.Value.StringValue == string.Empty)
+      if(para.Value.StringValue == string.Empty)
         resolved = false;
     }
 
@@ -93,9 +93,6 @@ public static class ExperimentTemplateExtensions
         {
           argument.UniqueId = Guid.NewGuid().ToString();
           argument.Metadata.UniqueId = Guid.NewGuid().ToString();
-
-          if(argument.Value is not null)
-            argument.Value.UniqueId = Guid.NewGuid().ToString();
 
           foreach(var constraint in argument.Metadata.Constraints)
             constraint.UniqueId = Guid.NewGuid().ToString();

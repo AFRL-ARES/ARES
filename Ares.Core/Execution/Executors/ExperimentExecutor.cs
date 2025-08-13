@@ -61,11 +61,10 @@ public class ExperimentExecutor : IExecutor<ExperimentExecutionSummary, Experime
     var completedExperiment = new ExperimentOverview
     {
       Template = Template.AssignNewUniquePlanningIds(),
-      Result = ResultGenerator.GenerateExperimentResult(stepSummaries, Template.StepTemplates)
+      Result = ResultGenerator.GenerateExperimentResult(stepSummaries, Template.StepTemplates),
     };
 
-    
-
+    completedExperiment.Parameters.AddRange(Template.GetAllParameters());
     return Task.FromResult(completedExperiment);
   }
 

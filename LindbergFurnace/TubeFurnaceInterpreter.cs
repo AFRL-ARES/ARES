@@ -25,14 +25,14 @@ public class TubeFurnaceInterpreter : DeviceCommandInterpreter<ITubeFurnace, Tub
     {
       case TubeFurnaceCommand.SetSetpoint:
         var setpoint = parameters[0];
-        if(!setpoint.Value.Value.HasNumberValue)
+        if(!setpoint.Value.HasNumberValue)
         {
           result.Success = false;
           result.Error = "The furnace command SetSetpoint requires a number as a parameter, but none was provided!";
           break;
         }  
 
-        var tempSetPoint = new Temperature(setpoint.Value.Value.NumberValue, UnitsNet.Units.TemperatureUnit.DegreeCelsius);
+        var tempSetPoint = new Temperature(setpoint.Value.NumberValue, UnitsNet.Units.TemperatureUnit.DegreeCelsius);
         await Device.SetSetpoint(tempSetPoint);
         break;
 

@@ -8,6 +8,7 @@ namespace Ares.Core.Analyzing;
 public class AnalysisHelper
 {
   readonly IAnalyzerRepo _analyzerRepo;
+
   public AnalysisHelper(IAnalyzerRepo analyzerRepo)
   {
     _analyzerRepo = analyzerRepo;
@@ -21,7 +22,14 @@ public class AnalysisHelper
       template.AnalyzerMaps);
     // TODO: Add support for settings
     var analysis = await analyzer.Analyze(analyzerInputs, cancellationToken);
-    experimentSummary.ExperimentOverview.AnalysisResult = analysis.Result;
+
+    experimentSummary.ExperimentOverview.AnalysisOverview = new AnalysisOverview
+    {
+      UniqueId = Guid.NewGuid().ToString(),
+      Result = analysis.Result,
+      AnalyzerInfo = await analyzer.CreateAnalyzerInfo(),
+      ExperimentOverviewId = experimentSummary.ExperimentOverview.UniqueId
+    };
     return analysis;
   }
 

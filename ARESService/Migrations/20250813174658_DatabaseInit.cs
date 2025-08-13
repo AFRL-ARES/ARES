@@ -91,23 +91,6 @@ namespace AresService.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "CampaignExecutionSummaries",
-                columns: table => new
-                {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    CampaignId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CampaignName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CampaignTags = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CampaignNotes = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_CampaignExecutionSummaries", x => x.UniqueId);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "CampaignTags",
                 columns: table => new
                 {
@@ -119,6 +102,20 @@ namespace AresService.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_CampaignTags", x => x.UniqueId);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "CampaignTemplates",
+                columns: table => new
+                {
+                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(450)", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
+                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CampaignTemplates", x => x.UniqueId);
                 });
 
             migrationBuilder.CreateTable(
@@ -172,32 +169,6 @@ namespace AresService.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_MfcStates", x => x.UniqueId);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "PlannerRequests",
-                columns: table => new
-                {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_PlannerRequests", x => x.UniqueId);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "PlannerResponses",
-                columns: table => new
-                {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_PlannerResponses", x => x.UniqueId);
                 });
 
             migrationBuilder.CreateTable(
@@ -387,25 +358,38 @@ namespace AresService.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ExperimentExecutionSummaries",
+                name: "ExperimentTemplates",
                 columns: table => new
                 {
                     UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ExperimentId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ResultOutputPath = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CampaignExecutionSummaryUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    AnalyzerId = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Resolved = table.Column<bool>(type: "bit", nullable: false),
+                    CampaignCloseoutId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    CampaignExperimentId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    CampaignStartupId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
                     LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ExperimentExecutionSummaries", x => x.UniqueId);
+                    table.PrimaryKey("PK_ExperimentTemplates", x => x.UniqueId);
                     table.ForeignKey(
-                        name: "FK_ExperimentExecutionSummaries_CampaignExecutionSummaries_CampaignExecutionSummaryUniqueId",
-                        column: x => x.CampaignExecutionSummaryUniqueId,
-                        principalTable: "CampaignExecutionSummaries",
+                        name: "FK_ExperimentTemplates_CampaignTemplates_CampaignCloseoutId",
+                        column: x => x.CampaignCloseoutId,
+                        principalTable: "CampaignTemplates",
+                        principalColumn: "UniqueId");
+                    table.ForeignKey(
+                        name: "FK_ExperimentTemplates_CampaignTemplates_CampaignExperimentId",
+                        column: x => x.CampaignExperimentId,
+                        principalTable: "CampaignTemplates",
                         principalColumn: "UniqueId",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ExperimentTemplates_CampaignTemplates_CampaignStartupId",
+                        column: x => x.CampaignStartupId,
+                        principalTable: "CampaignTemplates",
+                        principalColumn: "UniqueId");
                 });
 
             migrationBuilder.CreateTable(
@@ -452,22 +436,24 @@ namespace AresService.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "StepExecutionSummaries",
+                name: "StepTemplates",
                 columns: table => new
                 {
                     UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    StepId = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    IsParallel = table.Column<bool>(type: "bit", nullable: false),
+                    Index = table.Column<long>(type: "bigint", nullable: false),
                     CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    ExperimentExecutionSummaryUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    ExperimentTemplateUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_StepExecutionSummaries", x => x.UniqueId);
+                    table.PrimaryKey("PK_StepTemplates", x => x.UniqueId);
                     table.ForeignKey(
-                        name: "FK_StepExecutionSummaries_ExperimentExecutionSummaries_ExperimentExecutionSummaryUniqueId",
-                        column: x => x.ExperimentExecutionSummaryUniqueId,
-                        principalTable: "ExperimentExecutionSummaries",
+                        name: "FK_StepTemplates_ExperimentTemplates_ExperimentTemplateUniqueId",
+                        column: x => x.ExperimentTemplateUniqueId,
+                        principalTable: "ExperimentTemplates",
                         principalColumn: "UniqueId",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -492,6 +478,177 @@ namespace AresService.Migrations
                         name: "FK_CommandExecutionStatuses_StepExecutionStatuses_StepExecutionStatusUniqueId",
                         column: x => x.StepExecutionStatusUniqueId,
                         principalTable: "StepExecutionStatuses",
+                        principalColumn: "UniqueId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "CommandTemplates",
+                columns: table => new
+                {
+                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Index = table.Column<long>(type: "bigint", nullable: false),
+                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
+                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
+                    StepTemplateUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CommandTemplates", x => x.UniqueId);
+                    table.ForeignKey(
+                        name: "FK_CommandTemplates_StepTemplates_StepTemplateUniqueId",
+                        column: x => x.StepTemplateUniqueId,
+                        principalTable: "StepTemplates",
+                        principalColumn: "UniqueId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "CommandMetadata",
+                columns: table => new
+                {
+                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    DeviceName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    DeviceType = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CommandTemplateId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
+                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CommandMetadata", x => x.UniqueId);
+                    table.ForeignKey(
+                        name: "FK_CommandMetadata_CommandTemplates_CommandTemplateId",
+                        column: x => x.CommandTemplateId,
+                        principalTable: "CommandTemplates",
+                        principalColumn: "UniqueId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "OutputMetadata",
+                columns: table => new
+                {
+                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    DataSchema = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Index = table.Column<long>(type: "bigint", nullable: false),
+                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
+                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_OutputMetadata", x => x.UniqueId);
+                    table.ForeignKey(
+                        name: "FK_OutputMetadata_CommandMetadata_UniqueId",
+                        column: x => x.UniqueId,
+                        principalTable: "CommandMetadata",
+                        principalColumn: "UniqueId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AnalysisOverview",
+                columns: table => new
+                {
+                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ExperimentOverviewId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    Result = table.Column<double>(type: "float", nullable: false),
+                    AnalyzerInfo = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
+                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AnalysisOverview", x => x.UniqueId);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "CampaignExecutionSummaries",
+                columns: table => new
+                {
+                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CampaignId = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CampaignName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CampaignTags = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CampaignNotes = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    StartupExecutionSummaryUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    CloseoutExecutionSummaryUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
+                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CampaignExecutionSummaries", x => x.UniqueId);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ExperimentExecutionSummaries",
+                columns: table => new
+                {
+                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ExperimentId = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ResultOutputPath = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CampaignExecutionSummaryUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
+                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ExperimentExecutionSummaries", x => x.UniqueId);
+                    table.ForeignKey(
+                        name: "FK_ExperimentExecutionSummaries_CampaignExecutionSummaries_CampaignExecutionSummaryUniqueId",
+                        column: x => x.CampaignExecutionSummaryUniqueId,
+                        principalTable: "CampaignExecutionSummaries",
+                        principalColumn: "UniqueId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ExperimentOverviews",
+                columns: table => new
+                {
+                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TemplateUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    Result = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
+                    ExperimentResultId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ExperimentOverviews", x => x.UniqueId);
+                    table.ForeignKey(
+                        name: "FK_ExperimentOverviews_ExperimentExecutionSummaries_ExperimentResultId",
+                        column: x => x.ExperimentResultId,
+                        principalTable: "ExperimentExecutionSummaries",
+                        principalColumn: "UniqueId");
+                    table.ForeignKey(
+                        name: "FK_ExperimentOverviews_ExperimentTemplates_TemplateUniqueId",
+                        column: x => x.TemplateUniqueId,
+                        principalTable: "ExperimentTemplates",
+                        principalColumn: "UniqueId");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "StepExecutionSummaries",
+                columns: table => new
+                {
+                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    StepId = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
+                    ExperimentExecutionSummaryUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_StepExecutionSummaries", x => x.UniqueId);
+                    table.ForeignKey(
+                        name: "FK_StepExecutionSummaries_ExperimentExecutionSummaries_ExperimentExecutionSummaryUniqueId",
+                        column: x => x.ExperimentExecutionSummaryUniqueId,
+                        principalTable: "ExperimentExecutionSummaries",
                         principalColumn: "UniqueId",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -584,198 +741,6 @@ namespace AresService.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "CampaignTemplates",
-                columns: table => new
-                {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    StartupTemplateUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    ExperimentTemplateUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    Name = table.Column<string>(type: "nvarchar(450)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_CampaignTemplates", x => x.UniqueId);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ExperimentTemplates",
-                columns: table => new
-                {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    AnalyzerId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Resolved = table.Column<bool>(type: "bit", nullable: false),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ExperimentTemplates", x => x.UniqueId);
-                    table.ForeignKey(
-                        name: "FK_ExperimentTemplates_CampaignTemplates_UniqueId",
-                        column: x => x.UniqueId,
-                        principalTable: "CampaignTemplates",
-                        principalColumn: "UniqueId",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ExperimentOverviews",
-                columns: table => new
-                {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    TemplateUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    Result = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    AnalysisResult = table.Column<double>(type: "float", nullable: false),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    ExperimentResultId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ExperimentOverviews", x => x.UniqueId);
-                    table.ForeignKey(
-                        name: "FK_ExperimentOverviews_ExperimentExecutionSummaries_ExperimentResultId",
-                        column: x => x.ExperimentResultId,
-                        principalTable: "ExperimentExecutionSummaries",
-                        principalColumn: "UniqueId");
-                    table.ForeignKey(
-                        name: "FK_ExperimentOverviews_ExperimentTemplates_TemplateUniqueId",
-                        column: x => x.TemplateUniqueId,
-                        principalTable: "ExperimentTemplates",
-                        principalColumn: "UniqueId");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "StepTemplates",
-                columns: table => new
-                {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    IsParallel = table.Column<bool>(type: "bit", nullable: false),
-                    Index = table.Column<long>(type: "bigint", nullable: false),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    ExperimentTemplateUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_StepTemplates", x => x.UniqueId);
-                    table.ForeignKey(
-                        name: "FK_StepTemplates_ExperimentTemplates_ExperimentTemplateUniqueId",
-                        column: x => x.ExperimentTemplateUniqueId,
-                        principalTable: "ExperimentTemplates",
-                        principalColumn: "UniqueId",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "PlannerTransactions",
-                columns: table => new
-                {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    RequestUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    ResponseUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    PlannerInfoUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    ExperimentOverviewUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_PlannerTransactions", x => x.UniqueId);
-                    table.ForeignKey(
-                        name: "FK_PlannerTransactions_ExperimentOverviews_ExperimentOverviewUniqueId",
-                        column: x => x.ExperimentOverviewUniqueId,
-                        principalTable: "ExperimentOverviews",
-                        principalColumn: "UniqueId");
-                    table.ForeignKey(
-                        name: "FK_PlannerTransactions_PlannerRequests_RequestUniqueId",
-                        column: x => x.RequestUniqueId,
-                        principalTable: "PlannerRequests",
-                        principalColumn: "UniqueId");
-                    table.ForeignKey(
-                        name: "FK_PlannerTransactions_PlannerResponses_ResponseUniqueId",
-                        column: x => x.ResponseUniqueId,
-                        principalTable: "PlannerResponses",
-                        principalColumn: "UniqueId");
-                    table.ForeignKey(
-                        name: "FK_PlannerTransactions_Planners_PlannerInfoUniqueId",
-                        column: x => x.PlannerInfoUniqueId,
-                        principalTable: "Planners",
-                        principalColumn: "UniqueId");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "CommandTemplates",
-                columns: table => new
-                {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Index = table.Column<long>(type: "bigint", nullable: false),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    StepTemplateUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_CommandTemplates", x => x.UniqueId);
-                    table.ForeignKey(
-                        name: "FK_CommandTemplates_StepTemplates_StepTemplateUniqueId",
-                        column: x => x.StepTemplateUniqueId,
-                        principalTable: "StepTemplates",
-                        principalColumn: "UniqueId",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "CommandMetadata",
-                columns: table => new
-                {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    DeviceName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    DeviceType = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CommandTemplateId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_CommandMetadata", x => x.UniqueId);
-                    table.ForeignKey(
-                        name: "FK_CommandMetadata_CommandTemplates_CommandTemplateId",
-                        column: x => x.CommandTemplateId,
-                        principalTable: "CommandTemplates",
-                        principalColumn: "UniqueId",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "OutputMetadata",
-                columns: table => new
-                {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    DataSchema = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Index = table.Column<long>(type: "bigint", nullable: false),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_OutputMetadata", x => x.UniqueId);
-                    table.ForeignKey(
-                        name: "FK_OutputMetadata_CommandMetadata_UniqueId",
-                        column: x => x.UniqueId,
-                        principalTable: "CommandMetadata",
-                        principalColumn: "UniqueId",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Limits",
                 columns: table => new
                 {
@@ -810,8 +775,7 @@ namespace AresService.Migrations
                     CommandMetadataUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
                     LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    ParameterId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    PlannerRequestUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                    ParameterId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -831,11 +795,6 @@ namespace AresService.Migrations
                         column: x => x.CommandMetadataUniqueId,
                         principalTable: "CommandMetadata",
                         principalColumn: "UniqueId");
-                    table.ForeignKey(
-                        name: "FK_ParameterMetadata_PlannerRequests_PlannerRequestUniqueId",
-                        column: x => x.PlannerRequestUniqueId,
-                        principalTable: "PlannerRequests",
-                        principalColumn: "UniqueId");
                 });
 
             migrationBuilder.CreateTable(
@@ -843,6 +802,7 @@ namespace AresService.Migrations
                 columns: table => new
                 {
                     UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Value = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Planned = table.Column<bool>(type: "bit", nullable: false),
                     EnvironmentBased = table.Column<bool>(type: "bit", nullable: false),
                     PlanningMetadataUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
@@ -852,8 +812,7 @@ namespace AresService.Migrations
                     CommandTemplateUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
                     ExperimentOverviewUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    PlannerResponseUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
                 },
                 constraints: table =>
                 {
@@ -873,11 +832,6 @@ namespace AresService.Migrations
                         name: "FK_Parameters_ParameterMetadata_PlanningMetadataUniqueId",
                         column: x => x.PlanningMetadataUniqueId,
                         principalTable: "ParameterMetadata",
-                        principalColumn: "UniqueId");
-                    table.ForeignKey(
-                        name: "FK_Parameters_PlannerResponses_PlannerResponseUniqueId",
-                        column: x => x.PlannerResponseUniqueId,
-                        principalTable: "PlannerResponses",
                         principalColumn: "UniqueId");
                 });
 
@@ -913,26 +867,12 @@ namespace AresService.Migrations
                         principalColumn: "UniqueId");
                 });
 
-            migrationBuilder.CreateTable(
-                name: "ParameterValues",
-                columns: table => new
-                {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Value = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    ParameterId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ParameterValues", x => x.UniqueId);
-                    table.ForeignKey(
-                        name: "FK_ParameterValues_Parameters_ParameterId",
-                        column: x => x.ParameterId,
-                        principalTable: "Parameters",
-                        principalColumn: "UniqueId",
-                        onDelete: ReferentialAction.Cascade);
-                });
+            migrationBuilder.CreateIndex(
+                name: "IX_AnalysisOverview_ExperimentOverviewId",
+                table: "AnalysisOverview",
+                column: "ExperimentOverviewId",
+                unique: true,
+                filter: "[ExperimentOverviewId] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_AnalyzerCapabilities_AnalyzerInfoId",
@@ -949,9 +889,14 @@ namespace AresService.Migrations
                 filter: "[DeviceConfigId] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
-                name: "IX_CampaignTemplates_ExperimentTemplateUniqueId",
-                table: "CampaignTemplates",
-                column: "ExperimentTemplateUniqueId");
+                name: "IX_CampaignExecutionSummaries_CloseoutExecutionSummaryUniqueId",
+                table: "CampaignExecutionSummaries",
+                column: "CloseoutExecutionSummaryUniqueId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CampaignExecutionSummaries_StartupExecutionSummaryUniqueId",
+                table: "CampaignExecutionSummaries",
+                column: "StartupExecutionSummaryUniqueId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_CampaignTemplates_Name",
@@ -959,11 +904,6 @@ namespace AresService.Migrations
                 column: "Name",
                 unique: true,
                 filter: "[Name] IS NOT NULL");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_CampaignTemplates_StartupTemplateUniqueId",
-                table: "CampaignTemplates",
-                column: "StartupTemplateUniqueId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_CommandExecutionStatuses_StepExecutionStatusUniqueId",
@@ -1044,6 +984,27 @@ namespace AresService.Migrations
                 column: "TemplateUniqueId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_ExperimentTemplates_CampaignCloseoutId",
+                table: "ExperimentTemplates",
+                column: "CampaignCloseoutId",
+                unique: true,
+                filter: "[CampaignCloseoutId] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ExperimentTemplates_CampaignExperimentId",
+                table: "ExperimentTemplates",
+                column: "CampaignExperimentId",
+                unique: true,
+                filter: "[CampaignExperimentId] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ExperimentTemplates_CampaignStartupId",
+                table: "ExperimentTemplates",
+                column: "CampaignStartupId",
+                unique: true,
+                filter: "[CampaignStartupId] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Limits_ParameterMetadataUniqueId",
                 table: "Limits",
                 column: "ParameterMetadataUniqueId");
@@ -1071,11 +1032,6 @@ namespace AresService.Migrations
                 filter: "[ParameterId] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ParameterMetadata_PlannerRequestUniqueId",
-                table: "ParameterMetadata",
-                column: "PlannerRequestUniqueId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Parameters_CommandTemplateUniqueId",
                 table: "Parameters",
                 column: "CommandTemplateUniqueId");
@@ -1086,21 +1042,9 @@ namespace AresService.Migrations
                 column: "ExperimentOverviewUniqueId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Parameters_PlannerResponseUniqueId",
-                table: "Parameters",
-                column: "PlannerResponseUniqueId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Parameters_PlanningMetadataUniqueId",
                 table: "Parameters",
                 column: "PlanningMetadataUniqueId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ParameterValues_ParameterId",
-                table: "ParameterValues",
-                column: "ParameterId",
-                unique: true,
-                filter: "[ParameterId] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_PlannerAllocations_CampaignTemplateUniqueId",
@@ -1118,26 +1062,6 @@ namespace AresService.Migrations
                 column: "PlannerId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_PlannerTransactions_ExperimentOverviewUniqueId",
-                table: "PlannerTransactions",
-                column: "ExperimentOverviewUniqueId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_PlannerTransactions_PlannerInfoUniqueId",
-                table: "PlannerTransactions",
-                column: "PlannerInfoUniqueId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_PlannerTransactions_RequestUniqueId",
-                table: "PlannerTransactions",
-                column: "RequestUniqueId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_PlannerTransactions_ResponseUniqueId",
-                table: "PlannerTransactions",
-                column: "ResponseUniqueId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_StepExecutionStatuses_ExperimentExecutionStatusUniqueId",
                 table: "StepExecutionStatuses",
                 column: "ExperimentExecutionStatusUniqueId");
@@ -1153,17 +1077,25 @@ namespace AresService.Migrations
                 column: "ExperimentTemplateUniqueId");
 
             migrationBuilder.AddForeignKey(
-                name: "FK_CampaignTemplates_ExperimentTemplates_ExperimentTemplateUniqueId",
-                table: "CampaignTemplates",
-                column: "ExperimentTemplateUniqueId",
-                principalTable: "ExperimentTemplates",
+                name: "FK_AnalysisOverview_ExperimentOverviews_ExperimentOverviewId",
+                table: "AnalysisOverview",
+                column: "ExperimentOverviewId",
+                principalTable: "ExperimentOverviews",
+                principalColumn: "UniqueId",
+                onDelete: ReferentialAction.Cascade);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_CampaignExecutionSummaries_ExperimentExecutionSummaries_CloseoutExecutionSummaryUniqueId",
+                table: "CampaignExecutionSummaries",
+                column: "CloseoutExecutionSummaryUniqueId",
+                principalTable: "ExperimentExecutionSummaries",
                 principalColumn: "UniqueId");
 
             migrationBuilder.AddForeignKey(
-                name: "FK_CampaignTemplates_ExperimentTemplates_StartupTemplateUniqueId",
-                table: "CampaignTemplates",
-                column: "StartupTemplateUniqueId",
-                principalTable: "ExperimentTemplates",
+                name: "FK_CampaignExecutionSummaries_ExperimentExecutionSummaries_StartupExecutionSummaryUniqueId",
+                table: "CampaignExecutionSummaries",
+                column: "StartupExecutionSummaryUniqueId",
+                principalTable: "ExperimentExecutionSummaries",
                 principalColumn: "UniqueId");
 
             migrationBuilder.AddForeignKey(
@@ -1187,24 +1119,20 @@ namespace AresService.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropForeignKey(
+                name: "FK_Parameters_ExperimentOverviews_ExperimentOverviewUniqueId",
+                table: "Parameters");
+
+            migrationBuilder.DropForeignKey(
                 name: "FK_Any_DeviceConfigs_DeviceConfigId",
                 table: "Any");
 
             migrationBuilder.DropForeignKey(
-                name: "FK_CampaignTemplates_ExperimentTemplates_ExperimentTemplateUniqueId",
-                table: "CampaignTemplates");
+                name: "FK_CampaignExecutionSummaries_ExperimentExecutionSummaries_CloseoutExecutionSummaryUniqueId",
+                table: "CampaignExecutionSummaries");
 
             migrationBuilder.DropForeignKey(
-                name: "FK_CampaignTemplates_ExperimentTemplates_StartupTemplateUniqueId",
-                table: "CampaignTemplates");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_ExperimentOverviews_ExperimentTemplates_TemplateUniqueId",
-                table: "ExperimentOverviews");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_StepTemplates_ExperimentTemplates_ExperimentTemplateUniqueId",
-                table: "StepTemplates");
+                name: "FK_CampaignExecutionSummaries_ExperimentExecutionSummaries_StartupExecutionSummaryUniqueId",
+                table: "CampaignExecutionSummaries");
 
             migrationBuilder.DropForeignKey(
                 name: "FK_CommandMetadata_CommandTemplates_CommandTemplateId",
@@ -1213,14 +1141,6 @@ namespace AresService.Migrations
             migrationBuilder.DropForeignKey(
                 name: "FK_Parameters_CommandTemplates_CommandTemplateUniqueId",
                 table: "Parameters");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_ExperimentExecutionSummaries_CampaignExecutionSummaries_CampaignExecutionSummaryUniqueId",
-                table: "ExperimentExecutionSummaries");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_ExperimentOverviews_ExperimentExecutionSummaries_ExperimentResultId",
-                table: "ExperimentOverviews");
 
             migrationBuilder.DropForeignKey(
                 name: "FK_ParameterMetadata_CampaignTemplates_CampaignTemplateUniqueId",
@@ -1232,6 +1152,9 @@ namespace AresService.Migrations
 
             migrationBuilder.DropTable(
                 name: "Analyses");
+
+            migrationBuilder.DropTable(
+                name: "AnalysisOverview");
 
             migrationBuilder.DropTable(
                 name: "AnalyzerCapabilities");
@@ -1267,13 +1190,7 @@ namespace AresService.Migrations
                 name: "OutputMetadata");
 
             migrationBuilder.DropTable(
-                name: "ParameterValues");
-
-            migrationBuilder.DropTable(
                 name: "PlannerAllocations");
-
-            migrationBuilder.DropTable(
-                name: "PlannerTransactions");
 
             migrationBuilder.DropTable(
                 name: "Projects");
@@ -1318,10 +1235,16 @@ namespace AresService.Migrations
                 name: "CampaignExecutionStatuses");
 
             migrationBuilder.DropTable(
+                name: "ExperimentOverviews");
+
+            migrationBuilder.DropTable(
                 name: "DeviceConfigs");
 
             migrationBuilder.DropTable(
-                name: "ExperimentTemplates");
+                name: "ExperimentExecutionSummaries");
+
+            migrationBuilder.DropTable(
+                name: "CampaignExecutionSummaries");
 
             migrationBuilder.DropTable(
                 name: "CommandTemplates");
@@ -1330,10 +1253,7 @@ namespace AresService.Migrations
                 name: "StepTemplates");
 
             migrationBuilder.DropTable(
-                name: "CampaignExecutionSummaries");
-
-            migrationBuilder.DropTable(
-                name: "ExperimentExecutionSummaries");
+                name: "ExperimentTemplates");
 
             migrationBuilder.DropTable(
                 name: "CampaignTemplates");
@@ -1349,15 +1269,6 @@ namespace AresService.Migrations
 
             migrationBuilder.DropTable(
                 name: "Parameters");
-
-            migrationBuilder.DropTable(
-                name: "PlannerRequests");
-
-            migrationBuilder.DropTable(
-                name: "ExperimentOverviews");
-
-            migrationBuilder.DropTable(
-                name: "PlannerResponses");
         }
     }
 }

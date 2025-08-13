@@ -12,6 +12,11 @@ public class AnalyzerRepo : IAnalyzerRepo
     AddAnalyzer(defaultAnalyzer);
   }
 
+  public IAnalyzer GetDefaultAnalyzer()
+  {
+    return _analyzerStore.OfType<NoneAnalyzer>().First();
+  }
+
   public IAnalyzer? GetAnalyzerByName(string name)
   {
     var analyzer = _analyzerStore.FirstOrDefault(analyzer => analyzer.Name == name);

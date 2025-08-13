@@ -60,12 +60,12 @@
 
   public object TryUnpackDisplayData(Parameter argument)
   {
-    var aresStruct = argument.Value.Value;
-    if(aresStruct.HasNumberValue)
-      return $"{argument.Metadata.Name}: {aresStruct.NumberValue} {argument.Metadata.Unit}";
+    var aresValue = argument.Value;
+    if(aresValue.HasNumberValue)
+      return $"{argument.Metadata.Name}: {aresValue.NumberValue} {argument.Metadata.Unit}";
 
-    else if(aresStruct.HasStringValue)
-      return $"{argument.Metadata.Name}: {aresStruct.StringValue} {argument.Metadata.Unit}";
+    else if(aresValue.HasStringValue)
+      return $"{argument.Metadata.Name}: {aresValue.StringValue} {argument.Metadata.Unit}";
 
     else
       return $"{argument.Metadata.Name}: Custom Data";

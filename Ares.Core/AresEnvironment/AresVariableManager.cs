@@ -1,4 +1,5 @@
-﻿using Ares.Datamodel.Extensions;
+﻿using Ares.Datamodel;
+using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Templates;
 
 namespace Ares.Core.AresEnvironment;
@@ -30,11 +31,7 @@ public class AresVariableManager
       if(variableValue is null)
         return false;
 
-      var val = new ParameterValue
-      {
-        UniqueId = Guid.NewGuid().ToString(),
-        Value = AresValueHelper.CreateString(variableValue)
-      };
+      var val = AresValueHelper.CreateString(variableValue);
 
       parameter.Value = val;
     }

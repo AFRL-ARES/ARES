@@ -1,4 +1,5 @@
-﻿using Ares.Datamodel.Templates;
+﻿using Ares.Core.EntityConfigurations.Helpers;
+using Ares.Datamodel.Templates;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -19,11 +20,6 @@ internal class ParameterEntityConfiguration : AresEntityTypeBaseConfiguration<Pa
     builder.HasOne(parameter => parameter.PlanningMetadata)
       .WithMany();
 
-    builder.HasOne(parameter => parameter.Value)
-      .WithOne()
-      .HasForeignKey<ParameterValue>("ParameterId")
-      .OnDelete(DeleteBehavior.Cascade);
-
     builder.Navigation(parameter => parameter.Metadata)
       .AutoInclude();
 
@@ -32,5 +28,7 @@ internal class ParameterEntityConfiguration : AresEntityTypeBaseConfiguration<Pa
 
     builder.Navigation(parameter => parameter.Value)
       .AutoInclude();
+
+    builder.Property(parameter => parameter.Value).HasAresValue();
   }
 }
