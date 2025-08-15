@@ -127,7 +127,7 @@ public class CommandDesignerViewModel : ReactiveObject
       return;
     }
 
-    var newOutputs = outputs.Fields.Where(kvp => !OutputKeyMap.Any(uos => uos.DeviceOutputName == kvp.Key)).Select(newKvp => new UserOutputSelection(newKvp.Key, newKvp.Value, newKvp.Key));
+    var newOutputs = outputs.Fields.Where(kvp => !OutputKeyMap.Any(uos => uos.DeviceOutputName == kvp.Key)).Select(newKvp => new UserOutputSelection(newKvp.Key, newKvp.Value.Type, newKvp.Key));
     var removedOutputs = OutputKeyMap.Where(output => !outputs.Fields.ContainsKey(output.DeviceOutputName));
     OutputKeyMap = [.. OutputKeyMap.Concat(newOutputs).Except(removedOutputs)];
   }

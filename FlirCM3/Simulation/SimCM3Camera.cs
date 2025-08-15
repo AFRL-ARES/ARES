@@ -11,12 +11,12 @@ namespace FlirCM3.Simulation
     public SimCM3Camera(string deviceName)
     {
       Name = deviceName;
-      Status = new DeviceStatus();
+      Status = new DeviceOperationalStatus();
     }
 
     public Task<bool> Activate()
     {
-      Status.DeviceState = DeviceState.Active;
+      Status.OperationalState = OperationalState.Active;
       Status.Message = "Successfully activated simulated camera!";
 
       return Task.FromResult(true);
@@ -85,7 +85,7 @@ namespace FlirCM3.Simulation
     }
 
     public string Name { get; set; }
-    public DeviceStatus Status { get; set; }
+    public DeviceOperationalStatus Status { get; set; }
     public double Width { get; set; }
     public double Height { get; set; }
     public double OffsetX { get; set; }

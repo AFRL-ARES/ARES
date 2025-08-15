@@ -31,7 +31,7 @@ public class SyringePumpSettingsViewModel : ReactiveObject
 
   public SyringePumpConfigEditViewModel EditViewModel { get; }
 
-  public Task<DeviceStatus> GetDeviceStatus()
+  public Task<DeviceOperationalStatus> GetDeviceOperationalStatus()
   {
     try
     {
@@ -39,7 +39,7 @@ public class SyringePumpSettingsViewModel : ReactiveObject
     }
     catch (RpcException)
     {
-      return Task.FromResult(new DeviceStatus { DeviceState = DeviceState.Error, Message = $"Unable to find a registered syringe pump with a name {SyringePumpConfig.Name}" });
+      return Task.FromResult(new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Unable to find a registered syringe pump with a name {SyringePumpConfig.Name}" });
     }
   }
 

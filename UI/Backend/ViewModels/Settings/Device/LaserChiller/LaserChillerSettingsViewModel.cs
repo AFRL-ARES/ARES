@@ -26,7 +26,7 @@ public class LaserChillerSettingsViewModel : ReactiveObject
     EditViewModel = new LaserChillerConfigEditViewModel(_chillerClient, _devicesClient, ChillerConfig);
   }
 
-  public Task<DeviceStatus> GetDeviceStatus()
+  public Task<DeviceOperationalStatus> GetDeviceOperationalStatus()
   {
     try
     {
@@ -35,7 +35,7 @@ public class LaserChillerSettingsViewModel : ReactiveObject
 
     catch(RpcException)
     {
-      return Task.FromResult(new DeviceStatus { DeviceState = DeviceState.Error, Message = $"Unable to find a registered V6 Laser with a name {ChillerConfig.Name}" });
+      return Task.FromResult(new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Unable to find a registered V6 Laser with a name {ChillerConfig.Name}" });
     }
   }
 

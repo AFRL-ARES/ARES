@@ -13,12 +13,12 @@ public class SyringePumpInterpreter : DeviceCommandInterpreter<ISyringePump, Syr
   {
   }
 
-  protected override async Task<DeviceCommandResult> ParseAndPerformDeviceAction(SyringePumpCommand deviceCommandEnum,
+  protected override async Task<CommandResult> ParseAndPerformDeviceAction(SyringePumpCommand deviceCommandEnum,
     Parameter[] parameters,
     CommandMetadata metadata,
     CancellationToken cancellationToken)
   {
-    var result = new DeviceCommandResult();
+    var result = new CommandResult();
     result.Success = true;
 
     switch(deviceCommandEnum)
@@ -75,11 +75,11 @@ public class SyringePumpInterpreter : DeviceCommandInterpreter<ISyringePump, Syr
         }
         var speed = Speed.FromMillimetersPerMinutes(functionRateParam.NumberValue);
         await Device.SetProgramFunctionRate(speed);
-        return new DeviceCommandResult() { Success = true };
+        return new CommandResult() { Success = true };
 
       case SyringePumpCommand.GetProgramFunctionRate:
         await Device.GetProgramFunctionRate();
-        return new DeviceCommandResult { Success = true };
+        return new CommandResult { Success = true };
 
       case SyringePumpCommand.SetProgramFunctionVolumeToBeDispensed:
         throw new NotImplementedException();
@@ -95,23 +95,23 @@ public class SyringePumpInterpreter : DeviceCommandInterpreter<ISyringePump, Syr
 
       case SyringePumpCommand.StartPumpingProgram:
         await Device.StartPumpingProgram();
-        return new DeviceCommandResult { Success = true };
+        return new CommandResult { Success = true };
 
       case SyringePumpCommand.PurgePump:
         await Device.PurgePump();
-        return new DeviceCommandResult { Success = true };
+        return new CommandResult { Success = true };
 
       case SyringePumpCommand.StopPumpingProgram:
         await Device.StopPumpingProgram();
-        return new DeviceCommandResult { Success = true };
+        return new CommandResult { Success = true };
 
       case SyringePumpCommand.GetVolumeDispensed:
         await Device.GetVolumeDispensed();
-        return new DeviceCommandResult { Success = true };
+        return new CommandResult { Success = true };
 
       case SyringePumpCommand.ClearVolumeDispensed:
         //await Device.ClearVolumeDispensed();
-        return new DeviceCommandResult { Success = true };
+        return new CommandResult { Success = true };
 
       default:
         throw new NotImplementedException();

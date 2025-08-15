@@ -30,7 +30,7 @@ public class ServoSettingsViewModel : ReactiveObject
   public Func<Task> OnRemoveCallback { get; }
   public ServoConfigEditViewModel EditViewModel { get; }
 
-  public Task<DeviceStatus> GetDeviceStatus()
+  public Task<DeviceOperationalStatus> GetDeviceOperationalStatus()
   {
     try
     {
@@ -39,7 +39,7 @@ public class ServoSettingsViewModel : ReactiveObject
 
     catch (RpcException)
     {
-      return Task.FromResult(new DeviceStatus { DeviceState = DeviceState.Error, Message = $"Unable to find a registered Servo with a name {ServoConfig.Name}" });
+      return Task.FromResult(new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Unable to find a registered Servo with a name {ServoConfig.Name}" });
     }
   }
 

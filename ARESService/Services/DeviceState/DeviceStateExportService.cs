@@ -6,7 +6,7 @@ using AresService.DeviceStateExport.ExportStreamProviders;
 using Google.Protobuf;
 using Grpc.Core;
 
-namespace AresService.Services.DeviceState;
+namespace AresService.Services.OperationalState;
 
 public class DeviceStateExportService : StateExportService.StateExportServiceBase
 {

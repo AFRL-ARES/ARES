@@ -19,9 +19,9 @@ public class AresDemoDevice : AresDevice
     try
     {
       ClientStore.CreateClient(_address);
-      Status = new DeviceStatus
+      Status = new DeviceOperationalStatus
       {
-        DeviceState = DeviceState.Active,
+        OperationalState = OperationalState.Active,
         Message = $"Activated: {Name}"
       };
     }

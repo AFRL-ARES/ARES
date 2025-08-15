@@ -2,20 +2,20 @@
 
 <div class="device-settings-grid">
   <h5 class="device-settings-name">@Name</h5>
-  @if (DeviceStatusGetter is not null)
+  @if (DeviceOperationalStatusGetter is not null)
   {
     <div class="device-status d-flex">
-      <button class="btn btn-sm border-0 rounded-circle btn-outline-primary mx-1" @onclick="UpdateDeviceStatus">
+      <button class="btn btn-sm border-0 rounded-circle btn-outline-primary mx-1" @onclick="UpdateDeviceOperationalStatus">
         <RadzenIcon Icon="refresh"/>
       </button>
-      @if (_deviceStatus is not null)
+      @if (_DeviceOperationalStatus is not null)
       {
         <div class="d-flex flex-column">
-          <div class="device-status-@_deviceStatus.DeviceState.ToString().ToLower()">
-            @_deviceStatus.DeviceState.ToString()
+          <div class="device-status-@_DeviceOperationalStatus.OperationalState.ToString().ToLower()">
+            @_DeviceOperationalStatus.OperationalState.ToString()
           </div>
           <div>
-            @_deviceStatus.Message
+            @_DeviceOperationalStatus.Message
           </div>
         </div>
       }
@@ -60,20 +60,20 @@
   public Func<Task>? ActivateCallback { get; set; }
 
   [Parameter]
-  public Func<Task<DeviceStatus?>>? DeviceStatusGetter { get; set; }
+  public Func<Task<DeviceOperationalStatus?>>? DeviceOperationalStatusGetter { get; set; }
 
   [Parameter]
   public string Name { get; set; } = "No name?";
 
-  private DeviceStatus? _deviceStatus;
+  private DeviceOperationalStatus? _DeviceOperationalStatus;
 
   private bool _activateInProgress;
 
   protected override async Task OnInitializedAsync()
   {
-    if (DeviceStatusGetter is not null)
+    if (DeviceOperationalStatusGetter is not null)
     {
-      _deviceStatus = await DeviceStatusGetter();
+      _DeviceOperationalStatus = await DeviceOperationalStatusGetter();
       StateHasChanged();
     }
   }
@@ -88,13 +88,13 @@
     return RemoveCallback is not null ? RemoveCallback() : Task.CompletedTask;
   }
 
-  private async Task UpdateDeviceStatus()
+  private async Task UpdateDeviceOperationalStatus()
   {
-    if (DeviceStatusGetter is null)
+    if (DeviceOperationalStatusGetter is null)
       return;
 
-    _deviceStatus = null;
-    _deviceStatus = await DeviceStatusGetter();
+    _DeviceOperationalStatus = null;
+    _DeviceOperationalStatus = await DeviceOperationalStatusGetter();
   }
 
   private async Task ActivateClicked()
@@ -104,7 +104,7 @@
 
     _activateInProgress = true;
     await ActivateCallback();
-    await UpdateDeviceStatus();
+    await UpdateDeviceOperationalStatus();
     _activateInProgress = false;
   }
 

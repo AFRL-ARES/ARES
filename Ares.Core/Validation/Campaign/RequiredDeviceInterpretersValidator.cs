@@ -28,7 +28,7 @@ internal class RequiredDeviceInterpretersValidator : ICampaignValidator
       .Except(availableInterpreters.Select(interpreter => interpreter.Device.Name)).ToArray();
 
     var invalidAvailableInterpreters = availableInterpreters
-      .Where(interpreter => interpreter.Device.Status.DeviceState != DeviceState.Active).ToArray();
+      .Where(interpreter => interpreter.Device.Status.OperationalState != OperationalState.Active).ToArray();
 
     var success = !missingDeviceNames.Any() && !invalidAvailableInterpreters.Any();
     var errorMessages = new List<string>();

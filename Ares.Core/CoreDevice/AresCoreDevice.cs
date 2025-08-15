@@ -11,7 +11,7 @@ public class AresCoreDevice : IAresDevice
 
   public string Name => "ARES";
 
-  public DeviceStatus Status { get; } = new DeviceStatus { DeviceState = DeviceState.Active };
+  public DeviceOperationalStatus Status { get; } = new DeviceOperationalStatus { OperationalState = OperationalState.Active };
 
   public Task<bool> Activate()
   {

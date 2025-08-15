@@ -12,12 +12,12 @@ public class DataLoggerThermometerInterpreter : DeviceCommandInterpreter<Datalog
   {
   }
 
-  protected override async Task<DeviceCommandResult> ParseAndPerformDeviceAction(DataLoggerCommand deviceCommandEnum,
+  protected override async Task<CommandResult> ParseAndPerformDeviceAction(DataLoggerCommand deviceCommandEnum,
     Parameter[] parameters,
     CommandMetadata metadata,
     CancellationToken cancellationToken)
   {
-    var result = new DeviceCommandResult();
+    var result = new CommandResult();
 
     switch(deviceCommandEnum)
     {
@@ -35,7 +35,7 @@ public class DataLoggerThermometerInterpreter : DeviceCommandInterpreter<Datalog
 
       case DataLoggerCommand.Hold:
         Device.Hold();
-        return new DeviceCommandResult { Success = true };
+        return new CommandResult { Success = true };
       default:
         throw new ArgumentOutOfRangeException(nameof(deviceCommandEnum), deviceCommandEnum, null);
     }
@@ -55,7 +55,7 @@ public class DataLoggerThermometerInterpreter : DeviceCommandInterpreter<Datalog
       OutputMetadata = new OutputMetadata
       {
         Description = "The most recent data for the data logger",
-        DataSchema = new AresDataSchemaSimplified(),
+        DataSchema = new AresDataSchema(),
         UniqueId = Guid.NewGuid().ToString()
       }
     };

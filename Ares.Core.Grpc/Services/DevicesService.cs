@@ -42,7 +42,7 @@ public class DevicesService : AresDevices.AresDevicesBase
   public override async Task<Empty> Activate(DeviceActivateRequest request, ServerCallContext context)
   {
     var device = GetAresDevice(request.DeviceName);
-    if(device.Status.DeviceState == DeviceState.Active)
+    if(device.Status.OperationalState == OperationalState.Active)
       return new Empty();
 
     await device.Activate();
@@ -63,7 +63,7 @@ public class DevicesService : AresDevices.AresDevicesBase
     return Task.FromResult(response);
   }
 
-  public override Task<DeviceStatus> GetDeviceStatus(DeviceStatusRequest request, ServerCallContext context)
+  public override Task<DeviceOperationalStatus> GetDeviceStatus(DeviceStatusRequest request, ServerCallContext context)
   {
     try
     {
@@ -73,7 +73,7 @@ public class DevicesService : AresDevices.AresDevicesBase
     }
     catch(InvalidOperationException e)
     {
-      return Task.FromResult(new DeviceStatus { DeviceState = DeviceState.Error, Message = e.Message });
+      return Task.FromResult(new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = e.Message });
     }
   }
 
@@ -90,7 +90,7 @@ public class DevicesService : AresDevices.AresDevicesBase
     return Task.FromResult(response);
   }
 
-  public override async Task<DeviceCommandResult> ExecuteCommand(CommandTemplate request, ServerCallContext context)
+  public override async Task<DeviceExecutionResult> ExecuteCommand(CommandTemplate request, ServerCallContext context)
   {
     var interpreter = _deviceCommandInterpreterRepo
       .First(commandInterpreter => commandInterpreter.Device.Name == request.Metadata.DeviceName);
@@ -99,11 +99,16 @@ public class DevicesService : AresDevices.AresDevicesBase
     {
       var deviceCommandTask = interpreter.TemplateToDeviceCommand(request);
       var result = await deviceCommandTask(context.CancellationToken);
-      return result;
+      return new DeviceExecutionResult()
+      {
+        Result = result.Result,
+        Error = result.Error,
+        Success = result.Success
+      };
     }
     catch(Exception e)
     {
-      return new DeviceCommandResult { Success = false, Error = e.ToString() };
+      return new DeviceExecutionResult() { Success = false, Error = e.ToString() };
     }
   }
 

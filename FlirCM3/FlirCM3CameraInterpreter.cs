@@ -53,9 +53,9 @@ public class FlirCM3CameraInterpreter : DeviceCommandInterpreter<IFlirCM3Camera,
     };
   }
 
-  protected override async Task<DeviceCommandResult> ParseAndPerformDeviceAction(FlirCM3CommandType deviceCommand, Parameter[] parameters, CommandMetadata metadata, CancellationToken cancellationToken)
+  protected override async Task<CommandResult> ParseAndPerformDeviceAction(FlirCM3CommandType deviceCommand, Parameter[] parameters, CommandMetadata metadata, CancellationToken cancellationToken)
   {
-    var result = new DeviceCommandResult();
+    var result = new CommandResult();
 
     switch(deviceCommand)
     {

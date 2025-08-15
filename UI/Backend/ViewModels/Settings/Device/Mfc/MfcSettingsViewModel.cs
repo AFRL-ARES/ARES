@@ -48,30 +48,30 @@ public class MfcSettingsViewModel : ReactiveObject
 
   public async Task Init()
   {
-    var status = await GetDeviceStatus();
-    if (status.DeviceState is not DeviceState.Active)
+    var status = await GetDeviceOperationalStatus();
+    if (status.OperationalState is not OperationalState.Active)
       return;
 
-    var deviceState = await _mfcClient.GetStateAsync(new DeviceRequest { DeviceName = MfcConfig.Name });
-    AvailableGases = deviceState.AvailableGasInfos.OrderBy(entry => entry.Index).Select(entry => entry.Name);
+    var state = await _mfcClient.GetStateAsync(new DeviceRequest { DeviceName = MfcConfig.Name });
+    AvailableGases = state.AvailableGasInfos.OrderBy(entry => entry.Index).Select(entry => entry.Name);
     var ids = await _mfcClient.GetAvailableIdsAsync(new GetAvailableIdsRequest { PortName = MfcConfig.PortName, Simulated = MfcConfig.Simulated });
     AvailableIds = ids.Ids.Select(s => s.First());
-    CurrentGas = deviceState.Data?.Gas;
-    CurrentId = deviceState.AssumedId?.FirstOrDefault();
+    CurrentGas = state.Data?.Gas;
+    CurrentId = state.AssumedId?.FirstOrDefault();
     TargetId = CurrentId;
   }
 
-  public async Task<DeviceStatus> GetDeviceStatus()
+  public async Task<DeviceOperationalStatus> GetDeviceOperationalStatus()
   {
     try
     {
       var status = await _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceName = MfcConfig.Name }).ResponseAsync;
-      DeviceActive = status.DeviceState is DeviceState.Active;
+      DeviceActive = status.OperationalState is OperationalState.Active;
       return status;
     }
     catch (RpcException)
     {
-      return new DeviceStatus { DeviceState = DeviceState.Error, Message = $"Unable to find a registered mfc with a name {MfcConfig.Name}" };
+      return new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Unable to find a registered mfc with a name {MfcConfig.Name}" };
     }
   }
 

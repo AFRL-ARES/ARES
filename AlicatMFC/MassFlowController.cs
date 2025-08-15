@@ -125,7 +125,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     }
     catch(TimeoutException e)
     {
-      Status = new DeviceStatus { DeviceState = DeviceState.Error, Message = $"Failed to initialize: {e.Message}" };
+      Status = new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Failed to initialize: {e.Message}" };
     }
   }
 
@@ -254,7 +254,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     }
     catch(TimeoutException)
     {
-      Status = new DeviceStatus { DeviceState = DeviceState.Active, Message = $"Tried setting setpoint to {setpoint.StandardCubicCentimetersPerMinute} SCCM, but timed out while awaiting response." };
+      Status = new DeviceOperationalStatus { OperationalState = OperationalState.Active, Message = $"Tried setting setpoint to {setpoint.StandardCubicCentimetersPerMinute} SCCM, but timed out while awaiting response." };
     }
   }
 
@@ -288,7 +288,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
       }
       catch(TimeoutException e)
       {
-        Status = new DeviceStatus { DeviceState = DeviceState.Error, Message = $"Failed to initialize: {e.Message}" };
+        Status = new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Failed to initialize: {e.Message}" };
         activated = false;
       }
     }
@@ -344,7 +344,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     var importantEntries = Enumerable.Range(1, 7);
     if(!importantEntries.All(entryNum => cs!.DataFrameFormatEntries?.Any(entry => entry.EntryNumber == entryNum) ?? false))
     {
-      Status = new DeviceStatus { DeviceState = DeviceState.Error, Message = "Did not receive Data Frame Entries 1-7. Could be missing one, could be missing all." };
+      Status = new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = "Did not receive Data Frame Entries 1-7. Could be missing one, could be missing all." };
       return;
     }
     await QueryGasListInfo();
@@ -369,7 +369,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
           }
           catch(TimeoutException)
           {
-            Status = new DeviceStatus { DeviceState = DeviceState.Active, Message = $"Get Live Data timed out at {DateTime.Now}" };
+            Status = new DeviceOperationalStatus { OperationalState = OperationalState.Active, Message = $"Get Live Data timed out at {DateTime.Now}" };
           }
 
           await Task.Delay(interval);
@@ -380,7 +380,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
       }
       catch(Exception e)
       {
-        Status = new DeviceStatus { DeviceState = DeviceState.Error, Message = $"{e.Message}" };
+        Status = new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"{e.Message}" };
       }
     },
       _stateGetterLoopTokenSource.Token);

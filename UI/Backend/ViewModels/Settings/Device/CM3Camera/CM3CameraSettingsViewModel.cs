@@ -26,7 +26,7 @@ namespace UI.Backend.ViewModels.Settings.Device.CM3Camera
       EditViewModel = new FlirCM3ConfigEditViewModel(_cameraClient, _devicesClient, FlirCM3Config);
     }
 
-    public Task<DeviceStatus> GetDeviceStatus()
+    public Task<DeviceOperationalStatus> GetDeviceOperationalStatus()
     {
       try
       {
@@ -35,7 +35,7 @@ namespace UI.Backend.ViewModels.Settings.Device.CM3Camera
 
       catch(RpcException)
       {
-        return Task.FromResult(new DeviceStatus { DeviceState = DeviceState.Error, Message = $"Unable to find a registered Flir CM3 Camera with a name {FlirCM3Config.Name}" });
+        return Task.FromResult(new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Unable to find a registered Flir CM3 Camera with a name {FlirCM3Config.Name}" });
       }
     }
 

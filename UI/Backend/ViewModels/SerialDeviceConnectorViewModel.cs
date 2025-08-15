@@ -36,9 +36,9 @@ public abstract class SerialDeviceConnectorViewModel<TDeviceUnitVm> : ReactiveOb
     foreach (var deviceName in deviceNames)
     {
       var deviceStatusRequest = new DeviceStatusRequest { DeviceName = deviceName };
-      var deviceStatusResponse = _devicesClient.GetDeviceStatus(deviceStatusRequest);
+      var deviceOperationalStatusResponse = await _devicesClient.GetDeviceStatusAsync(deviceStatusRequest);
 
-      if (deviceStatusResponse.DeviceState == DeviceState.Active)
+      if (deviceOperationalStatusResponse.OperationalState == OperationalState.Active)
       {
         if (ConnectedSerialDeviceUnitControlVms.Any(vm => vm.DeviceName.Equals(deviceName)))
           continue;
@@ -48,7 +48,7 @@ public abstract class SerialDeviceConnectorViewModel<TDeviceUnitVm> : ReactiveOb
         continue;
       }
 
-      if (deviceStatusResponse.DeviceState == DeviceState.Inactive)
+      if (deviceOperationalStatusResponse.OperationalState == OperationalState.Inactive)
       {
         if (ConnectedSerialDeviceUnitControlVms.Any(vm => vm.DeviceName.Equals(deviceName)))
           _connectedSerialDeviceUnitControlVmsSource.Remove(deviceName);
@@ -56,7 +56,7 @@ public abstract class SerialDeviceConnectorViewModel<TDeviceUnitVm> : ReactiveOb
         continue;
       }
 
-      if (deviceStatusResponse.DeviceState == DeviceState.Error)
+      if (deviceOperationalStatusResponse.OperationalState == OperationalState.Error)
         if (ConnectedSerialDeviceUnitControlVms.Any(vm => vm.DeviceName.Equals(deviceName)))
           _connectedSerialDeviceUnitControlVmsSource.Remove(deviceName);
     }

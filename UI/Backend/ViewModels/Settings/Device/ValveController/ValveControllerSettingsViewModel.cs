@@ -32,7 +32,7 @@ public class ValveControllerSettingsViewModel : ReactiveObject
 
   public ValveControllerConfigEditViewModel EditViewModel { get; }
 
-  public Task<DeviceStatus> GetDeviceStatus()
+  public Task<DeviceOperationalStatus> GetDeviceOperationalStatus()
   {
     try
     {
@@ -41,7 +41,7 @@ public class ValveControllerSettingsViewModel : ReactiveObject
 
     catch (RpcException)
     {
-      return Task.FromResult(new DeviceStatus { DeviceState = DeviceState.Error, Message = $"Unable to find a registered Valve Controller with a name {ValveControllerConfig.Name}" });
+      return Task.FromResult(new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Unable to find a registered Valve Controller with a name {ValveControllerConfig.Name}" });
     }
   }
 

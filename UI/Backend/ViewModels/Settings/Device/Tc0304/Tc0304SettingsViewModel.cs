@@ -32,7 +32,7 @@ public class Tc0304SettingsViewModel : ReactiveObject
 
   public Tc0304ConfigEditViewModel EditViewModel { get; }
 
-  public Task<DeviceStatus> GetDeviceStatus()
+  public Task<DeviceOperationalStatus> GetDeviceOperationalStatus()
   {
     try
     {
@@ -40,7 +40,7 @@ public class Tc0304SettingsViewModel : ReactiveObject
     }
     catch (RpcException)
     {
-      return Task.FromResult(new DeviceStatus { DeviceState = DeviceState.Error, Message = $"Unable to find a registered TC0304 datalogger with a name {DataloggerConfig.Name}" });
+      return Task.FromResult(new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Unable to find a registered TC0304 datalogger with a name {DataloggerConfig.Name}" });
     }
   }
 

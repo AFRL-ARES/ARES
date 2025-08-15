@@ -33,17 +33,17 @@ namespace UI.Backend.ViewModels.Settings.Device.TubeFurnace
 
     public TubeFurnaceConfigEditViewModel EditViewModel { get; }
 
-    public async Task<DeviceStatus> GetDeviceStatus()
+    public async Task<DeviceOperationalStatus> GetDeviceOperationalStatus()
     {
       try
       {
         var status = await _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceName = TubeFurnaceConfig.Name }).ResponseAsync;
-        DeviceActive = status.DeviceState is DeviceState.Active;
+        DeviceActive = status.OperationalState is OperationalState.Active;
         return status;
       }
       catch (RpcException)
       {
-        return new DeviceStatus { DeviceState = DeviceState.Error, Message = $"Unable to find a registered stepper controller with a name {TubeFurnaceConfig.Name}" };
+        return new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Unable to find a registered stepper controller with a name {TubeFurnaceConfig.Name}" };
       }
     }
 
@@ -64,11 +64,11 @@ namespace UI.Backend.ViewModels.Settings.Device.TubeFurnace
 
     public async Task Init()
     {
-      var status = await GetDeviceStatus();
-      if (status.DeviceState != DeviceState.Active)
+      var status = await GetDeviceOperationalStatus();
+      if (status.OperationalState != OperationalState.Active)
         return;
 
-      var deviceState = await _tubeFurnaceClient.GetStateAsync(new TubeFurnaceRequest { TubeFurnaceName = _deviceConfig.DeviceName });
+      var state = await _tubeFurnaceClient.GetStateAsync(new TubeFurnaceRequest { TubeFurnaceName = _deviceConfig.DeviceName });
 
     }
 

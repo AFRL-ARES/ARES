@@ -51,34 +51,34 @@ public class ServoInterpreter : DeviceCommandInterpreter<Servo, ServoCommand>
     };
   }
 
-  protected override async Task<DeviceCommandResult> ParseAndPerformDeviceAction(ServoCommand deviceCommandEnum,
+  protected override async Task<CommandResult> ParseAndPerformDeviceAction(ServoCommand deviceCommandEnum,
     Parameter[] parameters,
     CommandMetadata metadata,
     CancellationToken cancellationToken)
   {
-    DeviceCommandResult result;
+    CommandResult result;
 
     switch(deviceCommandEnum)
     {
       case ServoCommand.GetPosition:
         var data = await Device.GetPosition();
-        return result = new DeviceCommandResult { Result = AresStructHelper.CreateNumberStruct("ServoPosition", data.Position), Success = true };
+        return result = new CommandResult { Result = AresStructHelper.CreateNumberStruct("ServoPosition", data.Position), Success = true };
 
       case ServoCommand.GoUp:
         await Device.ResetServo();
         Thread.Sleep(TimeSpan.FromSeconds(4));
         await Device.PistonUp();
-        return new DeviceCommandResult { Success = true };
+        return new CommandResult { Success = true };
 
       case ServoCommand.GoDown:
         await Device.ResetServo();
         Thread.Sleep(TimeSpan.FromSeconds(4));
         await Device.PistonDown();
-        return new DeviceCommandResult { Success = true };
+        return new CommandResult { Success = true };
 
       case ServoCommand.Reset:
         await Device.ResetServo();
-        return new DeviceCommandResult { Success = true };
+        return new CommandResult { Success = true };
 
       default:
         throw new NotSupportedException("Received a servo command that was not supported.");

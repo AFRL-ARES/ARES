@@ -82,12 +82,12 @@ public class StepperControllerInterpreter : DeviceCommandInterpreter<IStepperCon
     };
   }
 
-  protected override async Task<DeviceCommandResult> ParseAndPerformDeviceAction(StepperControllerCommand deviceCommandEnum,
+  protected override async Task<CommandResult> ParseAndPerformDeviceAction(StepperControllerCommand deviceCommandEnum,
     Parameter[] parameters,
     CommandMetadata metadata,
     CancellationToken cancellationToken)
   {
-    var result = new DeviceCommandResult();
+    var result = new CommandResult();
     result.Success = true;
 
     var timeout = TimeSpan.FromSeconds(10);

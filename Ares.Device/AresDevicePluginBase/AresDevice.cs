@@ -8,12 +8,12 @@ public abstract class AresDevice : IAresDevice
   protected AresDevice(string name)
   {
     Name = name;
-    Status = new DeviceStatus
-    { DeviceState = DeviceState.Inactive, Message = $"{Name} constructed. Activation has not been called yet." };
+    Status = new DeviceOperationalStatus
+    { OperationalState = OperationalState.Inactive, Message = $"{Name} constructed. Activation has not been called yet." };
   }
 
   public string Name { get; }
-  public DeviceStatus Status { get; protected set; }
+  public DeviceOperationalStatus Status { get; protected set; }
   public abstract Task<bool> Activate();
   public abstract Task EnterSafeMode();
 }

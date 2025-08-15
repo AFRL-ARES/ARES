@@ -1,5 +1,4 @@
 ﻿using Ares.Messages.DeviceState;
-using Ares.Messages.DeviceStates;
 using Ares.Messages.DeviceStates.Chiller;
 using AresService.DeviceStateLoggers;
 using Google.Protobuf.WellKnownTypes;
@@ -7,6 +6,7 @@ using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using System.Threading.Tasks;
+using Ares.Messages.DeviceStates;
 
 namespace AresService.Services.DeviceStateLogging;
 

@@ -41,9 +41,9 @@ public class AresCoreDeviceCommandInterpreter : DeviceCommandInterpreter<AresCor
     ];
   }
 
-  protected override async Task<DeviceCommandResult> ParseAndPerformDeviceAction(AresCoreDeviceCommand deviceCommandEnum, Parameter[] parameters, CommandMetadata metadata, CancellationToken cancellationToken)
+  protected override async Task<CommandResult> ParseAndPerformDeviceAction(AresCoreDeviceCommand deviceCommandEnum, Parameter[] parameters, CommandMetadata metadata, CancellationToken cancellationToken)
   {
-    var result = new DeviceCommandResult();
+    var result = new CommandResult();
     switch(deviceCommandEnum)
     {
       case AresCoreDeviceCommand.Sleep:

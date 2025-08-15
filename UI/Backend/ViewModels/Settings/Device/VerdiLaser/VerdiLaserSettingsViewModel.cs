@@ -30,7 +30,7 @@ namespace UI.Backend.ViewModels.Settings.Device.VerdiLaser
     public Func<Task> OnRemoveCallback { get; }
     public VerdiLaserConfigEditViewModel EditViewModel { get; }
 
-    public Task<DeviceStatus> GetDeviceStatus()
+    public Task<DeviceOperationalStatus> GetDeviceOperationalStatus()
     {
       try
       {
@@ -39,7 +39,7 @@ namespace UI.Backend.ViewModels.Settings.Device.VerdiLaser
 
       catch(RpcException)
       {
-        return Task.FromResult(new DeviceStatus { DeviceState = DeviceState.Error, Message = $"Unable to find a registered V6 Laser with a name {LaserConfig.Name}" });
+        return Task.FromResult(new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Unable to find a registered V6 Laser with a name {LaserConfig.Name}" });
       }
     }
 

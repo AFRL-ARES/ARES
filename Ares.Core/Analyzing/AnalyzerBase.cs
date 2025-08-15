@@ -99,10 +99,10 @@ public abstract class AnalyzerBase : IAnalyzer
     return result;
   }
 
-  private static ParameterValidationResult ValidateRequiredParams(AresDataSchemaSimplified inputSchema, AresDataSchema parameters)
+  private static ParameterValidationResult ValidateRequiredParams(AresDataSchema inputSchema, AresDataSchema parameters)
   {
     var requiredParams = parameters.Fields.Where(p => !p.Value.Optional).ToArray();
-    var unfulfilledParams = requiredParams.Where(rp => !inputSchema.Fields.Any(input => input.Key == rp.Key && input.Value == rp.Value.Type));
+    var unfulfilledParams = requiredParams.Where(rp => !inputSchema.Fields.Any(input => input.Key == rp.Key && input.Value.Type == rp.Value.Type));
 
     var messages = unfulfilledParams.Select(up => $"No value provided for the required parameter {up.Key}.").ToArray();
     var result = new ParameterValidationResult
@@ -114,12 +114,12 @@ public abstract class AnalyzerBase : IAnalyzer
     return result;
   }
 
-  public virtual async Task<ParameterValidationResult> ValidateInputs(AresDataSchemaSimplified inputSchema, CancellationToken cancellationToken)
+  public virtual async Task<ParameterValidationResult> ValidateInputs(AresDataSchema inputSchema, CancellationToken cancellationToken)
   {
     var analysisSchema = await GetParameters(cancellationToken);
     var paramValidationResults = analysisSchema.Fields.Select(analyzerField => ValidateParameterTypes(analyzerField, analysisSchema)).ToArray();
     var requiredValidationResult = ValidateRequiredParams(inputSchema, analysisSchema);
-    var allValidationResults = paramValidationResults.Append(requiredValidationResult);
+    var allValidationResults = paramValidationResults.Append(requiredValidationResult).ToArray();
 
     var result = new ParameterValidationResult { Success = allValidationResults.All(r => r.Success) };
     result.Messages.AddRange(allValidationResults.SelectMany(r => r.Messages));

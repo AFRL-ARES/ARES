@@ -53,12 +53,12 @@ public class SerialRestDeviceInterpreter : DeviceCommandInterpreter<SerialRestDe
     return outputMetadata;
   }
 
-  protected override async Task<DeviceCommandResult> ParseAndPerformDeviceAction(SerialRestDeviceCommandsEnum deviceCommandEnum,
+  protected override async Task<CommandResult> ParseAndPerformDeviceAction(SerialRestDeviceCommandsEnum deviceCommandEnum,
     Parameter[] parameters,
     CommandMetadata metadata,
     CancellationToken cancellationToken)
   {
-    var result = new DeviceCommandResult();
+    var result = new CommandResult();
 
     switch(deviceCommandEnum)
     {

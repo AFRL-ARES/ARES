@@ -131,13 +131,13 @@ public class RestDevice : AresRestDevice, IRestDevice
 
     if(success)
     {
-      Status.DeviceState = DeviceState.Active;
+      Status.OperationalState = OperationalState.Active;
       Status.Message = "Successfully Connected to REST API Device!";
     }
 
     else
     {
-      Status.DeviceState = DeviceState.Error;
+      Status.OperationalState = OperationalState.Error;
       Status.Message = "ARES was unable to connect to REST API Device";
     }
 

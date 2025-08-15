@@ -66,7 +66,7 @@ public class MfcManager : IDeviceManager<MfcConfig, IMassFlowController>
 
     foreach (var device in devices)
     {
-      if (device.Status.DeviceState == DeviceState.Active)
+      if (device.Status.OperationalState == OperationalState.Active)
         await device.Start();
     }
 

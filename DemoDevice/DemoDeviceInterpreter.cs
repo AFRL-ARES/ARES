@@ -11,12 +11,12 @@ public class DemoDeviceInterpreter : DeviceCommandInterpreter<AresDemoDevice, De
   {
   }
 
-  protected override async Task<DeviceCommandResult> ParseAndPerformDeviceAction(DemoDeviceCommand deviceCommandEnum,
+  protected override async Task<CommandResult> ParseAndPerformDeviceAction(DemoDeviceCommand deviceCommandEnum,
     Parameter[] parameters,
     CommandMetadata metadata,
     CancellationToken cancellationToken)
   {
-    var result = new DeviceCommandResult();
+    var result = new CommandResult();
     result.Success = true;
 
     switch(deviceCommandEnum)

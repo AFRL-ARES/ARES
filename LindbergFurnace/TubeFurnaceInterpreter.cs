@@ -13,12 +13,12 @@ public class TubeFurnaceInterpreter : DeviceCommandInterpreter<ITubeFurnace, Tub
   {
   }
 
-  protected override async Task<DeviceCommandResult> ParseAndPerformDeviceAction(TubeFurnaceCommand deviceCommandEnum,
+  protected override async Task<CommandResult> ParseAndPerformDeviceAction(TubeFurnaceCommand deviceCommandEnum,
     Parameter[] parameters,
     CommandMetadata metadata,
     CancellationToken cancellationToken)
   {
-    var result = new DeviceCommandResult();
+    var result = new CommandResult();
     result.Success = true;
 
     switch(deviceCommandEnum)

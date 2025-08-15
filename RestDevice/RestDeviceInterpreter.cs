@@ -40,12 +40,12 @@ public class RestDeviceInterpreter : DeviceCommandInterpreter<IRestDevice, RestD
     return metadata.ToArray();
   }
 
-  protected override async Task<DeviceCommandResult> ParseAndPerformDeviceAction(RestDeviceCommandEnum deviceCommandEnum,
+  protected override async Task<CommandResult> ParseAndPerformDeviceAction(RestDeviceCommandEnum deviceCommandEnum,
     Parameter[] parameters,
     CommandMetadata metadata,
     CancellationToken cancellationToken)
   {
-    var result = new DeviceCommandResult();
+    var result = new CommandResult();
 
     switch(deviceCommandEnum)
     {

@@ -10,14 +10,14 @@ public class TestDeviceInterpreter : DeviceCommandInterpreter<TestDevice, TestDe
   {
   }
 
-  protected override Task<DeviceCommandResult> ParseAndPerformDeviceAction(TestDeviceCommand deviceCommandEnum, Parameter[] parameters, CommandMetadata metadata, CancellationToken cancellationToken)
+  protected override Task<CommandResult> ParseAndPerformDeviceAction(TestDeviceCommand deviceCommandEnum, Parameter[] parameters, CommandMetadata metadata, CancellationToken cancellationToken)
   {
     switch(deviceCommandEnum)
     {
       case TestDeviceCommand.Record:
       case TestDeviceCommand.Record2:
       case TestDeviceCommand.Record3:
-        var result = new DeviceCommandResult();
+        var result = new CommandResult();
         var param = parameters.First(parameter => parameter.Metadata.Name == TestDeviceCommandParameter.ReplyParameter.ToString());
         
         if(!param.Value.HasNumberValue)

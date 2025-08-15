@@ -40,7 +40,7 @@ public class TubeFurnaceService : TubeFurnaceRpc.TubeFurnaceRpcBase
       .Select(interpreter => interpreter.Device)
       .OfType<ITubeFurnace>()
       .Select(device => device.StateStream.Take(1).ToTask().Result)
-      .Select(deviceState => new TubeFurnaceDeviceDescription { AssumedAddress = (int)deviceState.AssumedAddress, Name = deviceState.Name });
+      .Select(OperationalState => new TubeFurnaceDeviceDescription { AssumedAddress = (int)OperationalState.AssumedAddress, Name = OperationalState.Name });
 
     var response = new GetAllTubeFurnacesResponse();
     response.TubeFurnaces.AddRange(tubeFurnaceDescriptions);

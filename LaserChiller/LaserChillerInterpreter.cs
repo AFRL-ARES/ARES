@@ -40,9 +40,9 @@ public class LaserChillerInterpreter : DeviceCommandInterpreter<LaserChiller, La
     };
   }
 
-  protected override async Task<DeviceCommandResult> ParseAndPerformDeviceAction(LaserChillerCommand deviceCommandEnum, Parameter[] parameters, CommandMetadata metadata, CancellationToken cancellationToken)
+  protected override async Task<CommandResult> ParseAndPerformDeviceAction(LaserChillerCommand deviceCommandEnum, Parameter[] parameters, CommandMetadata metadata, CancellationToken cancellationToken)
   {
-    var result = new DeviceCommandResult();
+    var result = new CommandResult();
 
     switch(deviceCommandEnum)
     {

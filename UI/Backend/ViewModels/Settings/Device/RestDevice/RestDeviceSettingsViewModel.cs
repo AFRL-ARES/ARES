@@ -26,7 +26,7 @@ public class RestDeviceSettingsViewModel : ReactiveObject
     EditViewModel = new RestDeviceConfigEditViewModel(_client, _devicesClient, Config);
   }
 
-  public async Task<DeviceStatus> GetDeviceStatus()
+  public async Task<DeviceOperationalStatus> GetDeviceOperationalStatus()
   {
     try
     {
@@ -35,7 +35,7 @@ public class RestDeviceSettingsViewModel : ReactiveObject
 
     catch(RpcException)
     {
-      return new DeviceStatus() { DeviceState = DeviceState.Error, Message = $"Unable to find a registered Rest Device with a name {Config.Name}" };
+      return new DeviceOperationalStatus() { OperationalState = OperationalState.Error, Message = $"Unable to find a registered Rest Device with a name {Config.Name}" };
     }
   }
 

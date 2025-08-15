@@ -44,9 +44,9 @@ namespace VerdiV6Laser
       };
     }
 
-    protected override async Task<DeviceCommandResult> ParseAndPerformDeviceAction(VerdiV6LaserCommand deviceCommandEnum, Parameter[] parameters, CommandMetadata metadata, CancellationToken cancellationToken)
+    protected override async Task<CommandResult> ParseAndPerformDeviceAction(VerdiV6LaserCommand deviceCommandEnum, Parameter[] parameters, CommandMetadata metadata, CancellationToken cancellationToken)
     {
-      var result = new DeviceCommandResult();
+      var result = new CommandResult();
 
       switch(deviceCommandEnum)
       {

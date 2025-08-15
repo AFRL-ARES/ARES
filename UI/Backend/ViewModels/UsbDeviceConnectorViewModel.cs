@@ -39,9 +39,9 @@ public abstract class UsbDeviceConnectorViewModel<TDeviceUnitVm> : ReactiveObjec
     {
 
       var deviceStatusRequest = new DeviceStatusRequest { DeviceName = deviceName };
-      var deviceStatusResponse = _devicesClient.GetDeviceStatus(deviceStatusRequest);
+      var deviceOperationalStatusResponse = _devicesClient.GetDeviceStatus(deviceStatusRequest);
 
-      if (deviceStatusResponse.DeviceState == DeviceState.Active)
+      if (deviceOperationalStatusResponse.OperationalState == OperationalState.Active)
       {
         if (ConnectedUsbDeviceUnitControlVms.Any(vm => vm.DeviceName.Equals(deviceName)))
           continue;
@@ -51,7 +51,7 @@ public abstract class UsbDeviceConnectorViewModel<TDeviceUnitVm> : ReactiveObjec
         continue;
       }
 
-      if (deviceStatusResponse.DeviceState == DeviceState.Inactive)
+      if (deviceOperationalStatusResponse.OperationalState == OperationalState.Inactive)
       {
         if (ConnectedUsbDeviceUnitControlVms.Any(vm => vm.DeviceName.Equals(deviceName)))
           _connectedUsbDeviceUnitControlVmsSource.Remove(deviceName);
@@ -59,7 +59,7 @@ public abstract class UsbDeviceConnectorViewModel<TDeviceUnitVm> : ReactiveObjec
         continue;
       }
 
-      if (deviceStatusResponse.DeviceState == DeviceState.Error)
+      if (deviceOperationalStatusResponse.OperationalState == OperationalState.Error)
         if (ConnectedUsbDeviceUnitControlVms.Any(vm => vm.DeviceName.Equals(deviceName)))
           _connectedUsbDeviceUnitControlVmsSource.Remove(deviceName);
     }

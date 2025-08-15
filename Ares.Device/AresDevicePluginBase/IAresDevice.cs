@@ -6,7 +6,7 @@ namespace Ares.Device;
 public interface IAresDevice
 {
   string Name { get; }
-  DeviceStatus Status { get; }
+  DeviceOperationalStatus Status { get; }
   Task<bool> Activate();
   Task EnterSafeMode();
 }

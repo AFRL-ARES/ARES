@@ -15,12 +15,12 @@ public class MassFlowControllerInterpreter : DeviceCommandInterpreter<IMassFlowC
   {
   }
 
-  protected override async Task<DeviceCommandResult> ParseAndPerformDeviceAction(MassFlowControllerCommand deviceCommandEnum,
+  protected override async Task<CommandResult> ParseAndPerformDeviceAction(MassFlowControllerCommand deviceCommandEnum,
     Parameter[] parameters,
     CommandMetadata metadata,
     CancellationToken cancellationToken)
   {
-    var result = new DeviceCommandResult();
+    var result = new CommandResult();
 
     switch(deviceCommandEnum)
     {
