@@ -1,4 +1,4 @@
-﻿using Ares.Datamodel.Analyzing;
+﻿using Ares.Datamodel.Device;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

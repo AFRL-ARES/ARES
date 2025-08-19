@@ -4,7 +4,7 @@ using System.IO.Ports;
 using System.Linq;
 using System.Threading.Tasks;
 using Ares.Core.Device;
-using Ares.Datamodel;
+using Ares.Core.Device.Remote;
 using Ares.Datamodel.Device;
 using Ares.Datamodel.Templates;
 using Ares.Device;
@@ -19,9 +19,11 @@ public class DevicesService : AresDevices.AresDevicesBase
 {
   private readonly IDbContextFactory<CoreDatabaseContext> _dbContextFactory;
   private readonly IDeviceCommandInterpreterRepo _deviceCommandInterpreterRepo;
+  readonly IRemoteDeviceManager _remoteDeviceManager;
 
-  public DevicesService(IDeviceCommandInterpreterRepo deviceCommandInterpreterRepo, IDbContextFactory<CoreDatabaseContext> contextFactory)
+  public DevicesService(IDeviceCommandInterpreterRepo deviceCommandInterpreterRepo, IDbContextFactory<CoreDatabaseContext> contextFactory, IRemoteDeviceManager remoteDeviceManager)
   {
+    _remoteDeviceManager = remoteDeviceManager;
     _deviceCommandInterpreterRepo = deviceCommandInterpreterRepo;
     _dbContextFactory = contextFactory;
   }
@@ -135,5 +137,78 @@ public class DevicesService : AresDevices.AresDevicesBase
     var response = new DeviceConfigResponse();
     response.Configs.AddRange(configs);
     return response;
+  }
+
+  public override Task<RemoteDeviceConfigResponse> GetAllRemoteDevicesConfigs(Empty request, ServerCallContext context)
+  {
+    var remoteDevices = _deviceCommandInterpreterRepo.Select(dci => dci.Device).OfType<RemoteDevice>().ToArray();
+
+    var response = new RemoteDeviceConfigResponse();
+    var configs = remoteDevices.Select(rd => new RemoteDeviceConfig { Name = rd.Name, UniqueId = rd.UniqueId, Url = rd.Address.ToString() });
+
+    response.Configs.AddRange(configs);
+
+    return Task.FromResult(response);
+  }
+
+  public override Task<ListAresRemoteDevicesResponse> ListRemoteAresDevices(Empty request, ServerCallContext context)
+  {
+    var remoteDevices = _deviceCommandInterpreterRepo.Select(dci => dci.Device).OfType<RemoteDevice>().ToArray();
+
+    var response = new ListAresRemoteDevicesResponse();
+    var infos = remoteDevices.Select(GetInfo);
+
+    response.Devices.AddRange(infos);
+
+    return Task.FromResult(response);
+  }
+
+  public override async Task<UpdateRemoteDeviceResponse> UpdateRemoteDevice(UpdateRemoteDeviceRequest request, ServerCallContext context)
+  {
+    try
+    {
+      var deviceConfig = new RemoteDeviceConfig { UniqueId = request.DeviceId, Name = request.Name, Url = request.Url };
+      await _remoteDeviceManager.UpdateDevice(deviceConfig);
+      var response = new UpdateRemoteDeviceResponse
+      {
+        Success = true
+      };
+      return response;
+    }
+    catch(Exception e)
+    {
+      var response = new UpdateRemoteDeviceResponse
+      {
+        Success = false,
+        ErrorMessage = e.Message
+      };
+      return response;
+    }
+  }
+
+  public override async Task<RemoveRemoteDeviceResponse> RemoveRemoteDevice(RemoveRemoteDeviceRequest request, ServerCallContext context)
+  {
+    try
+    {
+      var removed = await _remoteDeviceManager.RemoveDevice(request.DeviceId);
+      return new RemoveRemoteDeviceResponse { Success = removed };
+    }
+    catch(Exception e)
+    {
+      return new RemoveRemoteDeviceResponse { Success = false, ErrorMessage = e.Message };
+    }
+  }
+
+  private DeviceInfo GetInfo(IAresDevice device)
+  {
+    return new DeviceInfo
+    {
+      Name = device.Name,
+      UniqueId = device.UniqueId,
+      Description = device.Description,
+      Type = device.Type,
+      Url = device is RemoteDevice remoteDevice ? remoteDevice.Address.ToString() : null,
+      Version = device.Version
+    };
   }
 }

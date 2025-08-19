@@ -1,5 +1,4 @@
-﻿using Ares.Datamodel.Analyzing;
-using Ares.Datamodel.Device;
+﻿using Ares.Datamodel.Device;
 
 namespace Ares.Core.Device.Remote;
 /// <summary>
@@ -14,7 +13,7 @@ public interface IRemoteDeviceManager
 
   Task CreateDevice(string name, string url);
 
-  Task RemoveDevice(string deviceId);
+  Task<bool> RemoveDevice(string deviceId);
 
   Task UpdateDevice(RemoteDeviceConfig config);
 

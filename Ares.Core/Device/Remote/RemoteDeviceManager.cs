@@ -1,6 +1,5 @@
 ﻿using Ares.Core.Analyzing;
 using Ares.Core.Notifications;
-using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Device;
 using Microsoft.EntityFrameworkCore;
 
@@ -58,13 +57,13 @@ internal class RemoteDeviceManager(IDeviceCommandInterpreterRepo _deviceCommandI
     }
   }
 
-  public async Task RemoveDevice(string deviceId)
+  public async Task<bool> RemoveDevice(string deviceId)
   {
     var ctx = _dbContextFactory.CreateDbContext();
     var device = ctx.RemoteDeviceConfigs.Where(a => a.UniqueId == deviceId).FirstOrDefault();
     if(device is null)
     {
-      return;
+      return false;
     }
 
     ctx.Remove(device);
@@ -74,6 +73,8 @@ internal class RemoteDeviceManager(IDeviceCommandInterpreterRepo _deviceCommandI
     var monitor = _deviceMonitors.First(m => m.DeviceId == deviceId);
     monitor.Dispose();
     _deviceMonitors.Remove(monitor);
+
+    return true;
   }
 
   public async Task UpdateDevice(RemoteDeviceConfig config)
