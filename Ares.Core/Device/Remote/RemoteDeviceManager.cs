@@ -1,0 +1,148 @@
+﻿using Ares.Core.Analyzing;
+using Ares.Core.Notifications;
+using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Device;
+using Microsoft.EntityFrameworkCore;
+
+namespace Ares.Core.Device.Remote;
+internal class RemoteDeviceManager(IDeviceCommandInterpreterRepo _deviceCommandInterpreters, IDeviceCache _deviceCache, INotificationHandler _notificationHandler, IDbContextFactory<CoreDatabaseContext> _dbContextFactory) : IRemoteDeviceManager
+{
+  private readonly List<RemoteDeviceMonitor> _deviceMonitors = [];
+
+  public async Task CreateDevice(string name, string url)
+  {
+    var config = new RemoteDeviceConfig { UniqueId = Guid.NewGuid().ToString(), Name = name, Url = url };
+    var device = ConfigToDevice(config);
+    if(device is null)
+      return;
+
+    _deviceCommandInterpreters.Add(new RemoteDeviceCommandInterpreter(device));
+    var monitor = new RemoteDeviceMonitor(device, _deviceCache);
+    _deviceMonitors.Add(monitor);
+
+    var ctx = _dbContextFactory.CreateDbContext();
+    ctx.RemoteDeviceConfigs.Add(config);
+
+    await ctx.SaveChangesAsync();
+  }
+
+  private RemoteDevice? ConfigToDevice(RemoteDeviceConfig config)
+  {
+    var uriValid = Uri.TryCreate(config.Url, UriKind.Absolute, out var uri);
+    if(!uriValid || uri is null)
+    {
+      _ = _notificationHandler.HandleNotification(
+        "Device Load Error",
+        $"Failed to load a remote device {config.Name} because the url {config.Url} is invalid.",
+        NotificationSeverityEnum.Danger);
+      return null;
+    }
+
+    var device = new RemoteDevice(config.Name, uri, config.UniqueId);
+
+    return device;
+  }
+
+  public async Task LoadDevices()
+  {
+    var ctx = _dbContextFactory.CreateDbContext();
+    var configs = await ctx.RemoteDeviceConfigs.ToArrayAsync();
+    var devices = await Task.WhenAll(configs.Select(LoadExistingDevice));
+    var nonNullDevices = devices.OfType<RemoteDevice>().ToArray();
+    foreach(var device in nonNullDevices)
+    {
+      _deviceCommandInterpreters.Add(new RemoteDeviceCommandInterpreter(device));
+
+      var monitor = new RemoteDeviceMonitor(device, _deviceCache);
+      _deviceMonitors.Add(monitor);
+    }
+  }
+
+  public async Task RemoveDevice(string deviceId)
+  {
+    var ctx = _dbContextFactory.CreateDbContext();
+    var device = ctx.RemoteDeviceConfigs.Where(a => a.UniqueId == deviceId).FirstOrDefault();
+    if(device is null)
+    {
+      return;
+    }
+
+    ctx.Remove(device);
+    await ctx.SaveChangesAsync();
+
+    _deviceCommandInterpreters.Remove(deviceId);
+    var monitor = _deviceMonitors.First(m => m.DeviceId == deviceId);
+    monitor.Dispose();
+    _deviceMonitors.Remove(monitor);
+  }
+
+  public async Task UpdateDevice(RemoteDeviceConfig config)
+  {
+    var ctx = _dbContextFactory.CreateDbContext();
+    var deviceCfg = ctx.RemoteDeviceConfigs.Where(a => a.UniqueId == config.UniqueId).FirstOrDefault();
+    if(deviceCfg is null)
+    {
+      return;
+    }
+
+    deviceCfg.Name = config.Name;
+    deviceCfg.Url = config.Url;
+    await ctx.SaveChangesAsync();
+
+    _deviceCommandInterpreters.Remove(deviceCfg.UniqueId);
+    var monitor = _deviceMonitors.First(m => m.DeviceId == deviceCfg.UniqueId);
+    monitor.Dispose();
+    _deviceMonitors.Remove(monitor);
+    var device = await LoadExistingDevice(deviceCfg);
+    if(device is null)
+    {
+      return;
+    }
+
+    monitor = new RemoteDeviceMonitor(device, _deviceCache);
+    _deviceMonitors.Add(monitor);
+    _deviceCommandInterpreters.Add(new RemoteDeviceCommandInterpreter(device));
+  }
+
+  public Task UpdateDeviceSettings(DeviceSettings deviceSettings)
+  {
+    var aresDevice = _deviceCommandInterpreters.FirstOrDefault(dci => dci.Device.UniqueId == deviceSettings.DeviceId)?.Device;
+    if(aresDevice is not RemoteDevice device)
+    {
+      return Task.CompletedTask;
+    }
+
+    device.UpdateSettings(deviceSettings.Settings);
+
+    if(device is not RemoteDevice remoteDevice)
+      return Task.CompletedTask;
+
+    return _deviceCache.CacheDeviceSettings(remoteDevice);
+  }
+
+  private async Task<RemoteDevice?> LoadExistingDevice(RemoteDeviceConfig config)
+  {
+    var device = ConfigToDevice(config);
+    if(device is null)
+      return null;
+
+    var deviceInfo = await _deviceCache.GetCachedDeviceInfo(config.UniqueId);
+    if(deviceInfo is not null)
+    {
+      await device.UpdateInfo(deviceInfo);
+    }
+
+    await device.Activate();
+
+    var deviceSettings = await _deviceCache.GetCachedDeviceSettings(config.UniqueId);
+    if(deviceSettings is not null)
+    {
+      device.UpdateSettings(deviceSettings);
+    }
+
+    await _deviceCache.CacheDeviceInfo(device);
+    await _deviceCache.CacheDeviceSettings(device);
+
+    return device;
+  }
+}

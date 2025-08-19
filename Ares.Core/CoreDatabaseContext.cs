@@ -20,6 +20,10 @@ public class CoreDatabaseContext : DbContext
   public DbSet<CommandTemplate> CommandTemplates => Set<CommandTemplate>();
   public DbSet<CampaignExecutionSummary> CampaignExecutionSummaries => Set<CampaignExecutionSummary>();
   public DbSet<DeviceConfig> DeviceConfigs => Set<DeviceConfig>();
+  public DbSet<RemoteDeviceConfig> RemoteDeviceConfigs => Set<RemoteDeviceConfig>();
+  public DbSet<DeviceSettings> DeviceSettings => Set<DeviceSettings>();
+
+  public DbSet<DeviceInfo> DeviceInfos => Set<DeviceInfo>();
   public DbSet<AnalyzerConfig> Analyzers => Set<AnalyzerConfig>();
   public DbSet<AnalyzerInfo> AnalyzerInfos => Set<AnalyzerInfo>();
   public DbSet<AnalyzerSettings> AnalyzerSettings => Set<AnalyzerSettings>();
