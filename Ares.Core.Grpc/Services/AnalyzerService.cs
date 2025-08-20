@@ -22,12 +22,13 @@ public class AnalyzerService(IAnalyzerRepo analyzerRepo, IRemoteAnalyzerManager 
     var availableAnalyzers = _analyzerRepo.AvailableAnalyzers;
     var infos = await Task.WhenAll(availableAnalyzers.Select(GetInfo));
     response.Analyzers.AddRange(infos);
-
     return response;
   }
 
   private async Task<AnalyzerInfo> GetInfo(IAnalyzer analyzer)
   {
+    var capabilities = await analyzer.GetCapabilities();
+
     var info = new AnalyzerInfo
     {
       Name = analyzer.Name,
@@ -35,8 +36,8 @@ public class AnalyzerService(IAnalyzerRepo analyzerRepo, IRemoteAnalyzerManager 
       Version = analyzer.Version,
       Description = analyzer.Description,
       UniqueId = analyzer.UniqueId,
-      Capabilities = await analyzer.GetCapabilities(),
-      Url = analyzer is RemoteAnalyzer remoteAnalyzer ? remoteAnalyzer.Address.ToString() : null
+      Capabilities = capabilities,
+      Url = analyzer is RemoteAnalyzer remoteAnalyzer ? remoteAnalyzer.Address.ToString() : string.Empty
     };
 
     return info;

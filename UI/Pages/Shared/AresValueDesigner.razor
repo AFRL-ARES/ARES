@@ -1,88 +1,119 @@
 ﻿@using Ares.Datamodel
 @using Ares.Datamodel.Extensions
 
-<RadzenFormField Text="@GetFormFieldName()" Variant="Variant.Outlined" Style="width: 100%">
   @if(Schema?.Type is AresDataType.String)
   {
-    @if(HasStringChoices)
-    {
-      <RadzenDropDown TValue="string" Data="@Schema.StringChoices.Strings" @bind-Value="_stringValue" Change="OnChanged" Style="width: 100%" />
-    }
-    else
-    {
-      <RadzenTextBox @bind-Value="_stringValue" Change="OnChanged" Style="width: 100%" />
-    }
+    <RadzenFormField Text="@GetFormFieldName()" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%">
+      @if(HasStringChoices)
+      {
+        <RadzenDropDown TValue="string" Data="@Schema.StringChoices.Strings" @bind-Value="_stringValue" Change="OnChanged" Style="width: 100%" />
+      }
+      else
+      {
+        <RadzenTextBox @bind-Value="_stringValue" Change="OnChanged" Style="width: 100%" />
+      }
+    </RadzenFormField>
   }
+
   else if(Schema?.Type is AresDataType.Number)
   {
-    @if(HasNumberChoices)
-    {
-      <RadzenDropDown TValue="double" Data="@Schema.NumberChoices.Numbers" @bind-Value="_numberValue" Change="@OnNumberChanged" Style="width: 100%" />
-    }
-    else
-    {
-      <RadzenNumeric TValue="double" @bind-Value="_numberValue" Change="@OnNumericChanged" Style="width: 100%" />
-    }
+    <RadzenFormField Text="@GetFormFieldName()" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%">
+      @if(HasNumberChoices)
+      {
+        <RadzenDropDown TValue="double" Data="@Schema.NumberChoices.Numbers" @bind-Value="_numberValue" Change="@OnNumberChanged" Style="width: 100%" />
+      }
+      else
+      {
+        <RadzenNumeric TValue="double" @bind-Value="_numberValue" Change="@OnNumericChanged" Style="width: 100%" />
+      }
+    </RadzenFormField>
   }
+
   else if(Schema?.Type is AresDataType.Boolean)
-  {
-    <RadzenCheckBox TValue="bool" @bind-Value="_boolValue" Change="@OnBoolChanged" />
+  { 
+    <RadzenRow Gap="1rem" AlignItems="AlignItems.Center" Style="padding-top: 0.5rem; padding-bottom: 0.5rem;">
+      @Name
+      <RadzenSwitch @bind-Value="_boolValue" Name="@Name" Change="@OnBoolChanged" Style="width: 20px"/>
+    </RadzenRow>
   }
+
   else if(Schema?.Type is AresDataType.StringArray)
   {
-    @for(var i = 0; i < _stringArray.Count; i++)
-    {
-      var index = i;
-      <div class="mb-2 flex items-center">
-        @if(HasStringChoices)
+    <RadzenFieldset AllowCollapse="true" Collapsed="true">
+      <HeaderTemplate>
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.25rem">
+          <RadzenIcon Icon="data_array" /><b>@Name</b>
+        </RadzenStack>
+      </HeaderTemplate>
+
+      <ChildContent>
+        @for(var i = 0; i < _stringArray.Count; i++)
         {
-          <RadzenDropDown TValue="string" Data="@Schema.StringChoices.Strings" Value="@_stringArray[index]" Change="@(value => OnStringArrayItemChanged(value, index))" Style="width: 90%" />
+          var index = i;
+          <div class="mb-2 flex items-center">
+            @if(HasStringChoices)
+            {
+              <RadzenDropDown TValue="string" Data="@Schema.StringChoices.Strings" Value="@_stringArray[index]" Change="@(value => OnStringArrayItemChanged(value, index))" Style="width: 90%" />
+            }
+            else
+            {
+              <RadzenTextBox Value="@_stringArray[index]" Change="@(value => OnStringArrayItemChanged(value, index))" Style="width: 90%"/>
+            }
+            <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(() => RemoveStringItem(index))" />
+          </div>
         }
-        else
-        {
-          <RadzenTextBox Value="@_stringArray[index]" Change="@(value => OnStringArrayItemChanged(value, index))" Style="width: 90%" />
-        }
-        <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(() => RemoveStringItem(index))" />
-      </div>
-    }
-    <RadzenButton Text="Add Item" Click="AddStringItem" />
+      <RadzenButton Icon="add" Click="AddStringItem" ButtonStyle="ButtonStyle.Secondary" />
+    </ChildContent>
+
+    <SummaryTemplate>
+      <RadzenCard>
+        <b>@_stringArray.Count() Items</b>
+      </RadzenCard>
+    </SummaryTemplate>
+
+  </RadzenFieldset>
   }
+
   else if(Schema?.Type is AresDataType.NumberArray)
   {
-    @for(var i = 0; i < _numberArray.Count; i++)
-    {
-      var index = i;
-      <div class="mb-2 flex items-center">
-        @if(HasNumberChoices)
+    <RadzenFieldset AllowCollapse="true" Collapsed="true">
+      <HeaderTemplate>
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.25rem">
+          <RadzenIcon Icon="data_array" /><b>@Name</b>
+        </RadzenStack>
+      </HeaderTemplate>
+      
+      <ChildContent>
+        @for(var i = 0; i < _numberArray.Count; i++)
         {
-          <RadzenDropDown TValue="double" Data="@Schema.NumberChoices.Numbers" Value="@_numberArray[index]" Change="@(value => OnNumberArrayItemChanged(value, index))" Style="width: 90%" />
+          var index = i;
+          <div class="mb-2 flex items-center">
+            @if(HasNumberChoices)
+            {
+              <RadzenDropDown TValue="double" Data="@Schema.NumberChoices.Numbers" Value="@_numberArray[index]" Change="@(value => OnNumberArrayItemChanged(value, index))" Style="width: 90%" />
+            }
+            else
+            {
+              <RadzenNumeric TValue="double" Value="@_numberArray[index]" Change="@(value => OnNumberArrayItemChanged(value, index))" Style="width: 90%" />
+            }
+            <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(() => RemoveNumberItem(index))" />
+          </div>
         }
-        else
-        {
-          <RadzenNumeric TValue="double" Value="@_numberArray[index]" Change="@(value => OnNumberArrayItemChanged(value, index))" Style="width: 90%" />
-        }
-        <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(() => RemoveNumberItem(index))" />
-      </div>
-    }
-    <RadzenButton Text="Add Item" Click="AddNumberItem" />
+        <RadzenButton Icon="add" Click="AddNumberItem" ButtonStyle="ButtonStyle.Secondary" />
+      </ChildContent>
+
+      <SummaryTemplate>
+        <RadzenCard>
+          <b>@_numberArray.Count() Items</b>
+        </RadzenCard>
+      </SummaryTemplate>
+    </RadzenFieldset>
   }
-  else if(Schema?.Type is AresDataType.BoolArray)
-  {
-    @for(var i = 0; i < _boolArray.Count; i++)
-    {
-      var index = i;
-      <div class="mb-2 flex items-center">
-        <RadzenCheckBox TValue="bool" Value="@_boolArray[index]" Change="@(value => OnBoolArrayItemChanged(value, index))" />
-        <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(() => RemoveBoolItem(index))" />
-      </div>
-    }
-    <RadzenButton Text="Add Item" Click="AddBoolItem" />
-  }
+
   else
   {
     <span>Unsupported type: @Schema?.Type</span>
   }
-</RadzenFormField>
 
 @code {
   [Parameter] public AresValue? Value { get; set; }

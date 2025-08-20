@@ -25,7 +25,8 @@
   <div class="d-flex analyzer-settings-actions">
     <vr />
     <button class="btn btn-sm btn-outline-primary rounded-2 analyzer-action-button" type="button" disabled="@(EditCallback is null)" @onclick="EditClicked"><RadzenIcon Icon="edit" /></button>
-    <button class="btn btn-sm btn-outline-danger rounded-2 analyzer-action-button" type="button" disabled="@(RemoveCallback is null)" @onclick="RemoveClicked"><RadzenIcon Icon="delete_outline" /></button>
+    <button class="btn btn-sm btn-outline-primary rounded-2 analyzer-action-button" type="button" disabled="@(SettingsCallback is null)" @onclick="SettingsClicked"><RadzenIcon Icon="settings" /></button>
+    <button class="btn btn-sm btn-outline-danger rounded-2 analyzer-action-button" type="button" disabled="@(RemoveCallback is null)" @onclick="RemoveClicked"><RadzenIcon Icon="delete_outline"/></button>
   </div>
   <hr class="analyzer-settings-separator" />
   <div class="analyzer-settings-content">
@@ -45,6 +46,9 @@
 
   [Parameter]
   public Func<Task>? EditCallback { get; set; }
+
+  [Parameter]
+  public Func<Task>? SettingsCallback { get; set; }
 
   [Parameter]
   public Func<Task>? StateUpdateCallback { get; set; }
@@ -71,5 +75,10 @@
   private Task RemoveClicked()
   {
     return RemoveCallback is not null ? RemoveCallback() : Task.CompletedTask;
+  }
+
+  private Task SettingsClicked()
+  {
+    return SettingsCallback is not null ? SettingsCallback() : Task.CompletedTask;
   }
 }

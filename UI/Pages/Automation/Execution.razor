@@ -230,7 +230,7 @@
       <div class="d-flex flex-column padded-item">
         <h6>Experiment Tags</h6>
         <RadzenDropDown Data="ViewModel!.AvailableTags" @bind-Value="ViewModel!.SelectedTags" 
-        Multiple=true Placeholder="Select Experiment Tags" AllowClear=true Style="width: 100%;" Chips=true AllowSelectAll=false>
+          Multiple=true Placeholder="Select Experiment Tags" AllowClear=true Style="width: 100%;" Chips=true AllowSelectAll=false>
           <ValueTemplate>
             @((context.TagName as string))
           </ValueTemplate>

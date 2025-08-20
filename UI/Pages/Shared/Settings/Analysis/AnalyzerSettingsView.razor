@@ -4,18 +4,12 @@
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Backend.ViewModels.Settings.Analysis.AnalyzerSettingsViewModel>
 @inject DialogService DialogService
 
-<AnalyzerSettingsContainer EditCallback="EditCallback" RemoveCallback="RemoveCallback" StateUpdateCallback="UpdateStateCallback" Name="@ViewModel!.Name" State="@ViewModel!.AnalyzerState" StateMessage="@ViewModel!.StateMessage" UpdatingInProgress="@UpdateInProgress">
+<AnalyzerSettingsContainer EditCallback="EditCallback" SettingsCallback="SettingCallback" RemoveCallback="RemoveCallback" StateUpdateCallback="UpdateStateCallback" Name="@ViewModel!.Name" State="@ViewModel!.AnalyzerState" StateMessage="@ViewModel!.StateMessage" UpdatingInProgress="@UpdateInProgress">
   <div style="display: flex; flex-direction: column">
     <span>Address: @ViewModel!.Address</span>
     <span>Type: @ViewModel!.Type</span>
     <span>Version: @ViewModel!.Version</span>
     <span>@ViewModel!.Description</span>
-    <div style="display: flex; flex-direction: column">
-      @foreach (var settingField in ViewModel!.Settings.Fields)
-      {
-        <AresValueDesigner Name="@settingField.Key" Value="@settingField.Value" Schema="@ViewModel!.SettingsSchema.Fields[settingField.Key]" ValueEditCallback="@(value => ValueEditCallback(settingField.Key, value))" />
-      }
-    </div>
   </div>
 </AnalyzerSettingsContainer>
 
@@ -30,12 +24,6 @@
     if (result is true && viewModel.Modified)
     {
       await ViewModel!.Save();
-      // var notification = new AresNotification();
-      // notification.Message = $"ARES successfully added the analyzer {viewModel.Name} utilizing the address {viewModel.Address}.";
-      // notification.Title = $"Successfully Added Analyzer {viewModel.Name}!";
-      // notification.NotificationSeverity = Severity.Success;
-      // notification.Timestamp = DateTime.UtcNow.ToTimestamp();
-      // ViewModel!.PushNotification(notification);
       StateHasChanged();
     }
   }
@@ -49,6 +37,19 @@
     }
   }
 
+  private async Task SettingCallback()
+  {
+    var viewModel = ViewModel!.SettingsEditorViewModel;
+    var result = await DialogService.OpenAsync("Analyzer Settings", ds =>
+    @<AnalyzerSettingsEditorView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)"/>);
+  
+    if(result is true && viewModel!.Modified)
+    {
+      await ViewModel!.Save();
+      StateHasChanged();
+    }
+  }
+
   private Task UpdateStateCallback()
   {
     return Update();
@@ -58,7 +59,6 @@
     UpdateInProgress = true;
     await ViewModel!.UpdateState();
     await ViewModel!.UpdateInfo();
-    await ViewModel!.FetchSettings();
     UpdateInProgress = false;
     StateHasChanged();
   }
@@ -67,11 +67,5 @@
   {
     await base.OnInitializedAsync();
     _ = Update();
-  }
-
-  private Task ValueEditCallback(string name, AresValue value)
-  {
-    ViewModel!.Settings.Fields[name] = value;
-    return ViewModel!.PushSettings();
   }
 }

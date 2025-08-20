@@ -161,7 +161,7 @@ public class CampaignExecutor : ICampaignExecutor
         analyses.Add(analysis);
 
         _analysisRepo.Add(analysis);
-        if(analysis.ErrorString is not null)
+        if(analysis.ErrorString != string.Empty && analysis.ErrorString is not null)
         {
           await HandleNotification("Analysis Process Failed!", analysis.ErrorString, NotificationSeverityEnum.Error);
           executionSuccess = false;

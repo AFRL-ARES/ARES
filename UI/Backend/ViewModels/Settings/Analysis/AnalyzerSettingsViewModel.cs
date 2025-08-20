@@ -24,6 +24,7 @@ public class AnalyzerSettingsViewModel : ReactiveObject
     Address = _analyzerInfo.Url;
     Type = _analyzerInfo.Type;
     EditViewModel = new AnalyzerConfigEditViewModel(analyzerService, new AnalyzerConfig() { Name = analyzerInfo.Name, UniqueId = analyzerInfo.UniqueId, Url = analyzerInfo.Url });
+    SettingsEditorViewModel = new AnalyzerSettingsEditorViewModel(analyzerService, analyzerInfo);
     OnRemoveCallback = onRemoveCallback;
     _notificationService = notificationService;
   }
@@ -47,6 +48,8 @@ public class AnalyzerSettingsViewModel : ReactiveObject
   public Func<Task> OnRemoveCallback { get; }
 
   public AnalyzerConfigEditViewModel EditViewModel { get; }
+
+  public AnalyzerSettingsEditorViewModel SettingsEditorViewModel { get; }
 
   public async Task Save()
   {
@@ -110,41 +113,6 @@ public class AnalyzerSettingsViewModel : ReactiveObject
     }
   }
 
-  public AresDataSchema SettingsSchema { get; private set; } = new AresDataSchema();
-
-  public AresStruct Settings { get; private set; } = new AresStruct();
-
-  public async Task FetchSettings()
-  {
-    var request = new AnalyzerSettingsRequest() { AnalyzerId = _analyzerInfo.UniqueId };
-    try
-    {
-      var settingsResponse = await _analyzerService.GetAnalyzerSettingsAsync(request);
-      Settings = settingsResponse;
-    }
-    catch(RpcException)
-    {
-      Settings = new AresStruct();
-    }
-  }
-
-  public async Task PushSettings()
-  {
-    var settings = new AnalyzerSettings
-    {
-      AnalyzerId = _analyzerInfo.UniqueId,
-      Settings = Settings
-    };
-    try
-    {
-      await _analyzerService.SetAnalyzerSettingsAsync(settings);
-    }
-    catch (RpcException)
-    {
-      // TODO maybe notify user
-    }
-  }
-
   public async Task UpdateInfo()
   {
     var request = new AnalyzerInfoRequest { AnalyzerId = _analyzerInfo.UniqueId };
@@ -155,7 +123,6 @@ public class AnalyzerSettingsViewModel : ReactiveObject
       Name = infoResponse.Info.Name;
       Version = infoResponse.Info.Version;
       Description = infoResponse.Info.Description;
-      SettingsSchema = infoResponse.Info.Capabilities?.SettingsSchema ?? new AresDataSchema();
     }
     catch(RpcException e)
     {

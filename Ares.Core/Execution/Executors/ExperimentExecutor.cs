@@ -60,6 +60,7 @@ public class ExperimentExecutor : IExecutor<ExperimentExecutionSummary, Experime
   {
     var completedExperiment = new ExperimentOverview
     {
+      UniqueId = Guid.NewGuid().ToString(),
       Template = Template.AssignNewUniquePlanningIds(),
       Result = ResultGenerator.GenerateExperimentResult(stepSummaries, Template.StepTemplates),
     };

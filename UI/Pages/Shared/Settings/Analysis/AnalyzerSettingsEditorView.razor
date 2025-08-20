@@ -1,0 +1,29 @@
+﻿@using Ares.Datamodel
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Backend.ViewModels.Settings.Analysis.AnalyzerSettingsEditorViewModel>
+
+<EditForm Model="@ViewModel" OnValidSubmit="OnValidSubmit">
+	<RadzenStack Orientation="Orientation.Vertical" Gap="5px">
+		@foreach(var settingField in ViewModel!.Settings.Fields)
+		{
+			<AresValueDesigner Name="@settingField.Key" Value="@settingField.Value" Schema="@ViewModel!.SettingsSchema.Fields[settingField.Key]" ValueEditCallback="@(value => ValueEditCallback(settingField.Key, value))" />
+		}
+	</RadzenStack>
+</EditForm>
+
+@code {
+	[Parameter]
+	public Action OnValidSubmit { get; set; } = delegate { };
+
+	private Task ValueEditCallback(string name, AresValue value)
+	{
+		ViewModel!.Settings.Fields[name] = value;
+		return ViewModel!.PushSettings();
+	}
+
+	protected override async Task OnInitializedAsync()
+	{
+		await ViewModel!.UpdateInfo();
+		await ViewModel!.FetchSettings();
+		await base.OnInitializedAsync();
+	}
+}

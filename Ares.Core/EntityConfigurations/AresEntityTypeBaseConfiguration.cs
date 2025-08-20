@@ -16,21 +16,6 @@ public abstract class AresEntityTypeBaseConfiguration<TAresCoreEntity> : IEntity
       .HasConversion(s => string.IsNullOrEmpty(s) ? default : Guid.Parse(s), guid => guid.ToString())
       .ValueGeneratedOnAdd();
 
-    //builder
-    //  .Property<string?>("CreationTime")
-    //  .HasConversion(s => string.IsNullOrEmpty(s) ? default : DateTime.Parse(s), time => time.ToString())
-    //  .ValueGeneratedOnAdd()
-    //  .HasDefaultValue();
-
-    //builder
-    //  .Property<string?>("LastModified")
-    //  .HasConversion(s => string.IsNullOrEmpty(s) ? default : DateTime.Parse(s), time => time.ToString())
-    //  .ValueGeneratedOnUpdate();
-
-    //builder
-    //.Property<string?>("UniqueId")
-    //.HasDefaultValueSql("NEWID()");
-
     builder
       .Property<DateTime>("CreationTime")
       .ValueGeneratedOnAdd()

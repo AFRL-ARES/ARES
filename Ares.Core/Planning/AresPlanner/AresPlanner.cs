@@ -65,7 +65,9 @@ public class AresPlanner : IPlanner
       IsPlanned = true,
       DataType = metadata.GetType().ToString()
     };
-    parameter.ParameterHistory.AddRange(relevantInfo.Select(param => double.Parse(param.Value.StringValue)));
+
+    //TODO: Fix me!!!
+    parameter.ParameterHistory.AddRange(relevantInfo.Select(param => param.Value.NumberValue));
 
     if(metadata.Constraints.Any())
     {
