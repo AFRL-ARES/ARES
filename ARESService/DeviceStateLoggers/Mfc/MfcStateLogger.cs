@@ -1,13 +1,13 @@
-﻿using AlicatMFC;
-using Ares.Core.EntityConfigurations;
-using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
+using AlicatMFC;
+using Ares.Core.EntityConfigurations;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 
 namespace AresService.DeviceStateLoggers.Mfc;
 
@@ -23,7 +23,7 @@ public class MfcStateLogger : IMfcStateLogger
     _device = device;
   }
 
-  public string DeviceId => _device.Name;
+  public string DeviceId => _device.UniqueId;
 
   public void Dispose()
   {
@@ -33,7 +33,7 @@ public class MfcStateLogger : IMfcStateLogger
   public async Task Start()
   {
     using var context = _dbContextFactory.CreateDbContext();
-    var existingInfo = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.DeviceName == _device.Name && config.DeviceType == _device.GetType().FullName);
+    var existingInfo = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.UniqueId == _device.UniqueId && config.DeviceType == _device.GetType().FullName);
     _stateWatcher = _device.StateStream
       .Where(state => state is not null)
       .Subscribe(async state => await UpdateState(state!));
@@ -61,7 +61,7 @@ public class MfcStateLogger : IMfcStateLogger
       MassFlow = state.LiveData.MassFlow?.StandardCubicCentimetersPerMinute,
       VolumetricFlow = state.LiveData.VolumetricFlow?.CubicCentimetersPerMinute,
       Setpoint = state.LiveData.Setpoint?.StandardCubicCentimetersPerMinute,
-      DeviceId = state.Name,
+      DeviceId = _device.UniqueId,
       Temperature = state.LiveData.Temperature?.DegreesCelsius
     };
 
@@ -87,7 +87,7 @@ public class MfcStateLogger : IMfcStateLogger
       MassFlow = state.LiveData.MassFlow?.StandardCubicCentimetersPerMinute,
       VolumetricFlow = state.LiveData.VolumetricFlow?.CubicCentimetersPerMinute,
       Setpoint = state.LiveData.Setpoint?.StandardCubicCentimetersPerMinute,
-      DeviceId = state.Name,
+      DeviceId = _device.UniqueId,
       Temperature = state.LiveData.Temperature?.DegreesCelsius
     };
 

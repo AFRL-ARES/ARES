@@ -49,10 +49,10 @@ public class MfcSettingsViewModel : ReactiveObject
   public async Task Init()
   {
     var status = await GetDeviceOperationalStatus();
-    if (status.OperationalState is not OperationalState.Active)
+    if(status.OperationalState is not OperationalState.Active)
       return;
 
-    var state = await _mfcClient.GetStateAsync(new DeviceRequest { DeviceName = MfcConfig.Name });
+    var state = await _mfcClient.GetStateAsync(new DeviceRequest { DeviceId = _deviceConfig.UniqueId });
     AvailableGases = state.AvailableGasInfos.OrderBy(entry => entry.Index).Select(entry => entry.Name);
     var ids = await _mfcClient.GetAvailableIdsAsync(new GetAvailableIdsRequest { PortName = MfcConfig.PortName, Simulated = MfcConfig.Simulated });
     AvailableIds = ids.Ids.Select(s => s.First());
@@ -65,11 +65,11 @@ public class MfcSettingsViewModel : ReactiveObject
   {
     try
     {
-      var status = await _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceName = MfcConfig.Name }).ResponseAsync;
+      var status = await _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceId = _deviceConfig.UniqueId }).ResponseAsync;
       DeviceActive = status.OperationalState is OperationalState.Active;
       return status;
     }
-    catch (RpcException)
+    catch(RpcException)
     {
       return new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Unable to find a registered mfc with a name {MfcConfig.Name}" };
     }
@@ -77,38 +77,50 @@ public class MfcSettingsViewModel : ReactiveObject
 
   public async Task Activate()
   {
-    await _mfcClient.StartDataCaptureAsync(new DeviceRequest { DeviceName = MfcConfig.Name });
-    await _devicesClient.ActivateAsync(new DeviceActivateRequest { DeviceName = MfcConfig.Name });
+    await _mfcClient.StartDataCaptureAsync(new DeviceRequest { DeviceId = _deviceConfig.UniqueId });
+    await _devicesClient.ActivateAsync(new DeviceActivateRequest { DeviceId = _deviceConfig.UniqueId });
   }
 
   public async Task Save()
   {
     var mfcConfig = EditViewModel.Save();
-    await _mfcClient.UpdateMfcAsync(mfcConfig);
+    var updateRequest = new MfcUpdateRequest
+    {
+      Id = _deviceConfig.UniqueId,
+      Config = mfcConfig
+    };
+
+    await _mfcClient.UpdateMfcAsync(updateRequest);
   }
 
   public async Task Remove()
   {
-    await _mfcClient.RemoveMfcAsync(new MfcRemoveRequest { MfcName = _deviceConfig.DeviceName });
+    await _mfcClient.RemoveMfcAsync(new MfcRemoveRequest { MfcId = _deviceConfig.UniqueId });
     await OnRemoveCallback();
   }
 
   public async Task ChangeId()
   {
-    if (!TargetId.HasValue || TargetId == CurrentId)
+    if(!TargetId.HasValue || TargetId == CurrentId)
       return;
 
-    await _mfcClient.ChangeHardwareUnitIdAsync(new ChangeUnitIdRequest { DeviceRequest = new DeviceRequest { DeviceName = MfcConfig.Name }, Id = TargetId.ToString() });
+    await _mfcClient.ChangeHardwareUnitIdAsync(new ChangeUnitIdRequest { DeviceRequest = new DeviceRequest { DeviceId = _deviceConfig.UniqueId }, Id = TargetId.ToString() });
     MfcConfig.Id = TargetId.ToString();
-    await _mfcClient.UpdateMfcAsync(MfcConfig);
+    var updateRequest = new MfcUpdateRequest
+    {
+      Id = _deviceConfig.UniqueId,
+      Config = MfcConfig
+    };
+
+    await _mfcClient.UpdateMfcAsync(updateRequest);
     await Init();
   }
 
   public async Task ChangeGas()
   {
-    if (string.IsNullOrEmpty(TargetGas) || TargetGas == CurrentGas || AvailableGases is null)
+    if(string.IsNullOrEmpty(TargetGas) || TargetGas == CurrentGas || AvailableGases is null)
       return;
 
-    await _mfcClient.ChooseDifferentGasAsync(new ChooseDifferentGasRequest { DeviceRequest = new DeviceRequest { DeviceName = MfcConfig.Name }, GasNumber = AvailableGases.IndexOf(TargetGas) });
+    await _mfcClient.ChooseDifferentGasAsync(new ChooseDifferentGasRequest { DeviceRequest = new DeviceRequest { DeviceId = _deviceConfig.UniqueId }, GasNumber = AvailableGases.IndexOf(TargetGas) });
   }
 }

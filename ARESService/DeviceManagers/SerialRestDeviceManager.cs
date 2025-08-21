@@ -1,12 +1,14 @@
-﻿using Ares.Core.Device;
-using Ares.Device.Serial;
-using AresService.ConnectionManagement;
-using RestSerialDevice;
-using RestSerialDevice.Config;
-using RestSerialDevice.Simulation;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Ares.Core.Device;
+using Ares.Device.Serial;
+using AresService.ConnectionManagement;
+using AresService.DeviceDbLoaders;
+using RestSerialDevice;
+using RestSerialDevice.Config;
+using RestSerialDevice.Simulation;
 
 namespace AresService.DeviceManagers;
 
@@ -22,44 +24,60 @@ public class SerialRestDeviceManager : IDeviceManager<RestSerialConfig, ISerialR
     _deviceCommandInterpreterRepo = deviceCommandInterpreters;
   }
 
-  public async Task<ISerialRestDevice> Load(RestSerialConfig config)
+  public Task<ISerialRestDevice> Create(RestSerialConfig config)
+  {
+    return Load(Guid.NewGuid().ToString(), config);
+  }
+
+  public async Task<ISerialRestDevice> Load(string id, RestSerialConfig config)
   {
     var connection = _connectionManager.GetConnection(config.PortName, config.Simulated);
-    
-    var device = new SerialRestDevice(config.Name, connection);
+
+    var device = new SerialRestDevice(config.Name, connection)
+    {
+      UniqueId = id
+    };
+
     await device.Init();
     await device.Activate();
-    
+
     var interpreter = new SerialRestDeviceInterpreter(device);
     _deviceCommandInterpreterRepo.Add(interpreter);
 
     return device;
   }
 
-  public async Task<ISerialRestDevice> Update(RestSerialConfig config)
+  public async Task<ISerialRestDevice[]> Load(IEnumerable<LoadableConfig<RestSerialConfig>> configs)
+  {
+    var restDevices = await Task.WhenAll(configs.Select(cfg => Load(cfg.Id, cfg.DeviceConfig)));
+    return restDevices;
+  }
+
+
+  public async Task<ISerialRestDevice> Update(string id, RestSerialConfig config)
   {
     var existingRestDevice = _deviceCommandInterpreterRepo
       .Select(interpreter => interpreter.Device)
       .OfType<ISerialRestDevice>()
-      .FirstOrDefault(device => device.Name == config.Name);
+      .FirstOrDefault(device => device.UniqueId == id);
 
     if(existingRestDevice is null)
-      return await Load(config);
+      return await Create(config);
 
     // if nothing changed, don't bother re-adding the device
     if(existingRestDevice.Connection.Name == config.PortName)
       if((existingRestDevice.Connection is SimRestSerialConnection && config.Simulated) || (existingRestDevice.Connection is SerialRestDeviceConnection && !config.Simulated))
         return existingRestDevice;
 
-    await Remove(existingRestDevice.Name);
+    await Remove(existingRestDevice.UniqueId);
 
-    return await Load(config);
+    return await Load(id, config);
   }
 
-  public async Task Remove(string restDeviceName)
+  public async Task Remove(string restDeviceId)
   {
     var restDeviceInterpreter = _deviceCommandInterpreterRepo
-      .FirstOrDefault(interpreter => interpreter.Device.Name == restDeviceName);
+      .FirstOrDefault(interpreter => interpreter.Device.UniqueId == restDeviceId);
 
     if(restDeviceInterpreter?.Device is not ISerialRestDevice restDevice)
       return;
@@ -74,12 +92,6 @@ public class SerialRestDeviceManager : IDeviceManager<RestSerialConfig, ISerialR
 
     if(!connectionInUse)
       _connectionManager.RemoveConnection(connection);
-  }
-
-  public async Task<IEnumerable<ISerialRestDevice>> Load(IEnumerable<RestSerialConfig> configs)
-  {
-    var restDevice = await Task.WhenAll(configs.Select(Load));
-    return restDevice;
   }
 
 

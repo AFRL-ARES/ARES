@@ -1,8 +1,10 @@
 ﻿using Ares.Core.Device;
 using Ares.Device.Serial;
 using AresService.ConnectionManagement;
+using AresService.DeviceDbLoaders;
 using AresService.DeviceStateLoggers;
 using AresService.DeviceStateLoggers.Tc0304;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -29,10 +31,19 @@ public class Tc0304Manager : IDeviceManager<Tc0304Config, IDataloggerThermometer
     _connectionManager = connectionManager;
   }
 
-  public async Task<IDataloggerThermometer> Load(Tc0304Config config)
+  public Task<IDataloggerThermometer> Create(Tc0304Config config)
+  {
+    return Load(Guid.NewGuid().ToString(), config);
+  }
+
+  public async Task<IDataloggerThermometer> Load(string id, Tc0304Config config)
   {
     var connection = _connectionManager.GetConnection(config.PortName, config.Simulated);
-    var device = new DataloggerThermometer(config.Name, connection);
+    var device = new DataloggerThermometer(config.Name, connection)
+    {
+      UniqueId = id
+    };
+
     if (config.Probe1Name is not null)
       device.ProbeNames.T1Name = config.Probe1Name;
 
@@ -55,30 +66,30 @@ public class Tc0304Manager : IDeviceManager<Tc0304Config, IDataloggerThermometer
     return device;
   }
 
-  public async Task<IDataloggerThermometer> Update(Tc0304Config config)
+  public async Task<IDataloggerThermometer> Update(string id, Tc0304Config config)
   {
     var existingLogger = _deviceCommandInterpreterRepo
       .Select(interpreter => interpreter.Device)
       .OfType<IDataloggerThermometer>()
-      .FirstOrDefault(device => device.Name == config.Name);
+      .FirstOrDefault(device => device.UniqueId == id);
 
     if (existingLogger is null)
-      return await Load(config);
+      return await Create(config);
 
     // if nothing changed, don't bother re-adding the device
     if (existingLogger.Connection.Name == config.PortName)
       if ((existingLogger.Connection is SimDataloggerThermometerConnection && config.Simulated) || (existingLogger.Connection is DataloggerThermometerConnection && !config.Simulated))
         return existingLogger;
 
-    await Remove(existingLogger.Name);
+    await Remove(existingLogger.UniqueId);
 
-    return await Load(config);
+    return await Load(id, config);
   }
 
-  public async Task Remove(string dataloggerName)
+  public async Task Remove(string dataloggerId)
   {
     var dataloggerInterpreter = _deviceCommandInterpreterRepo
-      .FirstOrDefault(interpreter => interpreter.Device.Name == dataloggerName);
+      .FirstOrDefault(interpreter => interpreter.Device.UniqueId == dataloggerId);
 
     if (dataloggerInterpreter?.Device is not IDataloggerThermometer logger)
       return;
@@ -96,9 +107,9 @@ public class Tc0304Manager : IDeviceManager<Tc0304Config, IDataloggerThermometer
       _connectionManager.RemoveConnection(connection);
   }
 
-  public async Task<IEnumerable<IDataloggerThermometer>> Load(IEnumerable<Tc0304Config> configs)
+  public async Task<IDataloggerThermometer[]> Load(IEnumerable<LoadableConfig<Tc0304Config>> configs)
   {
-    var pumps = await Task.WhenAll(configs.Select(Load));
+    var pumps = await Task.WhenAll(configs.Select(c => Load(c.Id, c.DeviceConfig)));
     return pumps;
   }
 }

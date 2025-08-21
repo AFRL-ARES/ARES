@@ -12,18 +12,23 @@ service ChillerRpc {
 	rpc SetChillerStandbyMode(ChillerRequest) returns (google.protobuf.Empty);
 	rpc GetManifoldTemperature(ChillerRequest) returns (ManifoldTemperatureResponse);
 
-	rpc UpdateChiller(config.ChillerConfig) returns (google.protobuf.Empty);
+	rpc UpdateChiller(UpdateChillerRequest) returns (google.protobuf.Empty);
 	rpc RemoveChiller(ChillerRequest) returns (google.protobuf.Empty);
 	rpc AddChiller(config.ChillerConfig) returns (google.protobuf.Empty);
 	rpc GetAllChillers(google.protobuf.Empty) returns (GetAllChillersResponse);
 }
 
 message ChillerRequest {
-	string chiller_name = 1;
+	string chiller_id = 1;
+}
+
+message UpdateChillerRequest {
+	string chiller_id = 1;
+	config.ChillerConfig config = 2;
 }
 
 message SetChillerTemperatureRequest {
-	string chiller_name = 1;
+	string chiller_id = 1;
 	double desired_temperature = 2;
 }
 
@@ -32,6 +37,11 @@ message ManifoldTemperatureResponse {
 }
 
 message GetAllChillersResponse {
-	repeated string device_names = 1;
+	repeated ChillerDescription chillers = 1;
+}
+
+message ChillerDescription {
+	string id = 1;
+	string name = 2;
 }
 

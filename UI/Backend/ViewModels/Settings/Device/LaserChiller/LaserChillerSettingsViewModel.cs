@@ -30,7 +30,7 @@ public class LaserChillerSettingsViewModel : ReactiveObject
   {
     try
     {
-      return _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceName = ChillerConfig.Name }).ResponseAsync;
+      return _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceId = _deviceConfig.UniqueId }).ResponseAsync;
     }
 
     catch(RpcException)
@@ -42,18 +42,24 @@ public class LaserChillerSettingsViewModel : ReactiveObject
   public async Task Save()
   {
     var laserConfig = EditViewModel.Save();
-    await _chillerClient.UpdateChillerAsync(laserConfig);
+    var updateRequest = new UpdateChillerRequest
+    {
+      ChillerId = _deviceConfig.UniqueId,
+      Config = laserConfig
+    };
+
+    await _chillerClient.UpdateChillerAsync(updateRequest);
   }
 
   public Task Activate()
     => _devicesClient.ActivateAsync(new DeviceActivateRequest
     {
-      DeviceName = ChillerConfig.Name
+      DeviceId = _deviceConfig.UniqueId
     }).ResponseAsync;
 
   public async Task Remove()
   {
-    await _chillerClient.RemoveChillerAsync(new ChillerRequest { ChillerName = _deviceConfig.DeviceName });
+    await _chillerClient.RemoveChillerAsync(new ChillerRequest { ChillerId = _deviceConfig.UniqueId });
     await OnRemoveCallback();
   }
 

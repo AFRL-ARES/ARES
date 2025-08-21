@@ -5,7 +5,7 @@ namespace Ares.Core.CoreDevice;
 
 public class AresCoreDevice : AresDevice
 {
-  public AresCoreDevice() : base("ARES")
+  public AresCoreDevice() : base("ARES", "ARES-CORE-DEVICE")
   {
   }
 

@@ -13,7 +13,7 @@ public class TubeFurnaceViewModel : SerialDeviceUnitViewModel, IAsyncDisposable
   private CancellationTokenSource _stateUpdateTokenSource;
   private TemperatureUnit _temperatureUnit = TemperatureUnit.DegreeCelsius;
 
-  public TubeFurnaceViewModel(string deviceName, TubeFurnaceRpc.TubeFurnaceRpcClient tubeFurnaceClient) : base(deviceName)
+  public TubeFurnaceViewModel(string id, string deviceName, TubeFurnaceRpc.TubeFurnaceRpcClient tubeFurnaceClient) : base(id, deviceName)
   {
     _tubeFurnaceClient = tubeFurnaceClient;
     _stateUpdateTokenSource = new();
@@ -40,11 +40,11 @@ public class TubeFurnaceViewModel : SerialDeviceUnitViewModel, IAsyncDisposable
 
   private async Task UpdateState()
   {
-    var deviceRequest = new TubeFurnaceRequest { TubeFurnaceName = DeviceName };
+    var deviceRequest = new TubeFurnaceRequest { TubeFurnaceId = DeviceId };
     await _tubeFurnaceClient.GetSetpointAsync(deviceRequest);
     await _tubeFurnaceClient.GetCurrentTemperatureAsync(deviceRequest);
 
-    var state = await _tubeFurnaceClient.GetStateAsync(new TubeFurnaceRequest { TubeFurnaceName = DeviceName });
+    var state = await _tubeFurnaceClient.GetStateAsync(new TubeFurnaceRequest { TubeFurnaceId = DeviceId });
 
     // TODO
     CurrentTemperatureValue = Temperature.FromDegreesCelsius(state.CurrentTemperature).As(TemperatureUnit);
@@ -68,7 +68,7 @@ public class TubeFurnaceViewModel : SerialDeviceUnitViewModel, IAsyncDisposable
       {
         DeviceRequest = new TubeFurnaceRequest
         {
-          TubeFurnaceName = DeviceName
+          TubeFurnaceId = DeviceId
         },
         DegreesCelsius = Temperature.From(value, TemperatureUnit).DegreesCelsius
       });

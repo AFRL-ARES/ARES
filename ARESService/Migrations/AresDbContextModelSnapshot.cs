@@ -378,34 +378,7 @@ namespace AresService.Migrations
                     b.ToTable("CommandExecutionSummaries", (string)null);
                 });
 
-            modelBuilder.Entity("Ares.Datamodel.Device.DeviceConfig", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("DeviceName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("DeviceType")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("DeviceConfigs", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Datamodel.DeviceCommandResult", b =>
+            modelBuilder.Entity("Ares.Datamodel.CommandResult", b =>
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
@@ -443,6 +416,123 @@ namespace AresService.Migrations
                         .HasFilter("[CommandExecutionSummaryId] IS NOT NULL");
 
                     b.ToTable("DeviceCommandResults", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Device.DeviceConfig", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("DeviceName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DeviceType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("DeviceConfigs", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Device.DeviceInfo", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Type")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Url")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Version")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("DeviceInfos");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Device.DeviceSettings", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("DeviceId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Settings")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("DeviceSettings");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Device.RemoteDeviceConfig", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Url")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("RemoteDevices", (string)null);
                 });
 
             modelBuilder.Entity("Ares.Datamodel.ExecutionInfo", b =>
@@ -1516,11 +1606,11 @@ namespace AresService.Migrations
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 
-            modelBuilder.Entity("Ares.Datamodel.DeviceCommandResult", b =>
+            modelBuilder.Entity("Ares.Datamodel.CommandResult", b =>
                 {
                     b.HasOne("Ares.Datamodel.CommandExecutionSummary", null)
                         .WithOne("Result")
-                        .HasForeignKey("Ares.Datamodel.DeviceCommandResult", "CommandExecutionSummaryId")
+                        .HasForeignKey("Ares.Datamodel.CommandResult", "CommandExecutionSummaryId")
                         .OnDelete(DeleteBehavior.ClientCascade);
                 });
 

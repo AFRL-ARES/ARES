@@ -20,7 +20,7 @@ public class SerialRestDeviceUnitControlViewModel : UsbDeviceUnitViewModel
     public async Task UpdateDeviceCapabilities()
     {
         
-        var response = await _client.GetDeviceCapabilitiesAsync(new DeviceRequest() { DeviceName = DeviceName });
+        var response = await _client.GetDeviceCapabilitiesAsync(new DeviceRequest() { DeviceId = DeviceId });
         DeviceMethods.Clear();
         MethodParameters.Clear();
 
@@ -39,7 +39,7 @@ public class SerialRestDeviceUnitControlViewModel : UsbDeviceUnitViewModel
 
         if (!found || parameters is null)
             throw new InvalidOperationException("Unknown method requested!");
-        var request = new DeviceMethodRequest() { DeviceName = DeviceName, MethodName = commandName };
+        var request = new DeviceMethodRequest() { DeviceId = DeviceId, MethodName = commandName };
 
         foreach (var param in parameters)
         {
@@ -75,8 +75,8 @@ public class SerialRestDeviceUnitControlViewModel : SerialDeviceUnitViewModel, I
     private readonly CancellationTokenSource _stateStreamCts = new();
     private Task _stateListener = Task.CompletedTask;
 
-    public SerialRestDeviceUnitControlViewModel(string deviceName, RestSerialDeviceRpc.RestSerialDeviceRpcClient client) :
-        base(deviceName)
+    public SerialRestDeviceUnitControlViewModel(string deviceId, string deviceName, RestSerialDeviceRpc.RestSerialDeviceRpcClient client) :
+        base(deviceId, deviceName)
     {
         _client = client;
     }
@@ -84,7 +84,7 @@ public class SerialRestDeviceUnitControlViewModel : SerialDeviceUnitViewModel, I
     public async Task UpdateDeviceCapabilities()
     {
         
-        var response = await _client.GetDeviceCapabilitiesAsync(new DeviceRequest() { DeviceName = DeviceName });
+        var response = await _client.GetDeviceCapabilitiesAsync(new DeviceRequest() { DeviceId = DeviceId });
         DeviceMethods.Clear();
         MethodParameters.Clear();
 
@@ -103,7 +103,7 @@ public class SerialRestDeviceUnitControlViewModel : SerialDeviceUnitViewModel, I
 
         if (!found || parameters is null)
             throw new InvalidOperationException("Unknown method requested!");
-        var request = new DeviceMethodRequest() { DeviceName = DeviceName, MethodName = commandName };
+        var request = new DeviceMethodRequest() { DeviceId = DeviceId, MethodName = commandName };
 
         foreach (var param in parameters)
         {

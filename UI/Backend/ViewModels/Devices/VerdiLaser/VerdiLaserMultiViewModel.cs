@@ -13,12 +13,13 @@ public class VerdiLaserMultiViewModel : SerialDeviceConnectorViewModel<VerdiLase
     _client = client;
   }
 
-  protected override VerdiLaserUnitControlViewModel CreateUnitVm(string deviceName)
-    => new(deviceName, _client);
+  protected override VerdiLaserUnitControlViewModel CreateUnitVm(AresDeviceDescription description)
+    => new(description.Name, description.Id, _client);
 
-  protected override async Task<IEnumerable<string>> GetDeviceNames()
+  protected override async Task<AresDeviceDescription[]> GetDeviceDescriptions()
   {
     var devicesResponse = await _client.GetAllLasersAsync(new Empty());
-    return devicesResponse.DeviceNames;
+    var descriptions = devicesResponse.Devices.Select(d => new AresDeviceDescription(d.Name, d.Id)).ToArray();
+    return descriptions;
   }
 }

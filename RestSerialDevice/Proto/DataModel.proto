@@ -5,7 +5,7 @@ package rest_serial_device.data_model;
 import "google/protobuf/wrappers.proto";
 
 message Data {
-	string device_name = 1;
+	string device_id = 1;
 	map<string, string> values = 2;
 }
 

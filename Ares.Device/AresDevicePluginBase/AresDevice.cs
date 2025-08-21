@@ -13,6 +13,14 @@ public abstract class AresDevice : IAresDevice
     { OperationalState = OperationalState.Inactive, Message = $"{Name} constructed. Activation has not been called yet." };
   }
 
+  protected AresDevice(string name, string id)
+  {
+    Name = name;
+    UniqueId = id;
+    Status = new DeviceOperationalStatus
+    { OperationalState = OperationalState.Inactive, Message = $"{Name} constructed. Activation has not been called yet." };
+  }
+
   public string Name { get; }
   public DeviceOperationalStatus Status { get; protected set; }
 
@@ -22,7 +30,7 @@ public abstract class AresDevice : IAresDevice
 
   public string Description { get; protected set; } = "";
 
-  public string UniqueId { get; protected set; } = Guid.NewGuid().ToString();
+  public string UniqueId { get; init; } = Guid.NewGuid().ToString();
 
   public abstract Task<bool> Activate();
   public abstract Task EnterSafeMode();

@@ -1,9 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Ares.Core.Device;
 using Ares.Device.Serial;
 using AresService.ConnectionManagement;
+using AresService.DeviceDbLoaders;
 using AresService.DeviceStateLoggers;
 using AresService.DeviceStateLoggers.TicStepperController;
 using Microsoft.Extensions.Logging;
@@ -33,11 +35,19 @@ public class StepperControllerManager : IDeviceManager<StepperControllerConfig, 
     _connectionManager = connectionManager;
   }
 
-  public async Task<IStepperController> Load(StepperControllerConfig config)
+  public Task<IStepperController> Create(StepperControllerConfig config)
+  {
+    return Load(Guid.NewGuid().ToString(), config);
+  }
+
+  public async Task<IStepperController> Load(string id, StepperControllerConfig config)
   {
     var connection = _connectionManager.GetConnection(config.PortName, config.Simulated);
     var ticLogger = _loggerFactory.CreateLogger<IStepperController>();
-    var device = new StepperController(config.Name, connection, ticLogger);
+    var device = new StepperController(config.Name, connection, ticLogger)
+    {
+      UniqueId = id
+    };
     var ticStateLogger = _stateLoggerFactory.Create(device);
 
     await device.Activate();
@@ -51,15 +61,15 @@ public class StepperControllerManager : IDeviceManager<StepperControllerConfig, 
     return device;
   }
 
-  public async Task<IEnumerable<IStepperController>> Load(IEnumerable<StepperControllerConfig> configs)
+  public async Task<IStepperController[]> Load(IEnumerable<LoadableConfig<StepperControllerConfig>> configs)
   {
-    return await Task.WhenAll(configs.Select(config => Load(config)));
+    return await Task.WhenAll(configs.Select(config => Load(config.Id, config.DeviceConfig)));
   }
 
   public async Task Remove(string deviceId)
   {
     var dataloggerInterpreter = _deviceCommandInterpreters
-      .FirstOrDefault(interpreter => interpreter.Device.Name == deviceId);
+      .FirstOrDefault(interpreter => interpreter.Device.UniqueId == deviceId);
 
     if (dataloggerInterpreter?.Device is not IStepperController controller)
       return;
@@ -77,20 +87,20 @@ public class StepperControllerManager : IDeviceManager<StepperControllerConfig, 
       _connectionManager.RemoveConnection(connection);
   }
 
-  public async Task<IStepperController> Update(StepperControllerConfig config)
+  public async Task<IStepperController> Update(string id, StepperControllerConfig config)
   {
     var device = _deviceCommandInterpreters
       .Select(dci => dci.Device)
       .OfType<IStepperController>()
-      .FirstOrDefault(sc => sc.Name == config.Name);
+      .FirstOrDefault(sc => sc.UniqueId == id);
 
     if (device is null)
-      return await Load(config);
+      return await Load(id, config);
 
     if (ConnectionNeedsUpdating(device.Connection, config.Simulated, config.PortName))
     {
-      await Remove(config.Name);
-      return await Load(config);
+      await Remove(id);
+      return await Load(id, config);
     }
 
     await device.Init(config);

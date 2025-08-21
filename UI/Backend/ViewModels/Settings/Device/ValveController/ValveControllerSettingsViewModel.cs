@@ -36,10 +36,10 @@ public class ValveControllerSettingsViewModel : ReactiveObject
   {
     try
     {
-      return _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceName = ValveControllerConfig.Name }).ResponseAsync;
+      return _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceId = ValveControllerConfig.Id }).ResponseAsync;
     }
 
-    catch (RpcException)
+    catch(RpcException)
     {
       return Task.FromResult(new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Unable to find a registered Valve Controller with a name {ValveControllerConfig.Name}" });
     }
@@ -48,18 +48,19 @@ public class ValveControllerSettingsViewModel : ReactiveObject
   public async Task Save()
   {
     var valveControllerConfig = EditViewModel.Save();
-    await _valveControllerClient.UpdateValveControllersAsync(valveControllerConfig);
+    var updateRequest = new UpdateValveControllerRequest { Id = _deviceConfig.UniqueId, Config = valveControllerConfig };
+    await _valveControllerClient.UpdateValveControllersAsync(updateRequest);
   }
 
   public Task Activate()
     => _devicesClient.ActivateAsync(new DeviceActivateRequest
     {
-      DeviceName = ValveControllerConfig.Name
+      DeviceId = ValveControllerConfig.Id
     }).ResponseAsync;
 
   public async Task Remove()
   {
-    await _valveControllerClient.RemoveValveControllerAsync(new ValveControllerRequest { DeviceName = _deviceConfig.DeviceName });
+    await _valveControllerClient.RemoveValveControllerAsync(new ValveControllerRequest { DeviceId = ValveControllerConfig.Id });
     await OnRemoveCallback();
   }
 }

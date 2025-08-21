@@ -34,7 +34,7 @@ namespace UI.Backend.ViewModels.Settings.Device.VerdiLaser
     {
       try
       {
-        return _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceName = LaserConfig.Name }).ResponseAsync;
+        return _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceId = _deviceConfig.UniqueId }).ResponseAsync;
       }
 
       catch(RpcException)
@@ -46,18 +46,23 @@ namespace UI.Backend.ViewModels.Settings.Device.VerdiLaser
     public async Task Save()
     {
       var laserConfig = EditViewModel.Save();
-      await _laserClient.UpdateLaserAsync(laserConfig);
+      var updateRequest = new LaserUpdateRequest
+      {
+        Id = _deviceConfig.UniqueId,
+        Config = laserConfig
+      };
+      await _laserClient.UpdateLaserAsync(updateRequest);
     }
 
     public Task Activate()
       => _devicesClient.ActivateAsync(new DeviceActivateRequest
       {
-        DeviceName = LaserConfig.Name
+        DeviceId = _deviceConfig.UniqueId
       }).ResponseAsync;
 
     public async Task Remove()
     {
-      await _laserClient.RemoveLaserAsync(new DeviceRequest { DeviceName = _deviceConfig.DeviceName });
+      await _laserClient.RemoveLaserAsync(new DeviceRequest { DeviceId = _deviceConfig.UniqueId });
       await OnRemoveCallback();
     }
 

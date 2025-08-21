@@ -10,10 +10,10 @@ public class SyringePumpUnitControlViewModel : SerialDeviceUnitViewModel, IAsync
   private DeviceRequest _deviceRequest;
   private CancellationTokenSource _stateCts = new();
   private Task _stateListener = Task.CompletedTask;
-  public SyringePumpUnitControlViewModel(string syringePumpName, SyringePumpRpc.SyringePumpRpcClient syringePumpClient) : base(syringePumpName)
+  public SyringePumpUnitControlViewModel(string id, string syringePumpName, SyringePumpRpc.SyringePumpRpcClient syringePumpClient) : base(id, syringePumpName)
   {
     _syringePumpClient = syringePumpClient;
-    _deviceRequest = new DeviceRequest { DeviceName = DeviceName };
+    _deviceRequest = new DeviceRequest { DeviceId = DeviceId };
     Initialize();
     this.WhenValueChanged(vm => vm.CurrentState).Subscribe(_ => UpdateStatus());
   }

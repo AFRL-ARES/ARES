@@ -37,7 +37,7 @@ public class StepperControllerSettingsViewModel : ReactiveObject
   {
     try
     {
-      var status = await _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceName = StepperControllerConfig.Name }).ResponseAsync;
+      var status = await _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceId = _deviceConfig.UniqueId }).ResponseAsync;
       DeviceActive = status.OperationalState is OperationalState.Active;
       return status;
     }
@@ -48,17 +48,23 @@ public class StepperControllerSettingsViewModel : ReactiveObject
   }
 
   public Task Activate()
-    => _devicesClient.ActivateAsync(new DeviceActivateRequest { DeviceName = StepperControllerConfig.Name }).ResponseAsync;
+    => _devicesClient.ActivateAsync(new DeviceActivateRequest { DeviceId = _deviceConfig.UniqueId }).ResponseAsync;
 
   public async Task Save()
   {
-    var syringePumpConfig = EditViewModel.Save();
-    await _stepperControllerClient.UpdateStepperControllerAsync(syringePumpConfig);
+    var stepperControllerConfig = EditViewModel.Save();
+    var updateRequest = new StepperControllerUpdateRequest
+    {
+      Id = _deviceConfig.UniqueId,
+      Config = stepperControllerConfig
+    };
+
+    await _stepperControllerClient.UpdateStepperControllerAsync(updateRequest);
   }
 
   public async Task Remove()
   {
-    await _stepperControllerClient.RemoveStepperControllerAsync(new TicRequest { TicName = _deviceConfig.DeviceName });
+    await _stepperControllerClient.RemoveStepperControllerAsync(new TicRequest { TicId = _deviceConfig.UniqueId });
     await OnRemoveCallback();
   }
 
@@ -68,7 +74,7 @@ public class StepperControllerSettingsViewModel : ReactiveObject
     if(status.OperationalState != OperationalState.Active)
       return;
 
-    var state = await _stepperControllerClient.GetStateAsync(new TicRequest { TicName = _deviceConfig.DeviceName });
+    var state = await _stepperControllerClient.GetStateAsync(new TicRequest { TicId = _deviceConfig.UniqueId });
 
     MaxAcceleration = state.MaxAcceleration;
     MaxDeceleration = state.MaxDeceleration;

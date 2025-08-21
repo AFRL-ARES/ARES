@@ -132,7 +132,7 @@ public class MetadataPickerViewModel : ReactiveObject
       return;
     }
 
-    var request = new CommandMetadatasRequest { DeviceName = SelectedDevice.Name };
+    var request = new CommandMetadatasRequest { DeviceId = SelectedDevice.Id };
     var metadataResponse = await _devicesClient.GetCommandMetadatasAsync(request);
     AvailableMetadata = metadataResponse.Metadatas.ToArray();
   }

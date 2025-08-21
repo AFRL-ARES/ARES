@@ -1,11 +1,11 @@
-﻿using Ares.Core.Device;
-using AresService.DeviceManagers;
-using Google.Protobuf.WellKnownTypes;
-using Grpc.Core;
-using System;
+﻿using System;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
+using Ares.Core.Device;
+using AresService.DeviceManagers;
+using Google.Protobuf.WellKnownTypes;
+using Grpc.Core;
 using Tc0304.Config;
 using Tc0304.DataModel;
 using Tc0304.Services;
@@ -27,19 +27,19 @@ public class Tc0304Service : TC0304Rpc.TC0304RpcBase
     _deviceManager = tc0304DeviceManager;
   }
 
-  private IDataloggerThermometer? GetDataLogger(string name)
+  private IDataloggerThermometer? GetDataLogger(string id)
   {
     var dataLogger = _deviceCommandInterpreterRepo
       .Select(interpreter => interpreter.Device)
       .OfType<IDataloggerThermometer>()
-      .FirstOrDefault(device => device.Name == name);
+      .FirstOrDefault(device => device.UniqueId == id);
 
     return dataLogger;
   }
 
   public override Task<Empty> Hold(DeviceRequest request, ServerCallContext context)
   {
-    var dataLogger = GetDataLogger(request.DeviceName);
+    var dataLogger = GetDataLogger(request.DeviceId);
 
     if(dataLogger is not null)
       dataLogger.Hold();
@@ -50,7 +50,7 @@ public class Tc0304Service : TC0304Rpc.TC0304RpcBase
   public override Task<DataResponse> GetData(DeviceRequest request, ServerCallContext context)
   {
     var response = new DataResponse();
-    var dataLogger = GetDataLogger(request.DeviceName);
+    var dataLogger = GetDataLogger(request.DeviceId);
     if(dataLogger is not null)
     {
       var data = dataLogger.StateStream.Take(1).Wait();
@@ -63,7 +63,7 @@ public class Tc0304Service : TC0304Rpc.TC0304RpcBase
 
   public override Task<Empty> StartStateUpdater(StartStateUpdaterRequest request, ServerCallContext context)
   {
-    var dataLogger = GetDataLogger(request.DeviceRequest.DeviceName);
+    var dataLogger = GetDataLogger(request.DeviceRequest.DeviceId);
 
     if(dataLogger is not null)
       dataLogger.StartStateUpdater(request.Interval?.ToTimeSpan() ?? TimeSpan.FromMilliseconds(250));
@@ -73,7 +73,7 @@ public class Tc0304Service : TC0304Rpc.TC0304RpcBase
 
   public override Task<Empty> StopStateUpdater(DeviceRequest request, ServerCallContext context)
   {
-    var dataLogger = GetDataLogger(request.DeviceName);
+    var dataLogger = GetDataLogger(request.DeviceId);
 
     if(dataLogger is not null)
       dataLogger.StopStateUpdater();
@@ -83,22 +83,22 @@ public class Tc0304Service : TC0304Rpc.TC0304RpcBase
 
   public override async Task<Empty> AddTc0304(Tc0304Config request, ServerCallContext context)
   {
-    await _deviceManager.Load(request);
-    await _configManager.Add(request.Name, request);
+    var device = await _deviceManager.Create(request);
+    await _configManager.Add(device.UniqueId, device.Name, request);
     return new Empty();
   }
 
   public override async Task<Empty> RemoveTc0304(Tc0304Request request, ServerCallContext context)
   {
-    await _deviceManager.Remove(request.Tc0304Name);
-    await _configManager.Remove(request.Tc0304Name);
+    await _deviceManager.Remove(request.Tc0304Id);
+    await _configManager.Remove(request.Tc0304Id);
     return new Empty();
   }
 
-  public override async Task<Empty> UpdateTc0304(Tc0304Config request, ServerCallContext context)
+  public override async Task<Empty> UpdateTc0304(UpdateTc0304Request request, ServerCallContext context)
   {
-    await _deviceManager.Update(request);
-    await _configManager.Update(request.Name, request);
+    await _deviceManager.Update(request.Id, request.Config);
+    await _configManager.Update(request.Id, request.Config);
     return new Empty();
   }
 
@@ -110,10 +110,10 @@ public class Tc0304Service : TC0304Rpc.TC0304RpcBase
     var dataLoggers = _deviceCommandInterpreterRepo
       .Select(interpreter => interpreter.Device)
       .OfType<IDataloggerThermometer>()
-      .Select(thermometer => thermometer.Name);
+      .Select(thermometer => new DeviceDescription { Id = thermometer.UniqueId, Name = thermometer.Name });
 
     var response = new GetAllTc0304sResponse();
-    response.DeviceNames.AddRange(dataLoggers);
+    response.Devices.AddRange(dataLoggers);
 
     return Task.FromResult(response);
   }

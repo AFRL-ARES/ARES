@@ -13,17 +13,12 @@ public class RestDeviceMultiViewModel : UsbDeviceConnectorViewModel<RestDeviceUn
     _client = client;
   }
 
-  protected override RestDeviceUnitControlViewModel CreateUnitVm(string deviceName) => new(deviceName, _client);
+  protected override RestDeviceUnitControlViewModel CreateUnitVm(string deviceId, string deviceName) => new(deviceId, deviceName, _client);
 
-  protected override async Task<IEnumerable<string>> GetDeviceNames()
+  protected override async Task<AresDeviceDescription[]> GetDeviceDescriptions()
   {
     var devicesResponse = await _client.GetAllRestDevicesAsync(new Empty());
-    return devicesResponse.DeviceNames;
-  }
-
-  protected override async Task<IEnumerable<string>> GetDeviceIds()
-  {
-    var devicesResponse = await _client.GetAllRestDevicesAsync(new Empty());
-    return devicesResponse.DeviceNames;
+    var descriptions = devicesResponse.Devices.Select(dev => new AresDeviceDescription(dev.Id, dev.Name)).ToArray();
+    return descriptions;
   }
 }

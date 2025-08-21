@@ -37,7 +37,7 @@ namespace UI.Backend.ViewModels.Settings.Device.TubeFurnace
     {
       try
       {
-        var status = await _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceName = TubeFurnaceConfig.Name }).ResponseAsync;
+        var status = await _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceId = _deviceConfig.UniqueId }).ResponseAsync;
         DeviceActive = status.OperationalState is OperationalState.Active;
         return status;
       }
@@ -48,17 +48,23 @@ namespace UI.Backend.ViewModels.Settings.Device.TubeFurnace
     }
 
     public Task Activate()
-      => _devicesClient.ActivateAsync(new DeviceActivateRequest { DeviceName = TubeFurnaceConfig.Name }).ResponseAsync;
+      => _devicesClient.ActivateAsync(new DeviceActivateRequest { DeviceId = _deviceConfig.UniqueId }).ResponseAsync;
 
     public async Task Save()
     {
       var tubeFurnaceConfig = EditViewModel.Save();
-      await _tubeFurnaceClient.UpdateTubeFurnaceAsync(tubeFurnaceConfig);
+      var updateRequest = new TubeFurnaceUpdateRequest
+      {
+        Id = _deviceConfig.UniqueId,
+        Config = tubeFurnaceConfig
+      };
+
+      await _tubeFurnaceClient.UpdateTubeFurnaceAsync(updateRequest);
     }
 
     public async Task Remove()
     {
-      await _tubeFurnaceClient.RemoveTubeFurnaceAsync(new TubeFurnaceRequest { TubeFurnaceName = _deviceConfig.DeviceName });
+      await _tubeFurnaceClient.RemoveTubeFurnaceAsync(new TubeFurnaceRequest { TubeFurnaceId = _deviceConfig.UniqueId });
       await OnRemoveCallback();
     }
 
@@ -68,7 +74,7 @@ namespace UI.Backend.ViewModels.Settings.Device.TubeFurnace
       if (status.OperationalState != OperationalState.Active)
         return;
 
-      var state = await _tubeFurnaceClient.GetStateAsync(new TubeFurnaceRequest { TubeFurnaceName = _deviceConfig.DeviceName });
+      var state = await _tubeFurnaceClient.GetStateAsync(new TubeFurnaceRequest { TubeFurnaceId = _deviceConfig.UniqueId });
 
     }
 

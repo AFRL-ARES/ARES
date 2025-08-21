@@ -1,6 +1,8 @@
 ﻿using Ares.Core.Device;
 using Ares.Device.Serial;
 using AresService.ConnectionManagement;
+using AresService.DeviceDbLoaders;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -22,10 +24,18 @@ namespace AresService.DeviceManagers
       _connectionManager = connectionManager;
     }
 
-    public async Task<IVerdiV6Laser> Load(VerdiConfig config)
+    public Task<IVerdiV6Laser> Create(VerdiConfig config)
+    {
+      return Load(Guid.NewGuid().ToString(), config);
+    }
+
+    public async Task<IVerdiV6Laser> Load(string id, VerdiConfig config)
     {
       var connection = _connectionManager.GetConnection(config.PortName, config.Simulated);
-      var device = new VerdiV6Laser.VerdiV6Laser(config.Name, connection);
+      var device = new VerdiV6Laser.VerdiV6Laser(config.Name, connection)
+      {
+        UniqueId = id
+      };
 
       await device.Activate();
       var interpreter = new VerdiV6LaserInterpreter(device);
@@ -34,30 +44,30 @@ namespace AresService.DeviceManagers
       return device;
     }
 
-    public async Task<IVerdiV6Laser> Update(VerdiConfig config)
+    public async Task<IVerdiV6Laser> Update(string id, VerdiConfig config)
     {
       var existingLaser = _deviceCommandInterpreterRepo
         .Select(interpreter => interpreter.Device)
         .OfType<IVerdiV6Laser>()
-        .FirstOrDefault(device => device.Name == config.Name);
+        .FirstOrDefault(device => device.UniqueId == id);
 
       if(existingLaser is null)
-        return await Load(config);
+        return await Create(config);
 
       // if nothing changed, don't bother re-adding the device
       if(existingLaser.Connection.Name == config.PortName)
         if((existingLaser.Connection is SimulatedLaser && config.Simulated) || (existingLaser.Connection is LaserConnection && !config.Simulated))
           return existingLaser;
 
-      await Remove(existingLaser.Name);
+      await Remove(existingLaser.UniqueId);
 
-      return await Load(config);
+      return await Load(id, config);
     }
 
-    public async Task Remove(string laserName)
+    public async Task Remove(string laserId)
     {
       var laserInterpreter = _deviceCommandInterpreterRepo
-        .FirstOrDefault(interpreter => interpreter.Device.Name == laserName);
+        .FirstOrDefault(interpreter => interpreter.Device.UniqueId == laserId);
 
       if(laserInterpreter?.Device is not IVerdiV6Laser laser)
         return;
@@ -74,9 +84,9 @@ namespace AresService.DeviceManagers
         _connectionManager.RemoveConnection(connection);
     }
 
-    public async Task<IEnumerable<IVerdiV6Laser>> Load(IEnumerable<VerdiConfig> configs)
+    public async Task<IVerdiV6Laser[]> Load(IEnumerable<LoadableConfig<VerdiConfig>> configs)
     {
-      var lasers = await Task.WhenAll(configs.Select(Load));
+      var lasers = await Task.WhenAll(configs.Select(c => Load(c.Id, c.DeviceConfig)));
       return lasers;
     }
   }

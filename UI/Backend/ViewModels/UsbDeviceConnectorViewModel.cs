@@ -1,10 +1,10 @@
-﻿using DynamicData;
-using ReactiveUI;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using Ares.Datamodel.Device;
 using Ares.Services.Device;
+using DynamicData;
+using ReactiveUI;
 
 namespace UI.Backend.ViewModels;
 
@@ -22,9 +22,7 @@ public abstract class UsbDeviceConnectorViewModel<TDeviceUnitVm> : ReactiveObjec
     ConnectedUsbDeviceUnitControlVms = connectedUsbDeviceUnitControlVms;
   }
 
-  protected abstract Task<IEnumerable<string>> GetDeviceNames();
-
-  protected abstract Task<IEnumerable<string>> GetDeviceIds();
+  protected abstract Task<AresDeviceDescription[]> GetDeviceDescriptions();
 
   public void Start(TimeSpan interval)
   {
@@ -33,45 +31,45 @@ public abstract class UsbDeviceConnectorViewModel<TDeviceUnitVm> : ReactiveObjec
 
   private async Task UpdateAvailableDevices()
   {
-    var deviceNames = await GetDeviceNames();
+    var devices = await GetDeviceDescriptions();
 
-    foreach (var deviceName in deviceNames)
+    foreach(var deviceDesc in devices)
     {
 
-      var deviceStatusRequest = new DeviceStatusRequest { DeviceName = deviceName };
+      var deviceStatusRequest = new DeviceStatusRequest { DeviceId = deviceDesc.Id };
       var deviceOperationalStatusResponse = _devicesClient.GetDeviceStatus(deviceStatusRequest);
 
-      if (deviceOperationalStatusResponse.OperationalState == OperationalState.Active)
+      if(deviceOperationalStatusResponse.OperationalState == OperationalState.Active)
       {
-        if (ConnectedUsbDeviceUnitControlVms.Any(vm => vm.DeviceName.Equals(deviceName)))
+        if(ConnectedUsbDeviceUnitControlVms.Any(vm => vm.DeviceId == deviceDesc.Id))
           continue;
 
-        var unitVm = CreateUnitVm(deviceName);
+        var unitVm = CreateUnitVm(deviceDesc.Id, deviceDesc.Name);
         _connectedUsbDeviceUnitControlVmsSource.AddOrUpdate(unitVm);
         continue;
       }
 
-      if (deviceOperationalStatusResponse.OperationalState == OperationalState.Inactive)
+      if(deviceOperationalStatusResponse.OperationalState == OperationalState.Inactive)
       {
-        if (ConnectedUsbDeviceUnitControlVms.Any(vm => vm.DeviceName.Equals(deviceName)))
-          _connectedUsbDeviceUnitControlVmsSource.Remove(deviceName);
+        if(ConnectedUsbDeviceUnitControlVms.FirstOrDefault(vm => vm.DeviceId == deviceDesc.Id) is TDeviceUnitVm vm)
+          _connectedUsbDeviceUnitControlVmsSource.Remove(vm);
 
         continue;
       }
 
-      if (deviceOperationalStatusResponse.OperationalState == OperationalState.Error)
-        if (ConnectedUsbDeviceUnitControlVms.Any(vm => vm.DeviceName.Equals(deviceName)))
-          _connectedUsbDeviceUnitControlVmsSource.Remove(deviceName);
+      if(deviceOperationalStatusResponse.OperationalState == OperationalState.Error)
+        if(ConnectedUsbDeviceUnitControlVms.FirstOrDefault(vm => vm.DeviceId == deviceDesc.Id) is TDeviceUnitVm vm)
+          _connectedUsbDeviceUnitControlVmsSource.Remove(vm);
     }
   }
 
-  protected abstract TDeviceUnitVm CreateUnitVm(string deviceName);
+  protected abstract TDeviceUnitVm CreateUnitVm(string deviceId, string deviceName);
 
   public async ValueTask DisposeAsync()
   {
     _deviceUpdater.Dispose();
     var vms = ConnectedUsbDeviceUnitControlVms.OfType<IAsyncDisposable>();
-    foreach (var vm in vms)
+    foreach(var vm in vms)
     {
       await vm.DisposeAsync();
     }

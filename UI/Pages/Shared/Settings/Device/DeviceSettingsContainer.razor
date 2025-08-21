@@ -8,14 +8,14 @@
       <button class="btn btn-sm border-0 rounded-circle btn-outline-primary mx-1" @onclick="UpdateDeviceOperationalStatus">
         <RadzenIcon Icon="refresh"/>
       </button>
-      @if (_DeviceOperationalStatus is not null)
+      @if (_deviceOperationalStatus is not null)
       {
         <div class="d-flex flex-column">
-          <div class="device-status-@_DeviceOperationalStatus.OperationalState.ToString().ToLower()">
-            @_DeviceOperationalStatus.OperationalState.ToString()
+          <div class="device-status-@_deviceOperationalStatus.OperationalState.ToString().ToLower()">
+            @_deviceOperationalStatus.OperationalState.ToString()
           </div>
           <div>
-            @_DeviceOperationalStatus.Message
+            @_deviceOperationalStatus.Message
           </div>
         </div>
       }
@@ -65,7 +65,7 @@
   [Parameter]
   public string Name { get; set; } = "No name?";
 
-  private DeviceOperationalStatus? _DeviceOperationalStatus;
+  private DeviceOperationalStatus? _deviceOperationalStatus;
 
   private bool _activateInProgress;
 
@@ -73,7 +73,7 @@
   {
     if (DeviceOperationalStatusGetter is not null)
     {
-      _DeviceOperationalStatus = await DeviceOperationalStatusGetter();
+      _deviceOperationalStatus = await DeviceOperationalStatusGetter();
       StateHasChanged();
     }
   }
@@ -93,8 +93,8 @@
     if (DeviceOperationalStatusGetter is null)
       return;
 
-    _DeviceOperationalStatus = null;
-    _DeviceOperationalStatus = await DeviceOperationalStatusGetter();
+    _deviceOperationalStatus = null;
+    _deviceOperationalStatus = await DeviceOperationalStatusGetter();
   }
 
   private async Task ActivateClicked()

@@ -13,12 +13,13 @@ public class ValveControllerMultiViewModel : SerialDeviceConnectorViewModel<Valv
     _client = client;
   }
 
-  protected override ValveControllerUnitControlViewModel CreateUnitVm(string deviceName)
-    => new(deviceName, _client);
+  protected override ValveControllerUnitControlViewModel CreateUnitVm(AresDeviceDescription description)
+    => new(description.Name, description.Id, _client);
 
-  protected override async Task<IEnumerable<string>> GetDeviceNames()
+  protected override async Task<AresDeviceDescription[]> GetDeviceDescriptions()
   {
     var devicesResponse = await _client.GetAllValveControllersAsync(new Empty());
-    return devicesResponse.DeviceNames;
+    var descriptions = devicesResponse.Devices.Select(d => new AresDeviceDescription(d.Id, d.Name)).ToArray();
+    return descriptions;
   }
 }

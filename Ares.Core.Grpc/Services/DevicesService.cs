@@ -43,7 +43,7 @@ public class DevicesService : AresDevices.AresDevicesBase
 
   public override async Task<Empty> Activate(DeviceActivateRequest request, ServerCallContext context)
   {
-    var device = GetAresDevice(request.DeviceName);
+    var device = GetAresDevice(request.DeviceId);
     if(device.Status.OperationalState == OperationalState.Active)
       return new Empty();
 
@@ -69,7 +69,7 @@ public class DevicesService : AresDevices.AresDevicesBase
   {
     try
     {
-      var aresDevice = GetAresDevice(request.DeviceName);
+      var aresDevice = GetAresDevice(request.DeviceId);
 
       return Task.FromResult(aresDevice.Status);
     }
@@ -82,7 +82,7 @@ public class DevicesService : AresDevices.AresDevicesBase
   public override Task<CommandMetadatasResponse> GetCommandMetadatas(CommandMetadatasRequest request, ServerCallContext context)
   {
     var interpreter = _deviceCommandInterpreterRepo
-      .First(commandInterpreter => commandInterpreter.Device.Name == request.DeviceName);
+      .First(commandInterpreter => commandInterpreter.Device.UniqueId == request.DeviceId);
 
     var commands = interpreter.CommandsToIndexedMetadatas();
 
@@ -114,14 +114,14 @@ public class DevicesService : AresDevices.AresDevicesBase
     }
   }
 
-  private IAresDevice GetAresDevice(string name)
+  private IAresDevice GetAresDevice(string id)
   {
     var aresDevice = _deviceCommandInterpreterRepo
       .Select(interpreter => interpreter.Device)
-      .FirstOrDefault(device => device.Name == name);
+      .FirstOrDefault(device => device.UniqueId == id);
 
     if(aresDevice is null)
-      throw new InvalidOperationException($"Could not find ARES device: {name}");
+      throw new InvalidOperationException($"Could not find ARES device with id: {id}");
 
     return aresDevice;
   }

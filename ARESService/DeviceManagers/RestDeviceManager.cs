@@ -1,8 +1,10 @@
-﻿using Ares.Core.Device;
-using RestDevice;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Ares.Core.Device;
+using AresService.DeviceDbLoaders;
+using RestDevice;
 using RestDevice.Config;
 
 namespace AresService.DeviceManagers;
@@ -15,16 +17,26 @@ public class RestDeviceManager : IDeviceManager<RestDeviceConfig, IRestDevice>
     _deviceCommandInterpreterRepo = deviceCommandInterpreterRepo;
   }
 
-  public async Task<IRestDevice> Load(RestDeviceConfig config)
+  public Task<IRestDevice> Create(RestDeviceConfig config)
+  {
+    return Load(Guid.NewGuid().ToString(), config);
+  }
+
+  public async Task<IRestDevice> Load(string id, RestDeviceConfig config)
   {
     IRestDevice restDevice;
-
     if(config.Simulated)
       //TODO: Fix this
-      restDevice = new RestDevice.RestDevice(config.Name, config.Address);
+      restDevice = new RestDevice.RestDevice(config.Name, config.Address)
+      {
+        UniqueId = id,
+      };
 
     else
-      restDevice = new RestDevice.RestDevice(config.Name, config.Address);
+      restDevice = new RestDevice.RestDevice(config.Name, config.Address)
+      {
+        UniqueId = id
+      };
 
     await restDevice.Activate();
     var interpreter = new RestDeviceInterpreter(restDevice);
@@ -33,15 +45,15 @@ public class RestDeviceManager : IDeviceManager<RestDeviceConfig, IRestDevice>
     return restDevice;
   }
 
-  public async Task<IEnumerable<IRestDevice>> Load(IEnumerable<RestDeviceConfig> configs)
+  public async Task<IRestDevice[]> Load(IEnumerable<LoadableConfig<RestDeviceConfig>> configs)
   {
-    var restDevices = await Task.WhenAll(configs.Select(Load));
+    var restDevices = await Task.WhenAll(configs.Select(cfg => Load(cfg.Id, cfg.DeviceConfig)));
     return restDevices;
   }
 
-  public async Task Remove(string managerName)
+  public async Task Remove(string managerId)
   {
-    var deviceInterpreter = _deviceCommandInterpreterRepo.FirstOrDefault(interpreter => interpreter.Device.Name == managerName);
+    var deviceInterpreter = _deviceCommandInterpreterRepo.FirstOrDefault(interpreter => interpreter.Device.UniqueId == managerId);
 
     if(deviceInterpreter?.Device is not IRestDevice restDevice)
       return;
@@ -50,18 +62,22 @@ public class RestDeviceManager : IDeviceManager<RestDeviceConfig, IRestDevice>
     _deviceCommandInterpreterRepo.Remove(deviceInterpreter);
   }
 
-  public async Task<IRestDevice> Update(RestDeviceConfig config)
+  public async Task<IRestDevice> Update(string id, RestDeviceConfig config)
   {
     var existingCameraManager = _deviceCommandInterpreterRepo
       .Select(interpreter => interpreter.Device)
       .OfType<IRestDevice>()
-      .FirstOrDefault(device => device.Name == config.Name);
+      .FirstOrDefault(device => device.UniqueId == id);
 
+    if(existingCameraManager is null)
+      return await Create(config);
+
+    // if nothing changed, don't bother re-adding the device
     if(existingCameraManager.Name == config.Name)
       return existingCameraManager;
 
-    await Remove(existingCameraManager.Name);
+    await Remove(existingCameraManager.UniqueId);
 
-    return await Load(config);
+    return await Load(id, config);
   }
 }

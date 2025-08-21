@@ -9,7 +9,7 @@ import "TubeFurnaceConfig.proto";
 
 service TubeFurnaceRpc {
   rpc AddTubeFurnace(config.TubeFurnaceConfig) returns (google.protobuf.Empty);
-  rpc UpdateTubeFurnace(config.TubeFurnaceConfig) returns (google.protobuf.Empty);
+  rpc UpdateTubeFurnace(TubeFurnaceUpdateRequest) returns (google.protobuf.Empty);
   rpc RemoveTubeFurnace(TubeFurnaceRequest) returns (google.protobuf.Empty);
 
   rpc GetState(TubeFurnaceRequest) returns (TubeFurnaceState);
@@ -18,6 +18,11 @@ service TubeFurnaceRpc {
   rpc GetCurrentTemperature(TubeFurnaceRequest) returns (google.protobuf.Empty);
   rpc GetSetpoint(TubeFurnaceRequest) returns (google.protobuf.Empty);
   rpc SetSetpoint(SetSetpointRequest) returns (google.protobuf.Empty);
+}
+
+message TubeFurnaceUpdateRequest {
+  string id = 1;
+  config.TubeFurnaceConfig config = 2;
 }
 
 message SetSetpointRequest {
@@ -30,11 +35,11 @@ message GetAllTubeFurnacesResponse {
 }
 
 message TubeFurnaceRequest {
-  string tube_furnace_name = 1;
+  string tube_furnace_id = 1;
 }
 
 message TubeFurnaceState {
-  string name = 1; // name of the tube furnace
+  string id = 1; // id of the tube furnace
   double setpoint = 2; // Currently targeted temperature of the tube furnace
   double target_setpoint = 3; // User targeted temperature of the tube furnace
   double current_temperature = 4; // Current temperature of the tube furnace
@@ -44,4 +49,5 @@ message TubeFurnaceState {
 message TubeFurnaceDeviceDescription {
 	string name = 1;
 	int32 assumed_address = 2;
+  string id = 3;
 }

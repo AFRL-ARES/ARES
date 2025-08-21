@@ -14,12 +14,13 @@ public class Tc0304MultiViewModel : SerialDeviceConnectorViewModel<Tc0304UnitCon
     _client = client;
   }
 
-  protected override Tc0304UnitControlViewModel CreateUnitVm(string deviceName)
-    => new(deviceName, _client);
+  protected override Tc0304UnitControlViewModel CreateUnitVm(AresDeviceDescription description)
+    => new(description.Name, description.Id, _client);
 
-  protected override async Task<IEnumerable<string>> GetDeviceNames()
+  protected override async Task<AresDeviceDescription[]> GetDeviceDescriptions()
   {
     var devicesResponse = await _client.GetAllTc0304sAsync(new Empty());
-    return devicesResponse.DeviceNames;
+    var descriptions = devicesResponse.Devices.Select(d =>  new AresDeviceDescription(d.Id, d.Name));
+    return descriptions.ToArray();
   }
 }
