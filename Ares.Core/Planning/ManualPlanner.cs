@@ -179,6 +179,6 @@ public class ManualPlanner : IPlannerService
   public IObservable<State> PlannerServiceStateObservable { get; }
   public State PlannerServiceState { get; } = State.Active;
   public string StateMessage { get; } = "Manual Planner is active!";
-  public AresStruct PlannerServiceSettings { get; } = new AresStruct();
+  public AresStruct Settings { get; } = new AresStruct();
   public TimeSpan PlanningTimeout { get; } = TimeSpan.FromSeconds(long.MaxValue);
 }

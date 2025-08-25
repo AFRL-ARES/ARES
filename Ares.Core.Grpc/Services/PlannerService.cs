@@ -119,7 +119,7 @@ public class PlannerService(IPlannerServiceRepo plannerRepo, IRemotePlannerManag
   public override Task<AresStruct> GetPlannerSettings(PlannerSettingsRequest request, ServerCallContext context)
   {
     var planner = _plannerRepo.GetPlannerById(request.PlannerId) ?? throw new ItemNotFoundException(request.PlannerId, typeof(IPlannerService), "Failed to get settings as requested planner was not found");
-    return Task.FromResult(planner.PlannerServiceSettings);
+    return Task.FromResult(planner.Settings);
   }
 
   public override async Task<Empty> SetPlannerSettings(PlannerSettings request, ServerCallContext context)

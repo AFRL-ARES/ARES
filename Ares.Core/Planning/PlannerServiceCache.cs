@@ -57,7 +57,6 @@ public class PlannerServiceCache(IDbContextFactory<CoreDatabaseContext> _dbConte
       existingInfoInDb.Address = planner.Address.ToString();
       existingInfoInDb.Version = planner.Version;
       existingInfoInDb.Capabilities = currentInfo.Capabilities;
-
       await ctx.SaveChangesAsync();
     }
     else

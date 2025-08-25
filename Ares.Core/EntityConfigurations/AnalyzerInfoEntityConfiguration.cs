@@ -12,6 +12,7 @@ internal class AnalyzerInfoEntityConfiguration : AresEntityTypeBaseConfiguration
       .HasOne(p => p.Capabilities)
       .WithOne()
       .HasForeignKey<AnalyzerCapabilities>("AnalyzerInfoId")
+      .IsRequired()
       .OnDelete(Microsoft.EntityFrameworkCore.DeleteBehavior.Cascade);
 
     builder.Navigation(p => p.Capabilities).AutoInclude();

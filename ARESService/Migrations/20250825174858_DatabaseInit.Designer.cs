@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AresService.Migrations
 {
     [DbContext(typeof(AresDbContext))]
-    [Migration("20250825145756_DatabaseInit")]
+    [Migration("20250825174858_DatabaseInit")]
     partial class DatabaseInit
     {
         /// <inheritdoc />
@@ -95,7 +95,7 @@ namespace AresService.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("AnalyzerInfoId")
+                    b.Property<Guid>("AnalyzerInfoId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreationTime")
@@ -117,8 +117,7 @@ namespace AresService.Migrations
                     b.HasKey("UniqueId");
 
                     b.HasIndex("AnalyzerInfoId")
-                        .IsUnique()
-                        .HasFilter("[AnalyzerInfoId] IS NOT NULL");
+                        .IsUnique();
 
                     b.ToTable("AnalyzerCapabilities");
                 });
@@ -755,7 +754,7 @@ namespace AresService.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
 
-                    b.Property<Guid?>("PlannerInfoId")
+                    b.Property<Guid>("PlannerInfoId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("ServiceName")
@@ -770,8 +769,7 @@ namespace AresService.Migrations
                     b.HasKey("UniqueId");
 
                     b.HasIndex("PlannerInfoId")
-                        .IsUnique()
-                        .HasFilter("[PlannerInfoId] IS NOT NULL");
+                        .IsUnique();
 
                     b.ToTable("PlannerServiceCapabilities");
                 });
@@ -1614,7 +1612,8 @@ namespace AresService.Migrations
                     b.HasOne("Ares.Datamodel.Analyzing.AnalyzerInfo", null)
                         .WithOne("Capabilities")
                         .HasForeignKey("Ares.Datamodel.Analyzing.AnalyzerCapabilities", "AnalyzerInfoId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Ares.Datamodel.CampaignExecutionSummary", b =>
@@ -1752,7 +1751,8 @@ namespace AresService.Migrations
                     b.HasOne("Ares.Datamodel.Planning.PlannerServiceInfo", null)
                         .WithOne("Capabilities")
                         .HasForeignKey("Ares.Datamodel.Planning.PlannerServiceCapabilities", "PlannerInfoId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Ares.Datamodel.StepExecutionStatus", b =>

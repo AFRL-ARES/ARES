@@ -24,7 +24,6 @@ public class PlannerSettingsViewModel : ReactiveObject
     EditViewModel = new PlannerConfigEditViewModel(planningClient, PlannerAdapter);
     SettingsEditorViewModel = new PlannerSettingsEditorViewModel(planningClient, PlannerAdapter);
     OnRemoveCallback = onRemoveCallback;
-    IsEditable = !(PlannerAdapter.Name == "Demo Planner" || PlannerAdapter.Name == "Print Planner");
   }
 
   public PlannerServiceInfo PlannerAdapter { get; }
@@ -34,8 +33,6 @@ public class PlannerSettingsViewModel : ReactiveObject
   public PlannerConfigEditViewModel EditViewModel { get; }
 
   public PlannerSettingsEditorViewModel SettingsEditorViewModel { get; }
-
-  public bool IsEditable { get; }
 
   public async Task Save()
   {

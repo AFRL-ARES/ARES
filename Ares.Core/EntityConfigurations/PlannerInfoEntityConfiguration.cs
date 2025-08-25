@@ -14,6 +14,7 @@ public class PlannerInfoEntityConfiguration : AresEntityTypeBaseConfiguration<Pl
       .HasOne(p => p.Capabilities)
       .WithOne()
       .HasForeignKey<PlannerServiceCapabilities>("PlannerInfoId")
+      .IsRequired()
       .OnDelete(DeleteBehavior.Cascade);
 
     builder.Navigation(p => p.Capabilities).AutoInclude();

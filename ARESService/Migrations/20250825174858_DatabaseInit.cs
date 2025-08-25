@@ -352,7 +352,7 @@ namespace AresService.Migrations
                     UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     TimeoutSeconds = table.Column<long>(type: "bigint", nullable: false),
                     SettingsSchema = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    AnalyzerInfoId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    AnalyzerInfoId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
                     LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
                 },
@@ -454,7 +454,7 @@ namespace AresService.Migrations
                     SettingsSchema = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
                     LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    PlannerInfoId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                    PlannerInfoId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -955,8 +955,7 @@ namespace AresService.Migrations
                 name: "IX_AnalyzerCapabilities_AnalyzerInfoId",
                 table: "AnalyzerCapabilities",
                 column: "AnalyzerInfoId",
-                unique: true,
-                filter: "[AnalyzerInfoId] IS NOT NULL");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Any_DeviceConfigId",
@@ -1147,8 +1146,7 @@ namespace AresService.Migrations
                 name: "IX_PlannerServiceCapabilities_PlannerInfoId",
                 table: "PlannerServiceCapabilities",
                 column: "PlannerInfoId",
-                unique: true,
-                filter: "[PlannerInfoId] IS NOT NULL");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_StepExecutionStatuses_ExperimentExecutionStatusUniqueId",

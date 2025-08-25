@@ -1,5 +1,6 @@
 ﻿using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Connection;
 
 namespace Ares.Core.Analyzing;
 
@@ -12,6 +13,7 @@ internal class NoneAnalyzer : AnalyzerBase
   public NoneAnalyzer() : base("NONE", "NONE :)", "1.0.0")
   {
     UniqueId = "NONE-ANALYZER";
+    AnalyzerState = State.Active;
   }
 
   public override Task<Analysis> Analyze(AresStruct inputs, CancellationToken cancellationToken)

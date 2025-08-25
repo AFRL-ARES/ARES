@@ -57,9 +57,11 @@ public interface IPlannerService
   string StateMessage { get; }
 
   /// <summary>
-  /// A list of settings custom to this adapter
+  /// Optional inputs that live on planners that can guide planning in certain directions.
+  /// Unlike parameters which are generally supposed to be different per plan, the settings
+  /// give the ability to have constants throughout the different plans.
   /// </summary>
-  AresStruct PlannerServiceSettings { get; }
+  AresStruct Settings { get; }
 
   /// <summary>
   /// Updates the internal settings by overwriting the existing values with the ones provided by the

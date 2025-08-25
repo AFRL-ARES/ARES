@@ -3,30 +3,16 @@
 @using UI.Pages.Shared.Settings.Planning.Layout
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Backend.ViewModels.Settings.Planning.PlannerSettingsViewModel>
 @inject DialogService DialogService
-
-
-@if(ViewModel!.IsEditable)
-{
-  <PlannerSettingsContainer PlannerStatusGetter="ViewModel!.GetPlannerStatus"
-  SettingsCallback="SettingCallback"
-  EditCallback="EditCallback" 
-  RemoveCallback="RemoveCallback" 
-  Name="@ViewModel!.PlannerAdapter.Name">
-    <div>
-      <span>@ViewModel!.PlannerAdapter.Address</span>
-    </div>
-  </PlannerSettingsContainer>
-}
-
-else
-{
-  <PlannerSettingsContainer EditCallback="null" RemoveCallback="null" Name="@ViewModel!.PlannerAdapter.Name">
-    <div>
-      <span>@ViewModel!.PlannerAdapter.Address</span>
-    </div>
-  </PlannerSettingsContainer>
-}
-
+  
+<PlannerSettingsContainer PlannerStatusGetter="ViewModel!.GetPlannerStatus"
+SettingsCallback="SettingCallback"
+EditCallback="EditCallback" 
+RemoveCallback="RemoveCallback" 
+Name="@ViewModel!.PlannerAdapter.Name">
+  <div>
+    <span>@ViewModel!.PlannerAdapter.Address</span>
+  </div>
+</PlannerSettingsContainer>
 
 @code {
   private async Task EditCallback()
