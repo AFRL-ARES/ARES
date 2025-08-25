@@ -1,4 +1,5 @@
-﻿using Ares.Datamodel.Templates;
+﻿using Ares.Datamodel.Device;
+using Ares.Datamodel.Templates;
 using Ares.Services.Device;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
@@ -12,7 +13,7 @@ public class MetadataPickerViewModel : ReactiveObject
   private readonly Guid _existingGuid = Guid.NewGuid();
   private Task _deviceRefreshTask = Task.CompletedTask;
   private CommandMetadata? _selectedCommandMetadata;
-  private AresDeviceInfo? _selectedDevice;
+  private DeviceInfo? _selectedDevice;
   private string? _selectedDeviceName;
   private string? _selectedMetadataName;
 
@@ -28,7 +29,7 @@ public class MetadataPickerViewModel : ReactiveObject
     _selectedMetadataName = existingMetadata.Name;
   }
 
-  public IEnumerable<AresDeviceInfo> AvailableDevices { get; private set; } = Array.Empty<AresDeviceInfo>();
+  public IEnumerable<DeviceInfo> AvailableDevices { get; private set; } = Array.Empty<DeviceInfo>();
 
   [Reactive]
   public IEnumerable<CommandMetadata> AvailableMetadata { get; private set; } = Array.Empty<CommandMetadata>();
@@ -100,7 +101,7 @@ public class MetadataPickerViewModel : ReactiveObject
     }
   }
 
-  public AresDeviceInfo? SelectedDevice
+  public DeviceInfo? SelectedDevice
   {
     get => _selectedDevice;
 
@@ -113,7 +114,7 @@ public class MetadataPickerViewModel : ReactiveObject
   public async Task Reset()
   {
     AvailableMetadata = Array.Empty<CommandMetadata>();
-    AvailableDevices = Array.Empty<AresDeviceInfo>();
+    AvailableDevices = Array.Empty<DeviceInfo>();
     await RefreshDevices();
     await RetrieveInfoForExistingMeta();
   }
@@ -132,7 +133,7 @@ public class MetadataPickerViewModel : ReactiveObject
       return;
     }
 
-    var request = new CommandMetadatasRequest { DeviceId = SelectedDevice.Id };
+    var request = new CommandMetadatasRequest { DeviceId = SelectedDevice.UniqueId };
     var metadataResponse = await _devicesClient.GetCommandMetadatasAsync(request);
     AvailableMetadata = metadataResponse.Metadatas.ToArray();
   }

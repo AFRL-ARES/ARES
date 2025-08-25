@@ -55,7 +55,7 @@ public class DevicesService : AresDevices.AresDevicesBase
   {
     var aresDeviceMessages = _deviceCommandInterpreterRepo
       .Select(interpreter => interpreter.Device)
-      .Select(device => new AresDeviceInfo { Name = device.Name, Type = device.GetType().FullName });
+      .Select(device => new DeviceInfo() { Name = device.Name, Type = device.GetType().FullName });
 
     var response = new ListAresDevicesResponse
     {

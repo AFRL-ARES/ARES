@@ -48,6 +48,7 @@ using UI.Backend.ViewModels.Settings.Analysis;
 using UI.Backend.ViewModels.Settings.Device.CM3Camera;
 using UI.Backend.ViewModels.Settings.Device.LaserChiller;
 using UI.Backend.ViewModels.Settings.Device.Mfc;
+using UI.Backend.ViewModels.Settings.Device.Remote;
 using UI.Backend.ViewModels.Settings.Device.RestDevice;
 using UI.Backend.ViewModels.Settings.Device.SerialRestDevice;
 using UI.Backend.ViewModels.Settings.Device.Servo;
@@ -167,6 +168,7 @@ internal static class ServiceCollectionExtensions
     services.AddTransient<TubeFurnaceSettingsListViewModel>();
     services.AddTransient<VerdiLaserSettingsListViewModel>();
     services.AddTransient<LaserChillerSettingsListViewModel>();
+    services.AddTransient<RemoteDeviceSettingsListViewModel>();
 
     //Device Multi-view Models
     services.AddTransient<RestDeviceSettingsListViewModel>();
