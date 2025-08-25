@@ -16,7 +16,6 @@
               @context.Name (@context.Version)
             </Template>
            </RadzenDropDown>
-          <RadzenButton Click="@ShowSettingsPage" Icon="settings" Variant="Variant.Text" ButtonStyle="ButtonStyle.Base" Shade="Shade.Lighter" Size="ButtonSize.ExtraSmall" />
       </RadzenRow>
 
       <RadzenRow>
@@ -49,11 +48,5 @@
    In this scenario, a seperate dropdown allows you to choose what planning method to use from the services advertised options.
   </div>
   , new DialogOptions() { CloseDialogOnOverlayClick = true });
-  }
-
-  private async Task ShowSettingsPage()
-  {
-    await DialogService.OpenAsync("Planner Settings", 
-    ds => @<PlannerAdapterSettingsView ViewModel="ViewModel" OnValidSubmit="() => ds.Close(true)"/>);
   }
 }
