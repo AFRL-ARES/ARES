@@ -1,6 +1,5 @@
 ﻿using System.Threading.Tasks;
 using Ares.Core.Analyzing;
-using Ares.Core.Exceptions;
 using Ares.Datamodel;
 using Ares.Services;
 using Grpc.Core;

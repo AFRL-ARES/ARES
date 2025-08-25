@@ -21,7 +21,7 @@ public class AresStarter
   private readonly IDbContextFactory<AresDbContext> _dbContextFactory;
   private readonly IDeviceCommandInterpreterRepo _deviceCommandInterpreterRepo;
   private readonly IEnumerable<IDeviceDbLoader> _deviceLoaders;
-  private readonly IPlannerManager _plannerManager;
+  private readonly IRemotePlannerManager _plannerManager;
   private readonly IConfiguration _configuration;
   private readonly string _dataPath;
   private readonly string _resultsPath;
@@ -31,7 +31,7 @@ public class AresStarter
   public AresStarter(
     IDeviceCommandInterpreterRepo deviceCommandInterpreterRepo,
     IDbContextFactory<AresDbContext> dbContextFactory,
-    IPlannerManager plannerManager,
+    IRemotePlannerManager plannerManager,
     IRemoteAnalyzerManager analyzerManager,
     IEnumerable<IDeviceDbLoader> deviceLoaders,
     IConfiguration configuration)
@@ -52,13 +52,11 @@ public class AresStarter
   {
     await EnsureDataPathsExist();
     await AddDemoDevice(new Uri("https://localhost:7038"));
-    //await AddCustomAnalyzer(new Uri("http://localhost:7356"));
-    await AddBoraasPlanner(new Uri("https://boraas.osu.edu/new_design"));
 
     foreach(var deviceLoader in _deviceLoaders)
       await deviceLoader.Load();
 
-    await _plannerManager.Init();
+    await _plannerManager.LoadPlanners();
     await _analyzerManager.LoadAnalyzers();
 
     Observable.Interval(TimeSpan.FromSeconds(20))
@@ -75,29 +73,12 @@ public class AresStarter
     return Task.CompletedTask;
   }
 
-  //public Task AddCustomAnalyzer(Uri address)
-  //{
-  //  var resultsPath = Path.Combine(_configuration.Get<AppSettings>().AresDataPath, string.Empty);
-  //  var customAnalyzer = new AresCustomAnalyzer(address);
-  //  customAnalyzer.Init();
-  //  _analyzerManager.(customAnalyzer);
-  //  return Task.CompletedTask;
-  //}
-
   public Task AddDemoDevice(Uri address)
   {
     var testDevice = new AresDemoDevice(address);
     testDevice.Activate();
     var testDeviceInterpreter = new DemoDeviceInterpreter(testDevice);
     _deviceCommandInterpreterRepo.Add(testDeviceInterpreter);
-    return Task.CompletedTask;
-  }
-
-  public Task AddBoraasPlanner(Uri address)
-  {
-    var boraasPlanner = new BoraasPlanner.BoraasPlanner(address, "BORAAS Planner");
-    boraasPlanner.Init();
-    _plannerManager.RegisterPlanner(boraasPlanner);
     return Task.CompletedTask;
   }
 }

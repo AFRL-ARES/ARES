@@ -172,20 +172,51 @@ namespace AresService.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Planners",
+                name: "PlannerInfos",
                 columns: table => new
                 {
                     UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    AdapterName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Type = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Version = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Address = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
                     LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Planners", x => x.UniqueId);
+                    table.PrimaryKey("PK_PlannerInfos", x => x.UniqueId);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "PlannerServices",
+                columns: table => new
+                {
+                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Url = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
+                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PlannerServices", x => x.UniqueId);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "PlannerSettings",
+                columns: table => new
+                {
+                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    PlannerId = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Settings = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
+                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PlannerSettings", x => x.UniqueId);
                 });
 
             migrationBuilder.CreateTable(
@@ -414,6 +445,29 @@ namespace AresService.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "PlannerServiceCapabilities",
+                columns: table => new
+                {
+                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ServiceName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    TimeoutSeconds = table.Column<long>(type: "bigint", nullable: false),
+                    SettingsSchema = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
+                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
+                    PlannerInfoId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PlannerServiceCapabilities", x => x.UniqueId);
+                    table.ForeignKey(
+                        name: "FK_PlannerServiceCapabilities_PlannerInfos_PlannerInfoId",
+                        column: x => x.PlannerInfoId,
+                        principalTable: "PlannerInfos",
+                        principalColumn: "UniqueId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "StepExecutionStatuses",
                 columns: table => new
                 {
@@ -454,6 +508,29 @@ namespace AresService.Migrations
                         name: "FK_StepTemplates_ExperimentTemplates_ExperimentTemplateUniqueId",
                         column: x => x.ExperimentTemplateUniqueId,
                         principalTable: "ExperimentTemplates",
+                        principalColumn: "UniqueId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Planner",
+                columns: table => new
+                {
+                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    PlannerName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Version = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
+                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
+                    PlannerServiceCapabilitiesUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Planner", x => x.UniqueId);
+                    table.ForeignKey(
+                        name: "FK_Planner_PlannerServiceCapabilities_PlannerServiceCapabilitiesUniqueId",
+                        column: x => x.PlannerServiceCapabilitiesUniqueId,
+                        principalTable: "PlannerServiceCapabilities",
                         principalColumn: "UniqueId",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -861,9 +938,9 @@ namespace AresService.Migrations
                         principalTable: "ParameterMetadata",
                         principalColumn: "UniqueId");
                     table.ForeignKey(
-                        name: "FK_PlannerAllocations_Planners_PlannerId",
+                        name: "FK_PlannerAllocations_PlannerInfos_PlannerId",
                         column: x => x.PlannerId,
-                        principalTable: "Planners",
+                        principalTable: "PlannerInfos",
                         principalColumn: "UniqueId");
                 });
 
@@ -1047,6 +1124,11 @@ namespace AresService.Migrations
                 column: "PlanningMetadataUniqueId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Planner_PlannerServiceCapabilitiesUniqueId",
+                table: "Planner",
+                column: "PlannerServiceCapabilitiesUniqueId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_PlannerAllocations_CampaignTemplateUniqueId",
                 table: "PlannerAllocations",
                 column: "CampaignTemplateUniqueId");
@@ -1060,6 +1142,13 @@ namespace AresService.Migrations
                 name: "IX_PlannerAllocations_PlannerId",
                 table: "PlannerAllocations",
                 column: "PlannerId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PlannerServiceCapabilities_PlannerInfoId",
+                table: "PlannerServiceCapabilities",
+                column: "PlannerInfoId",
+                unique: true,
+                filter: "[PlannerInfoId] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_StepExecutionStatuses_ExperimentExecutionStatusUniqueId",
@@ -1190,7 +1279,16 @@ namespace AresService.Migrations
                 name: "OutputMetadata");
 
             migrationBuilder.DropTable(
+                name: "Planner");
+
+            migrationBuilder.DropTable(
                 name: "PlannerAllocations");
+
+            migrationBuilder.DropTable(
+                name: "PlannerServices");
+
+            migrationBuilder.DropTable(
+                name: "PlannerSettings");
 
             migrationBuilder.DropTable(
                 name: "Projects");
@@ -1223,13 +1321,16 @@ namespace AresService.Migrations
                 name: "CommandExecutionSummaries");
 
             migrationBuilder.DropTable(
-                name: "Planners");
+                name: "PlannerServiceCapabilities");
 
             migrationBuilder.DropTable(
                 name: "ExperimentExecutionStatuses");
 
             migrationBuilder.DropTable(
                 name: "StepExecutionSummaries");
+
+            migrationBuilder.DropTable(
+                name: "PlannerInfos");
 
             migrationBuilder.DropTable(
                 name: "CampaignExecutionStatuses");

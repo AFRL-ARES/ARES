@@ -1,12 +1,12 @@
-﻿@using Ares.Datamodel
-@inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Backend.ViewModels.Settings.Analysis.AnalyzerSettingsEditorViewModel>
+﻿@using Ares.Datamodel;
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Backend.ViewModels.Settings.Planning.PlannerSettingsEditorViewModel>
 
 <EditForm Model="@ViewModel" OnValidSubmit="OnValidSubmit">
 	<RadzenStack Orientation="Orientation.Vertical" Gap="5px">
 		@foreach(var settingField in ViewModel!.Settings.Fields)
 		{
 			<AresValueDesigner Name="@settingField.Key" 
-			Value="@settingField.Value"
+			Value="@settingField.Value" 
 			Schema="@ViewModel!.SettingsSchema.Fields[settingField.Key]" 
 			ValueEditCallback="@(value => ValueEditCallback(settingField.Key, value))" />
 		}

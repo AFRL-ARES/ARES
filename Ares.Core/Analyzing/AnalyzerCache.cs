@@ -3,8 +3,7 @@ using Ares.Datamodel.Analyzing;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ares.Core.Analyzing;
-internal class AnalyzerCache(IDbContextFactory<CoreDatabaseContext> _dbContextFactory)
-: IAnalyzerCache
+internal class AnalyzerCache(IDbContextFactory<CoreDatabaseContext> _dbContextFactory) : IAnalyzerCache
 {
   public async Task<AresStruct?> GetCachedAnalyzerSettings(string analyzerId)
   {

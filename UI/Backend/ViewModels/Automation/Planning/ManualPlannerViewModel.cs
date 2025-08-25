@@ -1,6 +1,6 @@
-﻿using Ares.Messaging.Planning;
-using Ares.Datamodel.Extensions;
+﻿using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Planning;
+using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.AspNetCore.Components.Forms;
 using ReactiveUI;
@@ -10,9 +10,9 @@ namespace UI.Backend.ViewModels.Automation.Planning;
 
 public class ManualPlannerViewModel : ReactiveObject
 {
-  private readonly AresPlanning.AresPlanningClient _client;
+  private readonly AresPlannerManagementService.AresPlannerManagementServiceClient _client;
 
-  public ManualPlannerViewModel(AresPlanning.AresPlanningClient client)
+  public ManualPlannerViewModel(AresPlannerManagementService.AresPlannerManagementServiceClient client)
   {
     _client = client;
     _ = UpdatePlannerValues();

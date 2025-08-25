@@ -1,23 +1,43 @@
+using Ares.Datamodel;
+using Ares.Datamodel.Connection;
+using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Planning;
+using Ares.Datamodel.Planning.Remote;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 
 namespace DemoRemotePlanner.Services;
-public class DemoPlannerService : AresPlannerGrpc.AresPlannerGrpcBase
+public class DemoPlannerService : AresRemotePlannerService.AresRemotePlannerServiceBase
 {
   private readonly Random _random;
+  private readonly Planner _randomPlanner;
+  private readonly Planner _gradualPlanner;
 
   public DemoPlannerService()
   {
     _random = new Random();
+
+    _randomPlanner = new Planner()
+    {
+      PlannerName = "Random Planner",
+      Description = "A planner that returns random temperatures for the demo device.",
+      Version = "1.0.0"
+    };
+
+    _gradualPlanner = new Planner()
+    {
+      PlannerName = "Gradual Planner",
+      Description = "A planner that returns a temperature value that gradually increases from the previously provided value by 5 degrees.",
+      Version = "1.0.0"
+    };
   }
 
-  public override async Task<PlanResponse> Plan(PlanRequest request, ServerCallContext context)
+  public override async Task<PlanningResponse> Plan(PlanningRequest request, ServerCallContext context)
   {
     Console.WriteLine("Planning Requested!");
     var inputs = request.PlanningParameters;
     Console.WriteLine($"Received a total of {inputs.Count} parameters to plan for.");
-    var response = new PlanResponse();
+    var response = new PlanningResponse();
 
     foreach(var parameter in inputs)
     {
@@ -26,23 +46,20 @@ public class DemoPlannerService : AresPlannerGrpc.AresPlannerGrpcBase
         case "Random Planner":
         {
           var plannedParam = await RandomPlanner(parameter);
-          response.ParameterNames.Add(plannedParam.ParameterName);
-          response.ParameterValues.Add(plannedParam.ParameterValue);
+          response.PlannedParameters.Add(plannedParam);
           break;
         }
         case "Gradual Planner":
         {
           var gradualPlannedParam = await GradualPlanner(parameter);
-          response.ParameterNames.Add(gradualPlannedParam.ParameterName);
-          response.ParameterValues.Add(gradualPlannedParam.ParameterValue);
+          response.PlannedParameters.Add(gradualPlannedParam);
           break;
         }
         default:
         {
           Console.WriteLine("Unrecognized Planned Requested! Defaulting to random planner...");
           var plannedParam = await RandomPlanner(parameter);
-          response.ParameterNames.Add(plannedParam.ParameterName);
-          response.ParameterValues.Add(plannedParam.ParameterValue);
+          response.PlannedParameters.Add(plannedParam);
           break;
         }
       }
@@ -51,41 +68,47 @@ public class DemoPlannerService : AresPlannerGrpc.AresPlannerGrpcBase
     return response;
   }
 
-  public override Task<Capabilities> RequestCapabilities(Empty request, ServerCallContext context)
+  public override Task<ConnectionStatus> GetConnectionStatus(Empty request, ServerCallContext context)
   {
-    var capabilitesResponse = new Capabilities();
-
-    var randomPlanner = new Planner()
-    {
-      PlannerName = "Random Planner",
-      Description = "A planner that returns random temperatures for the demo device.",
-      UniqueId = Guid.NewGuid().ToString(),
-      Version = "1.0.0"
-    };
-
-    var gradualIncreasePlanner = new Planner()
-    {
-      PlannerName = "Gradual Planner",
-      Description = "A planner that returns a temperature value that gradually increases from the previously provided value by 5 degrees.",
-      UniqueId = Guid.NewGuid().ToString(),
-      Version = "1.0.0"
-    };
-
-    var randomSetting = new PlannerSetting() 
+    return Task.FromResult(new ConnectionStatus 
     { 
-      SettingName = "Dual Randomization", 
-      SettingValue = new SettingValue 
-      { 
-        BoolValue = false 
-      },  
-      Optional = true 
-    };
+      Status = AresStatus.Connected, 
+      Info = "Demo Planner Service is connected!"
+    });
+  }
 
-    capabilitesResponse.AvailablePlanners.Add(randomPlanner);
-    capabilitesResponse.AvailablePlanners.Add(gradualIncreasePlanner);
-    capabilitesResponse.AdapterSettings.Add(randomSetting);
+  public override Task<InfoResponse> GetInfo(Empty request, ServerCallContext context)
+  {
+    return Task.FromResult(new InfoResponse 
+    { 
+      Name = "Demo Planner Service", 
+      Description = "A demo of the ARES remote planenr service capabilities", 
+      Version = "1.0.0" 
+    });
+  }
+
+  public override Task<StateResponse> GetState(Empty request, ServerCallContext context)
+  {
+    return Task.FromResult(new StateResponse { State = State.Active, StateMessage = "The Demo Planner Service is active!" });
+  }
+
+  public override Task<PlannerServiceCapabilities> GetPlannerServiceCapabilities(Empty request, ServerCallContext context)
+  {
+    var capabilitesResponse = new PlannerServiceCapabilities();
+
+    capabilitesResponse.AvailablePlanners.Add(_randomPlanner);
+    capabilitesResponse.AvailablePlanners.Add(_gradualPlanner);
     capabilitesResponse.ServiceName = "Demo Planner Service";
     capabilitesResponse.TimeoutSeconds = 30;
+
+
+    capabilitesResponse.SettingsSchema = new AresDataSchema
+    {
+      Fields =
+      {
+        ["Dual Randomization"] = AresSchemaHelper.CreateSchemaEntry(AresDataType.Boolean, true)
+      }
+    };
 
     return Task.FromResult(capabilitesResponse);
   }
@@ -95,7 +118,8 @@ public class DemoPlannerService : AresPlannerGrpc.AresPlannerGrpcBase
     var randomDouble = _random.NextDouble();
     var plannedParam = new PlannedParameter();
     plannedParam.ParameterName = aresParameter.ParameterName;
-    plannedParam.ParameterValue = (float)(aresParameter.MinimumValue + (randomDouble * (aresParameter.MaximumValue - aresParameter.MinimumValue)));
+    var randomizedValue = (float)(aresParameter.MinimumValue + (randomDouble * (aresParameter.MaximumValue - aresParameter.MinimumValue)));
+    plannedParam.ParameterValue = AresValueHelper.CreateNumber(randomizedValue);
     return Task.FromResult(plannedParam);
   }
 
@@ -105,7 +129,7 @@ public class DemoPlannerService : AresPlannerGrpc.AresPlannerGrpcBase
     response.ParameterName = aresParameter.ParameterName;
 
     if(aresParameter.ParameterHistory.Count == 0)
-      response.ParameterValue = (float)aresParameter.MinimumValue;
+      response.ParameterValue = AresValueHelper.CreateNumber((float)aresParameter.MinimumValue);
 
     else
     {
@@ -113,10 +137,10 @@ public class DemoPlannerService : AresPlannerGrpc.AresPlannerGrpcBase
       var incrementedValue = previousValue + 5;
 
       if(incrementedValue > aresParameter.MaximumValue)
-        response.ParameterValue = (float)aresParameter.MaximumValue;
+        response.ParameterValue = AresValueHelper.CreateNumber((float)aresParameter.MaximumValue);
 
       else
-        response.ParameterValue = (float)incrementedValue;
+        response.ParameterValue = AresValueHelper.CreateNumber((float)incrementedValue);
     }
 
     return Task.FromResult(response);

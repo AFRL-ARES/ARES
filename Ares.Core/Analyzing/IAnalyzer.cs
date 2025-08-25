@@ -1,6 +1,7 @@
 ﻿using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Analyzing.Remote;
+using Ares.Datamodel.Connection;
 
 namespace Ares.Core.Analyzing;
 
@@ -39,18 +40,18 @@ public interface IAnalyzer
   Task Init();
 
   /// <summary>
-  /// Provides an observable for the <see cref="AnalyzerState" />
+  /// Provides an observable for the <see cref="State" />
   /// </summary>
-  IObservable<AnalyzerState> AnalyzerStateObservable { get; }
+  IObservable<State> AnalyzerStateObservable { get; }
 
   /// <summary>
-  /// Current state (<see cref="AnalyzerState" />) of the analyzer which essentially indicated
+  /// Current state (<see cref="State" />) of the analyzer which essentially indicated
   /// whether or not this analyzer is currently available for analyzing
   /// </summary>
-  AnalyzerState AnalyzerState { get; }
+  State AnalyzerState { get; }
 
   /// <summary>
-  /// If any reasoning needs to be provided for the current <see cref="AnalyzerState"/>
+  /// If any reasoning needs to be provided for the current <see cref="State"/>
   /// </summary>
   string StateMessage { get; }
 

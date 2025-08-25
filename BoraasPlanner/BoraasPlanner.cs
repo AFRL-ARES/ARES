@@ -1,6 +1,7 @@
 using Ares.Core.Planning;
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Connection;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
@@ -11,7 +12,7 @@ using System.Text;
 using System.Text.Json;
 
 namespace BoraasPlanner;
-public class BoraasPlanner : IPlanner
+public class BoraasPlanner : IPlannerService
 {
   readonly Uri _uri;
 
@@ -158,8 +159,7 @@ public class BoraasPlanner : IPlanner
   public string Name { get; set; }
   public Version Version { get; set; } = new Version(1, 0);
   public string Address { get; set; }
-  public string UniqueId { get; set; } = Guid.NewGuid().ToString();
+  public string UniqueId { get; } = Guid.NewGuid().ToString();
   public IList<Planner> AvailablePlanners { get; } = new List<Planner>();
-  public PlannerStatus Status { get; }
-  public IList<PlannerSetting> AdapterSettings { get; set; } = new List<PlannerSetting>();
+  public ConnectionStatusResponse Status { get; }
 }

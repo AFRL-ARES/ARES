@@ -10,6 +10,7 @@ using Ares.Datamodel.Templates;
 using Ares.Services;
 using UI.Backend.Extensions;
 using UI.Services.Notification;
+using Ares.Datamodel.Planning;
 
 namespace UI.Backend.ViewModels.Automation;
 
@@ -242,7 +243,7 @@ public class ExecutionViewModel : ReactiveObject
   [Reactive]
   public ExperimentExecutionStatus? ExperimentStatus { get; private set; }
   [Reactive]
-  public HashSet<PlannerAdapterInfo?> PlannerAdapterInfos { get; set; } = new();
+  public HashSet<PlannerServiceInfo?> PlannerAdapterInfos { get; set; } = new();
   [Reactive]
   public AnalyzerInfo? AnalyzerInfo { get; set; }
   public uint ExperimentsToRun { get; set; }

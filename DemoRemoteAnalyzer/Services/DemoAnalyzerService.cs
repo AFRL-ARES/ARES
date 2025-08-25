@@ -1,6 +1,7 @@
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Analyzing.Remote;
+using Ares.Datamodel.Connection;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 
@@ -11,10 +12,10 @@ public class DemoAnalyzerService : AresRemoteAnalyzerService.AresRemoteAnalyzerS
   {
   }
 
-  public override Task<AnalyzerStateResponse> GetState(Empty request, ServerCallContext context)
+  public override Task<StateResponse> GetState(Empty request, ServerCallContext context)
   {
     Console.WriteLine("State requested");
-    return Task.FromResult(new AnalyzerStateResponse { State = AnalyzerState.Active });
+    return Task.FromResult(new StateResponse { State = State.Active });
   }
 
   public override Task<Analysis> Analyze(AnalysisRequest request, ServerCallContext context)
@@ -88,9 +89,9 @@ public class DemoAnalyzerService : AresRemoteAnalyzerService.AresRemoteAnalyzerS
     return Task.FromResult(capabilities);
   }
 
-  public override Task<ConnectionStatusResponse> GetConnectionStatus(Empty request, ServerCallContext context)
+  public override Task<ConnectionStatus> GetConnectionStatus(Empty request, ServerCallContext context)
   {
-    var response = new ConnectionStatusResponse { Status = ConnectionStatus.Connected };
+    var response = new ConnectionStatus { Status = AresStatus.Connected };
 
     return Task.FromResult(response);
   }

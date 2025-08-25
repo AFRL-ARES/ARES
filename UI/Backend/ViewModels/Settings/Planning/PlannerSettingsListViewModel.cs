@@ -1,5 +1,4 @@
-﻿using Ares.Datamodel;
-using Ares.Messaging.Planning;
+﻿using Ares.Datamodel.Planning;
 using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
@@ -11,10 +10,10 @@ namespace UI.Backend.ViewModels.Settings.Planning;
 
 public class PlannerSettingsListViewModel : ReactiveObject
 {
-  private readonly AresPlanning.AresPlanningClient _planningService;
+  private readonly AresPlannerManagementService.AresPlannerManagementServiceClient _planningService;
   private readonly INotificationReceivingService _notificationService;
 
-  public PlannerSettingsListViewModel(AresPlanning.AresPlanningClient planningService,
+  public PlannerSettingsListViewModel(AresPlannerManagementService.AresPlannerManagementServiceClient planningService,
     INotificationReceivingService notificationService)
   {
     _planningService = planningService;
@@ -32,16 +31,16 @@ public class PlannerSettingsListViewModel : ReactiveObject
       .ResponseAsync.ContinueWith(task => UpdateViewModels(task.Result.Planners));
   }
 
-  private void UpdateViewModels(IEnumerable<PlannerAdapterInfo> plannerAdapters)
+  private void UpdateViewModels(IEnumerable<PlannerServiceInfo> plannerAdapters)
   {
-    plannerAdapters = plannerAdapters.Where(planner => planner.AdapterName != "Manual Planner");
+    plannerAdapters = plannerAdapters.Where(planner => planner.Name != "Manual Planner" && planner.Name != "NONE");
     var viewModels = plannerAdapters.Select(info => new PlannerSettingsViewModel(_planningService, _notificationService, info, OnPlannerRemoved)).ToList();
     SettingsViewModels = viewModels;
   }
 
-  public async Task AddNewPlanner(PlannerAdapterInfo plannerAdapter)
+  public async Task AddNewPlanner(PlannerServiceInfo plannerAdapter)
   {
-    var request = new GenericPlanner() { Name = plannerAdapter.AdapterName, Address = plannerAdapter.Address };
+    var request = new AddPlannerRequest() { Name = plannerAdapter.Name, Address = plannerAdapter.Address };
     await _planningService.AddPlannerAsync(request);
     await UpdateAvailablePlanners();
   }

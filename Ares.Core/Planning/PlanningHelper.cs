@@ -1,14 +1,15 @@
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
 
 namespace Ares.Core.Planning;
 
 public class PlanningHelper : IPlanningHelper
 {
-  private readonly IPlannerManager _plannerManager;
+  private readonly IPlannerServiceRepo _plannerManager;
 
-  public PlanningHelper(IPlannerManager plannerManager)
+  public PlanningHelper(IPlannerServiceRepo plannerManager)
   {
     _plannerManager = plannerManager;
   }
@@ -20,13 +21,12 @@ public class PlanningHelper : IPlanningHelper
     CancellationToken cancellationToken)
   {
     var parameterArray = parameters.ToArray();
-    var plannerToMetadataMaps = new List<(IPlanner Planner, ParameterMetadata Metadata)>();
+    var plannerToMetadataMaps = new List<(IPlannerService Planner, ParameterMetadata Metadata)>();
     foreach(var plannerAllocation in plannerAllocations)
     {
-      var hasVersion = Version.TryParse(plannerAllocation.Planner.Version, out var version);
-      var planner = hasVersion
-        ? _plannerManager.GetPlanner(plannerAllocation.Planner.Type, plannerAllocation.Planner.AdapterName, version!)
-        : _plannerManager.GetPlanner(plannerAllocation.Planner.Type, plannerAllocation.Planner.AdapterName);
+      var planner = _plannerManager.GetPlannerById(plannerAllocation.Planner.UniqueId);
+      if(planner is null)
+        return false;
 
       plannerToMetadataMaps.Add((planner, plannerAllocation.Parameter));
     }

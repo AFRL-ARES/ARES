@@ -1,28 +1,29 @@
-﻿using Ares.Messaging.Planning;
-using ReactiveUI;
+﻿using ReactiveUI;
 using System.Collections.ObjectModel;
-using Ares.Datamodel;
 using Ares.Datamodel.Templates;
-using UI.Backend.Extensions;
+using Ares.Services;
+using Ares.Datamodel.Planning;
 
 namespace UI.Backend.ViewModels.Automation.CampaignEdit;
 
 public class PlanningViewModel : ReactiveObject
 {
   private readonly CampaignTemplate _template;
-  private readonly AresPlanning.AresPlanningClient _client;
+  private readonly AresPlannerManagementService.AresPlannerManagementServiceClient _client;
 
-  public PlanningViewModel(CampaignTemplate template, IEnumerable<PlannerAdapterInfo> plannerAdapters, AresPlanning.AresPlanningClient client)
+  public PlanningViewModel(CampaignTemplate template, 
+    IEnumerable<PlannerServiceInfo> plannerAdapters, 
+    AresPlannerManagementService.AresPlannerManagementServiceClient client)
   {
     _template = template;
     _client = client;
-    PlannerAdapters = new ReadOnlyCollection<PlannerAdapterInfo>(plannerAdapters.ToList());
+    PlannerAdapters = new ReadOnlyCollection<PlannerServiceInfo>(plannerAdapters.ToList());
     PlannerAllocationEditors = template.PlannableParameters.Select(metadata => new PlannerAllocationEditorViewModel(metadata, template.PlannerAllocations.FirstOrDefault(allocation => allocation.Parameter.Equals(metadata))?.Planner, PlannerAdapters, client)).ToArray();
   }
 
   public IEnumerable<PlannerAllocationEditorViewModel> PlannerAllocationEditors { get; private set; }
 
-  public IEnumerable<PlannerAdapterInfo> PlannerAdapters { get; }
+  public IEnumerable<PlannerServiceInfo> PlannerAdapters { get; }
 
   public void Save()
   {

@@ -1,4 +1,4 @@
-﻿using Ares.Datamodel.Analyzing;
+﻿using Ares.Datamodel.Connection;
 
 namespace Ares.Core.Analyzing;
 internal class RemoteAnalyzerMonitor : IDisposable
@@ -6,7 +6,7 @@ internal class RemoteAnalyzerMonitor : IDisposable
   private readonly RemoteAnalyzer _analyzer;
   private readonly Task _monitorTask;
   private readonly CancellationTokenSource _tokenSource;
-  private AnalyzerState _lastState = AnalyzerState.UnspecifiedState;
+  private State _lastState = State.UnspecifiedState;
   readonly IAnalyzerCache _analyzerCache;
 
   public RemoteAnalyzerMonitor(RemoteAnalyzer analyzer, IAnalyzerCache analyzerCache)
@@ -35,7 +35,7 @@ internal class RemoteAnalyzerMonitor : IDisposable
           {
             await _analyzer.UpdateState();
 
-            if(_lastState != AnalyzerState.Active && _analyzer.AnalyzerState == AnalyzerState.Active)
+            if(_lastState != State.Active && _analyzer.AnalyzerState == State.Active)
             {
               await _analyzer.UpdateInfo();
               await _analyzer.UpdateParameters();

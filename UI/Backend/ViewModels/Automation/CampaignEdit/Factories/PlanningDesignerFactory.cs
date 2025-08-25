@@ -1,5 +1,5 @@
 ﻿using Ares.Datamodel.Templates;
-using Ares.Messaging.Planning;
+using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using UI.Backend.ViewModels.Automation.CampaignEdit;
 
@@ -8,9 +8,9 @@ namespace UI.Backend.ViewModels.Factories;
 
 public class PlanningDesignerFactory
 {
-  private readonly AresPlanning.AresPlanningClient _client;
+  private readonly AresPlannerManagementService.AresPlannerManagementServiceClient _client;
 
-  public PlanningDesignerFactory(AresPlanning.AresPlanningClient client)
+  public PlanningDesignerFactory(AresPlannerManagementService.AresPlannerManagementServiceClient client)
   {
     _client = client;
   }

@@ -1,11 +1,12 @@
 ﻿using Ares.Core.EntityConfigurations.Helpers;
-using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Planning;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Ares.Core.EntityConfigurations;
-internal class AnalyzerSettingsEntityConfiguration : AresEntityTypeBaseConfiguration<AnalyzerSettings>
+
+public class PlannerSettingsEntityConfiguration : AresEntityTypeBaseConfiguration<PlannerSettings>
 {
-  public override void Configure(EntityTypeBuilder<AnalyzerSettings> builder)
+  public override void Configure(EntityTypeBuilder<PlannerSettings> builder)
   {
     base.Configure(builder);
     builder.Property(p => p.Settings).HasAresStruct();

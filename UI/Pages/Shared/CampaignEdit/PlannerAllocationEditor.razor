@@ -1,4 +1,5 @@
 ﻿@using Ares.Datamodel
+@using Ares.Datamodel.Planning;
 @inject DialogService DialogService
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Backend.ViewModels.Automation.CampaignEdit.PlannerAllocationEditorViewModel>
 
@@ -10,9 +11,9 @@
       </RadzenRow>
       <RadzenRow>
           <RadzenLabel Text="Select Service:" Component="PlannerServiceDropDown" Style="min-width: 115px"/>
-          <RadzenDropDown TValue="PlannerAdapterInfo" Data="@ViewModel!.PlannerServices" @bind-Value="@ViewModel!.SelectedService" Name="PlannerServiceDropDown" Style="min-width: 15rem">
+          <RadzenDropDown TValue="PlannerServiceInfo" Data="@ViewModel!.PlannerServices" @bind-Value="@ViewModel!.SelectedService" Name="PlannerServiceDropDown" Style="min-width: 15rem">
             <Template>
-              @context.AdapterName (@context.Version)
+              @context.Name (@context.Version)
             </Template>
            </RadzenDropDown>
           <RadzenButton Click="@ShowSettingsPage" Icon="settings" Variant="Variant.Text" ButtonStyle="ButtonStyle.Base" Shade="Shade.Lighter" Size="ButtonSize.ExtraSmall" />
@@ -22,7 +23,7 @@
         @if(ViewModel!.PlannerOptions.Count() > 1)
         {
           <RadzenLabel Text="Select Planner:" Component="PlannerOptionDropDown" Style="min-width: 115px" />
-          <RadzenDropDown TValue="string" Data="@ViewModel!.PlannerOptions.Select(p => p.Name)" @bind-Value="@ViewModel!.SelectedPlannerOption" Name="PlannerOptionDropDown" Style="min-width: 15rem">
+          <RadzenDropDown TValue="string" Data="@ViewModel!.PlannerOptions.Select(p => p.PlannerName)" @bind-Value="@ViewModel!.SelectedPlannerOption" Name="PlannerOptionDropDown" Style="min-width: 15rem">
             <Template>
               @context
             </Template>

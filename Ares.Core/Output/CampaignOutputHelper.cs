@@ -91,10 +91,10 @@ public static class CampaignOutputHelper
 
     foreach(var allocation in template.PlannerAllocations)
     {
-      var found = versionedItems.TryGetValue(allocation.Planner.AdapterName, out var value);
+      var found = versionedItems.TryGetValue(allocation.Planner.Name, out var value);
 
       if(!found)
-        versionedItems.Add(allocation.Planner.AdapterName, allocation.Planner.Version);
+        versionedItems.Add(allocation.Planner.Name, allocation.Planner.Version);
     }
 
     var assembly = Assembly.GetEntryAssembly() ?? Assembly.GetCallingAssembly();

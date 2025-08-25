@@ -1,10 +1,19 @@
 ﻿@using Ares.Datamodel
+@using Ares.Services
+@using Google.Protobuf.WellKnownTypes
 @using Microsoft.EntityFrameworkCore.Metadata.Internal
 @using UI.Pages.Shared.Settings.Analysis.Layout
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Backend.ViewModels.Settings.Analysis.AnalyzerSettingsViewModel>
 @inject DialogService DialogService
 
-<AnalyzerSettingsContainer EditCallback="EditCallback" SettingsCallback="SettingCallback" RemoveCallback="RemoveCallback" StateUpdateCallback="UpdateStateCallback" Name="@ViewModel!.Name" State="@ViewModel!.AnalyzerState" StateMessage="@ViewModel!.StateMessage" UpdatingInProgress="@UpdateInProgress">
+<AnalyzerSettingsContainer EditCallback="EditCallback" 
+  SettingsCallback="SettingCallback" 
+  RemoveCallback="RemoveCallback" 
+  StateUpdateCallback="UpdateStateCallback" 
+  Name="@ViewModel!.Name" 
+  State="@ViewModel!.AnalyzerState" 
+  StateMessage="@ViewModel!.StateMessage" 
+  UpdatingInProgress="@UpdateInProgress">
   <div style="display: flex; flex-direction: column">
     <span>Address: @ViewModel!.Address</span>
     <span>Type: @ViewModel!.Type</span>
@@ -47,6 +56,12 @@
     {
       await ViewModel!.Save();
       StateHasChanged();
+      var notification = new AresNotification();
+      notification.Message = $"ARES successfully saved the request changes to {ViewModel!.Name}'s settings.";
+      notification.Title = "Successfully Updated Analyzer Settings";
+      notification.NotificationSeverity = Severity.Success;
+      notification.Timestamp = DateTime.UtcNow.ToTimestamp();
+      ViewModel!.PushNotification(notification);
     }
   }
 

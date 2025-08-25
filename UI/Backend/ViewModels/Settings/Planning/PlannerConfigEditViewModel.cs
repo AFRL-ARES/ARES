@@ -1,5 +1,5 @@
-﻿using Ares.Datamodel;
-using Ares.Messaging.Planning;
+﻿using Ares.Datamodel.Planning;
+using Ares.Services;
 using ReactiveUI;
 
 
@@ -7,20 +7,20 @@ namespace UI.Backend.ViewModels.Settings.Planning
 {
   public class PlannerConfigEditViewModel : ReactiveObject
   {
-    private readonly AresPlanning.AresPlanningClient _client;
-    private readonly PlannerAdapterInfo _plannerAdapter;
-    public PlannerConfigEditViewModel(AresPlanning.AresPlanningClient client)
+    private readonly AresPlannerManagementService.AresPlannerManagementServiceClient _client;
+    private readonly PlannerServiceInfo _plannerService;
+    public PlannerConfigEditViewModel(AresPlannerManagementService.AresPlannerManagementServiceClient client)
     {
       _client = client;
-      _plannerAdapter = new PlannerAdapterInfo();
+      _plannerService = new PlannerServiceInfo();
       NewConfig = true;
     }
 
-    public PlannerConfigEditViewModel(AresPlanning.AresPlanningClient client, PlannerAdapterInfo planner)
+    public PlannerConfigEditViewModel(AresPlannerManagementService.AresPlannerManagementServiceClient client, PlannerServiceInfo planner)
     {
       _client = client;
-      _plannerAdapter = planner;
-      Name = planner.AdapterName;
+      _plannerService = planner;
+      Name = planner.Name;
       Address = planner.Address;
     }
 
@@ -30,9 +30,9 @@ namespace UI.Backend.ViewModels.Settings.Planning
 
     public string Address { get; set; } = "http://localhost";
 
-    public bool Modified => _plannerAdapter.AdapterName != Name || _plannerAdapter.Address != Address;
+    public bool Modified => _plannerService.Name != Name || _plannerService.Address != Address;
 
-    public PlannerAdapterInfo Save()
-      => Modified ? new PlannerAdapterInfo { AdapterName = Name, Address = Address } : _plannerAdapter;
+    public PlannerServiceInfo Save()
+      => Modified ? new PlannerServiceInfo { Name = Name, Address = Address } : _plannerService;
   }
 }

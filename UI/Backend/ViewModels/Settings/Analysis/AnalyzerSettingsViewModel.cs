@@ -1,5 +1,5 @@
-﻿using Ares.Datamodel;
-using Ares.Datamodel.Analyzing;
+﻿using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Connection;
 using Ares.Services;
 using Grpc.Core;
 using ReactiveUI;
@@ -41,7 +41,7 @@ public class AnalyzerSettingsViewModel : ReactiveObject
 
   public string Description { get; set; } = "";
 
-  public AnalyzerState AnalyzerState { get; private set; }
+  public State AnalyzerState { get; private set; }
 
   public string StateMessage { get; private set; } = "";
 
@@ -99,7 +99,7 @@ public class AnalyzerSettingsViewModel : ReactiveObject
 
   public async Task UpdateState()
   {
-    var request = new AnalyzerStateRequest { AnalyzerId = _analyzerInfo.UniqueId };
+    var request = new StateRequest { Id = _analyzerInfo.UniqueId };
     try
     {
       var stateResponse = await _analyzerService.GetStateAsync(request);
@@ -109,7 +109,7 @@ public class AnalyzerSettingsViewModel : ReactiveObject
     catch(RpcException e)
     {
       StateMessage = $"Can't reach ares service: {e.Message}";
-      AnalyzerState = AnalyzerState.Error;
+      AnalyzerState = State.Error;
     }
   }
 

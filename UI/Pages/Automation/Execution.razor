@@ -31,7 +31,7 @@
               <div>Planners</div>
               @foreach (var planner in ViewModel!.PlannerAdapterInfos.Where(info => info is not null))
               {
-                @planner!.AdapterName
+                @planner!.Name
                 @* <DynamicComponent Type="GetTypeFromString(planner?.Type)"/> *@
               }
             </div>

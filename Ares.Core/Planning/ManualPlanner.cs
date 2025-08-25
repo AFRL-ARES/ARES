@@ -1,18 +1,19 @@
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Connection;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
 
 namespace Ares.Core.Planning;
 
-public class ManualPlanner : IPlanner
+public class ManualPlanner : IPlannerService
 {
   private readonly Queue<IEnumerable<ManualPlanResult>> _planResultsQueue = new();
 
   public ManualPlanner()
   {
-    Status = new PlannerStatus { PlannerState = PlannerState.Active, Message = "Manual Planner is active!" };
+    Status = new ConnectionStatus { Status = AresStatus.Connected, Info = "Manual Planner is active!" };
   }
 
   public IEnumerable<IEnumerable<(string Name, AresValue Value)>> CurrentPlanResults => 
@@ -145,6 +146,21 @@ public class ManualPlanner : IPlanner
     }
   }
 
+  public void UpdateSettings(AresStruct settings)
+  {
+    throw new NotImplementedException();
+  }
+
+  public Task<PlannerServiceCapabilities> GetCapabilities(CancellationToken cancellationToken = default)
+  {
+    throw new NotImplementedException();
+  }
+
+  public Task<IEnumerable<PlanResult>> Plan(IEnumerable<ParameterMetadata> plannableParameters, IEnumerable<ExperimentOverview> previousExperiments, IEnumerable<Analysis> analysisHistory, AresStruct settings, CancellationToken cancellationToken = default)
+  {
+    throw new NotImplementedException();
+  }
+
   private record ManualPlanResult(string Name, AresValue value)
 
   {
@@ -152,11 +168,17 @@ public class ManualPlanner : IPlanner
       => new(metadata, value);
   }
 
-  public PlannerStatus Status { get; protected set; }
-  public string Name { get; set; } = "Manual Planner";
-  public Version Version { get; set; } = new(1, 0);
-  public string Address { get; set; } = string.Empty;
   public string UniqueId { get; set; } = new Guid().ToString();
+  public ConnectionStatus Status { get; protected set; }
+  public string Name { get; set; } = "Manual Planner";
+  public string Address { get; set; } = string.Empty;
   public IList<Planner> AvailablePlanners { get; } = new List<Planner>();
-  public IList<PlannerSetting> AdapterSettings { get; } = new List<PlannerSetting>();
+  public string Type { get; } = "Manual Planner";
+  public string Version { get; } = "1.0.0";
+  public string Description { get; } = "A planner designed for executing a pre-determined set of values";
+  public IObservable<State> PlannerServiceStateObservable { get; }
+  public State PlannerServiceState { get; } = State.Active;
+  public string StateMessage { get; } = "Manual Planner is active!";
+  public AresStruct PlannerServiceSettings { get; } = new AresStruct();
+  public TimeSpan PlanningTimeout { get; } = TimeSpan.FromSeconds(long.MaxValue);
 }

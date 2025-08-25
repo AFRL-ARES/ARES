@@ -1,4 +1,4 @@
-﻿using Ares.Datamodel.Templates;
+﻿using Ares.Datamodel.Planning;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

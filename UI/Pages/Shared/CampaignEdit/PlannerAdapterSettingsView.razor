@@ -4,39 +4,24 @@
 
 <EditForm Model="@ViewModel" OnValidSubmit="OnValidSubmit">
   <RadzenStack Orientation="Orientation.Vertical" Gap="5px">
-    <RadzenText Text="@($"{ViewModel!.SelectedService!.AdapterName} Settings")"/>
+    <RadzenText Text="@($"{ViewModel!.SelectedService!.Name} Settings")"/>
 
-    @foreach(var setting in ViewModel!.PlannerSettings)
+    @foreach(var setting in ViewModel!.PlannerSettings.Fields)
     {
-      <RadzenFormField Text="@setting.SettingName" Variant="Variant.Flat">
-        @if(setting.SettingValue.HasStringValue)
+      <RadzenFormField Text="@setting.Key" Variant="Variant.Flat">
+        @if(setting.Value.HasStringValue)
         {
-          <RadzenTextBox @bind-Value="setting.SettingValue.StringValue"/>
+          <RadzenTextBox @bind-Value="setting.Value.StringValue" />
         }
 
-        @if(setting.SettingValue.HasInt32Value)
+        @if(setting.Value.HasNumberValue)
         {
-          <RadzenNumeric @bind-Value="setting.SettingValue.Int32Value"/>
+          <RadzenNumeric @bind-Value="setting.Value.NumberValue" />
         }
 
-        @if(setting.SettingValue.HasInt64Value)
+        @if(setting.Value.HasBoolValue)
         {
-          <RadzenNumeric @bind-Value="setting.SettingValue.Int64Value"/>
-        }
-
-        @if(setting.SettingValue.HasDoubleValue)
-        {
-          <RadzenNumeric @bind-Value="setting.SettingValue.DoubleValue" />
-        }
-
-        @if(setting.SettingValue.HasFloatValue)
-        {
-          <RadzenNumeric @bind-Value="setting.SettingValue.FloatValue" />
-        }
-
-        @if(setting.SettingValue.HasBoolValue)
-        {
-          <RadzenSwitch @bind-Value="setting.SettingValue.BoolValue"/>
+          <RadzenSwitch @bind-Value="setting.Value.BoolValue"/>
         }
 
       </RadzenFormField>

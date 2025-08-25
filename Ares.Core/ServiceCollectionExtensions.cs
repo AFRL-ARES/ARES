@@ -23,10 +23,10 @@ public static class ServiceCollectionExtensions
   {
     services.AddSingleton<IExecutionManager, ExecutionManager>();
     services.AddSingleton<IPlanningHelper, PlanningHelper>();
-    services.AddSingleton<IPlannerManager, PlannerManager>();
     services.AddSingleton<IExecutionReporter, ExecutionReporter>();
     services.AddSingleton<IExecutionReportStore, ExecutionReportStore>();
     services.AddSingleton<IAnalyzerRepo, AnalyzerRepo>();
+    services.AddSingleton<IPlannerServiceRepo, PlannerServiceRepo>();
     services.AddTransient<INumExperimentsRunFactory, NumExperimentsRunFactory>();
     services.AddSingleton<IActiveCampaignTemplateStore, ActiveCampaignTemplateStore>();
     services.AddSingleton<ICampaignValidatorRepository, CampaignValidatorRepository>();
@@ -35,9 +35,12 @@ public static class ServiceCollectionExtensions
     services.AddTransient<ICampaignValidator, RequiredDeviceInterpretersValidator>();
     services.AddSingleton<IDeviceCommandInterpreterRepo, DeviceCommandInterpreterRepo>();
     services.AddSingleton<IRemoteAnalyzerManager, RemoteAnalyzerManager>();
+    services.AddSingleton<IRemotePlannerManager, RemotePlannerManager>();
     services.AddSingleton<IAnalyzerCache, AnalyzerCache>();
+    services.AddSingleton<IPlannerServiceCache, PlannerServiceCache>();
     services.AddSingleton<AresVariableManager>();
     services.AddSingleton<AnalysisRepo>();
+    services.AddSingleton<PlannerServiceRepo>();
     services.AddSingleton<AnalysisHelper>();
     services.AddSingleton<IDesiredAnalysisResultFactory, DesiredAnalysisResultFactory>();
 

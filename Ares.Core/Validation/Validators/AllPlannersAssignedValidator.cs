@@ -1,4 +1,5 @@
-﻿using Ares.Datamodel.Templates;
+﻿using Ares.Datamodel.Planning;
+using Ares.Datamodel.Templates;
 
 namespace Ares.Core.Validation.Validators;
 

@@ -7,11 +7,11 @@
 
 @if(ViewModel!.IsEditable)
 {
-  <PlannerSettingsContainer PlannerStatusGetter="ViewModel!.GetPlannerStatus" 
+  <PlannerSettingsContainer PlannerStatusGetter="ViewModel!.GetPlannerStatus"
+  SettingsCallback="SettingCallback"
   EditCallback="EditCallback" 
   RemoveCallback="RemoveCallback" 
-  ActivateCallback="ViewModel!.Activate" 
-  Name="@ViewModel!.PlannerAdapter.AdapterName">
+  Name="@ViewModel!.PlannerAdapter.Name">
     <div>
       <span>@ViewModel!.PlannerAdapter.Address</span>
     </div>
@@ -20,7 +20,7 @@
 
 else
 {
-  <PlannerSettingsContainer EditCallback="null" RemoveCallback="null" Name="@ViewModel!.PlannerAdapter.AdapterName">
+  <PlannerSettingsContainer EditCallback="null" RemoveCallback="null" Name="@ViewModel!.PlannerAdapter.Name">
     <div>
       <span>@ViewModel!.PlannerAdapter.Address</span>
     </div>
@@ -47,9 +47,28 @@ else
     }
   }
 
+  private async Task SettingCallback()
+  {
+    var viewModel = ViewModel!.SettingsEditorViewModel;
+    var result = await DialogService.OpenAsync("Planner Settings", ds =>
+      @<PlannerSettingsEditorView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)"/>);
+  
+    if(result is true && viewModel!.Modified)
+    {
+      await ViewModel!.Save();
+      StateHasChanged();
+      var notification = new AresNotification();
+      notification.Message = $"ARES successfully saved the request changes to {ViewModel!.PlannerAdapter.Name}'s settings.";
+      notification.Title = "Successfully Updated Planner Settings";
+      notification.NotificationSeverity = Severity.Success;
+      notification.Timestamp = DateTime.UtcNow.ToTimestamp();
+      ViewModel!.PushNotification(notification);
+    }
+  }
+
   private async Task RemoveCallback()
   {
-    var result = await DialogService.Confirm($"Delete {ViewModel!.PlannerAdapter.AdapterName}?");
+    var result = await DialogService.Confirm($"Delete {ViewModel!.PlannerAdapter.Name}?");
     if (result is true)
     {
       await ViewModel!.Remove();

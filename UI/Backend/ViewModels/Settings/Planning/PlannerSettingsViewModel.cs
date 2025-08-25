@@ -1,6 +1,5 @@
-﻿using Ares.Datamodel;
+﻿using Ares.Datamodel.Connection;
 using Ares.Datamodel.Planning;
-using Ares.Messaging.Planning;
 using Ares.Services;
 using Grpc.Core;
 using ReactiveUI;
@@ -11,36 +10,39 @@ namespace UI.Backend.ViewModels.Settings.Planning;
 
 public class PlannerSettingsViewModel : ReactiveObject
 {
-  private readonly AresPlanning.AresPlanningClient _planningClient;
+  private readonly AresPlannerManagementService.AresPlannerManagementServiceClient _planningClient;
   private readonly INotificationReceivingService _notificationService;
 
-  public PlannerSettingsViewModel(AresPlanning.AresPlanningClient planningClient,
+  public PlannerSettingsViewModel(AresPlannerManagementService.AresPlannerManagementServiceClient planningClient,
     INotificationReceivingService notificationService,
-    PlannerAdapterInfo genericAdapter,
+    PlannerServiceInfo genericAdapter,
     Func<Task> onRemoveCallback)
   {
     _planningClient = planningClient;
     _notificationService = notificationService;
     PlannerAdapter = genericAdapter;
     EditViewModel = new PlannerConfigEditViewModel(planningClient, PlannerAdapter);
+    SettingsEditorViewModel = new PlannerSettingsEditorViewModel(planningClient, PlannerAdapter);
     OnRemoveCallback = onRemoveCallback;
-    IsEditable = !(PlannerAdapter.AdapterName == "Demo Planner" || PlannerAdapter.AdapterName == "Print Planner");
+    IsEditable = !(PlannerAdapter.Name == "Demo Planner" || PlannerAdapter.Name == "Print Planner");
   }
 
-  public PlannerAdapterInfo PlannerAdapter { get; }
+  public PlannerServiceInfo PlannerAdapter { get; }
 
   public Func<Task> OnRemoveCallback { get; }
 
   public PlannerConfigEditViewModel EditViewModel { get; }
+
+  public PlannerSettingsEditorViewModel SettingsEditorViewModel { get; }
 
   public bool IsEditable { get; }
 
   public async Task Save()
   {
     var planner = EditViewModel.Save();
-    var request = new GenericPlanner();
-    request.Name = planner.AdapterName;
-    request.Address = planner.Address;
+    var request = new UpdatePlannerRequest();
+    request.Name = planner.Name;
+    request.Url = planner.Address;
 
     await _planningClient.UpdatePlannerAsync(request);
     await OnRemoveCallback();
@@ -48,30 +50,27 @@ public class PlannerSettingsViewModel : ReactiveObject
 
   public async Task Remove()
   {
-    var request = new GenericPlanner();
-    request.Name = PlannerAdapter.AdapterName;
-    request.Address = PlannerAdapter.Address;
+    var request = new RemovePlannerRequest();
+    request.PlannerId = PlannerAdapter.UniqueId;
 
     await _planningClient.RemovePlannerAsync(request);
     await OnRemoveCallback();
   }
 
-  public Task Activate()
-    => _planningClient.ActivatePlannerAsync(new PlannerActivationRequest
-    {
-      AdapterName = PlannerAdapter.AdapterName
-    }).ResponseAsync;
-
-  public Task<PlannerStatus> GetPlannerStatus()
+  public async Task<StateResponse> GetPlannerStatus()
   {
     try
     {
-      return _planningClient.GetPlannerStatusAsync(new PlannerStatusRequest { AdapterName = PlannerAdapter.AdapterName }).ResponseAsync;
+      return await _planningClient.GetStateAsync(new StateRequest { Id = PlannerAdapter.UniqueId });
     }
 
     catch(RpcException)
     {
-      return Task.FromResult(new PlannerStatus { PlannerState = PlannerState.Error, Message = $"Unable to find a registered Planner with a name {PlannerAdapter.AdapterName}" });
+      return new StateResponse 
+      { 
+        State = State.Inactive, 
+        StateMessage = $"Unable to find a registered Planner with a name {PlannerAdapter.Name}" 
+      };
     }
   }
 

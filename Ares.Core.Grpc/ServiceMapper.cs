@@ -14,7 +14,7 @@ public static class ServiceMapper
     routeBuilder.MapGrpcService<AresNotificationService>();
     routeBuilder.MapGrpcService<AutomationService>();
     routeBuilder.MapGrpcService<HealthCheckService>();
-    routeBuilder.MapGrpcService<PlanningService>();
+    routeBuilder.MapGrpcService<PlannerService>();
     routeBuilder.MapGrpcService<ValidationService>();
     routeBuilder.MapGrpcService<AnalyzerService>();
     routeBuilder.MapGrpcService<AnalysisService>();

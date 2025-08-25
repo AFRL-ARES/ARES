@@ -1,4 +1,5 @@
-﻿@using Ares.Datamodel.Planning
+﻿@using Ares.Datamodel.Connection
+@using Ares.Datamodel.Planning
 
 <div class="planner-settings-grid">
   <h5 class="planner-settings-name">@Name</h5>
@@ -11,11 +12,11 @@
       @if(_plannerStatus is not null)
       {
         <div class="d-flex flex-column">
-          <div class="planner-status-@_plannerStatus.PlannerState.ToString().ToLower()">
-            @_plannerStatus.PlannerState.ToString()
+          <div class="planner-status-@_plannerStatus.State.ToString().ToLower()">
+            @_plannerStatus.State.ToString()
           </div>
           <div>
-            @_plannerStatus.Message
+            @_plannerStatus.StateMessage
           </div>
         </div>
       }
@@ -26,18 +27,9 @@
     </div>
   }
   <div class="d-flex planner-settings-actions">
-    <button class="btn btn-sm btn-outline-primary rounded-2 device-action-button" type="button" disabled="@(ActivateCallback is null)" @onclick="ActivateClicked">
-      @if(_activateInProgress)
-      {
-        <LoadingSpinner SpinnerSize="SpinnerSize.Small" />
-      }
-      else
-      {
-        <RadzenIcon Icon="sync" />
-      }
-    </button>
     <vr />
     <button class="btn btn-sm btn-outline-primary rounded-2 planner-action-button" type="button" disabled="@(EditCallback is null)" @onclick="EditClicked"><RadzenIcon Icon="edit" /></button>
+    <button class="btn btn-sm btn-outline-primary rounded-2 analyzer-action-button" type="button" disabled="@(SettingsCallback is null)" @onclick="SettingsClicked"><RadzenIcon Icon="settings" /></button>
     <button class="btn btn-sm btn-outline-danger rounded-2 planner-action-button" type="button" disabled="@(RemoveCallback is null)" @onclick="RemoveClicked"><RadzenIcon Icon="delete_outline" /></button>
   </div>
   <hr class="planner-settings-separator" />
@@ -60,10 +52,13 @@
   public Func<Task>? ActivateCallback { get; set; }
 
   [Parameter]
+  public Func<Task>? SettingsCallback { get; set; }
+
+  [Parameter]
   public string Name { get; set; } = "No name?";
 
   [Parameter]
-  public Func<Task<PlannerStatus?>>? PlannerStatusGetter { get; set; }
+  public Func<Task<StateResponse?>>? PlannerStatusGetter { get; set; }
 
   protected override async Task OnInitializedAsync()
   {
@@ -76,7 +71,7 @@
 
   private bool _activateInProgress;
 
-  private PlannerStatus? _plannerStatus; 
+  private StateResponse? _plannerStatus; 
 
   private Task EditClicked()
   {
@@ -86,6 +81,11 @@
   private Task RemoveClicked()
   {
     return RemoveCallback is not null ? RemoveCallback() : Task.CompletedTask;
+  }
+
+  private Task SettingsClicked()
+  {
+    return SettingsCallback is not null ? SettingsCallback() : Task.CompletedTask;
   }
 
   private async Task UpdatePlannerStatus()

@@ -8,7 +8,6 @@ using Ares.Messages.DeviceStates.SyringePump;
 using Ares.Messages.DeviceStates.Tc0304;
 using Ares.Messages.DeviceStates.TicStepperController;
 using Ares.Messages.DeviceStates.TubeFurnace;
-using Ares.Messaging.Planning;
 using Ares.Services;
 using Ares.Services.Device;
 using Ares.SyringePump.Ne1000.Messaging;
@@ -102,7 +101,7 @@ internal static class ServiceCollectionExtensions
     services.AddScoped(_ => clientManager.GetClient<UserManagement.UserManagementClient>());
     services.AddScoped(_ => clientManager.GetClient<AresAutomation.AresAutomationClient>());
     services.AddScoped(_ => clientManager.GetClient<Health.HealthClient>());
-    services.AddScoped(_ => clientManager.GetClient<AresPlanning.AresPlanningClient>());
+    services.AddScoped(_ => clientManager.GetClient<AresPlannerManagementService.AresPlannerManagementServiceClient>());
     services.AddScoped(_ => clientManager.GetClient<AresValidation.AresValidationClient>());
     services.AddScoped(_ => clientManager.GetClient<StateExportService.StateExportServiceClient>());
     services.AddScoped(_ => clientManager.GetClient<AresAnalyzerManagementService.AresAnalyzerManagementServiceClient>());

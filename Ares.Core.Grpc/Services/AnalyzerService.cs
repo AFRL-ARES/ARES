@@ -5,6 +5,7 @@ using Ares.Core.Analyzing;
 using Ares.Core.Exceptions;
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Connection;
 using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
@@ -99,10 +100,10 @@ public class AnalyzerService(IAnalyzerRepo analyzerRepo, IRemoteAnalyzerManager 
     return new Empty();
   }
 
-  public override Task<AnalyzerStateResponse> GetState(AnalyzerStateRequest request, ServerCallContext context)
+  public override Task<StateResponse> GetState(StateRequest request, ServerCallContext context)
   {
-    var response = new AnalyzerStateResponse();
-    var analyzer = _analyzerRepo.GetAnalyzerById(request.AnalyzerId) ?? throw new ItemNotFoundException(request.AnalyzerId, typeof(IAnalyzer), "Failed to get state as requested analyzer was not found"); ;
+    var response = new StateResponse();
+    var analyzer = _analyzerRepo.GetAnalyzerById(request.Id) ?? throw new ItemNotFoundException(request.Id, typeof(IAnalyzer), "Failed to get state as requested analyzer was not found"); ;
 
     response.State = analyzer.AnalyzerState;
     response.StateMessage = analyzer.StateMessage;
@@ -128,7 +129,7 @@ public class AnalyzerService(IAnalyzerRepo analyzerRepo, IRemoteAnalyzerManager 
 
   public override Task<AresStruct> GetAnalyzerSettings(AnalyzerSettingsRequest request, ServerCallContext context)
   {
-    var analyzer = _analyzerRepo.GetAnalyzerById(request.AnalyzerId) ?? throw new ItemNotFoundException(request.AnalyzerId, typeof(IAnalyzer), "Failed to get settings as requested analyzer was not found"); ;
+    var analyzer = _analyzerRepo.GetAnalyzerById(request.AnalyzerId) ?? throw new ItemNotFoundException(request.AnalyzerId, typeof(IAnalyzer), "Failed to get settings as requested analyzer was not found");
     return Task.FromResult(analyzer.Settings);
   }
 

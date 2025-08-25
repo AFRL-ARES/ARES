@@ -3,6 +3,7 @@ using System.Reactive.Subjects;
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Analyzing.Remote;
+using Ares.Datamodel.Connection;
 
 namespace Ares.Core.Analyzing;
 
@@ -12,8 +13,8 @@ namespace Ares.Core.Analyzing;
 /// </summary>
 public abstract class AnalyzerBase : IAnalyzer
 {
-  AnalyzerState _analyzerState = AnalyzerState.UnspecifiedState;
-  private readonly ISubject<AnalyzerState> _analyzerStateSubject = new BehaviorSubject<AnalyzerState>(AnalyzerState.UnspecifiedState);
+  State _analyzerState = State.UnspecifiedState;
+  private readonly ISubject<State> _analyzerStateSubject = new BehaviorSubject<State>(State.UnspecifiedState);
 
   public AnalyzerBase(string name, string type, string version)
   {
@@ -37,9 +38,9 @@ public abstract class AnalyzerBase : IAnalyzer
   public string Type { get; protected set; }
   public AresStruct Settings { get; } = new();
   public string UniqueId { get; set; } = Guid.NewGuid().ToString();
-  public IObservable<AnalyzerState> AnalyzerStateObservable { get; }
+  public IObservable<State> AnalyzerStateObservable { get; }
 
-  public AnalyzerState AnalyzerState
+  public State AnalyzerState
   {
     get => _analyzerState;
     protected set

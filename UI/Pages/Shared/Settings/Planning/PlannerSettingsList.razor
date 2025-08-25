@@ -49,7 +49,7 @@ else
       {
         await ViewModel!.AddNewPlanner(viewModel.Save());
         var notification = new AresNotification();
-        notification.Message = $"ARES successfully updated the planner {viewModel.Name} utilizing the address {viewModel.Address}.";
+        notification.Message = $"ARES successfully added {viewModel.Name} utilizing the address {viewModel.Address}.";
         notification.Title = $"Successfully Updated Planner {viewModel.Name}!";
         notification.NotificationSeverity = Severity.Success;
         notification.Timestamp = DateTime.UtcNow.ToTimestamp();
@@ -58,8 +58,8 @@ else
       catch (Grpc.Core.RpcException e)
       {
         var notification = new AresNotification();
-        notification.Message = $"ARES failed to update the planner {viewModel.Name} utilizing the address {viewModel.Address}.";
-        notification.Title = $"Planner Update Failed for {viewModel.Name}!";
+        notification.Message = e.Message;
+        notification.Title = $"Failed to add {viewModel.Name}!";
         notification.NotificationSeverity = Severity.Error;
         notification.Timestamp = DateTime.UtcNow.ToTimestamp();
         ViewModel!.PushNotification(notification);

@@ -1,5 +1,6 @@
 ﻿using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
 
 namespace Ares.Core.Planning;

@@ -1,12 +1,14 @@
 ﻿using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Analyzing.Remote;
+using Ares.Datamodel.Connection;
 using Ares.Datamodel.Extensions;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Grpc.Net.Client;
 
 namespace Ares.Core.Analyzing;
+
 public class RemoteAnalyzer : AnalyzerBase
 {
   private readonly GrpcChannel _channel;
@@ -122,7 +124,7 @@ public class RemoteAnalyzer : AnalyzerBase
     }
     catch(RpcException e)
     {
-      AnalyzerState = AnalyzerState.Inactive;
+      AnalyzerState = State.Inactive;
       StateMessage = $"Failed to connect to analyzer: {e.Message}";
     }
   }
