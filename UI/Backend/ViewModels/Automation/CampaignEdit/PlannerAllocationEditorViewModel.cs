@@ -1,5 +1,4 @@
-﻿using Ares.Datamodel;
-using Ares.Datamodel.Planning;
+﻿using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
 using Ares.Services;
 using ReactiveUI;
@@ -12,7 +11,6 @@ public class PlannerAllocationEditorViewModel : ReactiveObject
 {
   private readonly AresPlannerManagementService.AresPlannerManagementServiceClient _plannerClient;
   private readonly INotificationReceivingService _notificationService;
-  private string _selectedPlannerOption = string.Empty;
   private PlannerServiceInfo? _selectedAdapter;
 
   public PlannerAllocationEditorViewModel(ParameterMetadata metadata,
@@ -31,7 +29,7 @@ public class PlannerAllocationEditorViewModel : ReactiveObject
     if(plannerInfo is not null)
     {
       SelectedService = plannerInfo;
-      SelectedPlannerOption = metadata.PlannerName;
+      SelectedPlannerOption = plannerInfo.Capabilities.AvailablePlanners.FirstOrDefault(p => p.PlannerName == metadata.PlannerName);
     }
   }
 
@@ -47,9 +45,8 @@ public class PlannerAllocationEditorViewModel : ReactiveObject
       UniqueId = Guid.NewGuid().ToString()
     };
 
-    var selectedPlannerOption = PlannerOptions.FirstOrDefault(option => option.PlannerName == _selectedPlannerOption);
-    allocation.Parameter.PlannerName = _selectedPlannerOption ?? SelectedService.Name;
-    allocation.Parameter.PlannerDescription = selectedPlannerOption?.Description ?? SelectedService.Description;
+    allocation.Parameter.PlannerName = SelectedPlannerOption?.PlannerName ?? SelectedService.Name;
+    allocation.Parameter.PlannerDescription = SelectedPlannerOption?.Description ?? SelectedService.Description;
 
     return allocation;
   }
@@ -66,11 +63,8 @@ public class PlannerAllocationEditorViewModel : ReactiveObject
       PlannerOptions = updatedInfo.Info.Capabilities.AvailablePlanners;
 
       //Not all adapters will have multiple options, if not auto assign the value
-      if(PlannerOptions.Count() <= 1)
-      {
-        SelectedPlannerOption = SelectedService.Name;
-        PlannerDescription = SelectedService.Description;
-      } 
+      if(PlannerOptions.Count() == 1)
+        SelectedPlannerOption = SelectedService.Capabilities.AvailablePlanners.First();  
     }
 
     else
@@ -84,15 +78,6 @@ public class PlannerAllocationEditorViewModel : ReactiveObject
     }
   }
 
-  public async Task UpdatePlannerSettings()
-  {
-    if(SelectedService is null)
-      return;
-
-    PlannerSettings = await _plannerClient.GetPlannerSettingsAsync(new PlannerSettingsRequest { PlannerId = SelectedService.UniqueId });
-    PlannerDescription = PlannerOptions.First(p => p.PlannerName == SelectedPlannerOption).Description;
-  }
-
   public PlannerServiceInfo? SelectedService
   {
     get => _selectedAdapter;
@@ -103,34 +88,18 @@ public class PlannerAllocationEditorViewModel : ReactiveObject
         return;
 
       if(_selectedAdapter is not null)
-        _selectedPlannerOption = string.Empty;
+        SelectedPlannerOption = _selectedAdapter.Capabilities.AvailablePlanners.FirstOrDefault();
 
       _selectedAdapter = value;
       _ = UpdatePlannerOptions();
     }
   }
 
-  public string? SelectedPlannerOption
-  {
-    get => _selectedPlannerOption;
-
-    set
-    {
-      if(value is null || _selectedPlannerOption == value)
-        return;
-
-      _selectedPlannerOption = value;
-      _ = UpdatePlannerSettings();
-    }
-  }
-
+  [Reactive]
+  public ParameterMetadata ParameterMetadata { get; set; }
+  public IEnumerable<PlannerServiceInfo> PlannerServices { get; }
   [Reactive]
   public IEnumerable<Planner> PlannerOptions { get; set; } = Enumerable.Empty<Planner>();
   [Reactive]
-  public AresStruct PlannerSettings { get; set; } = new AresStruct();
-  [Reactive]
-  public string PlannerDescription { get; set; } = string.Empty;
-  public ParameterMetadata ParameterMetadata { get; }
-  public IEnumerable<PlannerServiceInfo> PlannerServices { get; }
-
+  public Planner? SelectedPlannerOption { get; set; }
 }

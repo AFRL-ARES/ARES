@@ -22,10 +22,14 @@
         @if(ViewModel!.PlannerOptions.Count() > 1)
         {
           <RadzenLabel Text="Select Planner:" Component="PlannerOptionDropDown" Style="min-width: 115px" />
-          <RadzenDropDown TValue="string" Data="@ViewModel!.PlannerOptions.Select(p => p.PlannerName)" @bind-Value="@ViewModel!.SelectedPlannerOption" Name="PlannerOptionDropDown" Style="min-width: 15rem">
+          <RadzenDropDown TValue="Planner" Data="@ViewModel!.PlannerOptions" @bind-Value="@ViewModel!.SelectedPlannerOption" Name="PlannerOptionDropDown" Style="min-width: 15rem">
             <Template>
-              @context
+              @context.PlannerName
             </Template>
+
+            <ValueTemplate>
+              @context.PlannerName
+            </ValueTemplate>
           </RadzenDropDown>
           <RadzenButton Click="@ShowPlannerOptionTip" Icon="help" Variant="Variant.Text" ButtonStyle="ButtonStyle.Base" Shade="Shade.Lighter" Size="ButtonSize.ExtraSmall" />
         }
@@ -33,7 +37,7 @@
 
       <RadzenRow style="padding-top: 0.5rem">
         Planner Description:
-        @ViewModel!.PlannerDescription
+        @(ViewModel!.SelectedPlannerOption?.Description ?? ViewModel!.SelectedService?.Description ?? string.Empty)
       </RadzenRow>
     </RadzenColumn>
   </RadzenStack>
@@ -49,4 +53,5 @@
   </div>
   , new DialogOptions() { CloseDialogOnOverlayClick = true });
   }
+
 }
