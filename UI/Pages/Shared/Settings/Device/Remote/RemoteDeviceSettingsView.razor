@@ -5,7 +5,7 @@
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<RemoteDeviceSettingsViewModel>
 @inject DialogService DialogService
 
-<DeviceSettingsContainer EditCallback="EditCallback" RemoveCallback="RemoveCallback" RefreshCallback="" Name="@ViewModel!.Name" State="@ViewModel.OperationalState" StateMessage="@ViewModel.StateMessage" IsBusy="@ViewModel.IsBusy">
+<DeviceSettingsContainer EditCallback="EditCallback" RemoveCallback="RemoveCallback" Name="@ViewModel!.Name" DeviceOperationalStatusGetter="@ViewModel!.GetOperationalStatus">
   <div style="display: flex; flex-direction: column">
     <span>Address: @ViewModel.Address</span>
     <span>Type: @ViewModel.Type</span>

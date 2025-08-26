@@ -1,4 +1,8 @@
-﻿using Ares.Datamodel.Device;
+﻿using System;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading.Tasks;
+using Ares.Datamodel.Device;
 using Ares.Services;
 using Ares.Services.Device;
 using Google.Protobuf.WellKnownTypes;
@@ -16,6 +20,7 @@ public class RemoteDeviceSettingsListViewModel : ReactiveObject
   {
     _devicesClient = devicesClient;
     _notificationService = notificationService;
+    SettingsViewModels = [];
     _ = UpdateAvailableDevices();
   }
 
@@ -23,41 +28,65 @@ public class RemoteDeviceSettingsListViewModel : ReactiveObject
 
   private async Task UpdateAvailableDevices()
   {
-    SettingsViewModels = null;
-    var remoteDevices = await _devicesClient.ListRemoteAresDevicesAsync(new Empty());
-    UpdateViewModels(remoteDevices.Devices);
+    IsLoading = true;
+    try
+    {
+      var remoteDevices = await _devicesClient.ListRemoteAresDevicesAsync(new Empty());
+      UpdateViewModels(remoteDevices.Devices);
+    }
+    catch (Exception e)
+    {
+      PushNotification(new AresNotification(){Message = $"Could not retrieve remote devices. {e.Message}", Title = "Connection Error", NotificationSeverity = Severity.Error});
+      SettingsViewModels.Clear();
+    }
+    finally
+    {
+      IsLoading = false;
+    }
   }
 
-  private void UpdateViewModels(IEnumerable<DeviceInfo> remoteDevices)
+  private void UpdateViewModels(System.Collections.Generic.IEnumerable<DeviceInfo> remoteDevices)
   {
+    SettingsViewModels.Clear();
     var viewModels = remoteDevices.Select(info => new RemoteDeviceSettingsViewModel(_devicesClient, _notificationService, info, OnDeviceRemoved)).ToArray();
-    SettingsViewModels = viewModels;
+    foreach (var vm in viewModels)
+    {
+      SettingsViewModels.Add(vm);
+    }
   }
 
   public async Task AddNewRemoteDevice(RemoteDeviceConfig deviceConfig)
   {
-    var request = new AddRemoteDeviceRequest() { Name = deviceConfig.Name, Url = deviceConfig.Url };
-    var response = await _devicesClient.AddRemoteDeviceAsync(request);
-    if(response.Success)
+    try
     {
-      PushNotification(new AresNotification() { Message = $"Added new device {deviceConfig.Name}", NotificationSeverity = Severity.Success, Title = "Successfully Added Remote Device" });
-      await UpdateAvailableDevices();
+      var request = new AddRemoteDeviceRequest() { Name = deviceConfig.Name, Url = deviceConfig.Url };
+      var response = await _devicesClient.AddRemoteDeviceAsync(request);
+      if (response.Success)
+      {
+        PushNotification(new AresNotification() { Message = $"Added new device {deviceConfig.Name}", NotificationSeverity = Severity.Success, Title = "Successfully Added Remote Device" });
+        await UpdateAvailableDevices();
+      }
+      else
+      {
+        PushNotification(
+          new AresNotification() { Message = $"Failed to add device {deviceConfig.Name}. {response.ErrorMessage}", NotificationSeverity = Severity.Error, Title = "Error"});
+      }
     }
-    else
+    catch (Exception e)
     {
-      PushNotification(
-        new AresNotification() { Message = $"Failed to add device {deviceConfig.Name}. {response.ErrorMessage}", NotificationSeverity = Severity.Error });
+      PushNotification(new AresNotification(){Message = $"Failed to add device {deviceConfig.Name}. {e.Message}", Title = "Error", NotificationSeverity = Severity.Error});
     }
   }
 
   private async Task OnDeviceRemoved()
   {
-    SettingsViewModels = null;
     await UpdateAvailableDevices();
   }
 
   public void PushNotification(AresNotification notification) => _notificationService.PushNotification(notification);
+  
+  [Reactive] 
+  public bool IsLoading { get; private set; }
 
-  [Reactive]
-  public IEnumerable<RemoteDeviceSettingsViewModel>? SettingsViewModels { get; private set; }
+  public ObservableCollection<RemoteDeviceSettingsViewModel> SettingsViewModels { get; }
 }

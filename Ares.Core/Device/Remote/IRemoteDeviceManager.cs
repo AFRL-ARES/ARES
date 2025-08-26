@@ -11,7 +11,7 @@ public interface IRemoteDeviceManager
 {
   Task LoadDevices();
 
-  Task CreateDevice(string name, string url);
+  Task<RemoteDevice> CreateDevice(string name, string url);
 
   Task<bool> RemoveDevice(string deviceId);
 

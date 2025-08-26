@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Ares.Core.Device;
 using Ares.Core.Device.Remote;
+using Ares.Datamodel;
 using Ares.Datamodel.Device;
 using Ares.Datamodel.Templates;
 using Ares.Device;
@@ -199,6 +200,54 @@ public class DevicesService : AresDevices.AresDevicesBase
     }
   }
 
+  public override async Task<AddRemoteDeviceResponse> AddRemoteDevice(AddRemoteDeviceRequest request, ServerCallContext context)
+  {
+    try
+    {
+      var device = await _remoteDeviceManager.CreateDevice(request.Name, request.Url);
+      return new AddRemoteDeviceResponse { Success = true, DeviceId = device.UniqueId };
+    }
+    catch(Exception e)
+    {
+      return new AddRemoteDeviceResponse { Success = false, ErrorMessage = e.Message };
+    }
+  }
+
+  public override Task<DeviceInfo> GetDeviceInfo(DeviceInfoRequest request, ServerCallContext context)
+  {
+    var device = _deviceCommandInterpreterRepo.Select(dci => dci.Device).FirstOrDefault(d => d.UniqueId == request.DeviceId);
+    if(device is null)
+      return Task.FromResult(new DeviceInfo());
+
+    var info = GetInfo(device);
+
+    return Task.FromResult(info);
+  }
+
+  public override Task<AresStruct> GetDeviceSettings(DeviceSettingsRequest request, ServerCallContext context)
+  {
+    var device = _deviceCommandInterpreterRepo.Select(dci => dci.Device).FirstOrDefault(d => d.UniqueId == request.DeviceId);
+    if(device is not RemoteDevice remoteDevice)
+    {
+      return Task.FromResult(new AresStruct());
+    }
+
+    return Task.FromResult(remoteDevice.Settings);
+  }
+
+  public override Task<Empty> SetDeviceSettings(DeviceSettings request, ServerCallContext context)
+  {
+    var device = _deviceCommandInterpreterRepo.Select(dci => dci.Device).FirstOrDefault(d => d.UniqueId == request.DeviceId);
+    if(device is not RemoteDevice remoteDevice)
+    {
+      return Task.FromResult(new Empty());
+    }
+
+    _remoteDeviceManager.UpdateDeviceSettings(request);
+
+    return Task.FromResult(new Empty());
+  }
+
   private DeviceInfo GetInfo(IAresDevice device)
   {
     return new DeviceInfo
@@ -208,7 +257,8 @@ public class DevicesService : AresDevices.AresDevicesBase
       Description = device.Description,
       Type = device.Type,
       Url = device is RemoteDevice remoteDevice ? remoteDevice.Address.ToString() : null,
-      Version = device.Version
+      Version = device.Version,
+      SettingsSchema = device is RemoteDevice rDevice ? rDevice.SettingSchema : null
     };
   }
 }

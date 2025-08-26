@@ -1,17 +1,18 @@
-﻿using Ares.Core.Analyzing;
-using Ares.Core.Device;
-using Ares.Core.Grpc;
-using Ares.Core.Planning;
-using DemoDevice;
-using AresService.DeviceDbLoaders;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
+using Ares.Core.Analyzing;
+using Ares.Core.Device;
+using Ares.Core.Device.Remote;
+using Ares.Core.Grpc;
+using Ares.Core.Planning;
 using Ares.Services;
+using AresService.DeviceDbLoaders;
+using DemoDevice;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace AresService;
 
@@ -23,6 +24,7 @@ public class AresStarter
   private readonly IEnumerable<IDeviceDbLoader> _deviceLoaders;
   private readonly IPlannerManager _plannerManager;
   private readonly IConfiguration _configuration;
+  private readonly IRemoteDeviceManager _remoteDeviceManager;
   private readonly string _dataPath;
   private readonly string _resultsPath;
   private readonly string _templatesPath;
@@ -34,7 +36,8 @@ public class AresStarter
     IPlannerManager plannerManager,
     IRemoteAnalyzerManager analyzerManager,
     IEnumerable<IDeviceDbLoader> deviceLoaders,
-    IConfiguration configuration)
+    IConfiguration configuration,
+    IRemoteDeviceManager remoteDeviceManager)
   {
     _deviceCommandInterpreterRepo = deviceCommandInterpreterRepo;
     _dbContextFactory = dbContextFactory;
@@ -42,6 +45,7 @@ public class AresStarter
     _analyzerManager = analyzerManager;
     _deviceLoaders = deviceLoaders;
     _configuration = configuration;
+    _remoteDeviceManager = remoteDeviceManager;
     _dataPath = _configuration.Get<AppSettings>().AresDataPath;
     _resultsPath = Path.Combine(_dataPath, AppSettings.ResultsFolder);
     _templatesPath = Path.Combine(_dataPath, AppSettings.TemplatesFolder);
@@ -60,6 +64,7 @@ public class AresStarter
 
     await _plannerManager.Init();
     await _analyzerManager.LoadAnalyzers();
+    await _remoteDeviceManager.LoadDevices();
 
     Observable.Interval(TimeSpan.FromSeconds(20))
       .Take(1)

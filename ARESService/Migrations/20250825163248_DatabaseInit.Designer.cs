@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AresService.Migrations
 {
     [DbContext(typeof(AresDbContext))]
-    [Migration("20250821180514_DatabaseInit")]
+    [Migration("20250825163248_DatabaseInit")]
     partial class DatabaseInit
     {
         /// <inheritdoc />
@@ -468,6 +468,9 @@ namespace AresService.Migrations
                         .HasDefaultValueSql("getdate()");
 
                     b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SettingsSchema")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Type")

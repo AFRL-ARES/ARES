@@ -2,22 +2,47 @@
 
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<RemoteDeviceConfigEditViewModel>
 
-<EditForm Model="@ViewModel" OnValidSubmit="OnValidSubmit">
+<RadzenTemplateForm TItem="RemoteDeviceConfigEditViewModel" Data="@ViewModel" Submit="@OnValidSubmit">
   <div class="d-flex flex-column">
     <RadzenFormField Text="Device Name" Variant="Variant.Flat">
-      <RadzenTextBox @bind-Value=ViewModel!.Name Disabled="@(!ViewModel!.NewConfig)"/>
+      <ChildContent>
+        <RadzenTextBox Name="Name" @bind-Value=ViewModel!.Name Disabled="@(!ViewModel!.NewConfig)"/>
+      </ChildContent>
+      <Helper>
+        <RadzenRequiredValidator Component="Name" Text="Name is required" />
+      </Helper>
     </RadzenFormField>
-
     <RadzenFormField Text="Address" Variant="Variant.Flat" >
-      <RadzenTextBox @bind-Value=ViewModel!.Address />
+      <ChildContent>
+        <RadzenTextBox Name="Address" @bind-Value=ViewModel!.Address />
+      </ChildContent>
+      <Helper>
+        <RadzenCustomValidator Component="Address" Validator="@(() => ValidateAddress(ViewModel!.Address))" Text="Please enter a valid URL" />
+      </Helper>      
     </RadzenFormField>
   </div>
   <ValidationSummary />
   <DataAnnotationsValidator />
   <button type="submit" class="btn my-2 btn-outline-primary">Save</button>
-</EditForm>
+</RadzenTemplateForm>
 
 @code {
+
+  private bool ValidateAddress(string address)
+  {
+    if (string.IsNullOrEmpty(address))
+    {
+      return false;
+    }
+
+    var test = Uri.TryCreate(address, UriKind.Absolute, out var _);
+    if (!test)
+    {
+      return false;
+    }
+
+    return true;
+  }
 
   [Parameter]
   public Action OnValidSubmit { get; set; } = delegate

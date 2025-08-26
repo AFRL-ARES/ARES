@@ -11,8 +11,9 @@ namespace Ares.Core.Device.Remote;
 public sealed class RemoteDevice : AresDevice
 {
   private readonly GrpcChannel _channel;
-  private AresDataSchema _settings = new();
+  private AresDataSchema _settingsSchema = new();
   private DeviceCommandDescriptor[] _commands = [];
+
   public RemoteDevice(string name, Uri address) : base(name)
   {
     _channel = GrpcChannel.ForAddress(address);
@@ -30,10 +31,12 @@ public sealed class RemoteDevice : AresDevice
 
   public AresStruct Settings { get; } = new();
 
+  public AresDataSchema SettingSchema => _settingsSchema;
+
   public override async Task<bool> Activate()
   {
     await UpdateOperationalStatus();
-    if(Status.OperationalState != OperationalState.Active)
+    if(Status.OperationalState != Datamodel.Device.OperationalState.Active)
     {
       return false;
     }
@@ -45,8 +48,16 @@ public sealed class RemoteDevice : AresDevice
 
   internal async Task UpdateOperationalStatus()
   {
-    var client = GetClient();
-    Status = await client.GetOperationalStatusAsync(new Empty());
+    try
+    {
+      var client = GetClient();
+      var status = await client.GetOperationalStatusAsync(new Empty());
+      Status = status;
+    }
+    catch(RpcException e)
+    {
+      Status = new DeviceOperationalStatus { OperationalState = OperationalState.Inactive, Message = $"Unable to connect to remote device: {e.Message}" };
+    }
   }
 
   internal async Task UpdateCommands()
@@ -54,8 +65,8 @@ public sealed class RemoteDevice : AresDevice
     var client = GetClient();
     try
     {
-      var blah = await client.GetCommandsAsync(new Empty());
-      _commands = [.. blah.Commands];
+      var cmdResponse = await client.GetCommandsAsync(new Empty());
+      _commands = [.. cmdResponse.Commands];
     }
     catch(RpcException)
     {
@@ -110,14 +121,14 @@ public sealed class RemoteDevice : AresDevice
     try
     {
       var response = await client.GetSettingsSchemaAsync(new Empty());
-      _settings = response.Schema;
+      _settingsSchema = response.Schema;
     }
     catch(RpcException)
     {
     }
 
-    var newSettings = _settings.Fields.Where(entry => !Settings.Fields.ContainsKey(entry.Key)) ?? [];
-    var removedSettings = Settings.Fields.Where(entry => !_settings.Fields.ContainsKey(entry.Key));
+    var newSettings = _settingsSchema.Fields.Where(entry => !Settings.Fields.ContainsKey(entry.Key)) ?? [];
+    var removedSettings = Settings.Fields.Where(entry => !_settingsSchema.Fields.ContainsKey(entry.Key));
 
     foreach(var removedSetting in removedSettings)
     {

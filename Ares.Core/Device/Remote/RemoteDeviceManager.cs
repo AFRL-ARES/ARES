@@ -8,12 +8,10 @@ internal class RemoteDeviceManager(IDeviceCommandInterpreterRepo _deviceCommandI
 {
   private readonly List<RemoteDeviceMonitor> _deviceMonitors = [];
 
-  public async Task CreateDevice(string name, string url)
+  public async Task<RemoteDevice> CreateDevice(string name, string url)
   {
     var config = new RemoteDeviceConfig { UniqueId = Guid.NewGuid().ToString(), Name = name, Url = url };
     var device = ConfigToDevice(config);
-    if(device is null)
-      return;
 
     _deviceCommandInterpreters.Add(new RemoteDeviceCommandInterpreter(device));
     var monitor = new RemoteDeviceMonitor(device, _deviceCache);
@@ -22,10 +20,13 @@ internal class RemoteDeviceManager(IDeviceCommandInterpreterRepo _deviceCommandI
     var ctx = _dbContextFactory.CreateDbContext();
     ctx.RemoteDeviceConfigs.Add(config);
 
+    await device.Activate();
+
     await ctx.SaveChangesAsync();
+    return device;
   }
 
-  private RemoteDevice? ConfigToDevice(RemoteDeviceConfig config)
+  private RemoteDevice ConfigToDevice(RemoteDeviceConfig config)
   {
     var uriValid = Uri.TryCreate(config.Url, UriKind.Absolute, out var uri);
     if(!uriValid || uri is null)
@@ -34,7 +35,7 @@ internal class RemoteDeviceManager(IDeviceCommandInterpreterRepo _deviceCommandI
         "Device Load Error",
         $"Failed to load a remote device {config.Name} because the url {config.Url} is invalid.",
         NotificationSeverityEnum.Danger);
-      return null;
+      throw new InvalidOperationException($"Failed to load a remote device {config.Name} because the url {config.Url} is invalid.");
     }
 
     var device = new RemoteDevice(config.Name, uri, config.UniqueId);
