@@ -1,0 +1,70 @@
+﻿@using Ares.Datamodel.Extensions
+@using Ares.Datamodel.Planning
+@using UI.Backend.ViewModels.Automation.Planning
+@inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<UI.Backend.ViewModels.Automation.Planning.ManualPlannerViewModel>
+@inject DialogService dialogService
+
+<RadzenStack Gap="2rem">
+  @if(ViewModel!.PlannerValueHeaders.Any())
+  {
+    <RadzenDataGrid Data="ViewModel!.DisplayObjects" ColumnWidth="100px" FilterPopupRenderMode="PopupRenderMode.OnDemand" AllowPaging="true" PageSize="5" @ref=PlanDisplayGrid>
+      <Columns>
+        <RadzenDataGridColumn Title="Experiment">
+          <Template>
+            @(context.ExperimentNumber)
+          </Template>
+        </RadzenDataGridColumn>
+        @foreach(var data in ViewModel!.PlannerValueHeaders)
+        {
+          <RadzenDataGridColumn Title="@data">
+            <Template>
+              @{
+                var matchingParam = context.Parameters.ParameterValues.FirstOrDefault(valuePair => valuePair.Name == data)?.Value ?? AresValueHelper.CreateNull();
+              }
+
+              @if(matchingParam.HasNumberValue)
+              {
+                @matchingParam.NumberValue
+              }
+
+              else if(matchingParam.HasStringValue)
+              {
+                @matchingParam.StringValue
+              }
+              
+              else
+              {
+                @("Error!")
+              }
+            </Template>
+          </RadzenDataGridColumn>
+        }
+      </Columns>
+    </RadzenDataGrid>
+  }
+
+  <RadzenRow>
+    <RadzenUpload Change="@FileChanged" Accept=".csv,.txt" Multiple=false ChooseText="Select Planning Data" Icon="upload" />
+  </RadzenRow>
+</RadzenStack>
+
+@code {
+  private RadzenDataGrid<ManualPlannerDisplayObject>? PlanDisplayGrid { get; set; }
+
+  private async Task FileChanged(UploadChangeEventArgs obj)
+  {
+    if(!obj.Files.Any())
+      return;
+
+    var file = obj.Files.First();
+    await ViewModel!.FileUploaded(file);
+    await ViewModel!.CreateDisplayData();
+    if(PlanDisplayGrid is not null)
+      await PlanDisplayGrid.RefreshDataAsync();
+  }
+
+  protected override async Task OnAfterRenderAsync(bool firstRender)
+  {
+    await ViewModel!.UpdatePlannerValues();
+  }
+}

@@ -153,7 +153,6 @@ internal static class ServiceCollectionExtensions
     //Device Settings List View Models
     services.AddTransient<DeviceStatesViewModel>();
     services.AddTransient<DeviceStateExporterViewModel>();
-    services.AddScoped<ManualPlannerViewModel>();
     services.AddTransient<AnalyzerSettingsListViewModel>();
     services.AddTransient<PlannerSettingsListViewModel>();
     services.AddTransient<MfcSettingsListViewModel>();

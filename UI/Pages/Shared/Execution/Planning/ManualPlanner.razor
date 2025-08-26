@@ -1,33 +1,16 @@
 ﻿@using Ares.Datamodel.Extensions
 @using Ares.Datamodel.Planning
+@using UI.Backend.ViewModels.Automation.Planning
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<UI.Backend.ViewModels.Automation.Planning.ManualPlannerViewModel>
+@inject DialogService dialogService
 
-<div class="d-flex border rounded-1 border-1">
-  <div>
-    <RadzenUpload Change="@FileChanged" Accept=".csv,.txt" Multiple=false ChooseText="Select Planning Data" Icon="upload" />
-  </div>
+<RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center">
+  <RadzenButton Click="EditManualPlanClick" ButtonStyle="ButtonStyle.Secondary" Text="Edit Manual Plan" />
+  <RadzenButton Click="@DisplayManualPlannerHelpTab" Icon="help" Variant="Variant.Text" ButtonStyle="ButtonStyle.Base" Size="ButtonSize.ExtraSmall" />
+  <RadzenText Text="@($"Number of Planned Items: {ViewModel!.DisplayObjects.Count}")"/>
+</RadzenStack>
 
-  @if(ViewModel!.PlannerValueHeaders.Any())
-  {
-    <RadzenDataGrid Data="DataGridDisplayObjects" ColumnWidth="100px" FilterPopupRenderMode="PopupRenderMode.OnDemand" AllowPaging="true" PageSize="5" >
-      <Columns>
-        <RadzenDataGridColumn Title="Experiment">
-          <Template>
-            @(context.ExperimentNumber)
-          </Template>
-        </RadzenDataGridColumn>
-        @foreach (var data in ViewModel!.PlannerValueHeaders)
-        {
-          <RadzenDataGridColumn Title="@data">
-            <Template>
-              @(@context.Parameters.ParameterValues.FirstOrDefault(valuePair => valuePair.Name == data)?.Value ?? AresValueHelper.CreateString("Error!"))
-            </Template>
-          </RadzenDataGridColumn>
-        }
-      </Columns>
-    </RadzenDataGrid>
-  }
-</div>
+
 
 @code {
   [Parameter]
@@ -39,43 +22,19 @@
   [Parameter]
   public Version Version { get; set; } = new (1, 0);
 
-  public List<DataGridDisplayObject> DataGridDisplayObjects { get; set; } = new();
-
-  public class DataGridDisplayObject
+  private async Task EditManualPlanClick()
   {
-    public string ExperimentNumber { get; set; } = string.Empty;
-
-    public ManualPlannerSet Parameters { get; set; } = new();
+    await dialogService.OpenAsync<ManualPlanEditor>("Edit Manual Plan");
   }
 
-  private async void FileChanged(UploadChangeEventArgs obj)
+  private async Task DisplayManualPlannerHelpTab()
   {
-    if (!obj.Files.Any())
-      return;
-
-    var file = obj.Files.First();
-    await ViewModel!.FileUploaded(file);
-    CreateDisplayData();
-  }
-
-  protected override async Task OnAfterRenderAsync(bool firstRender)
-  {
-    await ViewModel!.UpdatePlannerValues();
-  }
-
-  private void CreateDisplayData()
-  {
-    DataGridDisplayObjects = new();
-    var experimentNumber = 1;
-    foreach(var item in ViewModel!.ManualPlannerValues)
-    {
-      var displayObject = new DataGridDisplayObject();
-      displayObject.ExperimentNumber = $"{experimentNumber}";
-      displayObject.Parameters = item;
-      DataGridDisplayObjects.Add(displayObject);
-      experimentNumber++;
-    }
-
-    StateHasChanged();
+    await dialogService.OpenAsync("The Manual Planner", ds =>
+    @<div>
+      ARES provides a manual planner to give the user a way to feed pre-determined values into an experiment manually.
+      The manual planner accepts both strings and numbers as input. Any entries surrounded by quotation marks (e.g. "value") will be parsed as a string,
+      otherwise ARES will attempt to parse the entry as a number.
+    </div>
+    , new DialogOptions() { CloseDialogOnOverlayClick = true });
   }
 }

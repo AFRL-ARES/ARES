@@ -14,7 +14,7 @@ public interface IPlannerServiceRepo
   /// Gets the manual planner
   /// </summary>
   /// <returns>The Manual Planner</returns>
-  IPlannerService GetManualPlanner();
+  ManualPlanner GetManualPlanner();
 
   /// <summary>
   /// Gets a named planner based on the given planner name/> object

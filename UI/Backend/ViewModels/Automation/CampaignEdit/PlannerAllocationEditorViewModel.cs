@@ -4,25 +4,29 @@ using Ares.Datamodel.Templates;
 using Ares.Services;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
+using UI.Services.Notification;
 
 namespace UI.Backend.ViewModels.Automation.CampaignEdit;
 
 public class PlannerAllocationEditorViewModel : ReactiveObject
 {
   private readonly AresPlannerManagementService.AresPlannerManagementServiceClient _plannerClient;
+  private readonly INotificationReceivingService _notificationService;
   private string _selectedPlannerOption = string.Empty;
   private PlannerServiceInfo? _selectedAdapter;
 
   public PlannerAllocationEditorViewModel(ParameterMetadata metadata,
     PlannerServiceInfo? plannerInfo,
     IEnumerable<PlannerServiceInfo> plannerAdapters,
-    AresPlannerManagementService.AresPlannerManagementServiceClient plannerClient)
+    AresPlannerManagementService.AresPlannerManagementServiceClient plannerClient,
+    INotificationReceivingService notificationService)
   {
     var plannerArray = plannerAdapters.ToArray();
 
     ParameterMetadata = metadata;
     PlannerServices = plannerArray;
     _plannerClient = plannerClient;
+    _notificationService = notificationService;
 
     if(plannerInfo is not null)
     {
@@ -43,9 +47,9 @@ public class PlannerAllocationEditorViewModel : ReactiveObject
       UniqueId = Guid.NewGuid().ToString()
     };
 
-    var selectedPlannerOption = PlannerOptions.First(option => option.PlannerName == _selectedPlannerOption);
-    allocation.Parameter.PlannerName = _selectedPlannerOption;
-    allocation.Parameter.PlannerDescription = selectedPlannerOption.Description;
+    var selectedPlannerOption = PlannerOptions.FirstOrDefault(option => option.PlannerName == _selectedPlannerOption);
+    allocation.Parameter.PlannerName = _selectedPlannerOption ?? SelectedService.Name;
+    allocation.Parameter.PlannerDescription = selectedPlannerOption?.Description ?? SelectedService.Description;
 
     return allocation;
   }
@@ -56,11 +60,25 @@ public class PlannerAllocationEditorViewModel : ReactiveObject
       return;
 
     var updatedInfo = await _plannerClient.GetInfoAsync(new PlannerInfoRequest { PlannerId = SelectedService.UniqueId });
-    PlannerOptions = updatedInfo.Info.Capabilities.AvailablePlanners;
 
-    //Not all adapters will have multiple options, if not auto assign the value
-    if(PlannerOptions.Count() <= 1)
-      SelectedPlannerOption = SelectedService.Name;
+    if(updatedInfo.Info.Name != string.Empty)
+    {
+      PlannerOptions = updatedInfo.Info.Capabilities.AvailablePlanners;
+
+      //Not all adapters will have multiple options, if not auto assign the value
+      if(PlannerOptions.Count() <= 1)
+        SelectedPlannerOption = SelectedService.Name;
+    }
+
+    else
+    {
+      var notification = new AresNotification();
+      notification.Title = "Assigned Planner Unavailable!";
+      notification.Message = $"This template uses a planner that ARES no longer has a connection with. The template won't be usable until this is resolved.";
+      notification.NotificationSeverity = Severity.Warning;
+      notification.Loiter = true;
+      _notificationService.PushNotification(notification);
+    }
   }
 
   public async Task UpdatePlannerSettings()

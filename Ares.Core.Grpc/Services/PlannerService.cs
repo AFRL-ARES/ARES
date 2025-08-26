@@ -106,7 +106,7 @@ public class PlannerService(IPlannerServiceRepo plannerRepo, IRemotePlannerManag
     {
       return new PlannerInfoResponse
       {
-        Info = new PlannerServiceInfo { Name = "Unknown", Description = "Analyzer not found" }
+        Info = new PlannerServiceInfo { Name = string.Empty, Description = "Planner not found" }
       };
     }
 
@@ -118,8 +118,12 @@ public class PlannerService(IPlannerServiceRepo plannerRepo, IRemotePlannerManag
 
   public override Task<AresStruct> GetPlannerSettings(PlannerSettingsRequest request, ServerCallContext context)
   {
-    var planner = _plannerRepo.GetPlannerById(request.PlannerId) ?? throw new ItemNotFoundException(request.PlannerId, typeof(IPlannerService), "Failed to get settings as requested planner was not found");
-    return Task.FromResult(planner.Settings);
+    var planner = _plannerRepo.GetPlannerById(request.PlannerId);
+
+    if(planner is not null)
+      return Task.FromResult(planner.Settings);
+
+    return Task.FromResult(new AresStruct());
   }
 
   public override async Task<Empty> SetPlannerSettings(PlannerSettings request, ServerCallContext context)
@@ -134,6 +138,14 @@ public class PlannerService(IPlannerServiceRepo plannerRepo, IRemotePlannerManag
 
     else
       planner.UpdateSettings(request.Settings);
+
+    return new Empty();
+  }
+
+  public override async Task<Empty> SeedManualPlanner(ManualPlannerSeed request, ServerCallContext context)
+  {
+    var planner = _plannerRepo.GetManualPlanner();
+    await planner.Seed(request);
 
     return new Empty();
   }

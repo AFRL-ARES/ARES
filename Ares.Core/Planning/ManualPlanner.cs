@@ -138,7 +138,7 @@ public class ManualPlanner : IPlannerService
       // This line is a good experiment
       data.Add(expData);
     });
-
+    
     foreach(var argList in data)
     {
       var planResults = argList.Select((d, i) => new ManualPlanResult(firstLineTokens[i], AresValueHelper.CreateString(d)));
@@ -153,12 +153,14 @@ public class ManualPlanner : IPlannerService
 
   public Task<PlannerServiceCapabilities> GetCapabilities(CancellationToken cancellationToken = default)
   {
-    throw new NotImplementedException();
+    var response = new PlannerServiceCapabilities() { ServiceName = "Manual Planner", SettingsSchema = new AresDataSchema(), TimeoutSeconds = long.MaxValue };
+    response.AvailablePlanners.AddRange(AvailablePlanners);
+    return Task.FromResult(response);
   }
 
-  public Task<IEnumerable<PlanResult>> Plan(IEnumerable<ParameterMetadata> plannableParameters, IEnumerable<ExperimentOverview> previousExperiments, IEnumerable<Analysis> analysisHistory, AresStruct settings, CancellationToken cancellationToken = default)
+  public async Task<IEnumerable<PlanResult>> Plan(IEnumerable<ParameterMetadata> plannableParameters, IEnumerable<ExperimentOverview> previousExperiments, IEnumerable<Analysis> analysisHistory, AresStruct settings, CancellationToken cancellationToken = default)
   {
-    throw new NotImplementedException();
+    return await Plan(plannableParameters, previousExperiments, analysisHistory, cancellationToken);
   }
 
   private record ManualPlanResult(string Name, AresValue value)
@@ -180,5 +182,5 @@ public class ManualPlanner : IPlannerService
   public State PlannerServiceState { get; } = State.Active;
   public string StateMessage { get; } = "Manual Planner is active!";
   public AresStruct Settings { get; } = new AresStruct();
-  public TimeSpan PlanningTimeout { get; } = TimeSpan.FromSeconds(long.MaxValue);
+  public TimeSpan PlanningTimeout { get; } = TimeSpan.MaxValue;
 }

@@ -9,7 +9,9 @@ public class PlannerServiceRepo : IPlannerServiceRepo
   public PlannerServiceRepo()
   {
     var defaultPlanner = new NonePlannerService();
-    AddPlanner(defaultPlanner); 
+    var manualPlanner = new ManualPlanner();
+    AddPlanner(defaultPlanner);
+    AddPlanner(manualPlanner);
   }
 
   public IPlannerService GetDefaultPlanner()
@@ -17,7 +19,7 @@ public class PlannerServiceRepo : IPlannerServiceRepo
     return _plannerStore.OfType<NonePlannerService>().First();
   }
 
-  public IPlannerService GetManualPlanner()
+  public ManualPlanner GetManualPlanner()
   {
     return _plannerStore.OfType<ManualPlanner>().First();
   }
