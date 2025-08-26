@@ -100,7 +100,7 @@ public class DemoPlannerService : AresRemotePlannerService.AresRemotePlannerServ
     capabilitesResponse.AvailablePlanners.Add(_gradualPlanner);
     capabilitesResponse.ServiceName = "Demo Planner Service";
     capabilitesResponse.TimeoutSeconds = 30;
-
+    capabilitesResponse.AcceptedTypes.Add(AresDataType.Number);
 
     capabilitesResponse.SettingsSchema = new AresDataSchema
     {
@@ -134,7 +134,14 @@ public class DemoPlannerService : AresRemotePlannerService.AresRemotePlannerServ
     else
     {
       var previousValue = aresParameter.ParameterHistory.Last();
-      var incrementedValue = previousValue + 5;
+      double incrementedValue;
+
+      if(previousValue.HasNumberValue)
+        incrementedValue = previousValue.NumberValue + 5;
+
+      else
+        Console.WriteLine("The previous assigned value didn't exist, setting newest value to minimum allowed value.");
+        incrementedValue = aresParameter.MinimumValue;
 
       if(incrementedValue > aresParameter.MaximumValue)
         response.ParameterValue = AresValueHelper.CreateNumber((float)aresParameter.MaximumValue);

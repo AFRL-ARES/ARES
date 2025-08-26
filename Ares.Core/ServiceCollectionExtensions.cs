@@ -52,6 +52,7 @@ public static class ServiceCollectionExtensions
   {
     services.AddTransient<IStartCondition, CampaignInProgressStartCondition>();
     services.AddTransient<IStartCondition, AllPlannersAssignedStartCondition>();
+    services.AddTransient<IStartCondition, ValidPlannerParamTypeStartCondition>();
     services.AddTransient<IStartCondition, GoodAnalyzerForExperimentOutputCondition>();
     services.AddTransient<IStartCondition, RequiredDeviceInterpretersStartCondition>();
     services.AddTransient<IStartCondition, AssignedPlannersActiveStartCondition>();

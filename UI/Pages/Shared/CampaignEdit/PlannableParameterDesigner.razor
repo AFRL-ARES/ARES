@@ -3,9 +3,9 @@
 
 <div>
     @foreach (var parameterEditorVm in ViewModel!.ParameterEditors)
-        {
-            <PlannableParameterEditor ViewModel="@parameterEditorVm" DeleteParameterCallback="DeleteParameterCallback" />
-        }
+    {
+      <PlannableParameterEditor ViewModel="@parameterEditorVm" DeleteParameterCallback="DeleteParameterCallback" />
+    }
     <div>
         <button class="btn btn-secondary m-3" @onclick="NewParameterClick">Create New Parameter</button>
     </div>

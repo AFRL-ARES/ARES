@@ -165,11 +165,11 @@ public class RemotePlannerService : PlannerServiceBase
     {
       ParameterName = metadata.Name,
       IsPlanned = true,
-      DataType = metadata.GetType().ToString()
+      DataType = metadata.Schema.Type
     };
 
     //TODO: Fix me!!!
-    parameter.ParameterHistory.AddRange(relevantInfo.Select(param => param.Value.NumberValue));
+    parameter.ParameterHistory.AddRange(relevantInfo.Select(param => param.Value));
 
     if(metadata.Constraints.Any())
     {

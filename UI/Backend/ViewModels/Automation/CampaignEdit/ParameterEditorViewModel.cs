@@ -1,4 +1,5 @@
 ﻿using Ares.Datamodel;
+using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Templates;
 using Humanizer;
 using ReactiveUI;
@@ -26,6 +27,7 @@ public class ParameterEditorViewModel : ReactiveObject
       UniqueId = Guid.NewGuid().ToString(),
       Name = "Param",
       Unit = "Millimeter",
+      Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.UnspecifiedType, false),
       Constraints =
       {
         new Limits()
@@ -49,6 +51,8 @@ public class ParameterEditorViewModel : ReactiveObject
       Init(value);
     }
   }
+
+  public AresDataType DataType { get; set; }
 
   public string? Category
   {
@@ -115,6 +119,7 @@ public class ParameterEditorViewModel : ReactiveObject
   {
     LockInParams(meta);
     Name = meta.Name;
+    DataType = meta.Schema.Type;
     foreach(var metaConstraint in meta.Constraints)
     {
       Minimum = metaConstraint.Minimum;
@@ -127,11 +132,15 @@ public class ParameterEditorViewModel : ReactiveObject
     if(ParameterMetadata.Constraints.Count == 0)
       ParameterMetadata.Constraints.Add(new Limits());
 
-    ParameterMetadata.Constraints[0].Maximum = (float)Maximum;
-    ParameterMetadata.Constraints[0].Minimum = (float)Minimum;
-    ParameterMetadata.Unit = Unit.Dehumanize();
+    ParameterMetadata.Schema = AresSchemaHelper.CreateSchemaEntry(DataType, false);
     ParameterMetadata.Name = Name;
 
+    if(DataType == AresDataType.Number)
+    {
+      ParameterMetadata.Constraints[0].Maximum = (float)Maximum;
+      ParameterMetadata.Constraints[0].Minimum = (float)Minimum;
+      ParameterMetadata.Unit = Unit.Dehumanize();
+    }
 
     return ParameterMetadata;
   }
