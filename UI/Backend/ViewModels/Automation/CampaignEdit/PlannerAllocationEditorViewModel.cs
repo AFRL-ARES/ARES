@@ -67,7 +67,10 @@ public class PlannerAllocationEditorViewModel : ReactiveObject
 
       //Not all adapters will have multiple options, if not auto assign the value
       if(PlannerOptions.Count() <= 1)
+      {
         SelectedPlannerOption = SelectedService.Name;
+        PlannerDescription = SelectedService.Description;
+      } 
     }
 
     else

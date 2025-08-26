@@ -9,7 +9,7 @@
       <RadzenRow Style="padding-bottom: 0.5rem">
         @ViewModel!.ParameterMetadata.Name
       </RadzenRow>
-      <RadzenRow>
+      <RadzenRow AlignItems="AlignItems.Center">
           <RadzenLabel Text="Select Service:" Component="PlannerServiceDropDown" Style="min-width: 115px"/>
           <RadzenDropDown TValue="PlannerServiceInfo" Data="@ViewModel!.PlannerServices" @bind-Value="@ViewModel!.SelectedService" Name="PlannerServiceDropDown" Style="min-width: 15rem">
             <Template>
@@ -18,7 +18,7 @@
            </RadzenDropDown>
       </RadzenRow>
 
-      <RadzenRow>
+      <RadzenRow AlignItems="AlignItems.Center">
         @if(ViewModel!.PlannerOptions.Count() > 1)
         {
           <RadzenLabel Text="Select Planner:" Component="PlannerOptionDropDown" Style="min-width: 115px" />
