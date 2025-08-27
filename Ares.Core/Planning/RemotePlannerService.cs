@@ -1,4 +1,5 @@
 ﻿using Ares.Core.Analyzing;
+using Ares.Core.Execution.Extensions;
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Connection;
@@ -160,7 +161,11 @@ public class RemotePlannerService : PlannerServiceBase
 
   private PlanningParameter ConvertToPlanningParameter(ParameterMetadata metadata, IEnumerable<ExperimentOverview> experimentHistory)
   {
-    var relevantInfo = experimentHistory.SelectMany(experiment => experiment.Parameters.Where(param => param.PlanningMetadata.Name == metadata.Name));
+    var relevantInfo = experimentHistory
+      .SelectMany(experiment => experiment.Template
+      .GetAllPlannedParameters()
+      .Where(param => param.PlanningMetadata.Name == metadata.Name));
+    //var relevantInfo = experimentHistory.SelectMany(experiment => experiment.Parameters.Where(param => param.PlanningMetadata?.Name == metadata.Name));
     var parameter = new PlanningParameter
     {
       ParameterName = metadata.Name,

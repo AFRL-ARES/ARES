@@ -126,7 +126,7 @@
 
                       <RadzenTreeItem Text="Parameters">
                         <ChildContent>
-                          @foreach(var param in exp.ExperimentOverview.Parameters)
+                          @foreach(var param in exp.ExperimentOverview.Parameters.Where(p => p.PlanningMetadata is not null))
                           {
                             <RadzenTreeItem Text="@param.PlanningMetadata.Name">
                               <ChildContent>
