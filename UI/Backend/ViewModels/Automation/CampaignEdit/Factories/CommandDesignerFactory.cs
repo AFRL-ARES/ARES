@@ -11,7 +11,7 @@ public class CommandDesignerFactory
   private readonly MetadataPickerFactory _metadataPickerFactory;
 
   public CommandDesignerFactory(
-    MetadataPickerFactory metadataPickerFactory, 
+    MetadataPickerFactory metadataPickerFactory,
     CommandParameterDesignerFactory commandParameterDesignerFactory,
     AresDevices.AresDevicesClient devicesClient)
   {
@@ -21,7 +21,7 @@ public class CommandDesignerFactory
   }
 
   public CommandDesignerViewModel Create()
-    => new CommandDesignerViewModel(_commandParameterDesignerFactory, _metadataPickerFactory);
+    => new CommandDesignerViewModel(_commandParameterDesignerFactory, _metadataPickerFactory, _devicesClient);
 
   public CommandDesignerViewModel Create(CommandTemplate existingTemplate)
     => new CommandDesignerViewModel(existingTemplate, _commandParameterDesignerFactory, _metadataPickerFactory, _devicesClient);

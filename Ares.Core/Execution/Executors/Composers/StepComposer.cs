@@ -28,7 +28,7 @@ public class StepComposer : ICommandComposer<StepTemplate, StepExecutor>
                 .First(interpreter =>
                   interpreter
                     .Device
-                    .Name
+                    .UniqueId
                     .Equals(commandTemplate.Metadata.DeviceId));
 
             var command = commandInterpreter.TemplateToDeviceCommand(commandTemplate);

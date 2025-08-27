@@ -159,6 +159,8 @@ public sealed class RemoteDevice : AresDevice
     Type = info.Type;
     Description = info.Description;
     Version = info.Version;
+    _settingsSchema = info.SettingsSchema;
+    _commands = [.. info.Commands];
     await UpdateSettings();
   }
 

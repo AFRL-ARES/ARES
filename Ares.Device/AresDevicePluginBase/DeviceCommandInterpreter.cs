@@ -50,7 +50,8 @@ public abstract class DeviceCommandInterpreter<TQualifiedDevice, TDeviceCommandE
   {
     var parsed = Enum.TryParse<TDeviceCommandEnum>(commandTemplate.Metadata.Name, out var deviceCommandEnum);
 
-    if(!parsed)
+    // TODO: this should be reworked with remote devices in mind
+    if(!parsed && deviceCommandEnum.ToString() != "REMOTE_COMMAND")
     {
       deviceCommandEnum = default;
       if(!deviceCommandEnum.ToString().Contains("None", StringComparison.InvariantCultureIgnoreCase))
