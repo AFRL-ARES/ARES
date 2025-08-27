@@ -24,7 +24,7 @@ public class RestDeviceInterpreter : DeviceCommandInterpreter<IRestDevice, RestD
       {
         Name = function.Name,
         Description = function.Description,
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         UniqueId = function.UniqueId
       };
 
@@ -53,7 +53,7 @@ public class RestDeviceInterpreter : DeviceCommandInterpreter<IRestDevice, RestD
         //Custom Device Command
         var stringParameters = CreateParameterList(parameters);
         //TODO: FIX ME!!
-        var response = await Device.ProcessCommand(metadata.DeviceName, stringParameters, stringParameters);
+        var response = await Device.ProcessCommand(metadata.DeviceId, stringParameters, stringParameters);
         result.Result.AddValue("result", response);
         break;
 

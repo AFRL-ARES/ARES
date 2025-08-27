@@ -5,18 +5,18 @@ using Ares.Datamodel.Templates;
 namespace Ares.Core.Device.Remote;
 internal static class CommandHelpers
 {
-  public static CommandMetadata[] ToCommandMetadata(IEnumerable<DeviceCommandDescriptor> deviceCommandDescriptors, string deviceName)
+  public static CommandMetadata[] ToCommandMetadata(IEnumerable<DeviceCommandDescriptor> deviceCommandDescriptors, string deviceId)
   {
-    return [.. deviceCommandDescriptors.Select(dcd => dcd.ToCommandMetadata(deviceName))];
+    return [.. deviceCommandDescriptors.Select(dcd => dcd.ToCommandMetadata(deviceId))];
   }
 
-  public static CommandMetadata ToCommandMetadata(this DeviceCommandDescriptor deviceCommandDescriptor, string deviceName)
+  public static CommandMetadata ToCommandMetadata(this DeviceCommandDescriptor deviceCommandDescriptor, string deviceId)
   {
     var metadata = new CommandMetadata
     {
       Name = deviceCommandDescriptor.Name,
       Description = deviceCommandDescriptor.Description,
-      DeviceName = deviceName,
+      DeviceId = deviceId,
       UniqueId = Guid.NewGuid().ToString(),
       OutputMetadata = deviceCommandDescriptor.ToOutputMetadata()
     };

@@ -122,7 +122,7 @@ public class MassFlowControllerInterpreter : DeviceCommandInterpreter<IMassFlowC
     {
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = MassFlowControllerCommand.NewSetpoint.ToString(),
         Description = "Sets a new target mass flow",
         ParameterMetadatas =
@@ -138,13 +138,13 @@ public class MassFlowControllerInterpreter : DeviceCommandInterpreter<IMassFlowC
       },
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = MassFlowControllerCommand.ManufacturerInfo.ToString(),
         Description = "Queries the manufacturer info"
       },
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = MassFlowControllerCommand.ChangeUnitId.ToString(),
         Description = "Assigns the device a new letter ID",
         ParameterMetadatas =
@@ -159,19 +159,19 @@ public class MassFlowControllerInterpreter : DeviceCommandInterpreter<IMassFlowC
       },
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = MassFlowControllerCommand.PollLiveDataFrame.ToString(),
         Description = "Queries the device for a live data entry containing device ID, absolute pressure, temperature, volumetric flow, mass flow, setpoint, and gas"
       },
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = MassFlowControllerCommand.CancelValveHold.ToString(),
         Description = "Cancels holds on the device's valve(s)"
       },
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = MassFlowControllerCommand.ChooseDifferentGas.ToString(),
         Description = "Changes the currently managed gas",
         ParameterMetadatas =
@@ -186,7 +186,7 @@ public class MassFlowControllerInterpreter : DeviceCommandInterpreter<IMassFlowC
       },
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = MassFlowControllerCommand.DeleteComposerMix.ToString(),
         Description = "Deletes the indicated COMPOSER Mix number from the device's memory",
         ParameterMetadatas =
@@ -201,38 +201,38 @@ public class MassFlowControllerInterpreter : DeviceCommandInterpreter<IMassFlowC
       },
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = MassFlowControllerCommand.HoldValvesAtCurrentPosition.ToString(),
         Description = "Holds the device's valve(s) at the current position"
       },
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = MassFlowControllerCommand.HoldValvesClosed.ToString(),
         Description = "Holds the device's valve(s) at the closed position"
       },
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = MassFlowControllerCommand.NewComposerMix.ToString(),
         Description = "Adds a new COMPOSER mix to the device's memory"
         // TODO: ParameterMetadata
       },
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = MassFlowControllerCommand.TareAbsolutePressureWithBarometer.ToString(),
         Description = "Tares the device's absolute pressure with barometer"
       },
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = MassFlowControllerCommand.TareFlow.ToString(),
         Description = "Tares the device's flow"
       },
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = MassFlowControllerCommand.GetSetpoint.ToString(),
         Description = "Gets the current setpoint of the MFC",
         OutputMetadata = new OutputMetadata

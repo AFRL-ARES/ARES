@@ -12,10 +12,10 @@ internal class TestCampaignProvider
   public static CampaignTemplate GetSampleCampaignTemplate(IAnalyzer analyzer)
   {
     var device = new TestDevice();
-    var commandTemplate1 = GetCommandTemplate(0, GetCommandMetadata(TestDeviceCommand.Record.ToString(), device.Name, GetOutputMetadata(typeof(TestReply).FullName)), GetParameter(TestDeviceCommandParameter.ReplyParameter.ToString(), "10", 0));
-    var commandTemplate2 = GetCommandTemplate(1, GetCommandMetadata(TestDeviceCommand.Record.ToString(), device.Name, GetOutputMetadata(typeof(TestReply).FullName)), GetParameter(TestDeviceCommandParameter.ReplyParameter.ToString(), "20", 0));
-    var commandTemplate3 = GetCommandTemplate(2, GetCommandMetadata(TestDeviceCommand.Record.ToString(), device.Name, GetOutputMetadata(typeof(TestReply).FullName)), GetParameter(TestDeviceCommandParameter.ReplyParameter.ToString(), "30", 0));
-    var commandTemplate4 = GetCommandTemplate(3, GetCommandMetadata(TestDeviceCommand.Record.ToString(), device.Name, GetOutputMetadata(typeof(TestReply).FullName)), GetParameter(TestDeviceCommandParameter.ReplyParameter.ToString(), "40", 0));
+    var commandTemplate1 = GetCommandTemplate(0, GetCommandMetadata(TestDeviceCommand.Record.ToString(), device.UniqueId, GetOutputMetadata(typeof(TestReply).FullName)), GetParameter(TestDeviceCommandParameter.ReplyParameter.ToString(), "10", 0));
+    var commandTemplate2 = GetCommandTemplate(1, GetCommandMetadata(TestDeviceCommand.Record.ToString(), device.UniqueId, GetOutputMetadata(typeof(TestReply).FullName)), GetParameter(TestDeviceCommandParameter.ReplyParameter.ToString(), "20", 0));
+    var commandTemplate3 = GetCommandTemplate(2, GetCommandMetadata(TestDeviceCommand.Record.ToString(), device.UniqueId, GetOutputMetadata(typeof(TestReply).FullName)), GetParameter(TestDeviceCommandParameter.ReplyParameter.ToString(), "30", 0));
+    var commandTemplate4 = GetCommandTemplate(3, GetCommandMetadata(TestDeviceCommand.Record.ToString(), device.UniqueId, GetOutputMetadata(typeof(TestReply).FullName)), GetParameter(TestDeviceCommandParameter.ReplyParameter.ToString(), "40", 0));
 
     var stepTemplate = GetStepTemplate("Test Step", false, commandTemplate1, commandTemplate2, commandTemplate3, commandTemplate4);
 
@@ -114,10 +114,10 @@ internal class TestCampaignProvider
     return stepTemplate;
   }
 
-  public static CommandMetadata GetCommandMetadata(string cmdName, string deviceName, OutputMetadata outputMeta)
+  public static CommandMetadata GetCommandMetadata(string cmdName, string deviceId, OutputMetadata outputMeta)
     => new()
     {
-      DeviceName = deviceName,
+      DeviceId = deviceId,
       Name = cmdName,
       UniqueId = Guid.NewGuid().ToString(),
       OutputMetadata = outputMeta

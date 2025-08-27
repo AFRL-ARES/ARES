@@ -18,6 +18,9 @@ internal class DeviceCache(IDbContextFactory<CoreDatabaseContext> _dbContextFact
       existingInfoInDb.Description = device.Description;
       existingInfoInDb.Url = device.Address.ToString();
       existingInfoInDb.Version = device.Version;
+      existingInfoInDb.SettingsSchema = device.SettingSchema;
+      existingInfoInDb.Commands.Clear();
+      existingInfoInDb.Commands.AddRange(device.CommandDescriptors);
     }
     else
     {
@@ -69,9 +72,11 @@ internal class DeviceCache(IDbContextFactory<CoreDatabaseContext> _dbContextFact
       Type = device.Type,
       Description = device.Description,
       Version = device.Version,
-      Url = device.Address.ToString()
+      Url = device.Address.ToString(),
+      SettingsSchema = device.SettingSchema,
     };
-
+    info.Commands.AddRange(device.CommandDescriptors);
+    
     return info;
   }
 }

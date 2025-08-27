@@ -17,7 +17,7 @@ public class AresCoreDeviceCommandInterpreter : DeviceCommandInterpreter<AresCor
     [
       new CommandMetadata
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = AresCoreDeviceCommand.Sleep.ToString(),
         Description = "Sleep for a given amount of time.",
         ParameterMetadatas =
@@ -34,7 +34,7 @@ public class AresCoreDeviceCommandInterpreter : DeviceCommandInterpreter<AresCor
 
       new CommandMetadata
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = AresCoreDeviceCommand.WaitForUser.ToString(),
         Description = "ARES will request user confirmation before continuing."
       }

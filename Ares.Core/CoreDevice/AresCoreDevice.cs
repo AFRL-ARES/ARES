@@ -1,5 +1,4 @@
-﻿using Ares.Datamodel.Device;
-using Ares.Device;
+﻿using Ares.Device;
 
 namespace Ares.Core.CoreDevice;
 

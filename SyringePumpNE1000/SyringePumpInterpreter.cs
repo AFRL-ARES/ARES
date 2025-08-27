@@ -126,13 +126,13 @@ public class SyringePumpInterpreter : DeviceCommandInterpreter<ISyringePump, Syr
     {
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = SyringePumpCommand.QueryPhaseFunction.ToString(),
         Description = string.Empty },
 
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = SyringePumpCommand.SetPhase.ToString(),
         Description = string.Empty,
         ParameterMetadatas =
@@ -150,7 +150,7 @@ public class SyringePumpInterpreter : DeviceCommandInterpreter<ISyringePump, Syr
 
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = SyringePumpCommand.SetPhaseFunction.ToString(),
         Description = string.Empty,
         ParameterMetadatas =
@@ -169,7 +169,7 @@ public class SyringePumpInterpreter : DeviceCommandInterpreter<ISyringePump, Syr
 
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = SyringePumpCommand.QueryPhase.ToString(),
         Description = string.Empty,
         OutputMetadata = new OutputMetadata
@@ -182,7 +182,7 @@ public class SyringePumpInterpreter : DeviceCommandInterpreter<ISyringePump, Syr
 
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = SyringePumpCommand.SetDiameter.ToString(),
         Description = string.Empty,
         ParameterMetadatas =
@@ -202,14 +202,14 @@ public class SyringePumpInterpreter : DeviceCommandInterpreter<ISyringePump, Syr
 
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = SyringePumpCommand.GetDiameter.ToString(),
         Description = "Gets the set diameter value as reported by the syringe pump."
       },
 
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = SyringePumpCommand.SetProgramFunctionRate.ToString(),
         Description = string.Empty,
         ParameterMetadatas =
@@ -229,13 +229,13 @@ public class SyringePumpInterpreter : DeviceCommandInterpreter<ISyringePump, Syr
 
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = SyringePumpCommand.GetProgramFunctionRate.ToString(),
         Description = string.Empty },
 
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = SyringePumpCommand.SetProgramFunctionVolumeToBeDispensed.ToString(),
         Description = string.Empty,
         ParameterMetadatas = {new ParameterMetadata[] { new() { Index = 0, Name = "Volume", Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.Number, true) } } }
@@ -243,19 +243,19 @@ public class SyringePumpInterpreter : DeviceCommandInterpreter<ISyringePump, Syr
 
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = SyringePumpCommand.GetProgramFunctionVolumeToBeDispensed.ToString(),
         Description = string.Empty },
 
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = SyringePumpCommand.GetProgramFunctionPumpingDirection.ToString(),
         Description = string.Empty },
 
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = SyringePumpCommand.SetProgramFunctionPumpingDirection.ToString(),
         Description = string.Empty,
         ParameterMetadatas = {new ParameterMetadata[] { new() { Index = 0, Name = "Pumping Direction", Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.Number, true) } } }
@@ -263,7 +263,7 @@ public class SyringePumpInterpreter : DeviceCommandInterpreter<ISyringePump, Syr
 
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = SyringePumpCommand.StartPumpingProgram.ToString(),
         Description = "Starts the pumping program operation. If the pumping program was paused, then pumping program resumes at the point where it was stopped " +
         "Otherwise, the pumping program starts from phase one."
@@ -271,14 +271,14 @@ public class SyringePumpInterpreter : DeviceCommandInterpreter<ISyringePump, Syr
 
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = SyringePumpCommand.PurgePump.ToString(),
         Description = "Starts purge. Pump infuses or withdraws at the top speed, depending on the pumping direction."
       },
 
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = SyringePumpCommand.StopPumpingProgram.ToString(),
         Description = "If the pumping program is operating, the pump will be stopped and the pumping program will be paused. If the pumping program is paused, " +
         "the stop command will cancel the pause and reset the pumping program to Phase 1."
@@ -286,13 +286,13 @@ public class SyringePumpInterpreter : DeviceCommandInterpreter<ISyringePump, Syr
 
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = SyringePumpCommand.GetVolumeDispensed.ToString(),
         Description = string.Empty },
 
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = SyringePumpCommand.ClearVolumeDispensed.ToString(),
         Description = "Sets the infused or withdrawn volume disepensed to 0. Command is ONLY VALID while the pumping program is not operating."
       }

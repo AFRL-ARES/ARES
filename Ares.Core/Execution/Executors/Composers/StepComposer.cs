@@ -29,7 +29,7 @@ public class StepComposer : ICommandComposer<StepTemplate, StepExecutor>
                   interpreter
                     .Device
                     .Name
-                    .Equals(commandTemplate.Metadata.DeviceName));
+                    .Equals(commandTemplate.Metadata.DeviceId));
 
             var command = commandInterpreter.TemplateToDeviceCommand(commandTemplate);
             var executable = new CommandExecutor(command, commandTemplate);

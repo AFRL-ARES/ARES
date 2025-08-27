@@ -56,7 +56,7 @@ public class DevicesService : AresDevices.AresDevicesBase
   {
     var aresDeviceMessages = _deviceCommandInterpreterRepo
       .Select(interpreter => interpreter.Device)
-      .Select(device => new DeviceInfo() { Name = device.Name, Type = device.GetType().FullName });
+      .Select(GetInfo);
 
     var response = new ListAresDevicesResponse
     {
@@ -96,7 +96,7 @@ public class DevicesService : AresDevices.AresDevicesBase
   public override async Task<DeviceExecutionResult> ExecuteCommand(CommandTemplate request, ServerCallContext context)
   {
     var interpreter = _deviceCommandInterpreterRepo
-      .First(commandInterpreter => commandInterpreter.Device.Name == request.Metadata.DeviceName);
+      .First(commandInterpreter => commandInterpreter.Device.Name == request.Metadata.DeviceId);
 
     try
     {
@@ -256,7 +256,7 @@ public class DevicesService : AresDevices.AresDevicesBase
       UniqueId = device.UniqueId,
       Description = device.Description,
       Type = device.Type,
-      Url = device is RemoteDevice remoteDevice ? remoteDevice.Address.ToString() : null,
+      Url = device is RemoteDevice remoteDevice ? remoteDevice.Address.ToString() : "",
       Version = device.Version,
       SettingsSchema = device is RemoteDevice rDevice ? rDevice.SettingSchema : null
     };

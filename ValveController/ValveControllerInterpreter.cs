@@ -14,7 +14,7 @@ public class ValveControllerInterpreter : DeviceCommandInterpreter<ValveControll
     {
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = ValveControllerCommand.GetRelayStatus.ToString(),
         Description = "Determines the status of the relay board, telling ARES whether the relays are currently engaged or disengaged.",
         OutputMetadata = new OutputMetadata()
@@ -27,35 +27,35 @@ public class ValveControllerInterpreter : DeviceCommandInterpreter<ValveControll
 
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = ValveControllerCommand.EngageRelayOne.ToString(),
         Description = "Set's the device attached to the valve controllers first relay to the engaged state."
       },
 
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = ValveControllerCommand.EngageRelayTwo.ToString(),
         Description = "Set's the device attached to the valve controllers second relay to the engaged state."
       },
 
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = ValveControllerCommand.DisengageRelayOne.ToString(),
         Description = "Set's the device attached to the valve controllers first relay to the disengaged state."
       },
 
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = ValveControllerCommand.DisengageRelayTwo.ToString(),
         Description = "Set's the device attached to the valve controllers second relay to the disengaged state."
       },
 
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = ValveControllerCommand.EnableRelays.ToString(),
         Description = "Ensures that the Valve Controller's Relay's are enabled and ready for operation."
       }

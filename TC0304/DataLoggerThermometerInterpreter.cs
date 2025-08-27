@@ -50,7 +50,7 @@ public class DataLoggerThermometerInterpreter : DeviceCommandInterpreter<Datalog
     {
       Name = DataLoggerCommand.GetTemperatures.ToString(),
       Description = "Gets the most recent temperatures from the data logger service.",
-      DeviceName = Device.Name,
+      DeviceId = Device.UniqueId,
       UniqueId = Guid.NewGuid().ToString(),
       OutputMetadata = new OutputMetadata
       {
@@ -70,7 +70,7 @@ public class DataLoggerThermometerInterpreter : DeviceCommandInterpreter<Datalog
     {
       Name = DataLoggerCommand.Hold.ToString(),
       Description = "Holds the current temperature reading",
-      DeviceName = Device.Name,
+      DeviceId = Device.UniqueId,
       UniqueId = Guid.NewGuid().ToString()
     });
 

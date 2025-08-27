@@ -11,7 +11,7 @@ internal class RemoteDeviceCommandInterpreter : DeviceCommandInterpreter<RemoteD
 
   protected override CommandMetadata[] CommandsToMetadatas()
   {
-    var commands = CommandHelpers.ToCommandMetadata(RemoteDevice.CommandDescriptors, Device.Name);
+    var commands = CommandHelpers.ToCommandMetadata(RemoteDevice.CommandDescriptors, Device.UniqueId);
     return commands;
   }
 

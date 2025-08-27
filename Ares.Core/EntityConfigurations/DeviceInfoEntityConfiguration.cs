@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Ares.Core.EntityConfigurations.Helpers;
+﻿using Ares.Core.EntityConfigurations.Helpers;
 using Ares.Datamodel.Device;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Ares.Core.EntityConfigurations;
@@ -14,5 +10,13 @@ internal class DeviceInfoEntityConfiguration : AresEntityTypeBaseConfiguration<D
     {
         base.Configure(builder);
         builder.Property(b => b.SettingsSchema).HasDataSchema();
+
+        builder.HasMany(b => b.Commands)
+            .WithOne()
+            .HasForeignKey("DeviceInfoId")
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(b => b.Commands).AutoInclude();
     }
 }

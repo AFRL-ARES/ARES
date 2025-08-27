@@ -1,6 +1,5 @@
 ﻿using Ares.Core.EntityConfigurations.Helpers;
 using Ares.Datamodel.Templates;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Ares.Core.EntityConfigurations;

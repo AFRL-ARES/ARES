@@ -15,16 +15,16 @@ internal class RequiredDeviceInterpretersValidator : ICampaignValidator
 
   public Task<ValidationResult> Validate(CampaignTemplate template)
   {
-    var requiredDeviceNames = template.ExperimentTemplate.StepTemplates.SelectMany(stepTemp =>
-        stepTemp.CommandTemplates.Select(cmdTemp => cmdTemp.Metadata.DeviceName)).Distinct().ToArray();
+    var requiredDeviceIds = template.ExperimentTemplate.StepTemplates.SelectMany(stepTemp =>
+        stepTemp.CommandTemplates.Select(cmdTemp => cmdTemp.Metadata.DeviceId)).Distinct().ToArray();
 
-    var availableInterpreters = requiredDeviceNames.Select(deviceName =>
+    var availableInterpreters = requiredDeviceIds.Select(deviceName =>
         _deviceCommandInterpreterRepo
         .FirstOrDefault(interpreter => interpreter.Device.Name.Equals(deviceName)))
       .OfType<IDeviceCommandInterpreter<IAresDevice>>()
       .ToArray();
 
-    var missingDeviceNames = requiredDeviceNames
+    var missingDeviceNames = requiredDeviceIds
       .Except(availableInterpreters.Select(interpreter => interpreter.Device.Name)).ToArray();
 
     var invalidAvailableInterpreters = availableInterpreters

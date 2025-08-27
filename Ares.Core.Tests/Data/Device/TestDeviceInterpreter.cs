@@ -52,7 +52,7 @@ public class TestDeviceInterpreter : DeviceCommandInterpreter<TestDevice, TestDe
     var testCommandMetadata = new CommandMetadata
     {
       Description = "Test command that takes in an int and returns an int",
-      DeviceName = Device.Name,
+      DeviceId = Device.UniqueId,
       Name = ((TestDeviceCommand)idx).ToString(),
       UniqueId = Guid.NewGuid().ToString(),
       OutputMetadata = new OutputMetadata

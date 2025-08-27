@@ -17,7 +17,7 @@ public class StepperControllerInterpreter : DeviceCommandInterpreter<IStepperCon
     {
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = StepperControllerCommand.Reset.ToString(),
         Description = "This command makes the Tic forget most parts of its current state. Specifically, it does the following: " +
         "Reloads all settings from the Tic’s non-volatile memory and discards any temporary changes to the settings previously made with serial commands(this applies to the step mode, current limit, decay mode, max speed, starting speed, max acceleration, and max deceleration settings)." +
@@ -31,51 +31,51 @@ public class StepperControllerInterpreter : DeviceCommandInterpreter<IStepperCon
       },
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = StepperControllerCommand.EnterSafeStart.ToString(),
         Description = "If safe start is enabled and the control mode is Serial / I²C / USB, RC speed, analog speed, or encoder speed, this command causes the Tic to stop the motor (using the configured soft error response behavior) and set its “safe start violation” error bit. If safe start is disabled, or if the Tic is not in one of the listed modes, this command will cause a brief interruption in motor control (during which the soft error response behavior will be triggered) but otherwise have no effect."
       },
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = StepperControllerCommand.ExitSafeStart.ToString(),
         Description = "In Serial / I²C / USB control mode, this command causes the “safe start violation” error to be cleared for 200 ms. If there are no other errors, this allows the system to start up."
       },
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = StepperControllerCommand.HaltAndHold.ToString(),
         Description = "This command stops the motor abruptly without respecting the deceleration limit. Besides stopping the motor, this command also sets the “position uncertain” flag (because the abrupt stop might cause steps to be missed), sets the input state to “halt”, and clears the “input after scaling” variable."
       },
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = StepperControllerCommand.HaltAndSetPosition.ToString(),
         Description = "This command stops the motor abruptly without respecting the deceleration limit and sets the “Current position” variable, which represents what position the Tic currently thinks the motor is in. Besides stopping the motor and setting the current position, this command also clears the “position uncertain” flag, sets the input state to “halt”, and clears the “input after scaling” variable.",
         ParameterMetadatas = { new ParameterMetadata { Index = 0, Name = StepperControllerCommandParameter.Position.ToString() , Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.Number, true) } }
       },
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = StepperControllerCommand.SetTargetPosition.ToString(),
         Description = "This command sets the target position of the Tic, in microsteps.",
         ParameterMetadatas = { new ParameterMetadata { Index = 0, Name = StepperControllerCommandParameter.Position.ToString(), Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.Number, true) } }
       },
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = StepperControllerCommand.NextStep.ToString(),
         Description = "Goes to the next step in user defined microsteps."
       },
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = StepperControllerCommand.PreviousStep.ToString(),
         Description = "Goes to the previous step in user defined microsteps."
       },
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = StepperControllerCommand.HalfStep.ToString(),
         Description = "Advances the controller forward half of it's defined step size."
       }

@@ -18,7 +18,7 @@ public class LaserChillerInterpreter : DeviceCommandInterpreter<LaserChiller, La
     {
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = LaserChillerCommand.SetStabilizedTemperature.ToString(),
         Description = "Set the temperature which the laser chiller will attempt to reach.",
         ParameterMetadatas = { new ParameterMetadata {  Index = 0, Name = LaserChillerCommandParameter.TargetTemperature.ToString(), Unit = "Degrees Celsius" } }
@@ -26,14 +26,14 @@ public class LaserChillerInterpreter : DeviceCommandInterpreter<LaserChiller, La
 
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = LaserChillerCommand.SetChillerRunMode.ToString(),
         Description = "Set's the chiller to run mode, which starts the cooling process to achieve the current target temperature."
       },
 
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = LaserChillerCommand.SetChillerStandbyMode.ToString(),
         Description = "Set's the chiller to standby mode."
       }

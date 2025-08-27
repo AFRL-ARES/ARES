@@ -24,7 +24,7 @@ public class SerialRestDeviceInterpreter : DeviceCommandInterpreter<SerialRestDe
       {
         Name = function.Name,
         Description = function.Description,
-        DeviceName = Device.Name
+        DeviceId = Device.UniqueId
       };
 
       if(function.Parameters.Any())
