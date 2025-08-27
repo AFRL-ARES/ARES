@@ -35,18 +35,18 @@ public sealed class RemoteDevice : AresDevice
 
   public override async Task<bool> Activate()
   {
-    await UpdateOperationalStatus();
+    await FetchOperationalStatus();
     if(Status.OperationalState != Datamodel.Device.OperationalState.Active)
     {
       return false;
     }
-    await UpdateInfo();
-    await UpdateCommands();
-    await UpdateSettings();
+    await FetchInfo();
+    await FetchCommands();
+    await FetchSettings();
     return true;
   }
 
-  internal async Task UpdateOperationalStatus()
+  internal async Task FetchOperationalStatus()
   {
     try
     {
@@ -60,7 +60,7 @@ public sealed class RemoteDevice : AresDevice
     }
   }
 
-  internal async Task UpdateCommands()
+  internal async Task FetchCommands()
   {
     var client = GetClient();
     try
@@ -73,7 +73,7 @@ public sealed class RemoteDevice : AresDevice
     }
   }
 
-  internal async Task UpdateInfo()
+  internal async Task FetchInfo()
   {
     var client = GetClient();
     try
@@ -115,13 +115,22 @@ public sealed class RemoteDevice : AresDevice
     return cmdResult;
   }
 
-  internal async Task UpdateSettings()
+  internal async Task FetchSettings()
   {
     var client = GetClient();
     try
     {
       var response = await client.GetSettingsSchemaAsync(new Empty());
       _settingsSchema = response.Schema;
+    }
+    catch(RpcException)
+    {
+    }
+
+    try
+    {
+      var response = await client.GetCurrentSettingsAsync(new Empty());
+      await UpdateSettings(response.Settings);
     }
     catch(RpcException)
     {
@@ -152,6 +161,8 @@ public sealed class RemoteDevice : AresDevice
         Settings.Fields[newSetting.Key] = AresValueHelper.CreateDefault(newSetting.Value.Type);
       }
     }
+
+
   }
 
   internal async Task UpdateInfo(DeviceInfo info)
@@ -161,10 +172,10 @@ public sealed class RemoteDevice : AresDevice
     Version = info.Version;
     _settingsSchema = info.SettingsSchema;
     _commands = [.. info.Commands];
-    await UpdateSettings();
+    await FetchSettings();
   }
 
-  public void UpdateSettings(AresStruct settings)
+  public Task UpdateSettings(AresStruct settings)
   {
     foreach(var setting in Settings.Fields)
     {
@@ -176,6 +187,9 @@ public sealed class RemoteDevice : AresDevice
 
       Settings.Fields[setting.Key] = newValue;
     }
+
+    var client = GetClient();
+    return client.SetSettingsAsync(new SetSettingsRequest { Settings = Settings }).ResponseAsync;
   }
 
   public IReadOnlyList<DeviceCommandDescriptor> CommandDescriptors => _commands;

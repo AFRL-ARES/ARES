@@ -2,7 +2,6 @@
 using System.Reactive.Linq;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
-using Ares.Datamodel.Extensions;
 using Ares.Services;
 using Ares.Services.Device;
 using Grpc.Core;
@@ -151,14 +150,21 @@ public class RemoteDeviceSettingsViewModel : ReactiveObject
   {
     var request = new DeviceSettingsRequest() { DeviceId = _deviceInfo.UniqueId };
     var deviceSettings = await _devicesClient.GetDeviceSettingsAsync(request);
-    Settings.UpdateStruct(deviceSettings);
+    //Settings.UpdateStruct(deviceSettings);
+    Settings = deviceSettings;
   }
 
   private async Task PushSettingsAsync()
   {
     var settings = new DeviceSettings() { DeviceId = _deviceInfo.UniqueId, Settings = Settings };
-    await _devicesClient.SetDeviceSettingsAsync(settings);
-    PushNotification(new AresNotification { Title = "Settings Pushed", Message = $"Settings for {Name} have been sent.", NotificationSeverity = Severity.Info });
+    try
+    {
+      await _devicesClient.SetDeviceSettingsAsync(settings);
+    }
+    catch(Exception e)
+    {
+      PushNotification(new AresNotification { Title = "Update Error", Message = $"Settings for {Name} failed to send. {e.Message}", NotificationSeverity = Severity.Error });
+    }
   }
 
   private async Task UpdateInfoAsync()

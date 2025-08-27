@@ -21,7 +21,7 @@ else
         <RemoteDeviceSettingsView ViewModel="vm"/>
       </div>
     }
-    <button class="m-2 align-self-end btn btn-outline-light" disabled="@SavingInProgress" @onclick="AddAnalyzerClick">
+    <button class="m-2 align-self-end btn btn-outline-light" disabled="@SavingInProgress" @onclick="AddDeviceClick">
       @if (SavingInProgress)
       {
         <LoadingSpinner SpinnerSize="SpinnerSize.Small" />
@@ -35,10 +35,10 @@ else
 }
 
 @code {
-  private async Task AddAnalyzerClick()
+  private async Task AddDeviceClick()
   {
     var viewModel = ViewModel!.GetNewConfigEditViewModel();
-    var result = await DialogService.OpenAsync("New Analyzer", ds =>
+    var result = await DialogService.OpenAsync("New Device", ds =>
       @<RemoteDeviceConfigEditView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)" />);
 
     var notification = new AresNotification();

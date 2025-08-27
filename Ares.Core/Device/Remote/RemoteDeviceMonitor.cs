@@ -34,13 +34,13 @@ internal class RemoteDeviceMonitor : IDisposable
         {
           while(!token.IsCancellationRequested)
           {
-            await _device.UpdateOperationalStatus();
+            await _device.FetchOperationalStatus();
 
             if(_lastState != OperationalState.Active && _device.Status.OperationalState == OperationalState.Active)
             {
-              await _device.UpdateInfo();
-              await _device.UpdateSettings();
-              await _device.UpdateCommands();
+              await _device.FetchInfo();
+              await _device.FetchSettings();
+              await _device.FetchCommands();
               await _deviceCache.CacheDeviceInfo(_device);
               await _deviceCache.CacheDeviceSettings(_device);
             }
