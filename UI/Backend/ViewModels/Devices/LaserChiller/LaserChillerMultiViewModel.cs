@@ -13,7 +13,7 @@ namespace UI.Backend.ViewModels.Devices.LaserChiller
       _client = client;
     }
 
-    protected override LaserChillerUnitControlViewModel CreateUnitVm(AresDeviceDescription description) => new(description.Name, description.Id, _client);
+    protected override LaserChillerUnitControlViewModel CreateUnitVm(AresDeviceDescription description) => new(description.Id, description.Name, _client);
 
     protected override async Task<AresDeviceDescription[]> GetDeviceDescriptions()
     {

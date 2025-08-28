@@ -15,7 +15,7 @@ public class TubeFurnaceMultiViewModel : SerialDeviceConnectorViewModel<TubeFurn
 
   protected override TubeFurnaceViewModel CreateUnitVm(AresDeviceDescription description)
   {
-    var unitVm = new TubeFurnaceViewModel(description.Name, description.Id, _tubeFurnaceClient);
+    var unitVm = new TubeFurnaceViewModel(description.Id, description.Name, _tubeFurnaceClient);
     return unitVm;
   }
 

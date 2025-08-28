@@ -7,7 +7,7 @@ public class RemoteDeviceDirectorViewModel(AresDevices.AresDevicesClient devices
   : SerialDeviceConnectorViewModel<RemoteDeviceUnitViewModel>(devicesClient)
 {
   protected override RemoteDeviceUnitViewModel CreateUnitVm(AresDeviceDescription description)
-    => new(description.Name, description.Id, DevicesClient);
+    => new(description.Id, description.Name, DevicesClient);
 
   protected override async Task<AresDeviceDescription[]> GetDeviceDescriptions()
   {

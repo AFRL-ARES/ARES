@@ -14,12 +14,12 @@ public class VerdiLaserMultiViewModel : SerialDeviceConnectorViewModel<VerdiLase
   }
 
   protected override VerdiLaserUnitControlViewModel CreateUnitVm(AresDeviceDescription description)
-    => new(description.Name, description.Id, _client);
+    => new(description.Id, description.Name, _client);
 
   protected override async Task<AresDeviceDescription[]> GetDeviceDescriptions()
   {
     var devicesResponse = await _client.GetAllLasersAsync(new Empty());
-    var descriptions = devicesResponse.Devices.Select(d => new AresDeviceDescription(d.Name, d.Id)).ToArray();
+    var descriptions = devicesResponse.Devices.Select(d => new AresDeviceDescription(d.Id, d.Name)).ToArray();
     return descriptions;
   }
 }

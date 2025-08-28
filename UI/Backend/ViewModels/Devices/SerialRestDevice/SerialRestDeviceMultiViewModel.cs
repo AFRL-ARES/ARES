@@ -51,7 +51,7 @@ public class SerialRestDeviceMultiViewModel : SerialDeviceConnectorViewModel<Ser
 
   protected override SerialRestDeviceUnitControlViewModel CreateUnitVm(AresDeviceDescription description)
   {
-    var vm = new SerialRestDeviceUnitControlViewModel(description.Name, description.Id, _restSerialClient);
+    var vm = new SerialRestDeviceUnitControlViewModel(description.Id, description.Name, _restSerialClient);
     return vm;
   }
 

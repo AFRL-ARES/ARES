@@ -14,7 +14,7 @@ public class ValveControllerMultiViewModel : SerialDeviceConnectorViewModel<Valv
   }
 
   protected override ValveControllerUnitControlViewModel CreateUnitVm(AresDeviceDescription description)
-    => new(description.Name, description.Id, _client);
+    => new(description.Id, description.Name, _client);
 
   protected override async Task<AresDeviceDescription[]> GetDeviceDescriptions()
   {
