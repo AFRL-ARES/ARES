@@ -463,6 +463,30 @@ namespace AresService.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "DeviceCommandDescriptor",
+                columns: table => new
+                {
+                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    InputSchema = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    OutputSchema = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
+                    DeviceInfoId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DeviceCommandDescriptor", x => x.UniqueId);
+                    table.ForeignKey(
+                        name: "FK_DeviceCommandDescriptor_DeviceInfos_DeviceInfoId",
+                        column: x => x.DeviceInfoId,
+                        principalTable: "DeviceInfos",
+                        principalColumn: "UniqueId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "StepExecutionStatuses",
                 columns: table => new
                 {
@@ -559,7 +583,7 @@ namespace AresService.Migrations
                     UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    DeviceName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    DeviceId = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     DeviceType = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CommandTemplateId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
@@ -976,6 +1000,11 @@ namespace AresService.Migrations
                 column: "StepTemplateUniqueId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_DeviceCommandDescriptor_DeviceInfoId",
+                table: "DeviceCommandDescriptor",
+                column: "DeviceInfoId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_DeviceCommandResults_CommandExecutionSummaryId",
                 table: "DeviceCommandResults",
                 column: "CommandExecutionSummaryId",
@@ -1224,10 +1253,10 @@ namespace AresService.Migrations
                 name: "CommandExecutionStatuses");
 
             migrationBuilder.DropTable(
-                name: "DeviceCommandResults");
+                name: "DeviceCommandDescriptor");
 
             migrationBuilder.DropTable(
-                name: "DeviceInfos");
+                name: "DeviceCommandResults");
 
             migrationBuilder.DropTable(
                 name: "DeviceSettings");
@@ -1276,6 +1305,9 @@ namespace AresService.Migrations
 
             migrationBuilder.DropTable(
                 name: "StepExecutionStatuses");
+
+            migrationBuilder.DropTable(
+                name: "DeviceInfos");
 
             migrationBuilder.DropTable(
                 name: "CommandExecutionSummaries");

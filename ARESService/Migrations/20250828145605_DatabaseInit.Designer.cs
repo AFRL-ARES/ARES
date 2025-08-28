@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AresService.Migrations
 {
     [DbContext(typeof(AresDbContext))]
-    [Migration("20250825163248_DatabaseInit")]
+    [Migration("20250828145605_DatabaseInit")]
     partial class DatabaseInit
     {
         /// <inheritdoc />
@@ -419,6 +419,44 @@ namespace AresService.Migrations
                         .HasFilter("[CommandExecutionSummaryId] IS NOT NULL");
 
                     b.ToTable("DeviceCommandResults", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Device.DeviceCommandDescriptor", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("DeviceInfoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("InputSchema")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OutputSchema")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("DeviceInfoId");
+
+                    b.ToTable("DeviceCommandDescriptor");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Device.DeviceConfig", b =>
@@ -900,7 +938,7 @@ namespace AresService.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("DeviceName")
+                    b.Property<string>("DeviceId")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("DeviceType")
@@ -1620,6 +1658,15 @@ namespace AresService.Migrations
                         .OnDelete(DeleteBehavior.ClientCascade);
                 });
 
+            modelBuilder.Entity("Ares.Datamodel.Device.DeviceCommandDescriptor", b =>
+                {
+                    b.HasOne("Ares.Datamodel.Device.DeviceInfo", null)
+                        .WithMany("Commands")
+                        .HasForeignKey("DeviceInfoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Ares.Datamodel.ExecutionInfo", b =>
                 {
                     b.HasOne("Ares.Datamodel.CampaignExecutionSummary", null)
@@ -1849,6 +1896,11 @@ namespace AresService.Migrations
             modelBuilder.Entity("Ares.Datamodel.Device.DeviceConfig", b =>
                 {
                     b.Navigation("ConfigData");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Device.DeviceInfo", b =>
+                {
+                    b.Navigation("Commands");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.ExperimentExecutionStatus", b =>

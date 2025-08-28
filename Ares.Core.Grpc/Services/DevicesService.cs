@@ -1,7 +1,10 @@
-﻿using System;
+﻿
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.IO.Ports;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Ares.Core.Device;
 using Ares.Core.Device.Remote;
@@ -250,15 +253,55 @@ public class DevicesService : AresDevices.AresDevicesBase
 
   public override Task<DeviceStateResponse> GetDeviceState(DeviceStateRequest request, ServerCallContext context)
   {
+    // We can do the non-remote devices later
     var device = _deviceCommandInterpreterRepo.Select(dci => dci.Device).OfType<RemoteDevice>().FirstOrDefault(d => d.UniqueId == request.DeviceId);
     if(device is null)
     {
-      // We can do the non-remote devices later
       return Task.FromResult(new DeviceStateResponse());
     }
 
     var state = device.CurrentState;
     return Task.FromResult(state is null ? new DeviceStateResponse() : new DeviceStateResponse { State = state });
+  }
+
+  public override async Task GetDeviceStateStream(
+      DeviceStateStreamRequest request,
+      IServerStreamWriter<DeviceStateResponse> responseStream,
+      ServerCallContext context)
+  {
+    var device = _deviceCommandInterpreterRepo.Select(dci => dci.Device).OfType<RemoteDevice>().FirstOrDefault(d => d.UniqueId == request.DeviceId);
+    if(device is null)
+    {
+      return;
+    }
+
+    var interval = request.IntervalMs > 0 ? request.IntervalMs : 1000;
+
+    // Create a TaskCompletionSource to represent the lifetime of the subscription
+    var tcs = new TaskCompletionSource<object?>();
+
+    var subscription = device.StateStream
+        .Sample(TimeSpan.FromMilliseconds(interval))
+        .Subscribe(async state =>
+        {
+          try
+          {
+            await responseStream.WriteAsync(new DeviceStateResponse { State = state });
+          }
+          catch(Exception ex)
+          {
+            tcs.TrySetException(ex); // break out if client disconnects
+          }
+        });
+
+    // Cancel the subscription if the client disconnects
+    context.CancellationToken.Register(() =>
+    {
+      subscription.Dispose();
+      tcs.TrySetResult(null);
+    });
+
+    await tcs.Task; // keep method alive until cancelled
   }
 
   private DeviceInfo GetInfo(IAresDevice device)

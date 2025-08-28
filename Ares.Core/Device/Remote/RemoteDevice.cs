@@ -54,7 +54,7 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     return true;
   }
 
-  private async Task StartStateStream()
+  public async Task StartStateStream()
   {
     await _stateStreamCts.CancelAsync();
     _stateStreamCts = new CancellationTokenSource();
