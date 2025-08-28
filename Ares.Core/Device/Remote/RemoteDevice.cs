@@ -6,13 +6,17 @@ using Ares.Device;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Grpc.Net.Client;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 
 namespace Ares.Core.Device.Remote;
-public sealed class RemoteDevice : AresDevice
+public sealed class RemoteDevice : AresDevice, IAsyncDisposable
 {
   private readonly GrpcChannel _channel;
   private AresDataSchema _settingsSchema = new();
   private DeviceCommandDescriptor[] _commands = [];
+  private readonly ReplaySubject<AresStruct> _stateSubject = new(1);
+  private CancellationTokenSource _stateStreamCts = new();
 
   public RemoteDevice(string name, Uri address) : base(name)
   {
@@ -33,17 +37,53 @@ public sealed class RemoteDevice : AresDevice
 
   public AresDataSchema SettingSchema => _settingsSchema;
 
+  public IObservable<AresStruct> StateStream => _stateSubject.AsObservable();
+  public AresStruct? CurrentState { get; private set; }
+
   public override async Task<bool> Activate()
   {
     await FetchOperationalStatus();
-    if(Status.OperationalState != Datamodel.Device.OperationalState.Active)
+    if(Status.OperationalState != OperationalState.Active)
     {
       return false;
     }
     await FetchInfo();
     await FetchCommands();
     await FetchSettings();
+    _ = StartStateStream();
     return true;
+  }
+
+  private async Task StartStateStream()
+  {
+    await _stateStreamCts.CancelAsync();
+    _stateStreamCts = new CancellationTokenSource();
+    var token = _stateStreamCts.Token;
+
+    var client = GetClient();
+    try
+    {
+      using var call = client.GetStateStream(new DeviceStateStreamRequest {IntervalMs = 1000}, cancellationToken: token);
+      await foreach (var state in call.ResponseStream.ReadAllAsync(token))
+      {
+        CurrentState = state.State;
+        _stateSubject.OnNext(state.State);
+      }
+      _stateSubject.OnCompleted();
+    }
+    catch (RpcException e) when (e.StatusCode == StatusCode.Cancelled)
+    {
+      _stateSubject.OnCompleted();
+    }
+    catch (OperationCanceledException)
+    {
+      _stateSubject.OnCompleted();
+    }
+    catch (RpcException e)
+    {
+      Status = new DeviceOperationalStatus { OperationalState = OperationalState.Inactive, Message = $"State stream disconnected: {e.Message}" };
+      _stateSubject.OnError(e);
+    }
   }
 
   internal async Task FetchOperationalStatus()
@@ -136,7 +176,7 @@ public sealed class RemoteDevice : AresDevice
     {
     }
 
-    var newSettings = _settingsSchema.Fields.Where(entry => !Settings.Fields.ContainsKey(entry.Key)) ?? [];
+    var newSettings = _settingsSchema.Fields.Where(entry => !Settings.Fields.ContainsKey(entry.Key));
     var removedSettings = Settings.Fields.Where(entry => !_settingsSchema.Fields.ContainsKey(entry.Key));
 
     foreach(var removedSetting in removedSettings)
@@ -197,5 +237,15 @@ public sealed class RemoteDevice : AresDevice
   private AresRemoteDeviceService.AresRemoteDeviceServiceClient GetClient()
   {
     return new AresRemoteDeviceService.AresRemoteDeviceServiceClient(_channel);
+  }
+
+  public async ValueTask DisposeAsync()
+  {
+    await _stateStreamCts.CancelAsync();
+    _stateStreamCts.Dispose();
+    _stateSubject.OnCompleted();
+    _stateSubject.Dispose();
+    await _channel.ShutdownAsync();
+    _channel.Dispose();
   }
 }

@@ -1,5 +1,6 @@
 ﻿using Ares.Datamodel;
 using Ares.Services.Device;
+using ReactiveUI.Fody.Helpers;
 
 namespace UI.Backend.ViewModels.Devices.Remote;
 
@@ -41,6 +42,7 @@ public class RemoteDeviceUnitViewModel : SerialDeviceUnitViewModel, IAsyncDispos
     DeviceState = response.State;
   }
 
+  [Reactive]
   public AresStruct? DeviceState { get; private set; }
 
   public async ValueTask DisposeAsync()

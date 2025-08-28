@@ -248,6 +248,19 @@ public class DevicesService : AresDevices.AresDevicesBase
     return Task.FromResult(new Empty());
   }
 
+  public override Task<DeviceStateResponse> GetDeviceState(DeviceStateRequest request, ServerCallContext context)
+  {
+    var device = _deviceCommandInterpreterRepo.Select(dci => dci.Device).OfType<RemoteDevice>().FirstOrDefault(d => d.UniqueId == request.DeviceId);
+    if(device is null)
+    {
+      // We can do the non-remote devices later
+      return Task.FromResult(new DeviceStateResponse());
+    }
+
+    var state = device.CurrentState;
+    return Task.FromResult(state is null ? new DeviceStateResponse() : new DeviceStateResponse { State = state });
+  }
+
   private DeviceInfo GetInfo(IAresDevice device)
   {
     return new DeviceInfo

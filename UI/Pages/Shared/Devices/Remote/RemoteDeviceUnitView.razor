@@ -1,10 +1,30 @@
 ﻿@using UI.Backend.ViewModels.Devices.Remote
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<RemoteDeviceUnitViewModel>
 
-<div class="d-flex justify-content-between gap-5">
-    :^)
-</div>
+@if (ViewModel is { DeviceState.Fields.Count: > 0 })
+{
+    <RadzenFieldset Text="@ViewModel.DeviceName" Class="device-fieldset">
+        <div class="rz-p-4">
+            @foreach (var field in ViewModel.DeviceState.Fields)
+            {
+                <RadzenRow AlignItems="AlignItems.Center" Gap="1rem" Class="rz-mb-4">
+                    <RadzenColumn Size="4" class="d-flex justify-content-end">
+                        <RadzenLabel Text="@field.Key" />
+                    </RadzenColumn>
+                    <RadzenColumn Size="8">
+                        <AresValueDisplay Value="@field.Value" />
+                    </RadzenColumn>
+                </RadzenRow>
+            }
+        </div>
+    </RadzenFieldset>
+}
+else
+{
+    <RadzenCard class="rz-my-4">
+        <RadzenText TextStyle="TextStyle.Subtitle2" Class="rz-p-4 rz-text-align-center">No device data available to display.</RadzenText>
+    </RadzenCard>
+}
 
 @code {
-
 }
