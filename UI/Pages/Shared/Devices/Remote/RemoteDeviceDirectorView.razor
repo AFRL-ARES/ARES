@@ -1,0 +1,22 @@
+﻿@using UI.Backend.ViewModels.Devices.Remote
+@using DynamicData.Binding
+
+@inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<RemoteDeviceDirectorViewModel>
+
+@foreach (var device in ViewModel!.ConnectedSerialDeviceUnitControlVms)
+{
+  <div class="d-flex flex-wrap">
+    <DashboardWidget>
+      <RemoteDeviceUnitView ViewModel="@device" />
+    </DashboardWidget>
+  </div>
+}
+
+@code {
+  protected override Task OnInitializedAsync()
+  {
+    ViewModel!.ConnectedSerialDeviceUnitControlVms.ObserveCollectionChanges().Subscribe(_ => InvokeAsync(StateHasChanged));
+    ViewModel.Start(TimeSpan.FromSeconds(5));
+    return base.OnInitializedAsync();
+  }
+}

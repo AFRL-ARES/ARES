@@ -72,6 +72,8 @@ public abstract class SerialDeviceConnectorViewModel<TDeviceUnitVm> : ReactiveOb
 
   protected abstract TDeviceUnitVm CreateUnitVm(AresDeviceDescription description);
 
+  protected AresDevices.AresDevicesClient DevicesClient => _devicesClient;
+  
   public async ValueTask DisposeAsync()
   {
     _deviceUpdaterTokenSource.Cancel();

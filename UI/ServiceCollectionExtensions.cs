@@ -37,6 +37,7 @@ using UI.Backend.ViewModels.Devices.CM3Camera;
 using UI.Backend.ViewModels.Devices.HerkulexDRS;
 using UI.Backend.ViewModels.Devices.LaserChiller;
 using UI.Backend.ViewModels.Devices.Mfc;
+using UI.Backend.ViewModels.Devices.Remote;
 using UI.Backend.ViewModels.Devices.RestDevice;
 using UI.Backend.ViewModels.Devices.SerialRestDevice;
 using UI.Backend.ViewModels.Devices.ValveController;
@@ -185,6 +186,7 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<StepperControllerMultiViewModel>();
     services.AddScoped<VerdiLaserMultiViewModel>();
     services.AddScoped<LaserChillerMultiViewModel>();
+    services.AddScoped<RemoteDeviceDirectorViewModel>();
 
     //Other View Models
     services.AddTransient<DeviceStatesViewModel>();
