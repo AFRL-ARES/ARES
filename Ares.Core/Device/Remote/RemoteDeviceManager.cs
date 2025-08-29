@@ -20,7 +20,7 @@ internal class RemoteDeviceManager(IDeviceCommandInterpreterRepo _deviceCommandI
     var ctx = _dbContextFactory.CreateDbContext();
     ctx.RemoteDeviceConfigs.Add(config);
 
-    await device.Activate();
+    await device.Activate(CancellationToken.None);
 
     await ctx.SaveChangesAsync();
     return device;
@@ -134,7 +134,7 @@ internal class RemoteDeviceManager(IDeviceCommandInterpreterRepo _deviceCommandI
       await device.UpdateInfo(deviceInfo);
     }
 
-    await device.Activate();
+    await device.Activate(CancellationToken.None);
 
     var deviceSettings = await _deviceCache.GetCachedDeviceSettings(config.UniqueId);
     if(deviceSettings is not null)

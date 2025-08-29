@@ -148,14 +148,19 @@ public class DemoDeviceService : AresRemoteDeviceService.AresRemoteDeviceService
     _logger.LogInformation("State stream requested with interval {interval}ms", request.IntervalMs);
     while(!context.CancellationToken.IsCancellationRequested)
     {
-      _logger.LogInformation("Sending back a state from the state stream");
       var state = AresStructHelper.CreateNumberStruct("Temperature", _device.Temperature);
+      _logger.LogInformation("Sending back a state from the state stream {}", state);
       var response = new DeviceStateResponse
       {
         State = state
       };
       await responseStream.WriteAsync(response);
-      await Task.Delay(TimeSpan.FromMilliseconds(request.IntervalMs), context.CancellationToken);
+      try
+      {
+        await Task.Delay(TimeSpan.FromMilliseconds(request.IntervalMs), context.CancellationToken);
+      }
+      catch (TaskCanceledException)
+      {}
     }
   }
 }

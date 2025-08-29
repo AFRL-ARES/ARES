@@ -5,6 +5,7 @@ using AresService.DeviceDbLoaders;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using VerdiV6.Config;
 using VerdiV6Laser;
@@ -37,7 +38,7 @@ namespace AresService.DeviceManagers
         UniqueId = id
       };
 
-      await device.Activate();
+      await device.Activate(CancellationToken.None);
       var interpreter = new VerdiV6LaserInterpreter(device);
       _deviceCommandInterpreterRepo.Add(interpreter);
 

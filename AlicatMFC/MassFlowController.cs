@@ -277,9 +277,9 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
   public string FirmwareVersion { get; private set; } = string.Empty;
   public bool HasValve { get; }
 
-  public override async Task<bool> Activate()
+  public override async Task<bool> Activate(CancellationToken ct)
   {
-    var activated = await base.Activate();
+    var activated = await base.Activate(ct);
     if(activated)
     {
       try
@@ -296,7 +296,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     return activated;
   }
 
-  public override async Task EnterSafeMode()
+  public override async Task EnterSafeMode(CancellationToken ct)
   {
     //Set the setpoint to zero, effectively shutting off the MFC.. I think
     await NewSetpoint(StandardVolumeFlow.FromStandardCubicCentimetersPerMinute(0.0));

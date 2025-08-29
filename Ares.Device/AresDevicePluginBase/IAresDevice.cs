@@ -1,9 +1,11 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Ares.Datamodel.Device;
 
 namespace Ares.Device;
 
-public interface IAresDevice
+public interface IAresDevice : IDisposable
 {
   string UniqueId { get; }
   string Name { get; }
@@ -11,6 +13,7 @@ public interface IAresDevice
   string Type { get; }
   string Description { get; }
   DeviceOperationalStatus Status { get; }
-  Task<bool> Activate();
-  Task EnterSafeMode();
+  IObservable<DeviceOperationalStatus> StatusObservable { get; }
+  Task<bool> Activate(CancellationToken ct = default);
+  Task EnterSafeMode(CancellationToken ct = default);
 }

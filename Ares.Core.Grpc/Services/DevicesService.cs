@@ -5,6 +5,7 @@ using System.IO;
 using System.IO.Ports;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Ares.Core.Device;
 using Ares.Core.Device.Remote;
@@ -16,21 +17,18 @@ using Ares.Services.Device;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Ares.Core.Grpc.Services;
 
-public class DevicesService : AresDevices.AresDevicesBase
+public class DevicesService(
+  IDeviceCommandInterpreterRepo deviceCommandInterpreterRepo,
+  IDbContextFactory<CoreDatabaseContext> contextFactory,
+  IRemoteDeviceManager remoteDeviceManager,
+  ILogger<DevicesService> logger)
+  : AresDevices.AresDevicesBase
 {
-  private readonly IDbContextFactory<CoreDatabaseContext> _dbContextFactory;
-  private readonly IDeviceCommandInterpreterRepo _deviceCommandInterpreterRepo;
-  readonly IRemoteDeviceManager _remoteDeviceManager;
-
-  public DevicesService(IDeviceCommandInterpreterRepo deviceCommandInterpreterRepo, IDbContextFactory<CoreDatabaseContext> contextFactory, IRemoteDeviceManager remoteDeviceManager)
-  {
-    _remoteDeviceManager = remoteDeviceManager;
-    _deviceCommandInterpreterRepo = deviceCommandInterpreterRepo;
-    _dbContextFactory = contextFactory;
-  }
+  private readonly ILogger<DevicesService> _logger = logger;
 
   public override Task<ListServerSerialPortsResponse> GetServerSerialPorts(Empty request, ServerCallContext context)
   {
@@ -51,13 +49,13 @@ public class DevicesService : AresDevices.AresDevicesBase
     if(device.Status.OperationalState == OperationalState.Active)
       return new Empty();
 
-    await device.Activate();
+    await device.Activate(CancellationToken.None);
     return new Empty();
   }
 
   public override Task<ListAresDevicesResponse> ListAresDevices(Empty _, ServerCallContext context)
   {
-    var aresDeviceMessages = _deviceCommandInterpreterRepo
+    var aresDeviceMessages = deviceCommandInterpreterRepo
       .Select(interpreter => interpreter.Device)
       .Select(GetInfo);
 
@@ -85,7 +83,7 @@ public class DevicesService : AresDevices.AresDevicesBase
 
   public override Task<CommandMetadatasResponse> GetCommandMetadatas(CommandMetadatasRequest request, ServerCallContext context)
   {
-    var interpreter = _deviceCommandInterpreterRepo
+    var interpreter = deviceCommandInterpreterRepo
       .First(commandInterpreter => commandInterpreter.Device.UniqueId == request.DeviceId);
 
     var commands = interpreter.CommandsToIndexedMetadatas();
@@ -98,7 +96,7 @@ public class DevicesService : AresDevices.AresDevicesBase
 
   public override async Task<DeviceExecutionResult> ExecuteCommand(CommandTemplate request, ServerCallContext context)
   {
-    var interpreter = _deviceCommandInterpreterRepo
+    var interpreter = deviceCommandInterpreterRepo
       .First(commandInterpreter => commandInterpreter.Device.Name == request.Metadata.DeviceId);
 
     try
@@ -120,7 +118,7 @@ public class DevicesService : AresDevices.AresDevicesBase
 
   private IAresDevice GetAresDevice(string id)
   {
-    var aresDevice = _deviceCommandInterpreterRepo
+    var aresDevice = deviceCommandInterpreterRepo
       .Select(interpreter => interpreter.Device)
       .FirstOrDefault(device => device.UniqueId == id);
 
@@ -132,7 +130,7 @@ public class DevicesService : AresDevices.AresDevicesBase
 
   public override async Task<DeviceConfigResponse> GetAllDeviceConfigs(DeviceConfigRequest request, ServerCallContext context)
   {
-    await using var dbContext = _dbContextFactory.CreateDbContext();
+    await using var dbContext = contextFactory.CreateDbContext();
     var configQuery = dbContext.DeviceConfigs.AsQueryable();
     if(!string.IsNullOrEmpty(request.DeviceType))
       configQuery = configQuery.Where(config => config.DeviceType == request.DeviceType);
@@ -145,7 +143,7 @@ public class DevicesService : AresDevices.AresDevicesBase
 
   public override Task<RemoteDeviceConfigResponse> GetAllRemoteDevicesConfigs(Empty request, ServerCallContext context)
   {
-    var remoteDevices = _deviceCommandInterpreterRepo.Select(dci => dci.Device).OfType<RemoteDevice>().ToArray();
+    var remoteDevices = deviceCommandInterpreterRepo.Select(dci => dci.Device).OfType<RemoteDevice>().ToArray();
 
     var response = new RemoteDeviceConfigResponse();
     var configs = remoteDevices.Select(rd => new RemoteDeviceConfig { Name = rd.Name, UniqueId = rd.UniqueId, Url = rd.Address.ToString() });
@@ -157,7 +155,7 @@ public class DevicesService : AresDevices.AresDevicesBase
 
   public override Task<ListAresRemoteDevicesResponse> ListRemoteAresDevices(Empty request, ServerCallContext context)
   {
-    var remoteDevices = _deviceCommandInterpreterRepo.Select(dci => dci.Device).OfType<RemoteDevice>().ToArray();
+    var remoteDevices = deviceCommandInterpreterRepo.Select(dci => dci.Device).OfType<RemoteDevice>().ToArray();
 
     var response = new ListAresRemoteDevicesResponse();
     var infos = remoteDevices.Select(GetInfo);
@@ -172,7 +170,7 @@ public class DevicesService : AresDevices.AresDevicesBase
     try
     {
       var deviceConfig = new RemoteDeviceConfig { UniqueId = request.DeviceId, Name = request.Name, Url = request.Url };
-      await _remoteDeviceManager.UpdateDevice(deviceConfig);
+      await remoteDeviceManager.UpdateDevice(deviceConfig);
       var response = new UpdateRemoteDeviceResponse
       {
         Success = true
@@ -194,7 +192,7 @@ public class DevicesService : AresDevices.AresDevicesBase
   {
     try
     {
-      var removed = await _remoteDeviceManager.RemoveDevice(request.DeviceId);
+      var removed = await remoteDeviceManager.RemoveDevice(request.DeviceId);
       return new RemoveRemoteDeviceResponse { Success = removed };
     }
     catch(Exception e)
@@ -207,7 +205,7 @@ public class DevicesService : AresDevices.AresDevicesBase
   {
     try
     {
-      var device = await _remoteDeviceManager.CreateDevice(request.Name, request.Url);
+      var device = await remoteDeviceManager.CreateDevice(request.Name, request.Url);
       return new AddRemoteDeviceResponse { Success = true, DeviceId = device.UniqueId };
     }
     catch(Exception e)
@@ -218,7 +216,7 @@ public class DevicesService : AresDevices.AresDevicesBase
 
   public override Task<DeviceInfo> GetDeviceInfo(DeviceInfoRequest request, ServerCallContext context)
   {
-    var device = _deviceCommandInterpreterRepo.Select(dci => dci.Device).FirstOrDefault(d => d.UniqueId == request.DeviceId);
+    var device = deviceCommandInterpreterRepo.Select(dci => dci.Device).FirstOrDefault(d => d.UniqueId == request.DeviceId);
     if(device is null)
       return Task.FromResult(new DeviceInfo());
 
@@ -229,7 +227,7 @@ public class DevicesService : AresDevices.AresDevicesBase
 
   public override Task<AresStruct> GetDeviceSettings(DeviceSettingsRequest request, ServerCallContext context)
   {
-    var device = _deviceCommandInterpreterRepo.Select(dci => dci.Device).FirstOrDefault(d => d.UniqueId == request.DeviceId);
+    var device = deviceCommandInterpreterRepo.Select(dci => dci.Device).FirstOrDefault(d => d.UniqueId == request.DeviceId);
     if(device is not RemoteDevice remoteDevice)
     {
       return Task.FromResult(new AresStruct());
@@ -240,13 +238,13 @@ public class DevicesService : AresDevices.AresDevicesBase
 
   public override Task<Empty> SetDeviceSettings(DeviceSettings request, ServerCallContext context)
   {
-    var device = _deviceCommandInterpreterRepo.Select(dci => dci.Device).FirstOrDefault(d => d.UniqueId == request.DeviceId);
+    var device = deviceCommandInterpreterRepo.Select(dci => dci.Device).FirstOrDefault(d => d.UniqueId == request.DeviceId);
     if(device is not RemoteDevice remoteDevice)
     {
       return Task.FromResult(new Empty());
     }
 
-    _remoteDeviceManager.UpdateDeviceSettings(request);
+    remoteDeviceManager.UpdateDeviceSettings(request);
 
     return Task.FromResult(new Empty());
   }
@@ -254,7 +252,7 @@ public class DevicesService : AresDevices.AresDevicesBase
   public override Task<DeviceStateResponse> GetDeviceState(DeviceStateRequest request, ServerCallContext context)
   {
     // We can do the non-remote devices later
-    var device = _deviceCommandInterpreterRepo.Select(dci => dci.Device).OfType<RemoteDevice>().FirstOrDefault(d => d.UniqueId == request.DeviceId);
+    var device = deviceCommandInterpreterRepo.Select(dci => dci.Device).OfType<RemoteDevice>().FirstOrDefault(d => d.UniqueId == request.DeviceId);
     if(device is null)
     {
       return Task.FromResult(new DeviceStateResponse());
@@ -269,39 +267,27 @@ public class DevicesService : AresDevices.AresDevicesBase
       IServerStreamWriter<DeviceStateResponse> responseStream,
       ServerCallContext context)
   {
-    var device = _deviceCommandInterpreterRepo.Select(dci => dci.Device).OfType<RemoteDevice>().FirstOrDefault(d => d.UniqueId == request.DeviceId);
+    var device = deviceCommandInterpreterRepo.Select(dci => dci.Device).OfType<RemoteDevice>().FirstOrDefault(d => d.UniqueId == request.DeviceId);
     if(device is null)
     {
       return;
     }
-
+ 
     var interval = request.IntervalMs > 0 ? request.IntervalMs : 1000;
-
-    // Create a TaskCompletionSource to represent the lifetime of the subscription
-    var tcs = new TaskCompletionSource<object?>();
-
-    var subscription = device.StateStream
-        .Sample(TimeSpan.FromMilliseconds(interval))
-        .Subscribe(async state =>
-        {
-          try
-          {
-            await responseStream.WriteAsync(new DeviceStateResponse { State = state });
-          }
-          catch(Exception ex)
-          {
-            tcs.TrySetException(ex); // break out if client disconnects
-          }
-        });
-
-    // Cancel the subscription if the client disconnects
-    context.CancellationToken.Register(() =>
+ 
+    try
     {
-      subscription.Dispose();
-      tcs.TrySetResult(null);
-    });
-
-    await tcs.Task; // keep method alive until cancelled
+      await device.StateStream
+        .Sample(TimeSpan.FromMilliseconds(interval))
+        .ForEachAsync(async state =>
+        {
+          await responseStream.WriteAsync(new DeviceStateResponse { State = state }, context.CancellationToken);
+          _logger.LogDebug($"Wrote a thingy to the thingy {state}");
+        }, context.CancellationToken);
+    }
+    catch (OperationCanceledException)
+    {
+    }
   }
 
   private DeviceInfo GetInfo(IAresDevice device)

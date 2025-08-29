@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using AlicatMFC;
 using AlicatMFC.Simulation;
@@ -55,7 +56,7 @@ public class MfcManager : IDeviceManager<MfcConfig, IMassFlowController>
     if(connection is SimMassFlowControllerConnection simConnection)
       simConnection.AddCat(config.Id[0]);
 
-    await device.Activate();
+    await device.Activate(CancellationToken.None);
     _deviceStateLoggerRepo[device.UniqueId] = mfcStateLogger;
     await mfcStateLogger.Start();
 

@@ -7,6 +7,7 @@ using AresService.DeviceStateLoggers.Tc0304;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Tc0304.Config;
 using TC0304;
@@ -56,7 +57,7 @@ public class Tc0304Manager : IDeviceManager<Tc0304Config, IDataloggerThermometer
     if (config.Probe4Name is not null)
       device.ProbeNames.T4Name = config.Probe4Name;
 
-    await device.Activate();
+    await device.Activate(CancellationToken.None);
     var stateLogger = _stateLoggerFactory.Create(device);
     _deviceStateLoggerRepo[device.Name] = stateLogger;
     await stateLogger.Start();

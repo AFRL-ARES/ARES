@@ -5,6 +5,7 @@ using AresService.DeviceDbLoaders;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using ValveController;
 using ValveController.Config;
@@ -35,7 +36,7 @@ public class ValveControllerDeviceManager : IDeviceManager<ValveControllerConfig
       UniqueId = id
     };
 
-    await device.Activate();
+    await device.Activate(CancellationToken.None);
     var interpreter = new ValveControllerInterpreter(device);
     _deviceCommandInterpreterRepo.Add(interpreter);
 

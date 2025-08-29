@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Ares.Core.Device;
 using Ares.Device.Serial;
@@ -37,7 +38,7 @@ public class LaserChillerDeviceManager : IDeviceManager<ChillerConfig, ILaserChi
       UniqueId = id
     };
 
-    await device.Activate();
+    await device.Activate(CancellationToken.None);
     var interpreter = new LaserChillerInterpreter(device);
     _deviceCommandInterpreterRepo.Add(interpreter);
 

@@ -14,7 +14,7 @@ public class SimCM3Camera : AresDevice, IFlirCM3Camera
     Status = new DeviceOperationalStatus();
   }
 
-  public override Task<bool> Activate()
+  public override Task<bool> Activate(CancellationToken ct)
   {
     Status.OperationalState = OperationalState.Active;
     Status.Message = "Successfully activated simulated camera!";
@@ -79,7 +79,7 @@ public class SimCM3Camera : AresDevice, IFlirCM3Camera
     RedBalance = config.RedBalance;
   }
 
-  public override Task EnterSafeMode()
+  public override Task EnterSafeMode(CancellationToken ct)
   {
     throw new NotImplementedException();
   }

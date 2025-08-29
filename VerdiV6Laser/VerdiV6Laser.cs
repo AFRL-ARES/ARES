@@ -99,7 +99,7 @@ namespace VerdiV6Laser
       return Connection.Send(command, TimeSpan.FromSeconds(5));
     }
 
-    public override Task EnterSafeMode()
+    public override Task EnterSafeMode(CancellationToken ct)
     {
       //TODO: IMPLEMENT ME!!!
       throw new NotImplementedException();

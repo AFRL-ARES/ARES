@@ -10,6 +10,7 @@ using SyringePumpNE1000.Simulation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace AresService.DeviceManagers;
@@ -44,7 +45,7 @@ public class SyringePumpManager : IDeviceManager<SyringePumpConfig, ISyringePump
     {
       UniqueId = id
     };
-    await device.Activate();
+    await device.Activate(CancellationToken.None);
     await device.Start();
     var logger = _stateLoggerFactory.Create(device);
     _deviceStateLoggerRepo[logger.DeviceId] = logger;

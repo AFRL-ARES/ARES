@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Ares.Core.Device;
 using Ares.Device.Serial;
@@ -43,7 +44,7 @@ public class TubeFurnaceManager : IDeviceManager<TubeFurnaceConfig, ITubeFurnace
     {
       UniqueId = id
     };
-    await device.Activate();
+    await device.Activate(CancellationToken.None);
     var logger = _stateLoggerFactory.Create(device);
     _deviceStateLoggerRepo[logger.DeviceId] = logger;
     await logger.Start();

@@ -51,7 +51,7 @@ public class Servo : SerialDevice<IServoConnection>, IServo
     }
   }
 
-  public override async Task EnterSafeMode()
+  public override async Task EnterSafeMode(CancellationToken ct)
   {
     //Disengage Servo
     await PistonDown();

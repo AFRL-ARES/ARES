@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Ares.Core.Device;
 using Ares.Device.Serial;
@@ -39,7 +40,7 @@ public class SerialRestDeviceManager : IDeviceManager<RestSerialConfig, ISerialR
     };
 
     await device.Init();
-    await device.Activate();
+    await device.Activate(CancellationToken.None);
 
     var interpreter = new SerialRestDeviceInterpreter(device);
     _deviceCommandInterpreterRepo.Add(interpreter);

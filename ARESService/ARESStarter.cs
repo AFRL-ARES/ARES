@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Reactive.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Ares.Core.Analyzing;
 using Ares.Core.Device;
@@ -92,7 +93,7 @@ public class AresStarter
   public Task AddDemoDevice(Uri address)
   {
     var testDevice = new AresDemoDevice(address);
-    testDevice.Activate();
+    testDevice.Activate(CancellationToken.None);
     var testDeviceInterpreter = new DemoDeviceInterpreter(testDevice);
     _deviceCommandInterpreterRepo.Add(testDeviceInterpreter);
     return Task.CompletedTask;

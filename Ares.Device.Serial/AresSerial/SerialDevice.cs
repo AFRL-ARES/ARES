@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Ares.Datamodel.Device;
 
@@ -13,10 +14,10 @@ public abstract class SerialDevice<TConnection> : AresDevice, ISerialDevice<TCon
 
   public TConnection Connection { get; }
 
-  public override Task<bool> Activate()
-    => SerialActivate();
+  public override Task<bool> Activate(CancellationToken ct)
+    => SerialActivate(ct);
 
-  private async Task<bool> SerialActivate()
+  private async Task<bool> SerialActivate(CancellationToken ct)
   {
     if (!Connection.IsOpen)
     {

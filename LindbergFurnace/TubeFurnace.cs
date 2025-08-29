@@ -64,7 +64,7 @@ public class TubeFurnace : SerialDevice<ITubeFurnaceConnection>, ITubeFurnace
     return Task.FromResult(result);
   }
 
-  public override async Task EnterSafeMode()
+  public override async Task EnterSafeMode(CancellationToken ct)
   {
     await SetSetpoint(Temperature.FromDegreesCelsius(25.0));
   }

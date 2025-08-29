@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Ares.Core.Device;
 using Ares.Device.Serial;
@@ -50,7 +51,7 @@ public class StepperControllerManager : IDeviceManager<StepperControllerConfig, 
     };
     var ticStateLogger = _stateLoggerFactory.Create(device);
 
-    await device.Activate();
+    await device.Activate(CancellationToken.None);
     await device.Init(config);
     await device.Start();
     _stateLoggerRepo[device.Name] = ticStateLogger;

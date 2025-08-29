@@ -26,32 +26,34 @@ internal class RemoteDeviceMonitor : IDisposable
     _monitorTask.ContinueWith(_ => _tokenSource.Dispose());
   }
 
-  private Task<Task> Monitor(CancellationToken token)
+  private Task Monitor(CancellationToken token)
   {
-    return Task.Factory
-      .StartNew(
-        async (_) =>
+    return Task.Run(async () =>
+    {
+      while (!token.IsCancellationRequested)
+      {
+        await _device.FetchOperationalStatus();
+
+        if (_lastState != OperationalState.Active && _device.Status.OperationalState == OperationalState.Active)
         {
-          while(!token.IsCancellationRequested)
-          {
-            await _device.FetchOperationalStatus();
+          await _device.FetchInfo();
+          await _device.FetchSettings();
+          await _device.FetchCommands();
+          _ = _device.StartStateStream();
+          await _deviceCache.CacheDeviceInfo(_device);
+          await _deviceCache.CacheDeviceSettings(_device);
+        }
 
-            if(_lastState != OperationalState.Active && _device.Status.OperationalState == OperationalState.Active)
-            {
-              await _device.FetchInfo();
-              await _device.FetchSettings();
-              await _device.FetchCommands();
-              _ = _device.StartStateStream();
-              await _deviceCache.CacheDeviceInfo(_device);
-              await _deviceCache.CacheDeviceSettings(_device);
-            }
+        _lastState = _device.Status.OperationalState;
 
-            _lastState = _device.Status.OperationalState;
-
-            await Task.Delay(TimeSpan.FromSeconds(5));
-          }
-        },
-        token,
-        TaskCreationOptions.LongRunning);
+        try
+        {
+          await Task.Delay(TimeSpan.FromSeconds(5), token);
+        }
+        catch (TaskCanceledException)
+        {
+        }
+      }
+    }, token);
   }
 }

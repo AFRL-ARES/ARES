@@ -9,20 +9,41 @@ public class RemoteDeviceUnitViewModel : SerialDeviceUnitViewModel, IAsyncDispos
 {
   private readonly AresDevices.AresDevicesClient _client;
   private readonly CancellationTokenSource _stateUpdateTokenSource = new();
-  private Task _stateListener = Task.CompletedTask;
+  private Task _stateListener;
 
   public RemoteDeviceUnitViewModel(string id, string name, AresDevices.AresDevicesClient client) : base(id, name)
   {
     _client = client;
-    _ = StartStateUpdater();
+    _stateListener = StartStateUpdater();
   }
 
   private async Task StartStateUpdater()
   {
-    using var call = _client.GetDeviceStateStream(new DeviceStateStreamRequest { DeviceId = DeviceId, IntervalMs = 500 });
-    await foreach(var msg in call.ResponseStream.ReadAllAsync(_stateUpdateTokenSource.Token))
+    try
     {
-      DeviceState = msg.State;
+      using var call = _client.GetDeviceStateStream(new DeviceStateStreamRequest { DeviceId = DeviceId, IntervalMs = 500 });
+      await foreach (var msg in call.ResponseStream.ReadAllAsync(_stateUpdateTokenSource.Token))
+      {
+        DeviceState = msg.State;
+      }
+    }
+    catch (RpcException e) when (e.StatusCode == StatusCode.Cancelled)
+    {
+      // Expected cancellation
+    }
+    catch (OperationCanceledException)
+    {
+      // Expected cancellation
+    }
+    catch (RpcException e)
+    {
+      // Log unexpected gRPC errors. A proper logging framework would be ideal here.
+      System.Diagnostics.Debug.WriteLine($"[gRPC Error] State updater for device {DeviceId} failed: {e.Status}");
+    }
+    catch (Exception e)
+    {
+      // Catch-all for any other unexpected errors
+      System.Diagnostics.Debug.WriteLine($"[Error] State updater for device {DeviceId} failed: {e.Message}");
     }
   }
 
@@ -43,8 +64,7 @@ public class RemoteDeviceUnitViewModel : SerialDeviceUnitViewModel, IAsyncDispos
   public async ValueTask DisposeAsync()
   {
     StopStateUpdater();
-    await _stateListener;
-    _stateListener.Dispose();
+    await _stateListener.ConfigureAwait(false);
     _stateUpdateTokenSource.Dispose();
     GC.SuppressFinalize(this);
   }

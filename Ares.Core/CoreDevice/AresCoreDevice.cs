@@ -8,12 +8,12 @@ public class AresCoreDevice : AresDevice
   {
   }
 
-  public override Task<bool> Activate()
+  public override Task<bool> Activate(CancellationToken ct)
   {
     return Task.FromResult(true);
   }
 
-  public override Task EnterSafeMode()
+  public override Task EnterSafeMode(CancellationToken ct)
   {
     return Task.CompletedTask;
   }

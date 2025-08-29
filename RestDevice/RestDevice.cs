@@ -125,7 +125,7 @@ public class RestDevice : AresRestDevice, IRestDevice
     StartStateUpdater(TimeSpan.FromSeconds(2));
   }
 
-  public override async Task<bool> Activate()
+  public override async Task<bool> Activate(CancellationToken ct)
   {
     var success = await Init();
 
@@ -229,7 +229,7 @@ public class RestDevice : AresRestDevice, IRestDevice
     return AresValueHelper.CreateNull();
   }
 
-  public override Task EnterSafeMode()
+  public override Task EnterSafeMode(CancellationToken ct)
   {
     throw new NotImplementedException();
   }

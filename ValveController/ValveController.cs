@@ -47,7 +47,7 @@ public class ValveController : SerialDevice<IValveControllerConnection>, IValveC
     }
   }
 
-  public override async Task EnterSafeMode()
+  public override async Task EnterSafeMode(CancellationToken ct)
   {
     await DisengageRelayOne();
     await DisengageRelayTwo();

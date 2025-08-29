@@ -20,7 +20,7 @@ public class FlirCM3Camera : AresUSBDevice, IFlirCM3Camera
     _camera = _managedSystem.GetCameras().First();
   }
 
-  public override Task<bool> Activate()
+  public override Task<bool> Activate(CancellationToken ct)
   {
     Status = new DeviceOperationalStatus();
 
@@ -39,7 +39,7 @@ public class FlirCM3Camera : AresUSBDevice, IFlirCM3Camera
     return Task.FromResult(true);
   }
 
-  public override Task EnterSafeMode()
+  public override Task EnterSafeMode(CancellationToken ct)
   {
     //It's a camera...
     return Task.CompletedTask;

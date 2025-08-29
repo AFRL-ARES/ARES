@@ -8,6 +8,7 @@ using HerkulexDRS.Simulation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace AresService.DeviceManagers;
@@ -37,7 +38,7 @@ public class ServoDeviceManager : IDeviceManager<ServoConfig, IServo>
       UniqueId = id
     };
 
-    await device.Activate();
+    await device.Activate(CancellationToken.None);
     var interpreter = new ServoInterpreter(device);
     _deviceCommandInterpreterRepo.Add(interpreter);
 

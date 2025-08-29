@@ -50,7 +50,7 @@ public class StepperController : SerialDevice<IStepperControllerConnection>, ISt
     }
   }
 
-  public override async Task EnterSafeMode()
+  public override async Task EnterSafeMode(CancellationToken ct)
   {
     await EnterSafeStart();
   }
