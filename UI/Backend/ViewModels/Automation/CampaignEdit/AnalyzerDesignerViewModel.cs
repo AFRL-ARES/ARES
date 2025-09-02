@@ -66,7 +66,6 @@ public class AnalyzerDesignerViewModel : ReactiveObject
     AvailableAnalyzers = analyzers.Analyzers.ToList();
   }
 
-
   public async Task CheckAnalyzer()
   {
     if(string.IsNullOrEmpty(AnalyzerId))

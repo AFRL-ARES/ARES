@@ -7,6 +7,7 @@ namespace Ares.Core.Analyzing;
 public class RemoteAnalyzerManager(IDbContextFactory<CoreDatabaseContext> _dbContextFactory, IAnalyzerRepo _analyzerRepo, INotificationHandler _notificationHandler, IAnalyzerCache _analyzerCache) : IRemoteAnalyzerManager
 {
   private readonly List<RemoteAnalyzerMonitor> _analyzerMonitors = [];
+  private static readonly string _demoAnalyzerUniqueId = "9e5a8f3b-5c7d-4a1b-9f0a-1a2b3c4d5e6f";
 
   public async Task CreateAnalyzer(string name, string url)
   {
@@ -27,7 +28,7 @@ public class RemoteAnalyzerManager(IDbContextFactory<CoreDatabaseContext> _dbCon
 
   public Task CreateDemoAnalyzer(string url)
   {
-    var config = new AnalyzerConfig { UniqueId = Guid.NewGuid().ToString(), Name = "Demo Remote Analyzer", Url = url };
+    var config = new AnalyzerConfig { UniqueId = _demoAnalyzerUniqueId, Name = "Demo Remote Analyzer", Url = url };
     var analyzer = ConfigToAnalyzer(config);
     if(analyzer is null)
       return Task.CompletedTask;

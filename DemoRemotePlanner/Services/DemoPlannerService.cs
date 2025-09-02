@@ -140,8 +140,10 @@ public class DemoPlannerService : AresRemotePlannerService.AresRemotePlannerServ
         incrementedValue = previousValue.NumberValue + 5;
 
       else
+      {
         Console.WriteLine("The previous assigned value didn't exist, setting newest value to minimum allowed value.");
         incrementedValue = aresParameter.MinimumValue;
+      }
 
       if(incrementedValue > aresParameter.MaximumValue)
         response.ParameterValue = AresValueHelper.CreateNumber((float)aresParameter.MaximumValue);

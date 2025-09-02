@@ -14,7 +14,6 @@ public class DemoAnalyzerService : AresRemoteAnalyzerService.AresRemoteAnalyzerS
 
   public override Task<StateResponse> GetState(Empty request, ServerCallContext context)
   {
-    Console.WriteLine("State requested");
     return Task.FromResult(new StateResponse { State = State.Active });
   }
 
@@ -53,7 +52,6 @@ public class DemoAnalyzerService : AresRemoteAnalyzerService.AresRemoteAnalyzerS
 
   public override Task<AnalysisParametersResponse> GetAnalysisParameters(Empty request, ServerCallContext context)
   {
-    Console.WriteLine("Analysis parameters requested");
     var response = new AnalysisParametersResponse
     {
       ParameterSchema = new AresDataSchema
@@ -71,7 +69,6 @@ public class DemoAnalyzerService : AresRemoteAnalyzerService.AresRemoteAnalyzerS
 
   public override Task<AnalyzerCapabilities> GetAnalyzerCapabilities(Empty request, ServerCallContext context)
   {
-    Console.WriteLine("Capabilities requested");
     var capabilities = new AnalyzerCapabilities
     {
       SettingsSchema = new AresDataSchema
@@ -98,10 +95,9 @@ public class DemoAnalyzerService : AresRemoteAnalyzerService.AresRemoteAnalyzerS
 
   public override Task<InfoResponse> GetInfo(Empty request, ServerCallContext context)
   {
-    Console.WriteLine("Info requested");
     var infoResponse = new InfoResponse
     {
-      Description = "Give me a number and I'll give it back or multiply it by the multiplier parameter :)",
+      Description = "Give me a number and I'll give it back or multiply it by the multiplier parameter.",
       Name = "DemoAnalyzer",
       Version = "1.0.1"
     };

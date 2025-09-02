@@ -11,6 +11,7 @@ public class RemotePlannerManager(IDbContextFactory<CoreDatabaseContext> _dbCont
   IPlannerServiceCache _plannerCache) : IRemotePlannerManager
 {
   private readonly List<RemotePlannerMonitor> _plannerMonitors = [];
+  private readonly string _demoPlannerUniqueId = "4b14d5e9-1c9f-4f01-8b2b-4d4d1e2e3e4e";
 
   public async Task CreatePlanner(string name, string url)
   {
@@ -31,7 +32,7 @@ public class RemotePlannerManager(IDbContextFactory<CoreDatabaseContext> _dbCont
 
   public Task CreateDemoPlanner(string url)
   {
-    var config = new PlannerConfig { UniqueId = Guid.NewGuid().ToString(), Name = "Demo Remote Analyzer", Url = url };
+    var config = new PlannerConfig { UniqueId = _demoPlannerUniqueId, Name = "Demo Remote Planner", Url = url };
     var planner = ConfigToPlanner(config);
     if(planner is null)
       return Task.CompletedTask;
