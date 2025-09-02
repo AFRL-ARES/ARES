@@ -1,6 +1,7 @@
 ﻿using Ares.Core.Notifications;
 using Ares.Datamodel.Analyzing;
 using Microsoft.EntityFrameworkCore;
+using System.Xml.Linq;
 
 namespace Ares.Core.Analyzing;
 public class RemoteAnalyzerManager(IDbContextFactory<CoreDatabaseContext> _dbContextFactory, IAnalyzerRepo _analyzerRepo, INotificationHandler _notificationHandler, IAnalyzerCache _analyzerCache) : IRemoteAnalyzerManager
@@ -22,6 +23,20 @@ public class RemoteAnalyzerManager(IDbContextFactory<CoreDatabaseContext> _dbCon
     ctx.Analyzers.Add(config);
 
     await ctx.SaveChangesAsync();
+  }
+
+  public Task CreateDemoAnalyzer(string url)
+  {
+    var config = new AnalyzerConfig { UniqueId = Guid.NewGuid().ToString(), Name = "Demo Remote Analyzer", Url = url };
+    var analyzer = ConfigToAnalyzer(config);
+    if(analyzer is null)
+      return Task.CompletedTask;
+
+    _analyzerRepo.AddAnalyzer(analyzer);
+    var monitor = new RemoteAnalyzerMonitor(analyzer, _analyzerCache);
+    _analyzerMonitors.Add(monitor);
+
+    return Task.CompletedTask;
   }
 
   private RemoteAnalyzer? ConfigToAnalyzer(AnalyzerConfig config)

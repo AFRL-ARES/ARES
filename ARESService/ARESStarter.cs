@@ -52,6 +52,9 @@ public class AresStarter
   {
     await EnsureDataPathsExist();
     await AddDemoDevice(new Uri("https://localhost:7038"));
+    await _plannerManager.CreateDemoPlanner("http://localhost:5036");
+    await _analyzerManager.CreateDemoAnalyzer("http://localhost:5026");
+
 
     foreach(var deviceLoader in _deviceLoaders)
       await deviceLoader.Load();

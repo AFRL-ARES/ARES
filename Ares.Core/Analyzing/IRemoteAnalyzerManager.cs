@@ -13,6 +13,8 @@ public interface IRemoteAnalyzerManager
 
   Task CreateAnalyzer(string name, string url);
 
+  Task CreateDemoAnalyzer(string url);
+
   Task RemoveAnalyzer(string analyzerId);
 
   Task UpdateAnalyzer(AnalyzerConfig config);

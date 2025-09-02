@@ -1,6 +1,7 @@
 ﻿using Ares.Core.Notifications;
 using Ares.Datamodel.Planning;
 using Microsoft.EntityFrameworkCore;
+using System.Xml.Linq;
 
 namespace Ares.Core.Planning;
 
@@ -26,6 +27,20 @@ public class RemotePlannerManager(IDbContextFactory<CoreDatabaseContext> _dbCont
     ctx.Planners.Add(config);
 
     await ctx.SaveChangesAsync();
+  }
+
+  public Task CreateDemoPlanner(string url)
+  {
+    var config = new PlannerConfig { UniqueId = Guid.NewGuid().ToString(), Name = "Demo Remote Analyzer", Url = url };
+    var planner = ConfigToPlanner(config);
+    if(planner is null)
+      return Task.CompletedTask;
+
+    _plannerRepo.AddPlanner(planner);
+    var monitor = new RemotePlannerMonitor(planner, _plannerCache);
+    _plannerMonitors.Add(monitor);
+
+    return Task.CompletedTask;
   }
 
   private RemotePlannerService? ConfigToPlanner(PlannerConfig config)

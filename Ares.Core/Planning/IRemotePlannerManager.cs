@@ -8,6 +8,8 @@ public interface IRemotePlannerManager
 
   Task CreatePlanner(string name, string url);
 
+  Task CreateDemoPlanner(string url);
+
   Task RemovePlanner(string plannerId);
 
   Task UpdatePlanner(PlannerConfig config);
