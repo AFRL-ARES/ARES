@@ -51,10 +51,12 @@ public class AresStarter
   public async Task Start()
   {
     await EnsureDataPathsExist();
+
+#if DEBUG
     await AddDemoDevice(new Uri("https://localhost:7038"));
     await _plannerManager.CreateDemoPlanner("http://localhost:5036");
     await _analyzerManager.CreateDemoAnalyzer("http://localhost:5026");
-
+#endif
 
     foreach(var deviceLoader in _deviceLoaders)
       await deviceLoader.Load();

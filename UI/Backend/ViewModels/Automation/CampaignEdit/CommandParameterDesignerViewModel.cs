@@ -1,6 +1,7 @@
 ﻿using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Templates;
+using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using UI.Backend.Helpers;
 
@@ -151,16 +152,22 @@ public class CommandParameterDesignerViewModel : ReactiveObject
 
   private bool IsValid(AresValue value)
   {
-    //TODO: Ensure this is more robust!!
-    var parsed = float.TryParse(value.StringValue, out var floatValue);
+    switch(Schema.Type)
+    {
+      case AresDataType.Number:
+        if(!value.HasNumberValue)
+          return false;
 
-    //TODO: "And we'll deal with that later!"
-    if(!parsed)
-      return true;
+        if(Parameter.Metadata.Constraints.Count == 0)
+          return true;
 
-    if(Parameter.Metadata.Constraints.Count == 0)
-      return true;
+        return Parameter.Metadata.Constraints.Any(limits => value.NumberValue >= limits.Minimum && value.NumberValue <= limits.Maximum);
 
-    return Parameter.Metadata.Constraints.Any(limits => floatValue >= limits.Minimum && floatValue <= limits.Maximum);
+      case AresDataType.String:
+        return value.HasStringValue;
+
+      default:
+        return true;
+    }
   }
 }
