@@ -4,16 +4,20 @@ using Ares.Datamodel.Connection;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 
 namespace Ares.Core.Planning;
 
 public class ManualPlanner : IPlannerService
 {
   private readonly Queue<IEnumerable<ManualPlanResult>> _planResultsQueue = new();
+  private readonly ISubject<State> _plannerStateSubject = new BehaviorSubject<State>(State.Active);
 
   public ManualPlanner()
   {
     Status = new ConnectionStatus { Status = AresStatus.Connected, Info = "Manual Planner is active!" };
+    PlannerServiceStateObservable = _plannerStateSubject.AsObservable();
   }
 
   public IEnumerable<IEnumerable<(string Name, AresValue Value)>> CurrentPlanResults => 

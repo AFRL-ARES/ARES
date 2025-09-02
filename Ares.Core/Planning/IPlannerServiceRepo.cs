@@ -5,12 +5,6 @@ public interface IPlannerServiceRepo
   IEnumerable<IPlannerService> AvailablePlannerServices { get; }
 
   /// <summary>
-  /// Gets the default "None" planner
-  /// </summary>
-  /// <returns>The None Planner</returns>
-  IPlannerService GetDefaultPlanner();
-
-  /// <summary>
   /// Gets the manual planner
   /// </summary>
   /// <returns>The Manual Planner</returns>

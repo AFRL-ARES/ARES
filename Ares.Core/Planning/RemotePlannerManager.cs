@@ -51,22 +51,30 @@ public class RemotePlannerManager(IDbContextFactory<CoreDatabaseContext> _dbCont
     if(planner is null)
       return null;
 
-    var plannerInfo = await _plannerCache.GetCachedPlannerInfo(config.UniqueId);
-    if(plannerInfo is not null)
+    try
     {
-      await planner.UpdateInfo(plannerInfo);
+      var plannerInfo = await _plannerCache.GetCachedPlannerInfo(config.UniqueId);
+      if(plannerInfo is not null)
+      {
+        await planner.UpdateInfo(plannerInfo);
+      }
+
+      await planner.Init();
+
+      var plannerSettings = await _plannerCache.GetCachedPlannerSettings(config.UniqueId);
+      if(plannerSettings is not null)
+      {
+        planner.UpdateSettings(plannerSettings);
+      }
+
+      await _plannerCache.CachePlannerInfo(planner);
+      await _plannerCache.CachePlannerSettings(planner);
     }
 
-    await planner.Init();
-
-    var plannerSettings = await _plannerCache.GetCachedPlannerSettings(config.UniqueId);
-    if(plannerSettings is not null)
+    catch(Exception e)
     {
-      planner.UpdateSettings(plannerSettings);
+      await planner.SetOfflinePlannerStatus(e.Message);
     }
-
-    await _plannerCache.CachePlannerInfo(planner);
-    await _plannerCache.CachePlannerSettings(planner);
 
     return planner;
   }

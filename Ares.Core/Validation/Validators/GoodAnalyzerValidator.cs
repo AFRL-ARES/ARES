@@ -40,14 +40,14 @@ public static class GoodAnalyzerValidator
 
     foreach(var map in experimentTemplate.AnalyzerMaps)
     {
-      var matchingCommand = outputCommands.FirstOrDefault(cmd => cmd.UserOutputKeyMap.Values.Contains(map.Key));
+      var matchingCommand = outputCommands.FirstOrDefault(cmd => cmd.UserOutputKeyMap.Values.Contains(map.Value));
 
       if(matchingCommand is null)
         continue;
 
-      var matchingMap = matchingCommand.UserOutputKeyMap.FirstOrDefault(userMap => userMap.Value == map.Key);
+      var matchingMap = matchingCommand.UserOutputKeyMap.FirstOrDefault(userMap => userMap.Value == map.Value);
       var outputSchemaEntry = matchingCommand.Metadata.OutputMetadata.DataSchema.Fields.FirstOrDefault(field => field.Key == matchingMap.Key);
-      inputSchema.AddEntry(map.Value, outputSchemaEntry.Value);
+      inputSchema.AddEntry(map.Key, outputSchemaEntry.Value);
     }
 
     var result = await analyzer.ValidateInputs(inputSchema);

@@ -33,7 +33,7 @@ public class PlannerSettingsListViewModel : ReactiveObject
 
   private void UpdateViewModels(IEnumerable<PlannerServiceInfo> plannerAdapters)
   {
-    plannerAdapters = plannerAdapters.Where(planner => planner.Name != "Manual Planner" && planner.Name != "NONE");
+    plannerAdapters = plannerAdapters.Where(planner => planner.Name != "Manual Planner");
     var viewModels = plannerAdapters.Select(info => new PlannerSettingsViewModel(_planningService, _notificationService, info, OnPlannerRemoved)).ToList();
     SettingsViewModels = viewModels;
   }

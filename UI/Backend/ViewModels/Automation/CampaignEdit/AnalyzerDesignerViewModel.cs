@@ -50,13 +50,13 @@ public class AnalyzerDesignerViewModel : ReactiveObject
 
     foreach(var analyzerMapping in _experimentTemplate.AnalyzerMaps)
     {
-      var inputMapping = OutputInputMappings.FirstOrDefault(mapping => mapping.AnalyzerInputKey == analyzerMapping.Value);
+      var inputMapping = OutputInputMappings.FirstOrDefault(mapping => mapping.AnalyzerInputKey == analyzerMapping.Key);
       if(inputMapping is null)
       {
         continue;
       }
 
-      inputMapping.ExperimentOutput = analyzerMapping.Key;
+      inputMapping.ExperimentOutput = analyzerMapping.Value;
     }
   }
 
@@ -69,25 +69,18 @@ public class AnalyzerDesignerViewModel : ReactiveObject
 
   public async Task CheckAnalyzer()
   {
-    //TODO: This functionality is being cut out for now. Rather than force the check here and potentially confuse the user when things aren't being set properly
-    //we should notify them when trying to start the campaign. This might change when we have time to expand the functionality of these builders beyond basic
-    //functionality.
-
     if(string.IsNullOrEmpty(AnalyzerId))
       return;
 
     if(AvailableAnalyzers is null)
-    {
       await UpdateAvailableAnalyzers();
-    }
-
+    
     var request = new AnalyzerInfoRequest() { AnalyzerId = AnalyzerId };
     Analyzer = _analyzerManagementClient.GetInfo(request).Info;
   }
 
   private void CalculateAppropriateOutputs(IEnumerable<ExperimentOutputAnalyzerInputMapping> outputInputMappings)
   {
-
     foreach(var outputInputMap in outputInputMappings)
     {
       var outputs = _commandDesignerViewModels.SelectMany(cdv => cdv.OutputKeyMap)
@@ -107,7 +100,6 @@ public class AnalyzerDesignerViewModel : ReactiveObject
 
     _experimentTemplate.AnalyzerMaps.Clear();
     _experimentTemplate.AnalyzerMaps.AddRange(analyzerMappings);
-
     _experimentTemplate.AnalyzerId = AnalyzerId;
   }
 
@@ -140,8 +132,6 @@ public record ExperimentOutputAnalyzerInputMapping
   public string AnalyzerInputKey { get; }
   public AresDataType InputType { get; }
   public bool Required { get; }
-
   public string[] MatchingOutputs { get; set; } = [];
-
   public string? ExperimentOutput { get; set; }
 }

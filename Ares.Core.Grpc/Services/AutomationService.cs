@@ -53,7 +53,6 @@ public class AutomationService : AresAutomation.AresAutomationBase
     _notificationHandlers = notificationHandlers;
   }
 
-
   public override async Task<ProjectsResponse> GetAllProjects(Empty request, ServerCallContext context)
   {
     await using var dbContext = await _coreContextFactory.CreateDbContextAsync();

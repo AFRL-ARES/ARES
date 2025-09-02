@@ -33,8 +33,8 @@ public class RemotePlannerService : PlannerServiceBase
 
   public override async Task Init()
   {
-    await UpdateInfo();
     await UpdateState();
+    await UpdateInfo();
     await UpdateCapabilities();
   }
 
@@ -52,6 +52,13 @@ public class RemotePlannerService : PlannerServiceBase
     catch(RpcException)
     {
     }
+  }
+
+  internal Task SetOfflinePlannerStatus(string message)
+  {
+    PlannerServiceState = State.Inactive;
+    StateMessage = message;
+    return Task.CompletedTask;
   }
 
   internal async Task UpdateState()
@@ -73,6 +80,9 @@ public class RemotePlannerService : PlannerServiceBase
 
   internal async Task UpdateCapabilities()
   {
+    if(PlannerServiceState != State.Active)
+      return;
+
     var client = GetClient();
     try
     {
