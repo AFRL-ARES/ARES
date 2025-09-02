@@ -14,12 +14,20 @@
   <div class="row">
     <div class="col-8 gap-2">
       <div>
-       <RadzenDropDown TValue="CampaignExecutionSummaryMetadata" Class="w-100"
-        Placeholder="Select..." Data="ViewModel!.AvailableSummaries" @bind-Value=ViewModel!.SelectedSummaryMetadata Change="ViewModel!.GetSelectedSummary">
-        <Template>
-            @($"{(context as CampaignExecutionSummaryMetadata)!.CampaignName} - {(context as CampaignExecutionSummaryMetadata)!.CompletionTime.ToReadableTimestamp()}")
-        </Template>
-      </RadzenDropDown>
+        @if(ViewModel!.LoadingAvailableSumarries)
+        {
+          <LoadingSpinner SpinnerSize="SpinnerSize.Large"/>
+        }
+
+        else
+        {
+          <RadzenDropDown TValue="CampaignExecutionSummaryMetadata" Class="w-100" Placeholder="Select..." Data="ViewModel!.AvailableSummaries" @bind-Value=ViewModel!.SelectedSummaryMetadata Change="ViewModel!.GetSelectedSummary">
+            <Template>
+              @($"{(context as CampaignExecutionSummaryMetadata)!.CampaignName} - {(context as CampaignExecutionSummaryMetadata)!.CompletionTime.ToReadableTimestamp()}")
+            </Template>
+          </RadzenDropDown>
+        }
+
       </div>
 
       <div class="flex-column">

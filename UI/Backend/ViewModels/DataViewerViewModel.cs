@@ -37,8 +37,10 @@ public class DataViewerViewModel : ReactiveObject
 
   public async Task UpdateAvailableSummaries()
   {
+    LoadingAvailableSumarries = true;
     var summaries = await _automationClient.GetAvailableCampaignExecutionSummariesAsync(new Empty());
     AvailableSummaries = summaries.AvailableCampaignSummaries;
+    LoadingAvailableSumarries = false;
   }
 
   public async Task GetSummaryFromLinkId(string id)
@@ -94,7 +96,11 @@ public class DataViewerViewModel : ReactiveObject
   [Reactive]
   public CommandExecutionSummary? SelectedCommandSummary { get; set; }
 
+  [Reactive]
   public IEnumerable<CampaignExecutionSummaryMetadata> AvailableSummaries { get; set; } = Enumerable.Empty<CampaignExecutionSummaryMetadata>();
+
+  [Reactive]
+  public bool LoadingAvailableSumarries { get; set; } = false;
 
   public CampaignExecutionSummaryMetadata? SelectedSummaryMetadata { get; set; }
 }
