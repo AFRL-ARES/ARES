@@ -98,7 +98,7 @@ public class CommandParameterDesignerViewModel : ReactiveObject
     set
     {
       _isPlanned = value;
-      Value = value ? null : Parameter.Value ?? null;
+      Value = value ? null : Parameter.Value ?? new AresValue();
     }
   }
 
