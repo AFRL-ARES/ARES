@@ -1,7 +1,6 @@
 ﻿
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.IO.Ports;
 using System.Linq;
 using System.Reactive.Linq;
@@ -268,26 +267,43 @@ public class DevicesService(
       ServerCallContext context)
   {
     var device = deviceCommandInterpreterRepo.Select(dci => dci.Device).OfType<RemoteDevice>().FirstOrDefault(d => d.UniqueId == request.DeviceId);
-    if(device is null)
+    if(device is null || request.PollingSettings.PollingType == PollingType.None)
     {
       return;
     }
- 
-    var interval = request.IntervalMs > 0 ? request.IntervalMs : 1000;
- 
+
+    var interval = request.PollingSettings.PollingType == PollingType.Interval && request.PollingSettings.IntervalMs == 0 ? 1000 : request.PollingSettings.IntervalMs;
+
     try
     {
-      await device.StateStream
-        .Sample(TimeSpan.FromMilliseconds(interval))
+      IObservable<AresStruct?> stateStream = device.StateStream.DistinctUntilChanged();
+      if (request.PollingSettings.IntervalMs > 0)
+      {
+        stateStream = stateStream.Sample(TimeSpan.FromMilliseconds(interval));
+      }
+
+      await stateStream
         .ForEachAsync(async state =>
         {
           await responseStream.WriteAsync(new DeviceStateResponse { State = state }, context.CancellationToken);
-          _logger.LogDebug($"Wrote a thingy to the thingy {state}");
         }, context.CancellationToken);
     }
-    catch (OperationCanceledException)
+    catch(OperationCanceledException)
     {
     }
+  }
+
+  public override Task<DeviceStateSchemaResponse> GetDeviceStateSchema(DeviceStateSchemaRequest request, ServerCallContext context)
+  {
+    // We can do the non-remote devices later
+    var device = deviceCommandInterpreterRepo.Select(dci => dci.Device).OfType<RemoteDevice>().FirstOrDefault(d => d.UniqueId == request.DeviceId);
+    if(device is null)
+    {
+      return Task.FromResult(new DeviceStateSchemaResponse { Schema = new AresDataSchema() });
+    }
+
+    var schema = device.StateSchema;
+    return Task.FromResult(schema is null ? new DeviceStateSchemaResponse() : new DeviceStateSchemaResponse { Schema = schema });
   }
 
   private DeviceInfo GetInfo(IAresDevice device)

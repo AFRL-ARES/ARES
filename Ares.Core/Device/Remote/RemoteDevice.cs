@@ -1,4 +1,6 @@
-﻿using Ares.Datamodel;
+﻿using System.Reactive.Linq;
+using System.Reactive.Subjects;
+using Ares.Datamodel;
 using Ares.Datamodel.Device;
 using Ares.Datamodel.Device.Remote;
 using Ares.Datamodel.Extensions;
@@ -6,8 +8,6 @@ using Ares.Device;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Grpc.Net.Client;
-using System.Reactive.Linq;
-using System.Reactive.Subjects;
 
 namespace Ares.Core.Device.Remote;
 public sealed class RemoteDevice : AresDevice, IAsyncDisposable
@@ -16,6 +16,11 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
   private DeviceCommandDescriptor[] _commands = [];
   private readonly BehaviorSubject<AresStruct?> _stateSubject = new(new AresStruct());
   private CancellationTokenSource _stateStreamCts = new();
+  private DevicePollingSettings _pollingSettings = new()
+  {
+    IntervalMs = 1000,
+    PollingType = PollingType.Interval
+  };
 
   public RemoteDevice(string name, Uri address) : base(name)
   {
@@ -36,8 +41,20 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
 
   public AresDataSchema SettingSchema { get; private set; } = new();
 
+  // sets the polling options with the option to restart/start the stream
+  public void SetPollingSettings(DevicePollingSettings pollingSettings, bool restartStream = false)
+  {
+    _pollingSettings = pollingSettings;
+
+    if(restartStream)
+    {
+      _ = StartStateStream();
+    }
+  }
+
   public IObservable<AresStruct?> StateStream => _stateSubject.AsObservable();
-  public AresStruct? CurrentState { get; private set; }
+  public AresStruct? CurrentState => _stateSubject.Value;
+  public AresDataSchema StateSchema { get; private set; } = new();
 
   public override async Task<bool> Activate(CancellationToken ct)
   {
@@ -49,41 +66,42 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     await FetchInfo();
     await FetchCommands();
     await FetchSettings();
+    await FetchStateSchema();
     _ = StartStateStream();
     return true;
   }
 
-  public async Task StartStateStream()
+  public async Task StopStateStream()
   {
     await _stateStreamCts.CancelAsync();
     _stateStreamCts = new CancellationTokenSource();
+  }
+
+  public async Task StartStateStream()
+  {
     var token = _stateStreamCts.Token;
     var client = GetClient();
     try
     {
       using var call =
-        client.GetStateStream(new DeviceStateStreamRequest { IntervalMs = 1000 }, cancellationToken: token);
-      await foreach (var state in call.ResponseStream.ReadAllAsync(token))
+        client.GetStateStream(new DeviceStateStreamRequest { PollingSettings = _pollingSettings }, cancellationToken: token);
+      await foreach(var state in call.ResponseStream.ReadAllAsync(token))
       {
-        CurrentState = state.State;
         _stateSubject.OnNext(state.State);
-        Console.WriteLine($"Sending memes {state}");
       }
     }
-    catch (RpcException e) when (e.StatusCode == StatusCode.Cancelled)
+    catch(RpcException e) when(e.StatusCode == StatusCode.Cancelled)
     {
-      Status = new DeviceOperationalStatus
-        { OperationalState = OperationalState.Inactive, Message = $"State stream canceled" };
     }
-    catch (RpcException e)
+    catch(RpcException e)
     {
       Status = new DeviceOperationalStatus
-        { OperationalState = OperationalState.Inactive, Message = $"State stream disconnected: {e.Message}" };
+      { OperationalState = OperationalState.Inactive, Message = $"State stream disconnected: {e.Message}" };
     }
-    catch (Exception e)
+    catch(Exception e)
     {
       Status = new DeviceOperationalStatus
-        { OperationalState = OperationalState.Error, Message = $"Unspecified error occurred while fetching device state: {e.Message}" };
+      { OperationalState = OperationalState.Error, Message = $"Unspecified error occurred while fetching device state: {e.Message}" };
     }
   }
 
@@ -112,6 +130,20 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     catch(RpcException)
     {
       Status = new DeviceOperationalStatus { OperationalState = OperationalState.Inactive, Message = $"Failed to fetch commands. Possible connection issue." };
+    }
+  }
+
+  internal async Task FetchStateSchema()
+  {
+    var client = GetClient();
+    try
+    {
+      var response = await client.GetStateSchemaAsync(new Empty());
+      StateSchema = response.Schema;
+    }
+    catch(RpcException)
+    {
+      Status = new DeviceOperationalStatus { OperationalState = OperationalState.Inactive, Message = $"Failed to fetch state schema. Possible connection issue." };
     }
   }
 
@@ -205,8 +237,6 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
         Settings.Fields[newSetting.Key] = AresValueHelper.CreateDefault(newSetting.Value.Type);
       }
     }
-
-
   }
 
   internal async Task UpdateInfo(DeviceInfo info)

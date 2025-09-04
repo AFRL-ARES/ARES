@@ -17,7 +17,7 @@ public class DemoDevice : IDisposable
       while (!_cancellationTokenSource.Token.IsCancellationRequested)
       {
         Temperature = Random.Shared.Next(10, 100);
-        await Task.Delay(5000);
+        await Task.Delay(250);
       }
     });
 

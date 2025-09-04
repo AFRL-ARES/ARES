@@ -30,16 +30,18 @@ internal class RemoteDeviceMonitor : IDisposable
   {
     return Task.Run(async () =>
     {
-      while (!token.IsCancellationRequested)
+      while(!token.IsCancellationRequested)
       {
         await _device.FetchOperationalStatus();
 
-        if (_lastState != OperationalState.Active && _device.Status.OperationalState == OperationalState.Active)
+        if(_lastState != OperationalState.Active && _device.Status.OperationalState == OperationalState.Active)
         {
           await _device.FetchInfo();
           await _device.FetchSettings();
           await _device.FetchCommands();
+          await _device.StopStateStream();
           _ = _device.StartStateStream();
+          await _device.FetchOperationalStatus();
           await _deviceCache.CacheDeviceInfo(_device);
           await _deviceCache.CacheDeviceSettings(_device);
         }
@@ -50,7 +52,7 @@ internal class RemoteDeviceMonitor : IDisposable
         {
           await Task.Delay(TimeSpan.FromSeconds(5), token);
         }
-        catch (TaskCanceledException)
+        catch(TaskCanceledException)
         {
         }
       }

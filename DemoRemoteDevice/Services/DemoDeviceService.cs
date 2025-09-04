@@ -145,7 +145,7 @@ public class DemoDeviceService : AresRemoteDeviceService.AresRemoteDeviceService
 
   public override async Task GetStateStream(DeviceStateStreamRequest request, IServerStreamWriter<DeviceStateResponse> responseStream, ServerCallContext context)
   {
-    _logger.LogInformation("State stream requested with interval {interval}ms", request.IntervalMs);
+    _logger.LogInformation("State stream requested with interval {interval}ms and type of {pollingtype}", request.PollingSettings.IntervalMs, request.PollingSettings.PollingType);
     while(!context.CancellationToken.IsCancellationRequested)
     {
       var state = AresStructHelper.CreateNumberStruct("Temperature", _device.Temperature);
@@ -157,7 +157,7 @@ public class DemoDeviceService : AresRemoteDeviceService.AresRemoteDeviceService
       await responseStream.WriteAsync(response);
       try
       {
-        await Task.Delay(TimeSpan.FromMilliseconds(request.IntervalMs), context.CancellationToken);
+        await Task.Delay(TimeSpan.FromMilliseconds(request.PollingSettings.IntervalMs > 0 ? request.PollingSettings.IntervalMs : 1000), context.CancellationToken);
       }
       catch (TaskCanceledException)
       {}

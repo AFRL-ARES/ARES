@@ -54,8 +54,8 @@ public class CommandDesignerViewModel : ReactiveObject
 
   public int Index { get; set; }
 
-  public string? TemplateDeviceName { get; set; }
-  public string? MetadataDeviceName { get; set; }
+  public string? TemplateDeviceName { get; private set; }
+  public string? MetadataDeviceName { get; private set; }
   public string? TemplateCommandName => CommandTemplate.Metadata?.Name;
 
   public bool TemplateExperimentOutputProvider => CommandTemplate.UserOutputKeyMap.Any();
@@ -131,7 +131,7 @@ public class CommandDesignerViewModel : ReactiveObject
     if(existingTemplate.Metadata?.DeviceId is not null)
     {
       var deviceInfo = await _devicesClient.GetDeviceInfoAsync(new DeviceInfoRequest { DeviceId = existingTemplate.Metadata.DeviceId });
-      TemplateDeviceName = deviceInfo.Name;
+      TemplateDeviceName = string.IsNullOrEmpty(deviceInfo.Name) ? null : deviceInfo.Name;
     }
   }
 
@@ -140,20 +140,21 @@ public class CommandDesignerViewModel : ReactiveObject
     ArgumentDesigners = existingMetadata?.ParameterMetadatas.Select(_commandParameterDesignerFactory.Create).ToArray() ?? [];
 
     var outputs = existingMetadata?.OutputMetadata?.DataSchema;
-    if(outputs is null)
+    if(outputs is not null)
+    {
+      var newOutputs = outputs.Fields.Where(kvp => !OutputKeyMap.Any(uos => uos.DeviceOutputName == kvp.Key)).Select(newKvp => new UserOutputSelection(newKvp.Key, newKvp.Value.Type, newKvp.Key));
+      var removedOutputs = OutputKeyMap.Where(output => !outputs.Fields.ContainsKey(output.DeviceOutputName));
+      OutputKeyMap = [.. OutputKeyMap.Concat(newOutputs).Except(removedOutputs)];
+    }
+    else
     {
       OutputKeyMap = [];
-      return;
     }
-
-    var newOutputs = outputs.Fields.Where(kvp => !OutputKeyMap.Any(uos => uos.DeviceOutputName == kvp.Key)).Select(newKvp => new UserOutputSelection(newKvp.Key, newKvp.Value.Type, newKvp.Key));
-    var removedOutputs = OutputKeyMap.Where(output => !outputs.Fields.ContainsKey(output.DeviceOutputName));
-    OutputKeyMap = [.. OutputKeyMap.Concat(newOutputs).Except(removedOutputs)];
 
     if(CommandMetadata?.DeviceId is not null)
     {
       var deviceInfo = await _devicesClient.GetDeviceInfoAsync(new DeviceInfoRequest { DeviceId = CommandMetadata.DeviceId });
-      TemplateDeviceName = deviceInfo.Name;
+      MetadataDeviceName = string.IsNullOrEmpty(deviceInfo.Name) ? null : deviceInfo.Name;
     }
   }
 }

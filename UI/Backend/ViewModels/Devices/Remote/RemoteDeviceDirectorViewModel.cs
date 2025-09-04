@@ -1,18 +1,32 @@
-﻿using Ares.Services.Device;
-using Google.Protobuf.WellKnownTypes;
+﻿using System.Collections.ObjectModel;
+using DynamicData;
+using ReactiveUI;
+using UI.Backend.Devices;
 
 namespace UI.Backend.ViewModels.Devices.Remote;
 
-public class RemoteDeviceDirectorViewModel(AresDevices.AresDevicesClient devicesClient)
-  : SerialDeviceConnectorViewModel<RemoteDeviceUnitViewModel>(devicesClient)
+public class RemoteDeviceDirectorViewModel : ReactiveObject, IDisposable
 {
-  protected override RemoteDeviceUnitViewModel CreateUnitVm(AresDeviceDescription description)
-    => new(description.Id, description.Name, DevicesClient);
+  private readonly IDisposable _vmUpdater;
+  private bool _disposed;
 
-  protected override async Task<AresDeviceDescription[]> GetDeviceDescriptions()
+  public RemoteDeviceDirectorViewModel(DeviceAdapterRepository deviceAdapterRepository)
   {
-    var devicesResponse = await DevicesClient.ListRemoteAresDevicesAsync(new Empty());
-    var descriptions = devicesResponse.Devices.Select(d =>  new AresDeviceDescription(d.UniqueId, d.Name));
-    return descriptions.ToArray();
+    _vmUpdater = deviceAdapterRepository
+        .Connect()
+        .Transform(adapter => new RemoteDeviceUnitViewModel(adapter))
+        .Bind(out ReadOnlyObservableCollection<RemoteDeviceUnitViewModel> vms)
+        .Subscribe();
+
+    RemoteDeviceUnitViewModels = vms;
+  }
+
+  public ReadOnlyObservableCollection<RemoteDeviceUnitViewModel> RemoteDeviceUnitViewModels { get; }
+
+  public void Dispose()
+  {
+    if(_disposed) return;
+    _vmUpdater.Dispose();
+    _disposed = true;
   }
 }

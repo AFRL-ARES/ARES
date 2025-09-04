@@ -112,8 +112,8 @@ public class RemoteDeviceSettingsViewModel : ReactiveObject
     {
       PushNotification(new AresNotification
       {
-        Title = "Analyzer Update",
-        Message = $"Analyzer {deviceConfig.Name} updated successfully.",
+        Title = "Device Update",
+        Message = $"Device {deviceConfig.Name} updated successfully.",
         NotificationSeverity = Severity.Success
       });
       // Refresh local state from the server
@@ -124,8 +124,8 @@ public class RemoteDeviceSettingsViewModel : ReactiveObject
     {
       PushNotification(new AresNotification
       {
-        Title = "Analyzer Update Failed",
-        Message = $"Analyzer {deviceConfig.Name} failed to update: {response.ErrorMessage}",
+        Title = "Device Update Failed",
+        Message = $"Device {deviceConfig.Name} failed to update: {response.ErrorMessage}",
         NotificationSeverity = Severity.Error
       });
     }

@@ -1,71 +1,37 @@
 ﻿using Ares.Datamodel;
-using Ares.Services.Device;
-using Grpc.Core;
+using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
+using UI.Backend.Devices;
 
 namespace UI.Backend.ViewModels.Devices.Remote;
 
-public class RemoteDeviceUnitViewModel : SerialDeviceUnitViewModel, IAsyncDisposable
+public class RemoteDeviceUnitViewModel : ReactiveObject, IAsyncDisposable
 {
-  private readonly AresDevices.AresDevicesClient _client;
   private readonly CancellationTokenSource _stateUpdateTokenSource = new();
-  private Task _stateListener;
+  private readonly IAresDeviceAdapter _deviceAdapter;
+  private IDisposable? _stateListener;
 
-  public RemoteDeviceUnitViewModel(string id, string name, AresDevices.AresDevicesClient client) : base(id, name)
+  public RemoteDeviceUnitViewModel(IAresDeviceAdapter deviceAdapter)
   {
-    _client = client;
-    _stateListener = StartStateUpdater();
+    _deviceAdapter = deviceAdapter;
+    StartStateUpdater();
   }
 
-  private async Task StartStateUpdater()
+  private void StartStateUpdater()
   {
-    try
-    {
-      using var call = _client.GetDeviceStateStream(new DeviceStateStreamRequest { DeviceId = DeviceId, IntervalMs = 500 });
-      await foreach (var msg in call.ResponseStream.ReadAllAsync(_stateUpdateTokenSource.Token))
-      {
-        DeviceState = msg.State;
-      }
-    }
-    catch (RpcException e) when (e.StatusCode == StatusCode.Cancelled)
-    {
-      // Expected cancellation
-    }
-    catch (OperationCanceledException)
-    {
-      // Expected cancellation
-    }
-    catch (RpcException e)
-    {
-      // Log unexpected gRPC errors. A proper logging framework would be ideal here.
-      System.Diagnostics.Debug.WriteLine($"[gRPC Error] State updater for device {DeviceId} failed: {e.Status}");
-    }
-    catch (Exception e)
-    {
-      // Catch-all for any other unexpected errors
-      System.Diagnostics.Debug.WriteLine($"[Error] State updater for device {DeviceId} failed: {e.Message}");
-    }
-  }
-
-  private void StopStateUpdater()
-  {
-    _stateUpdateTokenSource.Cancel();
-  }
-
-  private async Task UpdateState()
-  {
-    var response = await _client.GetDeviceStateAsync(new DeviceStateRequest() { DeviceId = DeviceId });
-    DeviceState = response.State;
+    _stateListener = _deviceAdapter.StateStream.Subscribe(s => DeviceState = s);
   }
 
   [Reactive]
   public AresStruct? DeviceState { get; private set; }
 
-  public async ValueTask DisposeAsync()
+  public string DeviceName => _deviceAdapter.Name;
+
+  public ValueTask DisposeAsync()
   {
-    StopStateUpdater();
-    await _stateListener.ConfigureAwait(false);
+    _stateListener?.Dispose();
     _stateUpdateTokenSource.Dispose();
     GC.SuppressFinalize(this);
+    return ValueTask.CompletedTask;
   }
 }

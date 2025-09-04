@@ -26,6 +26,7 @@ using TicStepperController.Messaging;
 using TubeFurnace.Messaging;
 using UI.Areas.Identity;
 using UI.Authentication;
+using UI.Backend.Devices;
 using UI.Backend.Helpers;
 using UI.Backend.Notifications;
 using UI.Backend.ViewModels;
@@ -91,6 +92,9 @@ internal static class ServiceCollectionExtensions
     services.BindViewModelFactories();
     services.AddScoped<ICombinedDeviceIdGetter, CombinedDeviceIdGetter>();
     services.AddSingleton<INotificationRepository, NotificationRepository>();
+
+    services.AddSingleton<DeviceAdapterRepository>();
+    services.AddSingleton<DeviceAdapterManager>();
   }
 
   public static void BindClients(this IServiceCollection services)
@@ -113,7 +117,8 @@ internal static class ServiceCollectionExtensions
     services.AddSingleton(_ => clientManager.GetClient<AresNotificationRpc.AresNotificationRpcClient>());
 
     //Device Clients
-    services.AddScoped(_ => clientManager.GetClient<AresDevices.AresDevicesClient>());
+    //services.AddScoped(_ => clientManager.GetClient<AresDevices.AresDevicesClient>());
+    services.AddSingleton(_ => clientManager.GetClient<AresDevices.AresDevicesClient>());
     services.AddScoped(_ => clientManager.GetClient<MfcRpc.MfcRpcClient>());
     services.AddScoped(_ => clientManager.GetClient<SyringePumpRpc.SyringePumpRpcClient>());
     services.AddScoped(_ => clientManager.GetClient<TubeFurnaceRpc.TubeFurnaceRpcClient>());
@@ -194,7 +199,7 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<ManualPlannerViewModel>();
     services.AddScoped<ManualExecutionWidgetViewModel>();
     services.AddScoped<RestDeviceMultiViewModel>();
-    services.AddScoped<SerialRestDeviceMultiViewModel>(); 
+    services.AddScoped<SerialRestDeviceMultiViewModel>();
   }
   private static void BindViewModelFactories(this IServiceCollection services)
   {
