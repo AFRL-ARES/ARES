@@ -222,7 +222,7 @@ public class SerialRestDevice : SerialDevice<ISerialRestDeviceConnection>, ISeri
     return ValueTask.CompletedTask;
   }
 
-  public override Task EnterSafeMode()
+  public override Task EnterSafeMode(CancellationToken ct)
   {
     throw new NotImplementedException();
   }

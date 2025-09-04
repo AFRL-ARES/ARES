@@ -33,50 +33,56 @@ public class StepperControllerSettingsViewModel : ReactiveObject
 
   public StepperControllerConfigEditViewModel EditViewModel { get; }
 
-  public async Task<DeviceStatus> GetDeviceStatus()
+  public async Task<DeviceOperationalStatus> GetDeviceOperationalStatus()
   {
     try
     {
-      var status = await _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceName = StepperControllerConfig.Name }).ResponseAsync;
-      DeviceActive = status.DeviceState is DeviceState.Active;
+      var status = await _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceId = _deviceConfig.UniqueId }).ResponseAsync;
+      DeviceActive = status.OperationalState is OperationalState.Active;
       return status;
     }
     catch(RpcException)
     {
-      return new DeviceStatus { DeviceState = DeviceState.Error, Message = $"Unable to find a registered stepper controller with a name {StepperControllerConfig.Name}" };
+      return new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Unable to find a registered stepper controller with a name {StepperControllerConfig.Name}" };
     }
   }
 
   public Task Activate()
-    => _devicesClient.ActivateAsync(new DeviceActivateRequest { DeviceName = StepperControllerConfig.Name }).ResponseAsync;
+    => _devicesClient.ActivateAsync(new DeviceActivateRequest { DeviceId = _deviceConfig.UniqueId }).ResponseAsync;
 
   public async Task Save()
   {
-    var syringePumpConfig = EditViewModel.Save();
-    await _stepperControllerClient.UpdateStepperControllerAsync(syringePumpConfig);
+    var stepperControllerConfig = EditViewModel.Save();
+    var updateRequest = new StepperControllerUpdateRequest
+    {
+      Id = _deviceConfig.UniqueId,
+      Config = stepperControllerConfig
+    };
+
+    await _stepperControllerClient.UpdateStepperControllerAsync(updateRequest);
   }
 
   public async Task Remove()
   {
-    await _stepperControllerClient.RemoveStepperControllerAsync(new TicRequest { TicName = _deviceConfig.DeviceName });
+    await _stepperControllerClient.RemoveStepperControllerAsync(new TicRequest { TicId = _deviceConfig.UniqueId });
     await OnRemoveCallback();
   }
 
   public async Task Init()
   {
-    var status = await GetDeviceStatus();
-    if(status.DeviceState != DeviceState.Active)
+    var status = await GetDeviceOperationalStatus();
+    if(status.OperationalState != OperationalState.Active)
       return;
 
-    var deviceState = await _stepperControllerClient.GetStateAsync(new TicRequest { TicName = _deviceConfig.DeviceName });
+    var state = await _stepperControllerClient.GetStateAsync(new TicRequest { TicId = _deviceConfig.UniqueId });
 
-    MaxAcceleration = deviceState.MaxAcceleration;
-    MaxDeceleration = deviceState.MaxDeceleration;
-    CurrentLimit = deviceState.CurrentLimit;
-    StartingSpeed = deviceState.StartingSpeed;
-    CustomStepSize = deviceState.CustomStepSize;
-    MaxSpeed = deviceState.MaxSpeed;
-    StepMode = deviceState.StepMode;
+    MaxAcceleration = state.MaxAcceleration;
+    MaxDeceleration = state.MaxDeceleration;
+    CurrentLimit = state.CurrentLimit;
+    StartingSpeed = state.StartingSpeed;
+    CustomStepSize = state.CustomStepSize;
+    MaxSpeed = state.MaxSpeed;
+    StepMode = state.StepMode;
   }
 
   [Reactive]

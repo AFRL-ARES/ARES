@@ -1,4 +1,7 @@
 ﻿@using Ares.Datamodel.Templates
+@using Ares.Services.Device
+
+@inject AresDevices.AresDevicesClient DevicesClient
 
 @if (CommandTemplate is not null)
 {
@@ -6,7 +9,7 @@
     {
         <div class="d-flex align-items-center">
           <div class="border border-2 border-primary rounded px-2 py-1 mx-2">
-                @CommandTemplate.Metadata.DeviceName
+                @DeviceName
             </div>
           <div class="border border-2 border-primary rounded px-2 py-1 mx-2">
         @CommandTemplate.Metadata.Name
@@ -58,6 +61,8 @@
   [Parameter]
   public CommandTemplate? CommandTemplate { get; set; }
 
+  private string DeviceName { get; set; } = "";
+
   public object TryUnpackDisplayData(Parameter argument)
   {
     var aresValue = argument.Value;
@@ -69,5 +74,20 @@
 
     else
       return $"{argument.Metadata.Name}: Custom Data";
+  }
+
+  private async Task<string> GetDeviceName(string deviceId)
+  {
+    var info = await DevicesClient.GetDeviceInfoAsync(new DeviceInfoRequest { DeviceId = deviceId });
+
+    return info.Name;
+  }
+
+  protected override async Task OnInitializedAsync()
+  {
+    if(CommandTemplate is null)
+      return;
+
+    DeviceName = await GetDeviceName(CommandTemplate.Metadata.DeviceId);
   }
 }

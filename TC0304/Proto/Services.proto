@@ -18,14 +18,19 @@ service TC0304Rpc {
   rpc StopStateUpdater(DeviceRequest) returns (google.protobuf.Empty);
 
   rpc GetAllTc0304s(google.protobuf.Empty) returns (GetAllTc0304sResponse);
-  rpc UpdateTc0304(config.Tc0304Config) returns (google.protobuf.Empty);
+  rpc UpdateTc0304(UpdateTc0304Request) returns (google.protobuf.Empty);
 	rpc RemoveTc0304(Tc0304Request) returns (google.protobuf.Empty);
 	rpc AddTc0304(config.Tc0304Config) returns (google.protobuf.Empty);
   rpc GetProbeNames(Tc0304Request) returns (tc0304.data_model.ProbeNames);
 }
 
 message Tc0304Request {
-  string tc0304_name = 1;
+  string tc0304_id = 1;
+}
+
+message UpdateTc0304Request {
+  string id = 1;
+  config.Tc0304Config config = 2;
 }
 
 message GetTemperaturesResponse {
@@ -37,7 +42,12 @@ message BatteryStatusResponse {
 }
 
 message GetAllTc0304sResponse {
-  repeated string device_names = 1;
+  repeated DeviceDescription devices = 1;
+}
+
+message DeviceDescription {
+  string id = 1;
+  string name = 2;
 }
 
 message DataResponse {
@@ -50,7 +60,7 @@ message StartStateUpdaterRequest {
 }
 
 message ConnectRequest {
-  string device_name = 1; // name of the data logger
+  string device_id = 1; // id of the data logger
   string port_name = 2; // name of the port
 }
 
@@ -59,5 +69,5 @@ message ConnectResponse {
 }
 
 message DeviceRequest {
-  string device_name = 1;
+  string device_id = 1;
 }

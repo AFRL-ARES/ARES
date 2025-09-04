@@ -1,12 +1,12 @@
-﻿using Ares.Core.EntityConfigurations;
-using Ares.Messages.DeviceStates.Tc0304;
-using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
+using Ares.Core.EntityConfigurations;
+using Ares.Messages.DeviceStates.Tc0304;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using TC0304;
 using TC0304.Commands;
 
@@ -23,7 +23,7 @@ public class Tc0304StateLogger : ITc0304StateLogger
     _device = device;
   }
 
-  public string DeviceId => _device.Name;
+  public string DeviceId => _device.UniqueId;
 
   public Task Stop()
   {
@@ -39,7 +39,7 @@ public class Tc0304StateLogger : ITc0304StateLogger
   public async Task Start()
   {
     using var context = _dbContextFactory.CreateDbContext();
-    var existingInfo = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.DeviceName == _device.Name && config.DeviceType == _device.GetType().FullName);
+    var existingInfo = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.UniqueId == _device.UniqueId && config.DeviceType == _device.GetType().FullName);
     _stateWatcher = _device.StateStream
       .Where(state => state is not null)
       .Subscribe(async state => await UpdateState(state!));
@@ -57,7 +57,7 @@ public class Tc0304StateLogger : ITc0304StateLogger
       Probe2Temperature = state.T2Probe?.DegreesCelsius,
       Probe3Temperature = state.T3Probe?.DegreesCelsius,
       Probe4Temperature = state.T4Probe?.DegreesCelsius,
-      DeviceId = _device.Name
+      DeviceId = _device.UniqueId
     };
 
     context.Tc0304States.Add(tc0304State);
@@ -68,7 +68,7 @@ public class Tc0304StateLogger : ITc0304StateLogger
     {
       await context.SaveChangesAsync();
     }
-    catch (SqlException e)
+    catch(SqlException e)
     {
       Debug.WriteLine($"Exception while saving MFC State: {e})");
     }
@@ -86,7 +86,7 @@ public class Tc0304StateLogger : ITc0304StateLogger
       Probe2Temperature = state.T2Probe?.DegreesCelsius,
       Probe3Temperature = state.T3Probe?.DegreesCelsius,
       Probe4Temperature = state.T4Probe?.DegreesCelsius,
-      DeviceId = _device.Name
+      DeviceId = _device.UniqueId
     };
 
     context.Tc0304States.Add(tc0304State);

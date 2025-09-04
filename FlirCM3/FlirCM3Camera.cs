@@ -20,9 +20,9 @@ public class FlirCM3Camera : AresUSBDevice, IFlirCM3Camera
     _camera = _managedSystem.GetCameras().First();
   }
 
-  public override Task<bool> Activate()
+  public override Task<bool> Activate(CancellationToken ct)
   {
-    Status = new DeviceStatus();
+    Status = new DeviceOperationalStatus();
 
     //Initialize camera, and turn off a few settings we need defaulted to off.
     _camera.Init();
@@ -33,13 +33,13 @@ public class FlirCM3Camera : AresUSBDevice, IFlirCM3Camera
     _camera.PixelFormat.Value = PixelFormatEnums.RGB8.ToString();
     _camera.BalanceWhiteAuto.Value = BalanceWhiteAutoEnums.Off.ToString();
 
-    Status.DeviceState = DeviceState.Active;
+    Status.OperationalState = OperationalState.Active;
     Status.Message = "Activated Flir CM3 Camera";
 
     return Task.FromResult(true);
   }
 
-  public override Task EnterSafeMode()
+  public override Task EnterSafeMode(CancellationToken ct)
   {
     //It's a camera...
     return Task.CompletedTask;

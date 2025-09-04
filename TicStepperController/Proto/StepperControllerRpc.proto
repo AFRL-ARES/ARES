@@ -33,39 +33,49 @@ service StepperControllerRpc {
 
   rpc AddStepperController(config.StepperControllerConfig) returns (google.protobuf.Empty);
   rpc RemoveStepperController(TicRequest) returns (google.protobuf.Empty);
-  rpc UpdateStepperController(config.StepperControllerConfig) returns (google.protobuf.Empty);
+  rpc UpdateStepperController(StepperControllerUpdateRequest) returns (google.protobuf.Empty);
+}
+
+message StepperControllerUpdateRequest {
+  string id = 1;
+  config.StepperControllerConfig config = 2;
 }
 
 message TicRequest {
-  string tic_name = 1;
+  string tic_id = 1;
 }
 
 message GetAllControllersResponse {
-  repeated string tic_controllers = 1;
+  repeated DeviceDescription tic_controllers = 1;
+}
+
+message DeviceDescription {
+  string id = 1;
+  string name = 2;
 }
 
 message PositionCommand {
-  string tic_name = 1;
+  string tic_id = 1;
   sint32 position = 2;
 }
 
 message AccelerationCommand {
-  string tic_name = 1;
+  string tic_id = 1;
   uint32 acceleration = 2;
 }
 
 message CurrentLimitCommand {
-  string tic_name = 1;
+  string tic_id = 1;
   uint32 limit = 2;
 }
 
 message UnsignedCommand {
-  string tic_name = 1;
+  string tic_id = 1;
   uint32 argument = 2;
 }
 
 message StepModeCommand {
-  string tic_name = 1;
+  string tic_id = 1;
   StepMode step_mode = 2;
 }
 

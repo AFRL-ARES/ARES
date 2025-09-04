@@ -1,4 +1,5 @@
-﻿using Ares.Services.Device;
+﻿using Ares.Datamodel.Device;
+using Ares.Services.Device;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
@@ -24,5 +25,5 @@ public class DeviceStatesViewModel : ReactiveObject
   }
 
   [Reactive]
-  public IEnumerable<AresDeviceInfo>? AvailableDevices { get; private set; }
+  public IEnumerable<DeviceInfo>? AvailableDevices { get; private set; }
 }

@@ -33,22 +33,22 @@ public class MfcService : MfcRpc.MfcRpcBase
     _mfcManager = mfcManager;
   }
 
-  private IMassFlowController GetMfc(string name)
+  private IMassFlowController GetMfc(string id)
   {
     var mfc = _deviceCommandInterpreterRepo
       .Select(interpreter => interpreter.Device)
       .OfType<IMassFlowController>()
-      .FirstOrDefault(device => device.Name == name);
+      .FirstOrDefault(device => device.UniqueId == id);
 
-    if (mfc is null)
-      throw new InvalidOperationException($"Could not find MFC: {name}");
+    if(mfc is null)
+      throw new InvalidOperationException($"Could not find MFC: {id}");
 
     return mfc;
   }
 
   public override async Task<Empty> SetSetpoint(SetSetpointRequest request, ServerCallContext context)
   {
-    var mfc = GetMfc(request.DeviceRequest.DeviceName);
+    var mfc = GetMfc(request.DeviceRequest.DeviceId);
     // TODO: Verify units
     await mfc.NewSetpoint(StandardVolumeFlow.FromStandardCubicCentimetersPerMinute(request.Setpoint));
     return new Empty();
@@ -56,20 +56,20 @@ public class MfcService : MfcRpc.MfcRpcBase
 
   public override async Task<StateResponse> GetState(DeviceRequest request, ServerCallContext context)
   {
-    var mfc = GetMfc(request.DeviceName);
+    var mfc = GetMfc(request.DeviceId);
     var latestState = await mfc.StateStream.Take(1);
     return latestState.ToProto();
   }
 
   public override async Task<StateResponse> GetStateUpdate(DeviceRequest request, ServerCallContext context)
   {
-    var mfc = GetMfc(request.DeviceName);
+    var mfc = GetMfc(request.DeviceId);
     try
     {
       var latestState = await mfc.StateStream.Skip(1).Take(1);
       return latestState.ToProto();
     }
-    catch (InvalidOperationException)
+    catch(InvalidOperationException)
     {
       // Gets thrown when the device is disposed, just return empty response as at this point the state
       // is essentially invalid
@@ -79,49 +79,49 @@ public class MfcService : MfcRpc.MfcRpcBase
 
   public override async Task<Empty> ChangeHardwareUnitId(ChangeUnitIdRequest request, ServerCallContext context)
   {
-    var mfc = GetMfc(request.DeviceRequest.DeviceName);
+    var mfc = GetMfc(request.DeviceRequest.DeviceId);
     await mfc.ChangeHardwareUnitId(request.Id[0]);
     return new Empty();
   }
 
   public override Task<Empty> TareAbsolutePressureWithBarometer(DeviceRequest request, ServerCallContext context)
   {
-    var mfc = GetMfc(request.DeviceName);
+    var mfc = GetMfc(request.DeviceId);
     mfc.TareAbsolutePressureWithBarometer();
     return Task.FromResult(new Empty());
   }
 
   public override Task<Empty> TareFlow(DeviceRequest request, ServerCallContext context)
   {
-    var mfc = GetMfc(request.DeviceName);
+    var mfc = GetMfc(request.DeviceId);
     mfc.TareFlow();
     return Task.FromResult(new Empty());
   }
 
   public override async Task<Empty> HoldValvesAtCurrentPosition(DeviceRequest request, ServerCallContext context)
   {
-    var mfc = GetMfc(request.DeviceName);
+    var mfc = GetMfc(request.DeviceId);
     await mfc.HoldValvesAtCurrentPosition();
     return new Empty();
   }
 
   public override async Task<Empty> HoldValvesClosed(DeviceRequest request, ServerCallContext context)
   {
-    var mfc = GetMfc(request.DeviceName);
+    var mfc = GetMfc(request.DeviceId);
     await mfc.HoldValvesClosed();
     return new Empty();
   }
 
   public override async Task<Empty> CancelValveHold(DeviceRequest request, ServerCallContext context)
   {
-    var mfc = GetMfc(request.DeviceName);
+    var mfc = GetMfc(request.DeviceId);
     await mfc.CancelValveHold();
     return new Empty();
   }
 
   public override Task<Empty> NewComposerMix(ComposerMix request, ServerCallContext context)
   {
-    var mfc = GetMfc(request.DeviceRequest.DeviceName);
+    var mfc = GetMfc(request.DeviceRequest.DeviceId);
     var entries = request.Entries.Select(entry => new MfcGasCompositionEntry(entry.GasNumber, entry.Percentage))
       .ToArray();
 
@@ -134,14 +134,14 @@ public class MfcService : MfcRpc.MfcRpcBase
 
   public override Task<Empty> DeleteComposerMix(DeleteComposerMixRequest request, ServerCallContext context)
   {
-    var mfc = GetMfc(request.DeviceRequest.DeviceName);
+    var mfc = GetMfc(request.DeviceRequest.DeviceId);
     mfc.DeleteComposerMix(request.MixNumber);
     return Task.FromResult(new Empty());
   }
 
   public override async Task<Empty> ChooseDifferentGas(ChooseDifferentGasRequest request, ServerCallContext context)
   {
-    var mfc = GetMfc(request.DeviceRequest.DeviceName);
+    var mfc = GetMfc(request.DeviceRequest.DeviceId);
     await mfc.ChooseDifferentGas(request.GasNumber);
     return new Empty();
   }
@@ -150,7 +150,7 @@ public class MfcService : MfcRpc.MfcRpcBase
   {
     var mfcs = _deviceCommandInterpreterRepo.Select(interpreter => interpreter.Device)
       .OfType<IMassFlowController>()
-      .Select(device => new MfcDeviceDescription { Id = device.AssumedId.ToString(), Name = device.Name });
+      .Select(device => new MfcDeviceDescription { Id = device.UniqueId, Name = device.Name });
 
     var response = new GetAllMfcsResponse();
     response.Mfcs.AddRange(mfcs);
@@ -179,30 +179,30 @@ public class MfcService : MfcRpc.MfcRpcBase
 
   public override async Task<Empty> RemoveMfc(MfcRemoveRequest request, ServerCallContext context)
   {
-    await _mfcManager.Remove(request.MfcName);
-    await _configManager.Remove(request.MfcName);
+    await _mfcManager.Remove(request.MfcId);
+    await _configManager.Remove(request.MfcId);
     return new Empty();
   }
 
   public override async Task<Empty> AddMfc(MfcConfig request, ServerCallContext context)
   {
-    var mfc = await _mfcManager.Load(request);
+    var mfc = await _mfcManager.Create(request);
     await mfc.Start();
-    await _configManager.Add(request.Name, request);
+    await _configManager.Add(mfc.UniqueId, mfc.Name, request);
     return new Empty();
   }
 
-  public override async Task<Empty> UpdateMfc(MfcConfig request, ServerCallContext context)
+  public override async Task<Empty> UpdateMfc(MfcUpdateRequest request, ServerCallContext context)
   {
-    var mfc = await _mfcManager.Update(request);
+    var mfc = await _mfcManager.Update(request.Id, request.Config);
     await mfc.Start();
-    await _configManager.Update(request.Name, request);
+    await _configManager.Update(request.Id, request.Config);
     return new Empty();
   }
 
   public override Task<Empty> StartDataCapture(DeviceRequest request, ServerCallContext context)
   {
-    var mfc = GetMfc(request.DeviceName);
+    var mfc = GetMfc(request.DeviceId);
     mfc.Start();
     return Task.FromResult(new Empty());
   }

@@ -1,16 +1,19 @@
-﻿using AlicatMFC;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using AlicatMFC;
 using AlicatMFC.Simulation;
 using Ares.Alicat.Mfc.Config;
 using Ares.Core.Device;
+using Ares.Datamodel.Device;
 using Ares.Device.Serial;
 using AresService.ConnectionManagement;
+using AresService.DeviceDbLoaders;
 using AresService.DeviceStateLoggers;
 using AresService.DeviceStateLoggers.Mfc;
 using Microsoft.Extensions.Logging;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Ares.Datamodel.Device;
 
 namespace AresService.DeviceManagers;
 
@@ -19,7 +22,6 @@ public class MfcManager : IDeviceManager<MfcConfig, IMassFlowController>
   private readonly IDeviceCommandInterpreterRepo _deviceCommandInterpreterRepo;
   private readonly ISerialConnectionManager<IMfcConnection> _mfcConnectionManager;
   readonly IDeviceStateLoggerFactory<IMassFlowController, IMfcStateLogger> _stateLoggerFactory;
-  private readonly IList<IMassFlowController> _mfcs = new List<IMassFlowController>();
   readonly ILoggerFactory _loggerFactory;
   readonly IDeviceStateLoggerRepository _deviceStateLoggerRepo;
 
@@ -37,17 +39,25 @@ public class MfcManager : IDeviceManager<MfcConfig, IMassFlowController>
     _mfcConnectionManager = mfcConnectionManager;
   }
 
-  public async Task<IMassFlowController> Load(MfcConfig config)
+  public Task<IMassFlowController> Create(MfcConfig config)
+  {
+    return Load(Guid.NewGuid().ToString(), config);
+  }
+
+  public async Task<IMassFlowController> Load(string id, MfcConfig config)
   {
     var connection = _mfcConnectionManager.GetConnection(config.PortName, config.Simulated);
     var mfcLogger = _loggerFactory.CreateLogger<MassFlowController>();
-    var device = new MassFlowController(config.Name, config.Id[0], connection, config.HasValve, mfcLogger);
+    var device = new MassFlowController(config.Name, config.Id[0], connection, config.HasValve, mfcLogger)
+    {
+      UniqueId = id
+    };
     var mfcStateLogger = _stateLoggerFactory.Create(device);
-    if (connection is SimMassFlowControllerConnection simConnection)
+    if(connection is SimMassFlowControllerConnection simConnection)
       simConnection.AddCat(config.Id[0]);
 
-    await device.Activate();
-    _deviceStateLoggerRepo[device.Name] = mfcStateLogger;
+    await device.Activate(CancellationToken.None);
+    _deviceStateLoggerRepo[device.UniqueId] = mfcStateLogger;
     await mfcStateLogger.Start();
 
     var interpreter = new MassFlowControllerInterpreter(device);
@@ -55,55 +65,49 @@ public class MfcManager : IDeviceManager<MfcConfig, IMassFlowController>
     return device;
   }
 
-  public async Task<IEnumerable<IMassFlowController>> Load(IEnumerable<MfcConfig> configs)
+  public async Task<IMassFlowController[]> Load(IEnumerable<LoadableConfig<MfcConfig>> configs)
   {
-    var devices = new List<IMassFlowController>();
-    foreach (var config in configs)
-    {
-      var device = await Load(config);
-      devices.Add(device);
-    }
+    var devices = await Task.WhenAll(configs.Select(cfg => Load(cfg.Id, cfg.DeviceConfig)));
 
-    foreach (var device in devices)
+    foreach(var device in devices)
     {
-      if (device.Status.DeviceState == DeviceState.Active)
+      if(device.Status.OperationalState == OperationalState.Active)
         await device.Start();
     }
 
-    return devices;
+    return devices.ToArray();
   }
 
-  public async Task<IMassFlowController> Update(MfcConfig config)
+  public async Task<IMassFlowController> Update(string id, MfcConfig config)
   {
     var existingMfc = _deviceCommandInterpreterRepo
       .Select(interpreter => interpreter.Device)
       .OfType<IMassFlowController>()
-      .FirstOrDefault(device => device.Name == config.Name);
+      .FirstOrDefault(device => device.UniqueId == id);
 
-    if (existingMfc is null)
-      return await Load(config);
+    if(existingMfc is null)
+      return await Create(config);
 
     // if nothing changed, don't bother re-adding the device
-    if (existingMfc.AssumedId == config.Id.First() && existingMfc.Connection.Name == config.PortName && existingMfc.HasValve == config.HasValve)
-      if ((existingMfc.Connection is SimMassFlowControllerConnection && config.Simulated) || (existingMfc.Connection is MassFlowControllerConnection && !config.Simulated))
+    if(existingMfc.AssumedId == config.Id.First() && existingMfc.Connection.Name == config.PortName && existingMfc.HasValve == config.HasValve)
+      if((existingMfc.Connection is SimMassFlowControllerConnection && config.Simulated) || (existingMfc.Connection is MassFlowControllerConnection && !config.Simulated))
         return existingMfc;
 
-    await Remove(existingMfc.Name);
+    await Remove(existingMfc.UniqueId);
 
-    return await Load(config);
+    return await Load(id, config);
   }
 
-  public async Task Remove(string mfcName)
+  public async Task Remove(string mfcId)
   {
     var mfcInterpreter = _deviceCommandInterpreterRepo
-      .FirstOrDefault(interpreter => interpreter.Device.Name == mfcName);
+      .FirstOrDefault(interpreter => interpreter.Device.UniqueId == mfcId);
 
-    if (mfcInterpreter?.Device is not IMassFlowController mfc)
+    if(mfcInterpreter?.Device is not IMassFlowController mfc)
       return;
 
-    _mfcs.Remove(mfc);
     await mfc.DisposeAsync();
-    _deviceStateLoggerRepo.Remove(mfc.Name);
+    _deviceStateLoggerRepo.Remove(mfc.UniqueId);
     _deviceCommandInterpreterRepo.Remove(mfcInterpreter);
     var connection = mfc.Connection;
     var connectionInUse = _deviceCommandInterpreterRepo
@@ -111,7 +115,7 @@ public class MfcManager : IDeviceManager<MfcConfig, IMassFlowController>
       .OfType<ISerialDevice<IMfcConnection>>()
       .Any(device => device.Connection == connection);
 
-    if (!connectionInUse)
+    if(!connectionInUse)
       _mfcConnectionManager.RemoveConnection(connection);
   }
 }

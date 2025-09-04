@@ -1,11 +1,11 @@
-﻿using Ares.SyringePump.Ne1000.Messaging;
-using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
-using SyringePumpNE1000;
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Reactive.Disposables;
 using System.Threading.Tasks;
+using Ares.SyringePump.Ne1000.Messaging;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using SyringePumpNE1000;
 
 namespace AresService.DeviceStateLoggers.SyringePump;
 public class SyringePumpStateLogger : ISyringePumpStateLogger
@@ -20,12 +20,12 @@ public class SyringePumpStateLogger : ISyringePumpStateLogger
     _syringePump = syringePump;
   }
 
-  public string DeviceId => _syringePump.Name;
+  public string DeviceId => _syringePump.UniqueId;
 
   public async Task Start()
   {
     using var context = _dbContextFactory.CreateDbContext();
-    var existingInfo = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.DeviceName == _syringePump.Name && config.DeviceType == _syringePump.GetType().FullName);
+    var existingInfo = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.UniqueId == _syringePump.UniqueId && config.DeviceType == _syringePump.GetType().FullName);
     _stateWatcher = _syringePump.StateStream
       .Subscribe(async state => await UpdateState(state));
   }
@@ -42,7 +42,7 @@ public class SyringePumpStateLogger : ISyringePumpStateLogger
     {
       await context.SaveChangesAsync();
     }
-    catch (SqlException e)
+    catch(SqlException e)
     {
       Debug.WriteLine($"Exception while saving MFC State: {e})");
     }

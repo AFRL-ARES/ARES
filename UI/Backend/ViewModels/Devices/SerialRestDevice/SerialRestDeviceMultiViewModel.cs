@@ -33,33 +33,34 @@ public class SerialRestDeviceMultiViewModel : UsbDeviceConnectorViewModel<Serial
 }
 */
 
+using Ares.Services.Device;
 using Google.Protobuf.WellKnownTypes;
 using RestSerialDevice.Services;
-using Ares.Services.Device;
 
 namespace UI.Backend.ViewModels.Devices.SerialRestDevice;
 
 
 public class SerialRestDeviceMultiViewModel : SerialDeviceConnectorViewModel<SerialRestDeviceUnitControlViewModel>
 {
-    private readonly RestSerialDeviceRpc.RestSerialDeviceRpcClient _restSerialClient;
+  private readonly RestSerialDeviceRpc.RestSerialDeviceRpcClient _restSerialClient;
 
-    public SerialRestDeviceMultiViewModel(AresDevices.AresDevicesClient devicesClient, RestSerialDeviceRpc.RestSerialDeviceRpcClient restSerialClient) : base(devicesClient)
-    {
-        _restSerialClient = restSerialClient;
-    }
+  public SerialRestDeviceMultiViewModel(AresDevices.AresDevicesClient devicesClient, RestSerialDeviceRpc.RestSerialDeviceRpcClient restSerialClient) : base(devicesClient)
+  {
+    _restSerialClient = restSerialClient;
+  }
 
-    protected override SerialRestDeviceUnitControlViewModel CreateUnitVm(string deviceName)
-    {
-        var vm = new SerialRestDeviceUnitControlViewModel(deviceName, _restSerialClient);
-        return vm;
-    }
+  protected override SerialRestDeviceUnitControlViewModel CreateUnitVm(AresDeviceDescription description)
+  {
+    var vm = new SerialRestDeviceUnitControlViewModel(description.Id, description.Name, _restSerialClient);
+    return vm;
+  }
 
-    protected override async Task<IEnumerable<string>> GetDeviceNames()
-    {
-        var devInfos = await _restSerialClient.GetAllGenericSerialDevicesAsync(new Empty());
-        return devInfos.DeviceNames;
-    }
+  protected override async Task<AresDeviceDescription[]> GetDeviceDescriptions()
+  {
+    var devInfos = await _restSerialClient.GetAllGenericSerialDevicesAsync(new Empty());
+    var descriptions = devInfos.Devices.Select(d => new AresDeviceDescription(d.Id, d.Name)).ToArray();
+    return descriptions;
+  }
 
 }
 

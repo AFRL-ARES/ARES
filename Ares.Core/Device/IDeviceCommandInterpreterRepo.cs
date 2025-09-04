@@ -4,5 +4,6 @@ namespace Ares.Core.Device
 {
   public interface IDeviceCommandInterpreterRepo : ICollection<IDeviceCommandInterpreter<IAresDevice>>
   {
+    bool Remove(string deviceId);
   }
 }

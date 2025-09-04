@@ -10,7 +10,7 @@ public class Tc0304UnitControlViewModel : SerialDeviceUnitViewModel, IAsyncDispo
   private readonly CancellationTokenSource _stateUpdateTokenSource = new();
   private Task _stateListener = Task.CompletedTask;
 
-  public Tc0304UnitControlViewModel(string name, TC0304Rpc.TC0304RpcClient client) : base(name)
+  public Tc0304UnitControlViewModel(string id, string name, TC0304Rpc.TC0304RpcClient client) : base(id, name)
   {
     _client = client;
     StartStateUpdater();
@@ -63,7 +63,7 @@ public class Tc0304UnitControlViewModel : SerialDeviceUnitViewModel, IAsyncDispo
 
   private async Task UpdateState()
   {
-    var response = await _client.GetTemperaturesAsync(new DeviceRequest { DeviceName = DeviceName });
+    var response = await _client.GetTemperaturesAsync(new DeviceRequest { DeviceId = DeviceId });
     if(response.Temperatures is null)
       return;
 
@@ -76,7 +76,7 @@ public class Tc0304UnitControlViewModel : SerialDeviceUnitViewModel, IAsyncDispo
 
   public void Hold()
   {
-    _client.Hold(new DeviceRequest { DeviceName = DeviceName });
+    _client.Hold(new DeviceRequest { DeviceId = DeviceId });
   }
 
   public async ValueTask DisposeAsync()

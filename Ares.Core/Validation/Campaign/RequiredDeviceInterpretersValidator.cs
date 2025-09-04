@@ -1,7 +1,7 @@
 ﻿using Ares.Core.Device;
-using Ares.Device;
 using Ares.Datamodel.Device;
 using Ares.Datamodel.Templates;
+using Ares.Device;
 
 namespace Ares.Core.Validation.Campaign;
 
@@ -15,31 +15,32 @@ internal class RequiredDeviceInterpretersValidator : ICampaignValidator
 
   public Task<ValidationResult> Validate(CampaignTemplate template)
   {
-    var requiredDeviceNames = template.ExperimentTemplate.StepTemplates.SelectMany(stepTemp =>
-        stepTemp.CommandTemplates.Select(cmdTemp => cmdTemp.Metadata.DeviceName)).Distinct().ToArray();
+    var requiredDeviceIds = template.ExperimentTemplate.StepTemplates.SelectMany(stepTemp =>
+        stepTemp.CommandTemplates.Select(cmdTemp => cmdTemp.Metadata.DeviceId)).Distinct().ToArray();
 
-    var availableInterpreters = requiredDeviceNames.Select(deviceName =>
+    var existingRequiredDevices = requiredDeviceIds.Select(deviceId =>
         _deviceCommandInterpreterRepo
-        .FirstOrDefault(interpreter => interpreter.Device.Name.Equals(deviceName)))
+        .FirstOrDefault(interpreter => interpreter.Device.UniqueId.Equals(deviceId)))
       .OfType<IDeviceCommandInterpreter<IAresDevice>>()
+      .Select(interpreter => interpreter.Device)
       .ToArray();
 
-    var missingDeviceNames = requiredDeviceNames
-      .Except(availableInterpreters.Select(interpreter => interpreter.Device.Name)).ToArray();
+    var missingDeviceIds = requiredDeviceIds
+      .Except(existingRequiredDevices.Select(device => device.UniqueId)).ToArray();
 
-    var invalidAvailableInterpreters = availableInterpreters
-      .Where(interpreter => interpreter.Device.Status.DeviceState != DeviceState.Active).ToArray();
+    var offlineDevices = existingRequiredDevices
+      .Where(device => device.Status.OperationalState != OperationalState.Active).ToArray();
 
-    var success = !missingDeviceNames.Any() && !invalidAvailableInterpreters.Any();
+    var success = !missingDeviceIds.Any() && !offlineDevices.Any();
     var errorMessages = new List<string>();
     if(!success)
     {
-      errorMessages.AddRange(missingDeviceNames.Select(deviceName => $"{deviceName} is not detected in the core"));
-      errorMessages.AddRange(invalidAvailableInterpreters.Select(interpreter => $"{interpreter.Device.Name} is not active"));
+      errorMessages.AddRange(missingDeviceIds.Select(deviceId => $"Device with Id {deviceId} is not present in the core"));
+      errorMessages.AddRange(offlineDevices.Select(device => $"Device {device.Name} is not active"));
     }
 
-    var validAtionResult = new ValidationResult(success, errorMessages);
-    return Task.FromResult(validAtionResult);
+    var validationResult = new ValidationResult(success, errorMessages);
+    return Task.FromResult(validationResult);
   }
 
 }

@@ -24,7 +24,7 @@ public class RestDeviceInterpreter : DeviceCommandInterpreter<IRestDevice, RestD
       {
         Name = function.Name,
         Description = function.Description,
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         UniqueId = function.UniqueId
       };
 
@@ -40,12 +40,12 @@ public class RestDeviceInterpreter : DeviceCommandInterpreter<IRestDevice, RestD
     return metadata.ToArray();
   }
 
-  protected override async Task<DeviceCommandResult> ParseAndPerformDeviceAction(RestDeviceCommandEnum deviceCommandEnum,
+  protected override async Task<CommandResult> ParseAndPerformDeviceAction(RestDeviceCommandEnum deviceCommandEnum,
     Parameter[] parameters,
     CommandMetadata metadata,
     CancellationToken cancellationToken)
   {
-    var result = new DeviceCommandResult();
+    var result = new CommandResult();
 
     switch(deviceCommandEnum)
     {
@@ -53,7 +53,7 @@ public class RestDeviceInterpreter : DeviceCommandInterpreter<IRestDevice, RestD
         //Custom Device Command
         var stringParameters = CreateParameterList(parameters);
         //TODO: FIX ME!!
-        var response = await Device.ProcessCommand(metadata.DeviceName, stringParameters, stringParameters);
+        var response = await Device.ProcessCommand(metadata.DeviceId, stringParameters, stringParameters);
         result.Result.AddValue("result", response);
         break;
 

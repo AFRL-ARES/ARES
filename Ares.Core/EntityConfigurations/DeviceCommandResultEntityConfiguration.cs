@@ -5,9 +5,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Ares.Core.EntityConfigurations;
 
-internal class DeviceCommandResultEntityConfiguration : AresEntityTypeBaseConfiguration<DeviceCommandResult>
+internal class DeviceCommandResultEntityConfiguration : AresEntityTypeBaseConfiguration<CommandResult>
 {
-  public override void Configure(EntityTypeBuilder<DeviceCommandResult> builder)
+  public override void Configure(EntityTypeBuilder<CommandResult> builder)
   {
     base.Configure(builder);
     builder.ToTable("DeviceCommandResults");

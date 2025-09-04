@@ -2,12 +2,8 @@
 
 namespace UI.Backend.ViewModels;
 
-public abstract class SerialDeviceUnitViewModel : ReactiveObject
+public abstract class SerialDeviceUnitViewModel(string deviceId, string deviceName) : ReactiveObject
 {
-  protected SerialDeviceUnitViewModel(string deviceName)
-  {
-    DeviceName = deviceName;
-  }
-
-  public string DeviceName { get; }
+  public string DeviceName { get; } = deviceName;
+  public string DeviceId { get; } = deviceId;
 }

@@ -1,6 +1,6 @@
+using Ares.Services.Device;
 using Ares.SyringePump.Ne1000.Messaging;
 using Google.Protobuf.WellKnownTypes;
-using Ares.Services.Device;
 
 namespace UI.Backend.ViewModels.SyringePump;
 
@@ -16,20 +16,20 @@ public class SyringePumpWorkspaceControlViewModel : SerialDeviceConnectorViewMod
 
   public void Connect()
   {
-    var connectRequest = new ConnectRequest { DeviceName = SelectedDeviceName, PortName = SelectedSerialPort };
+    var connectRequest = new ConnectRequest { DeviceId = SelectedDeviceId, PortName = SelectedSerialPort };
     var connectionResponse = _syringePumpClient.Connect(connectRequest);
   }
 
-  protected override SyringePumpUnitControlViewModel CreateUnitVm(string deviceName)
+  protected override SyringePumpUnitControlViewModel CreateUnitVm(AresDeviceDescription description)
   {
-    var unitVm = new SyringePumpUnitControlViewModel(deviceName, _syringePumpClient);
+    var unitVm = new SyringePumpUnitControlViewModel(description.Id, description.Name, _syringePumpClient);
     return unitVm;
   }
 
-  protected override async Task<IEnumerable<string>> GetDeviceNames()
+  protected override async Task<AresDeviceDescription[]> GetDeviceDescriptions()
   {
     var sDevInfoResponse = await _syringePumpClient.GetAllSyringePumpsAsync(new Empty());
-    var sNames = sDevInfoResponse.SyringePumps.Select(sDevInfo => sDevInfo.Name);
+    var sNames = sDevInfoResponse.SyringePumps.Select(dev => new AresDeviceDescription(dev.Id, dev.Name)).ToArray();
     return sNames;
   }
 }

@@ -24,7 +24,7 @@ internal class StepperControllerStateLogger : IStepperControllerStateLogger
     _device = device;
   }
 
-  public string DeviceId => _device.Name;
+  public string DeviceId => _device.UniqueId;
 
   public void Dispose()
   {
@@ -96,7 +96,7 @@ internal class StepperControllerStateLogger : IStepperControllerStateLogger
     {
       await dbContext.SaveChangesAsync();
     }
-    catch (SqlException e)
+    catch(SqlException e)
     {
       Debug.WriteLine($"Exception while saving MFC State: {e})");
     }
@@ -104,7 +104,7 @@ internal class StepperControllerStateLogger : IStepperControllerStateLogger
 
   private static void AddIfTrue(IList<string> list, bool condition, string name)
   {
-    if (!condition)
+    if(!condition)
       return;
 
     list.Add(name);

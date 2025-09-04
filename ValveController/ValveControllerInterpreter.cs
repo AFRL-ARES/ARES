@@ -14,7 +14,7 @@ public class ValveControllerInterpreter : DeviceCommandInterpreter<ValveControll
     {
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = ValveControllerCommand.GetRelayStatus.ToString(),
         Description = "Determines the status of the relay board, telling ARES whether the relays are currently engaged or disengaged.",
         OutputMetadata = new OutputMetadata()
@@ -27,35 +27,35 @@ public class ValveControllerInterpreter : DeviceCommandInterpreter<ValveControll
 
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = ValveControllerCommand.EngageRelayOne.ToString(),
         Description = "Set's the device attached to the valve controllers first relay to the engaged state."
       },
 
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = ValveControllerCommand.EngageRelayTwo.ToString(),
         Description = "Set's the device attached to the valve controllers second relay to the engaged state."
       },
 
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = ValveControllerCommand.DisengageRelayOne.ToString(),
         Description = "Set's the device attached to the valve controllers first relay to the disengaged state."
       },
 
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = ValveControllerCommand.DisengageRelayTwo.ToString(),
         Description = "Set's the device attached to the valve controllers second relay to the disengaged state."
       },
 
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = ValveControllerCommand.EnableRelays.ToString(),
         Description = "Ensures that the Valve Controller's Relay's are enabled and ready for operation."
       }
@@ -63,7 +63,7 @@ public class ValveControllerInterpreter : DeviceCommandInterpreter<ValveControll
     };
   }
 
-  protected override async Task<DeviceCommandResult> ParseAndPerformDeviceAction(ValveControllerCommand deviceCommandEnum,
+  protected override async Task<CommandResult> ParseAndPerformDeviceAction(ValveControllerCommand deviceCommandEnum,
     Parameter[] parameters,
     CommandMetadata metadata,
     CancellationToken cancellationToken)
@@ -72,7 +72,7 @@ public class ValveControllerInterpreter : DeviceCommandInterpreter<ValveControll
     {
       case ValveControllerCommand.GetRelayStatus:
         var data = await Device.GetRelayStatus();
-        var result = new DeviceCommandResult
+        var result = new CommandResult
         {
           Result = AresStructHelper.CreateBoolStruct("Relay1", data.RelayOneOn).AddBool("Relay2", data.RelayTwoOn),
           Success = true
@@ -82,23 +82,23 @@ public class ValveControllerInterpreter : DeviceCommandInterpreter<ValveControll
 
       case ValveControllerCommand.EngageRelayOne:
         await Device.EngageRelayOne();
-        return new DeviceCommandResult() { Success = true };
+        return new CommandResult() { Success = true };
 
       case ValveControllerCommand.EngageRelayTwo:
         await Device.EngageRelayTwo();
-        return new DeviceCommandResult { Success = true };
+        return new CommandResult { Success = true };
 
       case ValveControllerCommand.DisengageRelayOne:
         await Device.DisengageRelayOne();
-        return new DeviceCommandResult { Success = true };
+        return new CommandResult { Success = true };
 
       case ValveControllerCommand.DisengageRelayTwo:
         await Device.DisengageRelayTwo();
-        return new DeviceCommandResult() { Success = true };
+        return new CommandResult() { Success = true };
 
       case ValveControllerCommand.EnableRelays:
         await Device.EnableRelays();
-        return new DeviceCommandResult() { Success = true };
+        return new CommandResult() { Success = true };
 
       default:
         throw new InvalidOperationException("Received an unknown command for the valve controller!");

@@ -17,36 +17,36 @@ namespace VerdiV6Laser
       {
         new()
         {
-          DeviceName = Device.Name,
+          DeviceId = Device.UniqueId,
           Name = VerdiV6LaserCommand.SetShutter.ToString(),
           Description = "Set the shutter of the laser to on or off.",
           ParameterMetadatas = { new ParameterMetadata { Index = 0, Name = VerdiV6LaserCommandParameter.Shutter.ToString(), Unit = "On/Off" } }
         },
         new()
         {
-          DeviceName = Device.Name,
+          DeviceId = Device.UniqueId,
           Name = VerdiV6LaserCommand.SetPower.ToString(),
           Description = "Set the power of the laser.",
           ParameterMetadatas = { new ParameterMetadata { Index = 0, Name = VerdiV6LaserCommandParameter.LaserPower.ToString(), Unit = "Laser Power" } }
         },
         new()
         {
-          DeviceName = Device.Name,
+          DeviceId = Device.UniqueId,
           Name = VerdiV6LaserCommand.ActivateLaser.ToString(),
           Description = "CAUTION! Will activate the laser utilizing whatever power was last set as the desired active power. Proceed with caution!"
         },
         new()
         {
-          DeviceName = Device.Name,
+          DeviceId = Device.UniqueId,
           Name = VerdiV6LaserCommand.DeactivateLaser.ToString(),
           Description = "Set's the Verdi V6 Laser back to minimal power levels, deactivating the laser."
         }
       };
     }
 
-    protected override async Task<DeviceCommandResult> ParseAndPerformDeviceAction(VerdiV6LaserCommand deviceCommandEnum, Parameter[] parameters, CommandMetadata metadata, CancellationToken cancellationToken)
+    protected override async Task<CommandResult> ParseAndPerformDeviceAction(VerdiV6LaserCommand deviceCommandEnum, Parameter[] parameters, CommandMetadata metadata, CancellationToken cancellationToken)
     {
-      var result = new DeviceCommandResult();
+      var result = new CommandResult();
 
       switch(deviceCommandEnum)
       {

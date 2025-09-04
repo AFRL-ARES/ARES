@@ -11,12 +11,12 @@ public class DemoDeviceInterpreter : DeviceCommandInterpreter<AresDemoDevice, De
   {
   }
 
-  protected override async Task<DeviceCommandResult> ParseAndPerformDeviceAction(DemoDeviceCommand deviceCommandEnum,
+  protected override async Task<CommandResult> ParseAndPerformDeviceAction(DemoDeviceCommand deviceCommandEnum,
     Parameter[] parameters,
     CommandMetadata metadata,
     CancellationToken cancellationToken)
   {
-    var result = new DeviceCommandResult();
+    var result = new CommandResult();
     result.Success = true;
 
     switch(deviceCommandEnum)
@@ -59,35 +59,35 @@ public class DemoDeviceInterpreter : DeviceCommandInterpreter<AresDemoDevice, De
       {
         Name = DemoDeviceCommand.SetTemperature.ToString(),
         Description = "Sets the temperature for the demo device",
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         ParameterMetadatas = { new ParameterMetadata { Index = 0, Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.Number, false), Name = DemoDeviceCommandParameter.Temperature.ToString(), Unit = "Degrees Celsius"} }
       },
       new()
       {
         Name = DemoDeviceCommand.GetTemperature.ToString(),
         Description = "Gets the current temperature of the demo device.",
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         OutputMetadata = new OutputMetadata { Description = "Resulting Temp", DataSchema = AresSchemaHelper.CreateSchema("Temperature", AresDataType.Number), Index = 0, UniqueId = Guid.NewGuid().ToString() },
       },
       new()
       {
         Name = DemoDeviceCommand.GetCurrentGrowth.ToString(),
         Description = "Gets the current growth of the demo object within the device.",
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         OutputMetadata = new OutputMetadata { Description = "Object growth", DataSchema = AresSchemaHelper.CreateSchema("Growth", AresDataType.Number), Index = 0, UniqueId = Guid.NewGuid().ToString() },
       },
       new()
       {
         Name = DemoDeviceCommand.GetCurrentPillar.ToString(),
         Description = "Gets the current pillar that the device is focused on.",
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         OutputMetadata = new OutputMetadata { Description = "Current Pillar", DataSchema = AresSchemaHelper.CreateSchema("Current Pillar", AresDataType.Number), Index = 0, UniqueId = Guid.NewGuid().ToString() },
       },
       new()
       {
         Name = DemoDeviceCommand.MoveToNextPillar.ToString(),
         Description = "Increases the pillar index by 1 and resets growth.",
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         OutputMetadata = new OutputMetadata { Description = "Current Pillar", DataSchema = AresSchemaHelper.CreateSchema("New Pillar", AresDataType.Number), Index = 0, UniqueId = Guid.NewGuid().ToString() },
       }
     };

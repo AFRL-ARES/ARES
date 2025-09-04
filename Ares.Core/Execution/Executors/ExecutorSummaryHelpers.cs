@@ -44,11 +44,11 @@ internal static class ExecutorSummaryHelpers
     return new StepExecutionSummary { UniqueId = Guid.NewGuid().ToString(), ExecutionInfo = MakeExecutionInfo(startTime, endTime) };
   }
   public static CommandExecutionSummary CreateCommandExecutionSummary(CommandTemplate template,
-    DeviceCommandResult? deviceResult,
+    CommandResult? deviceResult,
     DateTime startTime,
     DateTime endTime)
   {
-    var CommandExecutionSummary = new CommandExecutionSummary
+    var commandExecutionSummary = new CommandExecutionSummary
     {
       UniqueId = Guid.NewGuid().ToString(),
       ExecutionInfo = MakeExecutionInfo(startTime, endTime),
@@ -58,7 +58,7 @@ internal static class ExecutorSummaryHelpers
       CommandName = template.Metadata.Name
     };
 
-    return CommandExecutionSummary;
+    return commandExecutionSummary;
   }
 
   private static ExecutionInfo MakeExecutionInfo(DateTime startTime, DateTime endTime)

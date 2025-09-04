@@ -33,42 +33,48 @@ namespace UI.Backend.ViewModels.Settings.Device.TubeFurnace
 
     public TubeFurnaceConfigEditViewModel EditViewModel { get; }
 
-    public async Task<DeviceStatus> GetDeviceStatus()
+    public async Task<DeviceOperationalStatus> GetDeviceOperationalStatus()
     {
       try
       {
-        var status = await _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceName = TubeFurnaceConfig.Name }).ResponseAsync;
-        DeviceActive = status.DeviceState is DeviceState.Active;
+        var status = await _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceId = _deviceConfig.UniqueId }).ResponseAsync;
+        DeviceActive = status.OperationalState is OperationalState.Active;
         return status;
       }
       catch (RpcException)
       {
-        return new DeviceStatus { DeviceState = DeviceState.Error, Message = $"Unable to find a registered stepper controller with a name {TubeFurnaceConfig.Name}" };
+        return new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Unable to find a registered stepper controller with a name {TubeFurnaceConfig.Name}" };
       }
     }
 
     public Task Activate()
-      => _devicesClient.ActivateAsync(new DeviceActivateRequest { DeviceName = TubeFurnaceConfig.Name }).ResponseAsync;
+      => _devicesClient.ActivateAsync(new DeviceActivateRequest { DeviceId = _deviceConfig.UniqueId }).ResponseAsync;
 
     public async Task Save()
     {
       var tubeFurnaceConfig = EditViewModel.Save();
-      await _tubeFurnaceClient.UpdateTubeFurnaceAsync(tubeFurnaceConfig);
+      var updateRequest = new TubeFurnaceUpdateRequest
+      {
+        Id = _deviceConfig.UniqueId,
+        Config = tubeFurnaceConfig
+      };
+
+      await _tubeFurnaceClient.UpdateTubeFurnaceAsync(updateRequest);
     }
 
     public async Task Remove()
     {
-      await _tubeFurnaceClient.RemoveTubeFurnaceAsync(new TubeFurnaceRequest { TubeFurnaceName = _deviceConfig.DeviceName });
+      await _tubeFurnaceClient.RemoveTubeFurnaceAsync(new TubeFurnaceRequest { TubeFurnaceId = _deviceConfig.UniqueId });
       await OnRemoveCallback();
     }
 
     public async Task Init()
     {
-      var status = await GetDeviceStatus();
-      if (status.DeviceState != DeviceState.Active)
+      var status = await GetDeviceOperationalStatus();
+      if (status.OperationalState != OperationalState.Active)
         return;
 
-      var deviceState = await _tubeFurnaceClient.GetStateAsync(new TubeFurnaceRequest { TubeFurnaceName = _deviceConfig.DeviceName });
+      var state = await _tubeFurnaceClient.GetStateAsync(new TubeFurnaceRequest { TubeFurnaceId = _deviceConfig.UniqueId });
 
     }
 

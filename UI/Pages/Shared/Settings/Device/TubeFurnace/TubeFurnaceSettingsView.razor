@@ -3,7 +3,7 @@
 @inject DialogService DialogService
 @inject NotificationService NotificationService
 
-<DeviceSettingsContainer DeviceStatusGetter="ViewModel!.GetDeviceStatus" EditCallback="EditCallback" RemoveCallback="RemoveCallback" ActivateCallback="@ViewModel.Activate" Name="@Name">
+<DeviceSettingsContainer DeviceOperationalStatusGetter="ViewModel!.GetDeviceOperationalStatus" EditCallback="EditCallback" RemoveCallback="RemoveCallback" ActivateCallback="@ViewModel.Activate" Name="@Name">
   <div class="d-flex flex-column">
     <div>
       <span>Port - </span>

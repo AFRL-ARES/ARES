@@ -2,12 +2,15 @@
 using Ares.Device.Serial;
 using Ares.SyringePump.Ne1000.Messaging;
 using AresService.ConnectionManagement;
+using AresService.DeviceDbLoaders;
 using AresService.DeviceStateLoggers;
 using AresService.DeviceStateLoggers.SyringePump;
 using SyringePumpNE1000;
 using SyringePumpNE1000.Simulation;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace AresService.DeviceManagers;
@@ -30,11 +33,19 @@ public class SyringePumpManager : IDeviceManager<SyringePumpConfig, ISyringePump
     _connectionManager = connectionManager;
   }
 
-  public async Task<ISyringePump> Load(SyringePumpConfig config)
+  public Task<ISyringePump> Create(SyringePumpConfig config)
+  {
+    return Load(Guid.NewGuid().ToString(), config);
+  }
+
+  public async Task<ISyringePump> Load(string id, SyringePumpConfig config)
   {
     var connection = _connectionManager.GetConnection(config.PortName, config.Simulated);
-    var device = new SyringePump(config.Name, config.Address, connection);
-    await device.Activate();
+    var device = new SyringePump(config.Name, config.Address, connection)
+    {
+      UniqueId = id
+    };
+    await device.Activate(CancellationToken.None);
     await device.Start();
     var logger = _stateLoggerFactory.Create(device);
     _deviceStateLoggerRepo[logger.DeviceId] = logger;
@@ -44,30 +55,30 @@ public class SyringePumpManager : IDeviceManager<SyringePumpConfig, ISyringePump
     return device;
   }
 
-  public async Task<ISyringePump> Update(SyringePumpConfig config)
+  public async Task<ISyringePump> Update(string id, SyringePumpConfig config)
   {
     var existingPump = _deviceCommandInterpreterRepo
       .Select(interpreter => interpreter.Device)
       .OfType<ISyringePump>()
-      .FirstOrDefault(device => device.Name == config.Name);
+      .FirstOrDefault(device => device.UniqueId == id);
 
     if(existingPump is null)
-      return await Load(config);
+      return await Create(config);
 
     // if nothing changed, don't bother re-adding the device
     if(existingPump.Connection.Name == config.PortName)
       if((existingPump.Connection is SimSyringePumpConnection && config.Simulated) || (existingPump.Connection is SyringePumpConnection && !config.Simulated))
         return existingPump;
 
-    await Remove(existingPump.Name);
+    await Remove(existingPump.UniqueId);
 
-    return await Load(config);
+    return await Load(id, config);
   }
 
-  public async Task Remove(string syringePumpName)
+  public async Task Remove(string syringePumpId)
   {
     var syringePumpInterpreter = _deviceCommandInterpreterRepo
-      .FirstOrDefault(interpreter => interpreter.Device.Name == syringePumpName);
+      .FirstOrDefault(interpreter => interpreter.Device.UniqueId == syringePumpId);
 
     if(syringePumpInterpreter?.Device is not ISyringePump syringePump)
       return;
@@ -85,9 +96,9 @@ public class SyringePumpManager : IDeviceManager<SyringePumpConfig, ISyringePump
       _connectionManager.RemoveConnection(connection);
   }
 
-  public async Task<IEnumerable<ISyringePump>> Load(IEnumerable<SyringePumpConfig> configs)
+  public async Task<ISyringePump[]> Load(IEnumerable<LoadableConfig<SyringePumpConfig>> configs)
   {
-    var pumps = await Task.WhenAll(configs.Select(Load));
+    var pumps = await Task.WhenAll(configs.Select(c => Load(c.Id, c.DeviceConfig)));
     return pumps;
   }
 }

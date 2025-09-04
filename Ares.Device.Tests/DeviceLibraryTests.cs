@@ -55,7 +55,7 @@ internal class DeviceLibraryTests
     {
       var meta = new CommandMetadata
       {
-        DeviceName = device.Name,
+        DeviceId = device.UniqueId,
         Name = "Test"
       };
 
@@ -92,7 +92,7 @@ internal class DeviceLibraryTests
     {
       var meta = new CommandMetadata
       {
-        DeviceName = device.Name,
+        DeviceId = device.UniqueId,
         Name = "Test"
       };
 

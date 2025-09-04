@@ -13,12 +13,13 @@ public class ServoMultiViewModel : SerialDeviceConnectorViewModel<ServoUnitContr
     _client = client;
   }
 
-  protected override ServoUnitControlViewModel CreateUnitVm(string deviceName)
-    => new(deviceName, _client);
+  protected override ServoUnitControlViewModel CreateUnitVm(AresDeviceDescription description)
+    => new(description.Id, description.Name, _client);
 
-  protected override async Task<IEnumerable<string>> GetDeviceNames()
+  protected override async Task<AresDeviceDescription[]> GetDeviceDescriptions()
   {
     var devicesResponse = await _client.GetAllServosAsync(new Empty());
-    return devicesResponse.DeviceNames;
+    var descriptions = devicesResponse.Devices.Select(d => new AresDeviceDescription(d.Id, d.Name)).ToArray();
+    return descriptions;
   }
 }

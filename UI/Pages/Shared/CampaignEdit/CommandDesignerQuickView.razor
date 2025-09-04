@@ -9,9 +9,18 @@
   if (CommandDesignerViewModel.TemplateCommandName is not null)
   {
     <div class="d-flex align-items-center">
-      <div class="border border-2 border-primary rounded px-2 py-1 mx-2">
-        @CommandDesignerViewModel.TemplateDeviceName
-      </div>
+      @if((CommandDesignerViewModel.TemplateDeviceName ?? CommandDesignerViewModel.MetadataDeviceName) is null)
+      {
+        <div class="border border-2 border-danger rounded px-2 py-1 mx-2">
+          UNKNOWN_DEVICE
+        </div>  
+      }
+      else
+      {
+        <div class="border border-2 border-primary rounded px-2 py-1 mx-2">
+          @(CommandDesignerViewModel.TemplateDeviceName ?? CommandDesignerViewModel.MetadataDeviceName)
+        </div>        
+      }
       <div class="border border-2 border-primary rounded px-2 py-1 mx-2">
         @CommandDesignerViewModel.TemplateCommandName
       </div>

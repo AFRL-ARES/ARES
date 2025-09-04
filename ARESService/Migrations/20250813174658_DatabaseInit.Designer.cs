@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AresService.Migrations
 {
     [DbContext(typeof(AresDbContext))]
-    [Migration("20250902184652_DatabaseInit")]
+    [Migration("20250813174658_DatabaseInit")]
     partial class DatabaseInit
     {
         /// <inheritdoc />
@@ -95,7 +95,7 @@ namespace AresService.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("AnalyzerInfoId")
+                    b.Property<Guid?>("AnalyzerInfoId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreationTime")
@@ -117,7 +117,8 @@ namespace AresService.Migrations
                     b.HasKey("UniqueId");
 
                     b.HasIndex("AnalyzerInfoId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[AnalyzerInfoId] IS NOT NULL");
 
                     b.ToTable("AnalyzerCapabilities");
                 });
@@ -640,145 +641,14 @@ namespace AresService.Migrations
                     b.ToTable("Limits");
                 });
 
-            modelBuilder.Entity("Ares.Datamodel.Planning.Planner", b =>
+            modelBuilder.Entity("Ares.Datamodel.PlannerAdapterInfo", b =>
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("Description")
+                    b.Property<string>("AdapterName")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("PlannerName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid?>("PlannerServiceCapabilitiesUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Version")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("UniqueId");
-
-                    b.HasIndex("PlannerServiceCapabilitiesUniqueId");
-
-                    b.ToTable("Planner");
-                });
-
-            modelBuilder.Entity("Ares.Datamodel.Planning.PlannerAllocation", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("CampaignTemplateUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<Guid?>("ParameterUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("PlannerId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("UniqueId");
-
-                    b.HasIndex("CampaignTemplateUniqueId");
-
-                    b.HasIndex("ParameterUniqueId");
-
-                    b.HasIndex("PlannerId");
-
-                    b.ToTable("PlannerAllocations", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Datamodel.Planning.PlannerConfig", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Url")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("PlannerServices", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Datamodel.Planning.PlannerServiceCapabilities", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<Guid>("PlannerInfoId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("ServiceName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("SettingsSchema")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<long>("TimeoutSeconds")
-                        .HasColumnType("bigint");
-
-                    b.HasKey("UniqueId");
-
-                    b.HasIndex("PlannerInfoId")
-                        .IsUnique();
-
-                    b.ToTable("PlannerServiceCapabilities");
-                });
-
-            modelBuilder.Entity("Ares.Datamodel.Planning.PlannerServiceInfo", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Address")
                         .HasColumnType("nvarchar(max)");
@@ -788,16 +658,10 @@ namespace AresService.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
 
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Type")
                         .HasColumnType("nvarchar(max)");
@@ -807,34 +671,7 @@ namespace AresService.Migrations
 
                     b.HasKey("UniqueId");
 
-                    b.ToTable("PlannerInfos");
-                });
-
-            modelBuilder.Entity("Ares.Datamodel.Planning.PlannerSettings", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("PlannerId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Settings")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("PlannerSettings");
+                    b.ToTable("Planners", (string)null);
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Project", b =>
@@ -1221,6 +1058,42 @@ namespace AresService.Migrations
                         .HasFilter("[ParameterId] IS NOT NULL");
 
                     b.ToTable("ParameterMetadata");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Templates.PlannerAllocation", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CampaignTemplateUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<Guid?>("ParameterUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("PlannerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("CampaignTemplateUniqueId");
+
+                    b.HasIndex("ParameterUniqueId");
+
+                    b.HasIndex("PlannerId");
+
+                    b.ToTable("PlannerAllocations", (string)null);
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Templates.StepTemplate", b =>
@@ -1612,8 +1485,7 @@ namespace AresService.Migrations
                     b.HasOne("Ares.Datamodel.Analyzing.AnalyzerInfo", null)
                         .WithOne("Capabilities")
                         .HasForeignKey("Ares.Datamodel.Analyzing.AnalyzerCapabilities", "AnalyzerInfoId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("Ares.Datamodel.CampaignExecutionSummary", b =>
@@ -1712,45 +1584,6 @@ namespace AresService.Migrations
                     b.HasOne("Ares.Datamodel.Templates.ParameterMetadata", null)
                         .WithMany("Constraints")
                         .HasForeignKey("ParameterMetadataUniqueId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Ares.Datamodel.Planning.Planner", b =>
-                {
-                    b.HasOne("Ares.Datamodel.Planning.PlannerServiceCapabilities", null)
-                        .WithMany("AvailablePlanners")
-                        .HasForeignKey("PlannerServiceCapabilitiesUniqueId")
-                        .OnDelete(DeleteBehavior.Cascade);
-                });
-
-            modelBuilder.Entity("Ares.Datamodel.Planning.PlannerAllocation", b =>
-                {
-                    b.HasOne("Ares.Datamodel.Templates.CampaignTemplate", null)
-                        .WithMany("PlannerAllocations")
-                        .HasForeignKey("CampaignTemplateUniqueId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Ares.Datamodel.Templates.ParameterMetadata", "Parameter")
-                        .WithMany()
-                        .HasForeignKey("ParameterUniqueId");
-
-                    b.HasOne("Ares.Datamodel.Planning.PlannerServiceInfo", "Planner")
-                        .WithMany()
-                        .HasForeignKey("PlannerId")
-                        .OnDelete(DeleteBehavior.ClientCascade);
-
-                    b.Navigation("Parameter");
-
-                    b.Navigation("Planner");
-                });
-
-            modelBuilder.Entity("Ares.Datamodel.Planning.PlannerServiceCapabilities", b =>
-                {
-                    b.HasOne("Ares.Datamodel.Planning.PlannerServiceInfo", null)
-                        .WithOne("Capabilities")
-                        .HasForeignKey("Ares.Datamodel.Planning.PlannerServiceCapabilities", "PlannerInfoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -1858,6 +1691,28 @@ namespace AresService.Migrations
                     b.Navigation("ExtraInfo");
                 });
 
+            modelBuilder.Entity("Ares.Datamodel.Templates.PlannerAllocation", b =>
+                {
+                    b.HasOne("Ares.Datamodel.Templates.CampaignTemplate", null)
+                        .WithMany("PlannerAllocations")
+                        .HasForeignKey("CampaignTemplateUniqueId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Ares.Datamodel.Templates.ParameterMetadata", "Parameter")
+                        .WithMany()
+                        .HasForeignKey("ParameterUniqueId");
+
+                    b.HasOne("Ares.Datamodel.PlannerAdapterInfo", "Planner")
+                        .WithMany()
+                        .HasForeignKey("PlannerId")
+                        .OnDelete(DeleteBehavior.ClientCascade);
+
+                    b.Navigation("Parameter");
+
+                    b.Navigation("Planner");
+                });
+
             modelBuilder.Entity("Ares.Datamodel.Templates.StepTemplate", b =>
                 {
                     b.HasOne("Ares.Datamodel.Templates.ExperimentTemplate", null)
@@ -1922,16 +1777,6 @@ namespace AresService.Migrations
                     b.Navigation("AnalysisOverview");
 
                     b.Navigation("Parameters");
-                });
-
-            modelBuilder.Entity("Ares.Datamodel.Planning.PlannerServiceCapabilities", b =>
-                {
-                    b.Navigation("AvailablePlanners");
-                });
-
-            modelBuilder.Entity("Ares.Datamodel.Planning.PlannerServiceInfo", b =>
-                {
-                    b.Navigation("Capabilities");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.StepExecutionStatus", b =>

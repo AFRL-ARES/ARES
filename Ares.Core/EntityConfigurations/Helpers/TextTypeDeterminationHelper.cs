@@ -25,12 +25,12 @@ public static class TextTypeDeterminationHelper
       .HasColumnType(SerializerSettingsHelper.DetermineColumnType());
   }
 
-  public static PropertyBuilder<AresDataSchemaSimplified> HasDataSchemaSimplified(this PropertyBuilder<AresDataSchemaSimplified> schema)
+  public static PropertyBuilder<AresDataSchema> HasDataSchemaSimplified(this PropertyBuilder<AresDataSchema> schema)
   {
     var settings = SerializerSettingsHelper.CreateCustomSerializationSettings();
     return schema.HasConversion(
       s => JsonSerializer.Serialize(s, settings),
-      s => JsonSerializer.Deserialize<AresDataSchemaSimplified>(s, settings) ?? new AresDataSchemaSimplified())
+      s => JsonSerializer.Deserialize<AresDataSchema>(s, settings) ?? new AresDataSchema())
       .HasColumnType(SerializerSettingsHelper.DetermineColumnType());
   }
 

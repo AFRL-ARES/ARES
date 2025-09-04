@@ -1,4 +1,5 @@
-﻿@using Ares.Datamodel.Templates
+﻿@using Ares.Datamodel.Device
+@using Ares.Datamodel.Templates
 @using UI.Backend.ViewModels.Automation.CampaignEdit
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<MetadataPickerViewModel>
 <div class="d-flex flex-column mb-2">
@@ -10,18 +11,18 @@
                     <RadzenIcon Icon="refresh"/>
                 </button>
             </div>
-            <select @bind="ViewModel!.SelectedDeviceName" class="form-select">
+            <select @onchange="DeviceSelectionChanged" class="form-select">
                 @if (ViewModel!.SelectedDevice is null)
                 {
                     <option value="" selected disabled>Select a Device</option>
                 }
                 else
                 {
-                    <option value="" selected disabled>@ViewModel!.SelectedDeviceName</option>
+                    <option value="" selected disabled>@ViewModel!.SelectedDevice.Name</option>
                 }
                 @foreach (var device in ViewModel!.AvailableDevices)
                 {
-                    <option value="@device.Name">
+                    <option value="@device.UniqueId">
                         @device.Name
                     </option>
                 }
@@ -36,13 +37,13 @@
                 </button>
             </div>
             <select @onchange="MetadataChangedCallback" class="form-select align-self-stretch">
-                @if (ViewModel!.SelectedMetadataName is null)
+                @if (ViewModel!.SelectedCommandMetadata is null)
                 {
                     <option value="" selected disabled>Select a Command</option>
                 }
                 else
                 {
-                    <option value="" selected disabled>@ViewModel!.SelectedMetadataName</option>
+                    <option value="" selected disabled>@ViewModel!.SelectedCommandMetadata.Name</option>
                 }
                 @foreach (var metadata in ViewModel!.AvailableMetadata)
                 {
@@ -53,19 +54,19 @@
             </select>
         </div>
     </div>
-    @if (!string.IsNullOrEmpty(ViewModel!.SelectedMetadataDescription))
+    @if (ViewModel!.SelectedCommandMetadata is not null)
     {
         <div class="my-3">
             <hr/>
-            <span>@ViewModel!.SelectedMetadataDescription</span>
+            <span>@ViewModel!.SelectedCommandMetadata.Description</span>
         </div>
     }
 </div>
 @code {
 
-  // Dummy property so that the parent would have something to bind to to get metadata updates
-  [Parameter]
-  public CommandMetadata? CommandMetadata { get; set; }
+  // Dummy property so that the parent would have something to bind to get metadata updates
+  //[Parameter]
+  //public CommandMetadata? CommandMetadata { get; set; }
 
   [Parameter]
   public EventCallback<CommandMetadata> CommandMetadataChanged { get; set; }
@@ -76,9 +77,24 @@
     StateHasChanged();
   }
 
-    private void MetadataChangedCallback(ChangeEventArgs obj)
+    private async Task MetadataChangedCallback(ChangeEventArgs obj)
     {
-        ViewModel!.SelectedMetadataName = obj?.Value?.ToString();
-        CommandMetadataChanged.InvokeAsync(ViewModel!.SelectedCommandMetadata);
+        var metaName = obj?.Value?.ToString();
+        if (metaName is null)
+            return;
+        
+        ViewModel!.SelectMetadata(metaName);
+        await CommandMetadataChanged.InvokeAsync(ViewModel!.SelectedCommandMetadata);
     }
+
+    private async Task DeviceSelectionChanged(ChangeEventArgs obj)
+    {
+        var deviceId = obj.Value?.ToString();
+        if (deviceId is null)
+            return;
+        
+        await ViewModel!.SelectDevice(deviceId);
+        await CommandMetadataChanged.InvokeAsync(ViewModel!.SelectedCommandMetadata);
+    }
+
 }

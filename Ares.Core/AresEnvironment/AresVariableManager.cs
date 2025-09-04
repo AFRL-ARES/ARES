@@ -1,5 +1,4 @@
-﻿using Ares.Datamodel;
-using Ares.Datamodel.Extensions;
+﻿using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Templates;
 
 namespace Ares.Core.AresEnvironment;

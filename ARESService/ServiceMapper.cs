@@ -1,6 +1,6 @@
 ﻿using AresService.Services.Authentication;
 using AresService.Services.Devices;
-using AresService.Services.DeviceState;
+using AresService.Services.OperationalState;
 using AresService.Services.DeviceStateLogging;
 using AresService.Services.UserManagement;
 using Microsoft.AspNetCore.Builder;

@@ -13,12 +13,13 @@ namespace UI.Backend.ViewModels.Devices.LaserChiller
       _client = client;
     }
 
-    protected override LaserChillerUnitControlViewModel CreateUnitVm(string deviceName) => new(deviceName, _client);
+    protected override LaserChillerUnitControlViewModel CreateUnitVm(AresDeviceDescription description) => new(description.Id, description.Name, _client);
 
-    protected override async Task<IEnumerable<string>> GetDeviceNames()
+    protected override async Task<AresDeviceDescription[]> GetDeviceDescriptions()
     {
       var devicesResponse = await _client.GetAllChillersAsync(new Empty());
-      return devicesResponse.DeviceNames;
+      var descriptions = devicesResponse.Chillers.Select(c => new AresDeviceDescription(c.Id, c.Name)).ToArray();
+      return descriptions;
     }
   }
 }

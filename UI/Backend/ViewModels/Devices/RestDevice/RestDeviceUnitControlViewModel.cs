@@ -6,14 +6,14 @@ public class RestDeviceUnitControlViewModel : UsbDeviceUnitViewModel
 {
   private readonly RestDeviceRpc.RestDeviceRpcClient _client;
 
-  public RestDeviceUnitControlViewModel(string deviceName, RestDeviceRpc.RestDeviceRpcClient client) : base(deviceName)
+  public RestDeviceUnitControlViewModel(string deviceId, string deviceName, RestDeviceRpc.RestDeviceRpcClient client) : base(deviceId, deviceName)
   {
     _client = client;
   }
 
   public async Task UpdateDeviceCapabilities()
   {
-    var response = await _client.GetDeviceCapabilitiesAsync(new DeviceRequest() { DeviceName = DeviceName });
+    var response = await _client.GetDeviceCapabilitiesAsync(new DeviceRequest() { DeviceId = DeviceId });
     DeviceMethods.Clear();
     MethodParameters.Clear();
 
@@ -33,7 +33,7 @@ public class RestDeviceUnitControlViewModel : UsbDeviceUnitViewModel
     if(!found || parameters is null)
       throw new InvalidOperationException("Unknown method requested!");
 
-    var request = new DeviceMethodRequest() { DeviceName = DeviceName, MethodName = commandName };
+    var request = new DeviceMethodRequest() { DeviceId = DeviceId, MethodName = commandName };
 
     foreach(var param in parameters)
     {

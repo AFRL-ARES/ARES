@@ -116,9 +116,9 @@ public class LaserChiller : SerialDevice<ILaserChillerConnection>, ILaserChiller
     }
   }
 
-  public override async Task<bool> Activate()
+  public override async Task<bool> Activate(CancellationToken ct)
   {
-    var activated = await base.Activate();
+    var activated = await base.Activate(ct);
     if(!activated)
       return false;
 
@@ -131,7 +131,7 @@ public class LaserChiller : SerialDevice<ILaserChillerConnection>, ILaserChiller
     return ValueTask.CompletedTask;
   }
 
-  public override Task EnterSafeMode()
+  public override Task EnterSafeMode(CancellationToken ct)
   {
     //TODO: IMPLEMENT ME!!
     throw new NotImplementedException();

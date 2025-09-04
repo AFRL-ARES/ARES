@@ -7,7 +7,7 @@ namespace UI.Backend.ViewModels.Devices.VerdiLaser;
 public class VerdiLaserUnitControlViewModel : SerialDeviceUnitViewModel
 {
   private readonly VerdiV6Rpc.VerdiV6RpcClient _client;
-  public VerdiLaserUnitControlViewModel(string deviceName, VerdiV6Rpc.VerdiV6RpcClient client) : base(deviceName)
+  public VerdiLaserUnitControlViewModel(string id, string deviceName, VerdiV6Rpc.VerdiV6RpcClient client) : base(id, deviceName)
   {
     _client = client;
     this.WhenPropertyChanged(t => t.LaserOn).Subscribe(_ => LaserToggleClicked());
@@ -16,34 +16,34 @@ public class VerdiLaserUnitControlViewModel : SerialDeviceUnitViewModel
   public async Task SetLaserPower()
   {
     IsSavingPowerLevel = true;
-    await _client.SetLaserPowerAsync(new SetLaserPowerRequest { DeviceName = DeviceName, LaserPower = DesiredLaserPower });
+    await _client.SetLaserPowerAsync(new SetLaserPowerRequest { DeviceId = DeviceId, LaserPower = DesiredLaserPower });
     IsSavingPowerLevel = false;
   }
 
   public async Task SetLaserShutter()
   {
-    await _client.SetLaserShutterAsync(new SetShutterRequest { DeviceName = DeviceName, Shutter = IsLaserShutterOn });
+    await _client.SetLaserShutterAsync(new SetShutterRequest { DeviceId = DeviceId, Shutter = IsLaserShutterOn });
   }
 
   public async Task<double> GetLaserPower()
   {
-    var getPowerResponse = await _client.GetLaserPowerAsync(new DeviceRequest() { DeviceName = DeviceName });
+    var getPowerResponse = await _client.GetLaserPowerAsync(new DeviceRequest() { DeviceId = DeviceId });
     return getPowerResponse.LaserPower;
   }
 
   public async Task<bool> GetLaserShutter()
   {
-    var getLaserShutter = await _client.GetLaserShutterAsync(new DeviceRequest() { DeviceName = DeviceName });
+    var getLaserShutter = await _client.GetLaserShutterAsync(new DeviceRequest() { DeviceId = DeviceId });
     return getLaserShutter.Shutter;
   }
 
   public void LaserToggleClicked()
   {
     if(LaserOn)
-      _client.ActivateLaser(new DeviceRequest() { DeviceName = DeviceName });
+      _client.ActivateLaser(new DeviceRequest() { DeviceId = DeviceId });
 
     else
-      _client.DeactivateLaser(new DeviceRequest() { DeviceName = DeviceName });
+      _client.DeactivateLaser(new DeviceRequest() { DeviceId = DeviceId });
 
   }
 

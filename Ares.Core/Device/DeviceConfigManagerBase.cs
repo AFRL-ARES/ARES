@@ -14,18 +14,18 @@ public abstract class DeviceConfigManagerBase<TConfig, TDevice> : IDeviceConfigM
     _dbContextFactory = dbContextFactory;
   }
 
-  public async Task Add(string id, TConfig config)
+  public async Task Add(string id, string name, TConfig config)
   {
     await using var context = _dbContextFactory.CreateDbContext();
-    var existingDeviceConfig = await context.DeviceConfigs.FirstOrDefaultAsync(deviceConfig => deviceConfig.DeviceName == id);
+    var existingDeviceConfig = await context.DeviceConfigs.FirstOrDefaultAsync(deviceConfig => deviceConfig.UniqueId == id);
     if(existingDeviceConfig is not null)
       throw new InvalidOperationException($"A device with id {id} already exists in the configuration database");
 
     var newConfig = new DeviceConfig
     {
-      DeviceName = id,
+      DeviceName = name,
       DeviceType = typeof(TDevice).FullName,
-      UniqueId = Guid.NewGuid().ToString(),
+      UniqueId = id,
       ConfigData = Any.Pack(config)
     };
 
@@ -36,7 +36,7 @@ public abstract class DeviceConfigManagerBase<TConfig, TDevice> : IDeviceConfigM
   public async Task Remove(string id)
   {
     await using var context = _dbContextFactory.CreateDbContext();
-    var genericConfig = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.DeviceName == id);
+    var genericConfig = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.UniqueId == id);
     if(genericConfig is null)
       return;
 
@@ -47,7 +47,7 @@ public abstract class DeviceConfigManagerBase<TConfig, TDevice> : IDeviceConfigM
   public async Task Update(string id, TConfig config)
   {
     await using var context = _dbContextFactory.CreateDbContext();
-    var genericConfig = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.DeviceName == id);
+    var genericConfig = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.UniqueId == id);
     if(genericConfig is null)
       return;
 
@@ -60,7 +60,7 @@ public abstract class DeviceConfigManagerBase<TConfig, TDevice> : IDeviceConfigM
   public async Task<TConfig?> Get(string id)
   {
     await using var context = _dbContextFactory.CreateDbContext();
-    var genericConfig = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.DeviceName == id);
+    var genericConfig = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.UniqueId == id);
     if(genericConfig is null)
       return default;
 

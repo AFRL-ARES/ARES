@@ -11,6 +11,6 @@ public interface IDeviceCommandInterpreter<out TQualifiedDevice>
   where TQualifiedDevice : IAresDevice
 {
   TQualifiedDevice Device { get; }
-  Func<CancellationToken, Task<DeviceCommandResult>> TemplateToDeviceCommand(CommandTemplate commandTemplate);
+  Func<CancellationToken, Task<CommandResult>> TemplateToDeviceCommand(CommandTemplate commandTemplate);
   IEnumerable<CommandMetadata> CommandsToIndexedMetadatas();
 }

@@ -3,7 +3,7 @@
 @inject NotificationService NotificationService
 
 
-<DeviceSettingsContainer DeviceStatusGetter="ViewModel!.GetDeviceStatus" EditCallback="EditCallback" RemoveCallback="RemoveCallback" ActivateCallback="ViewModel.Activate" Name="@ViewModel!.Config.Name">
+<DeviceSettingsContainer DeviceOperationalStatusGetter="ViewModel!.GetDeviceOperationalStatus" EditCallback="EditCallback" RemoveCallback="RemoveCallback" ActivateCallback="ViewModel.Activate" Name="@ViewModel!.Config.Name">
   <div>
     @if(ViewModel!.Config.Simulated)
     {

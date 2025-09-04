@@ -25,6 +25,7 @@ using TicStepperController.Messaging;
 using TubeFurnace.Messaging;
 using UI.Areas.Identity;
 using UI.Authentication;
+using UI.Backend.Devices;
 using UI.Backend.Helpers;
 using UI.Backend.Notifications;
 using UI.Backend.ViewModels;
@@ -36,6 +37,7 @@ using UI.Backend.ViewModels.Devices.CM3Camera;
 using UI.Backend.ViewModels.Devices.HerkulexDRS;
 using UI.Backend.ViewModels.Devices.LaserChiller;
 using UI.Backend.ViewModels.Devices.Mfc;
+using UI.Backend.ViewModels.Devices.Remote;
 using UI.Backend.ViewModels.Devices.RestDevice;
 using UI.Backend.ViewModels.Devices.SerialRestDevice;
 using UI.Backend.ViewModels.Devices.ValveController;
@@ -47,6 +49,7 @@ using UI.Backend.ViewModels.Settings.Analysis;
 using UI.Backend.ViewModels.Settings.Device.CM3Camera;
 using UI.Backend.ViewModels.Settings.Device.LaserChiller;
 using UI.Backend.ViewModels.Settings.Device.Mfc;
+using UI.Backend.ViewModels.Settings.Device.Remote;
 using UI.Backend.ViewModels.Settings.Device.RestDevice;
 using UI.Backend.ViewModels.Settings.Device.SerialRestDevice;
 using UI.Backend.ViewModels.Settings.Device.Servo;
@@ -88,6 +91,9 @@ internal static class ServiceCollectionExtensions
     services.BindViewModelFactories();
     services.AddScoped<ICombinedDeviceIdGetter, CombinedDeviceIdGetter>();
     services.AddSingleton<INotificationRepository, NotificationRepository>();
+
+    services.AddSingleton<DeviceAdapterRepository>();
+    services.AddSingleton<DeviceAdapterManager>();
   }
 
   public static void BindClients(this IServiceCollection services)
@@ -110,7 +116,8 @@ internal static class ServiceCollectionExtensions
     services.AddSingleton(_ => clientManager.GetClient<AresNotificationRpc.AresNotificationRpcClient>());
 
     //Device Clients
-    services.AddScoped(_ => clientManager.GetClient<AresDevices.AresDevicesClient>());
+    //services.AddScoped(_ => clientManager.GetClient<AresDevices.AresDevicesClient>());
+    services.AddSingleton(_ => clientManager.GetClient<AresDevices.AresDevicesClient>());
     services.AddScoped(_ => clientManager.GetClient<MfcRpc.MfcRpcClient>());
     services.AddScoped(_ => clientManager.GetClient<SyringePumpRpc.SyringePumpRpcClient>());
     services.AddScoped(_ => clientManager.GetClient<TubeFurnaceRpc.TubeFurnaceRpcClient>());
@@ -165,6 +172,7 @@ internal static class ServiceCollectionExtensions
     services.AddTransient<TubeFurnaceSettingsListViewModel>();
     services.AddTransient<VerdiLaserSettingsListViewModel>();
     services.AddTransient<LaserChillerSettingsListViewModel>();
+    services.AddTransient<RemoteDeviceSettingsListViewModel>();
 
     //Device Multi-view Models
     services.AddTransient<RestDeviceSettingsListViewModel>();
@@ -181,6 +189,7 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<StepperControllerMultiViewModel>();
     services.AddScoped<VerdiLaserMultiViewModel>();
     services.AddScoped<LaserChillerMultiViewModel>();
+    services.AddScoped<RemoteDeviceDirectorViewModel>();
 
     //Other View Models
     services.AddTransient<DeviceStatesViewModel>();
@@ -188,7 +197,7 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<ManualPlannerViewModel>();
     services.AddScoped<ManualExecutionWidgetViewModel>();
     services.AddScoped<RestDeviceMultiViewModel>();
-    services.AddScoped<SerialRestDeviceMultiViewModel>(); 
+    services.AddScoped<SerialRestDeviceMultiViewModel>();
   }
   private static void BindViewModelFactories(this IServiceCollection services)
   {

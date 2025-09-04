@@ -1,24 +1,19 @@
 ﻿using Ares.Device;
-using Ares.Datamodel.Device;
 
 namespace Ares.Core.CoreDevice;
 
-public class AresCoreDevice : IAresDevice
+public class AresCoreDevice : AresDevice
 {
-  public AresCoreDevice()
+  public AresCoreDevice() : base("ARES", "ARES-CORE-DEVICE")
   {
   }
 
-  public string Name => "ARES";
-
-  public DeviceStatus Status { get; } = new DeviceStatus { DeviceState = DeviceState.Active };
-
-  public Task<bool> Activate()
+  public override Task<bool> Activate(CancellationToken ct)
   {
     return Task.FromResult(true);
   }
 
-  public Task EnterSafeMode()
+  public override Task EnterSafeMode(CancellationToken ct)
   {
     return Task.CompletedTask;
   }

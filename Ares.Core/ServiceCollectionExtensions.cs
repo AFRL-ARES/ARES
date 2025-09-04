@@ -1,6 +1,7 @@
 ﻿using Ares.Core.Analyzing;
 using Ares.Core.AresEnvironment;
 using Ares.Core.Device;
+using Ares.Core.Device.Remote;
 using Ares.Core.Execution;
 using Ares.Core.Execution.Executors;
 using Ares.Core.Execution.Executors.Composers;
@@ -37,6 +38,8 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<IRemoteAnalyzerManager, RemoteAnalyzerManager>();
     services.AddSingleton<IRemotePlannerManager, RemotePlannerManager>();
     services.AddSingleton<IAnalyzerCache, AnalyzerCache>();
+    services.AddSingleton<IRemoteDeviceManager, RemoteDeviceManager>();
+    services.AddSingleton<IDeviceCache, DeviceCache>();
     services.AddSingleton<IPlannerServiceCache, PlannerServiceCache>();
     services.AddSingleton<AresVariableManager>();
     services.AddSingleton<AnalysisRepo>();
