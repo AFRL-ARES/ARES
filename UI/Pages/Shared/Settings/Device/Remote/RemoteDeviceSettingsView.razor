@@ -21,7 +21,7 @@
 </DeviceSettingsContainer>
 
 @code {
-  private async Task EditCallback()
+  async Task EditCallback()
   {
     var viewModel = ViewModel!.EditViewModel;
     var result = await DialogService.OpenAsync("Edit Device", ds =>
@@ -44,12 +44,16 @@
 
   private async Task RefreshCallback()
   {
-    await Task.WhenAll(
-      ViewModel!.UpdateInfoCommand.Execute().ToTask(),
-      ViewModel!.UpdateStateCommand.Execute().ToTask(),
-      ViewModel!.FetchSettingsCommand.Execute().ToTask());
+    await ViewModel!.UpdateInfoCommand.Execute().ToTask();
+    await ViewModel!.UpdateStateCommand.Execute().ToTask();
+    await ViewModel!.FetchSettingsCommand.Execute().ToTask();
   }
 
+  protected override Task OnInitializedAsync()
+  {
+    return RefreshCallback();
+  }
+  
   private Task ValueEditCallback(string name, AresValue value)
   {
     ViewModel!.Settings.Fields[name] = value;

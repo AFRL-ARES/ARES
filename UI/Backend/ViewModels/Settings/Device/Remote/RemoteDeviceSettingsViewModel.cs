@@ -60,11 +60,6 @@ public class RemoteDeviceSettingsViewModel : ReactiveObject
             FetchSettingsCommand.IsExecuting,
             PushSettingsCommand.IsExecuting)
         .ToProperty(this, x => x.IsBusy);
-
-    // Initial data load
-    UpdateInfoCommand.Execute().Subscribe();
-    UpdateStateCommand.Execute().Subscribe();
-    FetchSettingsCommand.Execute().Subscribe();
   }
 
   [Reactive]
