@@ -2,7 +2,7 @@
 @inject DialogService DialogService
 @inject NotificationService NotificationService
 
-<DeviceSettingsContainer DeviceStatusGetter="ViewModel!.GetDeviceStatus" EditCallback="EditCallback" RemoveCallback="RemoveCallback" ActivateCallback="ViewModel.Activate" Name="@ViewModel!.DataloggerConfig.Name">
+<DeviceSettingsContainer DeviceOperationalStatusGetter="ViewModel!.GetDeviceOperationalStatus" EditCallback="EditCallback" RemoveCallback="RemoveCallback" ActivateCallback="ViewModel.Activate" Name="@ViewModel!.DataloggerConfig.Name">
   <div>
     @if (ViewModel!.DataloggerConfig.Simulated)
     {

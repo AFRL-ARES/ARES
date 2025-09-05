@@ -31,25 +31,31 @@ public class SyringePumpSettingsViewModel : ReactiveObject
 
   public SyringePumpConfigEditViewModel EditViewModel { get; }
 
-  public Task<DeviceStatus> GetDeviceStatus()
+  public Task<DeviceOperationalStatus> GetDeviceOperationalStatus()
   {
     try
     {
-      return _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceName = SyringePumpConfig.Name }).ResponseAsync;
+      return _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceId = _deviceConfig.UniqueId }).ResponseAsync;
     }
-    catch (RpcException)
+    catch(RpcException)
     {
-      return Task.FromResult(new DeviceStatus { DeviceState = DeviceState.Error, Message = $"Unable to find a registered syringe pump with a name {SyringePumpConfig.Name}" });
+      return Task.FromResult(new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Unable to find a registered syringe pump with a name {SyringePumpConfig.Name}" });
     }
   }
 
   public Task Activate()
-    => _devicesClient.ActivateAsync(new DeviceActivateRequest { DeviceName = SyringePumpConfig.Name }).ResponseAsync;
+    => _devicesClient.ActivateAsync(new DeviceActivateRequest { DeviceId = _deviceConfig.UniqueId }).ResponseAsync;
 
   public async Task Save()
   {
     var syringePumpConfig = EditViewModel.Save();
-    await _syringePumpClient.UpdateSyringePumpAsync(syringePumpConfig);
+    var updateRequest = new SyringePumpUpdateRequest
+    {
+      Id = _deviceConfig.UniqueId,
+      Config = syringePumpConfig
+    };
+
+    await _syringePumpClient.UpdateSyringePumpAsync(updateRequest);
   }
 
   public async Task Remove()

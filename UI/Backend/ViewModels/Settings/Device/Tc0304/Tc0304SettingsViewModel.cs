@@ -32,15 +32,15 @@ public class Tc0304SettingsViewModel : ReactiveObject
 
   public Tc0304ConfigEditViewModel EditViewModel { get; }
 
-  public Task<DeviceStatus> GetDeviceStatus()
+  public Task<DeviceOperationalStatus> GetDeviceOperationalStatus()
   {
     try
     {
-      return _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceName = DataloggerConfig.Name }).ResponseAsync;
+      return _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceId = _deviceConfig.UniqueId }).ResponseAsync;
     }
-    catch (RpcException)
+    catch(RpcException)
     {
-      return Task.FromResult(new DeviceStatus { DeviceState = DeviceState.Error, Message = $"Unable to find a registered TC0304 datalogger with a name {DataloggerConfig.Name}" });
+      return Task.FromResult(new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Unable to find a registered TC0304 datalogger with a name {DataloggerConfig.Name}" });
     }
   }
 
@@ -49,18 +49,24 @@ public class Tc0304SettingsViewModel : ReactiveObject
   public async Task Save()
   {
     var dataloggerConfig = EditViewModel.Save();
-    await _dataloggerClient.UpdateTc0304Async(dataloggerConfig);
+    var updateRequest = new UpdateTc0304Request
+    {
+      Id = _deviceConfig.UniqueId,
+      Config = dataloggerConfig
+    };
+
+    await _dataloggerClient.UpdateTc0304Async(updateRequest);
   }
 
   public Task Activate()
     => _devicesClient.ActivateAsync(new DeviceActivateRequest
     {
-      DeviceName = DataloggerConfig.Name
+      DeviceId = _deviceConfig.UniqueId
     }).ResponseAsync;
 
   public async Task Remove()
   {
-    await _dataloggerClient.RemoveTc0304Async(new Tc0304Request { Tc0304Name = _deviceConfig.DeviceName });
+    await _dataloggerClient.RemoveTc0304Async(new Tc0304Request { Tc0304Id = _deviceConfig.UniqueId });
     await OnRemoveCallback();
   }
 }

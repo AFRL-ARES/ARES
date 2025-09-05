@@ -9,7 +9,7 @@ public class StepperControllerViewModel : SerialDeviceUnitViewModel, IAsyncDispo
   private readonly CancellationTokenSource _stateUpdateTokenSource = new();
   private Task _stateListener = Task.CompletedTask;
 
-  public StepperControllerViewModel(string name, StepperControllerRpc.StepperControllerRpcClient client) : base(name)
+  public StepperControllerViewModel(string id, string name, StepperControllerRpc.StepperControllerRpcClient client) : base(id, name)
   {
     _client = client;
     StartStateUpdater();
@@ -44,37 +44,37 @@ public class StepperControllerViewModel : SerialDeviceUnitViewModel, IAsyncDispo
 
   public Task ExitSafeStart()
   {
-    return _client.ExitSafeStartAsync(new TicRequest { TicName = DeviceName }).ResponseAsync;
+    return _client.ExitSafeStartAsync(new TicRequest { TicId = DeviceId }).ResponseAsync;
   }
 
   public Task EnterSafeStart()
   {
-    return _client.EnterSafeStartAsync(new TicRequest { TicName = DeviceName }).ResponseAsync;
+    return _client.EnterSafeStartAsync(new TicRequest { TicId = DeviceId }).ResponseAsync;
   }
 
   public Task HaltAndHold()
   {
-    return _client.HaltAndHoldAsync(new TicRequest { TicName = DeviceName }).ResponseAsync;
+    return _client.HaltAndHoldAsync(new TicRequest { TicId = DeviceId }).ResponseAsync;
   }
 
   public Task NextStep()
   {
-    return _client.NextStepAsync(new TicRequest { TicName = DeviceName }).ResponseAsync;
+    return _client.NextStepAsync(new TicRequest { TicId = DeviceId }).ResponseAsync;
   }
 
   public Task PreviousStep()
   {
-    return _client.PreviousStepAsync(new TicRequest { TicName = DeviceName }).ResponseAsync;
+    return _client.PreviousStepAsync(new TicRequest { TicId = DeviceId }).ResponseAsync;
   }
 
   public Task HalfStep()
   {
-    return _client.HalfStepAsync(new TicRequest { TicName = DeviceName }).ResponseAsync;
+    return _client.HalfStepAsync(new TicRequest { TicId = DeviceId }).ResponseAsync;
   }
 
   public Task SetTargetPosition(int position)
   {
-    return _client.SetTargetPositionAsync(new PositionCommand { TicName = DeviceName, Position = position }).ResponseAsync;
+    return _client.SetTargetPositionAsync(new PositionCommand { TicId = DeviceId, Position = position }).ResponseAsync;
   }
 
   #endregion
@@ -104,7 +104,7 @@ public class StepperControllerViewModel : SerialDeviceUnitViewModel, IAsyncDispo
 
   private async Task UpdateState()
   {
-    var response = await _client.GetStateAsync(new TicRequest { TicName = DeviceName });
+    var response = await _client.GetStateAsync(new TicRequest { TicId = DeviceId });
     if (!response.Valid)
       return;
 

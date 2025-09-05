@@ -125,19 +125,19 @@ public class RestDevice : AresRestDevice, IRestDevice
     StartStateUpdater(TimeSpan.FromSeconds(2));
   }
 
-  public override async Task<bool> Activate()
+  public override async Task<bool> Activate(CancellationToken ct)
   {
     var success = await Init();
 
     if(success)
     {
-      Status.DeviceState = DeviceState.Active;
+      Status.OperationalState = OperationalState.Active;
       Status.Message = "Successfully Connected to REST API Device!";
     }
 
     else
     {
-      Status.DeviceState = DeviceState.Error;
+      Status.OperationalState = OperationalState.Error;
       Status.Message = "ARES was unable to connect to REST API Device";
     }
 
@@ -229,7 +229,7 @@ public class RestDevice : AresRestDevice, IRestDevice
     return AresValueHelper.CreateNull();
   }
 
-  public override Task EnterSafeMode()
+  public override Task EnterSafeMode(CancellationToken ct)
   {
     throw new NotImplementedException();
   }

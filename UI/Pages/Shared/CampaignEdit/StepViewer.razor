@@ -14,7 +14,10 @@
           <span class="badge">@CommandTemplates.Count</span>
       </div>
       <div class="col">
-        <UI.Pages.Resources.ExperimentOutputIcon />
+        @if(HasExperimentOutputs)
+        {
+          <UI.Pages.Resources.ExperimentOutputIcon />
+        }
       </div>
     </div>
   </div>

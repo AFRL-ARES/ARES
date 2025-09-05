@@ -13,17 +13,22 @@ service RestDeviceRpc {
 	rpc GetDeviceCapabilities(DeviceRequest) returns (DeviceCapabilitiesResponse);
 	
 	rpc GetAllRestDevices(google.protobuf.Empty) returns (GetAllRestDevicesResponse);
-	rpc UpdateRestDevice(config.RestDeviceConfig) returns (google.protobuf.Empty);
+	rpc UpdateRestDevice(RestDeviceUpdateRequest) returns (google.protobuf.Empty);
 	rpc RemoveRestDevice(DeviceRequest) returns (google.protobuf.Empty);
 	rpc AddRestDevice(config.RestDeviceConfig) returns (google.protobuf.Empty);
 }
 
+message RestDeviceUpdateRequest {
+	string id = 1;
+	config.RestDeviceConfig config = 2;
+}
+
 message DeviceRequest {
-	string device_name = 1;
+	string device_id = 1;
 }
 
 message DeviceCapabilitiesResponse {
-	string device_name = 1;
+	string device_id = 1;
 	repeated DeviceMethodInfo device_methods = 2;
 }
 
@@ -32,11 +37,16 @@ message DataResponse {
 }
 
 message GetAllRestDevicesResponse {
-	repeated string device_names = 1;
+	repeated RestDeviceDescription devices = 1;
+}
+
+message RestDeviceDescription {
+	string id = 1;
+	string name = 2;
 }
 
 message DeviceMethodRequest {
-	string device_name = 1;
+	string device_id = 1;
 	string method_name = 2;
 	repeated string parameter_names = 3;
 	repeated string parameter_values = 4;  

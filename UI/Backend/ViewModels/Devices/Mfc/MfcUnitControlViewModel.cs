@@ -13,10 +13,10 @@ public class MfcUnitControlViewModel : SerialDeviceUnitViewModel, IAsyncDisposab
   private readonly CancellationTokenSource _stateStreamCts = new();
   private Task _stateListener = Task.CompletedTask;
 
-  public MfcUnitControlViewModel(string mfcName, MfcRpc.MfcRpcClient mfcClient) : base(mfcName)
+  public MfcUnitControlViewModel(string mfcId, string mfcName, MfcRpc.MfcRpcClient mfcClient) : base(mfcId, mfcName)
   {
     MfcName = mfcName;
-    _deviceRequest = new DeviceRequest { DeviceName = MfcName };
+    _deviceRequest = new DeviceRequest { DeviceId = DeviceId };
     _mfcClient = mfcClient;
     Initialize();
   }
@@ -90,18 +90,18 @@ public class MfcUnitControlViewModel : SerialDeviceUnitViewModel, IAsyncDisposab
         CapturingLiveData = true;
         try
         {
-          while (!_stateStreamCts.Token.IsCancellationRequested)
+          while(!_stateStreamCts.Token.IsCancellationRequested)
           {
             var stateResponse = await _mfcClient.GetStateUpdateAsync(_deviceRequest, null, null, _stateStreamCts.Token);
             UpdateState(stateResponse);
             await Task.Delay(100);
           }
         }
-        catch (Exception ex) when (ex is ObjectDisposedException or OperationCanceledException)
+        catch(Exception ex) when(ex is ObjectDisposedException or OperationCanceledException)
         {
           Console.WriteLine($"~~~~~~~ Exception Getting State, Thread will live probably? ~~~~~~~");
         }
-        catch (Exception ex)
+        catch(Exception ex)
         {
           Console.WriteLine($"~~~~~~~ Exception Getting State, Thread will die probably? ~~~~~~~");
         }
@@ -110,7 +110,7 @@ public class MfcUnitControlViewModel : SerialDeviceUnitViewModel, IAsyncDisposab
       },
         _stateStreamCts.Token);
     }
-    catch (OperationCanceledException)
+    catch(OperationCanceledException)
     {
     }
   }
@@ -119,38 +119,38 @@ public class MfcUnitControlViewModel : SerialDeviceUnitViewModel, IAsyncDisposab
   {
     AssumedId = state.AssumedId?.FirstOrDefault();
     AvailableGases = state.AvailableGasInfos;
-    if (state.Data is null)
+    if(state.Data is null)
     {
       HasValidData = false;
       return;
     }
     HasValidData = true;
 
-    if (state.Data.Temperature is not null)
+    if(state.Data.Temperature is not null)
     {
       var foundTempUnit = UnitsNet.Temperature.TryParseUnit(state.Data.Temperature.Unit, out var tempUnit);
       Temperature = UnitsNet.Temperature.From(state.Data.Temperature.Value, foundTempUnit ? tempUnit : TemperatureUnit.DegreeCelsius);
     }
 
-    if (state.Data.AbsolutePressure is not null)
+    if(state.Data.AbsolutePressure is not null)
     {
       var foundAbsolutePressureUnit = Pressure.TryParseUnit(state.Data.AbsolutePressure.Unit, out var pressureUnit);
       AbsolutePressure = Pressure.From(state.Data.AbsolutePressure.Value, foundAbsolutePressureUnit ? pressureUnit : PressureUnit.PoundForcePerSquareInch);
     }
 
-    if (state.Data.VolumetricFlow is not null)
+    if(state.Data.VolumetricFlow is not null)
     {
       var foundVolumetricFlowUnit = VolumeFlow.TryParseUnit(state.Data.VolumetricFlow.Unit, out var volumeFlowUnit);
       VolumetricFlow = VolumeFlow.From(state.Data.VolumetricFlow.Value, foundVolumetricFlowUnit ? volumeFlowUnit : VolumeFlowUnit.CubicCentimeterPerMinute);
     }
 
-    if (state.Data.MassFlow is not null)
+    if(state.Data.MassFlow is not null)
     {
       var foundMassFlowUnit = StandardVolumeFlow.TryParseUnit(state.Data.MassFlow.Unit, out var massFlowUnit);
       MassFlow = StandardVolumeFlow.From(state.Data.MassFlow.Value, foundMassFlowUnit ? massFlowUnit : StandardVolumeFlowUnit.StandardCubicCentimeterPerMinute);
     }
 
-    if (state.Data.Setpoint is not null)
+    if(state.Data.Setpoint is not null)
     {
       var foundSetPointUnit = StandardVolumeFlow.TryParseUnit(state.Data.Setpoint.Unit, out var setpointUnit);
       Setpoint = StandardVolumeFlow.From(state.Data.Setpoint.Value, foundSetPointUnit ? setpointUnit : StandardVolumeFlowUnit.StandardCubicCentimeterPerMinute);
@@ -173,7 +173,7 @@ public class MfcUnitControlViewModel : SerialDeviceUnitViewModel, IAsyncDisposab
 
   public void SetSetpoint()
   {
-    if (!TargetSetpoint.HasValue)
+    if(!TargetSetpoint.HasValue)
       return;
     var setSetpointReq = new SetSetpointRequest { DeviceRequest = _deviceRequest, Setpoint = TargetSetpoint.Value };
     _mfcClient.SetSetpoint(setSetpointReq);

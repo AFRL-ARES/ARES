@@ -23,7 +23,7 @@ public abstract class DeviceDbLoaderBase<TDevice, TConfig> : IDeviceDbLoader whe
     await using var context = _dbContextFactory.CreateDbContext();
     var deviceConfigs = await context.DeviceConfigs
       .Where(config => config.DeviceType == typeof(TDevice).FullName)
-      .Select(config => config.ConfigData.Unpack<TConfig>()).ToArrayAsync();
+      .Select(config => new LoadableConfig<TConfig>(config.UniqueId, config.ConfigData.Unpack<TConfig>())).ToArrayAsync();
     await _deviceManager.Load(deviceConfigs);
   }
 }

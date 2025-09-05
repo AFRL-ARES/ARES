@@ -1,11 +1,14 @@
 ﻿using Ares.Core.Device;
 using Ares.Device.Serial;
 using AresService.ConnectionManagement;
+using AresService.DeviceDbLoaders;
 using HerkulexDRS;
 using HerkulexDRS.Config;
 using HerkulexDRS.Simulation;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace AresService.DeviceManagers;
@@ -22,36 +25,44 @@ public class ServoDeviceManager : IDeviceManager<ServoConfig, IServo>
     _connectionManager = connectionManager;
   }
 
-  public async Task<IServo> Load(ServoConfig config)
+  public Task<IServo> Create(ServoConfig config)
+  {
+    return Load(Guid.NewGuid().ToString(), config);
+  }
+
+  public async Task<IServo> Load(string id, ServoConfig config)
   {
     var connection = _connectionManager.GetConnection(config.PortName, config.Simulated);
-    var device = new Servo(config.Name, connection);
+    var device = new Servo(config.Name, connection)
+    {
+      UniqueId = id
+    };
 
-    await device.Activate();
+    await device.Activate(CancellationToken.None);
     var interpreter = new ServoInterpreter(device);
     _deviceCommandInterpreterRepo.Add(interpreter);
 
     return device;
   }
 
-  public async Task<IServo> Update(ServoConfig config)
+  public async Task<IServo> Update(string deviceId, ServoConfig config)
   {
     var existingServo = _deviceCommandInterpreterRepo
       .Select(interpreter => interpreter.Device)
       .OfType<IServo>()
-      .FirstOrDefault(device => device.Name == config.Name);
+      .FirstOrDefault(device => device.UniqueId == deviceId);
 
     if(existingServo is null)
-      return await Load(config);
+      return await Create(config);
 
     // if nothing changed, don't bother re-adding the device
     if(existingServo.Connection.Name == config.PortName)
       if((existingServo.Connection is SimServoConnection && config.Simulated) || (existingServo.Connection is ServoConnection && !config.Simulated))
         return existingServo;
 
-    await Remove(existingServo.Name);
+    await Remove(existingServo.UniqueId);
 
-    return await Load(config);
+    return await Load(deviceId, config);
   }
 
   public async Task Remove(string servoName)
@@ -74,9 +85,9 @@ public class ServoDeviceManager : IDeviceManager<ServoConfig, IServo>
       _connectionManager.RemoveConnection(connection);
   }
 
-  public async Task<IEnumerable<IServo>> Load(IEnumerable<ServoConfig> configs)
+  public async Task<IServo[]> Load(IEnumerable<LoadableConfig<ServoConfig>> configs)
   {
-    var servos = await Task.WhenAll(configs.Select(Load));
+    var servos = await Task.WhenAll(configs.Select(c => Load(c.Id, c.DeviceConfig)));
     return servos;
   }
 }

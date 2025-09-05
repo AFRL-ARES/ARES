@@ -21,4 +21,5 @@ message StepperControllerConfig {
   google.protobuf.DoubleValue step_angle = 13;
   bool dynamic_step_calculation = 14; // determines whether we calculate the number of steps we take dynamically
   bool simulated = 15; // whether or not this stepper controller is simulated or not
+
 }

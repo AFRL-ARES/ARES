@@ -1,0 +1,61 @@
+﻿using Ares.Core.Device.Remote;
+using Ares.Datamodel.Device;
+
+namespace Ares.Core.Analyzing;
+internal class RemoteDeviceMonitor : IDisposable
+{
+  private readonly RemoteDevice _device;
+  private readonly Task _monitorTask;
+  private readonly CancellationTokenSource _tokenSource;
+  private OperationalState _lastState = OperationalState.Unspecified;
+  readonly IDeviceCache _deviceCache;
+
+  public RemoteDeviceMonitor(RemoteDevice device, IDeviceCache deviceCache)
+  {
+    _deviceCache = deviceCache;
+    _device = device;
+    _tokenSource = new CancellationTokenSource();
+    _monitorTask = Monitor(_tokenSource.Token);
+  }
+
+  public string DeviceId => _device.UniqueId;
+
+  public void Dispose()
+  {
+    _tokenSource.Cancel();
+    _monitorTask.ContinueWith(_ => _tokenSource.Dispose());
+  }
+
+  private Task Monitor(CancellationToken token)
+  {
+    return Task.Run(async () =>
+    {
+      while(!token.IsCancellationRequested)
+      {
+        await _device.FetchOperationalStatus();
+
+        if(_lastState != OperationalState.Active && _device.Status.OperationalState == OperationalState.Active)
+        {
+          await _device.FetchInfo();
+          await _device.FetchSettings();
+          await _device.FetchCommands();
+          await _device.StopStateStream();
+          _ = _device.StartStateStream();
+          await _device.FetchOperationalStatus();
+          await _deviceCache.CacheDeviceInfo(_device);
+          await _deviceCache.CacheDeviceSettings(_device);
+        }
+
+        _lastState = _device.Status.OperationalState;
+
+        try
+        {
+          await Task.Delay(TimeSpan.FromSeconds(5), token);
+        }
+        catch(TaskCanceledException)
+        {
+        }
+      }
+    }, token);
+  }
+}

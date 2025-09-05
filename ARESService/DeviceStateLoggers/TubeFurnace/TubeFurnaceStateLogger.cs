@@ -21,12 +21,12 @@ public class TubeFurnaceStateLogger : ITubeFurnaceStateLogger
     _tubeFurnace = tubeFurnace;
   }
 
-  public string DeviceId => _tubeFurnace.Name;
+  public string DeviceId => _tubeFurnace.UniqueId;
 
   public async Task Start()
   {
     using var context = _dbContextFactory.CreateDbContext();
-    var existingInfo = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.DeviceName == _tubeFurnace.Name && config.DeviceType == _tubeFurnace.GetType().FullName);
+    var existingInfo = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.UniqueId == _tubeFurnace.UniqueId && config.DeviceType == _tubeFurnace.GetType().FullName);
     _stateWatcher = _tubeFurnace.StateStream
       .Subscribe(async state => await UpdateState(state));
   }

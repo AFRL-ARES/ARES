@@ -26,34 +26,40 @@ public class LaserChillerSettingsViewModel : ReactiveObject
     EditViewModel = new LaserChillerConfigEditViewModel(_chillerClient, _devicesClient, ChillerConfig);
   }
 
-  public Task<DeviceStatus> GetDeviceStatus()
+  public Task<DeviceOperationalStatus> GetDeviceOperationalStatus()
   {
     try
     {
-      return _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceName = ChillerConfig.Name }).ResponseAsync;
+      return _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceId = _deviceConfig.UniqueId }).ResponseAsync;
     }
 
     catch(RpcException)
     {
-      return Task.FromResult(new DeviceStatus { DeviceState = DeviceState.Error, Message = $"Unable to find a registered V6 Laser with a name {ChillerConfig.Name}" });
+      return Task.FromResult(new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Unable to find a registered V6 Laser with a name {ChillerConfig.Name}" });
     }
   }
 
   public async Task Save()
   {
     var laserConfig = EditViewModel.Save();
-    await _chillerClient.UpdateChillerAsync(laserConfig);
+    var updateRequest = new UpdateChillerRequest
+    {
+      ChillerId = _deviceConfig.UniqueId,
+      Config = laserConfig
+    };
+
+    await _chillerClient.UpdateChillerAsync(updateRequest);
   }
 
   public Task Activate()
     => _devicesClient.ActivateAsync(new DeviceActivateRequest
     {
-      DeviceName = ChillerConfig.Name
+      DeviceId = _deviceConfig.UniqueId
     }).ResponseAsync;
 
   public async Task Remove()
   {
-    await _chillerClient.RemoveChillerAsync(new ChillerRequest { ChillerName = _deviceConfig.DeviceName });
+    await _chillerClient.RemoveChillerAsync(new ChillerRequest { ChillerId = _deviceConfig.UniqueId });
     await OnRemoveCallback();
   }
 

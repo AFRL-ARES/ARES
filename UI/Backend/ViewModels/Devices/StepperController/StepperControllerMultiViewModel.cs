@@ -14,12 +14,13 @@ public class StepperControllerMultiViewModel : SerialDeviceConnectorViewModel<St
     _client = client;
   }
 
-  protected override StepperControllerViewModel CreateUnitVm(string deviceName)
-    => new(deviceName, _client);
+  protected override StepperControllerViewModel CreateUnitVm(AresDeviceDescription description)
+    => new(description.Id, description.Name, _client);
 
-  protected override async Task<IEnumerable<string>> GetDeviceNames()
+  protected override async Task<AresDeviceDescription[]> GetDeviceDescriptions()
   {
     var devicesResponse = await _client.GetAllControllersAsync(new Empty());
-    return devicesResponse.TicControllers;
+    var descriptions = devicesResponse.TicControllers.Select(tc => new AresDeviceDescription(tc.Id, tc.Name)).ToArray();
+    return descriptions;
   }
 }

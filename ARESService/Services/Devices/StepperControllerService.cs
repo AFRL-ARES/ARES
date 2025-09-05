@@ -1,12 +1,12 @@
-﻿using Ares.Core.Device;
+﻿using System;
+using System.Linq;
+using System.Reactive.Linq;
+using System.Threading.Tasks;
+using Ares.Core.Device;
 using AresService.DeviceManagers;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Linq;
-using System.Reactive.Linq;
-using System.Threading.Tasks;
 using TicStepperController;
 using TicStepperController.Config;
 using TicStepperController.Messaging;
@@ -34,10 +34,9 @@ public class StepperControllerService : StepperControllerRpc.StepperControllerRp
 
   public override async Task<Empty> AddStepperController(StepperControllerConfig request, ServerCallContext context)
   {
-    await _stepperManager.Load(request);
-    var device = GetStepperController(request.Name);
+    var device = await _stepperManager.Create(request);
     request = await FillConfig(device, request);
-    await _configManager.Add(request.Name, request);
+    await _configManager.Add(device.UniqueId, device.Name, request);
 
     return new Empty();
   }
@@ -65,7 +64,7 @@ public class StepperControllerService : StepperControllerRpc.StepperControllerRp
 
   public override async Task<Empty> DeEnergize(TicRequest request, ServerCallContext context)
   {
-    var controller = GetStepperController(request.TicName);
+    var controller = GetStepperController(request.TicId);
     await controller.DeEnergize();
 
     return new Empty();
@@ -73,7 +72,7 @@ public class StepperControllerService : StepperControllerRpc.StepperControllerRp
 
   public override async Task<Empty> Energize(TicRequest request, ServerCallContext context)
   {
-    var controller = GetStepperController(request.TicName);
+    var controller = GetStepperController(request.TicId);
     await controller.Energize();
 
     return new Empty();
@@ -81,7 +80,7 @@ public class StepperControllerService : StepperControllerRpc.StepperControllerRp
 
   public override async Task<Empty> EnterSafeStart(TicRequest request, ServerCallContext context)
   {
-    var controller = GetStepperController(request.TicName);
+    var controller = GetStepperController(request.TicId);
     await controller.EnterSafeStart();
 
     return new Empty();
@@ -89,7 +88,7 @@ public class StepperControllerService : StepperControllerRpc.StepperControllerRp
 
   public override async Task<Empty> ExitSafeStart(TicRequest request, ServerCallContext context)
   {
-    var controller = GetStepperController(request.TicName);
+    var controller = GetStepperController(request.TicId);
     await controller.ExitSafeStart();
 
     return new Empty();
@@ -97,7 +96,7 @@ public class StepperControllerService : StepperControllerRpc.StepperControllerRp
 
   public override async Task<TicState> GetState(TicRequest request, ServerCallContext context)
   {
-    var controller = GetStepperController(request.TicName);
+    var controller = GetStepperController(request.TicId);
     var currentState = await controller.StateStream.Where(state => state.Valid).Take(1);
 
     return currentState;
@@ -105,7 +104,7 @@ public class StepperControllerService : StepperControllerRpc.StepperControllerRp
 
   public override async Task<Empty> HaltAndHold(TicRequest request, ServerCallContext context)
   {
-    var controller = GetStepperController(request.TicName);
+    var controller = GetStepperController(request.TicId);
     await controller.HaltAndHold();
 
     return new Empty();
@@ -113,7 +112,7 @@ public class StepperControllerService : StepperControllerRpc.StepperControllerRp
 
   public override async Task<Empty> HaltAndSetPosition(PositionCommand request, ServerCallContext context)
   {
-    var controller = GetStepperController(request.TicName);
+    var controller = GetStepperController(request.TicId);
     await controller.HaltAndSetPosition(request.Position);
 
     return new Empty();
@@ -121,7 +120,7 @@ public class StepperControllerService : StepperControllerRpc.StepperControllerRp
 
   public override async Task<Empty> NextStep(TicRequest request, ServerCallContext context)
   {
-    var controller = GetStepperController(request.TicName);
+    var controller = GetStepperController(request.TicId);
     await controller.NextStep();
 
     return new Empty();
@@ -129,7 +128,7 @@ public class StepperControllerService : StepperControllerRpc.StepperControllerRp
 
   public override async Task<Empty> PreviousStep(TicRequest request, ServerCallContext context)
   {
-    var controller = GetStepperController(request.TicName);
+    var controller = GetStepperController(request.TicId);
     await controller.PreviousStep();
 
     return new Empty();
@@ -137,7 +136,7 @@ public class StepperControllerService : StepperControllerRpc.StepperControllerRp
 
   public override async Task<Empty> HalfStep(TicRequest request, ServerCallContext context)
   {
-    var controller = GetStepperController(request.TicName);
+    var controller = GetStepperController(request.TicId);
     await controller.HalfStep();
 
     return new Empty();
@@ -145,15 +144,15 @@ public class StepperControllerService : StepperControllerRpc.StepperControllerRp
 
   public override async Task<Empty> RemoveStepperController(TicRequest request, ServerCallContext context)
   {
-    await _stepperManager.Remove(request.TicName);
-    await _configManager.Remove(request.TicName);
+    await _stepperManager.Remove(request.TicId);
+    await _configManager.Remove(request.TicId);
 
     return new Empty();
   }
 
   public override async Task<Empty> Reset(TicRequest request, ServerCallContext context)
   {
-    var controller = GetStepperController(request.TicName);
+    var controller = GetStepperController(request.TicId);
     await controller.Reset();
 
     return new Empty();
@@ -161,7 +160,7 @@ public class StepperControllerService : StepperControllerRpc.StepperControllerRp
 
   public override async Task<Empty> ResetCommandTimeout(TicRequest request, ServerCallContext context)
   {
-    var controller = GetStepperController(request.TicName);
+    var controller = GetStepperController(request.TicId);
     await controller.ResetCommandTimeout();
 
     return new Empty();
@@ -169,7 +168,7 @@ public class StepperControllerService : StepperControllerRpc.StepperControllerRp
 
   public override Task<Empty> SetCustomStepSize(UnsignedCommand request, ServerCallContext context)
   {
-    var controller = GetStepperController(request.TicName);
+    var controller = GetStepperController(request.TicId);
     controller.UserStepSize = request.Argument;
 
     return Task.FromResult(new Empty());
@@ -177,7 +176,7 @@ public class StepperControllerService : StepperControllerRpc.StepperControllerRp
 
   public override async Task<Empty> SetMaxAcceleration(AccelerationCommand request, ServerCallContext context)
   {
-    var controller = GetStepperController(request.TicName);
+    var controller = GetStepperController(request.TicId);
     await controller.SetMaxAcceleration(request.Acceleration);
 
     return new Empty();
@@ -185,7 +184,7 @@ public class StepperControllerService : StepperControllerRpc.StepperControllerRp
 
   public override async Task<Empty> SetCurrentLimit(CurrentLimitCommand request, ServerCallContext context)
   {
-    var controller = GetStepperController(request.TicName);
+    var controller = GetStepperController(request.TicId);
     await controller.SetCurrentLimit(request.Limit);
 
     return new Empty();
@@ -193,7 +192,7 @@ public class StepperControllerService : StepperControllerRpc.StepperControllerRp
 
   public override async Task<Empty> SetMaxDeceleration(AccelerationCommand request, ServerCallContext context)
   {
-    var controller = GetStepperController(request.TicName);
+    var controller = GetStepperController(request.TicId);
     await controller.SetMaxDeceleration(request.Acceleration);
 
     return new Empty();
@@ -201,7 +200,7 @@ public class StepperControllerService : StepperControllerRpc.StepperControllerRp
 
   public override async Task<Empty> SetMaxSpeed(UnsignedCommand request, ServerCallContext context)
   {
-    var controller = GetStepperController(request.TicName);
+    var controller = GetStepperController(request.TicId);
     await controller.SetMaxSpeed(request.Argument);
 
     return new Empty();
@@ -209,7 +208,7 @@ public class StepperControllerService : StepperControllerRpc.StepperControllerRp
 
   public override async Task<Empty> SetStartingSpeed(UnsignedCommand request, ServerCallContext context)
   {
-    var controller = GetStepperController(request.TicName);
+    var controller = GetStepperController(request.TicId);
     await controller.SetStartingSpeed(request.Argument);
 
     return new Empty();
@@ -217,7 +216,7 @@ public class StepperControllerService : StepperControllerRpc.StepperControllerRp
 
   public override async Task<Empty> SetStepMode(StepModeCommand request, ServerCallContext context)
   {
-    var controller = GetStepperController(request.TicName);
+    var controller = GetStepperController(request.TicId);
     await controller.SetStepMode(request.StepMode.ToInternal());
 
     return new Empty();
@@ -225,16 +224,16 @@ public class StepperControllerService : StepperControllerRpc.StepperControllerRp
 
   public override async Task<Empty> SetTargetPosition(PositionCommand request, ServerCallContext context)
   {
-    var controller = GetStepperController(request.TicName);
+    var controller = GetStepperController(request.TicId);
     await controller.SetTargetPosition(request.Position);
 
     return new Empty();
   }
 
-  public override async Task<Empty> UpdateStepperController(StepperControllerConfig request, ServerCallContext context)
+  public override async Task<Empty> UpdateStepperController(StepperControllerUpdateRequest request, ServerCallContext context)
   {
-    await _stepperManager.Update(request);
-    await _configManager.Update(request.Name, request);
+    await _stepperManager.Update(request.Id, request.Config);
+    await _configManager.Update(request.Id, request.Config);
 
     return new Empty();
   }
@@ -244,7 +243,7 @@ public class StepperControllerService : StepperControllerRpc.StepperControllerRp
     var devices = _deviceCommandInterpreterRepo
       .Select(interpreter => interpreter.Device)
       .OfType<IStepperController>()
-      .Select(controller => controller.Name);
+      .Select(controller => new DeviceDescription { Id = controller.UniqueId, Name = controller.Name });
 
     var response = new GetAllControllersResponse();
     response.TicControllers.AddRange(devices);
@@ -252,15 +251,15 @@ public class StepperControllerService : StepperControllerRpc.StepperControllerRp
     return Task.FromResult(response);
   }
 
-  private IStepperController GetStepperController(string name)
+  private IStepperController GetStepperController(string id)
   {
     var controller = _deviceCommandInterpreterRepo
       .Select(dci => dci.Device)
       .OfType<IStepperController>()
-      .FirstOrDefault(sc => sc.Name == name);
+      .FirstOrDefault(sc => sc.UniqueId == id);
 
     if(controller is null)
-      throw new InvalidOperationException($"Could not find TIC Stepper Controller ({name})");
+      throw new InvalidOperationException($"Could not find TIC Stepper Controller ({id})");
 
     return controller;
   }

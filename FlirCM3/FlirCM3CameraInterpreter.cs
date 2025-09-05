@@ -19,7 +19,7 @@ public class FlirCM3CameraInterpreter : DeviceCommandInterpreter<IFlirCM3Camera,
     {
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = FlirCM3CommandType.CaptureImage.ToString(),
         Description = "A command that tells the attached camera to capture a single image.",
         ParameterMetadatas = { new ParameterMetadata {Index = 0, Name = FlirCM3CommandParameter.SavePath.ToString(), Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.String, true) } },
@@ -33,7 +33,7 @@ public class FlirCM3CameraInterpreter : DeviceCommandInterpreter<IFlirCM3Camera,
 
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = FlirCM3CommandType.SetExposureTime.ToString(),
         Description = "A command that sets the exposure time of the attached camera.",
         ParameterMetadatas = { new ParameterMetadata {Index = 0, Name = FlirCM3CommandParameter.ExposureTime.ToString(), Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.Number, true) } }
@@ -41,7 +41,7 @@ public class FlirCM3CameraInterpreter : DeviceCommandInterpreter<IFlirCM3Camera,
 
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = FlirCM3CommandType.GetLatestImagePath.ToString(),
         Description = "A command that gets the path to the latest captured image.",
         OutputMetadata = new OutputMetadata()
@@ -53,9 +53,9 @@ public class FlirCM3CameraInterpreter : DeviceCommandInterpreter<IFlirCM3Camera,
     };
   }
 
-  protected override async Task<DeviceCommandResult> ParseAndPerformDeviceAction(FlirCM3CommandType deviceCommand, Parameter[] parameters, CommandMetadata metadata, CancellationToken cancellationToken)
+  protected override async Task<CommandResult> ParseAndPerformDeviceAction(FlirCM3CommandType deviceCommand, Parameter[] parameters, CommandMetadata metadata, CancellationToken cancellationToken)
   {
-    var result = new DeviceCommandResult();
+    var result = new CommandResult();
 
     switch(deviceCommand)
     {

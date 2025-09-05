@@ -30,16 +30,16 @@ public class ServoSettingsViewModel : ReactiveObject
   public Func<Task> OnRemoveCallback { get; }
   public ServoConfigEditViewModel EditViewModel { get; }
 
-  public Task<DeviceStatus> GetDeviceStatus()
+  public Task<DeviceOperationalStatus> GetDeviceOperationalStatus()
   {
     try
     {
-      return _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceName = ServoConfig.Name }).ResponseAsync;
+      return _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceId = _deviceConfig.UniqueId }).ResponseAsync;
     }
 
-    catch (RpcException)
+    catch(RpcException)
     {
-      return Task.FromResult(new DeviceStatus { DeviceState = DeviceState.Error, Message = $"Unable to find a registered Servo with a name {ServoConfig.Name}" });
+      return Task.FromResult(new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Unable to find a registered Servo with a name {ServoConfig.Name}" });
     }
   }
 
@@ -52,12 +52,12 @@ public class ServoSettingsViewModel : ReactiveObject
   public Task Activate()
     => _devicesClient.ActivateAsync(new DeviceActivateRequest
     {
-      DeviceName = ServoConfig.Name
+      DeviceId = _deviceConfig.UniqueId
     }).ResponseAsync;
 
   public async Task Remove()
   {
-    await _servoClient.RemoveServoAsync(new HerkulexRequest { HerkulexName = _deviceConfig.DeviceName });
+    await _servoClient.RemoveServoAsync(new HerkulexRequest { HerkulexId = _deviceConfig.UniqueId });
     await OnRemoveCallback();
   }
 

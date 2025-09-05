@@ -20,7 +20,7 @@ public class AnalyzerSettingsListViewModel : ReactiveObject
 
   public AnalyzerConfigEditViewModel GetNewConfigEditViewModel() => new(_analyzerManagerService);
 
-  public Task UpdateAvailableAnalyzers()
+  private Task UpdateAvailableAnalyzers()
   {
     SettingsViewModels = null;
     return _analyzerManagerService

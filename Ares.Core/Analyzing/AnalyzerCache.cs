@@ -57,14 +57,13 @@ internal class AnalyzerCache(IDbContextFactory<CoreDatabaseContext> _dbContextFa
       existingInfoInDb.Url = analyzer.Address.ToString();
       existingInfoInDb.Version = analyzer.Version;
       existingInfoInDb.Capabilities = currentInfo.Capabilities;
-
-      await ctx.SaveChangesAsync();
     }
     else
     {
       ctx.AnalyzerInfos.Add(currentInfo);
-      await ctx.SaveChangesAsync();
     }
+    
+    await ctx.SaveChangesAsync();
   }
 
   private static async Task<AnalyzerInfo> AnalyzerToAnalyzerInfo(RemoteAnalyzer analyzer)

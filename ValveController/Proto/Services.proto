@@ -17,15 +17,20 @@ service ValveControllerRpc {
   rpc AddValveController(config.ValveControllerConfig) returns (google.protobuf.Empty);
   rpc RemoveValveController(ValveControllerRequest) returns (google.protobuf.Empty);
   rpc GetAllValveControllers(google.protobuf.Empty) returns (GetAllValveControllersResponse);
-  rpc UpdateValveControllers(config.ValveControllerConfig) returns (google.protobuf.Empty);
+  rpc UpdateValveControllers(UpdateValveControllerRequest) returns (google.protobuf.Empty);
+}
+
+message UpdateValveControllerRequest {
+  string id = 1;
+  config.ValveControllerConfig config = 2;
 }
 
 message DeviceRequest {
-  string device_name = 1;
+  string device_id = 1;
 }
 
 message ValveControllerRequest {
-  string device_name = 1;
+  string device_id = 1;
 }
 
 message GetRelayStatusResponse{
@@ -37,5 +42,10 @@ message DataResponse {
 }
 
 message GetAllValveControllersResponse {
-  repeated string device_names = 1;
+  repeated DeviceDescription devices = 1;
+}
+
+message DeviceDescription {
+  string id = 1;
+  string name = 2;
 }

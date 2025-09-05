@@ -1,13 +1,15 @@
-﻿using Ares.Core.Device;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Ares.Core.Device;
 using Ares.Device.Serial;
 using AresService.ConnectionManagement;
+using AresService.DeviceDbLoaders;
 using AresService.DeviceStateLoggers;
 using AresService.DeviceStateLoggers.TubeFurnace;
 using LindbergFurnace;
-using SyringePumpNE1000;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using TubeFurnace.Config;
 
 namespace AresService.DeviceManagers;
@@ -30,11 +32,19 @@ public class TubeFurnaceManager : IDeviceManager<TubeFurnaceConfig, ITubeFurnace
     _connectionManager = connectionManager;
   }
 
-  public async Task<ITubeFurnace> Load(TubeFurnaceConfig config)
+  public Task<ITubeFurnace> Create(TubeFurnaceConfig config)
+  {
+    return Load(Guid.NewGuid().ToString(), config);
+  }
+
+  public async Task<ITubeFurnace> Load(string id, TubeFurnaceConfig config)
   {
     var connection = _connectionManager.GetConnection(config.PortName, config.Simulated);
-    var device = new LindbergFurnace.TubeFurnace(config.Name, config.Address, connection);
-    await device.Activate();
+    var device = new LindbergFurnace.TubeFurnace(config.Name, config.Address, connection)
+    {
+      UniqueId = id
+    };
+    await device.Activate(CancellationToken.None);
     var logger = _stateLoggerFactory.Create(device);
     _deviceStateLoggerRepo[logger.DeviceId] = logger;
     await logger.Start();
@@ -43,30 +53,30 @@ public class TubeFurnaceManager : IDeviceManager<TubeFurnaceConfig, ITubeFurnace
     return device;
   }
 
-  public async Task<ITubeFurnace> Update(TubeFurnaceConfig config)
+  public async Task<ITubeFurnace> Update(string id, TubeFurnaceConfig config)
   {
     var existingFurnace = _deviceCommandInterpreterRepo
       .Select(interpreter => interpreter.Device)
       .OfType<ITubeFurnace>()
-      .FirstOrDefault(device => device.Name == config.Name);
+      .FirstOrDefault(device => device.UniqueId == id);
 
     if(existingFurnace is null)
-      return await Load(config);
+      return await Create(config);
 
     // if nothing changed, don't bother re-adding the device
     if(existingFurnace.Connection.Name == config.PortName)
       if((existingFurnace.Connection is SimTubeFurnaceConnection && config.Simulated) || (existingFurnace.Connection is TubeFurnaceConnection && !config.Simulated))
         return existingFurnace;
 
-    await Remove(existingFurnace.Name);
+    await Remove(existingFurnace.UniqueId);
 
-    return await Load(config);
+    return await Load(id, config);
   }
 
-  public Task Remove(string tubeFurnaceName)
+  public Task Remove(string tubeFurnaceId)
   {
     var tubeFurnaceInterpreter = _deviceCommandInterpreterRepo
-      .FirstOrDefault(interpreter => interpreter.Device.Name == tubeFurnaceName);
+      .FirstOrDefault(interpreter => interpreter.Device.UniqueId == tubeFurnaceId);
 
     if(tubeFurnaceInterpreter?.Device is not ITubeFurnace tubeFurnace)
       return Task.CompletedTask;
@@ -77,7 +87,7 @@ public class TubeFurnaceManager : IDeviceManager<TubeFurnaceConfig, ITubeFurnace
     var connection = tubeFurnace.Connection;
     var connectionInUse = _deviceCommandInterpreterRepo
       .Select(interpreter => interpreter.Device)
-      .OfType<ISerialDevice<ISyringePumpConnection>>()
+      .OfType<ISerialDevice<ITubeFurnaceConnection>>()
       .Any(device => device.Connection == connection);
 
     if(!connectionInUse)
@@ -86,9 +96,9 @@ public class TubeFurnaceManager : IDeviceManager<TubeFurnaceConfig, ITubeFurnace
     return Task.CompletedTask;
   }
 
-  public async Task<IEnumerable<ITubeFurnace>> Load(IEnumerable<TubeFurnaceConfig> configs)
+  public async Task<ITubeFurnace[]> Load(IEnumerable<LoadableConfig<TubeFurnaceConfig>> configs)
   {
-    var tubeFurnaces = await Task.WhenAll(configs.Select(Load));
+    var tubeFurnaces = await Task.WhenAll(configs.Select(c => Load(c.Id, c.DeviceConfig)));
     return tubeFurnaces;
   }
 }

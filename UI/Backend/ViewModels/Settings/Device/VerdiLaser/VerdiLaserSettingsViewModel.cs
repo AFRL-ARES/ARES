@@ -30,34 +30,39 @@ namespace UI.Backend.ViewModels.Settings.Device.VerdiLaser
     public Func<Task> OnRemoveCallback { get; }
     public VerdiLaserConfigEditViewModel EditViewModel { get; }
 
-    public Task<DeviceStatus> GetDeviceStatus()
+    public Task<DeviceOperationalStatus> GetDeviceOperationalStatus()
     {
       try
       {
-        return _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceName = LaserConfig.Name }).ResponseAsync;
+        return _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceId = _deviceConfig.UniqueId }).ResponseAsync;
       }
 
       catch(RpcException)
       {
-        return Task.FromResult(new DeviceStatus { DeviceState = DeviceState.Error, Message = $"Unable to find a registered V6 Laser with a name {LaserConfig.Name}" });
+        return Task.FromResult(new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Unable to find a registered V6 Laser with a name {LaserConfig.Name}" });
       }
     }
 
     public async Task Save()
     {
       var laserConfig = EditViewModel.Save();
-      await _laserClient.UpdateLaserAsync(laserConfig);
+      var updateRequest = new LaserUpdateRequest
+      {
+        Id = _deviceConfig.UniqueId,
+        Config = laserConfig
+      };
+      await _laserClient.UpdateLaserAsync(updateRequest);
     }
 
     public Task Activate()
       => _devicesClient.ActivateAsync(new DeviceActivateRequest
       {
-        DeviceName = LaserConfig.Name
+        DeviceId = _deviceConfig.UniqueId
       }).ResponseAsync;
 
     public async Task Remove()
     {
-      await _laserClient.RemoveLaserAsync(new DeviceRequest { DeviceName = _deviceConfig.DeviceName });
+      await _laserClient.RemoveLaserAsync(new DeviceRequest { DeviceId = _deviceConfig.UniqueId });
       await OnRemoveCallback();
     }
 

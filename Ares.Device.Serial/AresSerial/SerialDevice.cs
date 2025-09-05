@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Ares.Datamodel.Device;
 
@@ -13,10 +14,10 @@ public abstract class SerialDevice<TConnection> : AresDevice, ISerialDevice<TCon
 
   public TConnection Connection { get; }
 
-  public override Task<bool> Activate()
-    => SerialActivate();
+  public override Task<bool> Activate(CancellationToken ct)
+    => SerialActivate(ct);
 
-  private async Task<bool> SerialActivate()
+  private async Task<bool> SerialActivate(CancellationToken ct)
   {
     if (!Connection.IsOpen)
     {
@@ -26,18 +27,18 @@ public abstract class SerialDevice<TConnection> : AresDevice, ISerialDevice<TCon
       }
       catch (Exception e)
       {
-        Status = new DeviceStatus
+        Status = new DeviceOperationalStatus
         {
-          DeviceState = DeviceState.Error,
+          OperationalState = OperationalState.Error,
           Message = $"Failed to open connection {Connection.Name}{Environment.NewLine}{e.Message}"
         };
 
         return false;
       }
 
-      Status = new DeviceStatus
+      Status = new DeviceOperationalStatus
       {
-        DeviceState = DeviceState.Error,
+        OperationalState = OperationalState.Error,
         Message = $"Successfully established connection {Connection.Name} but it failed to report as being open."
       };
     }
@@ -47,17 +48,17 @@ public abstract class SerialDevice<TConnection> : AresDevice, ISerialDevice<TCon
       var validationResult = await Validate();
       if (!validationResult.Success)
       {
-        Status = new DeviceStatus { DeviceState = DeviceState.Error, Message = $"{Name} connected but could not pass validation.{Environment.NewLine}{validationResult.Message}" };
+        Status = new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"{Name} connected but could not pass validation.{Environment.NewLine}{validationResult.Message}" };
         return false;
       }
     }
     catch (Exception e)
     {
-      Status = new DeviceStatus { DeviceState = DeviceState.Error, Message = e.Message };
+      Status = new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = e.Message };
       return false;
     }
 
-    Status = new DeviceStatus { DeviceState = DeviceState.Active, Message = $"Activated {Name}" };
+    Status = new DeviceOperationalStatus { OperationalState = OperationalState.Active, Message = $"Activated {Name}" };
     return true;
   }
 

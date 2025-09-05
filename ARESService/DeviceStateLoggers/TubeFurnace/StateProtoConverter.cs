@@ -11,7 +11,7 @@ public static class StateProtoConverter
   {
     var message = new TubeFurnaceStateEntity
     {
-      DeviceId = state.Name,
+      DeviceId = state.Id,
       Timestamp = Timestamp.FromDateTime(DateTime.UtcNow),
       UniqueId = $"{Guid.NewGuid()}",
       CurrentTemp = state.CurrentTemperature,

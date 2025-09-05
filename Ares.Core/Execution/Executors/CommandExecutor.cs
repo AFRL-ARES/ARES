@@ -9,10 +9,10 @@ namespace Ares.Core.Execution.Executors;
 
 public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecutionStatus>
 {
-  private readonly Func<CancellationToken, Task<DeviceCommandResult>> _command;
+  private readonly Func<CancellationToken, Task<CommandResult>> _command;
   private readonly BehaviorSubject<CommandExecutionStatus> _stateSubject;
 
-  public CommandExecutor(Func<CancellationToken, Task<DeviceCommandResult>> command, CommandTemplate template)
+  public CommandExecutor(Func<CancellationToken, Task<CommandResult>> command, CommandTemplate template)
   {
     _command = command;
     Template = template;
@@ -20,7 +20,7 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
     {
       CommandId = template.UniqueId,
       CommandName = template.Metadata.Name,
-      DeviceName = template.Metadata.DeviceName,
+      DeviceName = template.Metadata.DeviceId,
       State = ExecutionState.Undefined
     };
 
@@ -75,7 +75,7 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
     return ExecutorSummaryHelpers.CreateCommandExecutionSummary(Template, result, timeStarted, DateTime.UtcNow);
   }
 
-  private async Task<DeviceCommandResult> InternalExecute(CancellationToken token)
+  private async Task<CommandResult> InternalExecute(CancellationToken token)
   {
     try
     {
@@ -84,7 +84,7 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
     }
     catch(Exception e)
     {
-      var result = new DeviceCommandResult() { Success = false, Error = e.Message };
+      var result = new CommandResult() { Success = false, Error = e.Message };
       return result;
     }
   }

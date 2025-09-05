@@ -13,12 +13,12 @@ public class TubeFurnaceInterpreter : DeviceCommandInterpreter<ITubeFurnace, Tub
   {
   }
 
-  protected override async Task<DeviceCommandResult> ParseAndPerformDeviceAction(TubeFurnaceCommand deviceCommandEnum,
+  protected override async Task<CommandResult> ParseAndPerformDeviceAction(TubeFurnaceCommand deviceCommandEnum,
     Parameter[] parameters,
     CommandMetadata metadata,
     CancellationToken cancellationToken)
   {
-    var result = new DeviceCommandResult();
+    var result = new CommandResult();
     result.Success = true;
 
     switch(deviceCommandEnum)
@@ -57,21 +57,21 @@ public class TubeFurnaceInterpreter : DeviceCommandInterpreter<ITubeFurnace, Tub
     {
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = TubeFurnaceCommand.GetSetpoint.ToString(),
         Description = "Get's the updated set point for the tube furnace."
       },
 
       new()
       {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = TubeFurnaceCommand.SetSetpoint.ToString(),
         Description = "Set's an updated set point for the tube furnace, defined by the user.",
         ParameterMetadatas = { new ParameterMetadata { Index = 0, Name = "Setpoint", Unit = "Degrees Celsius", Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.Number, true) } }
       },
 
       new() {
-        DeviceName = Device.Name,
+        DeviceId = Device.UniqueId,
         Name = TubeFurnaceCommand.GetCurrentTemperature.ToString(),
         Description = "Get's the current temperature of the tube furnace."
       }

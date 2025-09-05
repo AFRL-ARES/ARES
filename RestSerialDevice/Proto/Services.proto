@@ -14,15 +14,19 @@ service RestSerialDeviceRpc {
 	rpc StopStateUpdater(DeviceRequest) returns (google.protobuf.Empty);
 
 	rpc GetAllGenericSerialDevices(google.protobuf.Empty) returns (GetAllGenericSerialDevicesResponse);
-	rpc UpdateGenericSerialDevice(config.RestSerialConfig) returns (google.protobuf.Empty);
+	rpc UpdateGenericSerialDevice(GenericSerialRestDeviceUpdateRequest) returns (google.protobuf.Empty);
 	rpc RemoveGenericSerialDevice(DeviceRequest) returns (google.protobuf.Empty);
 	rpc AddGenericSerialDevice(config.RestSerialConfig) returns (google.protobuf.Empty);
 
 	rpc GetDeviceCapabilities(DeviceRequest) returns (DeviceCapabilitiesResponse);
 	rpc CallDeviceMethod(DeviceMethodRequest) returns (DeviceMethodResponse);
 
-	rpc UpdateGenericSerialDeviceConfig(config.RestSerialConfig) returns (google.protobuf.Empty);
 	rpc GetAvailableSerialPorts(google.protobuf.Empty) returns (AvailableSerialPortsResponse);
+}
+
+message GenericSerialRestDeviceUpdateRequest {
+	string id = 1;
+	config.RestSerialConfig config = 2;
 }
 
 message AvailableSerialPortsResponse {
@@ -30,7 +34,7 @@ message AvailableSerialPortsResponse {
 }
 
 message DeviceRequest {
-	string device_name = 1;
+	string device_id = 1;
 }
 
 message DataResponse {
@@ -43,16 +47,21 @@ message StartStateUpdaterRequest {
 }
 
 message GetAllGenericSerialDevicesResponse {
-	repeated string device_names = 1;
+	repeated DeviceDescription devices = 1;
+}
+
+message DeviceDescription {
+	string id = 1;
+	string name = 2;
 }
 
 message DeviceCapabilitiesResponse {
-	string device_name = 1;
+	string device_id = 1;
 	repeated DeviceMethodInfo device_methods = 2; // Refers to the new DeviceMethodInfo message
 }
 
 message DeviceMethodRequest {
-	string device_name = 1;
+	string device_id = 1;
 	string method_name = 2;
 	repeated string parameter_names = 3;
 	repeated string parameter_values = 4;

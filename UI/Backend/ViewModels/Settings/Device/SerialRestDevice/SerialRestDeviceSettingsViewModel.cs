@@ -8,65 +8,71 @@ public class SerialRestDeviceSettingsViewModel
 using Ares.Datamodel.Device;
 using Ares.Services.Device;
 using Grpc.Core;
+using ReactiveUI;
 using RestSerialDevice.Config;
 using RestSerialDevice.Services;
-using ReactiveUI;
 
 
 namespace UI.Backend.ViewModels.Settings.Device.SerialRestDevice;
 
 public class SerialRestDeviceSettingsViewModel : ReactiveObject
 {
-    private readonly RestSerialDeviceRpc.RestSerialDeviceRpcClient _client;
-    private readonly DeviceConfig _deviceConfig;
-    private readonly AresDevices.AresDevicesClient _devicesClient;
+  private readonly RestSerialDeviceRpc.RestSerialDeviceRpcClient _client;
+  private readonly DeviceConfig _deviceConfig;
+  private readonly AresDevices.AresDevicesClient _devicesClient;
 
-    public SerialRestDeviceSettingsViewModel(DeviceConfig deviceConfig,
-        RestSerialDeviceRpc.RestSerialDeviceRpcClient restClient,
-        AresDevices.AresDevicesClient devicesClient,
-        Func<Task> onRemoveCallback)
+  public SerialRestDeviceSettingsViewModel(DeviceConfig deviceConfig,
+      RestSerialDeviceRpc.RestSerialDeviceRpcClient restClient,
+      AresDevices.AresDevicesClient devicesClient,
+      Func<Task> onRemoveCallback)
+  {
+    _deviceConfig = deviceConfig;
+    _client = restClient;
+    _devicesClient = devicesClient;
+    Config = deviceConfig.ConfigData.Unpack<RestSerialConfig>();
+    OnRemoveCallback = onRemoveCallback;
+    EditViewModel = new SerialRestDeviceConfigEditViewModel(_client, _devicesClient, Config);
+  }
+
+  public async Task<DeviceOperationalStatus> GetDeviceOperationalStatus()
+  {
+    try
     {
-        _deviceConfig = deviceConfig;
-        _client = restClient;
-        _devicesClient = devicesClient;
-        Config = deviceConfig.ConfigData.Unpack<RestSerialConfig>();
-        OnRemoveCallback = onRemoveCallback;
-        EditViewModel = new SerialRestDeviceConfigEditViewModel(_client, _devicesClient, Config);
+      return await _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceId = _deviceConfig.UniqueId });
     }
 
-    public async Task<DeviceStatus> GetDeviceStatus()
+    catch(RpcException)
     {
-        try
-        {
-            return await _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceName = Config.Name });
-        }
-
-        catch(RpcException)
-        {
-            return new DeviceStatus() { DeviceState = DeviceState.Error, Message = $"Unable to find a registered Rest Device with a name {Config.Name}" };
-        }
+      return new DeviceOperationalStatus() { OperationalState = OperationalState.Error, Message = $"Unable to find a registered Rest Device with a name {Config.Name}" };
     }
+  }
 
-    public async Task Save()
+  public async Task Save()
+  {
+    var config = EditViewModel.Save();
+    var updateRequest = new GenericSerialRestDeviceUpdateRequest
     {
-        var servoConfig = EditViewModel.Save();
-        await _client.UpdateGenericSerialDeviceAsync(servoConfig);
-    }
+      Id = _deviceConfig.UniqueId,
+      Config = config,
+    };
 
-    public Task Activate()
-        => _devicesClient.ActivateAsync(new DeviceActivateRequest
-        {
-            DeviceName = Config.Name
-        }).ResponseAsync;
+    await _client.UpdateGenericSerialDeviceAsync(updateRequest);
+  }
 
-    public async Task Remove()
-    {
-        await _client.RemoveGenericSerialDeviceAsync(new DeviceRequest() { DeviceName = _deviceConfig.DeviceName });
-        await OnRemoveCallback();
-    }
+  public Task Activate()
+      => _devicesClient.ActivateAsync(new DeviceActivateRequest
+      {
+        DeviceId = _deviceConfig.UniqueId
+      }).ResponseAsync;
 
-    public RestSerialConfig Config { get; set; }
-    public Func<Task> OnRemoveCallback { get; set; }
-    public SerialRestDeviceConfigEditViewModel EditViewModel { get; set; }
+  public async Task Remove()
+  {
+    await _client.RemoveGenericSerialDeviceAsync(new DeviceRequest() { DeviceId = _deviceConfig.UniqueId });
+    await OnRemoveCallback();
+  }
+
+  public RestSerialConfig Config { get; set; }
+  public Func<Task> OnRemoveCallback { get; set; }
+  public SerialRestDeviceConfigEditViewModel EditViewModel { get; set; }
 }
 

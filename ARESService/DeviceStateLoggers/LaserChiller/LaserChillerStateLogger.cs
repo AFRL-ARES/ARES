@@ -1,12 +1,12 @@
-﻿using Ares.Core.EntityConfigurations;
+﻿using System;
+using System.Reactive.Disposables;
+using System.Reactive.Linq;
+using System.Threading.Tasks;
+using Ares.Core.EntityConfigurations;
 using Ares.Messages.DeviceStates.Chiller;
 using LaserChiller;
 using LaserChiller.Commands.Responses;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Reactive.Disposables;
-using System.Reactive.Linq;
-using System.Threading.Tasks;
 
 namespace AresService.DeviceStateLoggers.LaserChiller;
 
@@ -22,7 +22,7 @@ public class LaserChillerStateLogger : ILaserChillerStateLogger
     _device = device;
   }
 
-  public string DeviceId => _device.Name;
+  public string DeviceId => _device.UniqueId;
 
   public Task Stop()
   {
@@ -38,7 +38,7 @@ public class LaserChillerStateLogger : ILaserChillerStateLogger
   public async Task Start()
   {
     using var context = _dbContextFactory.CreateDbContext();
-    var existingInfo = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.DeviceName == _device.Name && config.DeviceType == _device.GetType().FullName);
+    var existingInfo = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.UniqueId == _device.UniqueId && config.DeviceType == _device.GetType().FullName);
     _stateWatcher = _device.StateStream
       .Where(state => state is not null)
       .Subscribe(async state => await UpdateState(state!));
@@ -53,7 +53,7 @@ public class LaserChillerStateLogger : ILaserChillerStateLogger
       Timestamp = timestamp.ToTimestampUtc(),
       UniqueId = Guid.NewGuid().ToString(),
       ManifoldTemperature = state.Temperature,
-      DeviceId = _device.Name
+      DeviceId = _device.UniqueId
     };
 
     context.ChillerStates.Add(chillerState);
@@ -70,7 +70,7 @@ public class LaserChillerStateLogger : ILaserChillerStateLogger
       Timestamp = time.ToTimestampUtc(),
       UniqueId = Guid.NewGuid().ToString(),
       ManifoldTemperature = state?.Temperature,
-      DeviceId = _device.Name
+      DeviceId = _device.UniqueId
     };
 
     context.ChillerStates.Add(chillerState);

@@ -4,6 +4,7 @@
 @using UI.Pages.Shared.Devices.DataLogger
 @using UI.Pages.Shared.Devices.LaserChiller
 @using UI.Pages.Shared.Devices.Mfc
+@using UI.Pages.Shared.Devices.Remote
 @using UI.Pages.Shared.Devices.RestDevice
 @using UI.Pages.Shared.Devices.SerialRestDevice
 @using UI.Pages.Shared.Devices.SyringePump
@@ -40,6 +41,7 @@
 @code {
   public List<Type> MultiViews = new List<Type>() 
   { 
+    typeof(RemoteDeviceDirectorView),
     typeof(DataLoggerMultiView), 
     typeof(MfcDirectorControl), 
     typeof(SyringePumpWorkspaceControl),

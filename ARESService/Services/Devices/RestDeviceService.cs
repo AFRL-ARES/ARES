@@ -1,12 +1,12 @@
-﻿using Ares.Core.Device;
+﻿using System.Linq;
+using System.Threading.Tasks;
+using Ares.Core.Device;
+using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
 using AresService.DeviceManagers;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using RestDevice;
-using System.Linq;
-using System.Threading.Tasks;
-using Ares.Datamodel;
 using RestDevice.Config;
 using RestDevice.Services;
 namespace AresService.Services.Devices;
@@ -38,7 +38,7 @@ public class RestDeviceService : RestDeviceRpc.RestDeviceRpcBase
 
   public override async Task<AresValue> CallDeviceMethod(DeviceMethodRequest request, ServerCallContext context)
   {
-    var device = GetRestDevice(request.DeviceName);
+    var device = GetRestDevice(request.DeviceId);
 
     if(device is null)
       return AresValueHelper.CreateNull();
@@ -49,13 +49,13 @@ public class RestDeviceService : RestDeviceRpc.RestDeviceRpcBase
 
   public override Task<DeviceCapabilitiesResponse> GetDeviceCapabilities(DeviceRequest request, ServerCallContext context)
   {
-    var device = GetRestDevice(request.DeviceName);
+    var device = GetRestDevice(request.DeviceId);
     var response = new DeviceCapabilitiesResponse();
 
     if(device is null)
       return Task.FromResult(response);
 
-    response.DeviceName = request.DeviceName;
+    response.DeviceId = request.DeviceId;
     foreach(var func in device.Functions)
     {
       var info = new DeviceMethodInfo();
@@ -74,35 +74,34 @@ public class RestDeviceService : RestDeviceRpc.RestDeviceRpcBase
 
   public override async Task<Empty> AddRestDevice(RestDeviceConfig restConfig, ServerCallContext context)
   {
-    await _deviceManager.Load(restConfig);
-    var device = GetRestDevice(restConfig.Name);
-    await _configManager.Add(restConfig.Name, restConfig);
+    var device = await _deviceManager.Create(restConfig);
+    await _configManager.Add(device.UniqueId, device.Name, restConfig);
     return new Empty();
   }
 
   public override async Task<Empty> RemoveRestDevice(DeviceRequest deviceRequest, ServerCallContext context)
   {
-    await _deviceManager.Remove(deviceRequest.DeviceName);
-    await _configManager.Remove(deviceRequest.DeviceName);
+    await _deviceManager.Remove(deviceRequest.DeviceId);
+    await _configManager.Remove(deviceRequest.DeviceId);
     return new Empty();
   }
 
-  public override async Task<Empty> UpdateRestDevice(RestDeviceConfig config, ServerCallContext context)
+  public override async Task<Empty> UpdateRestDevice(RestDeviceUpdateRequest request, ServerCallContext context)
   {
-    await _deviceManager.Update(config);
-    await _configManager.Update(config.Name, config);
+    await _deviceManager.Update(request.Id, request.Config);
+    await _configManager.Update(request.Id, request.Config);
     return new Empty();
   }
 
   public override Task<GetAllRestDevicesResponse> GetAllRestDevices(Empty request, ServerCallContext context)
   {
-    var deviceNames = _deviceCommandInterpreterRepo
+    var devices = _deviceCommandInterpreterRepo
       .Select(deviceInterpeter => deviceInterpeter.Device)
       .OfType<IRestDevice>()
-      .Select(device => device.Name);
+      .Select(device => new RestDeviceDescription { Id = device.UniqueId, Name = device.Name });
 
     var response = new GetAllRestDevicesResponse();
-    response.DeviceNames.AddRange(deviceNames);
+    response.Devices.AddRange(devices);
     return Task.FromResult(response);
   }
 }

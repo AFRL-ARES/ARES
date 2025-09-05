@@ -85,9 +85,9 @@ public class DataloggerThermometer : SerialDevice<IDataloggerThermometerConnecti
     _stateSubject.OnCompleted();
   }
 
-  public override async Task<bool> Activate()
+  public override async Task<bool> Activate(CancellationToken ct)
   {
-    var activated = await base.Activate();
+    var activated = await base.Activate(ct);
     if(!activated)
       return false;
 
@@ -95,7 +95,7 @@ public class DataloggerThermometer : SerialDevice<IDataloggerThermometerConnecti
     return true;
   }
 
-  public override Task EnterSafeMode()
+  public override Task EnterSafeMode(CancellationToken ct)
   {
     //No real safety concerns here
     return Task.CompletedTask;

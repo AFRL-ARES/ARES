@@ -363,7 +363,7 @@ public class SyringePump : SerialDevice<ISyringePumpConnection>, ISyringePump
     return result;
   }
 
-  public override async Task EnterSafeMode()
+  public override async Task EnterSafeMode(CancellationToken ct)
   {
     await StopPumpingProgram();
   }

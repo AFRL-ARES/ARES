@@ -14,14 +14,14 @@ public class AresDemoDevice : AresDevice
     _address = address;
   }
 
-  public override Task<bool> Activate()
+  public override Task<bool> Activate(CancellationToken ct)
   {
     try
     {
       ClientStore.CreateClient(_address);
-      Status = new DeviceStatus
+      Status = new DeviceOperationalStatus
       {
-        DeviceState = DeviceState.Active,
+        OperationalState = OperationalState.Active,
         Message = $"Activated: {Name}"
       };
     }
@@ -34,7 +34,7 @@ public class AresDemoDevice : AresDevice
     return Task.FromResult(true);
   }
 
-  public override async Task EnterSafeMode()
+  public override async Task EnterSafeMode(CancellationToken ct)
   {
     await SetTemperature(0);
   }

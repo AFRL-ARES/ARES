@@ -26,34 +26,40 @@ public class RestDeviceSettingsViewModel : ReactiveObject
     EditViewModel = new RestDeviceConfigEditViewModel(_client, _devicesClient, Config);
   }
 
-  public async Task<DeviceStatus> GetDeviceStatus()
+  public async Task<DeviceOperationalStatus> GetDeviceOperationalStatus()
   {
     try
     {
-      return await _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceName = Config.Name });
+      return await _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceId = _deviceConfig.UniqueId });
     }
 
     catch(RpcException)
     {
-      return new DeviceStatus() { DeviceState = DeviceState.Error, Message = $"Unable to find a registered Rest Device with a name {Config.Name}" };
+      return new DeviceOperationalStatus() { OperationalState = OperationalState.Error, Message = $"Unable to find a registered Rest Device with a name {Config.Name}" };
     }
   }
 
   public async Task Save()
   {
     var servoConfig = EditViewModel.Save();
-    await _client.UpdateRestDeviceAsync(servoConfig);
+    var updateRequest = new RestDeviceUpdateRequest
+    {
+      Id = _deviceConfig.UniqueId,
+      Config = servoConfig
+    };
+
+    await _client.UpdateRestDeviceAsync(updateRequest);
   }
 
   public Task Activate()
     => _devicesClient.ActivateAsync(new DeviceActivateRequest
     {
-      DeviceName = Config.Name
+      DeviceId = _deviceConfig.UniqueId
     }).ResponseAsync;
 
   public async Task Remove()
   {
-    await _client.RemoveRestDeviceAsync(new DeviceRequest() { DeviceName = _deviceConfig.DeviceName });
+    await _client.RemoveRestDeviceAsync(new DeviceRequest() { DeviceId = _deviceConfig.UniqueId });
     await OnRemoveCallback();
   }
 

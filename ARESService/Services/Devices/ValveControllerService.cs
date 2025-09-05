@@ -1,10 +1,10 @@
-﻿using Ares.Core.Device;
+﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
+using Ares.Core.Device;
 using AresService.DeviceManagers;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using ValveController;
 using ValveController.Config;
 using ValveController.Services;
@@ -27,22 +27,22 @@ public class ValveControllerService : ValveControllerRpc.ValveControllerRpcBase
     _configManager = configManager;
   }
 
-  private IValveController GetValveController(string name)
+  private IValveController GetValveController(string id)
   {
     var valveController = _deviceCommandInterpreterRepo
       .Select(interpreter => interpreter.Device)
       .OfType<IValveController>()
-      .FirstOrDefault(device => device.Name == name);
+      .FirstOrDefault(device => device.UniqueId == id);
 
-    if (valveController is null)
-      throw new InvalidOperationException($"Could not find find Valve Controller :O {name}");
+    if(valveController is null)
+      throw new InvalidOperationException($"Could not find find Valve Controller {id}");
 
     return valveController;
   }
 
   public override Task<Empty> EngageRelayOne(DeviceRequest request, ServerCallContext context)
   {
-    var valveController = GetValveController(request.DeviceName);
+    var valveController = GetValveController(request.DeviceId);
     valveController.EngageRelayOne();
 
     return Task.FromResult(new Empty());
@@ -50,7 +50,7 @@ public class ValveControllerService : ValveControllerRpc.ValveControllerRpcBase
 
   public override Task<Empty> DisengageRelayOne(DeviceRequest request, ServerCallContext context)
   {
-    var valveController = GetValveController(request.DeviceName);
+    var valveController = GetValveController(request.DeviceId);
     valveController.DisengageRelayOne();
 
     return Task.FromResult(new Empty());
@@ -58,7 +58,7 @@ public class ValveControllerService : ValveControllerRpc.ValveControllerRpcBase
 
   public override Task<Empty> EngageRelayTwo(DeviceRequest request, ServerCallContext context)
   {
-    var valveController = GetValveController(request.DeviceName);
+    var valveController = GetValveController(request.DeviceId);
     valveController.EngageRelayTwo();
 
     return Task.FromResult(new Empty());
@@ -66,7 +66,7 @@ public class ValveControllerService : ValveControllerRpc.ValveControllerRpcBase
 
   public override Task<Empty> DisengageRelayTwo(DeviceRequest request, ServerCallContext context)
   {
-    var valveController = GetValveController(request.DeviceName);
+    var valveController = GetValveController(request.DeviceId);
     valveController.DisengageRelayTwo();
 
     return Task.FromResult(new Empty());
@@ -75,7 +75,7 @@ public class ValveControllerService : ValveControllerRpc.ValveControllerRpcBase
   public override Task<Empty> EnableRelays(DeviceRequest request, ServerCallContext context)
   {
 
-    var valveController = GetValveController(request.DeviceName);
+    var valveController = GetValveController(request.DeviceId);
     valveController.EnableRelays();
 
     return Task.FromResult(new Empty());
@@ -83,23 +83,23 @@ public class ValveControllerService : ValveControllerRpc.ValveControllerRpcBase
 
   public override async Task<Empty> RemoveValveController(ValveControllerRequest request, ServerCallContext context)
   {
-    await _deviceManager.Remove(request.DeviceName);
-    await _configManager.Remove(request.DeviceName);
+    await _deviceManager.Remove(request.DeviceId);
+    await _configManager.Remove(request.DeviceId);
     return new Empty();
   }
 
   public override async Task<Empty> AddValveController(ValveControllerConfig request, ServerCallContext context)
   {
-    await _deviceManager.Load(request);
-    await _configManager.Add(request.Name, request);
+    var device = await _deviceManager.Create(request);
+    await _configManager.Add(device.UniqueId, device.Name, request);
     return new Empty();
   }
 
   public override Task<GetAllValveControllersResponse> GetAllValveControllers(Empty request, ServerCallContext context)
   {
-    var deviceNames = _deviceCommandInterpreterRepo.Select(deviceInterpreter => deviceInterpreter.Device).OfType<IValveController>().Select(valveController => valveController.Name);
+    var deviceDescriptions = _deviceCommandInterpreterRepo.Select(deviceInterpreter => deviceInterpreter.Device).OfType<IValveController>().Select(valveController => new DeviceDescription { Id = valveController.UniqueId, Name = valveController.Name });
     var response = new GetAllValveControllersResponse();
-    response.DeviceNames.AddRange(deviceNames);
+    response.Devices.AddRange(deviceDescriptions);
     return Task.FromResult(response);
   }
 

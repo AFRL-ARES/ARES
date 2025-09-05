@@ -2,7 +2,7 @@
 @inject DialogService DialogService
 @inject NotificationService NotificationService
 
-<DeviceSettingsContainer DeviceStatusGetter="ViewModel!.GetDeviceStatus" EditCallback="EditCallback" RemoveCallback="RemoveCallback" ActivateCallback="ViewModel.Activate" Name="@ViewModel!.FlirCM3Config.Name">
+<DeviceSettingsContainer DeviceOperationalStatusGetter="ViewModel!.GetDeviceOperationalStatus" EditCallback="EditCallback" RemoveCallback="RemoveCallback" ActivateCallback="ViewModel.Activate" Name="@ViewModel!.FlirCM3Config.Name">
   <div>
     @if (ViewModel!.FlirCM3Config.Simulated)
     {

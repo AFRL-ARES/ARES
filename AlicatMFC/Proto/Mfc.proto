@@ -33,18 +33,23 @@ service MfcRpc {
 
 	rpc GetAllMfcs(google.protobuf.Empty) returns (GetAllMfcsResponse);
 	rpc GetAvailableIds(GetAvailableIdsRequest) returns (GetAvailableIdsResponse);
-	rpc UpdateMfc(config.MfcConfig) returns (google.protobuf.Empty);
+	rpc UpdateMfc(MfcUpdateRequest) returns (google.protobuf.Empty);
 	rpc RemoveMfc(MfcRemoveRequest) returns (google.protobuf.Empty);
 	rpc AddMfc(config.MfcConfig) returns (google.protobuf.Empty);
 	rpc StartDataCapture(DeviceRequest) returns (google.protobuf.Empty);
 }
 
+message MfcUpdateRequest {
+	string id = 1;
+	config.MfcConfig config = 2;
+}
+
 message MfcRemoveRequest {
-	string mfc_name = 1;
+	string mfc_id = 1;
 }
 
 message ConnectRequest {
-  string device_name = 1; // name of the mass flow controller
+  string device_id = 1; // id of the mass flow controller
   string port_name = 2; // name of the port
 }
 
@@ -62,7 +67,7 @@ message ConnectResponse {
 }
 
 message DeviceRequest {
-  string device_name = 1;
+  string device_id = 1;
 }
 
 message MfcDeviceDescription {
