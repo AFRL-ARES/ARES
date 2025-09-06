@@ -9,7 +9,11 @@ namespace UI.Backend.Devices;
 public sealed class RemoteDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
 {
   private readonly BehaviorSubject<AresStruct> _stateSubject = new(new AresStruct());
+  private readonly BehaviorSubject<ConnectionStatus> _connectionStatusSubject =
+    new BehaviorSubject<ConnectionStatus>(ConnectionStatus.Undefined);
+  
   private readonly AresDevices.AresDevicesClient _devicesClient;
+  private readonly ILogger<RemoteDeviceAdapter> _logger;
   private CancellationTokenSource _stateStreamCts = new();
   private DevicePollingSettings _pollingSettings = new()
   {
@@ -17,9 +21,11 @@ public sealed class RemoteDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
     PollingType = PollingType.Interval
   };
 
-  public RemoteDeviceAdapter(AresDevices.AresDevicesClient devicesClient, string id)
+
+  public RemoteDeviceAdapter(AresDevices.AresDevicesClient devicesClient, string id, ILogger<RemoteDeviceAdapter> logger)
   {
     _devicesClient = devicesClient;
+    _logger = logger;
     Id = id;
     OperationalStatus = new DeviceOperationalStatus
     {
@@ -35,17 +41,19 @@ public sealed class RemoteDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
   public string Version { get; private set; } = "";
   public bool Active { get; private set; }
   public IObservable<AresStruct?> StateStream => _stateSubject.AsObservable();
+  public Task UpdateConnectionStatus()
+  {
+    // Fetching operational status is the least amount of data and it still updates the connection status
+    return FetchOperationalStatus();
+  }
+
   public AresStruct? State => _stateSubject.Value;
   public DeviceOperationalStatus OperationalStatus { get; private set; }
+  public IObservable<ConnectionStatus> ConnectionStatusStream => _connectionStatusSubject.AsObservable();
   public AresDataSchema? StateSchema { get; private set; }
 
   public async Task<bool> Activate()
   {
-    //await FetchOperationalStatus();
-    //if(OperationalStatus.OperationalState != OperationalState.Active)
-    //{
-    //  return false;
-    //}
     await FetchInfo();
     _ = StartStateStream();
     return true;
@@ -60,6 +68,8 @@ public sealed class RemoteDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
     try
     {
       using var call = _devicesClient.GetDeviceStateStream(new DeviceStateStreamRequest { DeviceId = Id, PollingSettings = _pollingSettings });
+      _logger.LogInformation("Started device state stream for device {}.", Name);
+      UpdateStatusIfChanged(ConnectionStatus.Connected);
       await foreach(var state in call.ResponseStream.ReadAllAsync(token))
       {
         _stateSubject.OnNext(state.State);
@@ -67,8 +77,8 @@ public sealed class RemoteDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
     }
     catch(Exception e)
     {
-      OperationalStatus = new DeviceOperationalStatus
-      { OperationalState = OperationalState.Error, Message = $"Unspecified error occurred. Ares Service possibly lost connection: {e.Message}" };
+      _logger.LogError("Device stream for {name} has stopped. {ex}", Name, e.Message);
+      UpdateStatusIfChanged(ConnectionStatus.Disconnected);
     }
 
     Active = false;
@@ -79,11 +89,14 @@ public sealed class RemoteDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
     try
     {
       var status = await _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceId = Id });
+      _logger.LogInformation("Fetched operational status for device {name}.", Name);
+      UpdateStatusIfChanged(ConnectionStatus.Connected);
       OperationalStatus = status;
     }
     catch(RpcException e)
     {
-      OperationalStatus = new DeviceOperationalStatus { OperationalState = OperationalState.Inactive, Message = $"Unable to connect to Ares Service: {e.Message}" };
+      _logger.LogError("Failed to fetch operational status for device {name}. {ex}", Name, e.Message);
+      UpdateStatusIfChanged(ConnectionStatus.Disconnected);
     }
   }
 
@@ -92,11 +105,14 @@ public sealed class RemoteDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
     try
     {
       var response = await _devicesClient.GetDeviceStateSchemaAsync(new DeviceStateSchemaRequest { DeviceId = Id });
+      _logger.LogInformation("Fetched state schema for device {name}.", Name);
+      UpdateStatusIfChanged(ConnectionStatus.Connected);
       StateSchema = response.Schema;
     }
     catch(RpcException)
     {
-      OperationalStatus = new DeviceOperationalStatus { OperationalState = OperationalState.Inactive, Message = $"Failed to fetch state schema. Possible connection issue with Ares Service." };
+      _logger.LogError("Failed to fetch state schema for device {name}.", Name);
+      UpdateStatusIfChanged(ConnectionStatus.Disconnected);
     }
   }
 
@@ -105,6 +121,8 @@ public sealed class RemoteDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
     try
     {
       var info = await _devicesClient.GetDeviceInfoAsync(new DeviceInfoRequest { DeviceId = Id });
+      _logger.LogInformation("Fetched device info for device {name}.", Name);
+      UpdateStatusIfChanged(ConnectionStatus.Connected);
       Name = info.Name;
       Version = info.Version;
       Description = info.Description;
@@ -112,12 +130,23 @@ public sealed class RemoteDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
     }
     catch(RpcException)
     {
-      OperationalStatus = new DeviceOperationalStatus { OperationalState = OperationalState.Inactive, Message = $"Failed to fetch info. Possible connection issue." };
+      _logger.LogError("Failed to fetch device info for device {name}.", Name);
+      UpdateStatusIfChanged(ConnectionStatus.Disconnected);
+    }
+  }
+
+  private void UpdateStatusIfChanged(ConnectionStatus status)
+  {
+    var currentStatus = _connectionStatusSubject.Value;
+    if (currentStatus != status)
+    {
+      _connectionStatusSubject.OnNext(status);
     }
   }
 
   public async ValueTask DisposeAsync()
   {
+    _logger.LogInformation("Disposing RemoteDeviceAdapter for device {name}.", Name);
     await _stateStreamCts.CancelAsync();
     _stateStreamCts.Dispose();
     _stateSubject.OnCompleted();

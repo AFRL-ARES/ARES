@@ -2,7 +2,7 @@
 
 public enum ConnectionStatus
 {
-  UNDEFINED,
-  CONNECTED,
-  DISCONNECTED
+  Undefined,
+  Disconnected,
+  Connected,
 }

@@ -10,7 +10,10 @@ public interface IAresDeviceAdapter
   string Description { get; }
   string Type { get; }
   string Version { get; }
+  Task<bool> Activate();
+  Task UpdateConnectionStatus();
   AresStruct? State { get; }
   IObservable<AresStruct?> StateStream { get; }
   DeviceOperationalStatus OperationalStatus { get; }
+  IObservable<ConnectionStatus> ConnectionStatusStream { get; }
 }

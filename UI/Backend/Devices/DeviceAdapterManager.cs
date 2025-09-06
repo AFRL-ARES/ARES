@@ -8,12 +8,14 @@ namespace UI.Backend.Devices;
 public class DeviceAdapterManager(
     AresDevices.AresDevicesClient _devicesClient,
     DeviceAdapterRepository _deviceAdapterRepository,
+    ILoggerFactory _loggerFactory,
     ILogger<DeviceAdapterManager> _logger) : IAsyncDisposable
 {
   private readonly CancellationTokenSource _cts = new();
   private IDisposable? _subscription;
   private bool _isErrorState;
-
+  private IDictionary<string, RemoteDeviceAdapterMonitor> _monitors = new Dictionary<string, RemoteDeviceAdapterMonitor>();
+  
   public void Activate()
   {
     _subscription = Observable.Interval(TimeSpan.FromSeconds(5))
@@ -62,17 +64,26 @@ public class DeviceAdapterManager(
             var removedDevices = existingIds.Except(remoteIds);
 
             var newAdapters = newDevices
-                    .Select(id => new RemoteDeviceAdapter(_devicesClient, id)).ToArray();
+                    .Select(id => new RemoteDeviceAdapter(_devicesClient, id, _loggerFactory.CreateLogger<RemoteDeviceAdapter>())).ToArray();
 
-            var removedAdapters = _deviceAdapterRepository.Items.Where(da => removedDevices.Contains(da.Id)).OfType<IAsyncDisposable>().ToArray();
+            var removedAdapters = _deviceAdapterRepository.Items.Where(da => removedDevices.Contains(da.Id)).ToArray();
             foreach(var adapter in removedAdapters)
             {
-              _ = adapter.DisposeAsync();
+              if (adapter is IAsyncDisposable asyncDisposable)
+              {
+                _ = asyncDisposable.DisposeAsync();
+              }
+              var monitorExists = _monitors.TryGetValue(adapter.Id, out var monitor);
+              if (!monitorExists || monitor is null) continue;
+              monitor.Dispose();
+              _monitors.Remove(adapter.Id);
             }
 
             foreach(var adapter in newAdapters)
             {
               _ = adapter.Activate();
+              var monitor = new RemoteDeviceAdapterMonitor(adapter, _loggerFactory.CreateLogger<RemoteDeviceAdapterMonitor>());
+              _monitors[adapter.Id] = monitor;
             }
 
             _deviceAdapterRepository.Edit(updater =>

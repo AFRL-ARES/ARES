@@ -1,4 +1,6 @@
-﻿using Ares.Core.Device.Remote;
+﻿using System.Reactive.Linq;
+using System.Reactive.Threading.Tasks;
+using Ares.Core.Device.Remote;
 using Ares.Datamodel.Device;
 
 namespace Ares.Core.Analyzing;
@@ -50,7 +52,11 @@ internal class RemoteDeviceMonitor : IDisposable
 
         try
         {
-          await Task.Delay(TimeSpan.FromSeconds(5), token);
+          var statusTask = _device.StatusObservable.Where(s => s.OperationalState != OperationalState.Active).ToTask(token);
+          var delayTask = Task.Delay(TimeSpan.FromSeconds(5), token);
+          _ = Task.WhenAny(statusTask, delayTask);
+          statusTask.Dispose();
+          delayTask.Dispose();
         }
         catch(TaskCanceledException)
         {

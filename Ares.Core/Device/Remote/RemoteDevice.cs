@@ -38,7 +38,7 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
   public Uri Address { get; }
 
   public AresStruct Settings { get; } = new();
-
+  
   public AresDataSchema SettingSchema { get; private set; } = new();
 
   // sets the polling options with the option to restart/start the stream
