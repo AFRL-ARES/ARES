@@ -109,8 +109,9 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
   {
     try
     {
+      var callOpts = new CallOptions(deadline: DateTime.UtcNow.AddSeconds(5));
       var client = GetClient();
-      var status = await client.GetOperationalStatusAsync(new Empty());
+      var status = await client.GetOperationalStatusAsync(new Empty(), callOpts);
       Status = status;
     }
     catch(RpcException e)
@@ -124,7 +125,8 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     var client = GetClient();
     try
     {
-      var cmdResponse = await client.GetCommandsAsync(new Empty());
+      var callOpts = new CallOptions(deadline: DateTime.UtcNow.AddSeconds(5));
+      var cmdResponse = await client.GetCommandsAsync(new Empty(), callOpts);
       _commands = [.. cmdResponse.Commands];
     }
     catch(RpcException)
@@ -152,7 +154,8 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     var client = GetClient();
     try
     {
-      var info = await client.GetInfoAsync(new Empty());
+      var callOpts = new CallOptions(deadline: DateTime.UtcNow.AddSeconds(5));
+      var info = await client.GetInfoAsync(new Empty(), callOpts);
       Type = info.Name;
       Version = info.Version;
       Description = info.Description;

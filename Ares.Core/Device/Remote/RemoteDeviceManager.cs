@@ -2,9 +2,10 @@
 using Ares.Core.Notifications;
 using Ares.Datamodel.Device;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Ares.Core.Device.Remote;
-internal class RemoteDeviceManager(IDeviceCommandInterpreterRepo _deviceCommandInterpreters, IDeviceCache _deviceCache, INotificationHandler _notificationHandler, IDbContextFactory<CoreDatabaseContext> _dbContextFactory) : IRemoteDeviceManager
+internal class RemoteDeviceManager(IDeviceCommandInterpreterRepo _deviceCommandInterpreters, IDeviceCache _deviceCache, INotificationHandler _notificationHandler, IDbContextFactory<CoreDatabaseContext> _dbContextFactory, ILoggerFactory _loggerFactory, ILogger<RemoteDeviceManager> _logger) : IRemoteDeviceManager
 {
   private readonly List<RemoteDeviceMonitor> _deviceMonitors = [];
 
@@ -14,7 +15,7 @@ internal class RemoteDeviceManager(IDeviceCommandInterpreterRepo _deviceCommandI
     var device = ConfigToDevice(config);
 
     _deviceCommandInterpreters.Add(new RemoteDeviceCommandInterpreter(device));
-    var monitor = new RemoteDeviceMonitor(device, _deviceCache);
+    var monitor = new RemoteDeviceMonitor(device, _deviceCache, _loggerFactory.CreateLogger<RemoteDeviceMonitor>());
     _deviceMonitors.Add(monitor);
 
     var ctx = _dbContextFactory.CreateDbContext();
@@ -31,6 +32,7 @@ internal class RemoteDeviceManager(IDeviceCommandInterpreterRepo _deviceCommandI
     var uriValid = Uri.TryCreate(config.Url, UriKind.Absolute, out var uri);
     if(!uriValid || uri is null)
     {
+      _logger.LogError("Failed to load a remote device {DeviceName} because the url {DeviceUrl} is invalid.", config.Name, config.Url);
       _ = _notificationHandler.HandleNotification(
         "Device Load Error",
         $"Failed to load a remote device {config.Name} because the url {config.Url} is invalid.",
@@ -53,7 +55,7 @@ internal class RemoteDeviceManager(IDeviceCommandInterpreterRepo _deviceCommandI
     {
       _deviceCommandInterpreters.Add(new RemoteDeviceCommandInterpreter(device));
 
-      var monitor = new RemoteDeviceMonitor(device, _deviceCache);
+      var monitor = new RemoteDeviceMonitor(device, _deviceCache, _loggerFactory.CreateLogger<RemoteDeviceMonitor>());
       _deviceMonitors.Add(monitor);
     }
   }
@@ -101,7 +103,7 @@ internal class RemoteDeviceManager(IDeviceCommandInterpreterRepo _deviceCommandI
       return;
     }
 
-    monitor = new RemoteDeviceMonitor(device, _deviceCache);
+    monitor = new RemoteDeviceMonitor(device, _deviceCache, _loggerFactory.CreateLogger<RemoteDeviceMonitor>());
     _deviceMonitors.Add(monitor);
     _deviceCommandInterpreters.Add(new RemoteDeviceCommandInterpreter(device));
   }

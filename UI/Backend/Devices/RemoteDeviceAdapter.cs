@@ -11,10 +11,11 @@ public sealed class RemoteDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
   private readonly BehaviorSubject<AresStruct> _stateSubject = new(new AresStruct());
   private readonly BehaviorSubject<ConnectionStatus> _connectionStatusSubject =
     new BehaviorSubject<ConnectionStatus>(ConnectionStatus.Undefined);
-  
+
   private readonly AresDevices.AresDevicesClient _devicesClient;
   private readonly ILogger<RemoteDeviceAdapter> _logger;
   private CancellationTokenSource _stateStreamCts = new();
+  private CancellationTokenSource _statusStreamCts = new();
   private DevicePollingSettings _pollingSettings = new()
   {
     IntervalMs = 1000,
@@ -55,8 +56,24 @@ public sealed class RemoteDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
   public async Task<bool> Activate()
   {
     await FetchInfo();
-    _ = StartStateStream();
+    await StartStateStream();
+    await StartStatusUpdate();
     return true;
+  }
+
+  public async Task StartStatusUpdate()
+  {
+    await _statusStreamCts.CancelAsync();
+    _statusStreamCts = new CancellationTokenSource();
+    var token = _statusStreamCts.Token;
+    _ = Task.Run(async () =>
+    {
+      while(!_statusStreamCts.IsCancellationRequested)
+      {
+        await UpdateConnectionStatus();
+        await Task.Delay(TimeSpan.FromSeconds(5));
+      }
+    }, _statusStreamCts.Token);
   }
 
   public async Task StartStateStream()
@@ -65,21 +82,24 @@ public sealed class RemoteDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
     _stateStreamCts = new CancellationTokenSource();
     var token = _stateStreamCts.Token;
     Active = true;
-    try
+    _ = Task.Run(async () =>
     {
-      using var call = _devicesClient.GetDeviceStateStream(new DeviceStateStreamRequest { DeviceId = Id, PollingSettings = _pollingSettings });
-      _logger.LogInformation("Started device state stream for device {}.", Name);
-      UpdateStatusIfChanged(ConnectionStatus.Connected);
-      await foreach(var state in call.ResponseStream.ReadAllAsync(token))
+      try
       {
-        _stateSubject.OnNext(state.State);
+        using var call = _devicesClient.GetDeviceStateStream(new DeviceStateStreamRequest { DeviceId = Id, PollingSettings = _pollingSettings });
+        _logger.LogInformation("Started device state stream for device {}.", Name);
+        UpdateStatusIfChanged(ConnectionStatus.ConnectedToService);
+        await foreach(var state in call.ResponseStream.ReadAllAsync(token))
+        {
+          _stateSubject.OnNext(state.State);
+        }
       }
-    }
-    catch(Exception e)
-    {
-      _logger.LogError("Device stream for {name} has stopped. {ex}", Name, e.Message);
-      UpdateStatusIfChanged(ConnectionStatus.Disconnected);
-    }
+      catch(Exception e)
+      {
+        _logger.LogError("Device stream for {name} has stopped. {ex}", Name, e.Message);
+        UpdateStatusIfChanged(ConnectionStatus.Disconnected);
+      }
+    }, _stateStreamCts.Token);
 
     Active = false;
   }
@@ -88,14 +108,23 @@ public sealed class RemoteDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
   {
     try
     {
-      var status = await _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceId = Id });
+      var callOpts = new CallOptions(deadline: DateTime.UtcNow.AddSeconds(5));
+      var status = await _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceId = Id }, callOpts);
       _logger.LogInformation("Fetched operational status for device {name}.", Name);
-      UpdateStatusIfChanged(ConnectionStatus.Connected);
+      if(status.OperationalState == OperationalState.Active)
+      {
+        UpdateStatusIfChanged(ConnectionStatus.ConnectedToDevice);
+      }
+      else
+      {
+        UpdateStatusIfChanged(ConnectionStatus.ConnectedToService);
+      }
       OperationalStatus = status;
     }
     catch(RpcException e)
     {
       _logger.LogError("Failed to fetch operational status for device {name}. {ex}", Name, e.Message);
+      OperationalStatus = new DeviceOperationalStatus { OperationalState = OperationalState.Unspecified, Message = "Unknown operational state. Trouble connecting to ARES service." };
       UpdateStatusIfChanged(ConnectionStatus.Disconnected);
     }
   }
@@ -104,9 +133,10 @@ public sealed class RemoteDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
   {
     try
     {
-      var response = await _devicesClient.GetDeviceStateSchemaAsync(new DeviceStateSchemaRequest { DeviceId = Id });
+      var callOpts = new CallOptions(deadline: DateTime.UtcNow.AddSeconds(5));
+      var response = await _devicesClient.GetDeviceStateSchemaAsync(new DeviceStateSchemaRequest { DeviceId = Id }, callOpts);
       _logger.LogInformation("Fetched state schema for device {name}.", Name);
-      UpdateStatusIfChanged(ConnectionStatus.Connected);
+      UpdateStatusIfChanged(ConnectionStatus.ConnectedToService);
       StateSchema = response.Schema;
     }
     catch(RpcException)
@@ -120,9 +150,10 @@ public sealed class RemoteDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
   {
     try
     {
-      var info = await _devicesClient.GetDeviceInfoAsync(new DeviceInfoRequest { DeviceId = Id });
+      var callOpts = new CallOptions(deadline: DateTime.UtcNow.AddSeconds(5));
+      var info = await _devicesClient.GetDeviceInfoAsync(new DeviceInfoRequest { DeviceId = Id }, callOpts);
       _logger.LogInformation("Fetched device info for device {name}.", Name);
-      UpdateStatusIfChanged(ConnectionStatus.Connected);
+      UpdateStatusIfChanged(ConnectionStatus.ConnectedToService);
       Name = info.Name;
       Version = info.Version;
       Description = info.Description;
@@ -138,7 +169,9 @@ public sealed class RemoteDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
   private void UpdateStatusIfChanged(ConnectionStatus status)
   {
     var currentStatus = _connectionStatusSubject.Value;
-    if (currentStatus != status)
+    var deviceActive = OperationalStatus.OperationalState == OperationalState.Active;
+    status = deviceActive ? ConnectionStatus.ConnectedToDevice : status;
+    if(currentStatus != status)
     {
       _connectionStatusSubject.OnNext(status);
     }
@@ -149,6 +182,8 @@ public sealed class RemoteDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
     _logger.LogInformation("Disposing RemoteDeviceAdapter for device {name}.", Name);
     await _stateStreamCts.CancelAsync();
     _stateStreamCts.Dispose();
+    await _statusStreamCts.CancelAsync();
+    _statusStreamCts.Dispose();
     _stateSubject.OnCompleted();
     _stateSubject.Dispose();
   }

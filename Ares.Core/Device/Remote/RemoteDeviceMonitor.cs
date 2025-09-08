@@ -2,6 +2,7 @@
 using System.Reactive.Threading.Tasks;
 using Ares.Core.Device.Remote;
 using Ares.Datamodel.Device;
+using Microsoft.Extensions.Logging;
 
 namespace Ares.Core.Analyzing;
 internal class RemoteDeviceMonitor : IDisposable
@@ -11,10 +12,12 @@ internal class RemoteDeviceMonitor : IDisposable
   private readonly CancellationTokenSource _tokenSource;
   private OperationalState _lastState = OperationalState.Unspecified;
   readonly IDeviceCache _deviceCache;
+  private readonly ILogger<RemoteDeviceMonitor> _logger;
 
-  public RemoteDeviceMonitor(RemoteDevice device, IDeviceCache deviceCache)
+  public RemoteDeviceMonitor(RemoteDevice device, IDeviceCache deviceCache, ILogger<RemoteDeviceMonitor> logger)
   {
     _deviceCache = deviceCache;
+    _logger = logger;
     _device = device;
     _tokenSource = new CancellationTokenSource();
     _monitorTask = Monitor(_tokenSource.Token);
@@ -30,14 +33,21 @@ internal class RemoteDeviceMonitor : IDisposable
 
   private Task Monitor(CancellationToken token)
   {
+    _logger.LogInformation("Started monitoring device {}", _device.Name);
     return Task.Run(async () =>
     {
       while(!token.IsCancellationRequested)
       {
         await _device.FetchOperationalStatus();
 
+        if(_lastState == OperationalState.Active && _device.Status.OperationalState != OperationalState.Active)
+        {
+          _logger.LogWarning("Lost connection with device {}", _device.Name);
+        }
+
         if(_lastState != OperationalState.Active && _device.Status.OperationalState == OperationalState.Active)
         {
+          _logger.LogInformation("Device {} reconnected, fetching details", _device.Name);
           await _device.FetchInfo();
           await _device.FetchSettings();
           await _device.FetchCommands();
@@ -46,19 +56,21 @@ internal class RemoteDeviceMonitor : IDisposable
           await _device.FetchOperationalStatus();
           await _deviceCache.CacheDeviceInfo(_device);
           await _deviceCache.CacheDeviceSettings(_device);
+          _logger.LogInformation("Fetched details for {DeviceName}", _device.Name);
         }
 
         _lastState = _device.Status.OperationalState;
 
         try
         {
-          var statusTask = _device.StatusObservable.Where(s => s.OperationalState != OperationalState.Active).ToTask(token);
-          var delayTask = Task.Delay(TimeSpan.FromSeconds(5), token);
-          _ = Task.WhenAny(statusTask, delayTask);
-          statusTask.Dispose();
-          delayTask.Dispose();
+          var tempSource = new CancellationTokenSource();
+          var combinedSource = CancellationTokenSource.CreateLinkedTokenSource(tempSource.Token, token);
+          var statusTask = _device.StatusObservable.Where(s => s.OperationalState != OperationalState.Active).ToTask(combinedSource.Token);
+          var delayTask = Task.Delay(TimeSpan.FromSeconds(5), combinedSource.Token);
+          _ = await Task.WhenAny(statusTask, delayTask);
+          tempSource.Cancel();
         }
-        catch(TaskCanceledException)
+        catch(OperationCanceledException)
         {
         }
       }
