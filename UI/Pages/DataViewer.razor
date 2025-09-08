@@ -115,7 +115,23 @@
                               @foreach(var setting in exp.ExperimentOverview.AnalysisOverview.AnalyzerInfo.Capabilities.SettingsSchema.Fields)
                               {
                                 //TODO: Finish
-                                <RadzenTreeItem Text=@($"{setting.Key}")/>
+                                <RadzenTreeItem Text=@($"{setting.Key}")>
+                                  <ChildContent>
+                                    <RadzenTreeItem Text=@($"Type: {setting.Value.Type}") />
+                                    @if(setting.Value.StringChoices.Strings.Count != 0)
+                                    {
+                                      <RadzenTreeItem Text=@($"String Constraints: {setting.Value.StringChoices.Strings}") />
+                                    }
+
+                                    else if(setting.Value.NumberChoices.Numbers.Count != 0)
+                                    {
+                                      <RadzenTreeItem Text=@($"Number Constraints: {setting.Value.NumberChoices.Numbers}") />
+                                    }
+
+                                    <RadzenTreeItem Text=@($"Optional: {setting.Value.Optional}") />
+
+                                  </ChildContent>
+                                </RadzenTreeItem>
                               }
                             </ChildContent>
 
@@ -264,13 +280,13 @@
       return "No Value";
 
     if(value.HasNumberValue)
-      return $"Planned Value: {value.NumberValue}";
+      return $"{value.NumberValue}";
 
     if(value.HasBoolValue)
-      return $"Planned Value: {value.BoolValue}";
+      return $"{value.BoolValue}";
 
     if(value.HasStringValue)
-      return $"Planned Value: {value.StringValue}";
+      return $"{value.StringValue}";
 
     if(value.HasBytesValue)
       return "Byte Array";

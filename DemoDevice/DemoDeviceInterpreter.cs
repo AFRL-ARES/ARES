@@ -27,6 +27,7 @@ public class DemoDeviceInterpreter : DeviceCommandInterpreter<AresDemoDevice, De
           throw new InvalidOperationException("The Demo Devices' SetTemperature command requires a number value as a parameter, but none was provided!");
 
         await Device.SetTemperature(value.Value.NumberValue);
+        result.Result = AresStructHelper.CreateNumberStruct("SetTemperature", value.Value.NumberValue);
         break;
       case DemoDeviceCommand.GetTemperature:
         var temp = await Device.GetTemperature();
