@@ -1,5 +1,5 @@
-﻿using Chiller.Config;
-using AresService.DeviceManagers;
+﻿using AresService.DeviceManagers;
+using Chiller.Config;
 using LaserChiller;
 using Microsoft.EntityFrameworkCore;
 

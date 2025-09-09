@@ -1,7 +1,7 @@
-﻿using RestSerialDevice;
-using RestSerialDevice.Simulation;
-using System;
+﻿using System;
 using System.Linq;
+using RestSerialDevice;
+using RestSerialDevice.Simulation;
 
 namespace AresService.ConnectionManagement;
 

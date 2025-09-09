@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
 using Ares.Core.Device.State.Logging;
-using Ares.Messages.DeviceState;
+using Ares.Datamodel.Device;
 using Ares.Messages.DeviceStates;
 using Ares.Messages.DeviceStates.SyringePump;
 using Google.Protobuf.WellKnownTypes;
@@ -18,7 +18,7 @@ public class SyringePumpStateService : SyringePumpStateLogging.SyringePumpStateL
     _dbContextFactory = dbContextFactory;
   }
 
-  public override async Task<SyringePumpStateResponse> GetSyringePumpStates(StateRequestFilter request, ServerCallContext context)
+  public override async Task<SyringePumpStateResponse> GetSyringePumpStates(DeviceStateRequestFilter request, ServerCallContext context)
   {
     using var dbContext = _dbContextFactory.CreateDbContext();
     var response = new SyringePumpStateResponse();
@@ -34,7 +34,7 @@ public class SyringePumpStateService : SyringePumpStateLogging.SyringePumpStateL
     return response;
   }
 
-  public override async Task<Empty> DeleteSyringePumpStates(StateRequestFilter request, ServerCallContext context)
+  public override async Task<Empty> DeleteSyringePumpStates(DeviceStateRequestFilter request, ServerCallContext context)
   {
     using var dbContext = _dbContextFactory.CreateDbContext();
     var stateQuery = await DeviceStateQueryBuilder.BuildQuery<SyringePumpState>(request, dbContext);

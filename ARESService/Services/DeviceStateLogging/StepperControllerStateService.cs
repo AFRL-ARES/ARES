@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
 using Ares.Core.Device.State.Logging;
-using Ares.Messages.DeviceState;
+using Ares.Datamodel.Device;
 using Ares.Messages.DeviceStates;
 using Ares.Messages.DeviceStates.TicStepperController;
 using Google.Protobuf.WellKnownTypes;
@@ -18,7 +18,7 @@ public class StepperControllerStateService : TicStepperControllerStateLogging.Ti
     _dbContextFactory = dbContextFactory;
   }
 
-  public override async Task<Empty> DeleteTicStepperControllerStates(StateRequestFilter request, ServerCallContext context)
+  public override async Task<Empty> DeleteTicStepperControllerStates(DeviceStateRequestFilter request, ServerCallContext context)
   {
     using var dbContext = _dbContextFactory.CreateDbContext();
     var stateQuery = await DeviceStateQueryBuilder.BuildQuery<TicStepperControllerState>(request, dbContext);
@@ -27,7 +27,7 @@ public class StepperControllerStateService : TicStepperControllerStateLogging.Ti
     return new Empty();
   }
 
-  public override async Task<TicStepperControllerStateResponse> GetTicStepperControllerStates(StateRequestFilter request, ServerCallContext context)
+  public override async Task<TicStepperControllerStateResponse> GetTicStepperControllerStates(DeviceStateRequestFilter request, ServerCallContext context)
   {
     using var dbContext = _dbContextFactory.CreateDbContext();
     var response = new TicStepperControllerStateResponse();

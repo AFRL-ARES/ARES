@@ -9,7 +9,7 @@ public abstract class DeviceStateDataProviderBase<TState> : IDeviceStateDataProv
   public DeviceStateDataProviderBase(IDeviceStateGetter stateGetter)
   { _stateGetter = stateGetter; }
 
-  public async Task<IEnumerable<SingleDeviceStateExportData>> GetExportData(StateRequestFilter filter)
+  public async Task<IEnumerable<SingleDeviceStateExportData>> GetExportData(DeviceStateRequestFilter filter)
   {
     var states = await _stateGetter.GetStates<TState>(filter);
     var exportData = new List<SingleDeviceStateExportData>();

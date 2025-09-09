@@ -13,7 +13,7 @@ public class ZippedStatesExportStreamProvider : IDeviceStateExportStreamProvider
 
   public string Name => "Zipped Multi Device Exporter";
 
-  public async Task<ExportStateStream> Export(StateRequestFilter filter)
+  public async Task<ExportStateStream> Export(DeviceStateRequestFilter filter)
   {
     var stateStreamGetters = _streamProviders.Select(provider => provider.GetStream(filter)).ToArray();
     var stateStreamsCollection = await Task.WhenAll(stateStreamGetters);

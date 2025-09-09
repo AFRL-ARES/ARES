@@ -1,12 +1,12 @@
-﻿using Ares.Core.Device;
-using Ares.Device.Serial;
-using AresService.ConnectionManagement;
-using AresService.DeviceDbLoaders;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Ares.Core.Device;
+using Ares.Device.Serial;
+using AresService.ConnectionManagement;
+using AresService.DeviceDbLoaders;
 using ValveController;
 using ValveController.Config;
 using ValveController.Simulated;

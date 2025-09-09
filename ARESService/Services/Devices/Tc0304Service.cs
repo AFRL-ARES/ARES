@@ -6,11 +6,11 @@ using Ares.Core.Device;
 using AresService.DeviceManagers;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
+using TC0304;
 using Tc0304.Config;
 using Tc0304.DataModel;
-using Tc0304.Services;
-using TC0304;
 using TC0304.Extensions;
+using Tc0304.Services;
 
 namespace AresService.Services.Devices;
 

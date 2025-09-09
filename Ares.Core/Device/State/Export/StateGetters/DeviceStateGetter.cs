@@ -13,7 +13,7 @@ public class DeviceStateGetter : IDeviceStateGetter
     _dbContextFactory = dbContextFactory;
   }
 
-  public async Task<IDictionary<string, IEnumerable<TState>>> GetStates<TState>(StateRequestFilter request) where TState : class, IDeviceState
+  public async Task<IDictionary<string, IEnumerable<TState>>> GetStates<TState>(DeviceStateRequestFilter request) where TState : class, IDeviceState
   {
     using var context = _dbContextFactory.CreateDbContext();
     var stateQuery = await DeviceStateQueryBuilder.BuildQuery<TState>(request, context);

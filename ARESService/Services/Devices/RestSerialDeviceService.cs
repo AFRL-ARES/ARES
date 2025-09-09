@@ -9,7 +9,6 @@ using RestSerialDevice.Config;
 using RestSerialDevice.DataModel;
 using RestSerialDevice.Services;
 
-
 namespace AresService.Services.Devices;
 
 public class RestSerialDeviceService : RestSerialDeviceRpc.RestSerialDeviceRpcBase

@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Ares.Core.Device.State.Logging;
 public static class DeviceStateQueryBuilder
 {
-  public static async Task<IQueryable<T>> BuildQuery<T>(StateRequestFilter request, CoreDatabaseContext dbContext) where T : class, IDeviceState
+  public static async Task<IQueryable<T>> BuildQuery<T>(DeviceStateRequestFilter request, CoreDatabaseContext dbContext) where T : class, IDeviceState
   {
     var statesQuery = dbContext.Set<T>().AsQueryable();
     if(request.Start is not null)

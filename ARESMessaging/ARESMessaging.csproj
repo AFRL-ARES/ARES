@@ -82,4 +82,8 @@
     <Protobuf Include="Authentication.proto" />
   </ItemGroup>
 
+	<ItemGroup>
+	  <ProjectReference Include="..\Ares.Core\Ares.Core.csproj" />
+	</ItemGroup>
+
 </Project>

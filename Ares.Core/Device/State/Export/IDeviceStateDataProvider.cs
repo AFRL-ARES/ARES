@@ -7,5 +7,5 @@ namespace Ares.Core.Device.State.Export;
 /// </summary>
 public interface IDeviceStateDataProvider
 {
-  Task<IEnumerable<SingleDeviceStateExportData>> GetExportData(StateRequestFilter request);
+  Task<IEnumerable<SingleDeviceStateExportData>> GetExportData(DeviceStateRequestFilter request);
 }

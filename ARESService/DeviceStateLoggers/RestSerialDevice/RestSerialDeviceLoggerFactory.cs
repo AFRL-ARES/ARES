@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Ares.Core.Device.State.Logging;
+using Microsoft.EntityFrameworkCore;
 using RestSerialDevice;
 
 namespace AresService.DeviceStateLoggers.RestSerialDevice;

@@ -1,12 +1,12 @@
-﻿using Ares.Messages.DeviceState;
+﻿using System.Linq;
+using System.Threading.Tasks;
+using Ares.Core.Device.State.Logging;
+using Ares.Datamodel.Device;
+using Ares.Messages.DeviceStates;
 using Ares.Messages.DeviceStates.Chiller;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
-using System.Threading.Tasks;
-using Ares.Messages.DeviceStates;
-using Ares.Core.Device.State.Logging;
 
 namespace AresService.Services.DeviceStateLogging;
 
@@ -19,7 +19,7 @@ public class LaserChillerStateService : ChillerStateLogging.ChillerStateLoggingB
     _dbContextFactory = dbContextFactory;
   }
 
-  public override async Task<Empty> DeleteStates(StateRequestFilter request, ServerCallContext context)
+  public override async Task<Empty> DeleteStates(DeviceStateRequestFilter request, ServerCallContext context)
   {
     using var dbContext = _dbContextFactory.CreateDbContext();
     var stateQuery = await DeviceStateQueryBuilder.BuildQuery<ChillerState>(request, dbContext);
@@ -28,7 +28,7 @@ public class LaserChillerStateService : ChillerStateLogging.ChillerStateLoggingB
     return new Empty();
   }
 
-  public override async Task<ChillerStateResponse> GetStates(StateRequestFilter request, ServerCallContext context)
+  public override async Task<ChillerStateResponse> GetStates(DeviceStateRequestFilter request, ServerCallContext context)
   {
     using var dbContext = _dbContextFactory.CreateDbContext();
     var response = new ChillerStateResponse();

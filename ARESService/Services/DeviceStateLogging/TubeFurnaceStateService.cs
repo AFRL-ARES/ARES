@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
 using Ares.Core.Device.State.Logging;
-using Ares.Messages.DeviceState;
+using Ares.Datamodel.Device;
 using Ares.Messages.DeviceStates;
 using Ares.Messages.DeviceStates.TubeFurnace;
 using Google.Protobuf.WellKnownTypes;
@@ -18,7 +18,7 @@ public class TubeFurnaceStateService : TubeFurnaceStateLogging.TubeFurnaceStateL
     _dbContextFactory = dbContextFactory;
   }
 
-  public override async Task<Empty> DeleteTubeFurnaceStates(StateRequestFilter request, ServerCallContext context)
+  public override async Task<Empty> DeleteTubeFurnaceStates(DeviceStateRequestFilter request, ServerCallContext context)
   {
     using var dbContext = _dbContextFactory.CreateDbContext();
     var stateQuery = await DeviceStateQueryBuilder.BuildQuery<TubeFurnaceStateEntity>(request, dbContext);
@@ -27,7 +27,7 @@ public class TubeFurnaceStateService : TubeFurnaceStateLogging.TubeFurnaceStateL
     return new Empty();
   }
 
-  public override async Task<TubeFurnaceStateResponse> GetTubeFurnaceStates(StateRequestFilter request, ServerCallContext context)
+  public override async Task<TubeFurnaceStateResponse> GetTubeFurnaceStates(DeviceStateRequestFilter request, ServerCallContext context)
   {
     using var dbContext = _dbContextFactory.CreateDbContext();
     var response = new TubeFurnaceStateResponse();

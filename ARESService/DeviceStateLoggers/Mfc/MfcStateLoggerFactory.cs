@@ -1,4 +1,5 @@
 ﻿using AlicatMFC;
+using Ares.Core.Device.State.Logging;
 using Microsoft.EntityFrameworkCore;
 
 namespace AresService.DeviceStateLoggers.Mfc;

@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
 using Ares.Core.Device.State.Logging;
-using Ares.Messages.DeviceState;
+using Ares.Datamodel.Device;
 using Ares.Messages.DeviceStates;
 using Ares.Messages.DeviceStates.Tc0304;
 using Google.Protobuf.WellKnownTypes;
@@ -18,7 +18,7 @@ public class Tc0304StateService : Tc0304StateLogging.Tc0304StateLoggingBase
     _dbContextFactory = dbContextFactory;
   }
 
-  public override async Task<Empty> DeleteStates(StateRequestFilter request, ServerCallContext context)
+  public override async Task<Empty> DeleteStates(DeviceStateRequestFilter request, ServerCallContext context)
   {
     using var dbContext = _dbContextFactory.CreateDbContext();
     var stateQuery = await DeviceStateQueryBuilder.BuildQuery<Tc0304State>(request, dbContext);
@@ -27,7 +27,7 @@ public class Tc0304StateService : Tc0304StateLogging.Tc0304StateLoggingBase
     return new Empty();
   }
 
-  public override async Task<Tc0304StateResponse> GetStates(StateRequestFilter request, ServerCallContext context)
+  public override async Task<Tc0304StateResponse> GetStates(DeviceStateRequestFilter request, ServerCallContext context)
   {
     using var dbContext = _dbContextFactory.CreateDbContext();
     var response = new Tc0304StateResponse();

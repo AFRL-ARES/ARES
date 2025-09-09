@@ -1,6 +1,6 @@
-﻿using LindbergFurnace;
-using System;
+﻿using System;
 using System.Linq;
+using LindbergFurnace;
 
 namespace AresService.ConnectionManagement
 {

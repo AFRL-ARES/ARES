@@ -1,4 +1,5 @@
-﻿using LindbergFurnace;
+﻿using Ares.Core.Device.State.Logging;
+using LindbergFurnace;
 using Microsoft.EntityFrameworkCore;
 
 namespace AresService.DeviceStateLoggers.TubeFurnace

@@ -1,7 +1,7 @@
-﻿using SyringePumpNE1000;
-using SyringePumpNE1000.Simulation;
-using System;
+﻿using System;
 using System.Linq;
+using SyringePumpNE1000;
+using SyringePumpNE1000.Simulation;
 
 namespace AresService.ConnectionManagement;
 

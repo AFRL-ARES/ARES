@@ -1,4 +1,5 @@
-﻿using LaserChiller;
+﻿using Ares.Core.Device.State.Logging;
+using LaserChiller;
 using Microsoft.EntityFrameworkCore;
 
 namespace AresService.DeviceStateLoggers.LaserChiller;

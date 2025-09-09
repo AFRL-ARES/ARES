@@ -9,6 +9,7 @@ using Grpc.Core;
 using RestDevice;
 using RestDevice.Config;
 using RestDevice.Services;
+
 namespace AresService.Services.Devices;
 
 public class RestDeviceService : RestDeviceRpc.RestDeviceRpcBase

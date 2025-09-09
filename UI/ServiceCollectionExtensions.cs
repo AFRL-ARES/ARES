@@ -1,6 +1,5 @@
 ﻿using Ares.Alicat.Mfc.Messaging;
 using Ares.Messages;
-using Ares.Messages.DeviceState;
 using Ares.Messages.DeviceStates.Chiller;
 using Ares.Messages.DeviceStates.Mfc;
 using Ares.Messages.DeviceStates.RestSerialDevice;
@@ -109,7 +108,6 @@ internal static class ServiceCollectionExtensions
     services.AddScoped(_ => clientManager.GetClient<Health.HealthClient>());
     services.AddScoped(_ => clientManager.GetClient<AresPlannerManagementService.AresPlannerManagementServiceClient>());
     services.AddScoped(_ => clientManager.GetClient<AresValidation.AresValidationClient>());
-    services.AddScoped(_ => clientManager.GetClient<StateExportService.StateExportServiceClient>());
     services.AddScoped(_ => clientManager.GetClient<AresAnalyzerManagementService.AresAnalyzerManagementServiceClient>());
     services.AddScoped(_ => clientManager.GetClient<AresAnalysisService.AresAnalysisServiceClient>());
     services.AddScoped(_ => clientManager.GetClient<AresSafetyService.AresSafetyServiceClient>());
@@ -138,7 +136,7 @@ internal static class ServiceCollectionExtensions
     services.AddScoped(_ => clientManager.GetClient<TicStepperControllerStateLogging.TicStepperControllerStateLoggingClient>());
     services.AddScoped(_ => clientManager.GetClient<TubeFurnaceStateLogging.TubeFurnaceStateLoggingClient>());
     services.AddScoped(_ => clientManager.GetClient<ChillerStateLogging.ChillerStateLoggingClient>());
-    services.AddScoped(_ => clientManager.GetClient<StateExportService.StateExportServiceClient>());
+    services.AddScoped(_ => clientManager.GetClient<DeviceStateExportService.DeviceStateExportServiceClient>());
     services.AddScoped(_ => clientManager.GetClient<RestSerialDeviceStateLogging.RestSerialDeviceStateLoggingClient>());
   }
 

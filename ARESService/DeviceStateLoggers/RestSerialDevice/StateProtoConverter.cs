@@ -1,8 +1,8 @@
-﻿using Ares.Messages.DeviceStates.RestSerialDevice;
+﻿using System;
+using Ares.Messages.DeviceStates.RestSerialDevice;
 using GenericSerialDevice.Commands.Responses;
 using Google.Protobuf.WellKnownTypes;
 using RestSerialDevice;
-using System;
 
 namespace AresService.DeviceStateLoggers.RestSerialDevice;
 

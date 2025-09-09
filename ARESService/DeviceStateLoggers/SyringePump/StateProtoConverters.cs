@@ -1,6 +1,6 @@
-﻿using Ares.Core.EntityConfigurations;
+﻿using System;
+using Ares.Core.EntityConfigurations;
 using Ares.Messages.DeviceStates.SyringePump;
-using System;
 
 namespace AresService.DeviceStateLoggers.SyringePump;
 

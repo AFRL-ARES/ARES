@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
 using Ares.Core.Device.State.Logging;
-using Ares.Messages.DeviceState;
+using Ares.Datamodel.Device;
 using Ares.Messages.DeviceStates;
 using Ares.Messages.DeviceStates.Mfc;
 using Google.Protobuf.WellKnownTypes;
@@ -18,7 +18,7 @@ public class MfcStateService : MfcStateLogging.MfcStateLoggingBase
     _dbContextFactory = dbContextFactory;
   }
 
-  public override async Task<Empty> DeleteMfcStates(StateRequestFilter request, ServerCallContext context)
+  public override async Task<Empty> DeleteMfcStates(DeviceStateRequestFilter request, ServerCallContext context)
   {
     using var dbContext = _dbContextFactory.CreateDbContext();
     var stateQuery = await DeviceStateQueryBuilder.BuildQuery<MfcState>(request, dbContext);
@@ -27,7 +27,7 @@ public class MfcStateService : MfcStateLogging.MfcStateLoggingBase
     return new Empty();
   }
 
-  public override async Task<MfcStateResponse> GetMfcStates(StateRequestFilter request, ServerCallContext context)
+  public override async Task<MfcStateResponse> GetMfcStates(DeviceStateRequestFilter request, ServerCallContext context)
   {
     using var dbContext = _dbContextFactory.CreateDbContext();
     var response = new MfcStateResponse();

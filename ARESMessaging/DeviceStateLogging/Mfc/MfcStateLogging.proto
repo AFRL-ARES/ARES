@@ -4,12 +4,12 @@ package ares.messages.device_states.mfc;
 
 import "google/protobuf/empty.proto";
 import "DeviceStateLogging/Mfc/MfcState.proto";
-import "device/state_request_filter.proto";
+import "device/device_state_request_filter.proto";
 import "DeviceStateLogging/DevicesResponse.proto";
 
 service MfcStateLogging {
-	rpc GetMfcStates(datamodel.device.StateRequestFilter) returns (MfcStateResponse);
-	rpc DeleteMfcStates(datamodel.device.StateRequestFilter) returns (google.protobuf.Empty);
+	rpc GetMfcStates(datamodel.device.DeviceStateRequestFilter) returns (MfcStateResponse);
+	rpc DeleteMfcStates(datamodel.device.DeviceStateRequestFilter) returns (google.protobuf.Empty);
 	rpc GetAvailableDevices(google.protobuf.Empty) returns (DevicesResponse);
 }
 

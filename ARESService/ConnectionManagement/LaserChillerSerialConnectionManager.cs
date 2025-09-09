@@ -1,7 +1,7 @@
-﻿using LaserChiller;
-using LaserChiller.Simulated;
-using System;
+﻿using System;
 using System.Linq;
+using LaserChiller;
+using LaserChiller.Simulated;
 using VerdiV6Laser;
 
 namespace AresService.ConnectionManagement;

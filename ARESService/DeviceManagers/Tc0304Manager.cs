@@ -1,16 +1,16 @@
-﻿using Ares.Core.Device;
-using Ares.Device.Serial;
-using AresService.ConnectionManagement;
-using AresService.DeviceDbLoaders;
-using AresService.DeviceStateLoggers;
-using AresService.DeviceStateLoggers.Tc0304;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Tc0304.Config;
+using Ares.Core.Device;
+using Ares.Core.Device.State.Logging;
+using Ares.Device.Serial;
+using AresService.ConnectionManagement;
+using AresService.DeviceDbLoaders;
+using AresService.DeviceStateLoggers.Tc0304;
 using TC0304;
+using Tc0304.Config;
 
 namespace AresService.DeviceManagers;
 

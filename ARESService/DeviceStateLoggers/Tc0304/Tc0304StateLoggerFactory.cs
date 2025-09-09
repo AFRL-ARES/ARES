@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Ares.Core.Device.State.Logging;
+using Microsoft.EntityFrameworkCore;
 using TC0304;
 
 namespace AresService.DeviceStateLoggers.Tc0304;

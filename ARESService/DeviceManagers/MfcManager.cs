@@ -7,11 +7,11 @@ using AlicatMFC;
 using AlicatMFC.Simulation;
 using Ares.Alicat.Mfc.Config;
 using Ares.Core.Device;
+using Ares.Core.Device.State.Logging;
 using Ares.Datamodel.Device;
 using Ares.Device.Serial;
 using AresService.ConnectionManagement;
 using AresService.DeviceDbLoaders;
-using AresService.DeviceStateLoggers;
 using AresService.DeviceStateLoggers.Mfc;
 using Microsoft.Extensions.Logging;
 

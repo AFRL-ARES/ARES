@@ -1,4 +1,5 @@
-﻿using Ares.Core;
+﻿using System.Reflection;
+using Ares.Core;
 using Ares.Messages.DeviceStates.Chiller;
 using Ares.Messages.DeviceStates.Mfc;
 using Ares.Messages.DeviceStates.RestDevice;
@@ -8,7 +9,6 @@ using Ares.Messages.DeviceStates.Tc0304;
 using Ares.Messages.DeviceStates.TicStepperController;
 using Ares.Messages.DeviceStates.TubeFurnace;
 using Microsoft.EntityFrameworkCore;
-using System.Reflection;
 
 namespace AresService;
 

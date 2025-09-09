@@ -1,5 +1,5 @@
 ﻿using Ares.Datamodel;
-using Ares.Messages.DeviceState;
+using Ares.Datamodel.Device;
 using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
@@ -64,9 +64,9 @@ public class DeviceStateFilterViewModel : ReactiveObject
   public bool UseEndTime { get; set; }
   public bool UseExperiment { get; set; }
 
-  public StateRequestFilter GetStateRequestFilter()
+  public DeviceStateRequestFilter GetStateRequestFilter()
   {
-    var request = new StateRequestFilter
+    var request = new DeviceStateRequestFilter
     {
       Start = UseStartTime ? StartTime.ToUniversalTime().ToTimestamp() : default,
       End = UseEndTime ? EndTime.ToUniversalTime().ToTimestamp() : default,

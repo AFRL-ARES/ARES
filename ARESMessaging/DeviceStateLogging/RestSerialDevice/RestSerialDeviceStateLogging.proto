@@ -4,12 +4,12 @@ package ares.messages.device_states.rest_serial_device;
 
 import "google/protobuf/empty.proto";
 import "DeviceStateLogging/RestSerialDevice/RestSerialDeviceStateEntity.proto";
-import "device/state_request_filter.proto";
+import "device/device_state_request_filter.proto";
 import "DeviceStateLogging/DevicesResponse.proto";
 
 service RestSerialDeviceStateLogging {
-	rpc GetRestSerialDeviceStates(datamodel.device.StateRequestFilter) returns (RestSerialDeviceStateResponse);
-	rpc DeleteRestSerialDeviceStates(datamodel.device.StateRequestFilter) returns (google.protobuf.Empty);
+	rpc GetRestSerialDeviceStates(datamodel.device.DeviceStateRequestFilter) returns (RestSerialDeviceStateResponse);
+	rpc DeleteRestSerialDeviceStates(datamodel.device.DeviceStateRequestFilter) returns (google.protobuf.Empty);
 	rpc GetAvailableDevices(google.protobuf.Empty) returns (DevicesResponse);
 }
 

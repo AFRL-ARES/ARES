@@ -26,7 +26,7 @@ public abstract class SingleDeviceTypeStateStreamProviderBase<TState, TStateMap>
   /// </summary>
   /// <param name="request"></param>
   /// <returns>the state streams for all the requested devices that provide states of type <see cref="TState"/></returns>
-  public async Task<IEnumerable<DeviceStateStream>> GetStream(StateRequestFilter request)
+  public async Task<IEnumerable<DeviceStateStream>> GetStream(DeviceStateRequestFilter request)
   {
     var stateMaps = await _deviceStateGetter.GetStates<TState>(request);
     var exports = new List<DeviceStateStream>();

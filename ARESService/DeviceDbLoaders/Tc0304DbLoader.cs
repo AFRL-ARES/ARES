@@ -1,7 +1,7 @@
 ﻿using AresService.DeviceManagers;
 using Microsoft.EntityFrameworkCore;
-using Tc0304.Config;
 using TC0304;
+using Tc0304.Config;
 
 namespace AresService.DeviceDbLoaders;
 

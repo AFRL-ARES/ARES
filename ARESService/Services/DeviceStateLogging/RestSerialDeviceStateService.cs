@@ -1,12 +1,12 @@
-﻿using Ares.Messages.DeviceState;
+﻿using System.Linq;
+using System.Threading.Tasks;
+using Ares.Core.Device.State.Logging;
+using Ares.Datamodel.Device;
+using Ares.Messages.DeviceStates;
 using Ares.Messages.DeviceStates.RestSerialDevice;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
-using System.Threading.Tasks;
-using Ares.Messages.DeviceStates;
-using Ares.Core.Device.State.Logging;
 
 namespace AresService.Services.DeviceStateLogging
 {
@@ -19,7 +19,7 @@ namespace AresService.Services.DeviceStateLogging
       _dbContextFactory = dbContextFactory;
     }
 
-    public override async Task<Empty> DeleteRestSerialDeviceStates(StateRequestFilter request, ServerCallContext context)
+    public override async Task<Empty> DeleteRestSerialDeviceStates(DeviceStateRequestFilter request, ServerCallContext context)
     {
       using var dbContext = _dbContextFactory.CreateDbContext();
       var stateQuery = await DeviceStateQueryBuilder.BuildQuery<RestSerialDeviceStateEntity>(request, dbContext);
@@ -28,7 +28,7 @@ namespace AresService.Services.DeviceStateLogging
       return new Empty();
     }
 
-    public override async Task<RestSerialDeviceStateResponse> GetRestSerialDeviceStates(StateRequestFilter request, ServerCallContext context)
+    public override async Task<RestSerialDeviceStateResponse> GetRestSerialDeviceStates(DeviceStateRequestFilter request, ServerCallContext context)
     {
       using var dbContext = _dbContextFactory.CreateDbContext();
       var response = new RestSerialDeviceStateResponse();

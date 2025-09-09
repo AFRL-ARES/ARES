@@ -1,7 +1,7 @@
-﻿using HerkulexDRS;
-using HerkulexDRS.Simulation;
-using System;
+﻿using System;
 using System.Linq;
+using HerkulexDRS;
+using HerkulexDRS.Simulation;
 
 namespace AresService.ConnectionManagement;
 public class ServoSerialConnectionManager : ISerialConnectionManager<IServoConnection>

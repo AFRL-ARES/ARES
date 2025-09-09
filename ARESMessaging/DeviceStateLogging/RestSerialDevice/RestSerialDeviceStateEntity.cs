@@ -1,4 +1,6 @@
-﻿namespace Ares.Messages.DeviceStates.RestSerialDevice;
+﻿using Ares.Core.Device.State;
+
+namespace Ares.Messages.DeviceStates.RestSerialDevice;
 
 public partial class RestSerialDeviceStateEntity : IDeviceState
 {

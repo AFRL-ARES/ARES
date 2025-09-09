@@ -1,8 +1,8 @@
-﻿using Ares.Core.Device.State.Export;
+﻿using System.Collections.Generic;
+using System.Linq;
+using Ares.Core.Device.State.Export;
 using Ares.Core.Device.State.Export.StateGetters;
 using Ares.Messages.DeviceStates.TicStepperController;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace AresService.DeviceStateExport.ExportDataProviders;
 

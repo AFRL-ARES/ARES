@@ -20,7 +20,7 @@ public class CombinedDeviceStateExportStreamProvider : IDeviceStateExportStreamP
     _dataProviders = dataProviders;
   }
 
-  public async Task<ExportStateStream> Export(StateRequestFilter request)
+  public async Task<ExportStateStream> Export(DeviceStateRequestFilter request)
   {
     var config = new CsvConfiguration(CultureInfo.InvariantCulture)
     {
@@ -100,7 +100,7 @@ public class CombinedDeviceStateExportStreamProvider : IDeviceStateExportStreamP
       }
     }
   }
-  private async Task<IOrderedEnumerable<SingleDeviceStateExportData>> GetStateExportData(StateRequestFilter request)
+  private async Task<IOrderedEnumerable<SingleDeviceStateExportData>> GetStateExportData(DeviceStateRequestFilter request)
   {
     var dataProviderGetters = _dataProviders.Select(provider => provider.GetExportData(request));
     var stateExportDataCollectionPerDevice = await Task.WhenAll(dataProviderGetters);

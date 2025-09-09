@@ -1,15 +1,15 @@
-﻿using Ares.Core.Device;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Ares.Core.Device;
 using Ares.Device.Serial;
 using AresService.ConnectionManagement;
 using AresService.DeviceDbLoaders;
 using HerkulexDRS;
 using HerkulexDRS.Config;
 using HerkulexDRS.Simulation;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace AresService.DeviceManagers;
 public class ServoDeviceManager : IDeviceManager<ServoConfig, IServo>

@@ -1,8 +1,8 @@
-﻿using Ares.Core.Device;
-using Ares.Core;
+﻿using Ares.Core;
+using Ares.Core.Device;
+using LindbergFurnace;
 using Microsoft.EntityFrameworkCore;
 using TubeFurnace.Config;
-using LindbergFurnace;
 
 namespace AresService.ConfigManagers
 {

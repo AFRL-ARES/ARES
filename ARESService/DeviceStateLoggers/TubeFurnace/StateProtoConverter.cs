@@ -1,6 +1,6 @@
-﻿using Ares.Messages.DeviceStates.TubeFurnace;
+﻿using System;
+using Ares.Messages.DeviceStates.TubeFurnace;
 using Google.Protobuf.WellKnownTypes;
-using System;
 using TubeFurnace.Messaging;
 
 namespace AresService.DeviceStateLoggers.TubeFurnace;

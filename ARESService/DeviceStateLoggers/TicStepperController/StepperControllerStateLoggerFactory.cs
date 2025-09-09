@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Ares.Core.Device.State.Logging;
+using Microsoft.EntityFrameworkCore;
 using TicStepperController;
 
 namespace AresService.DeviceStateLoggers.TicStepperController;

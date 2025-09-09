@@ -4,12 +4,12 @@ package ares.messages.device_states.rest_device;
 
 import "google/protobuf/empty.proto";
 import "DeviceStateLogging/RestDevice/RestDeviceStateEntity.proto";
-import "device/state_request_filter.proto";
+import "device/device_state_request_filter.proto";
 import "DeviceStateLogging/DevicesResponse.proto";
 
 service RestDeviceStateLogging {
-	rpc GetRestDeviceSttates(datamodel.device.StateRequestFilter) returns (RestDeviceStateResponse);
-	rpc DeleteRestDeviceStates(datamodel.device.StateRequestFilter) returns (google.protobuf.Empty);
+	rpc GetRestDeviceSttates(datamodel.device.DeviceStateRequestFilter) returns (RestDeviceStateResponse);
+	rpc DeleteRestDeviceStates(datamodel.device.DeviceStateRequestFilter) returns (google.protobuf.Empty);
 	rpc GetAvailableDevices(google.protobuf.Empty) returns (DevicesResponse);
 }
 
