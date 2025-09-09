@@ -1,9 +1,9 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
+using Ares.Core.Device.State.Logging;
 using Ares.Messages.DeviceState;
 using Ares.Messages.DeviceStates;
 using Ares.Messages.DeviceStates.Tc0304;
-using AresService.DeviceStateLoggers;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;

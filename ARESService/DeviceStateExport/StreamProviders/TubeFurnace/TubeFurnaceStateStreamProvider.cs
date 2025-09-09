@@ -1,5 +1,6 @@
-﻿using Ares.Messages.DeviceStates.TubeFurnace;
-using AresService.DeviceStateExport.StateGetters;
+﻿using Ares.Core.Device.State.Export;
+using Ares.Core.Device.State.Export.StateGetters;
+using Ares.Messages.DeviceStates.TubeFurnace;
 
 namespace AresService.DeviceStateExport.StreamProviders.TubeFurnace;
 

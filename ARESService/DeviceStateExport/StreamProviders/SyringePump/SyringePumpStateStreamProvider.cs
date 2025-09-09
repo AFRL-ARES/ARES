@@ -1,5 +1,6 @@
-﻿using Ares.Messages.DeviceStates.SyringePump;
-using AresService.DeviceStateExport.StateGetters;
+﻿using Ares.Core.Device.State.Export;
+using Ares.Core.Device.State.Export.StateGetters;
+using Ares.Messages.DeviceStates.SyringePump;
 
 namespace AresService.DeviceStateExport.StreamProviders.SyringePump;
 

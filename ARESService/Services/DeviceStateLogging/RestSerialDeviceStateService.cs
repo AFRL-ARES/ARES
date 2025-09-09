@@ -1,12 +1,12 @@
 ﻿using Ares.Messages.DeviceState;
 using Ares.Messages.DeviceStates.RestSerialDevice;
-using AresService.DeviceStateLoggers;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using System.Threading.Tasks;
 using Ares.Messages.DeviceStates;
+using Ares.Core.Device.State.Logging;
 
 namespace AresService.Services.DeviceStateLogging
 {

@@ -4,12 +4,12 @@ package ares.messages.device_states.tc0304;
 
 import "google/protobuf/empty.proto";
 import "DeviceStateLogging/Tc0304/Tc0304State.proto";
-import "DeviceState/StateRequestFilter.proto";
+import "device/state_request_filter.proto";
 import "DeviceStateLogging/DevicesResponse.proto";
 
 service Tc0304StateLogging {
-	rpc GetStates(device_state.StateRequestFilter) returns (Tc0304StateResponse);
-	rpc DeleteStates(device_state.StateRequestFilter) returns (google.protobuf.Empty);
+	rpc GetStates(datamodel.device.StateRequestFilter) returns (Tc0304StateResponse);
+	rpc DeleteStates(datamodel.device.StateRequestFilter) returns (google.protobuf.Empty);
 	rpc GetAvailableDevices(google.protobuf.Empty) returns (DevicesResponse);
 }
 

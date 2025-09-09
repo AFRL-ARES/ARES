@@ -1,5 +1,6 @@
-﻿using Ares.Messages.DeviceStates.Tc0304;
-using AresService.DeviceStateExport.StateGetters;
+﻿using Ares.Core.Device.State.Export;
+using Ares.Core.Device.State.Export.StateGetters;
+using Ares.Messages.DeviceStates.Tc0304;
 
 namespace AresService.DeviceStateExport.StreamProviders.Tc0304;
 

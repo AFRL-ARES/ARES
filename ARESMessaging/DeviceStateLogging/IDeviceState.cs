@@ -1,6 +1,6 @@
 ﻿using Google.Protobuf.WellKnownTypes;
 
-namespace AresMessaging.DeviceStateLogging;
+namespace Ares.Messages.DeviceStates;
 public interface IDeviceState
 {
   string DeviceId { get; set; }

@@ -4,12 +4,12 @@ package ares.messages.device_states.tube_furnace;
 
 import "google/protobuf/empty.proto";
 import "DeviceStateLogging/TubeFurnace/TubeFurnaceStateEntity.proto";
-import "DeviceState/StateRequestFilter.proto";
+import "device/state_request_filter.proto";
 import "DeviceStateLogging/DevicesResponse.proto";
 
 service TubeFurnaceStateLogging {
-	rpc GetTubeFurnaceStates(device_state.StateRequestFilter) returns (TubeFurnaceStateResponse);
-	rpc DeleteTubeFurnaceStates(device_state.StateRequestFilter) returns (google.protobuf.Empty);
+	rpc GetTubeFurnaceStates(datamodel.device.StateRequestFilter) returns (TubeFurnaceStateResponse);
+	rpc DeleteTubeFurnaceStates(datamodel.device.StateRequestFilter) returns (google.protobuf.Empty);
 	rpc GetAvailableDevices(google.protobuf.Empty) returns (DevicesResponse);
 }
 

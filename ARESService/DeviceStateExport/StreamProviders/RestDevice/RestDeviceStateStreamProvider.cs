@@ -1,5 +1,6 @@
-﻿using Ares.Messages.DeviceStates.RestDevice;
-using AresService.DeviceStateExport.StateGetters;
+﻿using Ares.Core.Device.State.Export;
+using Ares.Core.Device.State.Export.StateGetters;
+using Ares.Messages.DeviceStates.RestDevice;
 
 namespace AresService.DeviceStateExport.StreamProviders.RestDevice;
 

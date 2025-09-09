@@ -1,5 +1,4 @@
-﻿using Ares.Core.Analyzing;
-using Ares.Core.Notifications;
+﻿using Ares.Core.Notifications;
 using Ares.Datamodel.Device;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;

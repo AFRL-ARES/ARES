@@ -1,10 +1,9 @@
 ﻿using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
-using Ares.Core.Device.Remote;
 using Ares.Datamodel.Device;
 using Microsoft.Extensions.Logging;
 
-namespace Ares.Core.Analyzing;
+namespace Ares.Core.Device.Remote;
 internal class RemoteDeviceMonitor : IDisposable
 {
   private readonly RemoteDevice _device;

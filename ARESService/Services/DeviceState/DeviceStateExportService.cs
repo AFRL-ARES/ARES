@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Ares.Core.Device.State.Export.ExportStreamProviders;
 using Ares.Messages.DeviceState;
-using AresService.DeviceStateExport.ExportStreamProviders;
 using Google.Protobuf;
 using Grpc.Core;
 
