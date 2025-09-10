@@ -64,7 +64,7 @@ public class DemoDeviceService : AresRemoteDeviceService.AresRemoteDeviceService
 
     if(request.CommandName == Commands.ECHO_NUMBER.ToString())
     {
-      var arg = request.Arguments.GetValueOrDefault(DemoDataTypes.InputNumber.Key);
+      var arg = request.Arguments.Fields.GetValueOrDefault(DemoDataTypes.InputNumber.Key);
       if(arg == default)
       {
         return Task.FromResult(new DeviceExecutionResult { Success = false, Error = $"Arg {DemoDataTypes.InputNumber.Key} not provided." });
