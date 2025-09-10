@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Collections.ObjectModel;
 using Ares.Datamodel.Device;
 using Ares.Services;
 using Ares.Services.Device;
@@ -45,7 +42,7 @@ public class RemoteDeviceSettingsListViewModel : ReactiveObject
     }
   }
 
-  private void UpdateViewModels(System.Collections.Generic.IEnumerable<DeviceInfo> remoteDevices)
+  private void UpdateViewModels(IEnumerable<DeviceInfo> remoteDevices)
   {
     SettingsViewModels.Clear();
     var viewModels = remoteDevices.Select(info => new RemoteDeviceSettingsViewModel(_devicesClient, _notificationService, info, OnDeviceRemoved)).ToArray();

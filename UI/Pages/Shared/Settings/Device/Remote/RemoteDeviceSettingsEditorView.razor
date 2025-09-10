@@ -1,5 +1,6 @@
 ﻿@using Ares.Datamodel;
-@inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Backend.ViewModels.Settings.Device.Remote.RemoteDeviceSettingsEditorViewModel>
+@using System.Reactive.Threading.Tasks
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Backend.ViewModels.Settings.Device.Remote.RemoteDeviceSettingsViewModel>
 
 
 <EditForm Model="@ViewModel" OnValidSubmit="OnValidSubmit">
@@ -22,13 +23,12 @@
 	private Task ValueEditCallback(string name, AresValue value)
 	{
 		ViewModel!.Settings.Fields[name] = value;
-		return ViewModel!.PushSettings();
+		return Task.CompletedTask;
 	}
 
 	protected override async Task OnInitializedAsync()
 	{
-		await ViewModel!.UpdateInfo();
-		await ViewModel!.FetchSettings();
+		await ViewModel!.FetchSettingsCommand.Execute().ToTask();
 		await base.OnInitializedAsync();
 	}
 }

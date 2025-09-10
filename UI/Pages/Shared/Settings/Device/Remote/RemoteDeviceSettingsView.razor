@@ -21,13 +21,12 @@
 </DeviceSettingsContainer>
 
 @code {
-  async Task EditCallback()
+  private async Task EditCallback()
   {
     var viewModel = ViewModel!.EditViewModel;
-    var result = await DialogService.OpenAsync("Edit Device", ds =>
-      @<RemoteDeviceConfigEditView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)"/>);
+    var result = await DialogService.OpenAsync("Edit Device", ds => @<RemoteDeviceConfigEditView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)"/>);
 
-    if (result is true && viewModel.Modified)
+    if(result is true && viewModel.Modified)
     {
       await ViewModel.SaveCommand.Execute();
     }
@@ -35,15 +34,10 @@
 
   private async Task SettingCallback()
   {
-    var viewModel = ViewModel!.SettingsEditorViewModel;
-    var result = await DialogService.OpenAsync("Device Settings", ds => @<RemoteDeviceSettingsEditorView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)"/>);
-    
-    if(result is true && viewModel!.Modified)
-    {
-      await ViewModel!.SaveAsync();
-      StateHasChanged();
-    }
-  }
+    await DialogService.OpenAsync("Device Settings", ds => @<RemoteDeviceSettingsEditorView ViewModel="@ViewModel" OnValidSubmit="() => ds.Close(true)"/>);    
+    await ViewModel!.PushSettingsCommand.Execute();
+    StateHasChanged();
+   }
 
   private async Task RemoveCallback()
   {
@@ -58,6 +52,7 @@
   {
     await ViewModel!.UpdateInfoCommand.Execute().ToTask();
     await ViewModel!.UpdateStateCommand.Execute().ToTask();
+    await ViewModel!.FetchSettingsCommand.Execute().ToTask();
   }
 
   protected override Task OnInitializedAsync()
