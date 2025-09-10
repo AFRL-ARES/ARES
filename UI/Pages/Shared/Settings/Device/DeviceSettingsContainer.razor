@@ -26,19 +26,10 @@
     </div>
   }
   <div class="d-flex device-settings-actions">
-    <button class="btn btn-sm btn-outline-primary rounded-2 device-action-button" type="button" disabled="@(ActivateCallback is null)" @onclick="ActivateClicked">
-      @if (_activateInProgress)
-      {
-        <LoadingSpinner SpinnerSize="SpinnerSize.Small" />
-      }
-      else
-      {
-        <RadzenIcon Icon="sync"/>
-      }
-    </button>
     <vr />
     <button class="btn btn-sm btn-outline-primary rounded-2 device-action-button" type="button" disabled="@(EditCallback is null)" @onclick="EditClicked"><RadzenIcon Icon="edit"/></button>
-    <button class="btn btn-sm btn-outline-danger rounded-2 device-action-button" type="button" disabled="@(RemoveCallback is null)" @onclick="RemoveClicked"><RadzenIcon Icon="delete_outline"/></button>
+    <button class="btn btn-sm btn-outline-primary rounded-2 device-action-button" type="button" disabled="@(SettingsCallback is null)" @onclick="SettingsClicked"><RadzenIcon Icon="settings" /></button>
+    <button class="btn btn-sm btn-outline-danger rounded-2 device-action-button" type="button" disabled="@(RemoveCallback is null)" @onclick="RemoveClicked"><RadzenIcon Icon="delete_outline" /></button>
   </div>
   <hr class="device-settings-separator" />
   <div class="device-settings-content">
@@ -52,6 +43,9 @@
 
   [Parameter]
   public Func<Task>? RemoveCallback { get; set; }
+
+  [Parameter]
+  public Func<Task>? SettingsCallback { get; set; }
 
   [Parameter]
   public Func<Task>? EditCallback { get; set; }
@@ -81,6 +75,11 @@
   private Task EditClicked()
   {
     return EditCallback is not null ? EditCallback() : Task.CompletedTask;
+  }
+
+  private Task SettingsClicked()
+  {
+    return SettingsCallback is not null ? SettingsCallback() : Task.CompletedTask;
   }
 
   private Task RemoveClicked()

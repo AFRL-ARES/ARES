@@ -14,7 +14,7 @@ public class DemoAnalyzerService : AresRemoteAnalyzerService.AresRemoteAnalyzerS
 
   public override Task<StateResponse> GetState(Empty request, ServerCallContext context)
   {
-    return Task.FromResult(new StateResponse { State = State.Active });
+    return Task.FromResult(new StateResponse { State = State.Active, StateMessage = "The Demo Analyzer is Active!" });
   }
 
   public override Task<Analysis> Analyze(AnalysisRequest request, ServerCallContext context)
