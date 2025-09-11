@@ -1,37 +1,43 @@
 ﻿@using System.Reactive.Linq
 @using System.Reactive.Threading.Tasks
 @using Ares.Datamodel
+@using Ares.Services
 @using UI.Backend.ViewModels.Settings.Device.Remote
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<RemoteDeviceSettingsViewModel>
 @inject DialogService DialogService
 
-<DeviceSettingsContainer EditCallback="EditCallback" RemoveCallback="RemoveCallback" Name="@ViewModel!.Name" DeviceOperationalStatusGetter="@ViewModel!.GetOperationalStatus">
+<DeviceSettingsContainer 
+  EditCallback="EditCallback"
+  SettingsCallback="SettingCallback"
+  RemoveCallback="RemoveCallback" 
+  Name="@ViewModel!.Name" 
+  DeviceOperationalStatusGetter="@ViewModel!.GetOperationalStatus">
   <div style="display: flex; flex-direction: column">
     <span>Address: @ViewModel.Address</span>
     <span>Type: @ViewModel.Type</span>
     <span>Version: @ViewModel.Version</span>
     <span>@ViewModel.Description</span>
-    <div style="display: flex; flex-direction: column">
-      @foreach (var settingField in ViewModel.Settings.Fields)
-      {
-        <AresValueDesigner Name="@settingField.Key" Value="@settingField.Value" Schema="@ViewModel.SettingsSchema.Fields[settingField.Key]" ValueEditCallback="@(value => ValueEditCallback(settingField.Key, value))" />
-      }
-    </div>
   </div>
 </DeviceSettingsContainer>
 
 @code {
-  async Task EditCallback()
+  private async Task EditCallback()
   {
     var viewModel = ViewModel!.EditViewModel;
-    var result = await DialogService.OpenAsync("Edit Device", ds =>
-      @<RemoteDeviceConfigEditView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)"/>);
+    var result = await DialogService.OpenAsync("Edit Device", ds => @<RemoteDeviceConfigEditView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)"/>);
 
-    if (result is true && viewModel.Modified)
+    if(result is true && viewModel.Modified)
     {
       await ViewModel.SaveCommand.Execute();
     }
   }
+
+  private async Task SettingCallback()
+  {
+    await DialogService.OpenAsync("Device Settings", ds => @<RemoteDeviceSettingsEditorView ViewModel="@ViewModel" OnValidSubmit="() => ds.Close(true)"/>);    
+    await ViewModel!.PushSettingsCommand.Execute();
+    StateHasChanged();
+   }
 
   private async Task RemoveCallback()
   {
@@ -52,11 +58,5 @@
   protected override Task OnInitializedAsync()
   {
     return RefreshCallback();
-  }
-  
-  private Task ValueEditCallback(string name, AresValue value)
-  {
-    ViewModel!.Settings.Fields[name] = value;
-    return ViewModel.PushSettingsCommand.Execute().ToTask();
   }
 }

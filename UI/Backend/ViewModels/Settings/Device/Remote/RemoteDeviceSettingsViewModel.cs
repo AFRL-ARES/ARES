@@ -34,20 +34,19 @@ public class RemoteDeviceSettingsViewModel : ReactiveObject
 
     var config = new RemoteDeviceConfig { Name = deviceInfo.Name, UniqueId = deviceInfo.UniqueId, Url = deviceInfo.Url };
     EditViewModel = new RemoteDeviceConfigEditViewModel(config);
-
     SaveCommand = ReactiveCommand.CreateFromTask(SaveAsync);
     RemoveCommand = ReactiveCommand.CreateFromTask(() => RemoveAsync(onRemoveCallback));
-    UpdateStateCommand = ReactiveCommand.CreateFromTask(UpdateStateAsync);
     FetchSettingsCommand = ReactiveCommand.CreateFromTask(FetchSettingsAsync);
     PushSettingsCommand = ReactiveCommand.CreateFromTask(PushSettingsAsync);
+    UpdateStateCommand = ReactiveCommand.CreateFromTask(UpdateStateAsync);
     UpdateInfoCommand = ReactiveCommand.CreateFromTask(UpdateInfoAsync);
 
     var allExceptions = Observable.Merge(
         SaveCommand.ThrownExceptions,
         RemoveCommand.ThrownExceptions,
-        UpdateStateCommand.ThrownExceptions,
         FetchSettingsCommand.ThrownExceptions,
         PushSettingsCommand.ThrownExceptions,
+        UpdateStateCommand.ThrownExceptions,
         UpdateInfoCommand.ThrownExceptions);
 
     allExceptions.Subscribe(HandleError);
@@ -56,9 +55,9 @@ public class RemoteDeviceSettingsViewModel : ReactiveObject
             SaveCommand.IsExecuting,
             RemoveCommand.IsExecuting,
             UpdateStateCommand.IsExecuting,
-            UpdateInfoCommand.IsExecuting,
             FetchSettingsCommand.IsExecuting,
-            PushSettingsCommand.IsExecuting)
+            PushSettingsCommand.IsExecuting,
+            UpdateInfoCommand.IsExecuting)
         .ToProperty(this, x => x.IsBusy);
   }
 
@@ -89,9 +88,9 @@ public class RemoteDeviceSettingsViewModel : ReactiveObject
   public ReactiveCommand<Unit, Unit> SaveCommand { get; }
   public ReactiveCommand<Unit, Unit> RemoveCommand { get; }
   public ReactiveCommand<Unit, Unit> UpdateStateCommand { get; }
+  public ReactiveCommand<Unit, Unit> UpdateInfoCommand { get; }
   public ReactiveCommand<Unit, Unit> FetchSettingsCommand { get; }
   public ReactiveCommand<Unit, Unit> PushSettingsCommand { get; }
-  public ReactiveCommand<Unit, Unit> UpdateInfoCommand { get; }
 
   private async Task SaveAsync()
   {
@@ -145,7 +144,6 @@ public class RemoteDeviceSettingsViewModel : ReactiveObject
   {
     var request = new DeviceSettingsRequest() { DeviceId = _deviceInfo.UniqueId };
     var deviceSettings = await _devicesClient.GetDeviceSettingsAsync(request);
-    //Settings.UpdateStruct(deviceSettings);
     Settings = deviceSettings;
   }
 

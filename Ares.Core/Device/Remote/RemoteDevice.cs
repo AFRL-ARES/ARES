@@ -92,16 +92,21 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     }
     catch(RpcException e) when(e.StatusCode == StatusCode.Cancelled)
     {
+      Console.WriteLine($"Exception In State Stream {e.Message}");
     }
     catch(RpcException e)
     {
       Status = new DeviceOperationalStatus
       { OperationalState = OperationalState.Inactive, Message = $"State stream disconnected: {e.Message}" };
+
+      Console.WriteLine($"Exception In State Stream {e.Message}");
     }
     catch(Exception e)
     {
       Status = new DeviceOperationalStatus
       { OperationalState = OperationalState.Error, Message = $"Unspecified error occurred while fetching device state: {e.Message}" };
+
+      Console.WriteLine($"Exception In State Stream {e.Message}");
     }
   }
 
@@ -175,10 +180,10 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
   public async Task<CommandResult> ExecuteCommand(string command, AresStruct arguments, CancellationToken token)
   {
     var client = GetClient();
-    var executionRequest = new ExecuteCommandRequest { CommandName = command };
+    var executionRequest = new ExecuteCommandRequest { CommandName = command, Arguments = new AresStruct() };
     foreach(var argument in arguments.Fields)
     {
-      executionRequest.Arguments[argument.Key] = argument.Value;
+      executionRequest.Arguments.Fields[argument.Key] = argument.Value;
     }
 
     var executionResult = await client.ExecuteCommandAsync(executionRequest, cancellationToken: token);
@@ -199,7 +204,9 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     try
     {
       var response = await client.GetSettingsSchemaAsync(new Empty());
-      SettingSchema = response.Schema;
+
+      if(response.Schema is not null)
+        SettingSchema = response.Schema;
     }
     catch(RpcException)
     {
@@ -209,7 +216,9 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     try
     {
       var response = await client.GetCurrentSettingsAsync(new Empty());
-      await UpdateSettings(response.Settings);
+
+      if(response.Settings is not null)
+        await UpdateSettings(response.Settings);
     }
     catch(RpcException)
     {

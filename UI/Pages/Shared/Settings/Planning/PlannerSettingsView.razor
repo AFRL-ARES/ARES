@@ -9,8 +9,11 @@ SettingsCallback="SettingCallback"
 EditCallback="EditCallback" 
 RemoveCallback="RemoveCallback" 
 Name="@ViewModel!.PlannerAdapter.Name">
-  <div>
-    <span>@ViewModel!.PlannerAdapter.Address</span>
+  <div style="display: flex; flex-direction: column">
+    <span>Address: @ViewModel!.PlannerAdapter.Address</span>
+    <span>Type: @ViewModel!.PlannerAdapter.Type</span>
+    <span>Version: @ViewModel!.PlannerAdapter.Version</span>
+    <span>@ViewModel!.PlannerAdapter.Description</span>
   </div>
 </PlannerSettingsContainer>
 
