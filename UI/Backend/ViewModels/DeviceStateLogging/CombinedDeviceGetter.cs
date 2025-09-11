@@ -1,4 +1,5 @@
-﻿using Ares.Messages.DeviceStates.Mfc;
+﻿using Ares.Messages.DeviceStates;
+using Ares.Messages.DeviceStates.Mfc;
 using Ares.Messages.DeviceStates.SyringePump;
 using Ares.Messages.DeviceStates.Tc0304;
 using Ares.Messages.DeviceStates.TicStepperController;
@@ -7,7 +8,7 @@ using Google.Protobuf.WellKnownTypes;
 
 namespace UI.Backend.ViewModels.DeviceStateLogging;
 
-public class CombinedDeviceIdGetter : ICombinedDeviceIdGetter
+public class CombinedDeviceGetter : ICombinedDeviceGetter
 {
   private readonly MfcStateLogging.MfcStateLoggingClient _mfcClient;
   private readonly TicStepperControllerStateLogging.TicStepperControllerStateLoggingClient _ticClient;
@@ -15,7 +16,7 @@ public class CombinedDeviceIdGetter : ICombinedDeviceIdGetter
   private readonly SyringePumpStateLogging.SyringePumpStateLoggingClient _syringeClient;
   private readonly Tc0304StateLogging.Tc0304StateLoggingClient _tcClient;
 
-  public CombinedDeviceIdGetter(
+  public CombinedDeviceGetter(
       MfcStateLogging.MfcStateLoggingClient mfcClient,
       TicStepperControllerStateLogging.TicStepperControllerStateLoggingClient ticClient,
       TubeFurnaceStateLogging.TubeFurnaceStateLoggingClient tubeClient,
@@ -30,7 +31,7 @@ public class CombinedDeviceIdGetter : ICombinedDeviceIdGetter
     _tcClient = tcClient;
   }
 
-  public async Task<IEnumerable<string>> GetAvailableIds()
+  public async Task<DevicesDescription[]> GetAvailableDevices()
   {
     var mfcResponses = await _mfcClient.GetAvailableDevicesAsync(new Empty());
     var ticResponses = await _ticClient.GetAvailableDevicesAsync(new Empty());
@@ -38,13 +39,13 @@ public class CombinedDeviceIdGetter : ICombinedDeviceIdGetter
     var syringeResponses = await _syringeClient.GetAvailableDevicesAsync(new Empty());
     var tcResponses = await _tcClient.GetAvailableDevicesAsync(new Empty());
 
-    var deviceIds = new List<string>();
-    deviceIds.AddRange(mfcResponses.DeviceIds);
-    deviceIds.AddRange(ticResponses.DeviceIds);
-    deviceIds.AddRange(tubeResponses.DeviceIds);
-    deviceIds.AddRange(syringeResponses.DeviceIds);
-    deviceIds.AddRange(tcResponses.DeviceIds);
+    var deviceIds = new List<DevicesDescription>();
+    deviceIds.AddRange(mfcResponses.Devices);
+    deviceIds.AddRange(ticResponses.Devices);
+    deviceIds.AddRange(tubeResponses.Devices);
+    deviceIds.AddRange(syringeResponses.Devices);
+    deviceIds.AddRange(tcResponses.Devices);
 
-    return deviceIds;
+    return deviceIds.ToArray();
   }
 }

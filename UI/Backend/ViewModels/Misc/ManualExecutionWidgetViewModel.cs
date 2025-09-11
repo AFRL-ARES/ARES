@@ -35,7 +35,7 @@ public class ManualExecutionWidgetViewModel : ReactiveObject
     IsCollecting = true;
     CollectionStarted = DateTime.UtcNow;
     var devicesResponse = await _devicesClient.ListAresDevicesAsync(new Empty());
-    _activeDevices = devicesResponse.AresDevices.Select(dev => dev.Name).ToList();
+    _activeDevices = devicesResponse.AresDevices.Select(dev => dev.UniqueId).ToList();
   }
 
   public void StopDataCollection()

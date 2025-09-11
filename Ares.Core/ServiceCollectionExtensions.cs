@@ -1,6 +1,7 @@
 ﻿using Ares.Core.Analyzing;
 using Ares.Core.AresEnvironment;
 using Ares.Core.Device;
+using Ares.Core.Device.Helpers;
 using Ares.Core.Device.Remote;
 using Ares.Core.Execution;
 using Ares.Core.Execution.Executors;
@@ -46,6 +47,7 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<PlannerServiceRepo>();
     services.AddSingleton<AnalysisHelper>();
     services.AddSingleton<IDesiredAnalysisResultFactory, DesiredAnalysisResultFactory>();
+    services.AddSingleton<DeviceIdHelper>();
 
     services.BindComposers();
     services.BindStartConditions();

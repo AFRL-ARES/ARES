@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
+using Ares.Core.Device.Helpers;
 using Ares.Core.Device.State.Logging;
 using Ares.Datamodel.Device;
 using Ares.Messages.DeviceStates;
@@ -13,9 +14,12 @@ namespace AresService.Services.DeviceStateLogging;
 public class TubeFurnaceStateService : TubeFurnaceStateLogging.TubeFurnaceStateLoggingBase
 {
   readonly IDbContextFactory<AresDbContext> _dbContextFactory;
-  public TubeFurnaceStateService(IDbContextFactory<AresDbContext> dbContextFactory)
+  private readonly DeviceIdHelper _deviceIdHelper;
+
+  public TubeFurnaceStateService(IDbContextFactory<AresDbContext> dbContextFactory, DeviceIdHelper deviceIdHelper)
   {
     _dbContextFactory = dbContextFactory;
+    _deviceIdHelper = deviceIdHelper;
   }
 
   public override async Task<Empty> DeleteTubeFurnaceStates(DeviceStateRequestFilter request, ServerCallContext context)
@@ -46,9 +50,15 @@ public class TubeFurnaceStateService : TubeFurnaceStateLogging.TubeFurnaceStateL
   public override async Task<DevicesResponse> GetAvailableDevices(Empty request, ServerCallContext context)
   {
     using var dbContext = _dbContextFactory.CreateDbContext();
-    var devices = await dbContext.TubeFurnaceStates.GroupBy(s => s.DeviceId).Select(s => s.Key).ToListAsync();
+    var deviceIds = await dbContext.TubeFurnaceStates
+      .GroupBy(s => s.DeviceId)
+      .Select(s => s.Key)
+      .ToListAsync();
+
+    var deviceDescriptions = deviceIds.Select(id => new DevicesDescription
+      { DeviceId = id, DeviceName = _deviceIdHelper.DeviceIdToName(id) }).ToList();
     var response = new DevicesResponse();
-    response.DeviceIds.AddRange(devices);
+    response.Devices.AddRange(deviceDescriptions);
     return response;
   }
 }

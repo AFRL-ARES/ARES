@@ -88,7 +88,7 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<CampaignEditContext>();
     services.BindViewModels();
     services.BindViewModelFactories();
-    services.AddScoped<ICombinedDeviceIdGetter, CombinedDeviceIdGetter>();
+    services.AddScoped<ICombinedDeviceGetter, CombinedDeviceGetter>();
     services.AddSingleton<INotificationRepository, NotificationRepository>();
 
     services.AddSingleton<DeviceAdapterRepository>();
