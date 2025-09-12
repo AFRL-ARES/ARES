@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Reactive.Disposables;
 using System.Threading.Tasks;
+using Ares.Datamodel.Device;
 using Ares.SyringePump.Ne1000.Messaging;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -22,7 +23,7 @@ public class SyringePumpStateLogger : ISyringePumpStateLogger
 
   public string DeviceId => _syringePump.UniqueId;
 
-  public async Task Start()
+  public async Task Start(DeviceLoggingSettings? settings)
   {
     using var context = _dbContextFactory.CreateDbContext();
     var existingInfo = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.UniqueId == _syringePump.UniqueId && config.DeviceType == _syringePump.GetType().FullName);

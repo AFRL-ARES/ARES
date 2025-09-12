@@ -277,7 +277,7 @@ public class DevicesService(
     try
     {
       IObservable<AresStruct?> stateStream = device.StateStream.DistinctUntilChanged();
-      if (request.PollingSettings.IntervalMs > 0)
+      if(request.PollingSettings.IntervalMs > 0)
       {
         stateStream = stateStream.Sample(TimeSpan.FromMilliseconds(interval));
       }

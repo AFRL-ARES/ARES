@@ -5,6 +5,7 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Ares.Core.EntityConfigurations;
+using Ares.Datamodel.Device;
 using Ares.Messages.DeviceStates.TicStepperController;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -31,7 +32,7 @@ internal class StepperControllerStateLogger : IStepperControllerStateLogger
     _stateWatcher.Dispose();
   }
 
-  public Task Start()
+  public Task Start(DeviceLoggingSettings? settings)
   {
     _stateWatcher = _device.StateStream
       .Where(state => state.Valid)

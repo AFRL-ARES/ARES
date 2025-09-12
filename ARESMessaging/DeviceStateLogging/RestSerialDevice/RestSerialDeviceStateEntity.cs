@@ -1,4 +1,4 @@
-﻿using Ares.Core.Device.State;
+﻿using Ares.Datamodel.Device;
 
 namespace Ares.Messages.DeviceStates.RestSerialDevice;
 

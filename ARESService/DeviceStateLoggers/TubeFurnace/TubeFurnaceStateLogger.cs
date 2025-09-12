@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Reactive.Disposables;
 using System.Threading.Tasks;
+using Ares.Datamodel.Device;
 using LindbergFurnace;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -23,7 +24,7 @@ public class TubeFurnaceStateLogger : ITubeFurnaceStateLogger
 
   public string DeviceId => _tubeFurnace.UniqueId;
 
-  public async Task Start()
+  public async Task Start(DeviceLoggingSettings? settings)
   {
     using var context = _dbContextFactory.CreateDbContext();
     var existingInfo = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.UniqueId == _tubeFurnace.UniqueId && config.DeviceType == _tubeFurnace.GetType().FullName);

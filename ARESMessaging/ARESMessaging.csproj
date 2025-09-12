@@ -26,7 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="ARES.Datamodel" Version="0.11.0-beta.3" GeneratePathProperty="True" />
+    <PackageReference Include="ARES.Datamodel" Version="0.11.0-beta.9" GeneratePathProperty="True" />
     <PackageReference Include="Google.Protobuf" Version="3.31.1" />
     <PackageReference Include="Grpc" Version="2.46.6" />
     <PackageReference Include="Grpc.Tools" Version="2.72.0">
@@ -81,9 +81,5 @@
     <Protobuf Include="UserManagement.proto" />
     <Protobuf Include="Authentication.proto" />
   </ItemGroup>
-
-	<ItemGroup>
-	  <ProjectReference Include="..\Ares.Core\Ares.Core.csproj" />
-	</ItemGroup>
 
 </Project>

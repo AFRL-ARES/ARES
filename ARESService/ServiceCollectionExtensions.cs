@@ -43,8 +43,8 @@ using RestDevice.Config;
 using RestSerialDevice;
 using RestSerialDevice.Config;
 using SyringePumpNE1000;
-using TC0304;
 using Tc0304.Config;
+using TC0304;
 using TicStepperController;
 using TicStepperController.Config;
 using TubeFurnace.Config;
@@ -108,7 +108,7 @@ public static class ServiceCollectionExtensions
     services.AddTransient<IDeviceConfigManager<ChillerConfig>, LaserChillerConfigManager>();
     services.AddTransient<IDeviceConfigManager<RestDeviceConfig>, RestDeviceConfigManager>();
     services.AddTransient<IDeviceConfigManager<RestSerialConfig>, RestSerialDeviceConfigManager>();
-   
+
 
     //Device Managers
     services.AddTransient<IDeviceManager<MfcConfig, IMassFlowController>, MfcManager>();
@@ -139,9 +139,6 @@ public static class ServiceCollectionExtensions
 
   private static void BindStateExporters(this IServiceCollection services)
   {
-    services.AddSingleton<IDeviceStateExportStreamProvider, CombinedDeviceStateExportStreamProvider>();
-    services.AddSingleton<IDeviceStateExportStreamProvider, ZippedStatesExportStreamProvider>();
-
     //Export Data Providers
     services.AddSingleton<IDeviceStateDataProvider, MfcExportDataProvider>();
     services.AddSingleton<IDeviceStateDataProvider, Tc0304ExportDataProvider>();
@@ -171,9 +168,5 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<IDeviceStateLoggerFactory<IStepperController, IStepperControllerStateLogger>, StepperControllerStateLoggerFactory>();
     services.AddSingleton<IDeviceStateLoggerFactory<ITubeFurnace, ITubeFurnaceStateLogger>, TubeFurnaceStateLoggerFactory>();
     services.AddSingleton<IDeviceStateLoggerFactory<ILaserChiller, ILaserChillerStateLogger>, LaserChillerStateLoggerFactory>();
-
-    services.AddSingleton<IDeviceStateLoggerRepository, DeviceStateLoggerRepository>();
-
-    services.AddSingleton<IDeviceStateGetter, DeviceStateGetter>();
   }
 }

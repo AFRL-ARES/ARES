@@ -6,6 +6,7 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using AlicatMFC;
 using Ares.Core.EntityConfigurations;
+using Ares.Datamodel.Device;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
@@ -30,7 +31,7 @@ public class MfcStateLogger : IMfcStateLogger
     _stateWatcher.Dispose();
   }
 
-  public async Task Start()
+  public async Task Start(DeviceLoggingSettings? settings)
   {
     using var context = _dbContextFactory.CreateDbContext();
     var existingInfo = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.UniqueId == _device.UniqueId && config.DeviceType == _device.GetType().FullName);

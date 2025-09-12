@@ -1,10 +1,20 @@
-﻿using Ares.Core.Notifications;
+﻿using Ares.Core.Device.Remote.State;
+using Ares.Core.Device.State.Logging;
+using Ares.Core.Notifications;
 using Ares.Datamodel.Device;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Ares.Core.Device.Remote;
-internal class RemoteDeviceManager(IDeviceCommandInterpreterRepo _deviceCommandInterpreters, IDeviceCache _deviceCache, INotificationHandler _notificationHandler, IDbContextFactory<CoreDatabaseContext> _dbContextFactory, ILoggerFactory _loggerFactory, ILogger<RemoteDeviceManager> _logger) : IRemoteDeviceManager
+internal class RemoteDeviceManager(
+  IDeviceCommandInterpreterRepo _deviceCommandInterpreters,
+  IDeviceCache _deviceCache,
+  INotificationHandler _notificationHandler,
+  IDbContextFactory<CoreDatabaseContext> _dbContextFactory,
+  IDeviceStateLoggerRepository _stateLoggerRepository,
+  IDeviceStateLoggerFactory<RemoteDevice, RemoteDeviceStateLogger> _deviceStateLoggerFactory,
+  ILoggerFactory _loggerFactory,
+  ILogger<RemoteDeviceManager> _logger) : IRemoteDeviceManager
 {
   private readonly List<RemoteDeviceMonitor> _deviceMonitors = [];
 
@@ -21,6 +31,10 @@ internal class RemoteDeviceManager(IDeviceCommandInterpreterRepo _deviceCommandI
     ctx.RemoteDeviceConfigs.Add(config);
 
     await device.Activate(CancellationToken.None);
+
+    var stateLogger = _deviceStateLoggerFactory.Create(device);
+    await stateLogger.Start();
+    _stateLoggerRepository[device.UniqueId] = stateLogger;
 
     await ctx.SaveChangesAsync();
     return device;
@@ -56,6 +70,10 @@ internal class RemoteDeviceManager(IDeviceCommandInterpreterRepo _deviceCommandI
 
       var monitor = new RemoteDeviceMonitor(device, _deviceCache, _loggerFactory.CreateLogger<RemoteDeviceMonitor>());
       _deviceMonitors.Add(monitor);
+
+      var stateLogger = _deviceStateLoggerFactory.Create(device);
+      await stateLogger.Start();
+      _stateLoggerRepository[device.UniqueId] = stateLogger;
     }
   }
 
@@ -75,6 +93,12 @@ internal class RemoteDeviceManager(IDeviceCommandInterpreterRepo _deviceCommandI
     var monitor = _deviceMonitors.First(m => m.DeviceId == deviceId);
     monitor.Dispose();
     _deviceMonitors.Remove(monitor);
+
+    if(_stateLoggerRepository.TryGetValue(device.UniqueId, out var stateLogger))
+    {
+      await stateLogger.Stop();
+      _stateLoggerRepository.Remove(device.UniqueId);
+    }
 
     return true;
   }
@@ -96,15 +120,27 @@ internal class RemoteDeviceManager(IDeviceCommandInterpreterRepo _deviceCommandI
     var monitor = _deviceMonitors.First(m => m.DeviceId == deviceCfg.UniqueId);
     monitor.Dispose();
     _deviceMonitors.Remove(monitor);
+    if(_stateLoggerRepository.TryGetValue(deviceCfg.UniqueId, out var stateLogger))
+    {
+      await stateLogger.Stop();
+      _stateLoggerRepository.Remove(deviceCfg.UniqueId);
+    }
+
     var device = await LoadExistingDevice(deviceCfg);
     if(device is null)
     {
       return;
     }
 
+    var newStateLogger = _deviceStateLoggerFactory.Create(device);
+    await newStateLogger.Start();
+    _stateLoggerRepository[device.UniqueId] = newStateLogger;
+
     monitor = new RemoteDeviceMonitor(device, _deviceCache, _loggerFactory.CreateLogger<RemoteDeviceMonitor>());
     _deviceMonitors.Add(monitor);
     _deviceCommandInterpreters.Add(new RemoteDeviceCommandInterpreter(device));
+
+
   }
 
   public Task UpdateDeviceSettings(DeviceSettings deviceSettings)
