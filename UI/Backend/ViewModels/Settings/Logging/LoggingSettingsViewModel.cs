@@ -39,9 +39,9 @@ public class LoggingSettingsViewModel : ReactiveObject
   {
     var settings = await _devicesClient.GetDeviceLoggerSettingsAsync(new DeviceLoggerSettingsRequest { DeviceId = _deviceId });
 
-    _currentSettings = settings.Settings;
-    IntervalMS = settings.Settings.IntervalMs;
-    LoggingType = settings.Settings.LoggingType;
+    _currentSettings = settings;
+    IntervalMS = settings.IntervalMs;
+    LoggingType = settings.LoggingType;
 
     Fetched = true;
   }

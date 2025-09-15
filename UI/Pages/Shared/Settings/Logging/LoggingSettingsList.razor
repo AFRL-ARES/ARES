@@ -4,9 +4,20 @@
 @layout SettingsLayout
 @inherits ReactiveInjectableComponentBase<LoggingSettingsListViewModel>
 
-@foreach (var vm in ViewModel!.LoggingSettingsViewModels)
+@if (ViewModel!.LoggingSettingsViewModels is null)
 {
-  <LoggingSettingsEdit ViewModel="@vm" />
+  <LoadingSpinner />
+}
+else
+{
+  <div class="d-flex flex-column">
+    @foreach (var vm in ViewModel.LoggingSettingsViewModels)
+    {
+      <div class="m-2">
+        <LoggingSettingsEdit ViewModel="@vm" />
+      </div>
+    }
+  </div>
 }
 
 @code {

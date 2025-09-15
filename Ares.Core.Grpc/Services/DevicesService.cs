@@ -309,9 +309,9 @@ public class DevicesService(
     return Task.FromResult(schema is null ? new DeviceStateSchemaResponse() : new DeviceStateSchemaResponse { Schema = schema });
   }
 
-  public override async Task<Empty> SetDeviceLoggerSettings(DeviceLoggerUpdateRequest request, ServerCallContext context)
+  public override async Task<Empty> SetDeviceLoggerSettings(DeviceLoggingSettings request, ServerCallContext context)
   {
-    await _stateLoggerManager.UpdateLogger(request.DeviceId, request.Settings);
+    await _stateLoggerManager.UpdateLogger(request.DeviceId, request);
 
     return new Empty();
   }
@@ -319,24 +319,18 @@ public class DevicesService(
   public override Task<DeviceLoggersResponse> GetDeviceLoggers(Empty request, ServerCallContext context)
   {
     var response = new DeviceLoggersResponse();
-    var settingsResponses = _deviceStateLoggerRepository.Select(s => new DeviceLoggerSettingsResponse { DeviceId = s.Key, Settings = s.Value.Settings }).ToArray();
+    var settingsResponses = _deviceStateLoggerRepository.Select(s => s.Value.Settings).ToArray();
 
     response.Loggers.AddRange(settingsResponses);
 
     return Task.FromResult(response);
   }
 
-  public override Task<DeviceLoggerSettingsResponse> GetDeviceLoggerSettings(DeviceLoggerSettingsRequest request, ServerCallContext context)
+  public override Task<DeviceLoggingSettings> GetDeviceLoggerSettings(DeviceLoggerSettingsRequest request, ServerCallContext context)
   {
     var settings = _stateLoggerManager.GetLoggerSettings(request.DeviceId);
 
-    var response = new DeviceLoggerSettingsResponse
-    {
-      DeviceId = request.DeviceId,
-      Settings = settings
-    };
-
-    return Task.FromResult(response);
+    return Task.FromResult(settings);
   }
 
   private DeviceInfo GetInfo(IAresDevice device)

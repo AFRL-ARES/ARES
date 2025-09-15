@@ -1,11 +1,64 @@
 @using ReactiveUI.Blazor
 @using UI.Backend.ViewModels.Settings.Logging
+@using Ares.Datamodel.Device
 @inherits ReactiveComponentBase<LoggingSettingsViewModel>
 
-<RadzenCard>
-  <h3>@ViewModel!.DeviceName</h3>
-</RadzenCard>
+@if (ViewModel == null)
+{
+  <p>ViewModel not set.</p>
+}
+else
+{
+  <div class="card">
+    <div class="card-header">@ViewModel.DeviceName</div>
+    <div class="card-body">
+      @if (!ViewModel.Fetched)
+      {
+        <div class="d-flex justify-content-center">
+          <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      }
+      else
+      {
+        <div class="mb-3">
+          <label for="loggingType-@ViewModel.DeviceName" class="form-label">Logging Type</label>
+          <select id="loggingType-@ViewModel.DeviceName" class="form-select" @bind="ViewModel.LoggingType">
+            <option value="@DeviceLoggingSettings.Types.LoggingType.None">None</option>
+            <option value="@DeviceLoggingSettings.Types.LoggingType.OnChange">On Change</option>
+            <option value="@DeviceLoggingSettings.Types.LoggingType.Interval">Interval</option>
+          </select>
+        </div>
+
+        @if (ViewModel.LoggingType != DeviceLoggingSettings.Types.LoggingType.None)
+        {
+          <div class="mb-3">
+            <label for="interval-@ViewModel.DeviceName" class="form-label">@(IsOnChange ? "Throttle " : "")Interval (ms)</label>
+            <input id="interval-@ViewModel.DeviceName" type="number" class="form-control" @bind="ViewModel.IntervalMS" />
+          </div>
+        }
+      }
+    </div>
+  </div>
+}
 
 @code {
 
+  protected override async Task OnInitializedAsync()
+  {
+    await ViewModel!.FetchSettings();
+  }
+
+  protected override async Task OnParametersSetAsync()
+  {
+    if (ViewModel != null && !ViewModel.Fetched)
+    {
+      await ViewModel.FetchSettings();
+    }
+  }
+
+
+
+  private bool IsOnChange => ViewModel!.LoggingType == DeviceLoggingSettings.Types.LoggingType.OnChange;
 }
