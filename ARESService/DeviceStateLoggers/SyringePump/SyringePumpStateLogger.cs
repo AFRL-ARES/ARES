@@ -22,6 +22,7 @@ public class SyringePumpStateLogger : ISyringePumpStateLogger
   }
 
   public string DeviceId => _syringePump.UniqueId;
+  public DeviceLoggingSettings Settings { get; private set; } = new DeviceLoggingSettings { LoggingType = DeviceLoggingSettings.Types.LoggingType.None };
 
   public async Task Start(DeviceLoggingSettings? settings)
   {

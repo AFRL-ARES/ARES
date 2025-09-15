@@ -24,6 +24,7 @@ public class RestSerialDeviceStateLogger : IRestSerialDeviceStateLogger
   }
 
   public string DeviceId => _device.UniqueId;
+  public DeviceLoggingSettings Settings { get; private set; } = new DeviceLoggingSettings { LoggingType = DeviceLoggingSettings.Types.LoggingType.None };
 
   public void Dispose()
   {

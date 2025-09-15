@@ -47,4 +47,16 @@ public class StateLoggerManager(IDeviceStateLoggerRepository _stateLoggerReposit
       throw new KeyNotFoundException($"No logger found for device {deviceId}");
     }
   }
+
+  public DeviceLoggingSettings GetLoggerSettings(string deviceId)
+  {
+    if(_stateLoggerRepository.TryGetValue(deviceId, out var logger))
+    {
+      return logger.Settings;
+    }
+    else
+    {
+      throw new KeyNotFoundException($"No logger found for device {deviceId}");
+    }
+  }
 }

@@ -25,6 +25,8 @@ public class LaserChillerStateLogger : ILaserChillerStateLogger
 
   public string DeviceId => _device.UniqueId;
 
+  public DeviceLoggingSettings Settings { get; private set; } = new DeviceLoggingSettings { LoggingType = DeviceLoggingSettings.Types.LoggingType.None };
+
   public Task Stop()
   {
     _stateWatcher.Dispose();

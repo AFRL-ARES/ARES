@@ -20,26 +20,28 @@ public class RemoteDeviceStateLogger(
 
   public string DeviceId => device.UniqueId;
 
+  public DeviceLoggingSettings Settings { get; private set; } = new DeviceLoggingSettings { LoggingType = DeviceLoggingSettings.Types.LoggingType.None };
+
   public Task Start(DeviceLoggingSettings? settings = null)
   {
-    settings ??= new DeviceLoggingSettings { LoggingType = DeviceLoggingSettings.Types.LoggingType.None };
+    Settings = settings ?? Settings;
 
     var stream = device.StateStream;
-    if(settings.LoggingType == DeviceLoggingSettings.Types.LoggingType.Interval)
+    if(Settings.LoggingType == DeviceLoggingSettings.Types.LoggingType.Interval)
     {
       var timer = Observable.Interval(
-        settings.IntervalMs > 0 ? TimeSpan.FromMilliseconds(settings.IntervalMs) : TimeSpan.FromMilliseconds(1));
+        Settings.IntervalMs > 0 ? TimeSpan.FromMilliseconds(Settings.IntervalMs) : TimeSpan.FromMilliseconds(1));
       _stateWatcher = timer
         .CombineLatest(stream, (tick, state) => state)
         .SelectMany(meme => Observable.FromAsync(() => UpdateState(meme)))
         .OnErrorResumeNext(Observable.Empty<Unit>())
         .Subscribe();
     }
-    else if(settings.LoggingType == DeviceLoggingSettings.Types.LoggingType.OnChange)
+    else if(Settings.LoggingType == DeviceLoggingSettings.Types.LoggingType.OnChange)
     {
-      if(settings.IntervalMs > 0)
+      if(Settings.IntervalMs > 0)
       {
-        stream = stream.Sample(TimeSpan.FromMilliseconds(settings.IntervalMs));
+        stream = stream.Sample(TimeSpan.FromMilliseconds(Settings.IntervalMs));
       }
 
       _stateWatcher = stream

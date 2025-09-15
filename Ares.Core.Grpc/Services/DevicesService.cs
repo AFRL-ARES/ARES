@@ -26,7 +26,8 @@ public class DevicesService(
   IDbContextFactory<CoreDatabaseContext> contextFactory,
   IRemoteDeviceManager remoteDeviceManager,
   ILogger<DevicesService> logger,
-  IDeviceStateLoggerRepository _stateLoggerRepository)
+  StateLoggerManager _stateLoggerManager,
+  IDeviceStateLoggerRepository _deviceStateLoggerRepository)
   : AresDevices.AresDevicesBase
 {
   private readonly ILogger<DevicesService> _logger = logger;
@@ -308,16 +309,34 @@ public class DevicesService(
     return Task.FromResult(schema is null ? new DeviceStateSchemaResponse() : new DeviceStateSchemaResponse { Schema = schema });
   }
 
-  public override async Task<Empty> SetDeviceLoggingSettings(DeviceLoggingSettingRequest request, ServerCallContext context)
+  public override async Task<Empty> SetDeviceLoggerSettings(DeviceLoggerUpdateRequest request, ServerCallContext context)
   {
-    if (!_stateLoggerRepository.TryGetValue(request.DeviceId, out var logger))
-    {
-      return new Empty();
-    }
-
-    await logger.UpdateSettings(request.Settings);
+    await _stateLoggerManager.UpdateLogger(request.DeviceId, request.Settings);
 
     return new Empty();
+  }
+
+  public override Task<DeviceLoggersResponse> GetDeviceLoggers(Empty request, ServerCallContext context)
+  {
+    var response = new DeviceLoggersResponse();
+    var settingsResponses = _deviceStateLoggerRepository.Select(s => new DeviceLoggerSettingsResponse { DeviceId = s.Key, Settings = s.Value.Settings }).ToArray();
+
+    response.Loggers.AddRange(settingsResponses);
+
+    return Task.FromResult(response);
+  }
+
+  public override Task<DeviceLoggerSettingsResponse> GetDeviceLoggerSettings(DeviceLoggerSettingsRequest request, ServerCallContext context)
+  {
+    var settings = _stateLoggerManager.GetLoggerSettings(request.DeviceId);
+
+    var response = new DeviceLoggerSettingsResponse
+    {
+      DeviceId = request.DeviceId,
+      Settings = settings
+    };
+
+    return Task.FromResult(response);
   }
 
   private DeviceInfo GetInfo(IAresDevice device)

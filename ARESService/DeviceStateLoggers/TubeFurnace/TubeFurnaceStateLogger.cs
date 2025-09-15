@@ -24,6 +24,8 @@ public class TubeFurnaceStateLogger : ITubeFurnaceStateLogger
 
   public string DeviceId => _tubeFurnace.UniqueId;
 
+  public DeviceLoggingSettings Settings { get; private set; }
+
   public async Task Start(DeviceLoggingSettings? settings)
   {
     using var context = _dbContextFactory.CreateDbContext();

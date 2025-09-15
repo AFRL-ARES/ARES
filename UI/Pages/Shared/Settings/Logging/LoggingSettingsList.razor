@@ -1,8 +1,17 @@
-@inherits LayoutComponentBase
+@page "/settings/logging"
+@using ReactiveUI.Blazor
+@using UI.Backend.ViewModels.Settings.Logging
 @layout SettingsLayout
+@inherits ReactiveInjectableComponentBase<LoggingSettingsListViewModel>
 
-<div>Howdy</div>
+@foreach (var vm in ViewModel!.LoggingSettingsViewModels)
+{
+  <LoggingSettingsEdit ViewModel="@vm" />
+}
 
 @code {
-    
+  protected override async Task OnInitializedAsync()
+  {
+    await ViewModel!.FetchLoggers();
+  }
 }

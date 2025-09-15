@@ -58,6 +58,7 @@ using UI.Backend.ViewModels.Settings.Device.Tc0304;
 using UI.Backend.ViewModels.Settings.Device.TubeFurnace;
 using UI.Backend.ViewModels.Settings.Device.ValveController;
 using UI.Backend.ViewModels.Settings.Device.VerdiLaser;
+using UI.Backend.ViewModels.Settings.Logging;
 using UI.Backend.ViewModels.Settings.Planning;
 using UI.Backend.ViewModels.StepperController;
 using UI.Backend.ViewModels.SyringePump;
@@ -196,6 +197,7 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<ManualExecutionWidgetViewModel>();
     services.AddScoped<RestDeviceMultiViewModel>();
     services.AddScoped<SerialRestDeviceMultiViewModel>();
+    services.AddScoped<LoggingSettingsListViewModel>();
   }
   private static void BindViewModelFactories(this IServiceCollection services)
   {

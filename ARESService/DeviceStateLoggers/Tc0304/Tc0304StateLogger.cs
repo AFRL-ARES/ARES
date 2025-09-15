@@ -25,6 +25,7 @@ public class Tc0304StateLogger : ITc0304StateLogger
   }
 
   public string DeviceId => _device.UniqueId;
+  public DeviceLoggingSettings Settings { get; private set; } = new DeviceLoggingSettings { LoggingType = DeviceLoggingSettings.Types.LoggingType.None };
 
   public Task Stop()
   {
