@@ -58,4 +58,10 @@ public class RestSerialDeviceStateLogger : IRestSerialDeviceStateLogger
       Debug.WriteLine($"Exception while saving Rest Device State: {e})");
     }
   }
+
+  public async Task UpdateSettings(DeviceLoggingSettings settings)
+  {
+    await Stop();
+    await Start(settings);
+  }
 }

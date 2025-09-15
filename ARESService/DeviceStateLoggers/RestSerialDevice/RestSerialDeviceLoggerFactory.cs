@@ -4,7 +4,7 @@ using RestSerialDevice;
 
 namespace AresService.DeviceStateLoggers.RestSerialDevice;
 
-public class RestSerialDeviceLoggerFactory : IDeviceStateLoggerFactory<ISerialRestDevice, IRestSerialDeviceStateLogger>
+public class RestSerialDeviceLoggerFactory : DeviceStateLoggerFactory<ISerialRestDevice>
 {
   readonly IDbContextFactory<AresDbContext> _dbContextFactory;
   public RestSerialDeviceLoggerFactory(IDbContextFactory<AresDbContext> dbContextFactory)
@@ -12,6 +12,6 @@ public class RestSerialDeviceLoggerFactory : IDeviceStateLoggerFactory<ISerialRe
     _dbContextFactory = dbContextFactory;
   }
 
-  public IRestSerialDeviceStateLogger Create(ISerialRestDevice restDevice)
+  protected override IDeviceStateLogger Create(ISerialRestDevice restDevice)
     => new RestSerialDeviceStateLogger(_dbContextFactory, restDevice);
 }

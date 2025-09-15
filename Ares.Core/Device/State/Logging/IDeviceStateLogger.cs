@@ -6,4 +6,5 @@ public interface IDeviceStateLogger
   public string DeviceId { get; }
   public Task Start(DeviceLoggingSettings? settings = null);
   public Task Stop();
+  public Task UpdateSettings(DeviceLoggingSettings settings);
 }

@@ -17,19 +17,19 @@ namespace AresService.DeviceManagers;
 public class TubeFurnaceManager : IDeviceManager<TubeFurnaceConfig, ITubeFurnace>
 {
   private readonly ISerialConnectionManager<ITubeFurnaceConnection> _connectionManager;
+  private readonly StateLoggerManager _stateLoggerManager;
   private readonly IDeviceCommandInterpreterRepo _deviceCommandInterpreterRepo;
-  readonly IDeviceStateLoggerFactory<ITubeFurnace, ITubeFurnaceStateLogger> _stateLoggerFactory;
   readonly IDeviceStateLoggerRepository _deviceStateLoggerRepo;
 
   public TubeFurnaceManager(IDeviceCommandInterpreterRepo deviceCommandInterpreterRepo,
     ISerialConnectionManager<ITubeFurnaceConnection> connectionManager,
-    IDeviceStateLoggerFactory<ITubeFurnace, ITubeFurnaceStateLogger> stateLoggerFactory,
+    StateLoggerManager stateLoggerManager,
     IDeviceStateLoggerRepository deviceStateLoggerRepo)
   {
     _deviceStateLoggerRepo = deviceStateLoggerRepo;
-    _stateLoggerFactory = stateLoggerFactory;
     _deviceCommandInterpreterRepo = deviceCommandInterpreterRepo;
     _connectionManager = connectionManager;
+    _stateLoggerManager = stateLoggerManager;
   }
 
   public Task<ITubeFurnace> Create(TubeFurnaceConfig config)
@@ -45,9 +45,7 @@ public class TubeFurnaceManager : IDeviceManager<TubeFurnaceConfig, ITubeFurnace
       UniqueId = id
     };
     await device.Activate(CancellationToken.None);
-    var logger = _stateLoggerFactory.Create(device);
-    _deviceStateLoggerRepo[logger.DeviceId] = logger;
-    await logger.Start();
+    await _stateLoggerManager.SetupLogger(device);
     var interpreter = new TubeFurnaceInterpreter(device);
     _deviceCommandInterpreterRepo.Add(interpreter);
     return device;

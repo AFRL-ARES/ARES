@@ -93,4 +93,10 @@ public class Tc0304StateLogger : ITc0304StateLogger
     context.Tc0304States.Add(tc0304State);
     await context.SaveChangesAsync();
   }
+
+  public async Task UpdateSettings(DeviceLoggingSettings settings)
+  {
+    await Stop();
+    await Start(settings);
+  }
 }

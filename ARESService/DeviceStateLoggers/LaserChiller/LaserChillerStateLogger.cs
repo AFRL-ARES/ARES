@@ -77,4 +77,10 @@ public class LaserChillerStateLogger : ILaserChillerStateLogger
     context.ChillerStates.Add(chillerState);
     await context.SaveChangesAsync();
   }
+
+  public async Task UpdateSettings(DeviceLoggingSettings settings)
+  {
+    await Stop();
+    await Start(settings);
+  }
 }

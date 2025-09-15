@@ -8,7 +8,6 @@ using Ares.Core.Device.State.Logging;
 using Ares.Device.Serial;
 using AresService.ConnectionManagement;
 using AresService.DeviceDbLoaders;
-using AresService.DeviceStateLoggers.Tc0304;
 using TC0304;
 using Tc0304.Config;
 
@@ -18,16 +17,13 @@ public class Tc0304Manager : IDeviceManager<Tc0304Config, IDataloggerThermometer
 {
   private readonly ISerialConnectionManager<IDataloggerThermometerConnection> _connectionManager;
   private readonly IDeviceCommandInterpreterRepo _deviceCommandInterpreterRepo;
-  readonly IDeviceStateLoggerFactory<IDataloggerThermometer, ITc0304StateLogger> _stateLoggerFactory;
-  readonly IDeviceStateLoggerRepository _deviceStateLoggerRepo;
+  private readonly StateLoggerManager _stateLoggerManager;
 
   public Tc0304Manager(IDeviceCommandInterpreterRepo deviceCommandInterpreterRepo,
     ISerialConnectionManager<IDataloggerThermometerConnection> connectionManager,
-    IDeviceStateLoggerRepository deviceStateLoggerRepo,
-    IDeviceStateLoggerFactory<IDataloggerThermometer, ITc0304StateLogger> stateLoggerFactory)
+    StateLoggerManager stateLoggerManager)
   {
-    _deviceStateLoggerRepo = deviceStateLoggerRepo;
-    _stateLoggerFactory = stateLoggerFactory;
+    _stateLoggerManager = stateLoggerManager;
     _deviceCommandInterpreterRepo = deviceCommandInterpreterRepo;
     _connectionManager = connectionManager;
   }
@@ -58,9 +54,7 @@ public class Tc0304Manager : IDeviceManager<Tc0304Config, IDataloggerThermometer
       device.ProbeNames.T4Name = config.Probe4Name;
 
     await device.Activate(CancellationToken.None);
-    var stateLogger = _stateLoggerFactory.Create(device);
-    _deviceStateLoggerRepo[device.Name] = stateLogger;
-    await stateLogger.Start();
+    await _stateLoggerManager.SetupLogger(device);
     var interpreter = new DataLoggerThermometerInterpreter(device);
     _deviceCommandInterpreterRepo.Add(interpreter);
 
@@ -95,7 +89,7 @@ public class Tc0304Manager : IDeviceManager<Tc0304Config, IDataloggerThermometer
     if (dataloggerInterpreter?.Device is not IDataloggerThermometer logger)
       return;
 
-    _deviceStateLoggerRepo.Remove(logger.Name);
+    await _stateLoggerManager.RemoveLogger(logger.UniqueId);
     await logger.DisposeAsync();
     _deviceCommandInterpreterRepo.Remove(dataloggerInterpreter);
     var connection = logger.Connection;

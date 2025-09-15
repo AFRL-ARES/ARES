@@ -46,6 +46,12 @@ public class MfcStateLogger : IMfcStateLogger
     return Task.CompletedTask;
   }
 
+  public async Task UpdateSettings(DeviceLoggingSettings settings)
+  {
+    await Stop();
+    await Start(settings);
+  }
+
   public async Task UpdateState(DateTime timestamp)
   {
     var state = await _device.StateStream.Take(1);

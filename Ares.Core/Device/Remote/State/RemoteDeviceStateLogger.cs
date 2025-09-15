@@ -10,27 +10,21 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Ares.Core.Device.Remote.State;
-public class RemoteDeviceStateLogger : IDeviceStateLogger
+public class RemoteDeviceStateLogger(
+  IDbContextFactory<CoreDatabaseContext> dbContextFactory,
+  RemoteDevice device,
+  ILogger<RemoteDeviceStateLogger> logger)
+  : IDeviceStateLogger
 {
-  private readonly IDbContextFactory<CoreDatabaseContext> _dbContextFactory;
-  private readonly RemoteDevice _device;
-  private readonly ILogger<RemoteDeviceStateLogger> _logger;
   private IDisposable _stateWatcher = Disposable.Empty;
 
-  public RemoteDeviceStateLogger(IDbContextFactory<CoreDatabaseContext> dbContextFactory, RemoteDevice device, ILogger<RemoteDeviceStateLogger> logger)
-  {
-    _dbContextFactory = dbContextFactory;
-    _device = device;
-    _logger = logger;
-  }
-
-  public string DeviceId => _device.UniqueId;
+  public string DeviceId => device.UniqueId;
 
   public Task Start(DeviceLoggingSettings? settings = null)
   {
     settings ??= new DeviceLoggingSettings { LoggingType = DeviceLoggingSettings.Types.LoggingType.None };
 
-    var stream = _device.StateStream;
+    var stream = device.StateStream;
     if(settings.LoggingType == DeviceLoggingSettings.Types.LoggingType.Interval)
     {
       var timer = Observable.Interval(
@@ -64,19 +58,25 @@ public class RemoteDeviceStateLogger : IDeviceStateLogger
     return Task.CompletedTask;
   }
 
+  public async Task UpdateSettings(DeviceLoggingSettings settings)
+  {
+    await Stop();
+    await Start(settings);
+  }
+
   private async Task UpdateState(AresStruct? state)
   {
     if(state is null)
     {
       return;
     }
-    using var context = _dbContextFactory.CreateDbContext();
+    using var context = dbContextFactory.CreateDbContext();
 
     var time = DateTime.UtcNow;
     var deviceState = new DeviceState
     {
       Timestamp = time.ToTimestampUtc(),
-      DeviceId = _device.UniqueId,
+      DeviceId = device.UniqueId,
       Data = state,
     };
 
@@ -87,7 +87,7 @@ public class RemoteDeviceStateLogger : IDeviceStateLogger
     }
     catch(Exception ex)
     {
-      _logger.LogError("Failed to save device state for mfc {DeviceName}. {Exception}", _device.Name, ex);
+      logger.LogError("Failed to save device state for mfc {DeviceName}. {Exception}", device.Name, ex);
     }
   }
 }

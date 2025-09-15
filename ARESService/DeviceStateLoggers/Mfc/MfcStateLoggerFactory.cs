@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AresService.DeviceStateLoggers.Mfc;
 
-public class MfcStateLoggerFactory : IDeviceStateLoggerFactory<IMassFlowController, IMfcStateLogger>
+public class MfcStateLoggerFactory : DeviceStateLoggerFactory<IMassFlowController>
 {
   private readonly IDbContextFactory<AresDbContext> _dbContextFactory;
 
@@ -13,6 +13,6 @@ public class MfcStateLoggerFactory : IDeviceStateLoggerFactory<IMassFlowControll
     _dbContextFactory = dbContextFactory;
   }
 
-  public IMfcStateLogger Create(IMassFlowController device)
+  protected override IDeviceStateLogger Create(IMassFlowController device)
     => new MfcStateLogger(_dbContextFactory, device);
 }

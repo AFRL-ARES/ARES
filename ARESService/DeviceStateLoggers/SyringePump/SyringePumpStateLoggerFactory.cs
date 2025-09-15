@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SyringePumpNE1000;
 
 namespace AresService.DeviceStateLoggers.SyringePump;
-public class SyringePumpStateLoggerFactory : IDeviceStateLoggerFactory<ISyringePump, ISyringePumpStateLogger>
+public class SyringePumpStateLoggerFactory : DeviceStateLoggerFactory<ISyringePump>
 {
   readonly IDbContextFactory<AresDbContext> _dbContextFactory;
   public SyringePumpStateLoggerFactory(IDbContextFactory<AresDbContext> dbContextFactory)
@@ -11,6 +11,6 @@ public class SyringePumpStateLoggerFactory : IDeviceStateLoggerFactory<ISyringeP
     _dbContextFactory = dbContextFactory;
   }
 
-  public ISyringePumpStateLogger Create(ISyringePump syringePump)
+  protected override IDeviceStateLogger Create(ISyringePump syringePump)
     => new SyringePumpStateLogger(_dbContextFactory, syringePump);
 }

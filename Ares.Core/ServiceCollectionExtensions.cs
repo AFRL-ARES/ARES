@@ -53,6 +53,7 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<AnalysisHelper>();
     services.AddSingleton<IDesiredAnalysisResultFactory, DesiredAnalysisResultFactory>();
     services.AddSingleton<DeviceIdHelper>();
+    
 
     services.BindComposers();
     services.BindStartConditions();
@@ -61,12 +62,14 @@ public static class ServiceCollectionExtensions
 
   private static void BindStateLogging(this IServiceCollection services)
   {
+    services.AddSingleton<StateLoggerManager>();
+    services.AddSingleton<IDeviceStateStreamProvider, DeviceStateStreamProvider>();
     services.AddSingleton<IDeviceStateDataProvider, RemoteDeviceExportDataProvider>();
     services.AddSingleton<IDeviceStateExportStreamProvider, CombinedDeviceStateExportStreamProvider>();
     services.AddSingleton<IDeviceStateExportStreamProvider, ZippedStatesExportStreamProvider>();
     services.AddSingleton<IDeviceStateLoggerRepository, DeviceStateLoggerRepository>();
     services.AddSingleton<IDeviceStateGetter, DeviceStateGetter>();
-    services.AddSingleton<IDeviceStateLoggerFactory<RemoteDevice, RemoteDeviceStateLogger>, RemoteDeviceStateLoggerFactory>();
+    services.AddSingleton<IDeviceStateLoggerFactory, RemoteDeviceStateLoggerFactory>();
   }
 
   private static void BindStartConditions(this IServiceCollection services)

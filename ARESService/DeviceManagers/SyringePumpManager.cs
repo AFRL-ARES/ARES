@@ -9,7 +9,6 @@ using Ares.Device.Serial;
 using Ares.SyringePump.Ne1000.Messaging;
 using AresService.ConnectionManagement;
 using AresService.DeviceDbLoaders;
-using AresService.DeviceStateLoggers.SyringePump;
 using SyringePumpNE1000;
 using SyringePumpNE1000.Simulation;
 
@@ -19,16 +18,13 @@ public class SyringePumpManager : IDeviceManager<SyringePumpConfig, ISyringePump
 {
   private readonly ISerialConnectionManager<ISyringePumpConnection> _connectionManager;
   private readonly IDeviceCommandInterpreterRepo _deviceCommandInterpreterRepo;
-  readonly IDeviceStateLoggerFactory<ISyringePump, ISyringePumpStateLogger> _stateLoggerFactory;
-  readonly IDeviceStateLoggerRepository _deviceStateLoggerRepo;
+  private readonly StateLoggerManager _stateLoggerManager;
 
   public SyringePumpManager(IDeviceCommandInterpreterRepo deviceCommandInterpreterRepo,
     ISerialConnectionManager<ISyringePumpConnection> connectionManager,
-    IDeviceStateLoggerFactory<ISyringePump, ISyringePumpStateLogger> stateLoggerFactory,
-    IDeviceStateLoggerRepository deviceStateLoggerRepo)
+    StateLoggerManager stateLoggerManager)
   {
-    _deviceStateLoggerRepo = deviceStateLoggerRepo;
-    _stateLoggerFactory = stateLoggerFactory;
+    _stateLoggerManager = stateLoggerManager;
     _deviceCommandInterpreterRepo = deviceCommandInterpreterRepo;
     _connectionManager = connectionManager;
   }
@@ -47,9 +43,7 @@ public class SyringePumpManager : IDeviceManager<SyringePumpConfig, ISyringePump
     };
     await device.Activate(CancellationToken.None);
     await device.Start();
-    var logger = _stateLoggerFactory.Create(device);
-    _deviceStateLoggerRepo[logger.DeviceId] = logger;
-    await logger.Start();
+    await _stateLoggerManager.SetupLogger(device);
     var interpreter = new SyringePumpInterpreter(device);
     _deviceCommandInterpreterRepo.Add(interpreter);
     return device;
@@ -83,7 +77,7 @@ public class SyringePumpManager : IDeviceManager<SyringePumpConfig, ISyringePump
     if(syringePumpInterpreter?.Device is not ISyringePump syringePump)
       return;
 
-    _deviceStateLoggerRepo.Remove(syringePump.Name);
+    await _stateLoggerManager.RemoveLogger(syringePump.UniqueId);
     await syringePump.DisposeAsync();
     _deviceCommandInterpreterRepo.Remove(syringePumpInterpreter);
     var connection = syringePump.Connection;

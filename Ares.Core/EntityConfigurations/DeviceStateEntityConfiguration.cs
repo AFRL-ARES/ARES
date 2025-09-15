@@ -9,5 +9,6 @@ internal class DeviceStateEntityConfiguration : AresEntityTypeBaseConfiguration<
   {
     base.Configure(builder);
     builder.Property(b => b.Data).HasAresStruct();
+    builder.Property(b => b.Timestamp).HasTimestamp();
   }
 }

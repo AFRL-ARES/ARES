@@ -8,7 +8,6 @@ using Ares.Core.Device.State.Logging;
 using Ares.Device.Serial;
 using AresService.ConnectionManagement;
 using AresService.DeviceDbLoaders;
-using AresService.DeviceStateLoggers.TicStepperController;
 using Microsoft.Extensions.Logging;
 using TicStepperController;
 using TicStepperController.Config;
@@ -18,20 +17,17 @@ public class StepperControllerManager : IDeviceManager<StepperControllerConfig, 
 {
   readonly ISerialConnectionManager<IStepperControllerConnection> _connectionManager;
   readonly ILoggerFactory _loggerFactory;
-  readonly IDeviceStateLoggerFactory<IStepperController, IStepperControllerStateLogger> _stateLoggerFactory;
-  readonly IDeviceStateLoggerRepository _stateLoggerRepo;
+  private readonly StateLoggerManager _stateLoggerManager;
   readonly IDeviceCommandInterpreterRepo _deviceCommandInterpreters;
 
   public StepperControllerManager(
     ISerialConnectionManager<IStepperControllerConnection> connectionManager,
     ILoggerFactory loggerFactory,
-    IDeviceStateLoggerFactory<IStepperController, IStepperControllerStateLogger> stateLoggerFactory,
-    IDeviceStateLoggerRepository stateLoggerRepo,
+    StateLoggerManager stateLoggerManager,
     IDeviceCommandInterpreterRepo deviceCommandInterpreters)
   {
     _deviceCommandInterpreters = deviceCommandInterpreters;
-    _stateLoggerRepo = stateLoggerRepo;
-    _stateLoggerFactory = stateLoggerFactory;
+    _stateLoggerManager = stateLoggerManager;
     _loggerFactory = loggerFactory;
     _connectionManager = connectionManager;
   }
@@ -49,13 +45,11 @@ public class StepperControllerManager : IDeviceManager<StepperControllerConfig, 
     {
       UniqueId = id
     };
-    var ticStateLogger = _stateLoggerFactory.Create(device);
 
     await device.Activate(CancellationToken.None);
     await device.Init(config);
     await device.Start();
-    _stateLoggerRepo[device.Name] = ticStateLogger;
-    await ticStateLogger.Start();
+    await _stateLoggerManager.SetupLogger(device);
 
     var interpreter = new StepperControllerInterpreter(device);
     _deviceCommandInterpreters.Add(interpreter);
@@ -75,7 +69,7 @@ public class StepperControllerManager : IDeviceManager<StepperControllerConfig, 
     if (dataloggerInterpreter?.Device is not IStepperController controller)
       return;
 
-    _stateLoggerRepo.Remove(controller.Name);
+    await _stateLoggerManager.RemoveLogger(controller.UniqueId);
     await controller.DisposeAsync();
     _deviceCommandInterpreters.Remove(dataloggerInterpreter);
     var connection = controller.Connection;

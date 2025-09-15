@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using TC0304;
 
 namespace AresService.DeviceStateLoggers.Tc0304;
-public class Tc0304StateLoggerFactory : IDeviceStateLoggerFactory<IDataloggerThermometer, ITc0304StateLogger>
+public class Tc0304StateLoggerFactory : DeviceStateLoggerFactory<IDataloggerThermometer>
 {
   readonly IDbContextFactory<AresDbContext> _dbContextFactory;
   public Tc0304StateLoggerFactory(IDbContextFactory<AresDbContext> dbContextFactory)
@@ -11,6 +11,6 @@ public class Tc0304StateLoggerFactory : IDeviceStateLoggerFactory<IDataloggerThe
     _dbContextFactory = dbContextFactory;
   }
 
-  public ITc0304StateLogger Create(IDataloggerThermometer dataloggerThermometer)
+  protected override IDeviceStateLogger Create(IDataloggerThermometer dataloggerThermometer)
     => new Tc0304StateLogger(_dbContextFactory, dataloggerThermometer);
 }

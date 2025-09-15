@@ -12,7 +12,6 @@ using Ares.Datamodel.Device;
 using Ares.Device.Serial;
 using AresService.ConnectionManagement;
 using AresService.DeviceDbLoaders;
-using AresService.DeviceStateLoggers.Mfc;
 using Microsoft.Extensions.Logging;
 
 namespace AresService.DeviceManagers;
@@ -21,20 +20,17 @@ public class MfcManager : IDeviceManager<MfcConfig, IMassFlowController>
 {
   private readonly IDeviceCommandInterpreterRepo _deviceCommandInterpreterRepo;
   private readonly ISerialConnectionManager<IMfcConnection> _mfcConnectionManager;
-  readonly IDeviceStateLoggerFactory<IMassFlowController, IMfcStateLogger> _stateLoggerFactory;
   readonly ILoggerFactory _loggerFactory;
-  readonly IDeviceStateLoggerRepository _deviceStateLoggerRepo;
+  private readonly StateLoggerManager _stateLoggerManager;
 
   public MfcManager(
     IDeviceCommandInterpreterRepo deviceCommandInterpreterRepo,
     ISerialConnectionManager<IMfcConnection> mfcConnectionManager,
-    IDeviceStateLoggerFactory<IMassFlowController, IMfcStateLogger> stateLoggerFactory,
-    IDeviceStateLoggerRepository deviceStateLoggerRepo,
+    StateLoggerManager stateLoggerManager,
     ILoggerFactory loggerFactory)
   {
-    _deviceStateLoggerRepo = deviceStateLoggerRepo;
     _loggerFactory = loggerFactory;
-    _stateLoggerFactory = stateLoggerFactory;
+    _stateLoggerManager = stateLoggerManager;
     _deviceCommandInterpreterRepo = deviceCommandInterpreterRepo;
     _mfcConnectionManager = mfcConnectionManager;
   }
@@ -52,13 +48,11 @@ public class MfcManager : IDeviceManager<MfcConfig, IMassFlowController>
     {
       UniqueId = id
     };
-    var mfcStateLogger = _stateLoggerFactory.Create(device);
     if(connection is SimMassFlowControllerConnection simConnection)
       simConnection.AddCat(config.Id[0]);
 
     await device.Activate(CancellationToken.None);
-    _deviceStateLoggerRepo[device.UniqueId] = mfcStateLogger;
-    await mfcStateLogger.Start();
+    await _stateLoggerManager.SetupLogger(device);
 
     var interpreter = new MassFlowControllerInterpreter(device);
     _deviceCommandInterpreterRepo.Add(interpreter);
@@ -107,7 +101,7 @@ public class MfcManager : IDeviceManager<MfcConfig, IMassFlowController>
       return;
 
     await mfc.DisposeAsync();
-    _deviceStateLoggerRepo.Remove(mfc.UniqueId);
+    await _stateLoggerManager.RemoveLogger(mfc.UniqueId);
     _deviceCommandInterpreterRepo.Remove(mfcInterpreter);
     var connection = mfc.Connection;
     var connectionInUse = _deviceCommandInterpreterRepo

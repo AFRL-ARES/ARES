@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AresService.DeviceStateLoggers.TubeFurnace
 {
-  public class TubeFurnaceStateLoggerFactory : IDeviceStateLoggerFactory<ITubeFurnace, ITubeFurnaceStateLogger>
+  public class TubeFurnaceStateLoggerFactory : DeviceStateLoggerFactory<ITubeFurnace>
   {
     readonly IDbContextFactory<AresDbContext> _dbContextFactory;
     public TubeFurnaceStateLoggerFactory(IDbContextFactory<AresDbContext> dbContextFactory)
@@ -12,7 +12,7 @@ namespace AresService.DeviceStateLoggers.TubeFurnace
       _dbContextFactory = dbContextFactory;
     }
 
-    public ITubeFurnaceStateLogger Create(ITubeFurnace tubeFurnace)
+    protected override IDeviceStateLogger Create(ITubeFurnace tubeFurnace)
       => new TubeFurnaceStateLogger(_dbContextFactory, tubeFurnace);
   }
 }

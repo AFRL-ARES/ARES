@@ -246,6 +246,7 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
       }
       else
       {
+        // TODO Fix Concurrency issues here
         Settings.Fields[newSetting.Key] = AresValueHelper.CreateDefault(newSetting.Value.Type);
       }
     }

@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using TicStepperController;
 
 namespace AresService.DeviceStateLoggers.TicStepperController;
-public class StepperControllerStateLoggerFactory : IDeviceStateLoggerFactory<IStepperController, IStepperControllerStateLogger>
+public class StepperControllerStateLoggerFactory : DeviceStateLoggerFactory<IStepperController>
 {
   readonly IDbContextFactory<AresDbContext> _dbContextFactory;
   public StepperControllerStateLoggerFactory(IDbContextFactory<AresDbContext> dbContextFactory)
@@ -11,6 +11,6 @@ public class StepperControllerStateLoggerFactory : IDeviceStateLoggerFactory<ISt
     _dbContextFactory = dbContextFactory;
   }
 
-  public IStepperControllerStateLogger Create(IStepperController device)
+  protected override IDeviceStateLogger Create(IStepperController device)
     => new StepperControllerStateLogger(_dbContextFactory, device);
 }

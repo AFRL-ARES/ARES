@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AresService.DeviceStateLoggers.LaserChiller;
 
-public class LaserChillerStateLoggerFactory : IDeviceStateLoggerFactory<ILaserChiller, ILaserChillerStateLogger>
+public class LaserChillerStateLoggerFactory : DeviceStateLoggerFactory<ILaserChiller>
 {
   readonly IDbContextFactory<AresDbContext> _dbContextFactory;
   public LaserChillerStateLoggerFactory(IDbContextFactory<AresDbContext> dbContextFactory)
@@ -12,6 +12,6 @@ public class LaserChillerStateLoggerFactory : IDeviceStateLoggerFactory<ILaserCh
     _dbContextFactory = dbContextFactory;
   }
 
-  public ILaserChillerStateLogger Create(ILaserChiller laserChiller)
+  protected override IDeviceStateLogger Create(ILaserChiller laserChiller)
     => new LaserChillerStateLogger(_dbContextFactory, laserChiller);
 }

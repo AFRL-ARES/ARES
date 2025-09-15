@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using Ares.Datamodel;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -50,5 +51,10 @@ public static class TextTypeDeterminationHelper
       s => JsonSerializer.Serialize(s, settings),
       s => JsonSerializer.Deserialize<SchemaEntry>(s, settings) ?? new SchemaEntry())
       .HasColumnType(SerializerSettingsHelper.DetermineColumnType());
+  }
+
+  public static PropertyBuilder<Timestamp> HasTimestamp(this PropertyBuilder<Timestamp> timestamp)
+  {
+    return timestamp.HasConversion(t => t.ToDateTime(), time => time.ToTimestampUtc());
   }
 }

@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Ares.Core.Device;
 using Ares.Core.Device.Remote;
+using Ares.Core.Device.State.Logging;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
 using Ares.Datamodel.Templates;
@@ -24,7 +25,8 @@ public class DevicesService(
   IDeviceCommandInterpreterRepo deviceCommandInterpreterRepo,
   IDbContextFactory<CoreDatabaseContext> contextFactory,
   IRemoteDeviceManager remoteDeviceManager,
-  ILogger<DevicesService> logger)
+  ILogger<DevicesService> logger,
+  IDeviceStateLoggerRepository _stateLoggerRepository)
   : AresDevices.AresDevicesBase
 {
   private readonly ILogger<DevicesService> _logger = logger;
@@ -304,6 +306,18 @@ public class DevicesService(
 
     var schema = device.StateSchema;
     return Task.FromResult(schema is null ? new DeviceStateSchemaResponse() : new DeviceStateSchemaResponse { Schema = schema });
+  }
+
+  public override async Task<Empty> SetDeviceLoggingSettings(DeviceLoggingSettingRequest request, ServerCallContext context)
+  {
+    if (!_stateLoggerRepository.TryGetValue(request.DeviceId, out var logger))
+    {
+      return new Empty();
+    }
+
+    await logger.UpdateSettings(request.Settings);
+
+    return new Empty();
   }
 
   private DeviceInfo GetInfo(IAresDevice device)

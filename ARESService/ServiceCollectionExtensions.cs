@@ -162,11 +162,11 @@ public static class ServiceCollectionExtensions
   private static void AddDeviceStateLoggers(this IServiceCollection services)
   {
     //State Logger Factories
-    services.AddSingleton<IDeviceStateLoggerFactory<IMassFlowController, IMfcStateLogger>, MfcStateLoggerFactory>();
-    services.AddSingleton<IDeviceStateLoggerFactory<IDataloggerThermometer, ITc0304StateLogger>, Tc0304StateLoggerFactory>();
-    services.AddSingleton<IDeviceStateLoggerFactory<ISyringePump, ISyringePumpStateLogger>, SyringePumpStateLoggerFactory>();
-    services.AddSingleton<IDeviceStateLoggerFactory<IStepperController, IStepperControllerStateLogger>, StepperControllerStateLoggerFactory>();
-    services.AddSingleton<IDeviceStateLoggerFactory<ITubeFurnace, ITubeFurnaceStateLogger>, TubeFurnaceStateLoggerFactory>();
-    services.AddSingleton<IDeviceStateLoggerFactory<ILaserChiller, ILaserChillerStateLogger>, LaserChillerStateLoggerFactory>();
+    services.AddSingleton<IDeviceStateLoggerFactory, MfcStateLoggerFactory>();
+    services.AddSingleton<IDeviceStateLoggerFactory, Tc0304StateLoggerFactory>();
+    services.AddSingleton<IDeviceStateLoggerFactory, SyringePumpStateLoggerFactory>();
+    services.AddSingleton<IDeviceStateLoggerFactory, StepperControllerStateLoggerFactory>();
+    services.AddSingleton<IDeviceStateLoggerFactory, TubeFurnaceStateLoggerFactory>();
+    services.AddSingleton<IDeviceStateLoggerFactory, LaserChillerStateLoggerFactory>();
   }
 }

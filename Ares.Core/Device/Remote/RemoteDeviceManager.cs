@@ -11,8 +11,7 @@ internal class RemoteDeviceManager(
   IDeviceCache _deviceCache,
   INotificationHandler _notificationHandler,
   IDbContextFactory<CoreDatabaseContext> _dbContextFactory,
-  IDeviceStateLoggerRepository _stateLoggerRepository,
-  IDeviceStateLoggerFactory<RemoteDevice, RemoteDeviceStateLogger> _deviceStateLoggerFactory,
+  StateLoggerManager _stateLoggerManager,
   ILoggerFactory _loggerFactory,
   ILogger<RemoteDeviceManager> _logger) : IRemoteDeviceManager
 {
@@ -32,9 +31,7 @@ internal class RemoteDeviceManager(
 
     await device.Activate(CancellationToken.None);
 
-    var stateLogger = _deviceStateLoggerFactory.Create(device);
-    await stateLogger.Start();
-    _stateLoggerRepository[device.UniqueId] = stateLogger;
+    await _stateLoggerManager.SetupLogger(device);
 
     await ctx.SaveChangesAsync();
     return device;
@@ -71,9 +68,7 @@ internal class RemoteDeviceManager(
       var monitor = new RemoteDeviceMonitor(device, _deviceCache, _loggerFactory.CreateLogger<RemoteDeviceMonitor>());
       _deviceMonitors.Add(monitor);
 
-      var stateLogger = _deviceStateLoggerFactory.Create(device);
-      await stateLogger.Start();
-      _stateLoggerRepository[device.UniqueId] = stateLogger;
+      await _stateLoggerManager.SetupLogger(device);
     }
   }
 
@@ -94,11 +89,7 @@ internal class RemoteDeviceManager(
     monitor.Dispose();
     _deviceMonitors.Remove(monitor);
 
-    if(_stateLoggerRepository.TryGetValue(device.UniqueId, out var stateLogger))
-    {
-      await stateLogger.Stop();
-      _stateLoggerRepository.Remove(device.UniqueId);
-    }
+    await _stateLoggerManager.RemoveLogger(device.UniqueId);
 
     return true;
   }
@@ -120,11 +111,7 @@ internal class RemoteDeviceManager(
     var monitor = _deviceMonitors.First(m => m.DeviceId == deviceCfg.UniqueId);
     monitor.Dispose();
     _deviceMonitors.Remove(monitor);
-    if(_stateLoggerRepository.TryGetValue(deviceCfg.UniqueId, out var stateLogger))
-    {
-      await stateLogger.Stop();
-      _stateLoggerRepository.Remove(deviceCfg.UniqueId);
-    }
+    await _stateLoggerManager.RemoveLogger(deviceCfg.UniqueId);
 
     var device = await LoadExistingDevice(deviceCfg);
     if(device is null)
@@ -132,9 +119,7 @@ internal class RemoteDeviceManager(
       return;
     }
 
-    var newStateLogger = _deviceStateLoggerFactory.Create(device);
-    await newStateLogger.Start();
-    _stateLoggerRepository[device.UniqueId] = newStateLogger;
+    await _stateLoggerManager.SetupLogger(device);
 
     monitor = new RemoteDeviceMonitor(device, _deviceCache, _loggerFactory.CreateLogger<RemoteDeviceMonitor>());
     _deviceMonitors.Add(monitor);

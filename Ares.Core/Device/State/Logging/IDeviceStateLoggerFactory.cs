@@ -1,9 +1,11 @@
 ﻿using Ares.Device;
 
+using System;
+
 namespace Ares.Core.Device.State.Logging;
-public interface IDeviceStateLoggerFactory<in TDevice, out TStateLogger>
-  where TDevice : IAresDevice
-  where TStateLogger : IDeviceStateLogger
+
+public interface IDeviceStateLoggerFactory
 {
-  TStateLogger Create(TDevice device);
+  bool CanHandle(IAresDevice device);
+  IDeviceStateLogger Create(IAresDevice device);
 }

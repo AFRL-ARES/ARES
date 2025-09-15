@@ -3,19 +3,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Ares.Core.Device.Remote.State;
-public class RemoteDeviceStateLoggerFactory : IDeviceStateLoggerFactory<RemoteDevice, RemoteDeviceStateLogger>
+public class RemoteDeviceStateLoggerFactory(
+  ILoggerFactory loggerFactory,
+  IDbContextFactory<CoreDatabaseContext> dbContextFactory)
+  : DeviceStateLoggerFactory<RemoteDevice>
 {
-  private readonly ILoggerFactory _loggerFactory;
-  private readonly IDbContextFactory<CoreDatabaseContext> _dbContextFactory;
-
-  public RemoteDeviceStateLoggerFactory(ILoggerFactory loggerFactory, IDbContextFactory<CoreDatabaseContext> dbContextFactory)
+  protected override IDeviceStateLogger Create(RemoteDevice device)
   {
-    _loggerFactory = loggerFactory;
-    _dbContextFactory = dbContextFactory;
-  }
-
-  public RemoteDeviceStateLogger Create(RemoteDevice device)
-  {
-    return new RemoteDeviceStateLogger(_dbContextFactory, device, _loggerFactory.CreateLogger<RemoteDeviceStateLogger>());
+    return new RemoteDeviceStateLogger(dbContextFactory, device, loggerFactory.CreateLogger<RemoteDeviceStateLogger>());
   }
 }
