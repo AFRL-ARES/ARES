@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Reactive;
 using System.Reactive.Disposables;
+using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Ares.Datamodel.Device;
 using LindbergFurnace;
@@ -24,14 +26,50 @@ public class TubeFurnaceStateLogger : ITubeFurnaceStateLogger
 
   public string DeviceId => _tubeFurnace.UniqueId;
 
-  public DeviceLoggingSettings Settings { get; private set; }
+  public DeviceLoggingSettings Settings { get; private set; } = new DeviceLoggingSettings { LoggingType = DeviceLoggingSettings.Types.LoggingType.None };
 
   public async Task Start(DeviceLoggingSettings? settings)
   {
+    Settings = settings ?? Settings;
+
+    _stateWatcher.Dispose();
+
+    if(Settings.LoggingType == DeviceLoggingSettings.Types.LoggingType.None)
+    {
+      _stateWatcher = Disposable.Empty;
+      return;
+    }
+
     using var context = _dbContextFactory.CreateDbContext();
-    var existingInfo = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.UniqueId == _tubeFurnace.UniqueId && config.DeviceType == _tubeFurnace.GetType().FullName);
-    _stateWatcher = _tubeFurnace.StateStream
-      .Subscribe(async state => await UpdateState(state));
+    _ = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.UniqueId == _tubeFurnace.UniqueId && config.DeviceType == _tubeFurnace.GetType().FullName);
+
+    var stream = _tubeFurnace.StateStream;
+
+    if(Settings.LoggingType == DeviceLoggingSettings.Types.LoggingType.Interval)
+    {
+      var timer = Observable.Interval(Settings.IntervalMs > 0 ? TimeSpan.FromMilliseconds(Settings.IntervalMs) : TimeSpan.FromMilliseconds(1));
+      _stateWatcher = timer
+        .WithLatestFrom(stream, (_, state) => state)
+        .SelectMany(state => Observable.FromAsync(() => UpdateState(state)))
+        .OnErrorResumeNext(Observable.Empty<Unit>())
+        .Subscribe();
+    }
+    else if(Settings.LoggingType == DeviceLoggingSettings.Types.LoggingType.OnChange)
+    {
+      if(Settings.IntervalMs > 0)
+      {
+        stream = stream.Sample(TimeSpan.FromMilliseconds(Settings.IntervalMs));
+      }
+
+      _stateWatcher = stream
+        .SelectMany(state => Observable.FromAsync(() => UpdateState(state)))
+        .OnErrorResumeNext(Observable.Empty<Unit>())
+        .Subscribe();
+    }
+    else
+    {
+      _stateWatcher = Disposable.Empty;
+    }
   }
 
   private async Task UpdateState(TubeFurnaceState stateResponse)

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
@@ -40,11 +41,46 @@ public class Tc0304StateLogger : ITc0304StateLogger
 
   public async Task Start(DeviceLoggingSettings? settings)
   {
+    Settings = settings ?? Settings;
+
+    _stateWatcher.Dispose();
+
+    if(Settings.LoggingType == DeviceLoggingSettings.Types.LoggingType.None)
+    {
+      _stateWatcher = Disposable.Empty;
+      return;
+    }
+
     using var context = _dbContextFactory.CreateDbContext();
-    var existingInfo = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.UniqueId == _device.UniqueId && config.DeviceType == _device.GetType().FullName);
-    _stateWatcher = _device.StateStream
-      .Where(state => state is not null)
-      .Subscribe(async state => await UpdateState(state!));
+    _ = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.UniqueId == _device.UniqueId && config.DeviceType == _device.GetType().FullName);
+
+    var stream = _device.StateStream.Where(state => state is not null);
+
+    if(Settings.LoggingType == DeviceLoggingSettings.Types.LoggingType.Interval)
+    {
+      var timer = Observable.Interval(Settings.IntervalMs > 0 ? TimeSpan.FromMilliseconds(Settings.IntervalMs) : TimeSpan.FromMilliseconds(1));
+      _stateWatcher = timer
+        .WithLatestFrom(stream, (_, state) => state!)
+        .SelectMany(state => Observable.FromAsync(() => UpdateState(state)))
+        .OnErrorResumeNext(Observable.Empty<Unit>())
+        .Subscribe();
+    }
+    else if(Settings.LoggingType == DeviceLoggingSettings.Types.LoggingType.OnChange)
+    {
+      if(Settings.IntervalMs > 0)
+      {
+        stream = stream.Sample(TimeSpan.FromMilliseconds(Settings.IntervalMs));
+      }
+
+      _stateWatcher = stream
+        .SelectMany(state => Observable.FromAsync(() => UpdateState(state!)))
+        .OnErrorResumeNext(Observable.Empty<Unit>())
+        .Subscribe();
+    }
+    else
+    {
+      _stateWatcher = Disposable.Empty;
+    }
   }
 
   public async Task UpdateState(DateTime timestamp)

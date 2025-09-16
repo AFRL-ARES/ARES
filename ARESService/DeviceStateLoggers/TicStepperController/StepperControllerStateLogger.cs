@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
@@ -35,9 +36,43 @@ internal class StepperControllerStateLogger : IStepperControllerStateLogger
 
   public Task Start(DeviceLoggingSettings? settings)
   {
-    _stateWatcher = _device.StateStream
-      .Where(state => state.Valid)
-      .Subscribe(async state => await UpdateState(state));
+    Settings = settings ?? Settings;
+
+    _stateWatcher.Dispose();
+
+    if(Settings.LoggingType == DeviceLoggingSettings.Types.LoggingType.None)
+    {
+      _stateWatcher = Disposable.Empty;
+      return Task.CompletedTask;
+    }
+
+    var stream = _device.StateStream.Where(state => state.Valid);
+
+    if(Settings.LoggingType == DeviceLoggingSettings.Types.LoggingType.Interval)
+    {
+      var timer = Observable.Interval(Settings.IntervalMs > 0 ? TimeSpan.FromMilliseconds(Settings.IntervalMs) : TimeSpan.FromMilliseconds(1));
+      _stateWatcher = timer
+        .WithLatestFrom(stream, (_, state) => state)
+        .SelectMany(state => Observable.FromAsync(() => UpdateState(state)))
+        .OnErrorResumeNext(Observable.Empty<Unit>())
+        .Subscribe();
+    }
+    else if(Settings.LoggingType == DeviceLoggingSettings.Types.LoggingType.OnChange)
+    {
+      if(Settings.IntervalMs > 0)
+      {
+        stream = stream.Sample(TimeSpan.FromMilliseconds(Settings.IntervalMs));
+      }
+
+      _stateWatcher = stream
+        .SelectMany(state => Observable.FromAsync(() => UpdateState(state)))
+        .OnErrorResumeNext(Observable.Empty<Unit>())
+        .Subscribe();
+    }
+    else
+    {
+      _stateWatcher = Disposable.Empty;
+    }
 
     return Task.CompletedTask;
   }
