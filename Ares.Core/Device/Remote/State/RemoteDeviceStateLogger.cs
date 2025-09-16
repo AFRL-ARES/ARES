@@ -32,7 +32,7 @@ public class RemoteDeviceStateLogger(
       var timer = Observable.Interval(
         Settings.IntervalMs > 0 ? TimeSpan.FromMilliseconds(Settings.IntervalMs) : TimeSpan.FromMilliseconds(1));
       _stateWatcher = timer
-        .CombineLatest(stream, (tick, state) => state)
+        .WithLatestFrom(stream, (_, state) => state)
         .SelectMany(meme => Observable.FromAsync(() => UpdateState(meme)))
         .OnErrorResumeNext(Observable.Empty<Unit>())
         .Subscribe();

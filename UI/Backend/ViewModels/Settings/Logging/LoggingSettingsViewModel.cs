@@ -11,12 +11,19 @@ public class LoggingSettingsViewModel : ReactiveObject
   private readonly string _deviceId;
   private readonly AresDevices.AresDevicesClient _devicesClient;
   private DeviceLoggingSettings? _currentSettings;
+  private ObservableAsPropertyHelper<bool> _updatedObservable;
 
   public LoggingSettingsViewModel(string deviceId, string deviceName, AresDevices.AresDevicesClient devicesClient)
   {
     _deviceId = deviceId;
     DeviceName = deviceName;
     _devicesClient = devicesClient;
+
+    this.WhenAnyValue(vm => vm.IntervalMS,
+      vm => vm.LoggingType,
+      (interval, logType) =>
+        _currentSettings is not null && (interval != _currentSettings.IntervalMs || logType != _currentSettings.LoggingType)
+    ).ToProperty(this, vm => vm.Updated, out _updatedObservable);
 
     FetchSettingsCommand = ReactiveCommand.CreateFromTask(FetchSettings);
   }
@@ -31,7 +38,7 @@ public class LoggingSettingsViewModel : ReactiveObject
   [Reactive]
   public long IntervalMS { get; set; }
 
-  public bool Updated => IntervalMS != _currentSettings?.IntervalMs || LoggingType != _currentSettings?.LoggingType;
+  public bool Updated => _updatedObservable.Value;
 
   public ReactiveCommand<Unit, Unit> FetchSettingsCommand { get; }
 
@@ -44,5 +51,23 @@ public class LoggingSettingsViewModel : ReactiveObject
     LoggingType = settings.LoggingType;
 
     Fetched = true;
+  }
+
+  public async Task<bool> Save()
+  {
+    if(!Updated)
+    {
+      return false;
+    }
+
+    var settings = new DeviceLoggingSettings
+    {
+      DeviceId = _deviceId,
+      IntervalMs = IntervalMS,
+      LoggingType = LoggingType,
+    };
+    await _devicesClient.SetDeviceLoggerSettingsAsync(settings);
+    await FetchSettings();
+    return true;
   }
 }

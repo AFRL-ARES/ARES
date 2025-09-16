@@ -9,38 +9,39 @@
 }
 else
 {
-  <div class="card">
-    <div class="card-header">@ViewModel.DeviceName</div>
-    <div class="card-body">
-      @if (!ViewModel.Fetched)
-      {
-        <div class="d-flex justify-content-center">
-          <div class="spinner-border" role="status">
-            <span class="visually-hidden">Loading...</span>
-          </div>
+  <tr>
+    <td>@ViewModel.DeviceName</td>
+    @if (!ViewModel.Fetched)
+    {
+      <td colspan="2">
+        <div class="d-flex justify-content-start">
+          <LoadingSpinner SpinnerSize="SpinnerSize.Small" />
         </div>
-      }
-      else
-      {
-        <div class="mb-3">
-          <label for="loggingType-@ViewModel.DeviceName" class="form-label">Logging Type</label>
-          <select id="loggingType-@ViewModel.DeviceName" class="form-select" @bind="ViewModel.LoggingType">
-            <option value="@DeviceLoggingSettings.Types.LoggingType.None">None</option>
-            <option value="@DeviceLoggingSettings.Types.LoggingType.OnChange">On Change</option>
-            <option value="@DeviceLoggingSettings.Types.LoggingType.Interval">Interval</option>
-          </select>
-        </div>
-
+      </td>
+    }
+    else
+    {
+      <td>
+        <select id="loggingType-@ViewModel.DeviceName" class="form-select" @bind="ViewModel.LoggingType">
+          <option value="@DeviceLoggingSettings.Types.LoggingType.None">None</option>
+          <option value="@DeviceLoggingSettings.Types.LoggingType.OnChange">On Change</option>
+          <option value="@DeviceLoggingSettings.Types.LoggingType.Interval">Interval</option>
+        </select>
+      </td>
+      <td>
         @if (ViewModel.LoggingType != DeviceLoggingSettings.Types.LoggingType.None)
         {
-          <div class="mb-3">
-            <label for="interval-@ViewModel.DeviceName" class="form-label">@(IsOnChange ? "Throttle " : "")Interval (ms)</label>
+          <div class="input-group">
+            @if (IsOnChange)
+            {
+              <span class="input-group-text">Throttle</span>
+            }
             <input id="interval-@ViewModel.DeviceName" type="number" class="form-control" @bind="ViewModel.IntervalMS" />
           </div>
         }
-      }
-    </div>
-  </div>
+      </td>
+    }
+  </tr>
 }
 
 @code {
@@ -57,8 +58,6 @@ else
       await ViewModel.FetchSettings();
     }
   }
-
-
 
   private bool IsOnChange => ViewModel!.LoggingType == DeviceLoggingSettings.Types.LoggingType.OnChange;
 }
