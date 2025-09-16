@@ -1,4 +1,5 @@
-﻿using Ares.Core.Device.State.Export;
+﻿using Ares.Core.Device.Helpers;
+using Ares.Core.Device.State.Export;
 using Ares.Core.Device.State.Export.StateGetters;
 using Ares.Datamodel.Device;
 
@@ -18,7 +19,7 @@ public class RemoteDeviceExportDataProvider : DeviceStateDataProviderBase<Device
           .Select(
             f =>
               {
-                return new StateExportItem(f.Key, deviceName, f.Value);
+                return new StateExportItem(f.Key, deviceName, f.Value.GetValueAsString());
               });
 
         return new StateExportLine(itemsAtUniqueTimestamp, d.Timestamp.ToDateTime(), deviceName);
