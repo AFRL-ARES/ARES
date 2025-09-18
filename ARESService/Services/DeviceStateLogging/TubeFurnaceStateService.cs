@@ -7,6 +7,7 @@ using Ares.Messages.DeviceStates;
 using Ares.Messages.DeviceStates.TubeFurnace;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
+using LindbergFurnace;
 using Microsoft.EntityFrameworkCore;
 
 namespace AresService.Services.DeviceStateLogging;
@@ -50,9 +51,9 @@ public class TubeFurnaceStateService : TubeFurnaceStateLogging.TubeFurnaceStateL
   public override async Task<DevicesResponse> GetAvailableDevices(Empty request, ServerCallContext context)
   {
     using var dbContext = _dbContextFactory.CreateDbContext();
-    var deviceIds = await dbContext.TubeFurnaceStates
-      .GroupBy(s => s.DeviceId)
-      .Select(s => s.Key)
+    var deviceIds = await dbContext.DeviceConfigs
+      .Where(s => s.DeviceType == typeof(ITubeFurnace).FullName)
+      .Select(s => s.UniqueId)
       .ToListAsync();
 
     var deviceDescriptions = deviceIds.Select(id => new DevicesDescription

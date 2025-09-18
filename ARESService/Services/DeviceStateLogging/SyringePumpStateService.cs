@@ -8,6 +8,7 @@ using Ares.Messages.DeviceStates.SyringePump;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
+using SyringePumpNE1000;
 
 namespace AresService.Services.DeviceStateLogging;
 
@@ -50,9 +51,9 @@ public class SyringePumpStateService : SyringePumpStateLogging.SyringePumpStateL
   public override async Task<DevicesResponse> GetAvailableDevices(Empty request, ServerCallContext context)
   {
     using var dbContext = _dbContextFactory.CreateDbContext();
-    var deviceIds = await dbContext.SyringePumpStates
-      .GroupBy(s => s.DeviceId)
-      .Select(s => s.Key)
+    var deviceIds = await dbContext.DeviceConfigs
+      .Where(s => s.DeviceType == typeof(ISyringePump).FullName)
+      .Select(s => s.UniqueId)
       .ToListAsync();
 
     var deviceDescriptions = deviceIds.Select(id => new DevicesDescription

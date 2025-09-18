@@ -34,7 +34,10 @@ message UpdateTc0304Request {
 }
 
 message GetTemperaturesResponse {
-  repeated google.protobuf.DoubleValue temperatures = 1;
+  optional double probe_1_c = 1;
+  optional double probe_2_c = 2;
+  optional double probe_3_c = 3;
+  optional double probe_4_c = 4;
 }
 
 message BatteryStatusResponse {

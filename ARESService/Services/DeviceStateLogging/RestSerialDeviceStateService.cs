@@ -8,6 +8,7 @@ using Ares.Messages.DeviceStates.RestSerialDevice;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
+using RestSerialDevice;
 
 namespace AresService.Services.DeviceStateLogging
 {
@@ -50,9 +51,9 @@ namespace AresService.Services.DeviceStateLogging
     public override async Task<DevicesResponse> GetAvailableDevices(Empty request, ServerCallContext context)
     {
       using var dbContext = _dbContextFactory.CreateDbContext();
-      var deviceIds = await dbContext.RestSerialDeviceStates
-        .GroupBy(s => s.DeviceId)
-        .Select(s => s.Key)
+      var deviceIds = await dbContext.DeviceConfigs
+        .Where(s => s.DeviceType == typeof(ISerialRestDevice).FullName)
+        .Select(s => s.UniqueId)
         .ToListAsync();
 
       var deviceDescriptions = deviceIds.Select(id => new DevicesDescription

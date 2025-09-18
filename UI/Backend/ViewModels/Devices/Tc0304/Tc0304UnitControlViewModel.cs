@@ -64,14 +64,11 @@ public class Tc0304UnitControlViewModel : SerialDeviceUnitViewModel, IAsyncDispo
   private async Task UpdateState()
   {
     var response = await _client.GetTemperaturesAsync(new DeviceRequest { DeviceId = DeviceId });
-    if(response.Temperatures is null)
-      return;
 
-    var result = response.Temperatures;
-    T1Temp = result[0] is null ? null : Temperature.FromDegreesCelsius((double)result[0]!);
-    T2Temp = result[1] is null ? null : Temperature.FromDegreesCelsius((double)result[1]!);
-    T3Temp = result[2] is null ? null : Temperature.FromDegreesCelsius((double)result[2]!);
-    T4Temp = result[3] is null ? null : Temperature.FromDegreesCelsius((double)result[3]!);
+    T1Temp = response.HasProbe1C ? Temperature.FromDegreesCelsius(response.Probe1C) : null;
+    T2Temp = response.HasProbe2C ? Temperature.FromDegreesCelsius(response.Probe2C) : null;
+    T3Temp = response.HasProbe3C ? Temperature.FromDegreesCelsius(response.Probe3C) : null;
+    T4Temp = response.HasProbe4C ? Temperature.FromDegreesCelsius(response.Probe4C) : null;
   }
 
   public void Hold()

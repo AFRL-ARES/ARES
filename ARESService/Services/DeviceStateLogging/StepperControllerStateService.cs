@@ -8,6 +8,7 @@ using Ares.Messages.DeviceStates.TicStepperController;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
+using TicStepperController;
 
 namespace AresService.Services.DeviceStateLogging;
 
@@ -50,9 +51,9 @@ public class StepperControllerStateService : TicStepperControllerStateLogging.Ti
   public override async Task<DevicesResponse> GetAvailableDevices(Empty request, ServerCallContext context)
   {
     using var dbContext = _dbContextFactory.CreateDbContext();
-    var deviceIds = await dbContext.TicStepperControllerStates
-      .GroupBy(s => s.DeviceId)
-      .Select(s => s.Key)
+    var deviceIds = await dbContext.DeviceConfigs
+      .Where(s => s.DeviceType == typeof(IStepperController).FullName)
+      .Select(s => s.UniqueId)
       .ToListAsync();
 
     var deviceDescriptions = deviceIds.Select(id => new DevicesDescription

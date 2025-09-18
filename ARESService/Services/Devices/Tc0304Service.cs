@@ -6,6 +6,8 @@ using Ares.Core.Device;
 using AresService.DeviceManagers;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
+using Grpc.Core.Logging;
+using Microsoft.Extensions.Logging;
 using TC0304;
 using Tc0304.Config;
 using Tc0304.DataModel;
@@ -19,12 +21,18 @@ public class Tc0304Service : TC0304Rpc.TC0304RpcBase
   private readonly IDeviceConfigManager<Tc0304Config> _configManager;
   private readonly IDeviceCommandInterpreterRepo _deviceCommandInterpreterRepo;
   private readonly IDeviceManager<Tc0304Config, IDataloggerThermometer> _deviceManager;
+  private readonly ILogger<Tc0304Service> _logger;
 
-  public Tc0304Service(IDeviceCommandInterpreterRepo deviceCommandInterpreterRepo, IDeviceConfigManager<Tc0304Config> configManager, IDeviceManager<Tc0304Config, IDataloggerThermometer> tc0304DeviceManager)
+  public Tc0304Service(
+    IDeviceCommandInterpreterRepo deviceCommandInterpreterRepo, 
+    IDeviceConfigManager<Tc0304Config> configManager, 
+    IDeviceManager<Tc0304Config, IDataloggerThermometer> tc0304DeviceManager,
+    ILogger<Tc0304Service> logger)
   {
     _deviceCommandInterpreterRepo = deviceCommandInterpreterRepo;
     _configManager = configManager;
     _deviceManager = tc0304DeviceManager;
+    _logger = logger;
   }
 
   private IDataloggerThermometer? GetDataLogger(string id)
@@ -116,5 +124,38 @@ public class Tc0304Service : TC0304Rpc.TC0304RpcBase
     response.Devices.AddRange(dataLoggers);
 
     return Task.FromResult(response);
+  }
+
+  public override async Task<GetTemperaturesResponse> GetTemperatures(DeviceRequest request, ServerCallContext context)
+  {
+    var thermometer = _deviceCommandInterpreterRepo
+      .Select(dci => dci.Device)
+      .OfType<IDataloggerThermometer>()
+      .FirstOrDefault(d => d.UniqueId == request.DeviceId);
+    if (thermometer is null)
+    {
+      _logger.LogError("Thermometer with id of {DeviceId} was not found.", request.DeviceId);
+      return new GetTemperaturesResponse();
+    }
+
+    var temps = await thermometer.GetTemperatures();
+    var response = new GetTemperaturesResponse();
+    if (temps[0] is { } temp1)
+    {
+      response.Probe1C = temp1;
+    }
+    if (temps[1] is { } temp2)
+    {
+      response.Probe2C = temp2;
+    }
+    if (temps[2] is { } temp3)
+    {
+      response.Probe3C = temp3;
+    }
+    if (temps[3] is { } temp4)
+    {
+      response.Probe4C = temp4;
+    }
+    return response;
   }
 }

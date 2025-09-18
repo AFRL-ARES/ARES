@@ -29,8 +29,9 @@ public class DataLoggerThermometerInterpreter : DeviceCommandInterpreter<Datalog
 
       case DataLoggerCommand.GetTemperatures:
         var temp_data = await Device.GetTemperatures();
+        var non_null_temps = temp_data.OfType<double>();
         result.Success = true;
-        result.Result = AresStructHelper.CreateNumberArrayStruct("TempData", temp_data);
+        result.Result = AresStructHelper.CreateNumberArrayStruct("TempData", non_null_temps);
         return result;
 
       case DataLoggerCommand.Hold:

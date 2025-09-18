@@ -10,8 +10,7 @@ public class LoggingSettingsViewModel : ReactiveObject
 {
   private readonly string _deviceId;
   private readonly AresDevices.AresDevicesClient _devicesClient;
-  private DeviceLoggingSettings? _currentSettings;
-  private ObservableAsPropertyHelper<bool> _updatedObservable;
+  private readonly ObservableAsPropertyHelper<bool> _updatedObservable;
 
   public LoggingSettingsViewModel(string deviceId, string deviceName, AresDevices.AresDevicesClient devicesClient)
   {
@@ -19,10 +18,11 @@ public class LoggingSettingsViewModel : ReactiveObject
     DeviceName = deviceName;
     _devicesClient = devicesClient;
 
-    this.WhenAnyValue(vm => vm.IntervalMS,
+    this.WhenAnyValue(vm => vm.IntervalMs,
       vm => vm.LoggingType,
-      (interval, logType) =>
-        _currentSettings is not null && (interval != _currentSettings.IntervalMs || logType != _currentSettings.LoggingType)
+      vm => vm.CurrentSettings,
+      (interval, logType, settings) =>
+        settings is not null && (interval != settings.IntervalMs || logType != settings.LoggingType)
     ).ToProperty(this, vm => vm.Updated, out _updatedObservable);
 
     FetchSettingsCommand = ReactiveCommand.CreateFromTask(FetchSettings);
@@ -35,8 +35,11 @@ public class LoggingSettingsViewModel : ReactiveObject
   [Reactive]
   public DeviceLoggingSettings.Types.LoggingType LoggingType { get; set; }
 
+  [Reactive] 
+  private DeviceLoggingSettings? CurrentSettings { get; set; }
+  
   [Reactive]
-  public long IntervalMS { get; set; }
+  public long IntervalMs { get; set; }
 
   public bool Updated => _updatedObservable.Value;
 
@@ -46,8 +49,8 @@ public class LoggingSettingsViewModel : ReactiveObject
   {
     var settings = await _devicesClient.GetDeviceLoggerSettingsAsync(new DeviceLoggerSettingsRequest { DeviceId = _deviceId });
 
-    _currentSettings = settings;
-    IntervalMS = settings.IntervalMs;
+    CurrentSettings = settings;
+    IntervalMs = settings.IntervalMs;
     LoggingType = settings.LoggingType;
 
     Fetched = true;
@@ -63,7 +66,7 @@ public class LoggingSettingsViewModel : ReactiveObject
     var settings = new DeviceLoggingSettings
     {
       DeviceId = _deviceId,
-      IntervalMs = IntervalMS,
+      IntervalMs = IntervalMs,
       LoggingType = LoggingType,
     };
     await _devicesClient.SetDeviceLoggerSettingsAsync(settings);

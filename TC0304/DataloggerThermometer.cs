@@ -34,15 +34,15 @@ public class DataloggerThermometer : SerialDevice<IDataloggerThermometerConnecti
     return response;
   }
 
-  public async Task<double[]> GetTemperatures()
+  public async Task<double?[]> GetTemperatures()
   {
     var response = await GetAndUpdateState();
-    var temperatures = new double[]
+    var temperatures = new double?[]
     {
-      response.T1Probe.Value.DegreesCelsius,
-      response.T2Probe.Value.DegreesCelsius,
-      response.T3Probe.Value.DegreesCelsius,
-      response.T4Probe.Value.DegreesCelsius
+      response.T1Probe?.DegreesCelsius,
+      response.T2Probe?.DegreesCelsius,
+      response.T3Probe?.DegreesCelsius,
+      response.T4Probe?.DegreesCelsius
     };
 
     return temperatures;

@@ -8,6 +8,7 @@ using Ares.Messages.DeviceStates.Tc0304;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
+using TC0304;
 
 namespace AresService.Services.DeviceStateLogging;
 
@@ -50,9 +51,9 @@ public class Tc0304StateService : Tc0304StateLogging.Tc0304StateLoggingBase
   public override async Task<DevicesResponse> GetAvailableDevices(Empty request, ServerCallContext context)
   {
     using var dbContext = _dbContextFactory.CreateDbContext();
-    var deviceIds = await dbContext.Tc0304States
-      .GroupBy(s => s.DeviceId)
-      .Select(s => s.Key)
+    var deviceIds = await dbContext.DeviceConfigs
+      .Where(s => s.DeviceType == typeof(IDataloggerThermometer).FullName)
+      .Select(s => s.UniqueId)
       .ToListAsync();
 
     var deviceDescriptions = deviceIds.Select(id => new DevicesDescription
