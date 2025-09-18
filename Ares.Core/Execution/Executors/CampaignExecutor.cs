@@ -67,7 +67,11 @@ public class CampaignExecutor : ICampaignExecutor
 
   public async Task<CampaignExecutionSummary> Execute(ExecutionControlToken token)
   {
-    await _stateLoggerManager.EnableOnChangeOverrideAsync();
+    // Make sure we log all the device state changes during execution.
+    await _stateLoggerManager.EnableOverrideAsync(new Datamodel.Device.DeviceLoggingSettings
+    {
+      LoggingType = Datamodel.Device.DeviceLoggingSettings.Types.LoggingType.OnChange
+    });
 
     try
     {

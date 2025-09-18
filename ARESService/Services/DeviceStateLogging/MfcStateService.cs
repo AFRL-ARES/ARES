@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
+using AlicatMFC;
 using Ares.Core.Device.Helpers;
 using Ares.Core.Device.State.Logging;
 using Ares.Datamodel.Device;
@@ -25,7 +26,7 @@ public class MfcStateService : MfcStateLogging.MfcStateLoggingBase
   public override async Task<Empty> DeleteMfcStates(DeviceStateRequestFilter request, ServerCallContext context)
   {
     using var dbContext = _dbContextFactory.CreateDbContext();
-    var stateQuery = await DeviceStateQueryBuilder.BuildQuery<MfcState>(request, dbContext);
+    var stateQuery = await DeviceStateQueryBuilder.BuildQuery<Ares.Messages.DeviceStates.Mfc.MfcState>(request, dbContext);
     dbContext.MfcStates.RemoveRange(stateQuery);
     await dbContext.SaveChangesAsync();
     return new Empty();
@@ -35,7 +36,7 @@ public class MfcStateService : MfcStateLogging.MfcStateLoggingBase
   {
     using var dbContext = _dbContextFactory.CreateDbContext();
     var response = new MfcStateResponse();
-    var stateQuery = await DeviceStateQueryBuilder.BuildQuery<MfcState>(request, dbContext);
+    var stateQuery = await DeviceStateQueryBuilder.BuildQuery<Ares.Messages.DeviceStates.Mfc.MfcState>(request, dbContext);
     var statesGroups = stateQuery.GroupBy(s => s.DeviceId);
     foreach(var group in statesGroups)
     {
@@ -50,13 +51,13 @@ public class MfcStateService : MfcStateLogging.MfcStateLoggingBase
   public override async Task<DevicesResponse> GetAvailableDevices(Empty request, ServerCallContext context)
   {
     using var dbContext = _dbContextFactory.CreateDbContext();
-    var deviceIds = await dbContext.MfcStates
-      .GroupBy(s => s.DeviceId)
-      .Select(s => s.Key)
+    var deviceIds = await dbContext.DeviceConfigs
+      .Where(cfg => cfg.DeviceType == typeof(IMassFlowController).FullName)
+      .Select(cfg => cfg.UniqueId)
       .ToListAsync();
 
     var deviceDescriptions = deviceIds.Select(id => new DevicesDescription
-      { DeviceId = id, DeviceName = _deviceIdHelper.DeviceIdToName(id) }).ToList();
+    { DeviceId = id, DeviceName = _deviceIdHelper.DeviceIdToName(id) }).ToList();
     var response = new DevicesResponse();
     response.Devices.AddRange(deviceDescriptions);
     return response;

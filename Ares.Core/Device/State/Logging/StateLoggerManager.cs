@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Ares.Datamodel.Device;
 using Ares.Device;
 using Microsoft.EntityFrameworkCore;
@@ -11,12 +7,8 @@ namespace Ares.Core.Device.State.Logging;
 
 public class StateLoggerManager(IDeviceStateLoggerRepository _stateLoggerRepository, IEnumerable<IDeviceStateLoggerFactory> _factories, ILogger<StateLoggerManager> _logger, IDbContextFactory<CoreDatabaseContext> _dbContextFactory)
 {
-  private readonly object _overrideSync = new();
   private bool _overrideActive;
-  private int _overrideDepth;
-  private DeviceLoggingSettings.Types.LoggingType _overrideLoggingType = DeviceLoggingSettings.Types.LoggingType.None;
-  private readonly Dictionary<string, DeviceLoggingSettings> _originalSettings = new();
-  private readonly Dictionary<string, DeviceLoggingSettings> _pendingSettings = new();
+  private readonly SemaphoreSlim _overrideLock = new(1, 1);
 
   public async Task SetupLogger(IAresDevice device)
   {
@@ -41,11 +33,6 @@ public class StateLoggerManager(IDeviceStateLoggerRepository _stateLoggerReposit
 
     await logger.Start(existingSettings);
     _stateLoggerRepository.Add(device.UniqueId, logger);
-
-    if(TryGetOverrideType(out var overrideType))
-    {
-      await ApplyOverrideAsync(logger, overrideType);
-    }
   }
 
   public async Task RemoveLogger(string deviceId)
@@ -63,52 +50,33 @@ public class StateLoggerManager(IDeviceStateLoggerRepository _stateLoggerReposit
       ctx.DeviceLoggingSettings.Remove(existingSettings);
     }
 
-    lock(_overrideSync)
-    {
-      _originalSettings.Remove(deviceId);
-      _pendingSettings.Remove(deviceId);
-    }
+    _logger.LogInformation("Removed logger for device id {DeviceId}", deviceId);
   }
 
   public async Task UpdateLogger(string deviceId, DeviceLoggingSettings settings)
   {
     if(_stateLoggerRepository.TryGetValue(deviceId, out var logger))
     {
-      var applyOverride = false;
-      var overrideType = DeviceLoggingSettings.Types.LoggingType.None;
+      await _overrideLock.WaitAsync();
 
-      lock(_overrideSync)
+      await UpdateDatabase(deviceId, settings);
+
+      try
       {
-        if(_overrideActive)
+        if(!_overrideActive)
         {
-          _pendingSettings[deviceId] = CloneSettings(settings, deviceId);
-          applyOverride = true;
-          overrideType = _overrideLoggingType;
+          await logger.UpdateSettings(settings);
+          _logger.LogInformation("Updated logger for device id {DeviceId}", deviceId);
         }
       }
-
-      if(applyOverride)
+      catch(Exception e)
       {
-        await ApplyOverrideAsync(logger, overrideType);
+        _logger.LogError("Error updating device state logger for device {DeviceId}: {Exception}", deviceId, e);
       }
-      else
+      finally
       {
-        await logger.UpdateSettings(settings);
+        _overrideLock.Release();
       }
-
-      using var ctx = _dbContextFactory.CreateDbContext();
-      var existingSettings = await ctx.DeviceLoggingSettings.FirstOrDefaultAsync(s => s.DeviceId == deviceId);
-      if(existingSettings is not null)
-      {
-        existingSettings.IntervalMs = settings.IntervalMs;
-        existingSettings.LoggingType = settings.LoggingType;
-      }
-      else
-      {
-        ctx.DeviceLoggingSettings.Add(settings);
-      }
-
-      await ctx.SaveChangesAsync();
     }
     else
     {
@@ -116,183 +84,94 @@ public class StateLoggerManager(IDeviceStateLoggerRepository _stateLoggerReposit
     }
   }
 
-  public DeviceLoggingSettings GetLoggerSettings(string deviceId)
+  private async Task UpdateDatabase(string deviceId, DeviceLoggingSettings settings)
   {
-    if(TryGetOverrideSettings(deviceId, out var overrideSettings))
+    using var ctx = _dbContextFactory.CreateDbContext();
+    var existingSettings = await ctx.DeviceLoggingSettings.FirstOrDefaultAsync(s => s.DeviceId == deviceId);
+    if(existingSettings is not null)
     {
-      return overrideSettings;
+      existingSettings.IntervalMs = settings.IntervalMs;
+      existingSettings.LoggingType = settings.LoggingType;
+    }
+    else
+    {
+      ctx.DeviceLoggingSettings.Add(settings);
     }
 
+    await ctx.SaveChangesAsync();
+  }
+
+  public DeviceLoggingSettings GetCurrentLoggerSettings(string deviceId)
+  {
     if(_stateLoggerRepository.TryGetValue(deviceId, out var logger))
     {
-      return CloneSettings(logger.Settings, deviceId);
+      return logger.Settings;
     }
 
     throw new KeyNotFoundException($"No logger found for device {deviceId}");
   }
 
-  public async Task EnableOnChangeOverrideAsync()
+  public async Task<DeviceLoggingSettings> GetDatabaseLoggerSettings(string deviceId)
   {
-    await EnableOverrideAsync(DeviceLoggingSettings.Types.LoggingType.OnChange);
+    using var ctx = _dbContextFactory.CreateDbContext();
+    var existingSettings = await ctx.DeviceLoggingSettings.FirstOrDefaultAsync(s => s.DeviceId == deviceId);
+    return existingSettings is null
+      ? throw new KeyNotFoundException($"No loggers found in the database for device with id {deviceId}")
+      : existingSettings;
   }
 
   public async Task DisableOverrideAsync()
   {
-    List<Task> restoreTasks = new();
+    await _overrideLock.WaitAsync();
 
-    lock(_overrideSync)
+    if(!_overrideActive)
     {
-      if(!_overrideActive)
-      {
-        return;
-      }
-
-      _overrideDepth--;
-      if(_overrideDepth > 0)
-      {
-        return;
-      }
-
-      foreach(var logger in _stateLoggerRepository.Values)
-      {
-        if(_pendingSettings.TryGetValue(logger.DeviceId, out var pending))
-        {
-          restoreTasks.Add(RestoreAsync(logger, pending));
-        }
-        else if(_originalSettings.TryGetValue(logger.DeviceId, out var original))
-        {
-          restoreTasks.Add(RestoreAsync(logger, original));
-        }
-      }
-
-      _overrideActive = false;
-      _overrideLoggingType = DeviceLoggingSettings.Types.LoggingType.None;
-      _originalSettings.Clear();
-      _pendingSettings.Clear();
+      _overrideLock.Release();
+      return;
     }
-
-    await Task.WhenAll(restoreTasks);
-  }
-
-  private async Task EnableOverrideAsync(DeviceLoggingSettings.Types.LoggingType overrideType)
-  {
-    List<Task> overrideTasks = new();
-
-    lock(_overrideSync)
-    {
-      if(_overrideActive)
-      {
-        _overrideDepth++;
-        return;
-      }
-
-      _overrideActive = true;
-      _overrideDepth = 1;
-      _overrideLoggingType = overrideType;
-    }
-
-    foreach(var logger in _stateLoggerRepository.Values)
-    {
-      overrideTasks.Add(ApplyOverrideAsync(logger, overrideType));
-    }
-
-    await Task.WhenAll(overrideTasks);
-  }
-
-  private bool TryGetOverrideType(out DeviceLoggingSettings.Types.LoggingType loggingType)
-  {
-    lock(_overrideSync)
-    {
-      loggingType = _overrideLoggingType;
-      return _overrideActive;
-    }
-  }
-
-  private bool TryGetOverrideSettings(string deviceId, out DeviceLoggingSettings settings)
-  {
-    lock(_overrideSync)
-    {
-      if(_overrideActive)
-      {
-        if(_pendingSettings.TryGetValue(deviceId, out var pending))
-        {
-          settings = CloneSettings(pending, deviceId);
-          return true;
-        }
-
-        if(_originalSettings.TryGetValue(deviceId, out var original))
-        {
-          settings = CloneSettings(original, deviceId);
-          return true;
-        }
-      }
-    }
-
-    settings = default!;
-    return false;
-  }
-
-  private async Task ApplyOverrideAsync(IDeviceStateLogger logger, DeviceLoggingSettings.Types.LoggingType overrideType)
-  {
-    DeviceLoggingSettings original;
-    lock(_overrideSync)
-    {
-      if(!_originalSettings.TryGetValue(logger.DeviceId, out original!))
-      {
-        original = CloneSettings(logger.Settings, logger.DeviceId);
-        _originalSettings[logger.DeviceId] = original;
-      }
-    }
-
-    var overrideSettings = CloneSettings(original, logger.DeviceId);
-    overrideSettings.LoggingType = overrideType;
 
     try
     {
-      await logger.UpdateSettings(overrideSettings);
+      var loggerRestoreTasks = _stateLoggerRepository.Select(async logger =>
+      {
+        var settings = await GetDatabaseLoggerSettings(logger.Key);
+        await logger.Value.UpdateSettings(settings);
+      });
+
+      await Task.WhenAll(loggerRestoreTasks);
+      _logger.LogInformation("Disabled state logging override");
     }
-    catch(Exception ex)
+    catch(Exception e)
     {
-      _logger.LogError(ex, "Failed to apply logging override for device {DeviceId}", logger.DeviceId);
+      _logger.LogError("Error disabling state logging override: {Exception}", e);
+    }
+    finally
+    {
+      _overrideLock.Release();
     }
   }
 
-  private Task RestoreAsync(IDeviceStateLogger logger, DeviceLoggingSettings settings)
+  public async Task EnableOverrideAsync(DeviceLoggingSettings settings)
   {
-    var restoreSettings = CloneSettings(settings, logger.DeviceId);
+    await _overrideLock.WaitAsync();
 
-    return RestoreInternalAsync(logger, restoreSettings);
-  }
+    _overrideActive = true;
 
-  private async Task RestoreInternalAsync(IDeviceStateLogger logger, DeviceLoggingSettings settings)
-  {
     try
     {
-      await logger.UpdateSettings(settings);
-    }
-    catch(Exception ex)
-    {
-      _logger.LogError(ex, "Failed to restore logging settings for device {DeviceId}", logger.DeviceId);
-    }
-  }
+      var loggerOverrideTasks = _stateLoggerRepository
+        .Select(async logger => await logger.Value.UpdateSettings(settings));
 
-  private static DeviceLoggingSettings CloneSettings(DeviceLoggingSettings? settings, string deviceId)
-  {
-    if(settings is null)
-    {
-      return new DeviceLoggingSettings
-      {
-        DeviceId = deviceId,
-        IntervalMs = 0,
-        LoggingType = DeviceLoggingSettings.Types.LoggingType.None
-      };
+      await Task.WhenAll(loggerOverrideTasks);
+      _logger.LogInformation("Enabled state logging override");
     }
-
-    return new DeviceLoggingSettings
+    catch(Exception e)
     {
-      DeviceId = string.IsNullOrWhiteSpace(settings.DeviceId) ? deviceId : settings.DeviceId,
-      IntervalMs = settings.IntervalMs,
-      LoggingType = settings.LoggingType
-    };
+      _logger.LogError("Error enabling state logging override: {Exception}", e);
+    }
+    finally
+    {
+      _overrideLock.Release();
+    }
   }
 }

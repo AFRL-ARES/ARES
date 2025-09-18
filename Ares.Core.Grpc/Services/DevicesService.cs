@@ -328,7 +328,7 @@ public class DevicesService(
 
   public override Task<DeviceLoggingSettings> GetDeviceLoggerSettings(DeviceLoggerSettingsRequest request, ServerCallContext context)
   {
-    var settings = _stateLoggerManager.GetLoggerSettings(request.DeviceId);
+    var settings = _stateLoggerManager.GetCurrentLoggerSettings(request.DeviceId);
 
     return Task.FromResult(settings);
   }

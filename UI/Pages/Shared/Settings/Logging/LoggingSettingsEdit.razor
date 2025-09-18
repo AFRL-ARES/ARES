@@ -51,13 +51,5 @@ else
     await ViewModel!.FetchSettings();
   }
 
-  protected override async Task OnParametersSetAsync()
-  {
-    if (ViewModel != null && !ViewModel.Fetched)
-    {
-      await ViewModel.FetchSettings();
-    }
-  }
-
   private bool IsOnChange => ViewModel!.LoggingType == DeviceLoggingSettings.Types.LoggingType.OnChange;
 }
