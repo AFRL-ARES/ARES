@@ -43,17 +43,16 @@ public class Tc0304UnitControlViewModel : SerialDeviceUnitViewModel, IAsyncDispo
 
   private void StartStateUpdater()
   {
-    _stateListener = Task.Factory.StartNew(async _ =>
+    var token = _stateUpdateTokenSource.Token;
+
+    _stateListener = Task.Run(async () =>
     {
-      Thread.CurrentThread.Name = "Datalogger State Listener View Model Thread";
-      while(!_stateUpdateTokenSource.Token.IsCancellationRequested)
+      while (!token.IsCancellationRequested)
       {
         await UpdateState();
-        await Task.Delay(TimeSpan.FromMilliseconds(500));
+        await Task.Delay(TimeSpan.FromMilliseconds(500), token);
       }
-    },
-      _stateUpdateTokenSource.Token,
-      TaskCreationOptions.LongRunning);
+    }, token);
   }
 
   private void StopStateUpdater()
