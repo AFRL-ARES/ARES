@@ -1,4 +1,6 @@
-﻿
+﻿using System.Collections.Generic;
+using System.Text.Json;
+using Google.Protobuf;
 using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
@@ -17,6 +19,8 @@ public class RemoteDeviceStateLogger(
   : IDeviceStateLogger
 {
   private IDisposable _stateWatcher = Disposable.Empty;
+  private readonly Dictionary<string, double> _lastDeltaValues = new(StringComparer.OrdinalIgnoreCase);
+  private List<DeviceLoggingDelta> _eligibleDeltas = new();
 
   public string DeviceId => device.UniqueId;
 
@@ -25,6 +29,10 @@ public class RemoteDeviceStateLogger(
   public Task Start(DeviceLoggingSettings? settings = null)
   {
     Settings = settings ?? Settings;
+
+    _eligibleDeltas = Settings.Deltas
+      .Where(d => d is not null && d.Delta > 0 && !string.IsNullOrWhiteSpace(d.Key))
+      .ToList();
 
     var stream = device.StateStream;
     if(Settings.LoggingType == DeviceLoggingSettings.Types.LoggingType.Interval)
@@ -45,6 +53,7 @@ public class RemoteDeviceStateLogger(
       }
 
       _stateWatcher = stream
+        .Where(state => ShouldEmitByDeltas(state))
         .SelectMany(meme => Observable.FromAsync(() => UpdateState(meme)))
         .OnErrorResumeNext(Observable.Empty<Unit>())
         .Subscribe();
@@ -64,6 +73,108 @@ public class RemoteDeviceStateLogger(
   {
     await Stop();
     await Start(settings);
+  }
+
+  private bool ShouldEmitByDeltas(AresStruct? state)
+  {
+    // If no state or no configured/eligible deltas, allow emission (fallback to original behavior)
+    if (state is null || _eligibleDeltas.Count == 0)
+    {
+      return true;
+    }
+
+    bool anyExceeded = false;
+
+    foreach (var d in _eligibleDeltas)
+    {
+      if (!TryGetDouble(state, d.Key, out var current))
+      {
+        // If key not found or not numeric, skip this key silently
+        continue;
+      }
+
+      if (_lastDeltaValues.TryGetValue(d.Key, out var last))
+      {
+        if (Math.Abs(current - last) > d.Delta)
+        {
+          anyExceeded = true;
+          _lastDeltaValues[d.Key] = current; // advance baseline for this key
+        }
+      }
+      else
+      {
+        // First observation for this key establishes baseline and triggers an emit
+        anyExceeded = true;
+        _lastDeltaValues[d.Key] = current;
+      }
+    }
+
+    return anyExceeded;
+  }
+
+  private static bool TryGetDouble(AresStruct state, string keyPath, out double value)
+  {
+    value = default;
+
+    if (string.IsNullOrWhiteSpace(keyPath))
+      return false;
+
+    // Serialize to JSON using protobuf formatter, then walk it as JsonDocument.
+    // This assumes numeric leaves are valid JSON numbers.
+    string json;
+    try
+    {
+      json = JsonFormatter.Default.Format(state);
+    }
+    catch
+    {
+      return false;
+    }
+
+    try
+    {
+      using var doc = JsonDocument.Parse(json);
+      var current = doc.RootElement;
+
+      foreach (var segment in keyPath.Split('.', StringSplitOptions.RemoveEmptyEntries))
+      {
+        if (current.ValueKind == JsonValueKind.Object)
+        {
+          if (!current.TryGetProperty(segment, out current))
+          {
+            return false;
+          }
+        }
+        else if (current.ValueKind == JsonValueKind.Array)
+        {
+          // Support numeric index for arrays
+          if (!int.TryParse(segment, out var idx))
+            return false;
+          if (idx < 0 || idx >= current.GetArrayLength())
+            return false;
+          current = current[idx];
+        }
+        else
+        {
+          return false;
+        }
+      }
+
+      switch (current.ValueKind)
+      {
+        case JsonValueKind.Number:
+          return current.TryGetDouble(out value);
+        case JsonValueKind.String:
+          // Allow numeric strings
+          return double.TryParse(current.GetString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out value);
+        default:
+          return false;
+      }
+    }
+    catch
+    {
+      return false;
+    }
   }
 
   private async Task UpdateState(AresStruct? state)
