@@ -176,6 +176,7 @@ namespace AresService.Migrations
                     DeviceId = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     LoggingType = table.Column<int>(type: "int", nullable: false),
                     IntervalMs = table.Column<long>(type: "bigint", nullable: false),
+                    Deltas = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
                     LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
                 },

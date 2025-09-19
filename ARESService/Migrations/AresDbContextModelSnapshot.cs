@@ -532,6 +532,9 @@ namespace AresService.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
 
+                    b.Property<string>("Deltas")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("DeviceId")
                         .HasColumnType("nvarchar(max)");
 

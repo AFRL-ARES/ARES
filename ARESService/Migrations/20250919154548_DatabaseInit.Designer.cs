@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AresService.Migrations
 {
     [DbContext(typeof(AresDbContext))]
-    [Migration("20250915201643_DatabaseInit")]
+    [Migration("20250919154548_DatabaseInit")]
     partial class DatabaseInit
     {
         /// <inheritdoc />
@@ -534,6 +534,9 @@ namespace AresService.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Deltas")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("DeviceId")
                         .HasColumnType("nvarchar(max)");

@@ -1,12 +1,14 @@
 ﻿using System.Text.Json;
 using Ares.Datamodel;
+using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Ares.Core.EntityConfigurations.Helpers;
 
-public static class TextTypeDeterminationHelper
+public static class EfCoreValueConverters
 {
   public static PropertyBuilder<AresValue> HasAresValue(this PropertyBuilder<AresValue> value)
   {
@@ -56,5 +58,29 @@ public static class TextTypeDeterminationHelper
   public static PropertyBuilder<Timestamp> HasTimestamp(this PropertyBuilder<Timestamp> timestamp)
   {
     return timestamp.HasConversion(t => t.ToDateTime(), time => time.ToTimestampUtc());
+  }
+
+  public static PropertyBuilder<RepeatedField<T>> HasSerializedRepeatedField<T>(this PropertyBuilder<RepeatedField<T>> builder)
+  {
+    var converter = new ValueConverter<RepeatedField<T>, string>(
+      v => SerializeToJson(v),
+      v => DeserializeFromJson<T>(v));
+
+    return builder.HasConversion(converter);
+  }
+
+  private static string SerializeToJson<T>(RepeatedField<T> items)
+  {
+    return JsonSerializer.Serialize(items.ToArray(), JsonSerializerOptions.Default);
+  }
+
+  private static RepeatedField<T> DeserializeFromJson<T>(string json)
+  {
+    var arr = JsonSerializer.Deserialize<T[]>(json, JsonSerializerOptions.Default) ?? [];
+    var rf = new RepeatedField<T>
+    {
+      arr
+    };
+    return rf;
   }
 }
