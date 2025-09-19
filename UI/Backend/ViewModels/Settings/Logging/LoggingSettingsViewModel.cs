@@ -21,11 +21,12 @@ public class LoggingSettingsViewModel : ReactiveObject
     this.WhenAnyValue(vm => vm.IntervalMs,
       vm => vm.LoggingType,
       vm => vm.CurrentSettings,
-      (interval, logType, settings) =>
-        settings is not null && (interval != settings.IntervalMs || logType != settings.LoggingType)
+      vm => vm.DeltasChanged,
+      (interval, logType, settings, deltasChanged) =>
+        (settings is not null && (interval != settings.IntervalMs || logType != settings.LoggingType)) || deltasChanged
     ).ToProperty(this, vm => vm.Updated, out _updatedObservable);
 
-    FetchSettingsCommand = ReactiveCommand.CreateFromTask(FetchSettings);
+    FetchSettingsCommand = ReactiveCommand.CreateFromTask(Init);
   }
   public string DeviceName { get; }
 
@@ -35,23 +36,77 @@ public class LoggingSettingsViewModel : ReactiveObject
   [Reactive]
   public DeviceLoggingSettings.Types.LoggingType LoggingType { get; set; }
 
-  [Reactive] 
+  [Reactive]
   private DeviceLoggingSettings? CurrentSettings { get; set; }
-  
+
+  [Reactive]
+  private bool DeltasChanged { get; set; }
+
   [Reactive]
   public long IntervalMs { get; set; }
+
+  public Dictionary<string, double> Deltas { get; } = [];
 
   public bool Updated => _updatedObservable.Value;
 
   public ReactiveCommand<Unit, Unit> FetchSettingsCommand { get; }
 
-  public async Task FetchSettings()
+  public void UpdateDelta(string key, double delta)
+  {
+    var currentDelta = CurrentSettings?.Deltas.GetValueOrDefault(key);
+    if(currentDelta is null || currentDelta == delta)
+    {
+      return;
+    }
+
+    Deltas[key] = delta;
+    DeltasChanged = AnyDeltasChanged();
+  }
+
+  private bool AnyDeltasChanged()
+  {
+    if(CurrentSettings is null)
+      return false;
+
+    foreach(var item in Deltas)
+    {
+      var existingDelta = CurrentSettings.Deltas.GetValueOrDefault(item.Key);
+
+      if(item.Value != existingDelta)
+        return true;
+    }
+
+    return false;
+  }
+
+  public async Task Init()
   {
     var settings = await _devicesClient.GetDeviceLoggerSettingsAsync(new DeviceLoggerSettingsRequest { DeviceId = _deviceId });
 
     CurrentSettings = settings;
     IntervalMs = settings.IntervalMs;
     LoggingType = settings.LoggingType;
+
+    var stateSchema = await _devicesClient.GetDeviceStateSchemaAsync(new DeviceStateSchemaRequest { DeviceId = _deviceId });
+    var numericFields = stateSchema.Schema.Fields.Where(f => f.Value.Type == Ares.Datamodel.AresDataType.Number).ToArray();
+
+    var deviceDefaultDeltas = numericFields.Select(nf => new KeyValuePair<string, double>(nf.Key, 0)).ToDictionary();
+    foreach(var delta in deviceDefaultDeltas)
+    {
+      var hasSetting = settings.Deltas.TryGetValue(delta.Key, out var deltaSetting);
+      if(!hasSetting)
+      {
+        continue;
+      }
+
+      deviceDefaultDeltas[delta.Key] = deltaSetting;
+    }
+
+    Deltas.Clear();
+    foreach(var item in deviceDefaultDeltas)
+    {
+      Deltas[item.Key] = item.Value;
+    }
 
     Fetched = true;
   }
@@ -69,8 +124,9 @@ public class LoggingSettingsViewModel : ReactiveObject
       IntervalMs = IntervalMs,
       LoggingType = LoggingType,
     };
+    settings.Deltas.Add(Deltas);
     await _devicesClient.SetDeviceLoggerSettingsAsync(settings);
-    await FetchSettings();
+    await Init();
     return true;
   }
 }

@@ -17,7 +17,7 @@ public class RemoteDeviceStateLogger(
 {
   private IDisposable _stateWatcher = Disposable.Empty;
   private readonly Dictionary<string, double> _lastDeltaValues = new(StringComparer.OrdinalIgnoreCase);
-  private List<DeviceLoggingDelta> _eligibleDeltas = [];
+  private Dictionary<string, double> _eligibleDeltas = [];
 
   public string DeviceId => device.UniqueId;
 
@@ -28,8 +28,8 @@ public class RemoteDeviceStateLogger(
     Settings = settings ?? Settings;
 
     _eligibleDeltas = Settings.Deltas
-      .Where(d => d is not null && d.Delta > 0 && !string.IsNullOrWhiteSpace(d.Key))
-      .ToList();
+      .Where(d => d.Value > 0)
+      .ToDictionary();
 
     var stream = device.StateStream;
     if(Settings.LoggingType == DeviceLoggingSettings.Types.LoggingType.Interval)
@@ -92,7 +92,7 @@ public class RemoteDeviceStateLogger(
 
       if(_lastDeltaValues.TryGetValue(d.Key, out var last))
       {
-        if(Math.Abs(current - last) > d.Delta)
+        if(Math.Abs(current - last) > d.Value)
         {
           anyExceeded = true;
           _lastDeltaValues[d.Key] = current; // advance baseline for this key

@@ -40,6 +40,14 @@ else
           </div>
         }
       </td>
+      <td>
+        <div class="d-flex flex-column">
+          @foreach (var delta in ViewModel!.Deltas)
+          {
+            <span>@delta.Key -- @delta.Value</span>
+          }
+        </div>
+      </td>
     }
   </tr>
 }
@@ -48,7 +56,7 @@ else
 
   protected override async Task OnInitializedAsync()
   {
-    await ViewModel!.FetchSettings();
+    await ViewModel!.Init();
   }
 
   private bool IsOnChange => ViewModel!.LoggingType == DeviceLoggingSettings.Types.LoggingType.OnChange;
