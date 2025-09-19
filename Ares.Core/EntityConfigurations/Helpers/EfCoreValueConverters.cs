@@ -3,6 +3,7 @@ using Ares.Datamodel;
 using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
@@ -75,7 +76,9 @@ public static class EfCoreValueConverters
       v => SerializeMapToJson(v),
       v => DeserializeMapFromJson<TKey, TValue>(v));
 
-    return builder.HasConversion(converter);
+    var property = builder.HasConversion(converter);
+    property.Metadata.SetValueComparer(GetMapFieldComparer<TKey, TValue>());
+    return property;
   }
 
   private static string SerializeRepeatedFieldToJson<T>(RepeatedField<T> items)
@@ -98,6 +101,60 @@ public static class EfCoreValueConverters
     return map;
   }
 
+  private static ValueComparer<MapField<TKey, TValue>> GetMapFieldComparer<TKey, TValue>() where TKey : notnull
+  {
+    return new ValueComparer<MapField<TKey, TValue>>(
+      (d1, d2) => MapFieldEquals(d1, d2),
+      d => MapFieldHash(d),
+      d => MapFieldSnapshot(d)
+    );
+  }
+
+  private static bool MapFieldEquals<TKey, TValue>(MapField<TKey, TValue> d1, MapField<TKey, TValue> d2)
+    where TKey : notnull
+  {
+    if (ReferenceEquals(d1, d2)) return true;
+    if (d1 is null || d2 is null) return false;
+    if (d1.Count != d2.Count) return false;
+
+    // Compare by key lookup to avoid sorting and multiple enumeration
+    foreach (var kv in d1)
+    {
+      if (!d2.TryGetValue(kv.Key, out var v2)) return false;
+      if (!EqualityComparer<TValue>.Default.Equals(kv.Value, v2)) return false;
+    }
+    return true;
+  }
+
+  private static int MapFieldHash<TKey, TValue>(MapField<TKey, TValue> d)
+    where TKey : notnull
+  {
+    if (d is null) return 0;
+
+    // Deterministic, order-independent hash by iterating keys in sorted order
+    var keys = new List<TKey>(d.Keys);
+    keys.Sort();
+
+    var hash = new HashCode();
+    foreach (var key in keys)
+    {
+      hash.Add(key);
+      hash.Add(d[key]);
+    }
+    return hash.ToHashCode();
+  }
+
+  private static MapField<TKey, TValue> MapFieldSnapshot<TKey, TValue>(MapField<TKey, TValue> d)
+    where TKey : notnull
+  {
+    var clone = new MapField<TKey, TValue>();
+    if (d is not null)
+    {
+      clone.Add(d);
+    }
+    return clone;
+  }
+  
   private static RepeatedField<T> DeserializeRepeatedFieldFromJson<T>(string json)
   {
     var arr = JsonSerializer.Deserialize<T[]>(json, JsonSerializerOptions.Default) ?? [];

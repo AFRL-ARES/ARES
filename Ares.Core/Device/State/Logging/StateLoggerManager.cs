@@ -92,6 +92,8 @@ public class StateLoggerManager(IDeviceStateLoggerRepository _stateLoggerReposit
     {
       existingSettings.IntervalMs = settings.IntervalMs;
       existingSettings.LoggingType = settings.LoggingType;
+      existingSettings.Deltas.Clear();
+      existingSettings.Deltas.Add(settings.Deltas);
     }
     else
     {
@@ -115,9 +117,7 @@ public class StateLoggerManager(IDeviceStateLoggerRepository _stateLoggerReposit
   {
     using var ctx = _dbContextFactory.CreateDbContext();
     var existingSettings = await ctx.DeviceLoggingSettings.FirstOrDefaultAsync(s => s.DeviceId == deviceId);
-    return existingSettings is null
-      ? throw new KeyNotFoundException($"No loggers found in the database for device with id {deviceId}")
-      : existingSettings;
+    return existingSettings ?? throw new KeyNotFoundException($"No loggers found in the database for device with id {deviceId}");
   }
 
   public async Task DisableOverrideAsync()

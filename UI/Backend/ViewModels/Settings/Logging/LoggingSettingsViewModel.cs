@@ -108,6 +108,7 @@ public class LoggingSettingsViewModel : ReactiveObject
       Deltas[item.Key] = item.Value;
     }
 
+    DeltasChanged = AnyDeltasChanged();
     Fetched = true;
   }
 
