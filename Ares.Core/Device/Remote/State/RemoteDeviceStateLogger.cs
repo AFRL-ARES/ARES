@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Text.Json;
-using Google.Protobuf;
-using System.Reactive;
+﻿using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using Ares.Core.Device.State.Logging;
@@ -20,7 +17,7 @@ public class RemoteDeviceStateLogger(
 {
   private IDisposable _stateWatcher = Disposable.Empty;
   private readonly Dictionary<string, double> _lastDeltaValues = new(StringComparer.OrdinalIgnoreCase);
-  private List<DeviceLoggingDelta> _eligibleDeltas = new();
+  private List<DeviceLoggingDelta> _eligibleDeltas = [];
 
   public string DeviceId => device.UniqueId;
 
@@ -78,24 +75,24 @@ public class RemoteDeviceStateLogger(
   private bool ShouldEmitByDeltas(AresStruct? state)
   {
     // If no state or no configured/eligible deltas, allow emission (fallback to original behavior)
-    if (state is null || _eligibleDeltas.Count == 0)
+    if(state is null || _eligibleDeltas.Count == 0)
     {
       return true;
     }
 
     bool anyExceeded = false;
 
-    foreach (var d in _eligibleDeltas)
+    foreach(var d in _eligibleDeltas)
     {
-      if (!TryGetDouble(state, d.Key, out var current))
+      if(!TryGetDouble(state, d.Key, out var current))
       {
-        // If key not found or not numeric, skip this key silently
+        // If key not found or the ares value is not numeric, skip this key silently
         continue;
       }
 
-      if (_lastDeltaValues.TryGetValue(d.Key, out var last))
+      if(_lastDeltaValues.TryGetValue(d.Key, out var last))
       {
-        if (Math.Abs(current - last) > d.Delta)
+        if(Math.Abs(current - last) > d.Delta)
         {
           anyExceeded = true;
           _lastDeltaValues[d.Key] = current; // advance baseline for this key
@@ -116,65 +113,18 @@ public class RemoteDeviceStateLogger(
   {
     value = default;
 
-    if (string.IsNullOrWhiteSpace(keyPath))
+    if(string.IsNullOrWhiteSpace(keyPath))
       return false;
 
-    // Serialize to JSON using protobuf formatter, then walk it as JsonDocument.
-    // This assumes numeric leaves are valid JSON numbers.
-    string json;
-    try
-    {
-      json = JsonFormatter.Default.Format(state);
-    }
-    catch
-    {
+    var fieldExists = state.Fields.TryGetValue(keyPath, out var fieldValue);
+    if(!fieldExists)
       return false;
-    }
 
-    try
-    {
-      using var doc = JsonDocument.Parse(json);
-      var current = doc.RootElement;
-
-      foreach (var segment in keyPath.Split('.', StringSplitOptions.RemoveEmptyEntries))
-      {
-        if (current.ValueKind == JsonValueKind.Object)
-        {
-          if (!current.TryGetProperty(segment, out current))
-          {
-            return false;
-          }
-        }
-        else if (current.ValueKind == JsonValueKind.Array)
-        {
-          // Support numeric index for arrays
-          if (!int.TryParse(segment, out var idx))
-            return false;
-          if (idx < 0 || idx >= current.GetArrayLength())
-            return false;
-          current = current[idx];
-        }
-        else
-        {
-          return false;
-        }
-      }
-
-      switch (current.ValueKind)
-      {
-        case JsonValueKind.Number:
-          return current.TryGetDouble(out value);
-        case JsonValueKind.String:
-          // Allow numeric strings
-          return double.TryParse(current.GetString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out value);
-        default:
-          return false;
-      }
-    }
-    catch
-    {
+    if(!fieldValue.HasNumberValue)
       return false;
-    }
+
+    value = fieldValue.NumberValue;
+    return true;
   }
 
   private async Task UpdateState(AresStruct? state)
