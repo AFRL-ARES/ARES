@@ -63,18 +63,42 @@ public static class EfCoreValueConverters
   public static PropertyBuilder<RepeatedField<T>> HasSerializedRepeatedField<T>(this PropertyBuilder<RepeatedField<T>> builder)
   {
     var converter = new ValueConverter<RepeatedField<T>, string>(
-      v => SerializeToJson(v),
-      v => DeserializeFromJson<T>(v));
+      v => SerializeRepeatedFieldToJson(v),
+      v => DeserializeRepeatedFieldFromJson<T>(v));
 
     return builder.HasConversion(converter);
   }
 
-  private static string SerializeToJson<T>(RepeatedField<T> items)
+  public static PropertyBuilder<MapField<TKey, TValue>> HasSerializedMap<TKey, TValue>(this PropertyBuilder<MapField<TKey, TValue>> builder) where TKey : notnull
+  {
+    var converter = new ValueConverter<MapField<TKey, TValue>, string>(
+      v => SerializeMapToJson(v),
+      v => DeserializeMapFromJson<TKey, TValue>(v));
+
+    return builder.HasConversion(converter);
+  }
+
+  private static string SerializeRepeatedFieldToJson<T>(RepeatedField<T> items)
   {
     return JsonSerializer.Serialize(items.ToArray(), JsonSerializerOptions.Default);
   }
 
-  private static RepeatedField<T> DeserializeFromJson<T>(string json)
+  private static string SerializeMapToJson<TKey, TValue>(MapField<TKey, TValue> map)
+  {
+    return JsonSerializer.Serialize(map, JsonSerializerOptions.Default);
+  }
+
+  private static MapField<TKey, TValue> DeserializeMapFromJson<TKey, TValue>(string json) where TKey : notnull
+  {
+    var dict = JsonSerializer.Deserialize<Dictionary<TKey, TValue>>(json) ?? [];
+    var map = new MapField<TKey, TValue>
+    {
+      dict
+    };
+    return map;
+  }
+
+  private static RepeatedField<T> DeserializeRepeatedFieldFromJson<T>(string json)
   {
     var arr = JsonSerializer.Deserialize<T[]>(json, JsonSerializerOptions.Default) ?? [];
     var rf = new RepeatedField<T>

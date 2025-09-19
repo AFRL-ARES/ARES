@@ -11,6 +11,6 @@ internal class DeviceLoggingSettingsEntityConfiguration : AresEntityTypeBaseConf
     // We're not going to associate the DeviceId as the foreign key for now as the devices are added
     // to the database by different dotnet projects
 
-    builder.Property(b => b.Deltas).HasSerializedRepeatedField();
+    builder.Property(b => b.Deltas).HasSerializedMap();
   }
 }
