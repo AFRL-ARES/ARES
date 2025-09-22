@@ -235,7 +235,10 @@ public class DevicesService(
       return Task.FromResult(new AresStruct());
     }
 
-    return Task.FromResult(remoteDevice.Settings);
+    var aresSettings = new AresStruct();
+    aresSettings.Fields.Add(remoteDevice.Settings);
+
+    return Task.FromResult(aresSettings);
   }
 
   public override Task<Empty> SetDeviceSettings(DeviceSettings request, ServerCallContext context)

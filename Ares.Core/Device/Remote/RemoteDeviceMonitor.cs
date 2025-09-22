@@ -50,6 +50,7 @@ internal class RemoteDeviceMonitor : IDisposable
           await _device.FetchInfo();
           await _device.FetchSettings();
           await _device.FetchCommands();
+          await _device.FetchStateSchema();
           await _device.StopStateStream();
           _ = _device.StartStateStream();
           await _device.FetchOperationalStatus();
