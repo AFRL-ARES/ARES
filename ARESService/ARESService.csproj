@@ -30,7 +30,6 @@
     <ProjectReference Include="..\AlicatMFC\AlicatMFC.csproj" />
     <ProjectReference Include="..\Ares.Core.Grpc\Ares.Core.Grpc.csproj" />
     <ProjectReference Include="..\AresMessaging\AresMessaging.csproj" />
-    <ProjectReference Include="..\DemoDevice\DemoDevice.csproj" />
     <ProjectReference Include="..\FlirCM3\FlirCM3.csproj" />
     <ProjectReference Include="..\FlirCM3\FlirCM3.csproj" />
     <ProjectReference Include="..\HerkulexDRS\HerkulexDRS.csproj" />
