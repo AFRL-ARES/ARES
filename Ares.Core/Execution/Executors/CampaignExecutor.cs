@@ -86,8 +86,7 @@ public class CampaignExecutor : ICampaignExecutor
       if(CampaignTags.Any())
         await CampaignOutputHelper.WriteExperimentTags(campaignPath, CampaignTags);
 
-      // TODO do something about the analyzers here
-      var analyzerId = Template.ExperimentTemplate.AnalyzerId;
+      var analyzerId = string.IsNullOrEmpty(Template.ExperimentTemplate.AnalyzerId) ? NoneAnalyzer.Id : Template.ExperimentTemplate.AnalyzerId;
       if(analyzerId is not null)
       {
         var analyzer = _analyzerRepo.GetAnalyzerById(analyzerId);

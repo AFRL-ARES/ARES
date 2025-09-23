@@ -81,6 +81,7 @@ public class LoggingSettingsViewModel : ReactiveObject
 
   public async Task Init()
   {
+    Fetched = false;
     var settings = await _devicesClient.GetDeviceLoggerSettingsAsync(new DeviceLoggerSettingsRequest { DeviceId = _deviceId });
 
     CurrentSettings = settings;
