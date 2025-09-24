@@ -10,31 +10,34 @@
       @if (ViewModel.ConnectionStatus == ConnectionStatus.ConnectedToDevice)
       {
         <RadzenIcon @ref="_connectedIcon" Icon="link" class="rz-color-success"
-          @onmouseenter="@(args => ShowTooltip(_connectedIcon.Element, "Connected to Service and Device"))" />
+          @onmouseenter="@(args => ShowTooltip(_connectedIcon!.Element, "Connected to Service and Device"))" />
       }
       else if (ViewModel!.ConnectionStatus == ConnectionStatus.ConnectedToService)
       {
         <RadzenIcon @ref="_serviceConnectedIcon" Icon="link" class="rz-color-warning"
-          @onmouseenter="@(args => ShowTooltip(_serviceConnectedIcon.Element, "Connected to Service but not Device"))" />
+          @onmouseenter="@(args => ShowTooltip(_serviceConnectedIcon!.Element, "Connected to Service but not Device"))" />
       }
       else if (ViewModel.ConnectionStatus == ConnectionStatus.Disconnected)
       {
         <RadzenIcon @ref="_disconnectedIcon" Icon="link_off" class="rz-color-danger"
-          @onmouseenter="@(args => ShowTooltip(_disconnectedIcon.Element, "Disconnected"))" />
+          @onmouseenter="@(args => ShowTooltip(_disconnectedIcon!.Element, "Disconnected"))" />
       }
     </RadzenStack>
   </HeaderTemplate>
   <ChildContent>
-    @foreach (var field in ViewModel!.DeviceState.Fields)
+    @if(ViewModel!.DeviceState is not null)
     {
-      <RadzenRow AlignItems="AlignItems.Center" Gap="1rem" class="rz-mb-4">
-        <RadzenColumn Size="4" class="d-flex justify-content-end">
-          <RadzenLabel Text="@field.Key" />
-        </RadzenColumn>
-        <RadzenColumn Size="8">
-          <AresValueDisplay Value="@field.Value" />
-        </RadzenColumn>
-      </RadzenRow>
+      @foreach(var field in ViewModel!.DeviceState.Fields)
+      {
+        <RadzenRow AlignItems="AlignItems.Center" Gap="1rem" class="rz-mb-4">
+          <RadzenColumn Size="4" class="d-flex justify-content-end">
+            <RadzenLabel Text="@field.Key" />
+          </RadzenColumn>
+          <RadzenColumn Size="8">
+            <AresValueDisplay Value="@field.Value" />
+          </RadzenColumn>
+        </RadzenRow>
+      }
     }
   </ChildContent>
 </RadzenFieldset>
