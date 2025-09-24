@@ -20,7 +20,7 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
     {
       CommandId = template.UniqueId,
       CommandName = template.Metadata.Name,
-      DeviceName = template.Metadata.DeviceId,
+      DeviceName = template.Metadata.DeviceType,
       State = ExecutionState.Undefined
     };
 
