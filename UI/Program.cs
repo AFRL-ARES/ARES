@@ -17,7 +17,7 @@ if(connectionString is null)
 
 var provider = builder.Configuration.Get<AppSettings>()!.DatabaseProvider;
 
-switch (provider)
+switch(provider)
 {
   case "SqlServer":
     builder.Services.AddDbContextFactory<ApplicationDbContext>(dbBuilder =>
@@ -87,8 +87,8 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-app.UseAuthentication();
-app.UseAuthorization();
+//app.UseAuthentication();
+//app.UseAuthorization();
 
 app.MapControllers();
 app.MapBlazorHub();

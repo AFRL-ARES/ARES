@@ -19,8 +19,8 @@
     <RadzenTooltip/>
 
     <main>
-        <AuthorizeView>
-            <Authorized>
+        @* <AuthorizeView>
+            <Authorized> *@
                 <div class="main-layout-grid vh-100">
                     <div class="p-0 ares-sidebar">
                         <button @onclick="SidebarExpandClick" type="button" class="bg-dark btn hamburger-button">
@@ -69,23 +69,23 @@
                     </div>
                     <div class="ares-footer">
                       <AresFooter>
-                      <div class="d-flex flex-row justify-content-between align-items-center">
-                        <div>
+                      <div class="d-flex flex-row justify-content-end align-items-center">
+                        @* <div>
                           <span>Logged in as @context.User.Identity?.Name</span>
                           <a href="Identity/Account/Logout" class="mx-2">Logout</a>
-                        </div>
+                        </div> *@
                         <RadzenButton Click="@ShowEmergencyStopDialog" Text="Emergency Stop" Icon="report" ButtonStyle="ButtonStyle.Danger" />
                       </div>
                       </AresFooter>
                     </div>
                 </div>
-            </Authorized>
+        @*     </Authorized>
             <NotAuthorized>
                 <article class="content px-4">
                     <meta http-equiv="refresh" content="0.01; URL=Identity/Account/Login"/>
                 </article>
             </NotAuthorized>
-        </AuthorizeView>
+        </AuthorizeView> *@
     </main>
 </div>
 
