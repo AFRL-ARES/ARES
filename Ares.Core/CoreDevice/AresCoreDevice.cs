@@ -23,8 +23,8 @@ public class AresCoreDevice : AresDevice
     return Task.CompletedTask;
   }
 
-  public Task Sleep(TimeSpan timeSpan)
+  public Task Sleep(TimeSpan timeSpan, CancellationToken ct)
   {
-    return Task.Delay(timeSpan);
+    return Task.Delay(timeSpan, ct);
   }
 }

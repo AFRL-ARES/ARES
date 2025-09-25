@@ -147,7 +147,7 @@ internal class StepperControllerStateLogger : IStepperControllerStateLogger
     list.Add(name);
   }
 
-  public async Task UpdateSettings(DeviceLoggingSettings settings)
+  public async Task UpdateSettings(DeviceLoggingSettings? settings)
   {
     await Stop();
     await Start(settings);

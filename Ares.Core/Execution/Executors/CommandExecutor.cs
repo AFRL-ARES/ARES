@@ -40,7 +40,7 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
     if(token.IsPaused)
       try
       {
-        token.WaitForResume(token.CancellationToken);
+        token.WaitForResume();
       }
       catch(OperationCanceledException)
       {
@@ -94,8 +94,7 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
     executionToken.Pause();
     Status.State = ExecutionState.AwaitingUser;
     _stateSubject.OnNext(Status);
-    var ct = new CancellationToken();
-    executionToken.WaitForResume(ct);
+    executionToken.WaitForResume();
     Status.State = ExecutionState.Succeeded;
   }
 }

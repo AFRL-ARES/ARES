@@ -96,7 +96,7 @@ public class RestDeviceStateLogger : IRestDeviceStateLogger
     }
   }
 
-  public async Task UpdateSettings(DeviceLoggingSettings settings)
+  public async Task UpdateSettings(DeviceLoggingSettings? settings)
   {
     await Stop();
     await Start(settings);

@@ -89,7 +89,7 @@ public class CommandDesignerViewModel : ReactiveObject
     if(CommandMetadata is not null)
     {
       CommandTemplate.Metadata = CommandMetadata;
-      CommandTemplate.Metadata.DeviceType = TemplateDeviceName;
+      CommandTemplate.Metadata.DeviceType = MetadataDeviceName;
     }
       
 

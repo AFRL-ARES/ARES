@@ -113,11 +113,11 @@ public class StateLoggerManager(IDeviceStateLoggerRepository _stateLoggerReposit
     throw new KeyNotFoundException($"No logger found for device {deviceId}");
   }
 
-  public async Task<DeviceLoggingSettings> GetDatabaseLoggerSettings(string deviceId)
+  public async Task<DeviceLoggingSettings?> GetDatabaseLoggerSettings(string deviceId)
   {
     using var ctx = _dbContextFactory.CreateDbContext();
     var existingSettings = await ctx.DeviceLoggingSettings.FirstOrDefaultAsync(s => s.DeviceId == deviceId);
-    return existingSettings ?? throw new KeyNotFoundException($"No loggers found in the database for device with id {deviceId}");
+    return existingSettings;
   }
 
   public async Task DisableOverrideAsync()

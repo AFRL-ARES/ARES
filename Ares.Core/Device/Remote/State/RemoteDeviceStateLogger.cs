@@ -66,7 +66,7 @@ public class RemoteDeviceStateLogger(
     return Task.CompletedTask;
   }
 
-  public async Task UpdateSettings(DeviceLoggingSettings settings)
+  public async Task UpdateSettings(DeviceLoggingSettings? settings)
   {
     await Stop();
     await Start(settings);
