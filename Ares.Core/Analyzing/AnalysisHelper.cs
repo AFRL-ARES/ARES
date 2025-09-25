@@ -54,6 +54,7 @@ public class AnalysisHelper
   private AresStruct ExperimentOutputToAnalyzerInputs(AresStruct experimentResult, MapField<string, string> analyzerMappings)
   {
     var mappedStruct = new AresStruct();
+    // Analyzer mapping is [KeyThatAnalyzerExpects, UserDefinedExperimentOutputKey]
     foreach(var map in analyzerMappings)
     {
       var expResultValue = experimentResult.Fields[map.Value];
