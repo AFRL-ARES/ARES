@@ -108,18 +108,21 @@ public class CampaignExecutor : ICampaignExecutor
       await HandleNotification("Campaign Started!", $"ARES has started a campaign named {Template.Name} successfully!", NotificationSeverityEnum.Success);
       bool executionSuccess = true;
       var experiment_count = 0;
-
-      var startupExecutorResult = await GenerateExperimentExecutor(Template.StartupTemplate, analyses, experimentSummaries.Select(es => es.ExperimentOverview), token.CancellationToken);
-      if(startupExecutorResult.ErrorString is not null || startupExecutorResult.ExperimentExecutor is null)
+      var startupSummary = new ExperimentExecutionSummary();
+      if(Template.StartupTemplate is not null)
       {
-        await HandleNotification("Campaing Failed!", $"ARES failed to run startup routine for {Template.Name}, campaign will shut down.", NotificationSeverityEnum.Error);
-        executionSuccess = false;
-        return new CampaignExecutionSummary();
-      }
+        var startupExecutorResult = await GenerateExperimentExecutor(Template.StartupTemplate, analyses, experimentSummaries.Select(es => es.ExperimentOverview), token.CancellationToken);
+        if(startupExecutorResult.ErrorString is not null || startupExecutorResult.ExperimentExecutor is null)
+        {
+          await HandleNotification("Campaign Failed!", $"ARES failed to run startup routine for {Template.Name}, campaign will shut down.", NotificationSeverityEnum.Error);
+          executionSuccess = false;
+          return new CampaignExecutionSummary();
+        }
 
-      var startupSummary = await ExecuteTemplate(startupExecutorResult.ExperimentExecutor, token);
-      startupSummary.ResultOutputPath = AresEnvironment.AresEnvironment.GetEnvironmentVariable(VariableType.CampaignStartupFolder);
-      await PostExperimentExecution(startupSummary);
+        startupSummary = await ExecuteTemplate(startupExecutorResult.ExperimentExecutor, token);
+        startupSummary.ResultOutputPath = AresEnvironment.AresEnvironment.GetEnvironmentVariable(VariableType.CampaignStartupFolder);
+        await PostExperimentExecution(startupSummary);
+      }
 
       while(!ShouldStop() && !token.IsCancelled && executionSuccess == true)
       {
@@ -188,18 +191,22 @@ public class CampaignExecutor : ICampaignExecutor
         experimentSummaries.Add(experimentSummary);
       }
 
-      var closeoutExecutorResult = await GenerateExperimentExecutor(Template.CloseoutTemplate, analyses, experimentSummaries.Select(es => es.ExperimentOverview), token.CancellationToken);
-      if(closeoutExecutorResult?.ErrorString is not null || closeoutExecutorResult?.ExperimentExecutor is null)
+      var closeoutSummary = new ExperimentExecutionSummary();
+      if(Template.CloseoutTemplate is not null)
       {
-        await HandleNotification("Closeout Script Failed!", closeoutExecutorResult?.ErrorString ?? "Unknown Closeout Script Failure", NotificationSeverityEnum.Error);
-        executionSuccess = false;
-        //TODO: Do this better..?
-        return new CampaignExecutionSummary();
-      }
+        var closeoutExecutorResult = await GenerateExperimentExecutor(Template.CloseoutTemplate, analyses, experimentSummaries.Select(es => es.ExperimentOverview), token.CancellationToken);
+        if(closeoutExecutorResult?.ErrorString is not null || closeoutExecutorResult?.ExperimentExecutor is null)
+        {
+          await HandleNotification("Closeout Script Failed!", closeoutExecutorResult?.ErrorString ?? "Unknown Closeout Script Failure", NotificationSeverityEnum.Error);
+          executionSuccess = false;
+          //TODO: Do this better..?
+          return new CampaignExecutionSummary();
+        }
 
-      var closeoutSummary = await ExecuteTemplate(closeoutExecutorResult.ExperimentExecutor, token);
-      closeoutSummary.ResultOutputPath = AresEnvironment.AresEnvironment.GetEnvironmentVariable(VariableType.CampaignMiscFolder);
-      await PostExperimentExecution(closeoutSummary);
+        closeoutSummary = await ExecuteTemplate(closeoutExecutorResult.ExperimentExecutor, token);
+        closeoutSummary.ResultOutputPath = AresEnvironment.AresEnvironment.GetEnvironmentVariable(VariableType.CampaignMiscFolder);
+        await PostExperimentExecution(closeoutSummary);
+      }
 
       if(executionSuccess)
       {
