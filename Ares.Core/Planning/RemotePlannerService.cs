@@ -151,6 +151,7 @@ public class RemotePlannerService : PlannerServiceBase
     var client = GetClient();
     var planRequest = new PlanningRequest() { AdapterSettings = Settings };
     planRequest.PlanningParameters.AddRange(plannableParameters.Select(parameter => ConvertToPlanningParameter(parameter, previousExperiments)));
+    planRequest.AnalysisResults.AddRange(analysisHistory.Select(a => (double)a.Result));
     var result = await client.PlanAsync(planRequest, cancellationToken: cancellationToken);
     return ToPlanResults(result, plannableParameters);
   }
@@ -164,6 +165,7 @@ public class RemotePlannerService : PlannerServiceBase
     var client = GetClient();
     var planRequest = new PlanningRequest() { AdapterSettings = settings };
     planRequest.PlanningParameters.AddRange(plannableParameters.Select(parameter => ConvertToPlanningParameter(parameter, previousExperiments)));
+    planRequest.AnalysisResults.AddRange(analysisHistory.Select(a => (double)a.Result));
     var result = await client.PlanAsync(planRequest, cancellationToken: cancellationToken);
     return ToPlanResults(result, plannableParameters);
   }
