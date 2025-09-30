@@ -29,16 +29,16 @@
                         <AresNavMenu ExpandedMainNav="@SidebarExpanded">
                             <MainNavContent>
                                 <AresNavItem Text="Dashboard" Icon="dvr" Path="/"/>
-                                <AresNavItem Text="Project" Icon="space_dashboard" Path="project"/>
                                 <AresNavItem Match="NavLinkMatch.Prefix" Expandable="true" Icon="science" Text="Automation" Path="automation">
                                     <AresNavItem Icon="brush" Text="Campaign Designer" Path="automation/campaignlist"/>
                                     <AresNavItem Icon="stairs" Text="Custom Step Builder" Path="automation/customstepbuilder"/>
                                     <AresNavItem Icon="directions_run" Text="Execution" Path="automation/execution"/>
                                     <AresNavItem Icon="history" Text="Execution History" Path="automation/executionhistory"/>
                                 </AresNavItem>
-                                <AresNavItem Icon="assessment" Text="Data Viewer" Path="dataviewer"/>
+                                <AresNavItem Icon="data_table" Text="Data Viewer" Path="dataviewer"/>
                                 <AresNavItem Icon="assessment" Text="Device States" Path="device_states"/>
-                                <AresNavItem Icon="detector" Text="Safety" Path="/safety"/>
+                                @* Coming Soon *@
+                                @* <AresNavItem Icon="detector" Text="Safety" Path="/safety"/> *@
                             </MainNavContent>
 
                             <FooterContent>
@@ -58,6 +58,8 @@
                                     <AresNavItem Icon="stairs" Path="automation/customstepbuilder"/>
                                     <AresNavItem Icon="directions_run" Path="automation/execution"/>
                                     <AresNavItem Icon="history" Path="automation/executionhistory"/>
+                                    @* Coming Soon *@
+                                    @* <AresNavItem Icon="detector" Text="Safety" Path="/safety" /> *@
                                 </AresNavItem>
                                 <AresNavItem Icon="assessment" Path="dataviewer"/>
                             </CollapsedNavContent>
