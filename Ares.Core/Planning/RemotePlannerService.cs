@@ -18,7 +18,7 @@ public class RemotePlannerService : PlannerServiceBase
   private readonly GrpcChannel _channel;
   private PlannerServiceCapabilities _capabilities = new();
 
-  public RemotePlannerService(string name, Uri address, string id): base(name, "", "_._._", id)
+  public RemotePlannerService(string name, Uri address, string id) : base(name, "", "_._._", id)
   {
     _channel = GrpcChannel.ForAddress(address);
     Address = address;
@@ -70,7 +70,7 @@ public class RemotePlannerService : PlannerServiceBase
       StateMessage = state.StateMessage;
     }
 
-    catch(RpcException e) 
+    catch(RpcException e)
     {
       PlannerServiceState = State.Inactive;
       StateMessage = $"Failed to connect to planner: {e.Message}";
@@ -143,9 +143,9 @@ public class RemotePlannerService : PlannerServiceBase
     }
   }
 
-  public override async Task<IEnumerable<PlanResult>> Plan(IEnumerable<ParameterMetadata> plannableParameters, 
-    IEnumerable<ExperimentOverview> previousExperiments, 
-    IEnumerable<Analysis> analysisHistory, 
+  public override async Task<IEnumerable<PlanResult>> Plan(IEnumerable<ParameterMetadata> plannableParameters,
+    IEnumerable<ExperimentOverview> previousExperiments,
+    IEnumerable<Analysis> analysisHistory,
     CancellationToken cancellationToken = default)
   {
     var client = GetClient();
@@ -155,10 +155,10 @@ public class RemotePlannerService : PlannerServiceBase
     return ToPlanResults(result, plannableParameters);
   }
 
-  public override async Task<IEnumerable<PlanResult>> Plan(IEnumerable<ParameterMetadata> plannableParameters, 
-    IEnumerable<ExperimentOverview> previousExperiments, 
-    IEnumerable<Analysis> analysisHistory, 
-    AresStruct settings, 
+  public override async Task<IEnumerable<PlanResult>> Plan(IEnumerable<ParameterMetadata> plannableParameters,
+    IEnumerable<ExperimentOverview> previousExperiments,
+    IEnumerable<Analysis> analysisHistory,
+    AresStruct settings,
     CancellationToken cancellationToken = default)
   {
     var client = GetClient();
@@ -170,11 +170,6 @@ public class RemotePlannerService : PlannerServiceBase
 
   private PlanningParameter ConvertToPlanningParameter(ParameterMetadata metadata, IEnumerable<ExperimentOverview> experimentHistory)
   {
-    var relevantInfo = experimentHistory
-      .SelectMany(experiment => experiment.Template
-      .GetAllPlannedParameters()
-      .Where(param => param.PlanningMetadata.Name == metadata.Name));
-
     var parameter = new PlanningParameter
     {
       ParameterName = metadata.Name,
@@ -182,8 +177,20 @@ public class RemotePlannerService : PlannerServiceBase
       DataType = metadata.Schema.Type
     };
 
-    //TODO: Fix me!!!
-    parameter.ParameterHistory.AddRange(relevantInfo.Select(param => param.Value));
+    var paramHistory = experimentHistory.Select(exp =>
+    {
+      var plannedValue = exp.Template.GetAllPlannedParameters().First(param => param.PlanningMetadata.Name == metadata.Name).Value;
+
+      var actualValue = string.IsNullOrEmpty(metadata.OutputName) ? null : exp.Result.Fields.FirstOrDefault(f => f.Key == metadata.OutputName).Value;
+
+      return new ParameterHistoryInfo
+      {
+        PlannedValue = plannedValue,
+        AchievedValue = actualValue ?? AresValueHelper.CreateNull()
+      };
+    });
+
+    parameter.ParameterHistory.AddRange(paramHistory);
 
     if(metadata.Constraints.Any())
     {
