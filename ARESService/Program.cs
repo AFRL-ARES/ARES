@@ -1,6 +1,7 @@
 using System;
 using System.CommandLine;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -17,6 +18,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -63,11 +66,13 @@ public class Program
 
     // Build a temporary host to get the services
     var host = Host.CreateApplicationBuilder(args);
-    ConfigureDatabaseServices(host.Services, host.Configuration);
-    var app = host.Build();
-
     try
     {
+      ConfigureDatabaseServices(host.Services, host.Configuration);
+      var app = host.Build();
+      var settings = host.Configuration.Get<AppSettings>();
+      var provider = settings?.DatabaseProvider;
+      provider = string.IsNullOrEmpty(provider) ? "Sqlite" : provider;
       // Resolve both DbContext factories
       var aresDbContextFactory = app.Services.GetRequiredService<IDbContextFactory<AresDbContext>>();
       var aresIdentityContextFactory = app.Services.GetRequiredService<IDbContextFactory<AresIdentityContext>>();
@@ -75,17 +80,23 @@ public class Program
       // Migrate AresDbContext
       await using(var dbContext = await aresDbContextFactory.CreateDbContextAsync())
       {
+        var pendingMigrations = dbContext.Database.GetPendingMigrations();
+        var migration = pendingMigrations.FirstOrDefault(m => m.Contains(provider));
+        var migrator = dbContext.Database.GetService<IMigrator>();
         EnsureSqliteDirectoryExists(dbContext);
-        await dbContext.Database.MigrateAsync();
-        Console.WriteLine("AresDbContext migrations completed successfully.");
+        await migrator.MigrateAsync(migration);
+        Console.WriteLine($"AresDbContext migration completed successfully for {provider}.");
       }
 
       // Migrate AresIdentityContext
       await using(var dbContext = await aresIdentityContextFactory.CreateDbContextAsync())
       {
+        var pendingMigrations = dbContext.Database.GetPendingMigrations();
+        var migration = pendingMigrations.FirstOrDefault(m => m.Contains(provider));
+        var migrator = dbContext.Database.GetService<IMigrator>();
         EnsureSqliteDirectoryExists(dbContext);
-        await dbContext.Database.MigrateAsync();
-        Console.WriteLine("AresIdentityContext migrations completed successfully.");
+        await migrator.MigrateAsync(migration);
+        Console.WriteLine($"AresIdentityContext migration completed successfully for {provider}.");
       }
 
       Console.WriteLine("All database migrations completed.");
@@ -221,7 +232,7 @@ public class Program
   private static void ConfigureDatabaseServices(IServiceCollection services, ConfigurationManager configuration)
   {
     var sqlConnectionStrings = configuration.GetSection("ConnectionStrings");
-    var provider = configuration.Get<AppSettings>()!.DatabaseProvider;
+    var provider = configuration.Get<AppSettings>()?.DatabaseProvider ?? "Sqlite";
 
     if(provider == "SqlServer")
     {
@@ -252,7 +263,7 @@ public class Program
     }
     else
     {
-      throw new InvalidOperationException($"Unsupported database provider: {provider}");
+      throw new InvalidOperationException($"Unsupported database provider: {provider}. Available provider values: {string.Join(',', sqlConnectionStrings.AsEnumerable().Select(scs => scs.Key.Split(':').LastOrDefault()).Where(s => s != "ConnectionStrings"))}");
     }
   }
 

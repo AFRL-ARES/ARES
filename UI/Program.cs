@@ -78,7 +78,7 @@ app.Run();
 static void ConfigureDatabaseServices(IServiceCollection services, ConfigurationManager configuration)
 {
   var sqlConnectionStrings = configuration.GetSection("ConnectionStrings");
-  var provider = configuration.Get<AppSettings>()!.DatabaseProvider;
+  var provider = configuration.Get<AppSettings>().DatabaseProvider ?? "Sqlite";
 
   if(provider == "SqlServer")
   {
@@ -106,6 +106,6 @@ static void ConfigureDatabaseServices(IServiceCollection services, Configuration
   }
   else
   {
-    throw new InvalidOperationException($"Unsupported database provider: {provider}");
+    throw new InvalidOperationException($"Unsupported database provider: {provider}. Available provider values: {string.Join(',', sqlConnectionStrings.AsEnumerable().Select(scs => scs.Key.Split(':').LastOrDefault()).Where(s => s != "ConnectionStrings"))}");
   }
 }
