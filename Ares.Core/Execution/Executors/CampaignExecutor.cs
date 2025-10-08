@@ -162,7 +162,11 @@ public class CampaignExecutor : ICampaignExecutor
 
         //If a command failed, stop the experiment.
         if(experimentSummary.StepSummaries.Any(step => step.CommandSummaries.Any(cmd => !cmd.Result.Success)) || !experimentSummary.StepSummaries.Any())
+        {
+          executionSuccess = false;
           break;
+        }
+          
 
         // if the execution was canceled, the experiment may not have executed the command to provide the output
         // and thus sending a null result to the analyzer might break it depending on the analyzer
@@ -239,7 +243,11 @@ public class CampaignExecutor : ICampaignExecutor
       }
 
       else
+      {
         Status.State = ExecutionState.Failed;
+        await HandleNotification("Campaign Failed", $"ARES failed to execute {Template.Name} successfully, check the event history page for errors.", NotificationSeverityEnum.Error);
+      }
+      
 
       _executionReporter.Report(Status);
 
