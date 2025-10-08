@@ -227,28 +227,28 @@ public class Program
     {
       services.AddDbContextFactory<AresDbContext>(b =>
       {
-        b.UseSqlServer(sqlConnectionStrings["MSSQL"]);
+        b.UseSqlServer(sqlConnectionStrings[provider]);
         b.EnableSensitiveDataLogging();
       });
-      services.AddDbContextFactory<AresIdentityContext>(b => b.UseSqlServer(sqlConnectionStrings["MSSQL"]), ServiceLifetime.Transient);
+      services.AddDbContextFactory<AresIdentityContext>(b => b.UseSqlServer(sqlConnectionStrings[provider]), ServiceLifetime.Transient);
     }
     else if(provider == "Sqlite")
     {
       services.AddDbContextFactory<AresDbContext>(b =>
       {
-        b.UseSqlite(sqlConnectionStrings["Sqlite"]);
+        b.UseSqlite(sqlConnectionStrings[provider]);
         b.EnableSensitiveDataLogging();
       });
-      services.AddDbContextFactory<AresIdentityContext>(b => b.UseSqlite(sqlConnectionStrings["Sqlite"]), ServiceLifetime.Transient);
+      services.AddDbContextFactory<AresIdentityContext>(b => b.UseSqlite(sqlConnectionStrings[provider]), ServiceLifetime.Transient);
     }
     else if(provider == "Postgres")
     {
       services.AddDbContextFactory<AresDbContext>(b =>
       {
-        b.UseNpgsql(sqlConnectionStrings["Postgres"]);
+        b.UseNpgsql(sqlConnectionStrings[provider]);
         b.EnableSensitiveDataLogging();
       });
-      services.AddDbContextFactory<AresIdentityContext>(b => b.UseNpgsql(sqlConnectionStrings["Postgres"]), ServiceLifetime.Transient);
+      services.AddDbContextFactory<AresIdentityContext>(b => b.UseNpgsql(sqlConnectionStrings[provider]), ServiceLifetime.Transient);
     }
     else
     {

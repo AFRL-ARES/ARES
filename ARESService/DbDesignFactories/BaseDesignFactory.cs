@@ -21,9 +21,6 @@ public abstract class BaseDesignFactory<T> : IDesignTimeDbContextFactory<T> wher
 
     var optionsBuilder = new DbContextOptionsBuilder<T>();
 
-    Console.ForegroundColor = ConsoleColor.Green;
-    Console.WriteLine($"~~~~~~~~~~~~~~~ IMMA DO PROVIDER {provider} ~~~~~~~~~~~~~~~");
-    Console.ResetColor();
     switch(provider)
     {
       case "Sqlite":
