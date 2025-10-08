@@ -1,9 +1,10 @@
-﻿using System.Reactive.Linq;
-using System.Reactive.Subjects;
-using Ares.Core.Execution.ControlTokens;
+﻿using Ares.Core.Execution.ControlTokens;
+using Ares.Core.Notifications;
 using Ares.Datamodel;
 using Ares.Datamodel.Templates;
 using Google.Protobuf.WellKnownTypes;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 
 namespace Ares.Core.Execution.Executors;
 
@@ -11,8 +12,9 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
 {
   private readonly Func<CancellationToken, Task<CommandResult>> _command;
   private readonly BehaviorSubject<CommandExecutionStatus> _stateSubject;
+  private readonly IEnumerable<INotificationHandler> _notificationHandlers;
 
-  public CommandExecutor(Func<CancellationToken, Task<CommandResult>> command, CommandTemplate template)
+  public CommandExecutor(Func<CancellationToken, Task<CommandResult>> command, CommandTemplate template, IEnumerable<INotificationHandler> notificationHandlers)
   {
     _command = command;
     Template = template;
@@ -25,6 +27,7 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
     };
 
     _stateSubject = new BehaviorSubject<CommandExecutionStatus>(executionStatus);
+    _notificationHandlers = notificationHandlers;
 
     ExperimentStatusObservable = _stateSubject.AsObservable();
   }
@@ -67,7 +70,11 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
 
 
     else
+    {
       Status.State = ExecutionState.Failed;
+      NotifyOfCommandExecutionFailure(result.Error);
+    }
+
 
     _stateSubject.OnNext(Status);
     _stateSubject.OnCompleted();
@@ -96,5 +103,13 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
     _stateSubject.OnNext(Status);
     executionToken.WaitForResume();
     Status.State = ExecutionState.Succeeded;
+  }
+
+  private void NotifyOfCommandExecutionFailure(string message)
+  {
+    foreach(var handler in _notificationHandlers)
+    {
+      handler.HandleNotification("Command Execution Failed!", message, NotificationSeverityEnum.Error);
+    }
   }
 }
