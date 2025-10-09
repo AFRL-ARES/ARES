@@ -36,9 +36,15 @@ public class Program
       Description = "Creates and/or updates the database"
     };
 
+    var checkDbOption = new Option<bool>(name: "--check-database")
+    {
+      Description = "Checks if database exists and/or needs an update. Uses the exit code to return 0 if database is good, 1 if database is good but needs and update, 2 if database does not exist, 3 if other error.",
+    };
+
     var rootCommand = new RootCommand("Ares Service")
     {
-      migrateOption
+      migrateOption,
+      checkDbOption
     };
 
     rootCommand.SetAction(async parseResult =>
@@ -47,16 +53,77 @@ public class Program
       if(shouldMigrate)
       {
         await RunMigrationsAsync(args);
+        return 0;
       }
-      else
+
+      var checkUpdate = parseResult.GetValue(checkDbOption);
+      if(checkUpdate)
       {
-        await RunWebAppAsync(args);
+        return await CheckDatabase(args);
       }
+
+      await RunWebAppAsync(args);
+
+      return 0;
     });
 
     var parseResult = rootCommand.Parse(args);
 
     return await parseResult.InvokeAsync();
+  }
+
+  private static async Task<int> CheckDatabase(string[] args)
+  {
+    var host = Host.CreateApplicationBuilder(args);
+
+    try
+    {
+      ConfigureDatabaseServices(host.Services, host.Configuration);
+      var app = host.Build();
+      var settings = host.Configuration.Get<AppSettings>();
+      var provider = settings?.DatabaseProvider;
+      var aresDbContextFactory = app.Services.GetRequiredService<IDbContextFactory<AresDbContext>>();
+      var aresIdentityContextFactory = app.Services.GetRequiredService<IDbContextFactory<AresIdentityContext>>();
+
+      var contextResult = 0;
+      await using(var dbContext = await aresDbContextFactory.CreateDbContextAsync())
+      {
+        contextResult |= await CheckContext(dbContext);
+      }
+
+      await using(var dbContext = await aresIdentityContextFactory.CreateDbContextAsync())
+      {
+        contextResult |= await CheckContext(dbContext);
+      }
+
+      return contextResult;
+    }
+    catch(Exception e)
+    {
+      Console.ForegroundColor = ConsoleColor.Red;
+      Console.Error.WriteLine("Failed to check database");
+      Console.Error.WriteLine(e);
+
+      return 3;
+    }
+  }
+
+  private static async Task<int> CheckContext(DbContext context)
+  {
+    var canConnect = await context.Database.CanConnectAsync();
+    if(!canConnect)
+    {
+      return 2;
+    }
+
+    var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
+    if(pendingMigrations.Count() > 0)
+    {
+      return 1;
+    }
+    ;
+
+    return 0;
   }
 
   private static async Task RunMigrationsAsync(string[] args)
