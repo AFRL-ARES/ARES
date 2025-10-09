@@ -79,11 +79,7 @@ public class Program
       // Migrate AresDbContext
       await using(var dbContext = await aresDbContextFactory.CreateDbContextAsync())
       {
-        //var pendingMigrations = dbContext.Database.GetPendingMigrations();
-        //var migration = pendingMigrations.FirstOrDefault(m => m.Contains(provider));
-        //var migrator = dbContext.Database.GetService<IMigrator>();
-        //EnsureSqliteDirectoryExists(dbContext);
-        //await migrator.MigrateAsync(migration);
+        EnsureSqliteDirectoryExists(dbContext);
         await dbContext.Database.MigrateAsync();
         Console.WriteLine($"AresDbContext migration completed successfully for {provider}.");
       }
@@ -91,11 +87,7 @@ public class Program
       // Migrate AresIdentityContext
       await using(var dbContext = await aresIdentityContextFactory.CreateDbContextAsync())
       {
-        //var pendingMigrations = dbContext.Database.GetPendingMigrations();
-        //var migration = pendingMigrations.FirstOrDefault(m => m.Contains(provider));
-        //var migrator = dbContext.Database.GetService<IMigrator>();
-        //EnsureSqliteDirectoryExists(dbContext);
-        //await migrator.MigrateAsync(migration);
+        EnsureSqliteDirectoryExists(dbContext);
         await dbContext.Database.MigrateAsync();
         Console.WriteLine($"AresIdentityContext migration completed successfully for {provider}.");
       }
