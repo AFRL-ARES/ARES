@@ -300,7 +300,7 @@ public class CampaignExecutor : ICampaignExecutor
     {
       if(analyses.Count() % ReplanRate == 0)
       {
-        var resolveSuccess = await _planningHelper.TryResolveParameters(Template.PlannerAllocations, experimentTemplate.GetAllPlannedParameters(), analyses, previousExperiments, cancellationToken);
+        var resolveSuccess = await _planningHelper.TryResolveParameters(Template.PlannerAllocations, Template.UniqueId, experimentTemplate.GetAllPlannedParameters(), analyses, previousExperiments, cancellationToken);
         if(!resolveSuccess)
         {
           result.ErrorString = "Failed to plan! Experiment will be terminated!";
