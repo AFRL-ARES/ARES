@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Ares.Core.EntityConfigurations;
 using Ares.Datamodel.Device;
 using Ares.Messages.DeviceStates.Chiller;
+using AresService.Data;
 using LaserChiller;
 using LaserChiller.Commands.Responses;
 using Microsoft.EntityFrameworkCore;

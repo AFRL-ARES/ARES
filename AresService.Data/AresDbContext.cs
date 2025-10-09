@@ -10,7 +10,7 @@ using Ares.Messages.DeviceStates.TicStepperController;
 using Ares.Messages.DeviceStates.TubeFurnace;
 using Microsoft.EntityFrameworkCore;
 
-namespace AresService;
+namespace AresService.Data;
 
 public class AresDbContext : CoreDatabaseContext
 {

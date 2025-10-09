@@ -1,4 +1,5 @@
-﻿using AresService.DeviceManagers;
+﻿using AresService.Data;
+using AresService.DeviceManagers;
 using LindbergFurnace;
 using Microsoft.EntityFrameworkCore;
 using TubeFurnace.Config;

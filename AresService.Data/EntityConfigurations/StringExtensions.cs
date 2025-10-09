@@ -1,6 +1,6 @@
 ﻿using Google.Protobuf.Collections;
 
-namespace AresService.EntityConfigurations;
+namespace AresService.Data.EntityConfigurations;
 internal static class StringExtensions
 {
   public static RepeatedField<string> ToRepeatedField(this string value, char separator)

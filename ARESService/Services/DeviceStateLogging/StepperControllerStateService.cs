@@ -5,6 +5,7 @@ using Ares.Core.Device.State.Logging;
 using Ares.Datamodel.Device;
 using Ares.Messages.DeviceStates;
 using Ares.Messages.DeviceStates.TicStepperController;
+using AresService.Data;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;

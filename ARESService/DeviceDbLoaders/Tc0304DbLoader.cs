@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using TC0304;
 using Tc0304.Config;
+using AresService.Data;
 
 namespace AresService.DeviceDbLoaders;
 

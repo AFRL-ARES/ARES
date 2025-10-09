@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 
-namespace AresService;
+namespace AresService.Data;
 
 public class AresUser : IdentityUser
 {

@@ -5,6 +5,7 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Ares.Datamodel.Device;
+using AresService.Data;
 using LindbergFurnace;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;

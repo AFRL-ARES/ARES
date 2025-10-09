@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Ares.Core.Grpc;
 using Ares.Datamodel;
 using Ares.Messages;
+using AresService.Data;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.AspNetCore.Identity;

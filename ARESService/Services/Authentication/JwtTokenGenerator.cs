@@ -4,6 +4,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using AresService.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -31,12 +32,12 @@ public class JwtTokenGenerator
   public async Task<InternalToken?> GenerateTokenAsync(AuthenticationCredentials credentials)
   {
     var user = await _userManager.FindByNameAsync(credentials.UserName);
-    if (user is null)
+    if(user is null)
       return null;
 
     var authCheck = await _signInManager.CheckPasswordSignInAsync(user, credentials.Password, false);
 
-    if (!authCheck.Succeeded)
+    if(!authCheck.Succeeded)
       return null;
 
     // TODO revisit these claims if needed
@@ -52,11 +53,11 @@ public class JwtTokenGenerator
 
     claims.AddRange(userClaims);
 
-    foreach (var userRole in userRoles)
+    foreach(var userRole in userRoles)
     {
       claims.Add(new Claim(ClaimTypes.Role, userRole));
       var role = await _roleManager.FindByNameAsync(userRole);
-      if (role is null)
+      if(role is null)
         continue;
 
       var roleClaims = await _roleManager.GetClaimsAsync(role);

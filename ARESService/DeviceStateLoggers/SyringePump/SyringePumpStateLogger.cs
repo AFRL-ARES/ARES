@@ -6,6 +6,7 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Ares.Datamodel.Device;
 using Ares.SyringePump.Ne1000.Messaging;
+using AresService.Data;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using SyringePumpNE1000;

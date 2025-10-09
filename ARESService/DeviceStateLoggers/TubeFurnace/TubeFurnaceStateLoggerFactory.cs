@@ -1,4 +1,5 @@
 ﻿using Ares.Core.Device.State.Logging;
+using AresService.Data;
 using LindbergFurnace;
 using Microsoft.EntityFrameworkCore;
 

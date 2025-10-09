@@ -1,4 +1,5 @@
-﻿using AresService.DeviceManagers;
+﻿using AresService.Data;
+using AresService.DeviceManagers;
 using Microsoft.EntityFrameworkCore;
 using RestSerialDevice;
 using RestSerialDevice.Config;

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Ares.Core.EntityConfigurations;
 using Ares.Datamodel.Device;
 using Ares.Messages.DeviceStates.Tc0304;
+using AresService.Data;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using TC0304;

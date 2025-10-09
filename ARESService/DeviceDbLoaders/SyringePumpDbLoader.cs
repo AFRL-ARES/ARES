@@ -1,4 +1,5 @@
 ﻿using Ares.SyringePump.Ne1000.Messaging;
+using AresService.Data;
 using AresService.DeviceManagers;
 using Microsoft.EntityFrameworkCore;
 using SyringePumpNE1000;

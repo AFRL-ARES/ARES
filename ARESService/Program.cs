@@ -11,6 +11,7 @@ using Ares.Core.Grpc;
 using Ares.Datamodel;
 using Ares.Services;
 using AresService;
+using AresService.Data;
 using AresService.Services.Authentication;
 using Microsoft.AspNetCore.Authentication.Certificate;
 using Microsoft.AspNetCore.Builder;
@@ -18,8 +19,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -80,22 +79,24 @@ public class Program
       // Migrate AresDbContext
       await using(var dbContext = await aresDbContextFactory.CreateDbContextAsync())
       {
-        var pendingMigrations = dbContext.Database.GetPendingMigrations();
-        var migration = pendingMigrations.FirstOrDefault(m => m.Contains(provider));
-        var migrator = dbContext.Database.GetService<IMigrator>();
-        EnsureSqliteDirectoryExists(dbContext);
-        await migrator.MigrateAsync(migration);
+        //var pendingMigrations = dbContext.Database.GetPendingMigrations();
+        //var migration = pendingMigrations.FirstOrDefault(m => m.Contains(provider));
+        //var migrator = dbContext.Database.GetService<IMigrator>();
+        //EnsureSqliteDirectoryExists(dbContext);
+        //await migrator.MigrateAsync(migration);
+        await dbContext.Database.MigrateAsync();
         Console.WriteLine($"AresDbContext migration completed successfully for {provider}.");
       }
 
       // Migrate AresIdentityContext
       await using(var dbContext = await aresIdentityContextFactory.CreateDbContextAsync())
       {
-        var pendingMigrations = dbContext.Database.GetPendingMigrations();
-        var migration = pendingMigrations.FirstOrDefault(m => m.Contains(provider));
-        var migrator = dbContext.Database.GetService<IMigrator>();
-        EnsureSqliteDirectoryExists(dbContext);
-        await migrator.MigrateAsync(migration);
+        //var pendingMigrations = dbContext.Database.GetPendingMigrations();
+        //var migration = pendingMigrations.FirstOrDefault(m => m.Contains(provider));
+        //var migrator = dbContext.Database.GetService<IMigrator>();
+        //EnsureSqliteDirectoryExists(dbContext);
+        //await migrator.MigrateAsync(migration);
+        await dbContext.Database.MigrateAsync();
         Console.WriteLine($"AresIdentityContext migration completed successfully for {provider}.");
       }
 
@@ -238,28 +239,28 @@ public class Program
     {
       services.AddDbContextFactory<AresDbContext>(b =>
       {
-        b.UseSqlServer(sqlConnectionStrings[provider]);
+        b.UseSqlServer(sqlConnectionStrings[provider], b => b.MigrationsAssembly("AresService.Migrations.SqlServer"));
         b.EnableSensitiveDataLogging();
       });
-      services.AddDbContextFactory<AresIdentityContext>(b => b.UseSqlServer(sqlConnectionStrings[provider]), ServiceLifetime.Transient);
+      services.AddDbContextFactory<AresIdentityContext>(b => b.UseSqlServer(sqlConnectionStrings[provider], b => b.MigrationsAssembly("AresService.Migrations.SqlServer")), ServiceLifetime.Transient);
     }
     else if(provider == "Sqlite")
     {
       services.AddDbContextFactory<AresDbContext>(b =>
       {
-        b.UseSqlite(sqlConnectionStrings[provider]);
+        b.UseSqlite(sqlConnectionStrings[provider], b => b.MigrationsAssembly("AresService.Migrations.Sqlite"));
         b.EnableSensitiveDataLogging();
       });
-      services.AddDbContextFactory<AresIdentityContext>(b => b.UseSqlite(sqlConnectionStrings[provider]), ServiceLifetime.Transient);
+      services.AddDbContextFactory<AresIdentityContext>(b => b.UseSqlite(sqlConnectionStrings[provider], b => b.MigrationsAssembly("AresService.Migrations.Sqlite")), ServiceLifetime.Transient);
     }
     else if(provider == "Postgres")
     {
       services.AddDbContextFactory<AresDbContext>(b =>
       {
-        b.UseNpgsql(sqlConnectionStrings[provider]);
+        b.UseNpgsql(sqlConnectionStrings[provider], b => b.MigrationsAssembly("AresService.Migrations.Postgres"));
         b.EnableSensitiveDataLogging();
       });
-      services.AddDbContextFactory<AresIdentityContext>(b => b.UseNpgsql(sqlConnectionStrings[provider]), ServiceLifetime.Transient);
+      services.AddDbContextFactory<AresIdentityContext>(b => b.UseNpgsql(sqlConnectionStrings[provider], b => b.MigrationsAssembly("AresService.Migrations.Postgres")), ServiceLifetime.Transient);
     }
     else
     {

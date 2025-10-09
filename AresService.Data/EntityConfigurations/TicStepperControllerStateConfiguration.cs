@@ -3,7 +3,7 @@ using Ares.Messages.DeviceStates.TicStepperController;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace AresService.EntityConfigurations;
+namespace AresService.Data.EntityConfigurations;
 internal class TicStepperControllerStateConfiguration : AresEntityTypeBaseConfiguration<TicStepperControllerState>
 {
   public override void Configure(EntityTypeBuilder<TicStepperControllerState> builder)

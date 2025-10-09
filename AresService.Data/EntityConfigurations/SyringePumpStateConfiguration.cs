@@ -3,7 +3,7 @@ using Ares.Messages.DeviceStates.SyringePump;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace AresService.EntityConfigurations;
+namespace AresService.Data.EntityConfigurations;
 internal class SyringePumpStateConfiguration : AresEntityTypeBaseConfiguration<SyringePumpState>
 {
   public override void Configure(EntityTypeBuilder<SyringePumpState> builder)

@@ -1,8 +1,4 @@
-﻿using System;
-using System.IO;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Design;
-using Microsoft.Extensions.Configuration;
+﻿using AresService.Data;
 
 namespace AresService.DbDesignFactories;
 public class AresDbContextFactory : BaseDesignFactory<AresDbContext>

@@ -3,7 +3,7 @@ using Ares.Messages.DeviceStates.RestSerialDevice;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace AresService.EntityConfigurations;
+namespace AresService.Data.EntityConfigurations;
 
 public class RestSerialDeviceStateConfiguration : AresEntityTypeBaseConfiguration<RestSerialDeviceStateEntity>
 {

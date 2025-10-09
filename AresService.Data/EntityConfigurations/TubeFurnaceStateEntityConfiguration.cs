@@ -3,7 +3,7 @@ using Ares.Messages.DeviceStates.TubeFurnace;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace AresService.EntityConfigurations.DeviceStates;
+namespace AresService.Data.EntityConfigurations;
 internal class TubeFurnaceStateEntityConfiguration : AresEntityTypeBaseConfiguration<TubeFurnaceStateEntity>
 {
   public override void Configure(EntityTypeBuilder<TubeFurnaceStateEntity> builder)

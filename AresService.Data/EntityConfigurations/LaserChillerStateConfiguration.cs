@@ -3,7 +3,7 @@ using Ares.Messages.DeviceStates.Chiller;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace AresService.EntityConfigurations.DeviceStates;
+namespace AresService.Data.EntityConfigurations;
 
 public class LaserChillerStateConfiguration : AresEntityTypeBaseConfiguration<ChillerState>
 {

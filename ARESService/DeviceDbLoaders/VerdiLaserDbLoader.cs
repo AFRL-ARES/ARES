@@ -1,4 +1,5 @@
-﻿using AresService.DeviceManagers;
+﻿using AresService.Data;
+using AresService.DeviceManagers;
 using Microsoft.EntityFrameworkCore;
 using VerdiV6.Config;
 using VerdiV6Laser;

@@ -1,4 +1,5 @@
 ﻿using Ares.Core.Device.State.Logging;
+using AresService.Data;
 using Microsoft.EntityFrameworkCore;
 using TC0304;
 

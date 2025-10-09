@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
-namespace AresService;
+namespace AresService.Data;
 
 public class AresIdentityContext : IdentityDbContext<AresUser>
 {

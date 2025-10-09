@@ -10,7 +10,7 @@ public abstract class BaseDesignFactory<T> : IDesignTimeDbContextFactory<T> wher
   {
     var provider = "Sqlite";
 
-    for(int i = 0; i < args.Length - 1; i++)
+    for(var i = 0; i < args.Length - 1; i++)
     {
       if(args[i].Equals("--provider", StringComparison.OrdinalIgnoreCase))
       {
@@ -25,23 +25,23 @@ public abstract class BaseDesignFactory<T> : IDesignTimeDbContextFactory<T> wher
     {
       case "Sqlite":
         optionsBuilder.UseSqlite(
-            "Data Source=Data/app.db");
+            "Data Source=Data/app.db", b => b.MigrationsAssembly("AresService.Migrations.Sqlite"));
         break;
 
       case "Postgres":
         optionsBuilder.UseNpgsql(
-            "Host=localhost;Database=ares;Username=postgres;Password=postgres");
+            "Host=localhost;Database=ares;Username=postgres;Password=postgres", b => b.MigrationsAssembly("AresService.Migrations.Postgres"));
         break;
 
       case "SqlServer":
         optionsBuilder.UseSqlServer(
-            "Server=localhost;Database=Ares;Trusted_Connection=True;TrustServerCertificate=True;");
+            "Server=localhost;Database=Ares;Trusted_Connection=True;TrustServerCertificate=True;", b => b.MigrationsAssembly("AresService.Migrations.SqlServer"));
         break;
 
       default:
         throw new InvalidOperationException($"Unknown provider: {provider}");
     }
 
-    return (T)(Activator.CreateInstance(typeof(T), optionsBuilder.Options)!);
+    return (T)Activator.CreateInstance(typeof(T), optionsBuilder.Options)!;
   }
 }

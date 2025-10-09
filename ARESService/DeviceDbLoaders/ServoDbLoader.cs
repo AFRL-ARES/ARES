@@ -1,4 +1,5 @@
-﻿using AresService.DeviceManagers;
+﻿using AresService.Data;
+using AresService.DeviceManagers;
 using HerkulexDRS;
 using HerkulexDRS.Config;
 using Microsoft.EntityFrameworkCore;

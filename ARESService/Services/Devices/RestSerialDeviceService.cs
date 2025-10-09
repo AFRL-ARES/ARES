@@ -6,7 +6,6 @@ using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using RestSerialDevice;
 using RestSerialDevice.Config;
-using RestSerialDevice.DataModel;
 using RestSerialDevice.Services;
 
 namespace AresService.Services.Devices;
@@ -125,7 +124,7 @@ public class RestSerialDeviceService : RestSerialDeviceRpc.RestSerialDeviceRpcBa
     }
 
     // Initialize the nested 'data' message
-    response.Data = new Data(); // 'Data' is the C# class generated from 'rest_serial_device.data_model.Data'
+    response.Data = new RestSerialDevice.DataModel.Data(); // 'Data' is the C# class generated from 'rest_serial_device.data_model.Data'
 
     // Populate the nested 'data' message's fields
     response.Data.DeviceId = request.DeviceId; // Set the device name in the nested data

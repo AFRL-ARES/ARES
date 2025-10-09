@@ -3,7 +3,7 @@ using Ares.Messages.DeviceStates.Mfc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace AresService.EntityConfigurations;
+namespace AresService.Data.EntityConfigurations;
 
 internal class MfcStateConfiguration : AresEntityTypeBaseConfiguration<MfcState>
 {

@@ -1,4 +1,5 @@
-﻿using AresService.DeviceManagers;
+﻿using AresService.Data;
+using AresService.DeviceManagers;
 using FlirCM3;
 using FlirCM3.Config;
 using Microsoft.EntityFrameworkCore;

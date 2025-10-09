@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Ares.Datamodel;
+using AresService.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -28,7 +29,7 @@ public class UserInitializer
     var username = "admin";
     var password = "123456";
 
-    if (await _userManager.Users.AnyAsync(user => user.UserName == username))
+    if(await _userManager.Users.AnyAsync(user => user.UserName == username))
       return;
 
     var user = new AresUser
@@ -38,7 +39,7 @@ public class UserInitializer
     };
 
     var userCreation = await _userManager.CreateAsync(user, password);
-    if (!userCreation.Succeeded)
+    if(!userCreation.Succeeded)
       throw new InvalidOperationException($"Failed to create user: {user.UserName}, Reason: {userCreation.Errors.Select(error => error.Description).Aggregate((test, test2) => $"{test}\n {test2}")}");
 
     await _userManager.AddToRoleAsync(user, AresUserType.AresAdmin.ToString());

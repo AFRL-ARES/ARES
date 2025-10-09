@@ -10,6 +10,7 @@ using Ares.Core.Device.Remote;
 using Ares.Core.Grpc;
 using Ares.Core.Planning;
 using Ares.Services;
+using AresService.Data;
 using AresService.DeviceDbLoaders;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;

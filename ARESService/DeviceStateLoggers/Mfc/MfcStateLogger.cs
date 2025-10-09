@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using AlicatMFC;
 using Ares.Core.EntityConfigurations;
 using Ares.Datamodel.Device;
+using AresService.Data;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 

@@ -20,7 +20,11 @@ if (!$?)
     pause
 }
 
-$project = "../AresService.csproj"
+$root = "../../"
+$migrationProjectBase = "AresService.Migrations."
+#$startupProject = Join-Path $root "AresService.Data/AresService.Data.csproj"
+$startupProject = "../AresService.csproj"
+$solution = Join-Path $root "AresOS.sln"
 $contexts = @("AresDbContext", "AresIdentityContext")
 $migrationsRoot = "Migrations"
 
@@ -28,7 +32,7 @@ $migrationsRoot = "Migrations"
 # Build once before migrations
 # -----------------------------
 Write-Host "Building project in $Configuration mode..."
-dotnet build $project --configuration $Configuration
+dotnet build $startupProject --configuration $Configuration
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Build failed — aborting migrations."
     exit 1
@@ -40,26 +44,30 @@ if ($LASTEXITCODE -ne 0) {
 foreach ($provider in $Providers) {
     foreach ($context in $contexts) {
 
-        # Prefix migration name to isolate by provider
-        $migrationFullName = "${provider}_${MigrationName}"
+        $migrationDir = $migrationProjectBase + $provider
 
-        # Construct migration output path (e.g., Migrations/Sqlite/AresDbContext)
-        $outputDir = Join-Path $migrationsRoot "$provider/$context"
+        # Construct migration output path
+        $outputDir = Join-Path $root $migrationDir
+        $outputDir = Resolve-Path $outputDir
+        $outputProjFileName = $migrationDir + ".csproj"
+        $outputProj = Join-Path $outputDir $outputProjFileName
 
         # Ensure directory exists
         if (-not (Test-Path $outputDir)) {
-            New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
-            Write-Host "Created directory: $outputDir"
+            $fullDestination = Resolve-Path $outputDir
+            Write-Error "Migration destination not found $fullDestination"
+            exit 1
         }
 
-        Write-Host "=== Adding migration '$migrationFullName' for $context ($provider) ==="
+        $contextSpecificMigrationName = $MigrationName + "_$context"
 
-        dotnet ef migrations add $migrationFullName `
+        Write-Host "=== Adding migration '$MigrationName' for $context ($provider) ==="
+        #--output-dir $outputDir `        
+        dotnet ef migrations add $contextSpecificMigrationName `
             --no-build `
-            --project $project `
-            --startup-project $project `
+            --project $outputProj `
+            --startup-project $startupProject `
             --context $context `
-            --output-dir $outputDir `
             -- --provider $provider
 
         if ($LASTEXITCODE -ne 0) {
@@ -69,10 +77,38 @@ foreach ($provider in $Providers) {
     }
 }
 
-# -----------------------------
-# Rebuild after migrations
-# -----------------------------
-Write-Host "`Rebuilding project after migrations..."
-dotnet build $project --configuration $Configuration
+dotnet build $solution
 
-Write-Host "`All migrations created successfully!"
+function Build-MigrationProjects {
+    param (
+        [string[]]$Providers,
+        [string]$MigrationProjectBase,
+        [string]$Root,
+        [string]$Configuration
+    )
+
+    Write-Host "=== Building all migration provider projects ==="
+
+    foreach ($provider in $Providers) {
+        $migrationDir = $MigrationProjectBase + $provider
+        $outputDir = Join-Path $Root $migrationDir
+        $outputProjFileName = $migrationDir + ".csproj"
+        $outputProj = Join-Path $outputDir $outputProjFileName
+
+        if (-not (Test-Path $outputProj)) {
+            Write-Warning "Skipping $provider — no project found at $outputProj"
+            continue
+        }
+
+        Write-Host "Building $outputProj..."
+        dotnet build $outputProj --configuration $Configuration
+
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "Build failed for $provider migration project: $outputProj"
+            exit 1
+        }
+    }
+
+    Write-Host "All migration provider projects built successfully!"
+    Write-Host ""
+}

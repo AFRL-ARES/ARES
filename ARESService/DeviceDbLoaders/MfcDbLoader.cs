@@ -1,5 +1,6 @@
 ﻿using AlicatMFC;
 using Ares.Alicat.Mfc.Config;
+using AresService.Data;
 using AresService.DeviceManagers;
 using Microsoft.EntityFrameworkCore;
 

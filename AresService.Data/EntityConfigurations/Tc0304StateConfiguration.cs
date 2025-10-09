@@ -3,7 +3,7 @@ using Ares.Messages.DeviceStates.Tc0304;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace AresService.EntityConfigurations;
+namespace AresService.Data.EntityConfigurations;
 internal class Tc0304StateConfiguration : AresEntityTypeBaseConfiguration<Tc0304State>
 {
   public override void Configure(EntityTypeBuilder<Tc0304State> builder)
