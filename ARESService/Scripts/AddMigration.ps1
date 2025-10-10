@@ -22,7 +22,6 @@ if (!$?)
 
 $root = "../../"
 $migrationProjectBase = "AresService.Migrations."
-#$startupProject = Join-Path $root "AresService.Data/AresService.Data.csproj"
 $startupProject = "../AresService.csproj"
 $solution = Join-Path $root "AresOS.sln"
 $contexts = @("AresDbContext", "AresIdentityContext")
@@ -78,37 +77,3 @@ foreach ($provider in $Providers) {
 }
 
 dotnet build $solution
-
-function Build-MigrationProjects {
-    param (
-        [string[]]$Providers,
-        [string]$MigrationProjectBase,
-        [string]$Root,
-        [string]$Configuration
-    )
-
-    Write-Host "=== Building all migration provider projects ==="
-
-    foreach ($provider in $Providers) {
-        $migrationDir = $MigrationProjectBase + $provider
-        $outputDir = Join-Path $Root $migrationDir
-        $outputProjFileName = $migrationDir + ".csproj"
-        $outputProj = Join-Path $outputDir $outputProjFileName
-
-        if (-not (Test-Path $outputProj)) {
-            Write-Warning "Skipping $provider — no project found at $outputProj"
-            continue
-        }
-
-        Write-Host "Building $outputProj..."
-        dotnet build $outputProj --configuration $Configuration
-
-        if ($LASTEXITCODE -ne 0) {
-            Write-Error "Build failed for $provider migration project: $outputProj"
-            exit 1
-        }
-    }
-
-    Write-Host "All migration provider projects built successfully!"
-    Write-Host ""
-}
