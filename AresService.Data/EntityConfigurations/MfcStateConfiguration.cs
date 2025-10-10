@@ -1,4 +1,5 @@
 ﻿using Ares.Core.EntityConfigurations;
+using Ares.Core.EntityConfigurations.Helpers;
 using Ares.Messages.DeviceStates.Mfc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -13,7 +14,9 @@ internal class MfcStateConfiguration : AresEntityTypeBaseConfiguration<MfcState>
     builder.ToTable("MfcStates");
 
     builder.Property(b => b.StatusCodes)
-      .HasConversion(sc => string.Join(',', sc), s => s.ToRepeatedField(','));
+      .HasConversion(
+      sc => string.Join(',', sc),
+      s => s.ToRepeatedField(','), new StringEnumerableComparer());
 
     builder.Property(b => b.Timestamp)
       .HasConversion(t => t.ToDateTime(), d => d.ToTimestampUtc());

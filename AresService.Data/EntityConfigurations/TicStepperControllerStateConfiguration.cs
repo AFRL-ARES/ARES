@@ -1,4 +1,5 @@
 ﻿using Ares.Core.EntityConfigurations;
+using Ares.Core.EntityConfigurations.Helpers;
 using Ares.Messages.DeviceStates.TicStepperController;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -15,7 +16,7 @@ internal class TicStepperControllerStateConfiguration : AresEntityTypeBaseConfig
       .HasConversion(t => t.ToDateTime(), d => d.ToTimestampUtc());
 
     builder.Property(b => b.StatusMessages)
-      .HasConversion(sa => string.Join(',', sa), s => s.ToRepeatedField(','));
+      .HasConversion(sa => string.Join(',', sa), s => s.ToRepeatedField(','), new StringEnumerableComparer());
 
     builder.Property(b => b.StepMode)
       .HasConversion<string>();
