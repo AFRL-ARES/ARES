@@ -113,13 +113,13 @@ public class Program
     var canConnect = await context.Database.CanConnectAsync();
     if(!canConnect)
     {
-      return 2;
+      return 11;
     }
 
     var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
-    if(pendingMigrations.Count() > 0)
+    if(pendingMigrations.Any())
     {
-      return 1;
+      return 10;
     }
     ;
 
