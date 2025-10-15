@@ -1,4 +1,5 @@
-﻿using AlicatMFC;
+﻿using System.IO;
+using AlicatMFC;
 using Ares.Alicat.Mfc.Config;
 using Ares.Core;
 using Ares.Core.Device;
@@ -42,6 +43,7 @@ using RestDevice;
 using RestDevice.Config;
 using RestSerialDevice;
 using RestSerialDevice.Config;
+using Serilog;
 using SyringePumpNE1000;
 using Tc0304.Config;
 using TC0304;
@@ -77,6 +79,16 @@ public static class ServiceCollectionExtensions
         var stateExporters = provider.GetServices<IDeviceStateExportStreamProvider>();
         return new ExperimentResultJsonHandler(stateExporters);
       });
+    
+    services.AddLogging(b =>
+    {
+      var logPath = Path.Combine("logs", "AresServiceLog.log");
+      var logger = new LoggerConfiguration()
+        .WriteTo.File(logPath, rollingInterval: RollingInterval.Day)
+        .CreateLogger();
+
+      b.AddSerilog(logger);
+    });
   }
 
   private static void AddDeviceManagers(this IServiceCollection services)

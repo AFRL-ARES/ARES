@@ -19,6 +19,7 @@ using Microsoft.AspNetCore.Identity;
 using Radzen;
 using RestDevice.Services;
 using RestSerialDevice.Services;
+using Serilog;
 using Tc0304.Services;
 using TicStepperController.Messaging;
 using TubeFurnace.Messaging;
@@ -94,6 +95,16 @@ internal static class ServiceCollectionExtensions
 
     services.AddSingleton<DeviceAdapterRepository>();
     services.AddSingleton<DeviceAdapterManager>();
+
+    services.AddLogging(b =>
+    {
+      var logPath = Path.Combine("logs", "AresUiLog.log");
+      var logger = new LoggerConfiguration()
+        .WriteTo.File(logPath, rollingInterval: RollingInterval.Day)
+        .CreateLogger();
+
+      b.AddSerilog(logger);
+    });
   }
 
   public static void BindClients(this IServiceCollection services)
