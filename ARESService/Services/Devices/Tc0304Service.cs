@@ -6,7 +6,6 @@ using Ares.Core.Device;
 using AresService.DeviceManagers;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
-using Grpc.Core.Logging;
 using Microsoft.Extensions.Logging;
 using TC0304;
 using Tc0304.Config;

@@ -1,7 +1,5 @@
 ﻿using Ares.Datamodel;
-using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Templates;
-using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using UI.Backend.Helpers;
 

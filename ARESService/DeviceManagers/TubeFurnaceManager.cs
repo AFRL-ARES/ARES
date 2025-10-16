@@ -8,7 +8,6 @@ using Ares.Core.Device.State.Logging;
 using Ares.Device.Serial;
 using AresService.ConnectionManagement;
 using AresService.DeviceDbLoaders;
-using AresService.DeviceStateLoggers.TubeFurnace;
 using LindbergFurnace;
 using TubeFurnace.Config;
 

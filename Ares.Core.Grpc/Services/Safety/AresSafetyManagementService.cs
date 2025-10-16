@@ -1,12 +1,11 @@
 ﻿using Ares.Core.Device;
 using Ares.Core.Execution;
-using Ares.Device;
 using Ares.Services;
 using Grpc.Core;
 using System;
 using System.Threading.Tasks;
 
-namespace Ares.Core.Grpc.Services;
+namespace Ares.Core.Grpc.Services.Safety;
 
 public class AresSafetyManagementService : AresSafetyService.AresSafetyServiceBase
 {

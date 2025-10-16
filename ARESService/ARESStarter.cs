@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Reactive.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Ares.Core.Analyzing;
 using Ares.Core.Device;
