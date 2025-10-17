@@ -14,9 +14,11 @@ namespace LindbergFurnace.Commands.Requests
     
     protected override byte[] Serialize()
     {
-      var messageData = new List<byte>();
-      messageData.Add((byte)Address);
-      messageData.Add((byte)FunctionCode);
+      var messageData = new List<byte>
+      {
+        (byte)Address,
+        (byte)FunctionCode
+      };
       messageData.AddRange(FunctionData);
       var lrc = TubeFurnaceCommandHelper.Lrc(messageData.ToArray());
       messageData.Add(lrc);

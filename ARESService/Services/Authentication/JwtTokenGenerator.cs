@@ -43,10 +43,13 @@ public class JwtTokenGenerator
     // TODO revisit these claims if needed
     var claims = new List<Claim>
     {
-      new(JwtRegisteredClaimNames.Sub, user.UserName),
+      new(JwtRegisteredClaimNames.Sub, user?.UserName ?? string.Empty),
       new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-      new(JwtRegisteredClaimNames.UniqueName, user.UserName)
+      new(JwtRegisteredClaimNames.UniqueName, user?.UserName ?? string.Empty)
     };
+
+    if(user is null)
+      throw new InvalidOperationException("User was null!");
 
     var userRoles = await _userManager.GetRolesAsync(user);
     var userClaims = await _userManager.GetClaimsAsync(user);

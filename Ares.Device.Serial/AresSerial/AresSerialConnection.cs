@@ -13,17 +13,17 @@ namespace Ares.Device.Serial;
 
 public abstract class AresSerialConnection : IAresSerialConnection
 {
-  private readonly List<SerialBlock> _buffer = new();
+  private readonly List<SerialBlock> _buffer = [];
   private readonly ManualResetEventSlim _bufferEvent = new();
   private readonly object _bufferLock = new();
   private readonly CancellationTokenSource _listenerCancellationTokenSource = new();
-  private readonly IList<ISerialCommandWithResponse> _multiResponseQueue = new List<ISerialCommandWithResponse>();
+  private readonly IList<ISerialCommandWithResponse> _multiResponseQueue = [];
   private readonly ISubject<(ISerialCommandWithResponse, SerialResponse)> _responsePublisher = new Subject<(ISerialCommandWithResponse, SerialResponse)>();
   private readonly TimeSpan _sendBuffer;
   private readonly TimeSpan _defaultTimeout;
   private readonly TimeSpan _staleBufferEntryDuration;
   private readonly SemaphoreSlim _sendLock = new(1);
-  private readonly IList<ISerialCommandWithResponse> _singleResponseQueue = new List<ISerialCommandWithResponse>();
+  private readonly IList<ISerialCommandWithResponse> _singleResponseQueue = [];
 
   /// <summary>
   /// Creates a new serial connection.

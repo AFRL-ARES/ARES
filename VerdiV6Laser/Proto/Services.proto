@@ -4,7 +4,6 @@ package VerdiV6.services;
 
 import "google/protobuf/empty.proto";
 import "VerdiConfig.proto";
-import "DataModel.proto";
 
 service VerdiV6Rpc {
 	rpc GetLaserShutter(DeviceRequest) returns (GetShutterResponse);

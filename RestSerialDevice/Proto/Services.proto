@@ -4,7 +4,6 @@ package rest_serial_device.services;
 
 import "google/protobuf/empty.proto";
 import "google/protobuf/duration.proto";
-import "google/protobuf/wrappers.proto";
 import "DataModel.proto";
 import "RestSerialConfig.proto";
 

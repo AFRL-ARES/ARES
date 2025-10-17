@@ -18,7 +18,7 @@ public class ExecutionViewModel : ReactiveObject
 {
   private readonly AresAutomation.AresAutomationClient _automationClient;
   private readonly AresAnalyzerManagementService.AresAnalyzerManagementServiceClient _analyzerService;
-  public readonly ObservableCollection<CampaignTemplateSummary> CampaignTemplateSummaries = new();
+  public readonly ObservableCollection<CampaignTemplateSummary> CampaignTemplateSummaries = [];
   private readonly INotificationReceivingService _notificationService;
 
   public ExecutionViewModel(AresAutomation.AresAutomationClient automationClient,
@@ -242,7 +242,7 @@ public class ExecutionViewModel : ReactiveObject
   [Reactive]
   public ExperimentExecutionStatus? ExperimentStatus { get; private set; }
   [Reactive]
-  public HashSet<PlannerServiceInfo?> PlannerAdapterInfos { get; set; } = new();
+  public HashSet<PlannerServiceInfo?> PlannerAdapterInfos { get; set; } = [];
   [Reactive]
   public AnalyzerInfo? AnalyzerInfo { get; set; }
   public uint ExperimentsToRun { get; set; }
@@ -250,7 +250,7 @@ public class ExecutionViewModel : ReactiveObject
   public CampaignExecutionSummary? TestCampaignExecutionSummary { get; private set; }
   public IEnumerable<CampaignExecutionSummaryMetadata>? TestCampaignResultMetadata { get; private set; }
   public bool DisplayExecutionSummary { get; set; }
-  public List<AresCampaignTag> AvailableTags { get; set; } = new();
-  public List<AresCampaignTag> SelectedTags { get; set; } = new();
+  public List<AresCampaignTag> AvailableTags { get; set; } = [];
+  public List<AresCampaignTag> SelectedTags { get; set; } = [];
   public string? NewTagName { get; set; }
 }

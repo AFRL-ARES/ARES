@@ -363,10 +363,10 @@ public class CampaignExecutor : ICampaignExecutor
   }
 
   public CampaignTemplate Template { get; }
-  public IList<IStopCondition> StopConditions { get; } = new List<IStopCondition>();
+  public IList<IStopCondition> StopConditions { get; } = [];
   public double ReplanRate { get; set; } = 1;
   public string? ExecutionNotes { get; set; }
-  public List<AresCampaignTag> CampaignTags { get; set; } = new();
+  public List<AresCampaignTag> CampaignTags { get; set; } = [];
   public IObservable<CampaignExecutionStatus> ExperimentStatusObservable { get; }
   public CampaignExecutionStatus Status { get; private set; }
 }

@@ -2,8 +2,6 @@
 
 package tube_furnace.config;
 
-import "google/protobuf/wrappers.proto";
-
 message TubeFurnaceConfig {
   string name = 1; // name of the furnace controller
   string port_name = 2; // the port name for the furnace controller to connect to

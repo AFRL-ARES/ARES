@@ -160,7 +160,7 @@ internal class RemoteDeviceManager(
     var deviceSettings = await _deviceCache.GetCachedDeviceSettings(config.UniqueId);
     if(deviceSettings is not null)
     {
-      device.UpdateSettings(deviceSettings);
+      await device.UpdateSettings(deviceSettings);
     }
 
     await _deviceCache.CacheDeviceInfo(device);

@@ -236,10 +236,10 @@ public class RestDevice : AresRestDevice, IRestDevice
 
   public string? ReportedName { get; set; }
   public string? Version { set; get; }
-  public List<KeyValuePair<string, string>> Data { get; set; } = new();
+  public List<KeyValuePair<string, string>> Data { get; set; } = [];
   public string Hardware { get; set; } = string.Empty;
-  public List<RestDeviceMethod> Functions { get; set; } = new();
-  public List<RestDeviceVariable> Variables { get; set; } = new();
+  public List<RestDeviceMethod> Functions { get; set; } = [];
+  public List<RestDeviceVariable> Variables { get; set; } = [];
   public bool IsExternalDeviceConnected { get; set; }
   public IObservable<ReadDataJsonResponse?> StateStream { get; }
 

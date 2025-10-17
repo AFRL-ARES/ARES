@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package chiller.config;
 
-import "google/protobuf/wrappers.proto";
-
 message ChillerConfig {
 	string name = 1;
 	string port_name = 2;

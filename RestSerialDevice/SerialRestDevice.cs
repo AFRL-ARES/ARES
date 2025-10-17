@@ -231,7 +231,7 @@ public class SerialRestDevice : SerialDevice<ISerialRestDeviceConnection>, ISeri
 
   public string FirmwareVersion { get; set; }
 
-  public List<KeyValuePair<string, string>> Data { get; set; } = new();
+  public List<KeyValuePair<string, string>> Data { get; set; } = [];
 
   public string DeviceId { get; set; } = string.Empty;
 
@@ -242,7 +242,7 @@ public class SerialRestDevice : SerialDevice<ISerialRestDeviceConnection>, ISeri
 
   public IEnumerable<RestSerialDevice.Structure.RestDeviceMethod> Functions { get; set;  } = new List<RestSerialDevice.Structure.RestDeviceMethod>();
 
-  public List<RestDeviceVariable> Variables { get; set; } = new();
+  public List<RestDeviceVariable> Variables { get; set; } = [];
 
   public bool IsExternalDeviceConnected { get; set; }
 }

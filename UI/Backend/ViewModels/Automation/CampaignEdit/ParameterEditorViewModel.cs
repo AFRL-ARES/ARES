@@ -77,10 +77,10 @@ public class ParameterEditorViewModel : ReactiveObject
   }
 
   [Reactive]
-  public List<string> CategoryOptions { get; private set; } = new();
+  public List<string> CategoryOptions { get; private set; } = [];
 
   [Reactive]
-  public List<string> UnitOptions { get; private set; } = new();
+  public List<string> UnitOptions { get; private set; } = [];
 
   public string? Unit
   {

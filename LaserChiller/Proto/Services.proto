@@ -3,7 +3,6 @@ syntax = "proto3";
 package chiller.services;
 
 import "google/protobuf/empty.proto";
-import "DataModel.proto";
 import "ChillerConfig.proto";
 
 service ChillerRpc {

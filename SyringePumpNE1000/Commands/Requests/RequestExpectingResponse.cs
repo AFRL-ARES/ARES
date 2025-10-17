@@ -41,9 +41,11 @@ internal abstract class RequestExpectingResponse<TResponse> : SerialCommandWithR
     var crc16HighEntry = (byte)(crc16 >> 8);
     var crc16LowEntry = (byte)crc16;
 
-    var safeCommandData = new List<byte>();
-    safeCommandData.Add((byte)SpecialAsciiCharacter.STX);
-    safeCommandData.Add(lengthEntry);
+    var safeCommandData = new List<byte>
+    {
+      (byte)SpecialAsciiCharacter.STX,
+      lengthEntry
+    };
     safeCommandData.AddRange(asciiCommandDataEntry);
     safeCommandData.Add(crc16HighEntry);
     safeCommandData.Add(crc16LowEntry);

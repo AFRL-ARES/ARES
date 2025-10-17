@@ -131,8 +131,8 @@ public class SerialRestDeviceUnitControlViewModel : SerialDeviceUnitViewModel, I
         GC.SuppressFinalize(this);
     }
 
-    public Dictionary<string, List<string>> DeviceMethods { get; set; } = new();
-    public Dictionary<string, string> MethodParameters { get; set; } = new();
+    public Dictionary<string, List<string>> DeviceMethods { get; set; } = [];
+    public Dictionary<string, string> MethodParameters { get; set; } = [];
 }
 
 

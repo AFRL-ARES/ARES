@@ -15,7 +15,7 @@ namespace Ares.Core.Planning;
 public abstract class PlannerServiceBase : IPlannerService
 {
   State _plannerState = State.UnspecifiedState;
-  private readonly ISubject<State> _plannerStateSubject = new BehaviorSubject<State>(State.UnspecifiedState);
+  private readonly BehaviorSubject<State> _plannerStateSubject = new(State.UnspecifiedState);
 
   public PlannerServiceBase(string name, string type, string version)
   {
@@ -89,5 +89,5 @@ public abstract class PlannerServiceBase : IPlannerService
   public string StateMessage { get; protected set; } = "";
   public TimeSpan PlanningTimeout { get; protected set; } = TimeSpan.FromSeconds(30);
   public AresStruct PlannerServiceSettings { get; } = new();
-  public IList<Planner> AvailablePlanners { get; } = new List<Planner>();
+  public IList<Planner> AvailablePlanners { get; } = [];
 }

@@ -14,8 +14,8 @@ public class Function
   public string Description { get; set; } = string.Empty;
 
   [JsonPropertyName("parameters")]
-  public List<Parameter> Parameters { get; set; } = new List<Parameter>();
+  public List<Parameter> Parameters { get; set; } = [];
 
   [JsonPropertyName("returns")]
-  public List<Return> Returns { get; set; } = new List<Return>();
+  public List<Return> Returns { get; set; } = [];
 }

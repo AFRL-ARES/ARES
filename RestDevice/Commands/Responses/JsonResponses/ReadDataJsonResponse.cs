@@ -5,7 +5,7 @@ namespace RestDevice.Commands.Responses.JsonResponses;
 public class ReadDataJsonResponse
 {
   [JsonPropertyName("variables")]
-  public Dictionary<string, object> Variables { get; set; } = new();
+  public Dictionary<string, object> Variables { get; set; } = [];
 
   [JsonPropertyName("id")]
   public string? Id { get; set; }
