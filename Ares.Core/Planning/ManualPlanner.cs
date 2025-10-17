@@ -4,6 +4,7 @@ using Ares.Datamodel.Connection;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
+using System.Collections.Generic;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 
@@ -27,7 +28,7 @@ public class ManualPlanner : IPlannerService
     .Select(result => (result.Name, result.value)));
 
 
-  public Task<IEnumerable<PlanResult>> Plan(IEnumerable<ParameterMetadata> plannableParameters,
+  public Task<IList<PlanResult>> Plan(IEnumerable<ParameterMetadata> plannableParameters,
     string campaignId,
     IEnumerable<ExperimentOverview> experiments, 
     IEnumerable<Analysis> _, 
@@ -36,12 +37,12 @@ public class ManualPlanner : IPlannerService
     try
     {
       var currentParameterSet = _planResultsQueue.Dequeue().ToList();
-      var returnList = plannableParameters.Select(metadata => currentParameterSet.First(result => result.Name == metadata.Name).ToPlanResult(metadata));
-      return Task.FromResult(returnList);
+      var returnList = plannableParameters.Select(metadata => currentParameterSet.First(result => result.Name == metadata.Name).ToPlanResult(metadata)).ToList();
+      return Task.FromResult<IList<PlanResult>>(returnList);
     }
     catch(InvalidOperationException)
     {
-      return Task.FromResult<IEnumerable<PlanResult>>(new List<PlanResult>());
+      return Task.FromResult<IList<PlanResult>>(new List<PlanResult>());
     }
   }
 
@@ -163,7 +164,7 @@ public class ManualPlanner : IPlannerService
     return Task.FromResult(response);
   }
 
-  public async Task<IEnumerable<PlanResult>> Plan(IEnumerable<ParameterMetadata> plannableParameters, string campaignId, IEnumerable<ExperimentOverview> previousExperiments, IEnumerable<Analysis> analysisHistory, AresStruct settings, CancellationToken cancellationToken = default)
+  public async Task<IList<PlanResult>> Plan(IEnumerable<ParameterMetadata> plannableParameters, string campaignId, IEnumerable<ExperimentOverview> previousExperiments, IEnumerable<Analysis> analysisHistory, AresStruct settings, CancellationToken cancellationToken = default)
   {
     return await Plan(plannableParameters, campaignId, previousExperiments, analysisHistory, cancellationToken);
   }

@@ -215,8 +215,7 @@ public class ExecutionViewModel : ReactiveObject
 
     AvailableTags = tags.AvailableTags.ToList();
 
-    if(SelectedTags.Contains(aresTag))
-      SelectedTags.Remove(aresTag);
+    SelectedTags.Remove(aresTag);
   }
 
   public async Task GetAllTags()
@@ -235,7 +234,7 @@ public class ExecutionViewModel : ReactiveObject
   [Reactive]
   public bool CampaignPaused { get; set; }
   [Reactive]
-  public CampaignTemplateSummary SelectedTemplateSummary { get; set; }
+  public CampaignTemplateSummary? SelectedTemplateSummary { get; set; }
   [Reactive]
   public CampaignTemplate? CampaignTemplate { get; set; }
   [Reactive]

@@ -43,8 +43,7 @@ public class PlanningHelper : IPlanningHelper
       try
       {
         var plannableParameters = grouping.Select(pair => pair.Metadata).ToArray();
-        var resultsEnumerable = await planner.Plan(plannableParameters, campaignId, seedExperiments, seedAnalysesArr, cancellationToken);
-        var results = resultsEnumerable.ToArray();
+        var results = await planner.Plan(plannableParameters, campaignId, seedExperiments, seedAnalysesArr, cancellationToken);
         if(!results.Any())
           return false;
 

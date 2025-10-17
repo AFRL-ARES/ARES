@@ -10,6 +10,7 @@ using DynamicData;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Grpc.Net.Client;
+using System.Collections;
 
 namespace Ares.Core.Planning;
 
@@ -143,7 +144,7 @@ public class RemotePlannerService : PlannerServiceBase
     }
   }
 
-  public override async Task<IEnumerable<PlanResult>> Plan(IEnumerable<ParameterMetadata> plannableParameters,
+  public override async Task<IList<PlanResult>> Plan(IEnumerable<ParameterMetadata> plannableParameters,
     string campaignId,
     IEnumerable<ExperimentOverview> previousExperiments,
     IEnumerable<Analysis> analysisHistory,
@@ -157,7 +158,7 @@ public class RemotePlannerService : PlannerServiceBase
     return ToPlanResults(result, plannableParameters);
   }
 
-  public override async Task<IEnumerable<PlanResult>> Plan(IEnumerable<ParameterMetadata> plannableParameters,
+  public override async Task<IList<PlanResult>> Plan(IEnumerable<ParameterMetadata> plannableParameters,
     string campaignId,
     IEnumerable<ExperimentOverview> previousExperiments,
     IEnumerable<Analysis> analysisHistory,
@@ -172,7 +173,7 @@ public class RemotePlannerService : PlannerServiceBase
     return ToPlanResults(result, plannableParameters);
   }
 
-  private PlanningParameter ConvertToPlanningParameter(ParameterMetadata metadata, IEnumerable<ExperimentOverview> experimentHistory)
+  private static PlanningParameter ConvertToPlanningParameter(ParameterMetadata metadata, IEnumerable<ExperimentOverview> experimentHistory)
   {
     var parameter = new PlanningParameter
     {
@@ -207,7 +208,7 @@ public class RemotePlannerService : PlannerServiceBase
     return parameter;
   }
 
-  private IEnumerable<PlanResult> ToPlanResults(PlanningResponse result, IEnumerable<ParameterMetadata> plannableMetadata)
+  private static List<PlanResult> ToPlanResults(PlanningResponse result, IEnumerable<ParameterMetadata> plannableMetadata)
   {
     var planResults = new List<PlanResult>();
 
@@ -217,11 +218,10 @@ public class RemotePlannerService : PlannerServiceBase
       var matchingMetadata = plannableMetadata.FirstOrDefault(data => data.Name == currentPlannedParameter.ParameterName);
 
       //What do we do if we don't find the old metadata?
-      if(matchingMetadata is null)
+      matchingMetadata ??= new ParameterMetadata
       {
-        matchingMetadata = new ParameterMetadata();
-        matchingMetadata.Name = currentPlannedParameter.ParameterName;
-      }
+        Name = currentPlannedParameter.ParameterName
+      };
 
       var aresPlanResult = new PlanResult(matchingMetadata, currentPlannedParameter.ParameterValue);
       planResults.Add(aresPlanResult);

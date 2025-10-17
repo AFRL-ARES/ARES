@@ -59,13 +59,13 @@ public abstract class PlannerServiceBase : IPlannerService
     }
   }
 
-  public abstract Task<IEnumerable<PlanResult>> Plan(IEnumerable<ParameterMetadata> plannableParameters,
+  public abstract Task<IList<PlanResult>> Plan(IEnumerable<ParameterMetadata> plannableParameters,
     string campaignId,
     IEnumerable<ExperimentOverview> previousExperiments,
     IEnumerable<Analysis> analysisHistory, 
     CancellationToken cancellationToken = default);
 
-  public abstract Task<IEnumerable<PlanResult>> Plan(IEnumerable<ParameterMetadata> plannableParameters,
+  public abstract Task<IList<PlanResult>> Plan(IEnumerable<ParameterMetadata> plannableParameters,
     string campaignId,
     IEnumerable<ExperimentOverview> previousExperiments,
     IEnumerable<Analysis> analysisHistory,
