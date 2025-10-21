@@ -55,11 +55,11 @@ jobs:
 
     - name: Create ZIP Archive (Windows)
       if: runner.os == 'Windows'
-      run: 7z a -r "${{ env.ZIP_FILE_NAME }}" "${{ env.OUTPUT_PATH }}/*"
+      run: 7z a -r "${{ env.ZIP_FILE_NAME }}" "${{ env.OUTPUT_PATH }}\\*"
       
     - name: Create ZIP Archive (Linux/macOS)
       if: runner.os != 'Windows'
-      run: zip -r "${{ env.ZIP_FILE_NAME }}" "${{ env.OUTPUT_PATH }}"
+      run: zip -r "../${{ env.ZIP_FILE_NAME }}" "${{ env.OUTPUT_PATH }}"
     
     - name: Upload Published Binaries to Pre-release
       uses: softprops/action-gh-release@v1
