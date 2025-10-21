@@ -13,7 +13,7 @@ jobs:
   build-and-deploy-prerelease:
     strategy:
       matrix:
-        os: [ubuntu-latest, window-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         include:
           - os: ubuntu-latest
             runtime_id: linux-x64
