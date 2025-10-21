@@ -1,0 +1,61 @@
+name: ARES OS Release Pipeline
+
+on:
+  release:
+    types: [released]
+
+env:
+  UI_PROJECT_FILE: 'UI.csproj'
+  SERVICE_PROJECT_FILE: 'ARESService.csproj'
+  OUTPUT_PATH: 'public'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+    
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.x'
+      
+      - name: Restore Dependencies for Both Projects
+        run: |
+          dotnet restore ${{env.UI_PROJECT_FILE}}
+          dotnet restore ${{env.SERVICE_PROJECT_FILE}}
+
+      - name: Build and Publish Release Artifacts (UI and Service)
+        # Publish the UI  
+        run: |
+          echo "Publishing UI Project: ${{ env.UI_PROJECT_FILE }}"
+          dotnet publish ${{ env.UI_PROJECT_FILE }} \
+            --configuration Release \
+            --output ${{ env.OUTPUT_PATH }}
+            /p:UseAppHost=true
+        
+          # Publish the Service        
+          echo "Publishing Service Project: ${{ env.SERVICE_PROJECT_FILE }}"
+          dotnet publish ${{ env.SERVICE_PROJECT_FILE }} \
+            --configuration Release \
+            --output ${{ env.OUTPUT_PATH }} \
+            /p:UseAppHost=true
+      
+      - name: Create GitHub Release and Upload Assets
+        # This step uploads the contents of the combined 'publish' folder.
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        with:
+          tag_name: ${{ github.event.inputs.tag }}
+          name: Release ${{ github.event.inputs.tag }}
+          body: |
+            Automated release for ${{ github.event.inputs.tag }}.
+            
+          # Uploads all files from the shared published directory as release assets
+          files: ${{ env.OUTPUT_PATH }}/**/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+        

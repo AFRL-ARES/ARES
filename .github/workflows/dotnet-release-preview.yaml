@@ -1,0 +1,53 @@
+name: ARES Pre-Release Deployment
+
+on:
+  release:
+    types: [prereleased]
+
+env:
+  UI_PROJECT_FILE: 'UI.csproj'
+  SERVICE_PROJECT_FILE: 'ARESService.csproj'
+  OUTPUT_PATH: 'publish' # Shared output directory for all artifacts
+
+jobs:
+  build-and-deploy-prerelease:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.release.tag_name }}
+
+    - name: Set up .NET 8.x
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.x'
+
+    - name: Restore Dependencies for Both Projects
+      run: |
+        dotnet restore ${{ env.UI_PROJECT_FILE }}
+        dotnet restore ${{ env.SERVICE_PROJECT_FILE }}
+
+    - name: Build and Publish Release Artifacts (UI and Service)
+      run: |
+        echo "Publishing UI Project: ${{ env.UI_PROJECT_FILE }}"
+        dotnet publish ${{ env.UI_PROJECT_FILE }} \
+          --configuration Release \
+          --output ${{ env.OUTPUT_PATH }} \
+          /p:UseAppHost=true
+
+        echo "Publishing Service Project: ${{ env.SERVICE_PROJECT_FILE }}"
+        dotnet publish ${{ env.SERVICE_PROJECT_FILE }} \
+          --configuration Release \
+          --output ${{ env.OUTPUT_PATH }} \
+          /p:UseAppHost=true
+    
+    - name: Upload Published Binaries to Pre-release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ${{ env.OUTPUT_PATH }}/**/*
+        body: |
+          Pre-release assets for version ${{ github.event.release.tag_name }} have been automatically compiled and uploaded. Ready for QA validation.
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
