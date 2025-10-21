@@ -64,7 +64,7 @@ jobs:
           --self-contained true
 
     - name: Create ZIP Archive of Published Files
-      run: zip -r ${{ env.ZIP_FILE_NAME }} $ {{ env.OUTPUT_PATH }}
+      run: zip -r ${{ env.ZIP_FILE_NAME }} ${{ env.OUTPUT_PATH }}
     
     - name: Upload Published Binaries to Pre-release
       uses: softprops/action-gh-release@v1
