@@ -27,10 +27,13 @@ jobs:
         dotnet-version: '8.x'
 
     - name: Restore Dependencies
-      run: dotnet restore ${{ env.SOLUTION_FILE }}
+      run: dotnet restore 
+      working-directory: .
       
     - name: Build All Projects
-      run: dotnet build ${{ env.SOLUTION_FILE }} --configuration Release --no-restore
+      run: dotnet build --configuration Release --no-restore
+      working-directory: .
       
     - name: Run Unit Tests
-      run: dotnet test ${{ env.SOLUTION_FILE }} --configuration Release --no-build
+      run: dotnet test --configuration Release --no-build
+      working-directory: .
