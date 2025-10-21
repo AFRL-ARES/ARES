@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using AlicatMFC;
 using Ares.Alicat.Mfc.Config;
 using Ares.Core;
@@ -10,7 +9,6 @@ using Ares.Core.Device.State.Export.StateGetters;
 using Ares.Core.Device.State.Logging;
 using Ares.Core.Execution;
 using Ares.Core.Grpc;
-using Ares.Core.Notifications;
 using Ares.SyringePump.Ne1000.Messaging;
 using AresService.ConfigManagers;
 using AresService.ConnectionManagement;
@@ -81,16 +79,6 @@ public static class ServiceCollectionExtensions
         var stateExporters = provider.GetServices<IDeviceStateExportStreamProvider>();
         return new ExperimentResultJsonHandler(stateExporters);
       });
-
-    services.AddLogging(b =>
-    {
-      var logPath = Path.Combine("logs", "AresServiceLog.log");
-      var logger = new LoggerConfiguration()
-        .WriteTo.File(logPath, rollingInterval: RollingInterval.Day)
-        .CreateLogger();
-
-      b.AddSerilog(logger);
-    });
   }
 
   private static void AddDeviceManagers(this IServiceCollection services)

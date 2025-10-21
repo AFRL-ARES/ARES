@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 using UI;
 using UI.Backend.Helpers;
 using UI.Data;
@@ -10,6 +11,9 @@ using UI.Settings;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+
+Log.Logger = new LoggerConfiguration()
+  .CreateBootstrapLogger();
 
 ConfigureDatabaseServices(builder.Services, builder.Configuration);
 
@@ -43,6 +47,11 @@ builder.Services.AddOptions();
 builder.Services.AddAuthorizationCore();
 
 builder.Services.AddHostedService<ServiceStarter>();
+
+builder.Services.AddSerilog((services, lc) => lc
+  .ReadFrom.Configuration(builder.Configuration)
+  .ReadFrom.Services(services)
+  .Enrich.FromLogContext());
 
 var app = builder.Build();
 

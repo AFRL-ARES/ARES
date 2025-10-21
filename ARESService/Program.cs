@@ -22,8 +22,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
 
 public class Program
 {
@@ -172,6 +172,9 @@ public class Program
   // The original logic for running the web application
   private static async Task RunWebAppAsync(string[] args)
   {
+    Log.Logger = new LoggerConfiguration()
+      .CreateBootstrapLogger();
+
     var builder = WebApplication.CreateBuilder(args);
     var configuration = builder.Configuration;
     var services = builder.Services;
@@ -179,7 +182,10 @@ public class Program
     // Service Configuration
     services.AddGrpc(options => options.EnableDetailedErrors = true);
     services.Configure<TokensConfig>(configuration.GetSection(nameof(TokensConfig)));
-    services.AddLogging(b => b.AddConsole());
+    builder.Services.AddSerilog((services, lc) => lc
+      .ReadFrom.Configuration(builder.Configuration)
+      .ReadFrom.Services(services)
+      .Enrich.FromLogContext());
 
     ConfigureDatabaseServices(services, configuration);
 

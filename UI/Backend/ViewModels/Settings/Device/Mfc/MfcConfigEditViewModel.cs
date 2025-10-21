@@ -1,10 +1,10 @@
-﻿using Ares.Alicat.Mfc.Config;
+﻿using System.ComponentModel.DataAnnotations;
+using Ares.Alicat.Mfc.Config;
 using Ares.Alicat.Mfc.Messaging;
+using Ares.Services.Device;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
-using System.ComponentModel.DataAnnotations;
-using Ares.Services.Device;
 
 namespace UI.Backend.ViewModels.Settings.Device.Mfc;
 
@@ -29,6 +29,7 @@ public class MfcConfigEditViewModel : ReactiveObject
     Port = _mfcConfig.PortName;
     Simulated = _mfcConfig.Simulated;
     HasValve = _mfcConfig.HasValve;
+    SelectedMfcType = _mfcConfig.MfcType == MfcType.None ? MfcType.Normal : _mfcConfig.MfcType;
   }
 
   public MfcConfigEditViewModel(MfcRpc.MfcRpcClient mfcClient, AresDevices.AresDevicesClient devicesClient)
@@ -47,7 +48,7 @@ public class MfcConfigEditViewModel : ReactiveObject
 
     set
     {
-      if (!NewConfig)
+      if(!NewConfig)
         return;
 
       _name = value;
@@ -68,6 +69,10 @@ public class MfcConfigEditViewModel : ReactiveObject
 
   public bool HasValve { get; set; } = true;
 
+  public MfcType[] AvailableMfcTypes { get; } = System.Enum.GetValues<MfcType>();
+
+  public MfcType SelectedMfcType { get; set; } = MfcType.Normal;
+
   public bool Simulated { get; set; }
 
   [Reactive]
@@ -76,7 +81,7 @@ public class MfcConfigEditViewModel : ReactiveObject
   [Reactive]
   public IEnumerable<string>? AvailablePorts { get; private set; }
 
-  public bool Modified => _mfcConfig.Id != Id || _mfcConfig.Name != Name || _mfcConfig.PortName != Port || _mfcConfig.Simulated != Simulated || _mfcConfig.HasValve != HasValve;
+  public bool Modified => _mfcConfig.Id != Id || _mfcConfig.Name != Name || _mfcConfig.PortName != Port || _mfcConfig.Simulated != Simulated || _mfcConfig.HasValve != HasValve || _mfcConfig.MfcType != SelectedMfcType;
 
   public async Task UpdateAvailableSerialPorts()
   {
@@ -90,7 +95,7 @@ public class MfcConfigEditViewModel : ReactiveObject
   {
     AvailableIds = null;
     Id = null;
-    if (Port is null)
+    if(Port is null)
       return;
 
     var ids = await _mfcClient.GetAvailableIdsAsync(new GetAvailableIdsRequest { PortName = Port, Simulated = Simulated });
@@ -98,5 +103,5 @@ public class MfcConfigEditViewModel : ReactiveObject
   }
 
   public MfcConfig Save()
-    => Modified ? new MfcConfig { Id = Id, Name = Name, PortName = Port, Simulated = Simulated, HasValve = HasValve } : _mfcConfig;
+    => Modified ? new MfcConfig { Id = Id, Name = Name, PortName = Port, Simulated = Simulated, HasValve = HasValve, MfcType = SelectedMfcType } : _mfcConfig;
 }
