@@ -1,0 +1,16 @@
+﻿syntax = "proto3";
+
+package ares.messages;
+
+message ConnectRequest {
+	string device_name = 1; // name of the mass flow controller
+	string port_name = 2; // name of the port
+}
+
+message ConnectResponse {
+	bool connected = 1; // whether or not the device successfully connected
+}
+
+message DeviceRequest {
+	string device_name = 1;
+}
