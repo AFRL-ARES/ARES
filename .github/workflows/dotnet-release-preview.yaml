@@ -53,12 +53,13 @@ jobs:
         echo "Publishing Service Project for ${{ matrix.os_name_tag }}  (${{ matrix.runtime_id }})"
         dotnet publish ${{ env.SERVICE_PROJECT_FILE }} --configuration Release --output ${{ env.OUTPUT_PATH }} /p:UseAppHost=true -r ${{ matrix.runtime_id }} --self-contained true
 
-    - name: Create ZIP Archive of Published Files
-      run: |
-        if [ "$RUNNER_OS" == "Windows" ]; then
-          7z a -r ${{ env.ZIP_FILE_NAME }} $ {{ env.OUTPUT.PATH }}/*
-        else
-          zip -r ${{ env.ZIP_FILE_NAME }} ${{ env.OUTPUT_PATH }}
+    - name: Create ZIP Archive (Windows)
+      if: runner.os == 'Windows'
+      run: 7z a -r "${{{ env.ZIP_FILE_NAME }}" "${{ env.OUTPUT_PATH }}/*"
+      
+    - name: Create ZIP Archive (Linux/macOS)
+      if: runner.os != 'Windows'
+      run: zip -r "${{ env.ZIP_FILE_NAME }}" "${{ env.OUTPUT_PATH }}"
     
     - name: Upload Published Binaries to Pre-release
       uses: softprops/action-gh-release@v1
