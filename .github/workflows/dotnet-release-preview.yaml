@@ -22,7 +22,7 @@ jobs:
             runtime_id: win-x64
             os_name_tag: windows
           - os: macos-latest
-            runtime_id: osx-64
+            runtime_id: osx-x64
             os_name_tag: macos
             
     runs-on: ${{ matrix.os }}
