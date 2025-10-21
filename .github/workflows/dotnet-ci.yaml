@@ -3,10 +3,10 @@ name: ARES OS Continuous Integration
 on:
   push:
     branches:
-      - main
+      - Develop
   pull_request:
     branches:
-      - main
+      - Develop
   workflow_dispatch:
 
 env:
