@@ -27,7 +27,7 @@ jobs:
             
     runs-on: ${{ matrix.os }}
     env:
-      ZIP_FILE_NAME: 'ARES-OS-v${{ github.event.release.tag_name }}-${{ matrix.os_name_tag }}.zip'
+      ZIP_FILE_NAME: 'ARES-OS-${{ github.event.release.tag_name }}-${{ matrix.os_name_tag }}.zip'
 
     steps:
     - name: Checkout Code
