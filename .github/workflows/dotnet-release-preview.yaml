@@ -6,7 +6,7 @@ on:
 
 env:
   UI_PROJECT_FILE: 'UI.csproj'
-  SERVICE_PROJECT_FILE: 'ARESService.csproj'
+  SERVICE_PROJECT_FILE: 'AresService.csproj'
   OUTPUT_PATH: 'publish' # Shared output directory for all artifacts
 
 jobs:
