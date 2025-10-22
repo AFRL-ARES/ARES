@@ -31,12 +31,12 @@ jobs:
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         ref: ${{ github.event.release.tag_name }}
 
     - name: Set up .NET 8.x
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: '8.x'
 
@@ -64,7 +64,7 @@ jobs:
         zip -r ../${{ env.ZIP_FILE_NAME }} .
     
     - name: Upload Published Binaries to Pre-release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         files: ${{ env.ZIP_FILE_NAME }}
         body: |
