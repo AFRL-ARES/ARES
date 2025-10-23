@@ -8,7 +8,7 @@ updates:
     groups:
       dotnet-minor-patch:
         patterns:
-          - ["*"]
+          - "*"
         update-types:
           - "patch"
           - "minor"
