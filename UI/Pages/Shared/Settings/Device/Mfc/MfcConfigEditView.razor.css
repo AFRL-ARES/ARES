@@ -5,6 +5,7 @@
     "port ." 1fr
     "simulated ." 1fr
     "id spinner" 1fr
+    "type ." 1fr
     "valve ." 1fr
     / auto 40px
 }
@@ -19,6 +20,10 @@
 
 .mfc-id {
   grid-area: id;
+}
+
+.mfc-type {
+  grid-area: type;
 }
 
 .mfc-simulated {

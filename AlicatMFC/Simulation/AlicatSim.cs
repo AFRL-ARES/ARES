@@ -1,11 +1,11 @@
-﻿using AlicatMFC.Commands.Responses;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Text;
+using AlicatMFC.Commands.Responses;
 using UnitsNet;
 
 namespace AlicatMFC.Simulation;
 
-public class AlicatSim : IDisposable
+public class AlicatSim : IAlicatSim
 {
   private readonly Pressure _absolutePressureBase = Pressure.FromAtmospheres(100);
   private readonly string[] _availableGases = { "Air", "Ar", "CH4", "CO", "CO2", "C2H6", "H2", "He", "N2", "N2O", "Ne", "O2" };
@@ -51,7 +51,7 @@ public class AlicatSim : IDisposable
       showTemperature ? new(DeviceId.ToString(), lineNumber++, DataFormatField.Temperature.ToFriendlyString(), "signed", "-010.00", "+050.00", "C") : null,
       showVolumetric ? new(DeviceId.ToString(), lineNumber++, DataFormatField.Volumetric.ToFriendlyString(), "signed", "+0000.0", "+0500.0", "CCM") : null,
       new(DeviceId.ToString(), lineNumber++, DataFormatField.Mass.ToFriendlyString(), "signed", "+0000.0", "+0500.0", "SCCM"),
-      new(DeviceId.ToString(), lineNumber++, DataFormatField.SetPoint.ToFriendlyString(), "signed", "+0000.0", "+0500", "SCCM"),
+      new(DeviceId.ToString(), lineNumber++, DataFormatField.Setpoint.ToFriendlyString(), "signed", "+0000.0", "+0500", "SCCM"),
       new(DeviceId.ToString(), lineNumber++, DataFormatField.Gas.ToFriendlyString(), "string", _availableGases.First(), _availableGases.Last(), "na"),
       new(DeviceId.ToString(), lineNumber++, DataFormatField.Error.ToFriendlyString(), "string", "na", StatusCode.Adc.ToString(), "na"),
       new(DeviceId.ToString(), lineNumber++, DataFormatField.Status.ToFriendlyString(), "string", "na", StatusCode.Lck.ToString(), "na"),

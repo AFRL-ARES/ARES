@@ -16,6 +16,7 @@ public class LiveDataResponse : CommandResponse
     StandardVolumeFlow? massFlow,
     StandardVolumeFlow? setpoint,
     StandardVolumeFlow? totalizedMassFlow,
+    double valveDrive,
     string gas,
     IEnumerable<StatusCode> statusCodes)
     : base(id)
@@ -30,6 +31,7 @@ public class LiveDataResponse : CommandResponse
     MassFlow = massFlow;
     Setpoint = setpoint;
     TotalizedMassFlow = totalizedMassFlow;
+    ValveDrive = valveDrive;
     Gas = gas;
     StatusCodes = statusCodes.ToList();
   }
@@ -46,4 +48,5 @@ public class LiveDataResponse : CommandResponse
   public StandardVolumeFlow? TotalizedMassFlow { get; }
   public string Gas { get; } = "Errrrrorr";
   public IList<StatusCode> StatusCodes { get; } = new List<StatusCode>();
+  public double ValveDrive { get; }
 }

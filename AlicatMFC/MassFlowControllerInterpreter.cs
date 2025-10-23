@@ -118,7 +118,7 @@ public class MassFlowControllerInterpreter : DeviceCommandInterpreter<IMassFlowC
 
   protected override CommandMetadata[] CommandsToMetadatas()
   {
-    return new CommandMetadata[]
+    var metadatas = new List<CommandMetadata>
     {
       new()
       {
@@ -139,12 +139,6 @@ public class MassFlowControllerInterpreter : DeviceCommandInterpreter<IMassFlowC
       new()
       {
         DeviceId = Device.UniqueId,
-        Name = MassFlowControllerCommand.ManufacturerInfo.ToString(),
-        Description = "Queries the manufacturer info"
-      },
-      new()
-      {
-        DeviceId = Device.UniqueId,
         Name = MassFlowControllerCommand.ChangeUnitId.ToString(),
         Description = "Assigns the device a new letter ID",
         ParameterMetadatas =
@@ -161,7 +155,7 @@ public class MassFlowControllerInterpreter : DeviceCommandInterpreter<IMassFlowC
       {
         DeviceId = Device.UniqueId,
         Name = MassFlowControllerCommand.PollLiveDataFrame.ToString(),
-        Description = "Queries the device for a live data entry containing device ID, absolute pressure, temperature, volumetric flow, mass flow, setpoint, and gas"
+        Description = "Queries the device for a live data entry containing device ID, temperature, flow, setpoint, and gas. Depending on the type of the MFC, it may also include pressure and other data items."
       },
       new()
       {
@@ -187,19 +181,60 @@ public class MassFlowControllerInterpreter : DeviceCommandInterpreter<IMassFlowC
       new()
       {
         DeviceId = Device.UniqueId,
-        Name = MassFlowControllerCommand.DeleteComposerMix.ToString(),
-        Description = "Deletes the indicated COMPOSER Mix number from the device's memory",
-        ParameterMetadatas =
+        Name = MassFlowControllerCommand.GetSetpoint.ToString(),
+        Description = "Gets the current setpoint of the MFC",
+        OutputMetadata = new OutputMetadata
         {
-          new ParameterMetadata
-          {
-            Index = 0,
-            Name = MassFlowControllerCommandParameter.MixNumber.ToString(),
-            Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.String, true)
+          Description = "Current setpoint",
+          DataSchema = AresSchemaHelper.CreateSchema(MfcDataTypes.Setpoint.Key, MfcDataTypes.Setpoint.Value)
+        }
+      }
+    };
+
+    if (Device is MassFlowController mfc && mfc.MfcType == Ares.Alicat.Mfc.Config.MfcType.Basis2)
+    {
+      metadatas.AddRange(new CommandMetadata[]
+      {
+        new()
+        {
+          DeviceId = Device.UniqueId,
+          Name = MassFlowControllerCommand.HoldValvesClosed.ToString(),
+          Description = "Holds the device's valve(s) at the given position",
+          ParameterMetadatas = {
+            new ParameterMetadata
+            {
+              Index = 0,
+              Name = MassFlowControllerCommandParameter.ValvePercent.ToString(),
+              Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.Number, false)
+            }
           }
         }
-      },
-      new()
+      });
+    }
+
+    if(Device is MassFlowController mfc2 && mfc2.MfcType == Ares.Alicat.Mfc.Config.MfcType.Normal)
+    {
+      metadatas.AddRange(new CommandMetadata[]
+      {
+        new()
+        {
+          DeviceId = Device.UniqueId,
+          Name = MassFlowControllerCommand.ManufacturerInfo.ToString(),
+          Description = "Queries the manufacturer info"
+        },
+        new()
+        {
+          DeviceId = Device.UniqueId,
+          Name = MassFlowControllerCommand.TareAbsolutePressureWithBarometer.ToString(),
+          Description = "Tares the device's absolute pressure with barometer"
+        },
+        new()
+        {
+          DeviceId = Device.UniqueId,
+          Name = MassFlowControllerCommand.TareFlow.ToString(),
+          Description = "Tares the device's flow"
+        },      
+        new()
       {
         DeviceId = Device.UniqueId,
         Name = MassFlowControllerCommand.HoldValvesAtCurrentPosition.ToString(),
@@ -217,30 +252,26 @@ public class MassFlowControllerInterpreter : DeviceCommandInterpreter<IMassFlowC
         Name = MassFlowControllerCommand.NewComposerMix.ToString(),
         Description = "Adds a new COMPOSER mix to the device's memory"
         // TODO: ParameterMetadata
-      },
-      new()
+      },      
+        new()
       {
         DeviceId = Device.UniqueId,
-        Name = MassFlowControllerCommand.TareAbsolutePressureWithBarometer.ToString(),
-        Description = "Tares the device's absolute pressure with barometer"
-      },
-      new()
-      {
-        DeviceId = Device.UniqueId,
-        Name = MassFlowControllerCommand.TareFlow.ToString(),
-        Description = "Tares the device's flow"
-      },
-      new()
-      {
-        DeviceId = Device.UniqueId,
-        Name = MassFlowControllerCommand.GetSetpoint.ToString(),
-        Description = "Gets the current setpoint of the MFC",
-        OutputMetadata = new OutputMetadata
+        Name = MassFlowControllerCommand.DeleteComposerMix.ToString(),
+        Description = "Deletes the indicated COMPOSER Mix number from the device's memory",
+        ParameterMetadatas =
         {
-          Description = "Current setpoint",
-          DataSchema = AresSchemaHelper.CreateSchema(MfcDataTypes.Setpoint.Key, MfcDataTypes.Setpoint.Value)
+          new ParameterMetadata
+          {
+            Index = 0,
+            Name = MassFlowControllerCommandParameter.MixNumber.ToString(),
+            Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.String, true)
+          }
         }
-      }
-    };
+      },
+      });
+
+    }
+
+    return metadatas.ToArray();
   }
 }

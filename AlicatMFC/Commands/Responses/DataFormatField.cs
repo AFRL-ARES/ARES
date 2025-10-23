@@ -12,13 +12,14 @@ public enum DataFormatField
   Temperature,
   Volumetric,
   Mass,
-  SetPoint,
+  Setpoint,
   TotalizedMassFlow,
   TotalizedVolumetricFlow,
   Gas,
   DifferentialPressure,
   Status,
-  Error
+  Error,
+  ValveDrive
 }
 internal static class DataFormatFieldExtensions
 {
@@ -28,7 +29,7 @@ internal static class DataFormatFieldExtensions
     { DataFormatField.Temperature, new[] {"Temperature", "FlowTemp" } },
     { DataFormatField.Volumetric, new[] { "Volumetric", "VoluFlow" } },
     { DataFormatField.Mass, new[] {"Mass", "MassFlow" } },
-    { DataFormatField.SetPoint, new[] {"SetPoint", "MassFlowSetpt" } },
+    { DataFormatField.Setpoint, new[] {"SetPoint", "MassFlowSetpt" } },
     { DataFormatField.UnitId, new[] {"Identifier"} },
   };
   public static DataFormatField ToDataFormatField(this string potentialFormatField)
@@ -51,13 +52,14 @@ internal static class DataFormatFieldExtensions
       DataFormatField.Temperature => typeof(TemperatureUnit),
       DataFormatField.Volumetric => typeof(VolumeFlowUnit),
       DataFormatField.Mass => typeof(StandardVolumeFlowUnit),
-      DataFormatField.SetPoint => typeof(StandardVolumeFlowUnit),
+      DataFormatField.Setpoint => typeof(StandardVolumeFlowUnit),
       DataFormatField.TotalizedMassFlow => typeof(StandardVolumeFlowUnit),
       DataFormatField.Gas => null,
       DataFormatField.DifferentialPressure => typeof(PressureUnit),
       DataFormatField.GaugePressure => typeof(PressureUnit),
       DataFormatField.BarometricPressure => typeof(PressureUnit),
       DataFormatField.TotalizedVolumetricFlow => typeof(VolumeFlowUnit),
+      DataFormatField.ValveDrive => null,
       DataFormatField.Status => null,
       DataFormatField.Error => null,
       _ => throw new ArgumentOutOfRangeException(nameof(format), format, null)
@@ -78,7 +80,7 @@ internal static class DataFormatFieldExtensions
       case DataFormatField.Temperature:
       case DataFormatField.Volumetric:
       case DataFormatField.Mass:
-      case DataFormatField.SetPoint:
+      case DataFormatField.Setpoint:
       case DataFormatField.TotalizedMassFlow:
       case DataFormatField.TotalizedVolumetricFlow:
       case DataFormatField.Gas:

@@ -44,12 +44,12 @@ public class MfcManager : IDeviceManager<MfcConfig, IMassFlowController>
   {
     var connection = _mfcConnectionManager.GetConnection(config.PortName, config.Simulated);
     var mfcLogger = _loggerFactory.CreateLogger<MassFlowController>();
-    var device = new MassFlowController(config.Name, config.Id[0], connection, config.HasValve, mfcLogger)
+    var device = new MassFlowController(config.Name, config.Id[0], connection, config.HasValve, config.MfcType, mfcLogger)
     {
       UniqueId = id
     };
     if(connection is SimMassFlowControllerConnection simConnection)
-      simConnection.AddCat(config.Id[0]);
+      simConnection.AddCat(config.Id[0], config.MfcType);
 
     await device.Activate(CancellationToken.None);
     await _stateLoggerManager.SetupLogger(device);
@@ -108,6 +108,11 @@ public class MfcManager : IDeviceManager<MfcConfig, IMassFlowController>
       .Select(interpreter => interpreter.Device)
       .OfType<ISerialDevice<IMfcConnection>>()
       .Any(device => device.Connection == connection);
+
+    if(connection is SimMassFlowControllerConnection simCon)
+    {
+      simCon.RemoveCat(mfc.AssumedId);
+    }
 
     if(!connectionInUse)
       _mfcConnectionManager.RemoveConnection(connection);

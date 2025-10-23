@@ -225,3 +225,9 @@ message StateResponse {
 	bool has_valve = 6;
 }
 
+enum SetpointSource {
+	UNKNOWN_SOURCE = 0;
+	ANALOG = 1;
+	DIGITAL = 2;
+	UNSAVED_DIGITAL = 3;
+}

@@ -1,0 +1,311 @@
+﻿using System.Diagnostics;
+using System.Text;
+using AlicatMFC.Commands.Responses;
+using Ares.Alicat.Mfc.Messaging;
+using UnitsNet;
+
+namespace AlicatMFC.Simulation;
+
+public class AlicatBasisSim : IAlicatSim
+{
+  private readonly string[] _availableGases = { "Air", "Ar", "CO2", "N2", "O2", "N2O", "H2", "He", "CH4" };
+  private readonly Action<byte[]> _byteSender;
+  private readonly CancellationTokenSource _generalCancellationTokenSource = new();
+  private readonly StandardVolumeFlow _flowBase = StandardVolumeFlow.FromStandardLitersPerMinute(8000);
+  private readonly StandardVolumeFlow _totalizer = StandardVolumeFlow.FromStandardLitersPerMinute(0);
+  private readonly ISet<StatusCode> _statusCodes = new HashSet<StatusCode>();
+  private readonly Temperature _temperatureBase = Temperature.FromDegreesCelsius(40);
+  private readonly float _valveDriveBase = 0;
+
+  private string _currentGas = "Air";
+
+  private StandardVolumeFlow _massFlow;
+  private bool _processingCommand;
+  private StandardVolumeFlow _setpoint = StandardVolumeFlow.FromStandardLitersPerMinute(8000);
+  private float _valveDrive;
+  private CancellationTokenSource _streamingTokenSource = new();
+  private Temperature _temperature;
+  private SetpointSource _setpointSource;
+
+  public AlicatBasisSim(Action<byte[]> byteSender, char id)
+  {
+    _byteSender = byteSender;
+    DeviceId = id;
+    var random = new Random();
+    _temperature = Temperature.FromDegreesCelsius(_temperatureBase.DegreesCelsius + random.Next(-10, 10));
+    _massFlow = StandardVolumeFlow.FromStandardLitersPerMinute(_flowBase.StandardLitersPerMinute + random.Next(-10, 10));
+    _valveDrive = _valveDriveBase;
+    _setpointSource = SetpointSource.Analog;
+    Start();
+  }
+
+  private string TemperatureString => _temperature.Value.ToString("+0.00;-#");
+  private string MassFlowString => _massFlow.Value.ToString("+0.00;-#");
+  private string SetpointString => _setpoint.Value.ToString("+0.00;-#");
+  private string ValveDriveString => _valveDrive.ToString("+0.00;-#");
+  private string TotalizerString => _totalizer.Value.ToString("+0.00;-#");
+
+  public char DeviceId { get; private set; }
+
+  public void Dispose()
+  {
+    _generalCancellationTokenSource.Dispose();
+    _streamingTokenSource.Dispose();
+  }
+
+  public void SendCommand(byte[] command)
+  {
+    // simulating the mfc ignoring commands when it's busy processing existing ones
+    if(_processingCommand)
+      return;
+
+    _processingCommand = true;
+    var random = new Random();
+    // some fake delay to simulate transmission/processing/etc.
+    Task.Delay(random.Next(10, 20)).ContinueWith(_ =>
+    {
+      var cmd = Encoding.ASCII.GetString(command);
+      ProcessCommand(cmd);
+      _processingCommand = false;
+    });
+  }
+
+  private void ProcessCommand(string input)
+  {
+    if(!input.EndsWith('\r'))
+      return;
+
+    input = input.TrimEnd('\r');
+    Trace.WriteLine($"{GetType().Name} {DeviceId} Received {input}");
+    var deviceId = input.FirstOrDefault();
+    if(deviceId is < 'A' or > 'Z')
+      return;
+
+    if(deviceId != DeviceId)
+      return;
+
+    ProcessQualifiedCommand(input[1..]);
+  }
+
+  private void Send(string simulatedResponse)
+  {
+    if(!simulatedResponse.EndsWith('\r'))
+      simulatedResponse += '\r';
+
+    var serialData = Encoding.ASCII.GetBytes(simulatedResponse.ToCharArray());
+    var random = new Random();
+    var blah = random.Next(1, 10);
+    Task.Run(() =>
+    {
+      if(serialData.Length < 10)
+      {
+        _byteSender(serialData);
+        return;
+      }
+      _byteSender(serialData[..blah]);
+      Task.Delay(10).Wait();
+      _byteSender(serialData[blah..]);
+
+    });
+  }
+
+  /// <summary>
+  /// Qualified essentially means that we've verified the ID of the command to match the ID of this device
+  /// </summary>
+  /// <param name="command"></param>
+  private void ProcessQualifiedCommand(string command)
+  {
+    if(string.IsNullOrEmpty(command))
+      SendDataFrame();
+
+    if(command.StartsWith("VE", StringComparison.InvariantCultureIgnoreCase))
+    {
+      SendFirmwareVersion();
+      return;
+    }
+
+    if(command.StartsWith("HPUR", StringComparison.InvariantCultureIgnoreCase))
+    {
+      ProcessHold(command["HPUR".Length..]);
+      return;
+    }
+
+    if(command.StartsWith("C", StringComparison.InvariantCultureIgnoreCase))
+    {
+      _statusCodes.Remove(StatusCode.Hld);
+      _valveDrive = 0;
+      SendDataFrame();
+      return;
+    }
+
+    if(command.StartsWith("GS", StringComparison.InvariantCultureIgnoreCase))
+    {
+      var gasNumString = command["GS".Length..];
+      ProcessGas(gasNumString);
+      return;
+    }
+
+    if(command.StartsWith("S", StringComparison.InvariantCultureIgnoreCase))
+    {
+      ProcessSetpoint(command["S".Length..]);
+      return;
+    }
+
+    if(command.StartsWith("LSS", StringComparison.InvariantCultureIgnoreCase))
+    {
+      ProcessSetpointSource(command["LSS".Length..]);
+      return;
+    }
+
+    Send("?");
+  }
+
+  private void ProcessHold(string query)
+  {
+    // HC HP and H all should set the status code to HLD that's mostly what we are concerned with
+    // without going deep into how the MFC works
+    var percentageParsed = float.TryParse(query, out var holdPercentage);
+    if(percentageParsed)
+    {
+      _statusCodes.Add(StatusCode.Hld);
+      _valveDrive = holdPercentage;
+      SendDataFrame();
+    }
+    else
+      Send("?");
+  }
+
+  private void ProcessSetpointSource(string query)
+  {
+    query = query.Trim();
+    if(string.IsNullOrEmpty(query))
+    {
+      Send($"{DeviceId}LSS {_setpointSource.ToStringSource()}");
+      return;
+    }
+
+    var src = SetpointSourceExtensions.FromStringSource(query);
+    if(src == SetpointSource.UnknownSource)
+    {
+      Send("?");
+      return;
+    }
+
+    _setpointSource = src;
+  }
+
+  private void ProcessSetpoint(string query)
+  {
+    query = query.Trim();
+    var numeric = double.TryParse(query, out var setpoint);
+    if(!numeric)
+    {
+      Send("?");
+      return;
+    }
+
+    if(_setpointSource == SetpointSource.Analog || _setpointSource == SetpointSource.UnknownSource)
+    {
+      // ignore?
+      return;
+    }
+
+    _setpoint = StandardVolumeFlow.FromStandardLitersPerMinute(setpoint);
+  }
+
+  private void ProcessGas(string query)
+  {
+    if(string.IsNullOrEmpty(query))
+    {
+      SendCurrentGas();
+      return;
+    }
+
+    var trimmed = query.Trim();
+    if(trimmed == "*")
+    {
+      SendAvailableGasResponse();
+      return;
+    }
+
+    var gasNumParsed = int.TryParse(trimmed, out var gasNum);
+    if(gasNumParsed && gasNum < _availableGases.Length)
+    {
+      _currentGas = _availableGases[gasNum];
+      return;
+    }
+
+    Send("?");
+  }
+
+  private void SendCurrentGas()
+  {
+    var gas = _currentGas;
+    var gasIdx = Array.IndexOf(_availableGases, gas);
+    Send($"{DeviceId} {gasIdx} {gas}");
+  }
+
+  private void SendAvailableGasResponse()
+  {
+    var gasResponses = new List<string>();
+    foreach(var gas in _availableGases)
+    {
+      var response = $"{DeviceId} G{gasResponses.Count:D2}   {gas}";
+      gasResponses.Add(response);
+    }
+    foreach(var gas in gasResponses)
+    {
+      Send($"{gas}\r");
+      Task.Delay(25).Wait();
+    }
+  }
+
+  private void SendFirmwareVersion()
+  {
+    Send($"{DeviceId} V3.0.13");
+  }
+
+  private void Start()
+  {
+    Task.Factory.StartNew(_ =>
+    {
+      Thread.CurrentThread.IsBackground = true;
+      Thread.CurrentThread.Name = $"Alicat MFC BASIS2 {DeviceId} Data Randomization Thread";
+      while(!_generalCancellationTokenSource.IsCancellationRequested)
+      {
+        RandomizeData();
+        Thread.Sleep(TimeSpan.FromMilliseconds(200));
+      }
+    },
+      _generalCancellationTokenSource.Token,
+      TaskCreationOptions.LongRunning);
+  }
+
+  private void RandomizeData()
+  {
+    var random = new Random();
+    _temperature = Temperature.FromDegreesCelsius(_temperatureBase.DegreesCelsius + random.Next(-10, 10));
+    _massFlow = StandardVolumeFlow.FromStandardLitersPerMinute(_flowBase.StandardLitersPerMinute + random.Next(-10, 10));
+    return;
+  }
+
+  private void SendDataFrame()
+  {
+    var data = new List<string>
+    {
+      $"{DeviceId}",
+      $"{TemperatureString}",
+      MassFlowString,
+      TotalizerString,
+      SetpointString,
+      ValveDriveString,
+      _currentGas
+    };
+
+    var dataString = string.Join(' ', data);
+    if(_statusCodes.Any())
+      dataString += $" {string.Concat(_statusCodes.Select(sc => $"[{sc}]"))}";
+
+    Send(dataString);
+  }
+}

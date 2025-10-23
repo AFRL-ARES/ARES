@@ -4,10 +4,10 @@ using System.Text;
 
 namespace AlicatMFC.Commands.Requests;
 
-internal abstract class CommandWithStreamedResponse<T> : SerialCommandWithStreamedResponse<T> where T : CommandResponse
+internal abstract class MfcCommandWithStreamedResponse<T> : SerialCommandWithStreamedResponse<T> where T : CommandResponse
 {
   readonly string _firmware;
-  public CommandWithStreamedResponse(char id, SerialResponseParser<T> parser, string firmware) : base(parser)
+  public MfcCommandWithStreamedResponse(char id, SerialResponseParser<T> parser, string firmware) : base(parser)
   {
     _firmware = firmware;
     AlicatId = id;

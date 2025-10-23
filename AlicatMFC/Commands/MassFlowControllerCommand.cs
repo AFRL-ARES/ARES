@@ -15,6 +15,7 @@ public enum MassFlowControllerCommand
   // NewSetpointFloat, // [unit ID]s[floating point #]
   // NewSetpointInteger, // [unit ID][integer]
   HoldValvesAtCurrentPosition,// [unit ID]hp
+  HoldValvesAtGivenPosition,
   HoldValvesClosed,// [unit ID]hc
   CancelValveHold,// [unit ID]c
   QueryGasListInfo,// [unit ID]??g*

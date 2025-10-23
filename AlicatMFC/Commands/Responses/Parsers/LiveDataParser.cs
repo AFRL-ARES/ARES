@@ -59,6 +59,7 @@ internal class LiveDataParser : ResponseParser<LiveDataResponse>
     StandardVolumeFlow? massFlow = default;
     StandardVolumeFlow? setpoint = default;
     StandardVolumeFlow? totalizedMassFlow = default;
+    double valveDrive = default;
     string? gas = default;
     List<StatusCode> statusCodes = new();
     for(var i = 0; i < tokens.Length; i++)
@@ -99,7 +100,7 @@ internal class LiveDataParser : ResponseParser<LiveDataResponse>
             (StandardVolumeFlowUnit)(format.Unit ?? StandardVolumeFlow.BaseUnit));
 
           break;
-        case DataFormatField.SetPoint:
+        case DataFormatField.Setpoint:
           setpoint = StandardVolumeFlow.From(value,
             (StandardVolumeFlowUnit)(format.Unit ?? StandardVolumeFlow.BaseUnit));
 
@@ -123,7 +124,10 @@ internal class LiveDataParser : ResponseParser<LiveDataResponse>
           var foundCode = Enum.TryParse<StatusCode>(token, true, out var code);
           if(foundCode)
             statusCodes.Add(code);
+          break;
 
+        case DataFormatField.ValveDrive:
+          valveDrive = value;
           break;
         default:
           throw new ArgumentOutOfRangeException();
@@ -152,6 +156,7 @@ internal class LiveDataParser : ResponseParser<LiveDataResponse>
       massFlow,
       setpoint,
       totalizedMassFlow,
+      valveDrive,
       gas,
       statusCodes);
 

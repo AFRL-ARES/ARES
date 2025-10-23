@@ -5,5 +5,6 @@ public enum MassFlowControllerCommandParameter
   GasNumber,
   MixNumber,
   Setpoint,
-  DeviceId
+  DeviceId,
+  ValvePercent
 }

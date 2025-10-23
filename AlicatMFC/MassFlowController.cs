@@ -1,41 +1,51 @@
-﻿using AlicatMFC.Commands.Requests;
-using AlicatMFC.Commands.Responses;
-using AlicatMFC.Commands.Responses.Streamed;
-using Ares.Device.Serial;
-using Microsoft.Extensions.Logging;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Text.RegularExpressions;
+using AlicatMFC.Commands.Requests;
+using AlicatMFC.Commands.Responses;
+using AlicatMFC.Commands.Responses.Streamed;
+using Ares.Alicat.Mfc.Config;
 using Ares.Datamodel.Device;
+using Ares.Device.Serial;
+using Microsoft.Extensions.Logging;
 using UnitsNet;
+using UnitsNet.Units;
 
 namespace AlicatMFC;
 
 public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowController
 {
-  private static readonly int _expectedDataFormatEntryCount = 12;
-  private readonly ISubject<MfcState?> _statePublisher = new BehaviorSubject<MfcState?>(default);
+  private static int _expectedDataFormatEntryCount = 12;
+  private readonly BehaviorSubject<MfcState?> _statePublisher = new(default);
   private CancellationTokenSource _stateGetterLoopTokenSource = new();
   private CompositeDisposable _stateWatchers = new();
   private Task _stateUpdater = Task.CompletedTask;
   readonly ILogger<MassFlowController> _logger;
 
-  public MassFlowController(string name, char id, IMfcConnection connection, bool hasValve, ILogger<MassFlowController> logger) : base(name, connection)
+  public MassFlowController(string name, char id, IMfcConnection connection, bool hasValve, MfcType mfcType, ILogger<MassFlowController> logger) : base(name, connection)
   {
     HasValve = hasValve;
+    MfcType = mfcType;
     _logger = logger;
     StateStream = _statePublisher.AsObservable();
     AssumedId = id;
     _stateWatchers = new CompositeDisposable
     {
-      Connection.GetTransactionStream<LiveDataResponse>().Select(transaction => transaction.Response).Subscribe(UpdateState),
+      Connection.GetTransactionStream<LiveDataResponse>().Select(transaction => transaction.Response).Subscribe(UpdateState)
     };
+
+    _expectedDataFormatEntryCount = mfcType == MfcType.Normal ? 12 : 7;
   }
 
   public async Task<bool> QueryManufacturerInfo()
   {
+    if(MfcType == MfcType.Basis2)
+    {
+      throw new InvalidOperationException("Basis devices cannot query manufacturer info.");
+    }
+
     var currentState = GetCurrentState();
     if(currentState is null)
       return false;
@@ -72,7 +82,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
       return;
 
     var currentState = GetCurrentState();
-    var dataFrameFormat = currentState?.DataFrameFormatEntries?.FirstOrDefault(entry => entry.Field == DataFormatField.SetPoint);
+    var dataFrameFormat = currentState?.DataFrameFormatEntries?.FirstOrDefault(entry => entry.Field == DataFormatField.Setpoint);
     if(dataFrameFormat is not null)
     {
       if(dataFrameFormat.MaxVal is null)
@@ -137,8 +147,41 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
 
   public Task ChooseDifferentGas(int gasNumber)
   {
-    var chooseDifferentGasCommand = new ChooseDifferentGasCommand(AssumedId, gasNumber, GetFormatEntries(), FirmwareVersion);
+    var chooseDifferentGasCommand = new ChooseDifferentGasCommand(AssumedId, gasNumber, GetFormatEntries(), FirmwareVersion, MfcType);
     return Send(chooseDifferentGasCommand);
+  }
+
+  //public void UpdateBasisGases()
+  //{
+  //  var currentState = GetCurrentState();
+  //  if(currentState is null)
+  //    return;
+
+  //  var entries = new GasInfoEntry[]
+  //  {
+  //    new(currentState.Id, )
+  //  }
+  //}
+
+  public async Task QueryGasViaStream()
+  {
+    var currentState = GetCurrentState();
+    if(currentState is null)
+      return;
+
+    var request = new QueryGasStreamCommand(currentState.Id, ":)", MfcType);
+
+    var responseStream = await Send(request);
+
+    var gasInfos = await responseStream
+      .Timeout(TimeSpan.FromSeconds(2))
+      .Catch<GasInfoEntry, TimeoutException>(_ => Observable.Empty<GasInfoEntry>())
+      .ToArray();
+
+    foreach(var gasInfo in gasInfos)
+    {
+      UpdateState(gasInfo);
+    }
   }
 
   // TODO: Implement a more qualified response to the query, the documentation doesn't show the response syntax
@@ -152,7 +195,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     var endMarkerReached = false;
     while(!endMarkerReached)
     {
-      var command = new QueryGasCommand(currentState.Id, FirmwareVersion, gasIdx);
+      var command = new QueryGasCommand(currentState.Id, FirmwareVersion, MfcType, gasIdx);
       try
       {
         var response = await GetResponseWithRetry<GasInfoEntry, QueryGasCommand>(command, 5, TimeSpan.FromMilliseconds(500));
@@ -188,6 +231,33 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     {
       FirmwareVersion = string.Empty;
     }
+  }
+
+  private void UpdateBasisDataFrames()
+  {
+    var currentState = GetCurrentState();
+    if(currentState is null)
+      return;
+
+    var formatEntries = new DataFrameFormatEntry[] {
+      new(currentState.Id, 1, DataFormatField.UnitId, "string", null, null, null, "", null),
+      new(currentState.Id, 2, DataFormatField.Temperature, "s decimal", null, null, null, "", TemperatureUnit.DegreeCelsius),
+      new(currentState.Id, 3, DataFormatField.Mass, "s decimal", null, null, null, "", StandardVolumeFlowUnit.StandardLiterPerMinute),
+      new(currentState.Id, 4, DataFormatField.TotalizedMassFlow, "s decimal", null, null, null, "", StandardVolumeFlowUnit.StandardLiterPerMinute),
+      new(currentState.Id, 5, DataFormatField.Setpoint, "s decimal", null, null, null, "", StandardVolumeFlowUnit.StandardLiterPerMinute),
+      new(currentState.Id, 6, DataFormatField.ValveDrive, "s decimal", null, null, null, "", null),
+      new(currentState.Id, 7, DataFormatField.Gas, "string", null, null, null, "", null),
+    };
+
+    foreach(var entry in formatEntries)
+    {
+      UpdateState(entry);
+    }
+  }
+
+  public async Task SetSetpointSource()
+  {
+
   }
 
   public async Task<bool> QueryDataFrameFormat()
@@ -247,7 +317,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
 
   public async Task NewSetpoint(StandardVolumeFlow setpoint)
   {
-    var newSetpointCommand = new NewSetpointCommand(AssumedId, setpoint, GetFormatEntries(), FirmwareVersion);
+    var newSetpointCommand = new NewSetpointCommand(AssumedId, setpoint, GetFormatEntries(), FirmwareVersion, MfcType);
     try
     {
       var response = await Send(newSetpointCommand, TimeSpan.FromMilliseconds(1000));
@@ -276,6 +346,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
 
   public string FirmwareVersion { get; private set; } = string.Empty;
   public bool HasValve { get; }
+  public MfcType MfcType { get; }
 
   public override async Task<bool> Activate(CancellationToken ct)
   {
@@ -315,7 +386,11 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
   public Task<LiveDataResponse> GetLiveData()
   {
     var currentState = GetCurrentState();
-    if(currentState is null || currentState.DataFrameFormatEntries?.Count() < _expectedDataFormatEntryCount)
+    if(currentState is null)
+    {
+      throw new InvalidOperationException("Current state has not yet been initialized. Need to initialize the device first.");
+    }
+    if(currentState.DataFrameFormatEntries?.Count() < _expectedDataFormatEntryCount)
       throw new InvalidOperationException(
         $"Cannot request live data without knowing format entries. Number of currently known formats: {currentState?.DataFrameFormatEntries?.Count() ?? 0}, Expected at least {_expectedDataFormatEntryCount}");
 
@@ -332,13 +407,26 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
       throw new NullReferenceException("Initialize was called, but Connection was not set");
 
     await StopUpdateLoop();
-    var state = new MfcState(AssumedId, Name);
-    state.HasValve = HasValve;
+    var state = new MfcState(AssumedId, Name)
+    {
+      HasValve = HasValve
+    };
 
     _statePublisher.OnNext(state);
 
-    await QueryDataFrameFormat();
+    if(MfcType == MfcType.Normal)
+    {
+      await InitNormal();
+    }
+    else if(MfcType == MfcType.Basis2)
+    {
+      await InitBasis();
+    }
+  }
 
+  private async Task InitNormal()
+  {
+    await QueryDataFrameFormat();
     var cs = GetCurrentState();
 
     var importantEntries = Enumerable.Range(1, 7);
@@ -348,7 +436,15 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
       return;
     }
     await QueryGasListInfo();
+    await QueryFirmwareVersion();
     await QueryManufacturerInfo();
+  }
+
+  private async Task InitBasis()
+  {
+    UpdateBasisDataFrames();
+    await QueryGasViaStream();
+    await QueryFirmwareVersion();
   }
 
   public async Task StartUpdateLoop(TimeSpan interval)
@@ -500,8 +596,8 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
 
   private MfcState? GetCurrentState()
   {
-    var stateStream = StateStream.Take(1).Wait();
-    return stateStream;
+    var state = _statePublisher.Value;
+    return state;
   }
 
   private DataFrameFormatEntry[] GetFormatEntries()
@@ -512,9 +608,9 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     return dataFormatEntries!;
   }
 
-  private void Send<T>(CommandWithStreamedResponse<T> command) where T : CommandResponse
+  private Task<IObservable<T>> Send<T>(MfcCommandWithStreamedResponse<T> command) where T : CommandResponse
   {
-    Connection.Send(command);
+    return Connection.Send(command);
   }
 
   private Task<T> Send<T>(MfcCommandExpectingResponse<T> command) where T : CommandResponse

@@ -1,12 +1,13 @@
-﻿using Ares.Device.Serial;
+﻿using System.IO.Ports;
+using Ares.Alicat.Mfc.Config;
+using Ares.Device.Serial;
 using Ares.Device.Serial.Simulation;
-using System.IO.Ports;
 
 namespace AlicatMFC.Simulation;
 
 public class SimMassFlowControllerConnection : AresSerialSimConnection, IMfcConnection
 {
-  private readonly IList<AlicatSim> _alicatSims = new List<AlicatSim>();
+  private readonly IList<IAlicatSim> _alicatSims = new List<IAlicatSim>();
 
   public SimMassFlowControllerConnection(string portName) : base(new SerialPortConnectionInfo(0, Parity.None, 0, StopBits.None), portName, new SerialConnectionOptions { SendBuffer = TimeSpan.FromMilliseconds(150) })
   {
@@ -15,7 +16,7 @@ public class SimMassFlowControllerConnection : AresSerialSimConnection, IMfcConn
   public override void Dispose()
   {
     base.Dispose();
-    foreach (var alicatSim in _alicatSims)
+    foreach(var alicatSim in _alicatSims)
       alicatSim.Dispose();
   }
 
@@ -28,13 +29,19 @@ public class SimMassFlowControllerConnection : AresSerialSimConnection, IMfcConn
   {
   }
 
-  public void AddCat(char id)
+  public void AddCat(char id, MfcType mfcType)
   {
     var cat = _alicatSims.FirstOrDefault(sim => sim.DeviceId == id);
-    if (cat is not null)
+    if(cat is not null)
       throw new InvalidOperationException($"Simulated alicat with id of {id} already exists on simulated connection {Name}");
 
-    cat = new AlicatSim(AddDataReceived, id);
+
+    cat = mfcType switch
+    {
+      MfcType.Normal => new AlicatSim(AddDataReceived, id),
+      MfcType.Basis2 => new AlicatBasisSim(AddDataReceived, id),
+      _ => throw new NotImplementedException(),
+    };
 
     _alicatSims.Add(cat);
   }
@@ -42,7 +49,7 @@ public class SimMassFlowControllerConnection : AresSerialSimConnection, IMfcConn
   public void RemoveCat(char id)
   {
     var cat = _alicatSims.FirstOrDefault(sim => sim.DeviceId == id);
-    if (cat is null)
+    if(cat is null)
       return;
 
     cat.Dispose();
@@ -51,7 +58,7 @@ public class SimMassFlowControllerConnection : AresSerialSimConnection, IMfcConn
 
   public override void SendInternally(byte[] bytes)
   {
-    foreach (var alicatSim in _alicatSims)
+    foreach(var alicatSim in _alicatSims)
       alicatSim.SendCommand(bytes);
   }
 }
