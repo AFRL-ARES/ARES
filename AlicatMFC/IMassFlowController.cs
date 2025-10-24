@@ -1,4 +1,5 @@
 ﻿using AlicatMFC.Commands.Requests;
+using Ares.Alicat.Mfc.Messaging;
 using Ares.Device.Serial;
 using UnitsNet;
 
@@ -17,6 +18,9 @@ public interface IMassFlowController : ISerialDevice<IMfcConnection>, IAsyncDisp
   Task ChooseDifferentGas(int gasNumber);
   Task<bool> QueryGasListInfo();
   Task<bool> QueryDataFrameFormat();
+
+  Task SetSetpointSource(SetpointSource source);
+  Task<SetpointSource> GetSetpointSource();
   Task StartUpdateLoop(TimeSpan interval);
   Task DeleteComposerMix(int mixNumber);
   Task HoldValvesAtCurrentPosition();

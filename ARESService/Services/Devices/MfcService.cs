@@ -34,6 +34,23 @@ public class MfcService : MfcRpc.MfcRpcBase
     _mfcManager = mfcManager;
   }
 
+  public override async Task<SetpointSourceResponse> GetSetpointSource(DeviceRequest request, ServerCallContext context)
+  {
+    var mfc = GetMfc(request.DeviceId);
+    var response = new SetpointSourceResponse();
+    var source = await mfc.GetSetpointSource();
+    response.Source = source;
+    
+    return response;
+  }
+
+  public override async Task<Empty> SetSetpointSource(SetSetpointSourceRequest request, ServerCallContext context)
+  {
+    var mfc = GetMfc(request.Id);
+    await mfc.SetSetpointSource(request.Source);
+    return new Empty();
+  }
+
   private IMassFlowController GetMfc(string id)
   {
     var mfc = _deviceCommandInterpreterRepo

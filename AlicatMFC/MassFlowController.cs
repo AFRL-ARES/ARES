@@ -7,11 +7,15 @@ using AlicatMFC.Commands.Requests;
 using AlicatMFC.Commands.Responses;
 using AlicatMFC.Commands.Responses.Streamed;
 using Ares.Alicat.Mfc.Config;
+using Ares.Alicat.Mfc.Messaging;
 using Ares.Datamodel.Device;
 using Ares.Device.Serial;
 using Microsoft.Extensions.Logging;
 using UnitsNet;
 using UnitsNet.Units;
+using DataFrameFormatEntry = AlicatMFC.Commands.Responses.Streamed.DataFrameFormatEntry;
+using GasInfoEntry = AlicatMFC.Commands.Responses.Streamed.GasInfoEntry;
+using ManufacturerInfoEntry = AlicatMFC.Commands.Responses.ManufacturerInfoEntry;
 
 namespace AlicatMFC;
 
@@ -111,6 +115,19 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     if(!reservedId)
       throw new InvalidOperationException($"ID {targetId} is already in use by another Alicat");
 
+    if (MfcType == MfcType.Basis2)
+    {
+      await ChangeBasisHardwareUnitId(targetId);
+    }
+    else if (MfcType == MfcType.Normal)
+    {
+      await ChangeNormalHardwareUnitId(targetId);
+    }
+
+  }
+
+  private async Task ChangeNormalHardwareUnitId(char targetId)
+  {
     var command = new ChangeIdCommand(AssumedId, targetId, FirmwareVersion);
     GenericLineResponse? result = null;
     try
@@ -127,8 +144,36 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
       throw new InvalidOperationException("Could not get a response for the newly changed id");
     }
 
-    AssumedId = targetId;
     Connection.ReleaseId(AssumedId);
+    AssumedId = targetId;
+    try
+    {
+      await Initialize();
+    }
+    catch(TimeoutException e)
+    {
+      Status = new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Failed to initialize: {e.Message}" };
+    }
+  }
+
+  private async Task ChangeBasisHardwareUnitId(char targetId)
+  {
+    var command = new BasisChangeIdCommand(AssumedId, targetId, FirmwareVersion);
+    await Connection.Send(command);
+    await Task.Delay(500); // we don't get a response back immediately, so we have to assume slight delay
+
+    try
+    {
+      var liveData = await GetLiveData();
+    }
+    catch (TimeoutException)
+    {
+      Connection.ReleaseId(targetId);
+      throw new InvalidOperationException("Could not get a response for the newly changed id");
+    }
+    
+    Connection.ReleaseId(AssumedId);
+    AssumedId = targetId;
     try
     {
       await Initialize();
@@ -151,19 +196,29 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     return Send(chooseDifferentGasCommand);
   }
 
-  //public void UpdateBasisGases()
-  //{
-  //  var currentState = GetCurrentState();
-  //  if(currentState is null)
-  //    return;
+  public async Task SetSetpointSource(SetpointSource source)
+  {
+    var currentState = GetCurrentState();
+    if (currentState is null)
+      return;
 
-  //  var entries = new GasInfoEntry[]
-  //  {
-  //    new(currentState.Id, )
-  //  }
-  //}
+    var request = new SetSetpointSourceCommand(currentState.Id, source, ":)");
 
-  public async Task QueryGasViaStream()
+    await Send(request);
+  }
+
+  public async Task<SetpointSource> GetSetpointSource()
+  {
+    var currentState = GetCurrentState();
+    if (currentState is null)
+      return SetpointSource.UnknownSource;
+
+    var request = new GetSetpointSourceCommand(currentState.Id);
+    var response = await Send(request);
+    return response.Source;
+  }
+
+  private async Task QueryGasViaStream()
   {
     var currentState = GetCurrentState();
     if(currentState is null)
@@ -247,6 +302,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
       new(currentState.Id, 5, DataFormatField.Setpoint, "s decimal", null, null, null, "", StandardVolumeFlowUnit.StandardLiterPerMinute),
       new(currentState.Id, 6, DataFormatField.ValveDrive, "s decimal", null, null, null, "", null),
       new(currentState.Id, 7, DataFormatField.Gas, "string", null, null, null, "", null),
+      new(currentState.Id, 8, DataFormatField.StatusCodes, "string", null, null, null, "", null),
     };
 
     foreach(var entry in formatEntries)
@@ -299,14 +355,46 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
 
   public Task HoldValvesAtCurrentPosition()
   {
-    var holdValvesCommand = new HoldValvesAtCurrentPositionCommand(AssumedId, GetFormatEntries(), FirmwareVersion);
-    return Send(holdValvesCommand);
+    switch (MfcType)
+    {
+      case MfcType.Normal:
+      {
+        var holdValvesCommand = new HoldValvesAtCurrentPositionCommand(AssumedId, GetFormatEntries(), FirmwareVersion);
+        return Send(holdValvesCommand);
+      }
+      case MfcType.Basis2:
+      {
+        var currentState = GetCurrentState();
+        if (currentState?.LiveData is null)
+          return Task.CompletedTask;
+      
+        var holdValvesCommand = new BasisHoldValvesAtCurrentPositionCommand(AssumedId, FirmwareVersion, currentState.LiveData.ValveDrive);
+        return Send(holdValvesCommand);
+      }
+      case MfcType.None:
+      default:
+        throw new ArgumentOutOfRangeException();
+    }
   }
 
   public Task HoldValvesClosed()
   {
-    var holdValvesClosedCommand = new HoldValvesClosedCommand(AssumedId, GetFormatEntries(), FirmwareVersion);
-    return Send(holdValvesClosedCommand);
+    switch (MfcType)
+    {
+      case MfcType.Normal:
+      {
+        var holdValvesClosedCommand = new HoldValvesClosedCommand(AssumedId, GetFormatEntries(), FirmwareVersion);
+        return Send(holdValvesClosedCommand);
+      }
+      case MfcType.Basis2:
+      {
+        var holdValvesClosedCommand = new BasisHoldValvesClosedCommand(AssumedId, FirmwareVersion);
+        return Send(holdValvesClosedCommand);
+      }
+      case MfcType.None:
+      default:
+        throw new ArgumentOutOfRangeException();
+    }
   }
 
   public Task NewComposerMix(MfcGasComposition composerMix)
@@ -609,6 +697,11 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
   }
 
   private Task<IObservable<T>> Send<T>(MfcCommandWithStreamedResponse<T> command) where T : CommandResponse
+  {
+    return Connection.Send(command);
+  }
+
+  private Task Send(MfcCommand command)
   {
     return Connection.Send(command);
   }

@@ -5,6 +5,7 @@ using Ares.Services.Device;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
+using Enum = System.Enum;
 
 namespace UI.Backend.ViewModels.Settings.Device.Mfc;
 
@@ -13,16 +14,19 @@ public class MfcConfigEditViewModel : ReactiveObject
   private readonly AresDevices.AresDevicesClient _devicesClient;
   private readonly MfcRpc.MfcRpcClient _mfcClient;
   private readonly MfcConfig _mfcConfig;
+  private readonly ILogger<MfcConfigEditViewModel> _logger;
   private string? _name;
 
   public MfcConfigEditViewModel(MfcRpc.MfcRpcClient mfcClient,
     AresDevices.AresDevicesClient devicesClient,
-    MfcConfig mfcConfig
+    MfcConfig mfcConfig,
+    ILogger<MfcConfigEditViewModel> logger
     )
   {
     _mfcClient = mfcClient;
     _devicesClient = devicesClient;
     _mfcConfig = mfcConfig;
+    _logger = logger;
     _ = UpdateAvailableSerialPorts();
     _name = _mfcConfig.Name;
     Id = _mfcConfig.Id;
@@ -57,9 +61,7 @@ public class MfcConfigEditViewModel : ReactiveObject
 
   [Required]
   public string? Port { get; set; }
-
-  // TODO this is here to prevent changing name as the name of the device is used for lookup and stuff
-  // but maybe we should use some kind of GUID instead to make this a bit more robust and allow name changes.
+  
   public bool NewConfig { get; }
 
   [Required]
@@ -73,6 +75,12 @@ public class MfcConfigEditViewModel : ReactiveObject
 
   public MfcType SelectedMfcType { get; set; } = MfcType.Normal;
 
+  [Reactive]
+  public SetpointSource SetpointSource { get; private set; } = SetpointSource.UnknownSource;
+
+  public SetpointSource[] AvailableSetpointSources { get; } =
+    Enum.GetValues<SetpointSource>().Except([SetpointSource.UnknownSource]).ToArray();
+
   public bool Simulated { get; set; }
 
   [Reactive]
@@ -83,6 +91,24 @@ public class MfcConfigEditViewModel : ReactiveObject
 
   public bool Modified => _mfcConfig.Id != Id || _mfcConfig.Name != Name || _mfcConfig.PortName != Port || _mfcConfig.Simulated != Simulated || _mfcConfig.HasValve != HasValve || _mfcConfig.MfcType != SelectedMfcType;
 
+  public async Task UpdateSetpointSource(SetpointSource source)
+  {
+    if (SetpointSource == source)
+      return;
+
+    try
+    {
+      await _mfcClient.SetSetpointSourceAsync(new SetSetpointSourceRequest { Id = _mfcConfig.Id, Source = source });
+      var newSource = await _mfcClient.GetSetpointSourceAsync(new DeviceRequest { DeviceId = _mfcConfig.Id });
+      SetpointSource = newSource.Source;
+    }
+    catch (Exception e)
+    {
+      SetpointSource = SetpointSource.UnknownSource;
+      _logger.LogError(e, "Failed to update setpoint source for alicat {}", _mfcConfig.Name);
+    }
+  }
+  
   public async Task UpdateAvailableSerialPorts()
   {
     AvailablePorts = null;

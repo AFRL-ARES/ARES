@@ -25,7 +25,7 @@ public class AlicatBasisSim : IAlicatSim
   private float _valveDrive;
   private CancellationTokenSource _streamingTokenSource = new();
   private Temperature _temperature;
-  private SetpointSource _setpointSource;
+  private SetpointSource _setpointSource = SetpointSource.Analog;
 
   public AlicatBasisSim(Action<byte[]> byteSender, char id)
   {
@@ -35,7 +35,6 @@ public class AlicatBasisSim : IAlicatSim
     _temperature = Temperature.FromDegreesCelsius(_temperatureBase.DegreesCelsius + random.Next(-10, 10));
     _massFlow = StandardVolumeFlow.FromStandardLitersPerMinute(_flowBase.StandardLitersPerMinute + random.Next(-10, 10));
     _valveDrive = _valveDriveBase;
-    _setpointSource = SetpointSource.Analog;
     Start();
   }
 
@@ -115,8 +114,17 @@ public class AlicatBasisSim : IAlicatSim
   /// <param name="command"></param>
   private void ProcessQualifiedCommand(string command)
   {
-    if(string.IsNullOrEmpty(command))
+    if (string.IsNullOrEmpty(command))
+    {
       SendDataFrame();
+      return;
+    }
+    
+    if(command.StartsWith("@="))
+    {
+      DeviceId = command["@=".Length..].First();
+      return;
+    }
 
     if(command.StartsWith("VE", StringComparison.InvariantCultureIgnoreCase))
     {
@@ -159,7 +167,7 @@ public class AlicatBasisSim : IAlicatSim
 
     Send("?");
   }
-
+  
   private void ProcessHold(string query)
   {
     // HC HP and H all should set the status code to HLD that's mostly what we are concerned with
@@ -169,7 +177,7 @@ public class AlicatBasisSim : IAlicatSim
     {
       _statusCodes.Add(StatusCode.Hld);
       _valveDrive = holdPercentage;
-      SendDataFrame();
+      //SendDataFrame();
     }
     else
       Send("?");

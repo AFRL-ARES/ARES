@@ -14,10 +14,12 @@ public class MfcSettingsViewModel : ReactiveObject
   private readonly DeviceConfig _deviceConfig;
   private readonly AresDevices.AresDevicesClient _devicesClient;
   private readonly MfcRpc.MfcRpcClient _mfcClient;
+  private readonly ILogger<MfcSettingsViewModel> _logger;
 
   public MfcSettingsViewModel(DeviceConfig deviceConfig,
     MfcRpc.MfcRpcClient mfcClient,
     AresDevices.AresDevicesClient devicesClient,
+    ILoggerFactory loggerFactory,
     Func<Task> onRemoveCallback)
   {
     _deviceConfig = deviceConfig;
@@ -25,7 +27,8 @@ public class MfcSettingsViewModel : ReactiveObject
     _mfcClient = mfcClient;
     _devicesClient = devicesClient;
     OnRemoveCallback = onRemoveCallback;
-    EditViewModel = new MfcConfigEditViewModel(_mfcClient, _devicesClient, MfcConfig);
+    EditViewModel = new MfcConfigEditViewModel(_mfcClient, _devicesClient, MfcConfig, loggerFactory.CreateLogger<MfcConfigEditViewModel>());
+    _logger = loggerFactory.CreateLogger<MfcSettingsViewModel>();
   }
 
   public MfcConfig MfcConfig { get; }
@@ -46,6 +49,15 @@ public class MfcSettingsViewModel : ReactiveObject
   public string? TargetGas { get; set; }
   public char? TargetId { get; set; }
 
+  public SetpointSource[] AvailableSetpointSources { get; } =
+    Enum.GetValues<SetpointSource>().Except([SetpointSource.UnknownSource]).ToArray();
+
+  [Reactive]
+  public SetpointSource SelectedSetpointSource { get; private set; } = SetpointSource.UnknownSource;
+
+  [Reactive]
+  public bool SetpointSourceUpdating { get; private set; }
+
   public async Task Init()
   {
     var status = await GetDeviceOperationalStatus();
@@ -59,6 +71,8 @@ public class MfcSettingsViewModel : ReactiveObject
     CurrentGas = state.Data?.Gas;
     CurrentId = state.AssumedId?.FirstOrDefault();
     TargetId = CurrentId;
+
+    await RefreshSetpointSource();
   }
 
   public async Task<DeviceOperationalStatus> GetDeviceOperationalStatus()
@@ -122,5 +136,44 @@ public class MfcSettingsViewModel : ReactiveObject
       return;
 
     await _mfcClient.ChooseDifferentGasAsync(new ChooseDifferentGasRequest { DeviceRequest = new DeviceRequest { DeviceId = _deviceConfig.UniqueId }, GasNumber = AvailableGases.IndexOf(TargetGas) });
+  }
+
+  public async Task UpdateSetpointSource(SetpointSource source)
+  {
+    if (SelectedSetpointSource == source)
+      return;
+
+    if (MfcConfig.MfcType != MfcType.Basis2)
+      return;
+
+    SetpointSourceUpdating = true;
+    try
+    {
+      await _mfcClient.SetSetpointSourceAsync(new SetSetpointSourceRequest { Id = _deviceConfig.UniqueId, Source = source });
+      await RefreshSetpointSource();
+    }
+    catch (Exception e)
+    {
+      _logger.LogError(e, "Failed to update setpoint source for mfc {Mfc}", MfcConfig.Name);
+      SelectedSetpointSource = SetpointSource.UnknownSource;
+    }
+    finally
+    {
+      SetpointSourceUpdating = false;
+    }
+  }
+
+  private async Task RefreshSetpointSource()
+  {
+    try
+    {
+      var response = await _mfcClient.GetSetpointSourceAsync(new DeviceRequest { DeviceId = _deviceConfig.UniqueId });
+      SelectedSetpointSource = response.Source;
+    }
+    catch (Exception e)
+    {
+      _logger.LogError(e, "Failed to load setpoint source for mfc {Mfc}", MfcConfig.Name);
+      SelectedSetpointSource = SetpointSource.UnknownSource;
+    }
   }
 }

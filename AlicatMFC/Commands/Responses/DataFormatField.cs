@@ -19,7 +19,8 @@ public enum DataFormatField
   DifferentialPressure,
   Status,
   Error,
-  ValveDrive
+  ValveDrive,
+  StatusCodes
 }
 internal static class DataFormatFieldExtensions
 {
@@ -62,6 +63,7 @@ internal static class DataFormatFieldExtensions
       DataFormatField.ValveDrive => null,
       DataFormatField.Status => null,
       DataFormatField.Error => null,
+      DataFormatField.StatusCodes => null,
       _ => throw new ArgumentOutOfRangeException(nameof(format), format, null)
     };
   }
@@ -86,6 +88,7 @@ internal static class DataFormatFieldExtensions
       case DataFormatField.Gas:
       case DataFormatField.DifferentialPressure:
       case DataFormatField.Status:
+      case DataFormatField.StatusCodes:
       case DataFormatField.Error:
         return format.ToString();
       default:

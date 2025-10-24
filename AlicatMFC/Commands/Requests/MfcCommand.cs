@@ -6,7 +6,8 @@ namespace AlicatMFC.Commands.Requests;
 public abstract class MfcCommand : SerialCommand
 {
   readonly string _firmware;
-  public MfcCommand(char id, string firmware)
+
+  protected MfcCommand(char id, string firmware)
   {
     _firmware = firmware;
     MfcId = id;

@@ -1,4 +1,5 @@
-﻿using AlicatMFC.Commands.Responses.Streamed;
+﻿using System.Text.RegularExpressions;
+using AlicatMFC.Commands.Responses.Streamed;
 using UnitsNet;
 using UnitsNet.Units;
 
@@ -125,7 +126,16 @@ internal class LiveDataParser : ResponseParser<LiveDataResponse>
           if(foundCode)
             statusCodes.Add(code);
           break;
-
+        case DataFormatField.StatusCodes:
+          var matches = Regex.Matches(token, @"\[(.*?)\]");
+          var result = matches.Select(m => m.Groups[1].Value).ToList();
+          foreach (var match in result)
+          {
+            var foundCode2 = Enum.TryParse<StatusCode>(match, true, out var code2);
+            if(foundCode2)
+              statusCodes.Add(code2);
+          }
+          break;
         case DataFormatField.ValveDrive:
           valveDrive = value;
           break;

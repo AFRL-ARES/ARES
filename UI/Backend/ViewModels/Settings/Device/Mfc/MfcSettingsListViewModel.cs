@@ -12,11 +12,13 @@ public class MfcSettingsListViewModel : ReactiveObject
 {
   private readonly AresDevices.AresDevicesClient _devicesClient;
   private readonly MfcRpc.MfcRpcClient _mfcClient;
+  private readonly ILoggerFactory _loggerFactory;
 
-  public MfcSettingsListViewModel(AresDevices.AresDevicesClient devicesClient, MfcRpc.MfcRpcClient mfcClient)
+  public MfcSettingsListViewModel(AresDevices.AresDevicesClient devicesClient, MfcRpc.MfcRpcClient mfcClient, ILoggerFactory loggerFactory)
   {
     _devicesClient = devicesClient;
     _mfcClient = mfcClient;
+    _loggerFactory = loggerFactory;
     _ = UpdateConfigs();
   }
 
@@ -25,7 +27,7 @@ public class MfcSettingsListViewModel : ReactiveObject
 
   private void UpdateViewModels(IEnumerable<DeviceConfig> deviceConfigs)
   {
-    var viewModels = deviceConfigs.Select(config => new MfcSettingsViewModel(config, _mfcClient, _devicesClient, OnConfigRemoved)).ToArray();
+    var viewModels = deviceConfigs.Select(config => new MfcSettingsViewModel(config, _mfcClient, _devicesClient, _loggerFactory, OnConfigRemoved)).ToArray();
     SettingsViewModels = viewModels;
   }
 

@@ -30,6 +30,9 @@ service MfcRpc {
 	// rpc DisoverUnitId(DeviceRequest) returns (google.protobuf.Empty);
 	rpc GetState(DeviceRequest) returns (StateResponse);
 	rpc GetStateUpdate(DeviceRequest) returns (StateResponse);
+  
+  rpc GetSetpointSource(DeviceRequest) returns (SetpointSourceResponse);
+  rpc SetSetpointSource(SetSetpointSourceRequest) returns (google.protobuf.Empty);
 
 	rpc GetAllMfcs(google.protobuf.Empty) returns (GetAllMfcsResponse);
 	rpc GetAvailableIds(GetAvailableIdsRequest) returns (GetAvailableIdsResponse);
@@ -37,6 +40,15 @@ service MfcRpc {
 	rpc RemoveMfc(MfcRemoveRequest) returns (google.protobuf.Empty);
 	rpc AddMfc(config.MfcConfig) returns (google.protobuf.Empty);
 	rpc StartDataCapture(DeviceRequest) returns (google.protobuf.Empty);
+}
+
+message SetSetpointSourceRequest {
+  string id = 1;
+  SetpointSource source = 2;
+}
+
+message SetpointSourceResponse {
+  SetpointSource source = 1;
 }
 
 message MfcUpdateRequest {
