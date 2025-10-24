@@ -19,7 +19,6 @@ using Microsoft.AspNetCore.Identity;
 using Radzen;
 using RestDevice.Services;
 using RestSerialDevice.Services;
-using Serilog;
 using Tc0304.Services;
 using TicStepperController.Messaging;
 using TubeFurnace.Messaging;

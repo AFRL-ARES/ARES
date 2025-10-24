@@ -1,6 +1,6 @@
 ﻿.mfc-settings-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: 1fr;
   position: relative;
 }
 
@@ -9,7 +9,7 @@
   align-items: center;
   grid-template-columns: 1fr 1fr auto auto;
   grid-column-gap: 5px;
-  max-width: 350px;
+  max-width: 450px;
 }
 
 .disabled-overlay {

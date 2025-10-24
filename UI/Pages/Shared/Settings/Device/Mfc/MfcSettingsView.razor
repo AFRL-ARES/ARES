@@ -1,4 +1,6 @@
-﻿@using UI.Backend.ViewModels.Settings.Device.Mfc
+﻿@using Ares.Alicat.Mfc.Config
+@using UI.Backend.ViewModels.Settings.Device.Mfc
+@using Ares.Alicat.Mfc.Messaging
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<MfcSettingsViewModel>
 @inject DialogService DialogService
 @inject NotificationService NotificationService
@@ -12,7 +14,7 @@
     
     @if (ViewModel!.DeviceActive)
     {
-      <div class="mfc-settings-grid">
+      <div class="">
         @if (_changing)
         {
           <div class="disabled-overlay d-flex align-items-center justify-content-center">
@@ -45,6 +47,24 @@
               }
             </select>
             <button disabled="@_changing" class="btn btn-sm" @onclick="ChangeIdClicked">Submit</button>
+          }
+          @if (ViewModel!.MfcConfig.MfcType == MfcType.Basis2)
+          {
+            <span class="flex-fill">Setpoint Source</span>
+            <span class="flex-fill">@ViewModel!.SelectedSetpointSource</span>
+            <select class="form-select-sm"
+                    disabled="@(_changing || ViewModel!.SetpointSourceUpdating)"
+                    @bind="SelectedSetpointSourceValue">
+              <option value="@SetpointSource.UnknownSource" disabled hidden>Select a source</option>
+              @foreach (var source in ViewModel!.AvailableSetpointSources)
+              {
+                <option value="@source">@source</option>
+              }
+            </select>
+            @if (ViewModel!.SetpointSourceUpdating)
+            {
+              <span class="ms-2 d-flex align-items-center"><LoadingSpinner SpinnerSize="SpinnerSize.Small"/></span>
+            }
           }
         </div>
       </div>
@@ -114,6 +134,30 @@
     }
     await ViewModel!.Init();
     _changing = false;
+    StateHasChanged();
+  }
+
+  private string SelectedSetpointSourceValue
+  {
+    get => ViewModel?.SelectedSetpointSource.ToString() ?? SetpointSource.UnknownSource.ToString();
+    set
+    {
+      if (ViewModel is null)
+        return;
+
+      if (!Enum.TryParse<SetpointSource>(value, out var parsed))
+        return;
+
+      if (ViewModel.SetpointSourceUpdating || ViewModel.SelectedSetpointSource == parsed)
+        return;
+
+      _ = InvokeAsync(() => ChangeSetpointSourceAsync(parsed));
+    }
+  }
+
+  private async Task ChangeSetpointSourceAsync(SetpointSource source)
+  {
+    await ViewModel!.UpdateSetpointSource(source);
     StateHasChanged();
   }
 }
