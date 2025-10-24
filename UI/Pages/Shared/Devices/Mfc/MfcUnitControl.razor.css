@@ -59,6 +59,10 @@
   grid-row: 7;
 }
 
+.mfc-valve-drive {
+  grid-row: 5;
+}
+
 .mfc-setpoint-input {
   max-width: 100px;
   justify-self: stretch;

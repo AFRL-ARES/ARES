@@ -60,6 +60,9 @@ public class MfcUnitControlViewModel : SerialDeviceUnitViewModel, IAsyncDisposab
   public StandardVolumeFlow? Setpoint { get; set; }
 
   [Reactive]
+  public double? ValveDrive { get; set; }
+
+  [Reactive]
   public bool HasValidData { get; private set; }
 
   public ISourceList<Status> StatusCodes { get; } = new SourceList<Status>();
@@ -154,6 +157,11 @@ public class MfcUnitControlViewModel : SerialDeviceUnitViewModel, IAsyncDisposab
     {
       var foundSetPointUnit = StandardVolumeFlow.TryParseUnit(state.Data.Setpoint.Unit, out var setpointUnit);
       Setpoint = StandardVolumeFlow.From(state.Data.Setpoint.Value, foundSetPointUnit ? setpointUnit : StandardVolumeFlowUnit.StandardCubicCentimeterPerMinute);
+    }
+
+    if(state.Data.HasValveDrive)
+    {
+      ValveDrive = state.Data.ValveDrive;
     }
 
     HasValve = state.HasValve;

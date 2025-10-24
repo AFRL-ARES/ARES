@@ -16,8 +16,11 @@ public static class LiveDataExtensions
       MassFlow = internalResponse.MassFlow is not null ? new UnitValue { Unit = StandardVolumeFlow.GetAbbreviation(StandardVolumeFlowUnit.StandardLiterPerMinute), Value = internalResponse.MassFlow.Value.StandardLitersPerMinute } : default,
       Setpoint = internalResponse.Setpoint is not null ? new UnitValue { Unit = StandardVolumeFlow.GetAbbreviation(StandardVolumeFlowUnit.StandardLiterPerMinute), Value = internalResponse.Setpoint.Value.StandardLitersPerMinute } : default,
       Temperature = internalResponse.Temperature is not null ? new UnitValue { Unit = Temperature.GetAbbreviation(TemperatureUnit.DegreeCelsius), Value = internalResponse.Temperature.Value.DegreesCelsius } : default,
-      VolumetricFlow = internalResponse.VolumetricFlow is not null ? new UnitValue { Unit = VolumeFlow.GetAbbreviation(VolumeFlowUnit.CubicCentimeterPerMinute), Value = internalResponse.VolumetricFlow.Value.CubicCentimetersPerMinute } : default
+      VolumetricFlow = internalResponse.VolumetricFlow is not null ? new UnitValue { Unit = VolumeFlow.GetAbbreviation(VolumeFlowUnit.CubicCentimeterPerMinute), Value = internalResponse.VolumetricFlow.Value.CubicCentimetersPerMinute } : default,
     };
+
+    if(internalResponse.ValveDrive.HasValue)
+      response.ValveDrive = internalResponse.ValveDrive.Value;
 
     response.StatusCodes.AddRange(internalResponse.StatusCodes.Select(code => code.ToProto()));
     return response;

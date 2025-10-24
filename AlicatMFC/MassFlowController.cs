@@ -21,7 +21,7 @@ namespace AlicatMFC;
 
 public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowController
 {
-  private static int _expectedDataFormatEntryCount = 12;
+  private readonly int _expectedDataFormatEntryCount;
   private readonly BehaviorSubject<MfcState?> _statePublisher = new(default);
   private CancellationTokenSource _stateGetterLoopTokenSource = new();
   private CompositeDisposable _stateWatchers = new();
@@ -115,11 +115,11 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     if(!reservedId)
       throw new InvalidOperationException($"ID {targetId} is already in use by another Alicat");
 
-    if (MfcType == MfcType.Basis2)
+    if(MfcType == MfcType.Basis2)
     {
       await ChangeBasisHardwareUnitId(targetId);
     }
-    else if (MfcType == MfcType.Normal)
+    else if(MfcType == MfcType.Normal)
     {
       await ChangeNormalHardwareUnitId(targetId);
     }
@@ -166,12 +166,12 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     {
       var liveData = await GetLiveData();
     }
-    catch (TimeoutException)
+    catch(TimeoutException)
     {
       Connection.ReleaseId(targetId);
       throw new InvalidOperationException("Could not get a response for the newly changed id");
     }
-    
+
     Connection.ReleaseId(AssumedId);
     AssumedId = targetId;
     try
@@ -199,7 +199,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
   public async Task SetSetpointSource(SetpointSource source)
   {
     var currentState = GetCurrentState();
-    if (currentState is null)
+    if(currentState is null)
       return;
 
     var request = new SetSetpointSourceCommand(currentState.Id, source, ":)");
@@ -210,7 +210,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
   public async Task<SetpointSource> GetSetpointSource()
   {
     var currentState = GetCurrentState();
-    if (currentState is null)
+    if(currentState is null)
       return SetpointSource.UnknownSource;
 
     var request = new GetSetpointSourceCommand(currentState.Id);
@@ -311,11 +311,6 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     }
   }
 
-  public async Task SetSetpointSource()
-  {
-
-  }
-
   public async Task<bool> QueryDataFrameFormat()
   {
     var currentState = GetCurrentState();
@@ -355,22 +350,22 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
 
   public Task HoldValvesAtCurrentPosition()
   {
-    switch (MfcType)
+    switch(MfcType)
     {
       case MfcType.Normal:
-      {
-        var holdValvesCommand = new HoldValvesAtCurrentPositionCommand(AssumedId, GetFormatEntries(), FirmwareVersion);
-        return Send(holdValvesCommand);
-      }
+        {
+          var holdValvesCommand = new HoldValvesAtCurrentPositionCommand(AssumedId, GetFormatEntries(), FirmwareVersion);
+          return Send(holdValvesCommand);
+        }
       case MfcType.Basis2:
-      {
-        var currentState = GetCurrentState();
-        if (currentState?.LiveData is null)
-          return Task.CompletedTask;
-      
-        var holdValvesCommand = new BasisHoldValvesAtCurrentPositionCommand(AssumedId, FirmwareVersion, currentState.LiveData.ValveDrive);
-        return Send(holdValvesCommand);
-      }
+        {
+          var currentState = GetCurrentState();
+          if(currentState?.LiveData is null || !currentState.LiveData.ValveDrive.HasValue)
+            return Task.CompletedTask;
+
+          var holdValvesCommand = new BasisHoldValvesAtCurrentPositionCommand(AssumedId, FirmwareVersion, currentState.LiveData.ValveDrive.Value);
+          return Send(holdValvesCommand);
+        }
       case MfcType.None:
       default:
         throw new ArgumentOutOfRangeException();
@@ -379,18 +374,18 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
 
   public Task HoldValvesClosed()
   {
-    switch (MfcType)
+    switch(MfcType)
     {
       case MfcType.Normal:
-      {
-        var holdValvesClosedCommand = new HoldValvesClosedCommand(AssumedId, GetFormatEntries(), FirmwareVersion);
-        return Send(holdValvesClosedCommand);
-      }
+        {
+          var holdValvesClosedCommand = new HoldValvesClosedCommand(AssumedId, GetFormatEntries(), FirmwareVersion);
+          return Send(holdValvesClosedCommand);
+        }
       case MfcType.Basis2:
-      {
-        var holdValvesClosedCommand = new BasisHoldValvesClosedCommand(AssumedId, FirmwareVersion);
-        return Send(holdValvesClosedCommand);
-      }
+        {
+          var holdValvesClosedCommand = new BasisHoldValvesClosedCommand(AssumedId, FirmwareVersion);
+          return Send(holdValvesClosedCommand);
+        }
       case MfcType.None:
       default:
         throw new ArgumentOutOfRangeException();
@@ -418,12 +413,20 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
 
   public Task TareAbsolutePressureWithBarometer()
   {
+    // ignore taring on BASIS for now, implement later when/if needed
+    if(MfcType != MfcType.Normal)
+      return Task.CompletedTask;
+
     var tarePressureCommand = new TareAbsolutePressureWithBarometerCommand(AssumedId, GetFormatEntries(), FirmwareVersion);
     return Send(tarePressureCommand);
   }
 
   public Task TareFlow()
   {
+    // ignore taring on BASIS for now, implement later when/if needed
+    if(MfcType != MfcType.Normal)
+      return Task.CompletedTask;
+
     var tareFlowCommand = new TareFlowCommand(AssumedId, GetFormatEntries(), FirmwareVersion);
     return Send(tareFlowCommand);
   }

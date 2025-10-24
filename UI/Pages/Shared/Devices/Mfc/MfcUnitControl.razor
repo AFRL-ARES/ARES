@@ -50,6 +50,12 @@
         <input type="number" class="form-control form-control-sm text-center mfc-setpoint-control mfc-setpoint-input" @bind="@ViewModel!.TargetSetpoint" placeholder="@ViewModel!.Setpoint" tabindex="ViewModel.TargetSetpoint" />
         <input type="submit" class="btn btn-sm btn-secondary mx-2 mfc-setpoint-control" value="Set" @onclick="ViewModel.SetSetpoint" />
       }
+
+      @if(ViewModel!.ValveDrive is not null)
+      {
+        <div class="mfc-valve-drive field-descriptor">Valve Drive</div>
+        <div class="mfc-valve-drive">@($"{ViewModel!.ValveDrive}")</div>
+    }
     </div>
     @if (ViewModel!.Setpoint is not null && ViewModel!.HasValve)
     {

@@ -114,12 +114,12 @@ public class AlicatBasisSim : IAlicatSim
   /// <param name="command"></param>
   private void ProcessQualifiedCommand(string command)
   {
-    if (string.IsNullOrEmpty(command))
+    if(string.IsNullOrEmpty(command))
     {
       SendDataFrame();
       return;
     }
-    
+
     if(command.StartsWith("@="))
     {
       DeviceId = command["@=".Length..].First();
@@ -167,7 +167,7 @@ public class AlicatBasisSim : IAlicatSim
 
     Send("?");
   }
-  
+
   private void ProcessHold(string query)
   {
     // HC HP and H all should set the status code to HLD that's mostly what we are concerned with
@@ -294,6 +294,7 @@ public class AlicatBasisSim : IAlicatSim
     var random = new Random();
     _temperature = Temperature.FromDegreesCelsius(_temperatureBase.DegreesCelsius + random.Next(-10, 10));
     _massFlow = StandardVolumeFlow.FromStandardLitersPerMinute(_flowBase.StandardLitersPerMinute + random.Next(-10, 10));
+    _valveDrive = random.Next(1, 99);
     return;
   }
 

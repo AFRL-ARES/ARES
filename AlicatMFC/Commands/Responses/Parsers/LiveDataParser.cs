@@ -60,7 +60,7 @@ internal class LiveDataParser : ResponseParser<LiveDataResponse>
     StandardVolumeFlow? massFlow = default;
     StandardVolumeFlow? setpoint = default;
     StandardVolumeFlow? totalizedMassFlow = default;
-    double valveDrive = default;
+    double? valveDrive = null;
     string? gas = default;
     List<StatusCode> statusCodes = new();
     for(var i = 0; i < tokens.Length; i++)
@@ -129,7 +129,7 @@ internal class LiveDataParser : ResponseParser<LiveDataResponse>
         case DataFormatField.StatusCodes:
           var matches = Regex.Matches(token, @"\[(.*?)\]");
           var result = matches.Select(m => m.Groups[1].Value).ToList();
-          foreach (var match in result)
+          foreach(var match in result)
           {
             var foundCode2 = Enum.TryParse<StatusCode>(match, true, out var code2);
             if(foundCode2)

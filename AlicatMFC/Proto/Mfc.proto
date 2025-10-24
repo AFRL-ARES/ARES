@@ -167,6 +167,7 @@ message MfcLiveDataResponse {
   UnitValue setpoint = 6; // Targeted mass flow
 	string gas = 7; // Gas abbreviation (ex: "N2")
 	repeated Status status_codes = 8; // status codes of the mfc
+	optional double valve_drive = 9; // valve drive of a BASIS2 device
 }
 
 message UnitValue {
