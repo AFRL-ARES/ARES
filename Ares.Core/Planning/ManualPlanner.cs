@@ -4,7 +4,6 @@ using Ares.Datamodel.Connection;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
-using System.Collections.Generic;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 
@@ -103,7 +102,8 @@ public class ManualPlanner : IPlannerService
     // Create a useful Func to split lines
     var tokenizeLine = new Func<string, List<string>>(line =>
     {
-      return line.Trim().Split([delim], StringSplitOptions.RemoveEmptyEntries).ToList();
+      line = line.Trim();
+      return line.Split(delim, StringSplitOptions.RemoveEmptyEntries).ToList();
     });
 
     // Tokenize the first line of the file
