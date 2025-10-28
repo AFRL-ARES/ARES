@@ -10,5 +10,5 @@ internal class BasisHoldValvesClosedCommand : MfcCommandExpectingResponse<LiveDa
   { }
 
   protected override string SerializeToString()
-    => "HPUR 100";
+    => "HPUR 0";
 }
