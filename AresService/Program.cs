@@ -75,7 +75,10 @@ public class Program
   private static async Task<int> CheckDatabase(string[] args)
   {
     var host = Host.CreateApplicationBuilder(args);
-
+    host.Configuration
+      .AddJsonFile("appsettings.aresservice.json", optional: false, reloadOnChange: true)
+      .AddJsonFile($"appsettings.aresservice.{host.Environment.EnvironmentName}.json", optional: true);
+    
     try
     {
       ConfigureDatabaseServices(host.Services, host.Configuration);
@@ -132,6 +135,10 @@ public class Program
 
     // Build a temporary host to get the services
     var host = Host.CreateApplicationBuilder(args);
+    host.Configuration
+      .AddJsonFile("appsettings.aresservice.json", optional: false, reloadOnChange: true)
+      .AddJsonFile($"appsettings.aresservice.{host.Environment.EnvironmentName}.json", optional: true);
+    
     try
     {
       ConfigureDatabaseServices(host.Services, host.Configuration);
@@ -176,6 +183,10 @@ public class Program
       .CreateBootstrapLogger();
 
     var builder = WebApplication.CreateBuilder(args);
+    builder.Configuration
+      .AddJsonFile("appsettings.aresservice.json", optional: false, reloadOnChange: true)
+      .AddJsonFile($"appsettings.aresservice.{builder.Environment.EnvironmentName}.json", optional: true);
+    
     var configuration = builder.Configuration;
     var services = builder.Services;
 
