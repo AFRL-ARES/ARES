@@ -84,7 +84,7 @@ public class MassFlowControllerInterpreter : DeviceCommandInterpreter<IMassFlowC
           break;
         }
 
-        await Device.NewSetpoint(StandardVolumeFlow.FromStandardCubicCentimetersPerMinute(setpointParameter.Value.NumberValue));
+        await Device.NewSetpoint(StandardVolumeFlow.FromStandardLitersPerMinute(setpointParameter.Value.NumberValue));
         break;
 
       case MassFlowControllerCommand.GetSetpoint:

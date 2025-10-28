@@ -68,7 +68,7 @@ public class MfcService : MfcRpc.MfcRpcBase
   {
     var mfc = GetMfc(request.DeviceRequest.DeviceId);
     // TODO: Verify units
-    await mfc.NewSetpoint(StandardVolumeFlow.FromStandardCubicCentimetersPerMinute(request.Setpoint));
+    await mfc.NewSetpoint(StandardVolumeFlow.FromStandardLitersPerMinute(request.Setpoint));
     return new Empty();
   }
 

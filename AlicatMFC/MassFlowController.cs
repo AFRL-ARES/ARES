@@ -462,7 +462,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
   public override async Task EnterSafeMode(CancellationToken ct)
   {
     //Set the setpoint to zero, effectively shutting off the MFC.. I think
-    await NewSetpoint(StandardVolumeFlow.FromStandardCubicCentimetersPerMinute(0.0));
+    await NewSetpoint(StandardVolumeFlow.FromStandardLitersPerMinute(0.0));
     await HoldValvesClosed();
   }
 

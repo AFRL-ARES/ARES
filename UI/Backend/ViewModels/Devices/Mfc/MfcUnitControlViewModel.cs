@@ -150,13 +150,13 @@ public class MfcUnitControlViewModel : SerialDeviceUnitViewModel, IAsyncDisposab
     if(state.Data.MassFlow is not null)
     {
       var foundMassFlowUnit = StandardVolumeFlow.TryParseUnit(state.Data.MassFlow.Unit, out var massFlowUnit);
-      MassFlow = StandardVolumeFlow.From(state.Data.MassFlow.Value, foundMassFlowUnit ? massFlowUnit : StandardVolumeFlowUnit.StandardCubicCentimeterPerMinute);
+      MassFlow = StandardVolumeFlow.From(state.Data.MassFlow.Value, foundMassFlowUnit ? massFlowUnit : StandardVolumeFlowUnit.StandardLiterPerMinute);
     }
 
     if(state.Data.Setpoint is not null)
     {
       var foundSetPointUnit = StandardVolumeFlow.TryParseUnit(state.Data.Setpoint.Unit, out var setpointUnit);
-      Setpoint = StandardVolumeFlow.From(state.Data.Setpoint.Value, foundSetPointUnit ? setpointUnit : StandardVolumeFlowUnit.StandardCubicCentimeterPerMinute);
+      Setpoint = StandardVolumeFlow.From(state.Data.Setpoint.Value, foundSetPointUnit ? setpointUnit : StandardVolumeFlowUnit.StandardLiterPerMinute);
     }
 
     if(state.Data.HasValveDrive)
