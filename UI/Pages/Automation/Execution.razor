@@ -105,7 +105,7 @@
                 var latestExperiment = i == ExperimentExecutionStatuses.Count - 1;
                 <ul class="tree">
                   <li>
-                    <h6>Experiment: @ExperimentExecutionStatuses.Count</h6>
+                    <h6>Experiment: @experimentStatus.ExperimentId</h6>
                     <ul>
                       @foreach(var stepStatus in experimentStatus.StepExecutionStatuses)
                       {

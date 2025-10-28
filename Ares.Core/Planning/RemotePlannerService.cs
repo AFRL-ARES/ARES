@@ -10,7 +10,6 @@ using DynamicData;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Grpc.Net.Client;
-using System.Collections;
 
 namespace Ares.Core.Planning;
 
@@ -144,7 +143,7 @@ public class RemotePlannerService : PlannerServiceBase
     }
   }
 
-  public override async Task<IList<PlanResult>> Plan(IEnumerable<ParameterMetadata> plannableParameters,
+  public override async Task<PlanResponse> Plan(IEnumerable<ParameterMetadata> plannableParameters,
     string campaignId,
     IEnumerable<ExperimentOverview> previousExperiments,
     IEnumerable<Analysis> analysisHistory,
@@ -155,10 +154,13 @@ public class RemotePlannerService : PlannerServiceBase
     planRequest.PlanningParameters.AddRange(plannableParameters.Select(parameter => ConvertToPlanningParameter(parameter, previousExperiments)));
     planRequest.AnalysisResults.AddRange(analysisHistory.Select(a => (double)a.Result));
     var result = await client.PlanAsync(planRequest, cancellationToken: cancellationToken);
-    return ToPlanResults(result, plannableParameters);
+
+    var convertedResults = ToPlanResults(result, plannableParameters);
+    var response = new PlanResponse(convertedResults, result.PlanningOutcome, result.ErrorString);
+    return response;
   }
 
-  public override async Task<IList<PlanResult>> Plan(IEnumerable<ParameterMetadata> plannableParameters,
+  public override async Task<PlanResponse> Plan(IEnumerable<ParameterMetadata> plannableParameters,
     string campaignId,
     IEnumerable<ExperimentOverview> previousExperiments,
     IEnumerable<Analysis> analysisHistory,
@@ -170,7 +172,10 @@ public class RemotePlannerService : PlannerServiceBase
     planRequest.PlanningParameters.AddRange(plannableParameters.Select(parameter => ConvertToPlanningParameter(parameter, previousExperiments)));
     planRequest.AnalysisResults.AddRange(analysisHistory.Select(a => (double)a.Result));
     var result = await client.PlanAsync(planRequest, cancellationToken: cancellationToken);
-    return ToPlanResults(result, plannableParameters);
+    
+    var convertedResults = ToPlanResults(result, plannableParameters);
+    var response = new PlanResponse(convertedResults, result.PlanningOutcome, result.ErrorString);
+    return response;
   }
 
   private static PlanningParameter ConvertToPlanningParameter(ParameterMetadata metadata, IEnumerable<ExperimentOverview> experimentHistory)
