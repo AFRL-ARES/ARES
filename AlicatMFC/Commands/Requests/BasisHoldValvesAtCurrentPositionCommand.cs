@@ -1,10 +1,14 @@
-﻿namespace AlicatMFC.Commands.Requests;
+﻿using AlicatMFC.Commands.Responses;
+using AlicatMFC.Commands.Responses.Parsers;
+using AlicatMFC.Commands.Responses.Streamed;
 
-internal class BasisHoldValvesAtCurrentPositionCommand : MfcCommand
+namespace AlicatMFC.Commands.Requests;
+
+internal class BasisHoldValvesAtCurrentPositionCommand : MfcCommandExpectingResponse<LiveDataResponse>
 {
   private readonly double _currentValveDrive;
 
-  public BasisHoldValvesAtCurrentPositionCommand(char id, string firmware, double currentValveDrive) : base(id, firmware)
+  public BasisHoldValvesAtCurrentPositionCommand(char id, string firmware, DataFrameFormatEntry[] dataFrames, double currentValveDrive) : base(id, new LiveDataParser(dataFrames), firmware)
   {
     _currentValveDrive = currentValveDrive;
   }

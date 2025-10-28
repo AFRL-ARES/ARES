@@ -1,11 +1,12 @@
 ﻿using System.Text.RegularExpressions;
 using AlicatMFC.Commands.Responses.Streamed;
+using Ares.Device.Serial.Commands;
 using UnitsNet;
 using UnitsNet.Units;
 
 namespace AlicatMFC.Commands.Responses.Parsers;
 
-internal class LiveDataParser : ResponseParser<LiveDataResponse>
+internal class LiveDataParser : AsciiResponseParser<LiveDataResponse>
 {
   public LiveDataParser(DataFrameFormatEntry[] formatEntries)
   {

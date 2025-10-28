@@ -1,4 +1,5 @@
 ﻿using AlicatMFC.Commands.Requests;
+using Ares.Alicat.Mfc.Config;
 using Ares.Alicat.Mfc.Messaging;
 using Ares.Device.Serial;
 using UnitsNet;
@@ -9,6 +10,7 @@ public interface IMassFlowController : ISerialDevice<IMfcConnection>, IAsyncDisp
 {
   char AssumedId { get; }
   bool HasValve { get; }
+  MfcType MfcType { get; }
   IObservable<MfcState?> StateStream { get; }
 
   Task Start();

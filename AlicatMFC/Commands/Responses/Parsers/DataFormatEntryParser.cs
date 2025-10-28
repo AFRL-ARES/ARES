@@ -1,9 +1,10 @@
-﻿using AlicatMFC.Commands.Responses.Streamed;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
+using AlicatMFC.Commands.Responses.Streamed;
+using Ares.Device.Serial.Commands;
 
 namespace AlicatMFC.Commands.Responses.Parsers;
 
-internal class DataFormatEntryParser : ResponseParser<DataFrameFormatEntry>
+internal class DataFormatEntryParser : AsciiResponseParser<DataFrameFormatEntry>
 {
 
   private static readonly Regex _identifierExpression = new(@"D\d\d");
@@ -26,7 +27,7 @@ internal class DataFormatEntryParser : ResponseParser<DataFrameFormatEntry>
   /// <returns></returns>
   public static Enum? GetUnitFromAbbreviation(string? msg, Type? unitType)
   {
-    if (unitType is null || string.IsNullOrEmpty(msg))
+    if(unitType is null || string.IsNullOrEmpty(msg))
       return null;
 
     // The MFC likes to report an absolute pressure unit for its pressure, but I'm not sure we have a UnitsNet equivalent,
@@ -38,7 +39,7 @@ internal class DataFormatEntryParser : ResponseParser<DataFrameFormatEntry>
 
   public static Enum? GetUnitFromEnumString(string? msg, Type? unitType)
   {
-    if (unitType is null || string.IsNullOrEmpty(msg))
+    if(unitType is null || string.IsNullOrEmpty(msg))
       return null;
 
     var info = Enum.TryParse(unitType, msg, out var unitEnum);
@@ -52,29 +53,29 @@ internal class DataFormatEntryParser : ResponseParser<DataFrameFormatEntry>
   {
     var headerTokens = header.Split(' ', StringSplitOptions.RemoveEmptyEntries);
     var headerTypes = new HeaderTokenType[headerTokens.Length];
-    for (var i = 0; i < headerTokens.Length; i++)
+    for(var i = 0; i < headerTokens.Length; i++)
     {
       var token = headerTokens[i];
       var unitIdMatch = _unitIdExpression.Match(token);
-      if (unitIdMatch.Success)
+      if(unitIdMatch.Success)
         headerTypes[i] = HeaderTokenType.Id;
-      else if (token.StartsWith("name", StringComparison.InvariantCultureIgnoreCase))
+      else if(token.StartsWith("name", StringComparison.InvariantCultureIgnoreCase))
         headerTypes[i] = HeaderTokenType.Name;
-      else if (token.StartsWith("type", StringComparison.InvariantCultureIgnoreCase))
+      else if(token.StartsWith("type", StringComparison.InvariantCultureIgnoreCase))
         headerTypes[i] = HeaderTokenType.Type;
-      else if (token.StartsWith("MinVal", StringComparison.InvariantCultureIgnoreCase))
+      else if(token.StartsWith("MinVal", StringComparison.InvariantCultureIgnoreCase))
         headerTypes[i] = HeaderTokenType.MinVal;
-      else if (token.StartsWith("MaxVal", StringComparison.InvariantCultureIgnoreCase))
+      else if(token.StartsWith("MaxVal", StringComparison.InvariantCultureIgnoreCase))
         headerTypes[i] = HeaderTokenType.MaxVal;
-      else if (token.StartsWith("Unit", StringComparison.InvariantCultureIgnoreCase))
+      else if(token.StartsWith("Unit", StringComparison.InvariantCultureIgnoreCase))
         headerTypes[i] = HeaderTokenType.Units;
-      else if (token.EndsWith("00", StringComparison.InvariantCultureIgnoreCase))
+      else if(token.EndsWith("00", StringComparison.InvariantCultureIgnoreCase))
         headerTypes[i] = HeaderTokenType.LineNumber;
-      else if (token.StartsWith("Notes", StringComparison.InvariantCultureIgnoreCase))
+      else if(token.StartsWith("Notes", StringComparison.InvariantCultureIgnoreCase))
         headerTypes[i] = HeaderTokenType.Notes;
-      else if (token.StartsWith("Width", StringComparison.InvariantCultureIgnoreCase))
+      else if(token.StartsWith("Width", StringComparison.InvariantCultureIgnoreCase))
         headerTypes[i] = HeaderTokenType.Width;
-      else if (token.StartsWith("id", StringComparison.InvariantCultureIgnoreCase))
+      else if(token.StartsWith("id", StringComparison.InvariantCultureIgnoreCase))
         headerTypes[i] = HeaderTokenType.DataFrameId;
     }
 
@@ -84,13 +85,13 @@ internal class DataFormatEntryParser : ResponseParser<DataFrameFormatEntry>
   protected override bool TryParseResponse(string line, out DataFrameFormatEntry? response)
   {
     var isEndMarker = line.EndsWith('?') || line.StartsWith('?');
-    if (isEndMarker)
+    if(isEndMarker)
     {
       response = new DataFrameFormatEntry(_assumedId, DataFrameFormatEntryType.EndMarker);
       return true;
     }
 
-    if (line[0] != _assumedId)
+    if(line[0] != _assumedId)
     {
       response = null;
       return false;
@@ -100,7 +101,7 @@ internal class DataFormatEntryParser : ResponseParser<DataFrameFormatEntry>
     lineCpy = DespaceNames(lineCpy);
 
     var identifierMatch = _identifierExpression.Match(lineCpy);
-    if (!identifierMatch.Success)
+    if(!identifierMatch.Success)
     // if (!identifierExpression.IsMatch(line))
     {
       response = null;
@@ -109,14 +110,14 @@ internal class DataFormatEntryParser : ResponseParser<DataFrameFormatEntry>
 
     var identifier = identifierMatch.Value;
     var isHeader = identifier.Equals(_headerIdentifer);
-    if (isHeader)
+    if(isHeader)
     {
       _headerTypes = GetHeaderTypes(lineCpy);
       response = new DataFrameFormatEntry(_assumedId, DataFrameFormatEntryType.Header);// We don't really care about the header, but we want to say the line was parsed successfully so it is removed from zeh buffer.
       return true;
     }
 
-    if (_headerTypes is null)
+    if(_headerTypes is null)
       throw new InvalidOperationException("Header was undefined when trying to parse a data format entry.");
 
 
@@ -126,7 +127,7 @@ internal class DataFormatEntryParser : ResponseParser<DataFrameFormatEntry>
     var idStr = tokens[Array.IndexOf(_headerTypes, HeaderTokenType.Id)];
     var lineNumberStr = tokens[Array.IndexOf(_headerTypes, HeaderTokenType.LineNumber)];
     var lineNumber = int.Parse(lineNumberStr[1..]);
-    if (_entryNumber.HasValue && lineNumber != _entryNumber.Value)
+    if(_entryNumber.HasValue && lineNumber != _entryNumber.Value)
     {
       response = null;
       return false;

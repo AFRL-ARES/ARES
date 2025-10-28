@@ -1,13 +1,14 @@
-﻿using Ares.Alicat.Mfc.Messaging;
+﻿using AlicatMFC.Commands.Responses;
+using AlicatMFC.Commands.Responses.Parsers;
 
 namespace AlicatMFC.Commands.Requests;
 
-internal class SetSetpointSourceCommand : MfcCommand
+internal class SetSetpointSourceCommand : MfcCommandExpectingResponse<SetpointSourceResponse>
 {
-  private readonly SetpointSource _source;
+  private readonly Ares.Alicat.Mfc.Messaging.SetpointSource _source;
 
-  public SetSetpointSourceCommand(char id, SetpointSource source, string firmware)
-    : base(id, firmware)
+  public SetSetpointSourceCommand(char id, Ares.Alicat.Mfc.Messaging.SetpointSource source, string firmware)
+    : base(id, new SetpointSourceParser(id), firmware)
   {
     _source = source;
   }

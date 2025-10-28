@@ -1,8 +1,12 @@
-﻿namespace AlicatMFC.Commands.Requests;
+﻿using AlicatMFC.Commands.Responses;
+using AlicatMFC.Commands.Responses.Parsers;
+using AlicatMFC.Commands.Responses.Streamed;
 
-internal class BasisCancelValveHoldCommand : MfcCommand
+namespace AlicatMFC.Commands.Requests;
+
+internal class BasisCancelValveHoldCommand : MfcCommandExpectingResponse<LiveDataResponse>
 {
-  public BasisCancelValveHoldCommand(char id, string firmware) : base(id, firmware)
+  public BasisCancelValveHoldCommand(char id, DataFrameFormatEntry[] formatEntries, string firmware) : base(id, new LiveDataParser(formatEntries), firmware)
   {
   }
 

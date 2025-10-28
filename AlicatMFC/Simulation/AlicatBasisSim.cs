@@ -123,6 +123,7 @@ public class AlicatBasisSim : IAlicatSim
     if(command.StartsWith("@="))
     {
       DeviceId = command["@=".Length..].First();
+      SendDataFrame();
       return;
     }
 
@@ -177,7 +178,7 @@ public class AlicatBasisSim : IAlicatSim
     {
       _statusCodes.Add(StatusCode.Hld);
       _valveDrive = holdPercentage;
-      //SendDataFrame();
+      SendDataFrame();
     }
     else
       Send("?");
@@ -188,7 +189,7 @@ public class AlicatBasisSim : IAlicatSim
     query = query.Trim();
     if(string.IsNullOrEmpty(query))
     {
-      Send($"{DeviceId}LSS {_setpointSource.ToStringSource()}");
+      Send($"{DeviceId} {_setpointSource.ToStringSource()}");
       return;
     }
 
@@ -200,6 +201,7 @@ public class AlicatBasisSim : IAlicatSim
     }
 
     _setpointSource = src;
+    Send($"{DeviceId} {_setpointSource.ToStringSource()}");
   }
 
   private void ProcessSetpoint(string query)
@@ -219,6 +221,8 @@ public class AlicatBasisSim : IAlicatSim
     }
 
     _setpoint = StandardVolumeFlow.FromStandardLitersPerMinute(setpoint);
+
+    SendDataFrame();
   }
 
   private void ProcessGas(string query)
@@ -240,6 +244,7 @@ public class AlicatBasisSim : IAlicatSim
     if(gasNumParsed && gasNum < _availableGases.Length)
     {
       _currentGas = _availableGases[gasNum];
+      SendCurrentGas();
       return;
     }
 
@@ -258,14 +263,12 @@ public class AlicatBasisSim : IAlicatSim
     var gasResponses = new List<string>();
     foreach(var gas in _availableGases)
     {
-      var response = $"{DeviceId} G{gasResponses.Count:D2}   {gas}";
+      var response = $"{DeviceId} {gasResponses.Count:D2}   {gas}";
       gasResponses.Add(response);
     }
-    foreach(var gas in gasResponses)
-    {
-      Send($"{gas}\r");
-      Task.Delay(25).Wait();
-    }
+    var gasResponse = string.Join('\n', gasResponses);
+
+    Send($"{gasResponse}\r");
   }
 
   private void SendFirmwareVersion()

@@ -1,9 +1,10 @@
-﻿using AlicatMFC.Commands.Responses.Streamed;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
+using AlicatMFC.Commands.Responses.Streamed;
+using Ares.Device.Serial.Commands;
 
 namespace AlicatMFC.Commands.Responses.Parsers;
 
-internal class GasInfoEntryParser : ResponseParser<GasInfoEntry>
+internal class GasInfoEntryParser : AsciiResponseParser<GasInfoEntry>
 {
   // private static Regex _identifierExpression = new(@"G\d\d\s+");
   // private static Regex _unitIdExpression = new(@"[A-Z]\s+");
@@ -19,7 +20,7 @@ internal class GasInfoEntryParser : ResponseParser<GasInfoEntry>
   }
   protected override bool TryParseResponse(string line, out GasInfoEntry? gasInfoEntry)
   {
-    if (line.EndsWith('?') || line.StartsWith('?'))
+    if(line.EndsWith('?') || line.StartsWith('?'))
     {
       gasInfoEntry = new GasInfoEntry(_assumedId);
       return true;
@@ -27,21 +28,21 @@ internal class GasInfoEntryParser : ResponseParser<GasInfoEntry>
 
     var lineCpy = line.Replace("\b", "");
     var entryMatch = _gasInfoEntryRegex.Match(lineCpy);
-    if (!entryMatch.Success)
+    if(!entryMatch.Success)
     {
       gasInfoEntry = null;
       return false;
     }
 
     var tokens = lineCpy.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-    if (tokens[0][0] != _assumedId)
+    if(tokens[0][0] != _assumedId)
     {
       gasInfoEntry = null;
       return false;
     }
     var indexStr = tokens[1][1..];
     var index = uint.Parse(indexStr);
-    if (_gasIdx.HasValue && index != _gasIdx)
+    if(_gasIdx.HasValue && index != _gasIdx)
     {
       gasInfoEntry = null;
       return false;

@@ -158,7 +158,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
 
   private async Task ChangeBasisHardwareUnitId(char targetId)
   {
-    var command = new BasisChangeIdCommand(AssumedId, targetId, FirmwareVersion);
+    var command = new BasisChangeIdCommand(AssumedId, targetId, GetFormatEntries(), FirmwareVersion);
     await Connection.Send(command);
     await Task.Delay(500); // we don't get a response back immediately, so we have to assume slight delay
 
@@ -218,22 +218,17 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     return response.Source;
   }
 
-  private async Task QueryGasViaStream()
+  private async Task QueryBasisGasList()
   {
     var currentState = GetCurrentState();
     if(currentState is null)
       return;
 
-    var request = new QueryGasStreamCommand(currentState.Id, ":)", MfcType);
+    var request = new BasisQueryGasCommand(currentState.Id, ":)");
 
-    var responseStream = await Send(request);
+    var response = await Send(request, TimeSpan.FromSeconds(5));
 
-    var gasInfos = await responseStream
-      .Timeout(TimeSpan.FromSeconds(2))
-      .Catch<GasInfoEntry, TimeoutException>(_ => Observable.Empty<GasInfoEntry>())
-      .ToArray();
-
-    foreach(var gasInfo in gasInfos)
+    foreach(var gasInfo in response.GasInfoEntries)
     {
       UpdateState(gasInfo);
     }
@@ -302,7 +297,11 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
       new(currentState.Id, 5, DataFormatField.Setpoint, "s decimal", null, null, null, "", StandardVolumeFlowUnit.StandardLiterPerMinute),
       new(currentState.Id, 6, DataFormatField.ValveDrive, "s decimal", null, null, null, "", null),
       new(currentState.Id, 7, DataFormatField.Gas, "string", null, null, null, "", null),
-      new(currentState.Id, 8, DataFormatField.StatusCodes, "string", null, null, null, "", null),
+      new(currentState.Id, 8, DataFormatField.Status, "string", null, null, "3", "TOV", null),
+      new(currentState.Id, 8, DataFormatField.Status, "string", null, null, "3", "MOV", null),
+      new(currentState.Id, 8, DataFormatField.Status, "string", null, null, "3", "OVR", null),
+      new(currentState.Id, 8, DataFormatField.Status, "string", null, null, "3", "HLD", null),
+      new(currentState.Id, 8, DataFormatField.Status, "string", null, null, "3", "VTM", null),
     };
 
     foreach(var entry in formatEntries)
@@ -350,46 +349,40 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
 
   public Task HoldValvesAtCurrentPosition()
   {
-    switch(MfcType)
+    if(MfcType == MfcType.Normal)
     {
-      case MfcType.Normal:
-        {
-          var holdValvesCommand = new HoldValvesAtCurrentPositionCommand(AssumedId, GetFormatEntries(), FirmwareVersion);
-          return Send(holdValvesCommand);
-        }
-      case MfcType.Basis2:
-        {
-          var currentState = GetCurrentState();
-          if(currentState?.LiveData is null || !currentState.LiveData.ValveDrive.HasValue)
-            return Task.CompletedTask;
-
-          var holdValvesCommand = new BasisHoldValvesAtCurrentPositionCommand(AssumedId, FirmwareVersion, currentState.LiveData.ValveDrive.Value);
-          return Send(holdValvesCommand);
-        }
-      case MfcType.None:
-      default:
-        throw new ArgumentOutOfRangeException();
+      var holdValvesCommand = new HoldValvesAtCurrentPositionCommand(AssumedId, GetFormatEntries(), FirmwareVersion);
+      return Send(holdValvesCommand);
     }
+    else if(MfcType == MfcType.Basis2)
+    {
+      var currentState = GetCurrentState();
+      if(currentState?.LiveData?.ValveDrive is null)
+        return Task.CompletedTask;
+
+      var holdValvesCommand = new BasisHoldValvesAtCurrentPositionCommand(AssumedId, FirmwareVersion, GetFormatEntries(), currentState.LiveData.ValveDrive.Value);
+      return Send(holdValvesCommand);
+    }
+
+    return Task.CompletedTask;
+
   }
 
   public Task HoldValvesClosed()
   {
-    switch(MfcType)
+    if(MfcType == MfcType.Normal)
     {
-      case MfcType.Normal:
-        {
-          var holdValvesClosedCommand = new HoldValvesClosedCommand(AssumedId, GetFormatEntries(), FirmwareVersion);
-          return Send(holdValvesClosedCommand);
-        }
-      case MfcType.Basis2:
-        {
-          var holdValvesClosedCommand = new BasisHoldValvesClosedCommand(AssumedId, FirmwareVersion);
-          return Send(holdValvesClosedCommand);
-        }
-      case MfcType.None:
-      default:
-        throw new ArgumentOutOfRangeException();
+      var holdValvesClosedCommand = new HoldValvesClosedCommand(AssumedId, GetFormatEntries(), FirmwareVersion);
+      return Send(holdValvesClosedCommand);
     }
+    else if(MfcType == MfcType.Basis2)
+    {
+      var holdValvesClosedCommand = new BasisHoldValvesClosedCommand(AssumedId, GetFormatEntries(), FirmwareVersion);
+      return Send(holdValvesClosedCommand);
+    }
+
+    return Task.CompletedTask;
+
   }
 
   public Task NewComposerMix(MfcGasComposition composerMix)
@@ -400,14 +393,22 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
 
   public async Task NewSetpoint(StandardVolumeFlow setpoint)
   {
-    var newSetpointCommand = new NewSetpointCommand(AssumedId, setpoint, GetFormatEntries(), FirmwareVersion, MfcType);
-    try
+    if(MfcType == MfcType.Normal)
     {
-      var response = await Send(newSetpointCommand, TimeSpan.FromMilliseconds(1000));
+      var newSetpointCommand = new NewSetpointCommand(AssumedId, setpoint, GetFormatEntries(), FirmwareVersion);
+      try
+      {
+        var response = await Send(newSetpointCommand, TimeSpan.FromMilliseconds(1000));
+      }
+      catch(TimeoutException)
+      {
+        Status = new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Tried setting setpoint to {setpoint.StandardCubicCentimetersPerMinute}, but timed out while awaiting response." };
+      }
     }
-    catch(TimeoutException)
+    else if(MfcType == MfcType.Basis2)
     {
-      Status = new DeviceOperationalStatus { OperationalState = OperationalState.Active, Message = $"Tried setting setpoint to {setpoint.StandardCubicCentimetersPerMinute} SCCM, but timed out while awaiting response." };
+      var newSetpointCommand = new BasisNewSetpointCommand(AssumedId, setpoint, GetFormatEntries(), FirmwareVersion);
+      await Send(newSetpointCommand);
     }
   }
 
@@ -534,7 +535,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
   private async Task InitBasis()
   {
     UpdateBasisDataFrames();
-    await QueryGasViaStream();
+    await QueryBasisGasList();
     await QueryFirmwareVersion();
   }
 

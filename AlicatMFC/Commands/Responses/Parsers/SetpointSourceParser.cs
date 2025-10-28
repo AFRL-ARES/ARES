@@ -1,5 +1,7 @@
-﻿namespace AlicatMFC.Commands.Responses.Parsers;
-internal class SetpointSourceParser : ResponseParser<SetpointSourceResponse>
+﻿using Ares.Device.Serial.Commands;
+
+namespace AlicatMFC.Commands.Responses.Parsers;
+internal class SetpointSourceParser : AsciiResponseParser<SetpointSourceResponse>
 {
   private readonly char _assumedId;
 
@@ -7,18 +9,23 @@ internal class SetpointSourceParser : ResponseParser<SetpointSourceResponse>
   {
     _assumedId = assumedId;
   }
-  
+
   protected override bool TryParseResponse(string line, out SetpointSourceResponse? response)
   {
     var tokens = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-    if (tokens[0].First() != _assumedId)
+    if(tokens[0].First() != _assumedId)
     {
       response = null;
       return false;
     }
-    
+
     var sourceToken = tokens.ElementAtOrDefault(1);
-    if (string.IsNullOrEmpty(sourceToken))
+    if(string.IsNullOrEmpty(sourceToken))
+    {
+      response = null;
+      return false;
+    }
+    if(sourceToken != "U" && sourceToken != "A" && sourceToken != "S")
     {
       response = null;
       return false;
