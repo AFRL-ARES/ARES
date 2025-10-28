@@ -158,7 +158,7 @@ internal class RemoteDeviceManager(
     await device.Activate(CancellationToken.None);
 
     var deviceSettings = await _deviceCache.GetCachedDeviceSettings(config.UniqueId);
-    if(deviceSettings is not null)
+    if(deviceSettings is not null && deviceSettings.Fields.Count != 0)
     {
       await device.UpdateSettings(deviceSettings);
     }
