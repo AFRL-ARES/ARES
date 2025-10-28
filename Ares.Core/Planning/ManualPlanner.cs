@@ -27,7 +27,7 @@ public class ManualPlanner : IPlannerService
     .Select(result => (result.Name, result.Value)));
 
 
-  public Task<IList<PlanResult>> Plan(IEnumerable<ParameterMetadata> plannableParameters,
+  public Task<PlanResponse> Plan(IEnumerable<ParameterMetadata> plannableParameters,
     string campaignId,
     IEnumerable<ExperimentOverview> experiments, 
     IEnumerable<Analysis> _, 
@@ -37,11 +37,12 @@ public class ManualPlanner : IPlannerService
     {
       var currentParameterSet = _planResultsQueue.Dequeue().ToList();
       var returnList = plannableParameters.Select(metadata => currentParameterSet.First(result => result.Name == metadata.Name).ToPlanResult(metadata)).ToList();
-      return Task.FromResult<IList<PlanResult>>(returnList);
+      var response = new PlanResponse(returnList, Outcome.Success, string.Empty);
+      return Task.FromResult(response);
     }
-    catch(InvalidOperationException)
+    catch(InvalidOperationException e)
     {
-      return Task.FromResult<IList<PlanResult>>([]);
+      return Task.FromResult(new PlanResponse([], Outcome.Failure, e.Message));
     }
   }
 
@@ -164,7 +165,7 @@ public class ManualPlanner : IPlannerService
     return Task.FromResult(response);
   }
 
-  public async Task<IList<PlanResult>> Plan(IEnumerable<ParameterMetadata> plannableParameters, string campaignId, IEnumerable<ExperimentOverview> previousExperiments, IEnumerable<Analysis> analysisHistory, AresStruct settings, CancellationToken cancellationToken = default)
+  public async Task<PlanResponse> Plan(IEnumerable<ParameterMetadata> plannableParameters, string campaignId, IEnumerable<ExperimentOverview> previousExperiments, IEnumerable<Analysis> analysisHistory, AresStruct settings, CancellationToken cancellationToken = default)
   {
     return await Plan(plannableParameters, campaignId, previousExperiments, analysisHistory, cancellationToken);
   }
