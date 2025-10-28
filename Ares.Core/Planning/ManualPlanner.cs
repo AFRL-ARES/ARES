@@ -4,7 +4,6 @@ using Ares.Datamodel.Connection;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
-using System.Collections.Generic;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 
@@ -28,7 +27,7 @@ public class ManualPlanner : IPlannerService
     .Select(result => (result.Name, result.Value)));
 
 
-  public Task<IList<PlanResult>> Plan(IEnumerable<ParameterMetadata> plannableParameters,
+  public Task<PlanResponse> Plan(IEnumerable<ParameterMetadata> plannableParameters,
     string campaignId,
     IEnumerable<ExperimentOverview> experiments, 
     IEnumerable<Analysis> _, 
@@ -38,11 +37,12 @@ public class ManualPlanner : IPlannerService
     {
       var currentParameterSet = _planResultsQueue.Dequeue().ToList();
       var returnList = plannableParameters.Select(metadata => currentParameterSet.First(result => result.Name == metadata.Name).ToPlanResult(metadata)).ToList();
-      return Task.FromResult<IList<PlanResult>>(returnList);
+      var response = new PlanResponse(returnList, Outcome.Success, string.Empty);
+      return Task.FromResult(response);
     }
-    catch(InvalidOperationException)
+    catch(InvalidOperationException e)
     {
-      return Task.FromResult<IList<PlanResult>>([]);
+      return Task.FromResult(new PlanResponse([], Outcome.Failure, e.Message));
     }
   }
 
@@ -103,7 +103,8 @@ public class ManualPlanner : IPlannerService
     // Create a useful Func to split lines
     var tokenizeLine = new Func<string, List<string>>(line =>
     {
-      return line.Trim().Split([delim], StringSplitOptions.RemoveEmptyEntries).ToList();
+      line = line.Trim();
+      return line.Split(delim, StringSplitOptions.RemoveEmptyEntries).ToList();
     });
 
     // Tokenize the first line of the file
@@ -164,7 +165,7 @@ public class ManualPlanner : IPlannerService
     return Task.FromResult(response);
   }
 
-  public async Task<IList<PlanResult>> Plan(IEnumerable<ParameterMetadata> plannableParameters, string campaignId, IEnumerable<ExperimentOverview> previousExperiments, IEnumerable<Analysis> analysisHistory, AresStruct settings, CancellationToken cancellationToken = default)
+  public async Task<PlanResponse> Plan(IEnumerable<ParameterMetadata> plannableParameters, string campaignId, IEnumerable<ExperimentOverview> previousExperiments, IEnumerable<Analysis> analysisHistory, AresStruct settings, CancellationToken cancellationToken = default)
   {
     return await Plan(plannableParameters, campaignId, previousExperiments, analysisHistory, cancellationToken);
   }
