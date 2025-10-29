@@ -17,7 +17,7 @@ namespace AresService.Migrations.Postgres.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.20")
+                .HasAnnotation("ProductVersion", "9.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -61,6 +61,9 @@ namespace AresService.Migrations.Postgres.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<int>("AnalysisOutcome")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
@@ -76,9 +79,6 @@ namespace AresService.Migrations.Postgres.Migrations
 
                     b.Property<float>("Result")
                         .HasColumnType("real");
-
-                    b.Property<bool>("Success")
-                        .HasColumnType("boolean");
 
                     b.HasKey("UniqueId");
 
@@ -1358,6 +1358,9 @@ namespace AresService.Migrations.Postgres.Migrations
 
                     b.Property<long>("Index")
                         .HasColumnType("bigint");
+
+                    b.Property<string>("InitialValue")
+                        .HasColumnType("jsonb");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()

@@ -44,6 +44,8 @@ public class ParameterEditorViewModel : ReactiveObject
     _unitHelper = unitHelper;
     ParameterMetadata = existingMetadata;
     AvailableOutputs = availableOutputs.ToArray();
+    HasInitialValue = existingMetadata.InitialValue != null;
+    InitialValue = existingMetadata.InitialValue;
   }
 
   public ParameterMetadata ParameterMetadata
@@ -198,7 +200,11 @@ public class ParameterEditorViewModel : ReactiveObject
     set
     {
       _hasInitialValue = value;
-      InitialValue = AresValueHelper.CreateDefault(DataType);
+      if(value)
+        InitialValue = AresValueHelper.CreateDefault(DataType);
+
+      else
+        InitialValue = null;
     }
   }
 
