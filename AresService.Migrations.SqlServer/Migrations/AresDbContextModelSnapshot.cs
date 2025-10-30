@@ -17,7 +17,7 @@ namespace AresService.Migrations.SqlServer.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.20")
+                .HasAnnotation("ProductVersion", "9.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -62,6 +62,9 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<int>("AnalysisOutcome")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
@@ -77,9 +80,6 @@ namespace AresService.Migrations.SqlServer.Migrations
 
                     b.Property<float>("Result")
                         .HasColumnType("real");
-
-                    b.Property<bool>("Success")
-                        .HasColumnType("bit");
 
                     b.HasKey("UniqueId");
 
@@ -1369,6 +1369,9 @@ namespace AresService.Migrations.SqlServer.Migrations
 
                     b.Property<long>("Index")
                         .HasColumnType("bigint");
+
+                    b.Property<string>("InitialValue")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()

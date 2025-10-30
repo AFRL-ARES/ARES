@@ -53,8 +53,18 @@
     </div>
   }
 
+  @if(ViewModel!.HasInitialValue)
+  {
+    <AresValueDesigner ValueEditCallback="ValueEditCallback" Schema="new SchemaEntry { Type = ViewModel!.DataType }" Value="@ViewModel!.InitialValue" Unit="" Name="Initial Value"/>
+  }
+
 
   <hr style="border-top: 1px solid #ccc; margin: 10px 0;" />
+
+  <RadzenRow AlignItems="AlignItems.Center">
+    <RadzenSwitch Name="AchievedValueSwitch" @bind-Value="ViewModel!.HasInitialValue" class="my-2" />
+    <RadzenLabel Text="Has Initial Value" Component="InitalValueSwitch" />
+  </RadzenRow>
 
   <RadzenRow AlignItems="AlignItems.Center">
     <RadzenSwitch Name="AchievedValueSwitch" @bind-Value="ViewModel!.HasAchievedValue" class="my-2"/>
@@ -81,6 +91,19 @@
   private void DeleteParameterClick()
   {
     DeleteParameterCallback(ViewModel!);
+  }
+
+  private Task ValueEditCallback(AresValue value)
+  {
+    //Not sure what scenario this would be to be honest
+    if(value is null)
+      return Task.CompletedTask;
+
+    if(ViewModel!.InitialValue is null)
+      ViewModel!.InitialValue = new AresValue();
+
+    ViewModel!.InitialValue = value;
+    return Task.CompletedTask;
   }
 
   protected override void OnInitialized()

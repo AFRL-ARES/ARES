@@ -184,20 +184,26 @@ public class RemotePlannerService : PlannerServiceBase
     {
       ParameterName = metadata.Name,
       IsPlanned = true,
-      DataType = metadata.Schema.Type
+      DataType = metadata.Schema.Type,
+      InitialValue = metadata.InitialValue
     };
 
     var paramHistory = experimentHistory.Select(exp =>
     {
-      var plannedValue = exp.Template.GetAllPlannedParameters().First(param => param.PlanningMetadata.Name == metadata.Name).Value;
+      var plannedParameters = exp.Template.GetAllPlannedParameters();
+      var plannedValue = plannedParameters.FirstOrDefault(param => param.PlanningMetadata.Name == metadata.Name)?.Value;
 
       var actualValue = string.IsNullOrEmpty(metadata.OutputName) ? null : exp.Result.Fields.FirstOrDefault(f => f.Key == metadata.OutputName).Value;
 
-      return new ParameterHistoryInfo
-      {
-        PlannedValue = plannedValue,
-        AchievedValue = actualValue ?? AresValueHelper.CreateNull()
-      };
+      if(plannedValue is null)
+        return new ParameterHistoryInfo();
+
+      else
+        return new ParameterHistoryInfo
+        {
+          PlannedValue = plannedValue,
+          AchievedValue = actualValue ?? AresValueHelper.CreateNull()
+        };
     });
 
     parameter.ParameterHistory.AddRange(paramHistory);

@@ -15,7 +15,7 @@ namespace AresService.Migrations.Sqlite.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "8.0.20");
+            modelBuilder.HasAnnotation("ProductVersion", "9.0.10");
 
             modelBuilder.Entity("Ares.Datamodel.AnalysisOverview", b =>
                 {
@@ -56,6 +56,9 @@ namespace AresService.Migrations.Sqlite.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("AnalysisOutcome")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT")
@@ -71,9 +74,6 @@ namespace AresService.Migrations.Sqlite.Migrations
 
                     b.Property<float>("Result")
                         .HasColumnType("REAL");
-
-                    b.Property<bool>("Success")
-                        .HasColumnType("INTEGER");
 
                     b.HasKey("UniqueId");
 
@@ -1353,6 +1353,9 @@ namespace AresService.Migrations.Sqlite.Migrations
 
                     b.Property<long>("Index")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("InitialValue")
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
