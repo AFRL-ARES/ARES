@@ -29,4 +29,7 @@ internal class MfcUnitParser
 
   public bool TryParse(string unitAbbreviation, Type unitType, out Enum? unitEnum)
     => _parser.TryParse(unitAbbreviation, unitType, out unitEnum);
+
+  public bool TryParse<TUnitType>(string unitAbbreviation, out TUnitType unitEnum) where TUnitType : struct, Enum
+    => _parser.TryParse(unitAbbreviation, out unitEnum);
 }

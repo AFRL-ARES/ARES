@@ -99,7 +99,25 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
         }
         var numMatch = Regex.Match(modelNumber, @"\d+");
         var num = numMatch.Success ? numMatch.Value : default;
-        dataFrameFormat.MaxVal = num;
+        var unitMatch = Regex.Match(modelNumber, @"[A-Z]+");
+        if(unitMatch.Success)
+        {
+          var unitFound = MfcUnitParser.Parser.TryParse<StandardVolumeFlowUnit>(unitMatch.Value, out var unit);
+          if(!unitFound)
+          {
+            _logger.LogWarning("Failed to get max value for MFC {Name} as we couldn't get the value units from model number {Model}", Name, entry.Data);
+            return;
+          }
+          if(!int.TryParse(num, out var numericNum) || numericNum <= 0)
+          {
+            _logger.LogWarning(
+                "Failed to get max value for MFC {Name} as we couldn't get the numeric max value from model number {Model}",
+                Name, entry.Data);
+            return;
+          }
+          var flowVal = StandardVolumeFlow.From(numericNum, unit);
+          dataFrameFormat.MaxVal = flowVal.StandardLitersPerMinute.ToString();
+        }
       }
     }
   }
