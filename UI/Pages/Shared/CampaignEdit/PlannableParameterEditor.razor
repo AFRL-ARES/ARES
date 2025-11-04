@@ -16,7 +16,7 @@
 
   <div class="row">
     <RadzenFormField Text="Data Type" Variant="Variant.Outlined" Style="width: 100%">
-      <RadzenDropDown Data="@filteredTypes" @bind-Value="ViewModel!.DataType" />
+      <RadzenDropDown Data="@FilteredTypes" @bind-Value="ViewModel!.DataType" />
     </RadzenFormField>
   </div>
 
@@ -83,7 +83,7 @@
 
 @code {
 
-  private IEnumerable<AresDataType> filteredTypes;
+  private IEnumerable<AresDataType>? FilteredTypes;
 
   [Parameter]
   public Action<ParameterEditorViewModel> DeleteParameterCallback { get; set; } = delegate { };
@@ -108,6 +108,6 @@
 
   protected override void OnInitialized()
   {
-    filteredTypes = Enum.GetValues(typeof(AresDataType)).Cast<AresDataType>().Where(s => s != AresDataType.Null && s != AresDataType.UnspecifiedType);
+    FilteredTypes = Enum.GetValues(typeof(AresDataType)).Cast<AresDataType>().Where(s => s != AresDataType.Null && s != AresDataType.UnspecifiedType);
   }
 }

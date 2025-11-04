@@ -68,8 +68,6 @@
     }
   }
 
-  private bool _activateInProgress;
-
   private StateResponse? _plannerStatus; 
 
   private Task EditClicked()
@@ -101,9 +99,7 @@
     if(ActivateCallback is null)
       return;
 
-    _activateInProgress = true;
     await ActivateCallback();
     await UpdatePlannerStatus();
-    _activateInProgress = false;
   }
 }

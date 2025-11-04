@@ -3,6 +3,7 @@ using Ares.Alicat.Mfc.Config;
 using Ares.Alicat.Mfc.Messaging;
 using Ares.Datamodel.Device;
 using Ares.Services.Device;
+using Microsoft.Extensions.Logging;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 
@@ -32,7 +33,7 @@ public class MfcSettingsListViewModel : ReactiveObject
   }
 
   public MfcConfigEditViewModel GetNewConfigEditViewModel()
-    => new(_mfcClient, _devicesClient);
+    => new(_mfcClient, _devicesClient, _loggerFactory.CreateLogger<MfcConfigEditViewModel>());
 
   private async Task UpdateConfigs()
   {

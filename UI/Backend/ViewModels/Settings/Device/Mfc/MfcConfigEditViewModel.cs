@@ -36,10 +36,11 @@ public class MfcConfigEditViewModel : ReactiveObject
     SelectedMfcType = _mfcConfig.MfcType == MfcType.None ? MfcType.Normal : _mfcConfig.MfcType;
   }
 
-  public MfcConfigEditViewModel(MfcRpc.MfcRpcClient mfcClient, AresDevices.AresDevicesClient devicesClient)
+  public MfcConfigEditViewModel(MfcRpc.MfcRpcClient mfcClient, AresDevices.AresDevicesClient devicesClient, ILogger<MfcConfigEditViewModel> logger)
   {
     _mfcClient = mfcClient;
     _devicesClient = devicesClient;
+    _logger = logger;
     _mfcConfig = new MfcConfig();
     _ = UpdateAvailableSerialPorts();
     NewConfig = true;

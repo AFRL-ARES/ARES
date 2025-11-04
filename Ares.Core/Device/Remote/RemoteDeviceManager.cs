@@ -167,10 +167,6 @@ internal class RemoteDeviceManager(
 
       catch(Exception ex) 
       {
-        await _notificationHandler.HandleNotification("Remote Device Exception!",
-          $"ARES tried to update the settings for {config.Name}, but an error occured! Check logs for more info.",
-          NotificationSeverityEnum.Error);
-
         _logger.LogError(ex.Message);
       }
     }

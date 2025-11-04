@@ -235,7 +235,6 @@ public class RestDevice : AresRestDevice, IRestDevice
   }
 
   public string? ReportedName { get; set; }
-  public string? Version { set; get; }
   public List<KeyValuePair<string, string>> Data { get; set; } = [];
   public string Hardware { get; set; } = string.Empty;
   public List<RestDeviceMethod> Functions { get; set; } = [];

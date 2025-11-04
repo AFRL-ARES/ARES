@@ -350,6 +350,7 @@ public class Program
   private static void PopulateAresConfig(IConfiguration configuration)
   {
     var basePath = configuration.Get<AppSettings>()?.AresDataPath ?? ".";
+    basePath = Path.GetFullPath(basePath);
     AresConfig.ResultsPath = Path.Combine(basePath, AppSettings.ResultsFolder);
     AresConfig.TemplatePath = Path.Combine(basePath, AppSettings.TemplatesFolder);
     AresConfig.DevicesPath = Path.Combine(basePath, AppSettings.DevicesFolder);

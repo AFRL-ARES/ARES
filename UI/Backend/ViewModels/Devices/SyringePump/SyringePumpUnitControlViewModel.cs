@@ -142,7 +142,7 @@ public class SyringePumpUnitControlViewModel : SerialDeviceUnitViewModel, IAsync
   [Reactive]
   public Direction ActiveDirection { get; set; }
   [Reactive]
-  public StateResponse CurrentState { get; private set; }
+  public StateResponse CurrentState { get; private set; } = new StateResponse();
   [Reactive]
   public string Status { get; private set; } = "Not Connected";
   [Reactive]

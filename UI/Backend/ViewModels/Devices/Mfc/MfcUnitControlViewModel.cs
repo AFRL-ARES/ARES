@@ -100,11 +100,7 @@ public class MfcUnitControlViewModel : SerialDeviceUnitViewModel, IAsyncDisposab
             await Task.Delay(100);
           }
         }
-        catch(Exception ex) when(ex is ObjectDisposedException or OperationCanceledException)
-        {
-          Console.WriteLine($"~~~~~~~ Exception Getting State, Thread will live probably? ~~~~~~~");
-        }
-        catch(Exception ex)
+        catch(Exception)
         {
           Console.WriteLine($"~~~~~~~ Exception Getting State, Thread will die probably? ~~~~~~~");
         }

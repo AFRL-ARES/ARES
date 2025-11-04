@@ -6,7 +6,7 @@
 <RadzenFieldset class="device-fieldset">
   <HeaderTemplate>
     <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
-      <RadzenText Text="@ViewModel.DeviceName" TItem="string" />
+      <RadzenText Text="@ViewModel!.DeviceName" TItem="string" />
       @if (ViewModel.ConnectionStatus == ConnectionStatus.ConnectedToDevice)
       {
         <RadzenIcon @ref="_connectedIcon" Icon="link" class="rz-color-success"

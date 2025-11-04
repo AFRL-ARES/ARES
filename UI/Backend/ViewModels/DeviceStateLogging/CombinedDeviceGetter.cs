@@ -17,7 +17,6 @@ public class CombinedDeviceGetter : ICombinedDeviceGetter
   private readonly TubeFurnaceStateLogging.TubeFurnaceStateLoggingClient _tubeClient;
   private readonly SyringePumpStateLogging.SyringePumpStateLoggingClient _syringeClient;
   private readonly AresDevices.AresDevicesClient _devicesClient;
-  private readonly AresRemoteDeviceService.AresRemoteDeviceServiceClient _remoteDeviceServiceClient;
   private readonly Tc0304StateLogging.Tc0304StateLoggingClient _tcClient;
 
   public CombinedDeviceGetter(
