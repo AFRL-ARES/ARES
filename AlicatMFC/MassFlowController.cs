@@ -420,7 +420,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
       }
       catch(TimeoutException)
       {
-        Status = new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Tried setting setpoint to {setpoint.StandardCubicCentimetersPerMinute}, but timed out while awaiting response." };
+        Status = new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Tried setting setpoint to {setpoint.StandardLitersPerMinute}, but timed out while awaiting response." };
       }
     }
     else if(MfcType == MfcType.Basis2)

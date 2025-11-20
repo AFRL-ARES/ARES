@@ -6,21 +6,21 @@ internal static class SetpointSourceExtensions
   public static string ToStringSource(this SetpointSource source) =>
     source switch
     {
-      SetpointSource.Analog => "a",
-      SetpointSource.Digital => "s",
-      SetpointSource.UnsavedDigital => "u",
+      SetpointSource.Analog => "A",
+      SetpointSource.Digital => "S",
+      SetpointSource.UnsavedDigital => "U",
       _ => throw new NotSupportedException()
     };
 
   public static SetpointSource FromStringSource(string source)
   {
-    if(source == "a")
+    if(source == "A")
       return SetpointSource.Analog;
 
-    if(source == "s")
+    if(source == "S")
       return SetpointSource.Digital;
 
-    if(source == "u")
+    if(source == "U")
       return SetpointSource.UnsavedDigital;
 
     return SetpointSource.UnknownSource;

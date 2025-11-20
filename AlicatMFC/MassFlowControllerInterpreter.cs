@@ -48,6 +48,7 @@ public class MassFlowControllerInterpreter : DeviceCommandInterpreter<IMassFlowC
         }
 
         await Device.ChooseDifferentGas((int)gasNumberParam.Value.NumberValue);
+        result.Success = true;
         break;
 
       case MassFlowControllerCommand.DeleteComposerMix:
@@ -60,6 +61,7 @@ public class MassFlowControllerInterpreter : DeviceCommandInterpreter<IMassFlowC
         }
 
         await Device.DeleteComposerMix((int)mixParam.Value.NumberValue);
+        result.Success = true;
         break;
 
       case MassFlowControllerCommand.HoldValvesAtCurrentPosition:
@@ -85,6 +87,7 @@ public class MassFlowControllerInterpreter : DeviceCommandInterpreter<IMassFlowC
         }
 
         await Device.NewSetpoint(StandardVolumeFlow.FromStandardLitersPerMinute(setpointParameter.Value.NumberValue));
+        result.Success = true;
         break;
 
       case MassFlowControllerCommand.GetSetpoint:
@@ -131,7 +134,7 @@ public class MassFlowControllerInterpreter : DeviceCommandInterpreter<IMassFlowC
           {
             Index = 0,
             Name = MassFlowControllerCommandParameter.Setpoint.ToString(),
-            Unit = MassFlowUnit.CentigramPerSecond.ToString(), // TODO: Verify unit
+            Unit = StandardVolumeFlowUnit.StandardLiterPerMinute.ToString(),
             Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.Number, true)
           }
         }
