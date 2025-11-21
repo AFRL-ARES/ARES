@@ -1,9 +1,9 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
 using System.Threading.Tasks;
 using Ares.Core.Device;
+using Ares.Core.Notifications;
 using AresService.Data;
 using AresService.DeviceManagers;
 using Google.Protobuf.WellKnownTypes;
@@ -22,21 +22,23 @@ public class TubeFurnaceService : TubeFurnaceRpc.TubeFurnaceRpcBase
   private readonly IDeviceManager<TubeFurnaceConfig, ITubeFurnace> _tubeFurnaceManager;
   private readonly IDbContextFactory<AresDbContext> _dbContextFactory;
   private readonly IDeviceConfigManager<TubeFurnaceConfig> _configManager;
+  private readonly INotifier _notifier;
 
   public TubeFurnaceService(IDeviceCommandInterpreterRepo deviceCommandInterpreterRepo,
     IDeviceManager<TubeFurnaceConfig, ITubeFurnace> tubeFurnaceManager,
     IDbContextFactory<AresDbContext> dbContextFactory,
-    IDeviceConfigManager<TubeFurnaceConfig> configManager)
+    IDeviceConfigManager<TubeFurnaceConfig> configManager,
+    INotifier notifier)
   {
     _deviceCommandInterpreterRepo = deviceCommandInterpreterRepo;
     _tubeFurnaceManager = tubeFurnaceManager;
     _dbContextFactory = dbContextFactory;
     _configManager = configManager;
+    _notifier = notifier;
   }
 
   public override Task<GetAllTubeFurnacesResponse> GetAllTubeFurnaces(Empty request, ServerCallContext context)
   {
-
     var tubeFurnaceDescriptions = _deviceCommandInterpreterRepo
       .Select(interpreter => interpreter.Device)
       .OfType<ITubeFurnace>()
@@ -50,12 +52,24 @@ public class TubeFurnaceService : TubeFurnaceRpc.TubeFurnaceRpcBase
   public override async Task<Empty> GetSetpoint(TubeFurnaceRequest request, ServerCallContext context)
   {
     var device = GetTubeFurnace(request.TubeFurnaceId);
-    await device.GetSetpoint();
+
+    if(device is not null)
+      await device.GetSetpoint();
+    
     return new Empty();
   }
+
   public override async Task<Empty> SetSetpoint(SetSetpointRequest request, ServerCallContext context)
   {
     var device = GetTubeFurnace(request.DeviceRequest.TubeFurnaceId);
+    if(device is null)
+    {
+      await _notifier.Notify("Setpoint Error!", 
+        $"Attempted to set the setpoint value for Tube Furnace with an ID of {request.DeviceRequest.TubeFurnaceId}, but none was found.", 
+        NotificationSeverityEnum.Error);
+      return new Empty();
+    }
+      
     var temperature = Temperature.FromDegreesCelsius(request.DegreesCelsius);
     await device.SetSetpoint(temperature);
     return new Empty();
@@ -64,7 +78,10 @@ public class TubeFurnaceService : TubeFurnaceRpc.TubeFurnaceRpcBase
   public override async Task<Empty> GetCurrentTemperature(TubeFurnaceRequest request, ServerCallContext context)
   {
     var device = GetTubeFurnace(request.TubeFurnaceId);
-    await device.GetCurrentTemperature();
+
+    if(device is not null) 
+      await device.GetCurrentTemperature();
+    
     return new Empty();
   }
 
@@ -79,6 +96,10 @@ public class TubeFurnaceService : TubeFurnaceRpc.TubeFurnaceRpcBase
   public override async Task<TubeFurnaceState> GetState(TubeFurnaceRequest request, ServerCallContext context)
   {
     var tubeFurnace = GetTubeFurnace(request.TubeFurnaceId);
+
+    if (tubeFurnace is null)
+      return new TubeFurnaceState() { CurrentTemperature = -1.0, Id = "INVALID", AssumedAddress = -1};
+    ;
     var currentState = await tubeFurnace.StateStream.Take(1).ToTask();
     return currentState;
   }
@@ -90,16 +111,12 @@ public class TubeFurnaceService : TubeFurnaceRpc.TubeFurnaceRpcBase
     return new Empty();
   }
 
-  private ITubeFurnace GetTubeFurnace(string id)
+  private ITubeFurnace? GetTubeFurnace(string id)
   {
     var tubeFurnace = _deviceCommandInterpreterRepo
       .Select(interpreter => interpreter.Device)
       .OfType<ITubeFurnace>()
       .FirstOrDefault(device => device.UniqueId == id);
-
-    //TODO: Don't just throw an error here. Handle it gracefully
-    if(tubeFurnace is null)
-      throw new InvalidOperationException($"Could not find Tube Furnace: {id}");
 
     return tubeFurnace;
   }
@@ -124,9 +141,7 @@ public class TubeFurnaceService : TubeFurnaceRpc.TubeFurnaceRpcBase
   /// <returns></returns>
   private static Task<TubeFurnaceConfig> FillConfig(ITubeFurnace controller, TubeFurnaceConfig config)
   {
-    //var state = await controller.StateStream.Where(s => s.Valid).Take(1);
     var newConfig = config.Clone();
-
     return Task.FromResult(newConfig);
   }
 }

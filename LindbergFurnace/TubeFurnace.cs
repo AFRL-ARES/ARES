@@ -45,8 +45,8 @@ public class TubeFurnace : SerialDevice<ITubeFurnaceConnection>, ITubeFurnace
     var request = new ReadMultipleRegistersRequest(1, Register.PV, 1);
     var response = await Connection.Send(request);
     var temperatureData = response.RegisterContents.First();
-    var temperatureAsciiHEx = temperatureData.Select(b => (char)b).ToArray();
-    var temperatureInt = int.Parse(temperatureAsciiHEx, NumberStyles.HexNumber);
+    var temperatureAsciiHex = temperatureData.Select(b => (char)b).ToArray();
+    var temperatureInt = int.Parse(temperatureAsciiHex, NumberStyles.HexNumber);
     var temperature = Temperature.FromDegreesCelsius(temperatureInt);
 
     var currentState = await StateStream.Take(1);
@@ -54,8 +54,14 @@ public class TubeFurnace : SerialDevice<ITubeFurnaceConnection>, ITubeFurnace
     _statePublisher.OnNext(currentState);
   }
 
+  public async Task<int> GetCurrentAddress()
+  {
+    var currentState = await StateStream.Take(1);
+    if(currentState is not null)
+      return currentState.AssumedAddress;
 
-  public IObservable<TubeFurnaceState> StateStream { get; }
+    return -1;
+  }
 
   protected override Task<SerialDeviceValidationResult> Validate()
   {
@@ -81,4 +87,5 @@ public class TubeFurnace : SerialDevice<ITubeFurnaceConnection>, ITubeFurnace
     var request = new WriteMultipleRegistersRequest(1, setpointWrite);
     var response = await Connection.Send(request);
   }
+  public IObservable<TubeFurnaceState> StateStream { get; }
 }
