@@ -97,6 +97,7 @@ public class TubeFurnaceService : TubeFurnaceRpc.TubeFurnaceRpcBase
       .OfType<ITubeFurnace>()
       .FirstOrDefault(device => device.UniqueId == id);
 
+    //TODO: Don't just throw an error here. Handle it gracefully
     if(tubeFurnace is null)
       throw new InvalidOperationException($"Could not find Tube Furnace: {id}");
 
