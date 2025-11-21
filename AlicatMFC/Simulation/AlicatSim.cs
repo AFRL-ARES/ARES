@@ -144,7 +144,7 @@ public class AlicatSim : IAlicatSim
     var serialData = Encoding.ASCII.GetBytes(simulatedResponse.ToCharArray());
     var random = new Random();
     var blah = random.Next(1, 10);
-    Task.Run(() =>
+    Task.Run(async () =>
     {
       if(serialData.Length < 10)
       {
@@ -152,7 +152,7 @@ public class AlicatSim : IAlicatSim
         return;
       }
       _byteSender(serialData[..blah]);
-      Task.Delay(10).Wait();
+      await Task.Delay(10);
       _byteSender(serialData[blah..]);
 
     });
@@ -313,18 +313,14 @@ public class AlicatSim : IAlicatSim
 
   private void Start()
   {
-    Task.Factory.StartNew(_ =>
+    Task.Run(async () =>
     {
-      Thread.CurrentThread.IsBackground = true;
-      Thread.CurrentThread.Name = $"Alicat MFC {DeviceId} Data Randomization Thread";
       while(!_generalCancellationTokenSource.IsCancellationRequested)
       {
         RandomizeData();
-        Thread.Sleep(TimeSpan.FromMilliseconds(200));
+        await Task.Delay(TimeSpan.FromMilliseconds(200));
       }
-    },
-      _generalCancellationTokenSource.Token,
-      TaskCreationOptions.LongRunning);
+    }, _generalCancellationTokenSource.Token);
   }
 
   private void RandomizeData()
@@ -341,17 +337,15 @@ public class AlicatSim : IAlicatSim
   {
     _streamingTokenSource = new CancellationTokenSource();
     var combinedSource = CancellationTokenSource.CreateLinkedTokenSource(_streamingTokenSource.Token, _generalCancellationTokenSource.Token);
-    Task.Factory.StartNew(_ =>
+    Task.Run(async () =>
     {
-      Thread.CurrentThread.Name = $"Alicat MFC {DeviceId} Data Stream Thread";
       while(!combinedSource.Token.IsCancellationRequested)
       {
         SendDataInfo();
-        Task.Delay(50, combinedSource.Token).Wait(combinedSource.Token);
+        await Task.Delay(50, combinedSource.Token);
       }
     },
-      combinedSource.Token,
-      TaskCreationOptions.LongRunning);
+      combinedSource.Token);
   }
 
   private void StopDataStream()

@@ -96,7 +96,7 @@ public class AlicatBasisSim : IAlicatSim
     var serialData = Encoding.ASCII.GetBytes(simulatedResponse.ToCharArray());
     var random = new Random();
     var blah = random.Next(1, 10);
-    Task.Run(() =>
+    Task.Run(async () =>
     {
       if(serialData.Length < 10)
       {
@@ -104,7 +104,7 @@ public class AlicatBasisSim : IAlicatSim
         return;
       }
       _byteSender(serialData[..blah]);
-      Task.Delay(10).Wait();
+      await Task.Delay(10);
       _byteSender(serialData[blah..]);
 
     });
@@ -279,18 +279,15 @@ public class AlicatBasisSim : IAlicatSim
 
   private void Start()
   {
-    Task.Factory.StartNew(_ =>
+    Task.Run(async () =>
     {
-      Thread.CurrentThread.IsBackground = true;
-      Thread.CurrentThread.Name = $"Alicat MFC BASIS2 {DeviceId} Data Randomization Thread";
       while(!_generalCancellationTokenSource.IsCancellationRequested)
       {
         RandomizeData();
-        Thread.Sleep(TimeSpan.FromMilliseconds(200));
+        await Task.Delay(TimeSpan.FromMilliseconds(200));
       }
     },
-      _generalCancellationTokenSource.Token,
-      TaskCreationOptions.LongRunning);
+      _generalCancellationTokenSource.Token);
   }
 
   private void RandomizeData()
