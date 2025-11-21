@@ -4,6 +4,7 @@
 
 <EditForm Model="@ViewModel" OnValidSubmit="OnValidSubmit">
   <div class="furnace-config-grid">
+    <input type="text" class="form-control furnace-name" disabled="@(!ViewModel!.NewConfig)" placeholder="Name" @bind="@ViewModel!.Name" />
     <input type="text" placeholder="@(ViewModel!.Port is null ? "Port" : ViewModel!.Port)" list="port-list" @bind="ViewModel!.Port" class="form-select furnace-port" />
     <datalist id="port-list">
       @if (ViewModel!.AvailablePorts is not null)
@@ -14,7 +15,6 @@
         }
       }
     </datalist>
-    <input type="text" class="form-control furnace-name" disabled="@(!ViewModel!.NewConfig)" placeholder="Name" @bind="@ViewModel!.Name" />
     <div class="furnace-simulated d-flex">
       <label class="flex-fill" for="simulated-switch">Simulated</label>
       <RadzenSwitch id="simulated-switch" @bind-Value="@ViewModel!.Simulated">Simulated</RadzenSwitch>
