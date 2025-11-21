@@ -23,6 +23,6 @@ public class ServoUnitControlViewModel : SerialDeviceUnitViewModel
 
   public void ServoReset()
   {
-    _client.ResetServo(new DeviceRequest { DeviceId = DeviceName });
+    _client.ResetServo(new DeviceRequest { DeviceId = DeviceId });
   }
 }
