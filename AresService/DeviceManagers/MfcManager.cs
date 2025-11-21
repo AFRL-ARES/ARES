@@ -61,7 +61,12 @@ public class MfcManager : IDeviceManager<MfcConfig, IMassFlowController>
 
   public async Task<IMassFlowController[]> Load(IEnumerable<LoadableConfig<MfcConfig>> configs)
   {
-    var devices = await Task.WhenAll(configs.Select(cfg => Load(cfg.Id, cfg.DeviceConfig)));
+    var devices = new List<IMassFlowController>();
+    foreach (var config in configs)
+    {
+      var device = await Load(config.Id, config.DeviceConfig);
+      devices.Add(device);
+    }
 
     foreach(var device in devices)
     {

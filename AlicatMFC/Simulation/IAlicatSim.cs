@@ -2,5 +2,5 @@
 internal interface IAlicatSim : IDisposable
 {
   char DeviceId { get; }
-  void SendCommand(byte[] command);
+  Task SendCommand(byte[] command);
 }

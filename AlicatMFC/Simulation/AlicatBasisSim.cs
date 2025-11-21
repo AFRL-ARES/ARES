@@ -52,21 +52,23 @@ public class AlicatBasisSim : IAlicatSim
     _streamingTokenSource.Dispose();
   }
 
-  public void SendCommand(byte[] command)
+  public async Task SendCommand(byte[] command)
   {
+    var stringCommand = Encoding.ASCII.GetString(command);
     // simulating the mfc ignoring commands when it's busy processing existing ones
-    if(_processingCommand)
+    if (_processingCommand)
+    {
+      Debug.WriteLine($"Got command [{stringCommand}], but ignored as MFC is busy.");
       return;
+    }
 
     _processingCommand = true;
     var random = new Random();
     // some fake delay to simulate transmission/processing/etc.
-    Task.Delay(random.Next(10, 20)).ContinueWith(_ =>
-    {
-      var cmd = Encoding.ASCII.GetString(command);
-      ProcessCommand(cmd);
-      _processingCommand = false;
-    });
+    await Task.Delay(random.Next(10, 20));
+    
+    ProcessCommand(stringCommand);
+    _processingCommand = false;
   }
 
   private void ProcessCommand(string input)
@@ -75,7 +77,7 @@ public class AlicatBasisSim : IAlicatSim
       return;
 
     input = input.TrimEnd('\r');
-    Trace.WriteLine($"{GetType().Name} {DeviceId} Received {input}");
+    //Trace.WriteLine($"{GetType().Name} {DeviceId} Received {input}");
     var deviceId = input.FirstOrDefault();
     if(deviceId is < 'A' or > 'Z')
       return;

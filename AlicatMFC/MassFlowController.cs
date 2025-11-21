@@ -168,7 +168,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     {
       await Initialize();
     }
-    catch(TimeoutException e)
+    catch(Exception e)
     {
       Status = new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Failed to initialize: {e.Message}" };
     }
@@ -467,7 +467,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
       {
         await Initialize();
       }
-      catch(TimeoutException e)
+      catch(Exception e)
       {
         Status = new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Failed to initialize: {e.Message}" };
         activated = false;
@@ -487,25 +487,30 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
   public async ValueTask DisposeAsync()
   {
     _stateWatchers.Dispose();
-    _stateGetterLoopTokenSource.Cancel();
+    await _stateGetterLoopTokenSource.CancelAsync();
     await _stateUpdater;
     _stateGetterLoopTokenSource.Dispose();
     _statePublisher.OnCompleted();
   }
 
-  public Task<LiveDataResponse> GetLiveData()
+  private Task<LiveDataResponse> GetLiveData()
   {
     var currentState = GetCurrentState();
     if(currentState is null)
     {
       throw new InvalidOperationException("Current state has not yet been initialized. Need to initialize the device first.");
     }
-    if(currentState.DataFrameFormatEntries?.Count() < _expectedDataFormatEntryCount)
-      throw new InvalidOperationException(
-        $"Cannot request live data without knowing format entries. Number of currently known formats: {currentState?.DataFrameFormatEntries?.Count() ?? 0}, Expected at least {_expectedDataFormatEntryCount}");
 
-    var formatEntries =
-      currentState.DataFrameFormatEntries?.ToArray() ?? Array.Empty<DataFrameFormatEntry>();
+    var formatEntries = currentState.DataFrameFormatEntries?.ToArray();
+    if (formatEntries is null)
+    {
+      throw new InvalidOperationException(
+        $"Cannot get live data as the format entries have not even been initialized. Need to acquire the format entries first.");
+    }
+    
+    if(formatEntries.Length < _expectedDataFormatEntryCount)
+      throw new InvalidOperationException(
+        $"Cannot request live data without knowing format entries. Number of currently known formats: {formatEntries.Length}, Expected at least {_expectedDataFormatEntryCount}");
 
     var command = new LiveDataRequest(formatEntries, FirmwareVersion);
     return Send(command, TimeSpan.FromSeconds(5));
@@ -536,7 +541,12 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
 
   private async Task InitNormal()
   {
-    await QueryDataFrameFormat();
+    var dataFrameQuerySuccess = await QueryDataFrameFormat();
+    if(!dataFrameQuerySuccess)
+    {
+      throw new InvalidOperationException("Failed to query the data frames.");
+    }
+    
     var cs = GetCurrentState();
 
     var importantEntries = Enumerable.Range(1, 7);
@@ -545,9 +555,17 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
       Status = new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = "Did not receive Data Frame Entries 1-7. Could be missing one, could be missing all." };
       return;
     }
-    await QueryGasListInfo();
+    var gasQuerySuccess = await QueryGasListInfo();
+    if (!gasQuerySuccess)
+    {
+      throw new InvalidOperationException("Failed to query the gas list.");
+    }
     await QueryFirmwareVersion();
-    await QueryManufacturerInfo();
+    var manufacturerInfoQuerySuccess = await QueryManufacturerInfo();
+    if (!manufacturerInfoQuerySuccess)
+    {
+      throw new InvalidOperationException("Failed to query the manufacturer info.");
+    }
   }
 
   private async Task InitBasis()

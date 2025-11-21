@@ -7,6 +7,7 @@ using AlicatMFC.Commands.Requests;
 using Ares.Alicat.Mfc.Config;
 using Ares.Alicat.Mfc.Messaging;
 using Ares.Core.Device;
+using Ares.Datamodel.Device;
 using AresService.Data;
 using AresService.DeviceManagers;
 using Google.Protobuf.WellKnownTypes;
@@ -205,7 +206,10 @@ public class MfcService : MfcRpc.MfcRpcBase
   public override async Task<Empty> AddMfc(MfcConfig request, ServerCallContext context)
   {
     var mfc = await _mfcManager.Create(request);
-    await mfc.Start();
+    if (mfc.Status.OperationalState == Ares.Datamodel.Device.OperationalState.Active)
+    {
+      await mfc.Start();
+    }
     await _configManager.Add(mfc.UniqueId, mfc.Name, request);
     return new Empty();
   }
@@ -213,15 +217,21 @@ public class MfcService : MfcRpc.MfcRpcBase
   public override async Task<Empty> UpdateMfc(MfcUpdateRequest request, ServerCallContext context)
   {
     var mfc = await _mfcManager.Update(request.Id, request.Config);
-    await mfc.Start();
+    if (mfc.Status.OperationalState == Ares.Datamodel.Device.OperationalState.Active)
+    {
+      await mfc.Start();
+    }
     await _configManager.Update(request.Id, request.Config);
     return new Empty();
   }
 
-  public override Task<Empty> StartDataCapture(DeviceRequest request, ServerCallContext context)
+  public override async Task<Empty> StartDataCapture(DeviceRequest request, ServerCallContext context)
   {
     var mfc = GetMfc(request.DeviceId);
-    mfc.Start();
-    return Task.FromResult(new Empty());
+    if (mfc.Status.OperationalState == Ares.Datamodel.Device.OperationalState.Active)
+    {
+      await mfc.Start();
+    }
+    return new Empty();
   }
 }
