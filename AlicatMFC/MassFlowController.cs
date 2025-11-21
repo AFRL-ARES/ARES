@@ -62,7 +62,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     var command = new ManufactureInfoRequest(currentState.Id, FirmwareVersion, infoIdx);
     try
     {
-      var response = await GetResponseWithRetry<ManufacturerInfoEntry, ManufactureInfoRequest>(command, 5, TimeSpan.FromMilliseconds(500));
+      var response = await GetResponseWithRetry<ManufacturerInfoEntry, ManufactureInfoRequest>(command, 5, TimeSpan.FromSeconds(2));
       UpdateState(response);
       UpdatePotentialMaxValue(response);
       endMarkerReached = response.IsEndMarker;
@@ -228,7 +228,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
   public async Task<SetpointSource> GetSetpointSource()
   {
     var currentState = GetCurrentState();
-    if(currentState is null)
+    if(currentState is null || MfcType != MfcType.Basis2)
       return SetpointSource.UnknownSource;
 
     var request = new GetSetpointSourceCommand(currentState.Id);
@@ -266,7 +266,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
       var command = new QueryGasCommand(currentState.Id, FirmwareVersion, MfcType, gasIdx);
       try
       {
-        var response = await GetResponseWithRetry<GasInfoEntry, QueryGasCommand>(command, 5, TimeSpan.FromMilliseconds(500));
+        var response = await GetResponseWithRetry<GasInfoEntry, QueryGasCommand>(command, 5, TimeSpan.FromSeconds(2));
         UpdateState(response);
         endMarkerReached = response.IsEndMarker;
       }
@@ -341,7 +341,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
       var command = new DataFormatRequest(currentState.Id, FirmwareVersion, formatIdx);
       try
       {
-        var response = await GetResponseWithRetry<DataFrameFormatEntry, DataFormatRequest>(command, 5, TimeSpan.FromMilliseconds(500));
+        var response = await GetResponseWithRetry<DataFrameFormatEntry, DataFormatRequest>(command, 5, TimeSpan.FromSeconds(2));
         UpdateState(response);
         endMarkerReached = response.EntryType == DataFrameFormatEntryType.EndMarker;
       }
@@ -416,7 +416,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
       var newSetpointCommand = new NewSetpointCommand(AssumedId, setpoint, GetFormatEntries(), FirmwareVersion);
       try
       {
-        var response = await Send(newSetpointCommand, TimeSpan.FromMilliseconds(1000));
+        var response = await Send(newSetpointCommand, TimeSpan.FromSeconds(2));
       }
       catch(TimeoutException)
       {
