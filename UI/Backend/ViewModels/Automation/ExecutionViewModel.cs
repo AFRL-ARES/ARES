@@ -11,10 +11,7 @@ using Ares.Services;
 using UI.Backend.Extensions;
 using UI.Services.Notification;
 using Ares.Datamodel.Planning;
-using UI.Backend.Service;
-using Microsoft.AspNetCore.Components;
 using System.ComponentModel;
-using System.Reactive.Subjects;
 using System.Reactive.Linq;
 
 namespace UI.Backend.ViewModels.Automation;
@@ -57,6 +54,7 @@ public class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     CampaignTemplate = await _automationClient.GetSingleCampaignAsync(new CampaignRequest { UniqueId = campaignTemplateSummary.UniqueId });
     await _automationClient.SetCampaignForExecutionAsync(new CampaignRequest { UniqueId = CampaignTemplate.UniqueId });
     _ = UpdateCurrentTemplate();
+    DisplayExecutionSummary = false;
   }
 
   public async Task UpdateCurrentTemplate()
