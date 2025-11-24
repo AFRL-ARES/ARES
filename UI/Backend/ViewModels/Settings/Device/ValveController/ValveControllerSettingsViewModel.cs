@@ -36,7 +36,7 @@ public class ValveControllerSettingsViewModel : ReactiveObject
   {
     try
     {
-      return _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceId = ValveControllerConfig.Id }).ResponseAsync;
+      return _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceId = _deviceConfig.UniqueId }).ResponseAsync;
     }
 
     catch(RpcException)
@@ -55,12 +55,12 @@ public class ValveControllerSettingsViewModel : ReactiveObject
   public Task Activate()
     => _devicesClient.ActivateAsync(new DeviceActivateRequest
     {
-      DeviceId = ValveControllerConfig.Id
+      DeviceId = _deviceConfig.UniqueId
     }).ResponseAsync;
 
   public async Task Remove()
   {
-    await _valveControllerClient.RemoveValveControllerAsync(new ValveControllerRequest { DeviceId = ValveControllerConfig.Id });
+    await _valveControllerClient.RemoveValveControllerAsync(new ValveControllerRequest { DeviceId = _deviceConfig.UniqueId });
     await OnRemoveCallback();
   }
 }

@@ -104,9 +104,9 @@ public class MfcStateLogger : IMfcStateLogger
       UniqueId = Guid.NewGuid().ToString(),
       AbsolutePressure = state.LiveData.AbsolutePressure?.PoundsForcePerSquareInch,
       Gas = state.LiveData.Gas,
-      MassFlow = state.LiveData.MassFlow?.StandardCubicCentimetersPerMinute,
+      MassFlow = state.LiveData.MassFlow?.StandardLitersPerMinute,
       VolumetricFlow = state.LiveData.VolumetricFlow?.CubicCentimetersPerMinute,
-      Setpoint = state.LiveData.Setpoint?.StandardCubicCentimetersPerMinute,
+      Setpoint = state.LiveData.Setpoint?.StandardLitersPerMinute,
       DeviceId = _device.UniqueId,
       Temperature = state.LiveData.Temperature?.DegreesCelsius
     };
@@ -130,9 +130,9 @@ public class MfcStateLogger : IMfcStateLogger
       UniqueId = Guid.NewGuid().ToString(),
       AbsolutePressure = state.LiveData.AbsolutePressure?.PoundsForcePerSquareInch,
       Gas = state.LiveData.Gas,
-      MassFlow = state.LiveData.MassFlow?.StandardCubicCentimetersPerMinute,
+      MassFlow = state.LiveData.MassFlow?.StandardLitersPerMinute,
       VolumetricFlow = state.LiveData.VolumetricFlow?.CubicCentimetersPerMinute,
-      Setpoint = state.LiveData.Setpoint?.StandardCubicCentimetersPerMinute,
+      Setpoint = state.LiveData.Setpoint?.StandardLitersPerMinute,
       DeviceId = _device.UniqueId,
       Temperature = state.LiveData.Temperature?.DegreesCelsius
     };

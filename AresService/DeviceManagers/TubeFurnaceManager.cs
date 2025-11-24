@@ -60,8 +60,9 @@ public class TubeFurnaceManager : IDeviceManager<TubeFurnaceConfig, ITubeFurnace
     if(existingFurnace is null)
       return await Create(config);
 
+    var currentAddress = await existingFurnace.GetCurrentAddress();
     // if nothing changed, don't bother re-adding the device
-    if(existingFurnace.Connection.Name == config.PortName)
+    if (existingFurnace.Connection.Name == config.PortName && currentAddress == config.Address)
       if((existingFurnace.Connection is SimTubeFurnaceConnection && config.Simulated) || (existingFurnace.Connection is TubeFurnaceConnection && !config.Simulated))
         return existingFurnace;
 

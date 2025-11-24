@@ -60,7 +60,7 @@ public class SyringePumpSettingsViewModel : ReactiveObject
 
   public async Task Remove()
   {
-    await _syringePumpClient.RemoveSyringePumpAsync(new SyringePumpRemoveRequest { DeviceId = _deviceConfig.DeviceName });
+    await _syringePumpClient.RemoveSyringePumpAsync(new SyringePumpRemoveRequest { DeviceId = _deviceConfig.UniqueId });
     await OnRemoveCallback();
   }
 }

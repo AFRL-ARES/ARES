@@ -25,6 +25,7 @@ internal class SetpointSourceParser : AsciiResponseParser<SetpointSourceResponse
       response = null;
       return false;
     }
+    sourceToken = sourceToken.ToUpper();
     if(sourceToken != "U" && sourceToken != "A" && sourceToken != "S")
     {
       response = null;

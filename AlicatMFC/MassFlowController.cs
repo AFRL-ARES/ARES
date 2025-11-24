@@ -62,7 +62,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     var command = new ManufactureInfoRequest(currentState.Id, FirmwareVersion, infoIdx);
     try
     {
-      var response = await GetResponseWithRetry<ManufacturerInfoEntry, ManufactureInfoRequest>(command, 5, TimeSpan.FromMilliseconds(500));
+      var response = await GetResponseWithRetry<ManufacturerInfoEntry, ManufactureInfoRequest>(command, 5, TimeSpan.FromSeconds(5));
       UpdateState(response);
       UpdatePotentialMaxValue(response);
       endMarkerReached = response.IsEndMarker;
@@ -168,7 +168,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     {
       await Initialize();
     }
-    catch(TimeoutException e)
+    catch(Exception e)
     {
       Status = new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Failed to initialize: {e.Message}" };
     }
@@ -228,7 +228,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
   public async Task<SetpointSource> GetSetpointSource()
   {
     var currentState = GetCurrentState();
-    if(currentState is null)
+    if(currentState is null || MfcType != MfcType.Basis2)
       return SetpointSource.UnknownSource;
 
     var request = new GetSetpointSourceCommand(currentState.Id);
@@ -266,7 +266,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
       var command = new QueryGasCommand(currentState.Id, FirmwareVersion, MfcType, gasIdx);
       try
       {
-        var response = await GetResponseWithRetry<GasInfoEntry, QueryGasCommand>(command, 5, TimeSpan.FromMilliseconds(500));
+        var response = await GetResponseWithRetry<GasInfoEntry, QueryGasCommand>(command, 5, TimeSpan.FromSeconds(5));
         UpdateState(response);
         endMarkerReached = response.IsEndMarker;
       }
@@ -288,7 +288,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     var request = new MfcFirmwareRequest(AssumedId);
     try
     {
-      var response = await Send(request, TimeSpan.FromSeconds(3));
+      var response = await Send(request, TimeSpan.FromSeconds(5));
       FirmwareVersion = response.FirmwareVersion;
     }
     catch(OperationCanceledException)
@@ -341,7 +341,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
       var command = new DataFormatRequest(currentState.Id, FirmwareVersion, formatIdx);
       try
       {
-        var response = await GetResponseWithRetry<DataFrameFormatEntry, DataFormatRequest>(command, 5, TimeSpan.FromMilliseconds(500));
+        var response = await GetResponseWithRetry<DataFrameFormatEntry, DataFormatRequest>(command, 5, TimeSpan.FromSeconds(5));
         UpdateState(response);
         endMarkerReached = response.EntryType == DataFrameFormatEntryType.EndMarker;
       }
@@ -416,17 +416,26 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
       var newSetpointCommand = new NewSetpointCommand(AssumedId, setpoint, GetFormatEntries(), FirmwareVersion);
       try
       {
-        var response = await Send(newSetpointCommand, TimeSpan.FromMilliseconds(1000));
+        var response = await Send(newSetpointCommand, TimeSpan.FromSeconds(5));
       }
       catch(TimeoutException)
       {
-        Status = new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Tried setting setpoint to {setpoint.StandardCubicCentimetersPerMinute}, but timed out while awaiting response." };
+        Status = new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Tried setting setpoint to {setpoint.StandardLitersPerMinute}, but timed out while awaiting response." };
+        throw;
       }
     }
     else if(MfcType == MfcType.Basis2)
     {
       var newSetpointCommand = new BasisNewSetpointCommand(AssumedId, setpoint, GetFormatEntries(), FirmwareVersion);
-      await Send(newSetpointCommand);
+      try
+      {
+        await Send(newSetpointCommand, TimeSpan.FromSeconds(5));
+      }
+      catch(TimeoutException)
+      {
+        Status = new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Tried setting setpoint to {setpoint.StandardLitersPerMinute}, but timed out while awaiting response." };
+        throw;
+      }
     }
   }
 
@@ -467,7 +476,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
       {
         await Initialize();
       }
-      catch(TimeoutException e)
+      catch(Exception e)
       {
         Status = new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Failed to initialize: {e.Message}" };
         activated = false;
@@ -487,25 +496,30 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
   public async ValueTask DisposeAsync()
   {
     _stateWatchers.Dispose();
-    _stateGetterLoopTokenSource.Cancel();
+    await _stateGetterLoopTokenSource.CancelAsync();
     await _stateUpdater;
     _stateGetterLoopTokenSource.Dispose();
     _statePublisher.OnCompleted();
   }
 
-  public Task<LiveDataResponse> GetLiveData()
+  private Task<LiveDataResponse> GetLiveData()
   {
     var currentState = GetCurrentState();
     if(currentState is null)
     {
       throw new InvalidOperationException("Current state has not yet been initialized. Need to initialize the device first.");
     }
-    if(currentState.DataFrameFormatEntries?.Count() < _expectedDataFormatEntryCount)
-      throw new InvalidOperationException(
-        $"Cannot request live data without knowing format entries. Number of currently known formats: {currentState?.DataFrameFormatEntries?.Count() ?? 0}, Expected at least {_expectedDataFormatEntryCount}");
 
-    var formatEntries =
-      currentState.DataFrameFormatEntries?.ToArray() ?? Array.Empty<DataFrameFormatEntry>();
+    var formatEntries = currentState.DataFrameFormatEntries?.ToArray();
+    if (formatEntries is null)
+    {
+      throw new InvalidOperationException(
+        $"Cannot get live data as the format entries have not even been initialized. Need to acquire the format entries first.");
+    }
+    
+    if(formatEntries.Length < _expectedDataFormatEntryCount)
+      throw new InvalidOperationException(
+        $"Cannot request live data without knowing format entries. Number of currently known formats: {formatEntries.Length}, Expected at least {_expectedDataFormatEntryCount}");
 
     var command = new LiveDataRequest(formatEntries, FirmwareVersion);
     return Send(command, TimeSpan.FromSeconds(5));
@@ -536,7 +550,12 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
 
   private async Task InitNormal()
   {
-    await QueryDataFrameFormat();
+    var dataFrameQuerySuccess = await QueryDataFrameFormat();
+    if(!dataFrameQuerySuccess)
+    {
+      throw new InvalidOperationException("Failed to query the data frames.");
+    }
+    
     var cs = GetCurrentState();
 
     var importantEntries = Enumerable.Range(1, 7);
@@ -545,9 +564,17 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
       Status = new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = "Did not receive Data Frame Entries 1-7. Could be missing one, could be missing all." };
       return;
     }
-    await QueryGasListInfo();
+    var gasQuerySuccess = await QueryGasListInfo();
+    if (!gasQuerySuccess)
+    {
+      throw new InvalidOperationException("Failed to query the gas list.");
+    }
     await QueryFirmwareVersion();
-    await QueryManufacturerInfo();
+    var manufacturerInfoQuerySuccess = await QueryManufacturerInfo();
+    if (!manufacturerInfoQuerySuccess)
+    {
+      throw new InvalidOperationException("Failed to query the manufacturer info.");
+    }
   }
 
   private async Task InitBasis()
@@ -603,7 +630,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     var request = new GenericLineRequest(AssumedId);
     try
     {
-      var response = await GetResponseWithRetry<GenericLineResponse, GenericLineRequest>(request, 5, TimeSpan.FromSeconds(1));
+      var response = await GetResponseWithRetry<GenericLineResponse, GenericLineRequest>(request, 5, TimeSpan.FromSeconds(5));
       if(response.Id == AssumedId)
         return new SerialDeviceValidationResult(true);
 

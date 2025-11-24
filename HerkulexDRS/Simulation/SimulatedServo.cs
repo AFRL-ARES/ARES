@@ -17,6 +17,11 @@ public class SimulatedServo
       Debug.WriteLine("Received Piston Down Command");
     }
 
+    else if(command[6] == 0xF0)
+    {
+      Debug.WriteLine("Reset Request Received!");
+    }
+
     else
     {
       Debug.WriteLine("Received Piston Up Command");

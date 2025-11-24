@@ -48,7 +48,7 @@ else
     {
       await ViewModel!.AddNewConfig(viewModel.Save());
       DialogService.Close();
-      NotificationService.Notify(NotificationSeverity.Success, $"Successfully added MFC {viewModel.Name}");
+      NotificationService.Notify(NotificationSeverity.Success, $"Successfully added Syringe Pump {viewModel.Name}");
     }
     catch(Grpc.Core.RpcException e)
     {
