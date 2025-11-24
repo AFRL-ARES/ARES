@@ -39,7 +39,7 @@
 
                 else
                 {
-                  <div class="d-flex flex-row" style="">
+                  <div class="d-flex flex-row">
                     <h4 class="me-5">@planner!.Name</h4>                    
                     @if(ViewModel!.PlannerState == PlannerState.PlanningComplete)
                     {
@@ -63,11 +63,10 @@
           {
             <div class="border border-1 rounded-2 p-2 analyzer-display">
               <div>Analyzer</div>
-              <h4>@ViewModel!.AnalyzerInfo.Name </h4>
+              <div class="d-flex flex-row">
+                <h4 class="me-5">@ViewModel!.AnalyzerInfo.Name </h4>
 
-              @if(ViewModel!.ExperimentStatus is not null)
-              {
-                if(ViewModel!.AnalysisState == AnalysisState.AnalysisComplete)
+                @if(ViewModel!.AnalysisState == AnalysisState.AnalysisComplete)
                 {
                   <RadzenIcon Icon="done" IconColor="@Colors.Success"/>
                 }
@@ -79,7 +78,7 @@
                 {
                   <RadzenIcon class="filled-icon" Icon="dangerous" IconColor="@Colors.Danger" />
                 }
-              }
+              </div>
             </div>
           }
         </div>

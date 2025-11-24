@@ -187,6 +187,8 @@ public class CampaignExecutor : ICampaignExecutor
           };
 
           Status.AnalysisState = AnalysisState.AnalysisInProgress;
+          _executionStatusSubject.OnNext(Status);
+          _executionReporter.Report(Status);
           var analysis = await _analysisHelper.Analyze(
             experimentExecutor.Template,
             experimentSummary,
@@ -225,6 +227,8 @@ public class CampaignExecutor : ICampaignExecutor
           }
 
           Status.AnalysisState = AnalysisState.AnalysisComplete;
+          _executionStatusSubject.OnNext(Status);
+          _executionReporter.Report(Status);
           analyses.Add(analysis);
 
           _analysisRepo.Add(analysis);
