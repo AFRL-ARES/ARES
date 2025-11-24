@@ -317,6 +317,7 @@ public class CampaignExecutor : ICampaignExecutor
     {
       _logger.LogDebug($"Exception Caught in Execution! {ex.Message}");
       _logger.LogDebug($"{ex.StackTrace}");
+      throw;
     }
     finally
     {
@@ -437,4 +438,5 @@ public class CampaignExecutor : ICampaignExecutor
   public IObservable<CampaignExecutionStatus> ExperimentStatusObservable { get; }
   public CampaignExecutionStatus Status { get; private set; }
 }
+
 
