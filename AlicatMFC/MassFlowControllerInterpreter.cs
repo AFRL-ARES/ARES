@@ -86,7 +86,17 @@ public class MassFlowControllerInterpreter : DeviceCommandInterpreter<IMassFlowC
           break;
         }
 
-        await Device.NewSetpoint(StandardVolumeFlow.FromStandardLitersPerMinute(setpointParameter.Value.NumberValue));
+        try
+        {
+          await Device.NewSetpoint(StandardVolumeFlow.FromStandardLitersPerMinute(setpointParameter.Value.NumberValue));
+        }
+        catch(Exception e)
+        {
+          result.Success = false;
+          result.Error = e.Message;
+          break;
+        }
+
         result.Success = true;
         break;
 

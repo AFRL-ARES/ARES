@@ -62,7 +62,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     var command = new ManufactureInfoRequest(currentState.Id, FirmwareVersion, infoIdx);
     try
     {
-      var response = await GetResponseWithRetry<ManufacturerInfoEntry, ManufactureInfoRequest>(command, 5, TimeSpan.FromSeconds(2));
+      var response = await GetResponseWithRetry<ManufacturerInfoEntry, ManufactureInfoRequest>(command, 5, TimeSpan.FromSeconds(5));
       UpdateState(response);
       UpdatePotentialMaxValue(response);
       endMarkerReached = response.IsEndMarker;
@@ -266,7 +266,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
       var command = new QueryGasCommand(currentState.Id, FirmwareVersion, MfcType, gasIdx);
       try
       {
-        var response = await GetResponseWithRetry<GasInfoEntry, QueryGasCommand>(command, 5, TimeSpan.FromSeconds(2));
+        var response = await GetResponseWithRetry<GasInfoEntry, QueryGasCommand>(command, 5, TimeSpan.FromSeconds(5));
         UpdateState(response);
         endMarkerReached = response.IsEndMarker;
       }
@@ -288,7 +288,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     var request = new MfcFirmwareRequest(AssumedId);
     try
     {
-      var response = await Send(request, TimeSpan.FromSeconds(3));
+      var response = await Send(request, TimeSpan.FromSeconds(5));
       FirmwareVersion = response.FirmwareVersion;
     }
     catch(OperationCanceledException)
@@ -341,7 +341,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
       var command = new DataFormatRequest(currentState.Id, FirmwareVersion, formatIdx);
       try
       {
-        var response = await GetResponseWithRetry<DataFrameFormatEntry, DataFormatRequest>(command, 5, TimeSpan.FromSeconds(2));
+        var response = await GetResponseWithRetry<DataFrameFormatEntry, DataFormatRequest>(command, 5, TimeSpan.FromSeconds(5));
         UpdateState(response);
         endMarkerReached = response.EntryType == DataFrameFormatEntryType.EndMarker;
       }
@@ -416,17 +416,26 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
       var newSetpointCommand = new NewSetpointCommand(AssumedId, setpoint, GetFormatEntries(), FirmwareVersion);
       try
       {
-        var response = await Send(newSetpointCommand, TimeSpan.FromSeconds(2));
+        var response = await Send(newSetpointCommand, TimeSpan.FromSeconds(5));
       }
       catch(TimeoutException)
       {
         Status = new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Tried setting setpoint to {setpoint.StandardLitersPerMinute}, but timed out while awaiting response." };
+        throw;
       }
     }
     else if(MfcType == MfcType.Basis2)
     {
       var newSetpointCommand = new BasisNewSetpointCommand(AssumedId, setpoint, GetFormatEntries(), FirmwareVersion);
-      await Send(newSetpointCommand);
+      try
+      {
+        await Send(newSetpointCommand, TimeSpan.FromSeconds(5));
+      }
+      catch(TimeoutException)
+      {
+        Status = new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Tried setting setpoint to {setpoint.StandardLitersPerMinute}, but timed out while awaiting response." };
+        throw;
+      }
     }
   }
 
@@ -621,7 +630,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     var request = new GenericLineRequest(AssumedId);
     try
     {
-      var response = await GetResponseWithRetry<GenericLineResponse, GenericLineRequest>(request, 5, TimeSpan.FromSeconds(1));
+      var response = await GetResponseWithRetry<GenericLineResponse, GenericLineRequest>(request, 5, TimeSpan.FromSeconds(5));
       if(response.Id == AssumedId)
         return new SerialDeviceValidationResult(true);
 
