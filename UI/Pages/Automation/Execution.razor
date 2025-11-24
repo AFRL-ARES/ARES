@@ -39,7 +39,21 @@
 
                 else
                 {
-                  <h4>@planner!.Name</h4>
+                  <div class="d-flex flex-row" style="">
+                    <h4 class="me-5">@planner!.Name</h4>                    
+                    @if(ViewModel!.PlannerState == PlannerState.PlanningComplete)
+                    {
+                      <RadzenIcon Icon="done" IconColor="@Colors.Success"/>
+                    }
+                    else if(ViewModel!.PlannerState == PlannerState.PlanningInProgress)
+                    {
+                      <LoadingSpinner SpinnerSize="SpinnerSize.Small"/>  
+                    }
+                    else if(ViewModel!.PlannerState == PlannerState.PlanningError)
+                    {
+                      <RadzenIcon class="filled-icon" Icon="dangerous" IconColor="@Colors.Danger" />
+                    }
+                  </div>
                 }
               }
             </div>
@@ -50,6 +64,22 @@
             <div class="border border-1 rounded-2 p-2 analyzer-display">
               <div>Analyzer</div>
               <h4>@ViewModel!.AnalyzerInfo.Name </h4>
+
+              @if(ViewModel!.ExperimentStatus is not null)
+              {
+                if(ViewModel!.AnalysisState == AnalysisState.AnalysisComplete)
+                {
+                  <RadzenIcon Icon="done" IconColor="@Colors.Success"/>
+                }
+                else if(ViewModel!.AnalysisState == AnalysisState.AnalysisInProgress)
+                {
+                  <LoadingSpinner SpinnerSize="SpinnerSize.Small"/>  
+                }
+                else if(ViewModel!.AnalysisState == AnalysisState.AnalysisError)
+                {
+                  <RadzenIcon class="filled-icon" Icon="dangerous" IconColor="@Colors.Danger" />
+                }
+              }
             </div>
           }
         </div>
@@ -303,6 +333,7 @@
     _experimentStatusWatcher = SetupExperimentWatch(_experimentStatusWatcherCancellationTokenSource.Token);
 
     _campaignStateWatcherCancellationTokenSource = new CancellationTokenSource();
+    //ViewModel!.SetupCampaignStateWatch(_campaignStateWatcherCancellationTokenSource.Token);
     _campaignStateWatcher = SetupCampaignStateWatch(_campaignStateWatcherCancellationTokenSource.Token);
 
     _startupStatusWatcherCancellationTokenSource = new CancellationTokenSource();
@@ -385,6 +416,8 @@
         ViewModel!.CampaignActive = state.IsActive();
         ViewModel!.CampaignPaused = state.IsPaused();
         ViewModel!.CampaignExecutionState = state.State;
+        ViewModel!.AnalysisState = state.AnalysisState;
+        ViewModel!.PlannerState = state.PlannerState;
 
         if(ViewModel!.CampaignExecutionState == ExecutionState.AwaitingUser)
           await ViewModel!.ReqeustUserConfirmation();

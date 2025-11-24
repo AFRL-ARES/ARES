@@ -185,6 +185,8 @@ public class CampaignExecutor : ICampaignExecutor
             ExperimentId = experimentExecutor.Template.UniqueId, 
             SystemName = "ARES OS" 
           };
+
+          Status.AnalysisState = AnalysisState.AnalysisInProgress;
           var analysis = await _analysisHelper.Analyze(
             experimentExecutor.Template,
             experimentSummary,
@@ -196,6 +198,7 @@ public class CampaignExecutor : ICampaignExecutor
           // which also has support for "success" and "error" message
           if (analysis is null || analysis.Result == float.NaN)
           {
+            Status.AnalysisState = AnalysisState.AnalysisError;
             await _notifier.Notify("Analysis Failure", $"Analysis was reported as successful, but no actual analysis was provided. {analysis?.ErrorString ?? "No error string provided"}", NotificationSeverityEnum.Error);
             executionSuccess = false;
             break;
@@ -203,6 +206,7 @@ public class CampaignExecutor : ICampaignExecutor
 
           if(analysis.AnalysisOutcome == Outcome.Failure)
           {
+            Status.AnalysisState = AnalysisState.AnalysisError;
             await _notifier.Notify("Analysis Failure", $"Failed to analyze experiment result: {analysis.ErrorString}", NotificationSeverityEnum.Error);
             executionSuccess = false;
             break;           
@@ -210,6 +214,7 @@ public class CampaignExecutor : ICampaignExecutor
 
           else if(analysis.AnalysisOutcome == Outcome.Canceled)
           {
+            Status.AnalysisState = AnalysisState.AnalysisError;
             await _notifier.Notify("Analysis Canceled", "The requested analysis has been canceled", NotificationSeverityEnum.Info);
             break;
           }
@@ -219,6 +224,7 @@ public class CampaignExecutor : ICampaignExecutor
             await _notifier.Notify("Warning From Analyzer!", $"Analysis completed successfully, but the analyzer emitted a warning! {analysis.ErrorString}", NotificationSeverityEnum.Warning);
           }
 
+          Status.AnalysisState = AnalysisState.AnalysisComplete;
           analyses.Add(analysis);
 
           _analysisRepo.Add(analysis);
@@ -320,10 +326,14 @@ public class CampaignExecutor : ICampaignExecutor
     {
       if(analyses.Count() % ReplanRate == 0)
       {
+        Status.PlannerState = PlannerState.PlanningInProgress;
+        _executionStatusSubject.OnNext(Status);
+        _executionReporter.Report(Status);
         var metadata = new RequestMetadata { CampaignId = Template.UniqueId, CampaignName = Template.Name, ExperimentId = template.UniqueId, SystemName = "ARES OS" };
         var resolveSuccess = await _planningHelper.TryResolveParameters(Template.PlannerAllocations, metadata, experimentTemplate.GetAllPlannedParameters(), analyses, previousExperiments, cancellationToken);
         if(!resolveSuccess)
         {
+          Status.PlannerState = PlannerState.PlanningError;
           result.ErrorString = "Failed to plan! Experiment will be terminated!";
           return result;
         }
@@ -331,6 +341,8 @@ public class CampaignExecutor : ICampaignExecutor
 
       else
         experimentTemplate = previousExperiments.Last().Template.CloneWithNewIds();
+
+      Status.PlannerState = PlannerState.PlanningComplete;
     }
 
     if(!experimentTemplate.IsEnvironmentResolved())
