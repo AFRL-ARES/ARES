@@ -313,6 +313,11 @@ public class CampaignExecutor : ICampaignExecutor
 
       return campaignExecutionSummary;
     }
+    catch(Exception ex)
+    {
+      _logger.LogDebug($"Exception Caught in Execution! {ex.Message}");
+      _logger.LogDebug($"{ex.StackTrace}");
+    }
     finally
     {
       await _stateLoggerManager.DisableOverrideAsync();
@@ -432,3 +437,4 @@ public class CampaignExecutor : ICampaignExecutor
   public IObservable<CampaignExecutionStatus> ExperimentStatusObservable { get; }
   public CampaignExecutionStatus Status { get; private set; }
 }
+
