@@ -11,10 +11,12 @@ using Ares.Services;
 using UI.Backend.Extensions;
 using UI.Services.Notification;
 using Ares.Datamodel.Planning;
+using System.ComponentModel;
+using System.Reactive.Linq;
 
 namespace UI.Backend.ViewModels.Automation;
 
-public class ExecutionViewModel : ReactiveObject
+public class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 {
   private readonly AresAutomation.AresAutomationClient _automationClient;
   private readonly AresAnalyzerManagementService.AresAnalyzerManagementServiceClient _analyzerService;
@@ -52,6 +54,7 @@ public class ExecutionViewModel : ReactiveObject
     CampaignTemplate = await _automationClient.GetSingleCampaignAsync(new CampaignRequest { UniqueId = campaignTemplateSummary.UniqueId });
     await _automationClient.SetCampaignForExecutionAsync(new CampaignRequest { UniqueId = CampaignTemplate.UniqueId });
     _ = UpdateCurrentTemplate();
+    DisplayExecutionSummary = false;
   }
 
   public async Task UpdateCurrentTemplate()
@@ -239,6 +242,10 @@ public class ExecutionViewModel : ReactiveObject
   public CampaignTemplate? CampaignTemplate { get; set; }
   [Reactive]
   public ExecutionState? CampaignExecutionState { get; set; }
+  [Reactive]
+  public AnalysisState? AnalysisState { get; set; }
+  [Reactive]
+  public PlannerState? PlannerState { get; set; }
   [Reactive]
   public ExperimentExecutionStatus? ExperimentStatus { get; private set; }
   [Reactive]
