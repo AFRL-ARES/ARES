@@ -33,7 +33,8 @@ internal class CampaignExecutorTests
   private StateLoggerManager _stateLoggerManager;
   private INotifier _notifier;
   private ILogger<StateLoggerManager> _logger;
-  private ILogger<CampaignComposer> _composerLogger;
+  private ILogger<AnalysisHelper> _analysisHelperLogger;
+  private ILoggerFactory _loggerFactory;
 
 
   private IAnalyzer _replyAnalyzer;
@@ -45,7 +46,8 @@ internal class CampaignExecutorTests
     _replyAnalyzer = new TestReplyAnalyzer();
     _analyzerRepo.AddAnalyzer(_replyAnalyzer);
     _analysisRepo = [];
-    _analysisHelper = new AnalysisHelper(_analyzerRepo);
+    _analysisHelperLogger = new Mock<ILogger<AnalysisHelper>>().Object;
+    _analysisHelper = new AnalysisHelper(_analyzerRepo, _analysisHelperLogger);
     _executionReportStore = new ExecutionReportStore();
     _executionReporter = new ExecutionReporter(_executionReportStore);
     _planningHelper = new Mock<IPlanningHelper>().Object;
@@ -53,7 +55,7 @@ internal class CampaignExecutorTests
     _variableManager = new Mock<AresVariableManager>().Object;
     _notifier = new Mock<INotifier>().Object;
     _logger = new Mock<ILogger<StateLoggerManager>>().Object;
-    _composerLogger = new Mock<ILogger<CampaignComposer>>().Object;
+    _loggerFactory = new Mock<ILoggerFactory>().Object;
 
     var device = new TestDevice();
     var cmdInterpreter = new TestDeviceInterpreter(device);
@@ -68,7 +70,7 @@ internal class CampaignExecutorTests
     var factories = Array.Empty<IDeviceStateLoggerFactory>();
     var dbContextFactory = Mock.Of<IDbContextFactory<CoreDatabaseContext>>();
     _stateLoggerManager = new StateLoggerManager(stateLoggerRepository, factories, _logger, dbContextFactory);
-    _campaignComposer = new CampaignComposer(_analysisHelper, experimentComposer, _planningHelper, _executionReporter, _resultHandlers, _analysisRepo, _analyzerRepo, _notifier, _composerLogger, _variableManager, _stateLoggerManager);
+    _campaignComposer = new CampaignComposer(_analysisHelper, experimentComposer, _planningHelper, _executionReporter, _resultHandlers, _analysisRepo, _analyzerRepo, _notifier, _loggerFactory, _variableManager, _stateLoggerManager);
   }
 
   [SetUp]

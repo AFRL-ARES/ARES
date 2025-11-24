@@ -62,7 +62,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     var command = new ManufactureInfoRequest(currentState.Id, FirmwareVersion, infoIdx);
     try
     {
-      var response = await GetResponseWithRetry<ManufacturerInfoEntry, ManufactureInfoRequest>(command, 5, TimeSpan.FromSeconds(5));
+      var response = await GetResponseWithRetry<ManufacturerInfoEntry, ManufactureInfoRequest>(command, 5, TimeSpan.FromSeconds(10));
       UpdateState(response);
       UpdatePotentialMaxValue(response);
       endMarkerReached = response.IsEndMarker;
@@ -150,7 +150,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     GenericLineResponse? result = null;
     try
     {
-      result = await Connection.Send(command, TimeSpan.FromSeconds(5), response => response.Id == targetId);
+      result = await Connection.Send(command, TimeSpan.FromSeconds(10), response => response.Id == targetId);
     }
     catch(TimeoutException)
     {
@@ -244,7 +244,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
 
     var request = new BasisQueryGasCommand(currentState.Id, ":)");
 
-    var response = await Send(request, TimeSpan.FromSeconds(5));
+    var response = await Send(request, TimeSpan.FromSeconds(10));
 
     foreach(var gasInfo in response.GasInfoEntries)
     {
@@ -266,7 +266,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
       var command = new QueryGasCommand(currentState.Id, FirmwareVersion, MfcType, gasIdx);
       try
       {
-        var response = await GetResponseWithRetry<GasInfoEntry, QueryGasCommand>(command, 5, TimeSpan.FromSeconds(5));
+        var response = await GetResponseWithRetry<GasInfoEntry, QueryGasCommand>(command, 5, TimeSpan.FromSeconds(10));
         UpdateState(response);
         endMarkerReached = response.IsEndMarker;
       }
@@ -288,7 +288,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     var request = new MfcFirmwareRequest(AssumedId);
     try
     {
-      var response = await Send(request, TimeSpan.FromSeconds(5));
+      var response = await Send(request, TimeSpan.FromSeconds(10));
       FirmwareVersion = response.FirmwareVersion;
     }
     catch(OperationCanceledException)
@@ -341,7 +341,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
       var command = new DataFormatRequest(currentState.Id, FirmwareVersion, formatIdx);
       try
       {
-        var response = await GetResponseWithRetry<DataFrameFormatEntry, DataFormatRequest>(command, 5, TimeSpan.FromSeconds(5));
+        var response = await GetResponseWithRetry<DataFrameFormatEntry, DataFormatRequest>(command, 5, TimeSpan.FromSeconds(10));
         UpdateState(response);
         endMarkerReached = response.EntryType == DataFrameFormatEntryType.EndMarker;
       }
@@ -416,7 +416,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
       var newSetpointCommand = new NewSetpointCommand(AssumedId, setpoint, GetFormatEntries(), FirmwareVersion);
       try
       {
-        var response = await Send(newSetpointCommand, TimeSpan.FromSeconds(5));
+        var response = await Send(newSetpointCommand, TimeSpan.FromSeconds(10));
       }
       catch(TimeoutException)
       {
@@ -429,7 +429,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
       var newSetpointCommand = new BasisNewSetpointCommand(AssumedId, setpoint, GetFormatEntries(), FirmwareVersion);
       try
       {
-        await Send(newSetpointCommand, TimeSpan.FromSeconds(5));
+        await Send(newSetpointCommand, TimeSpan.FromSeconds(10));
       }
       catch(TimeoutException)
       {
@@ -522,7 +522,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
         $"Cannot request live data without knowing format entries. Number of currently known formats: {formatEntries.Length}, Expected at least {_expectedDataFormatEntryCount}");
 
     var command = new LiveDataRequest(formatEntries, FirmwareVersion);
-    return Send(command, TimeSpan.FromSeconds(5));
+    return Send(command, TimeSpan.FromSeconds(10));
   }
 
   private async Task Initialize()
@@ -630,7 +630,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     var request = new GenericLineRequest(AssumedId);
     try
     {
-      var response = await GetResponseWithRetry<GenericLineResponse, GenericLineRequest>(request, 5, TimeSpan.FromSeconds(5));
+      var response = await GetResponseWithRetry<GenericLineResponse, GenericLineRequest>(request, 5, TimeSpan.FromSeconds(10));
       if(response.Id == AssumedId)
         return new SerialDeviceValidationResult(true);
 
@@ -757,7 +757,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
 
   private Task<T> Send<T>(MfcCommandExpectingResponse<T> command) where T : CommandResponse
   {
-    return Connection.Send(command, TimeSpan.FromSeconds(5));
+    return Connection.Send(command, TimeSpan.FromSeconds(10));
   }
 
   private Task<T> Send<T>(MfcCommandExpectingResponse<T> command, TimeSpan timeout) where T : CommandResponse
