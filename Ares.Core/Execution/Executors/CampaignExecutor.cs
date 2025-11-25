@@ -84,7 +84,7 @@ public class CampaignExecutor : ICampaignExecutor
 
       //Init Campaign Directories
       var campaignPath = await CampaignOutputHelper.InitializeOutputDirectories(Template, startTime);
-      _logger.LogInformation("Campaign started with output directory at: {}", campaignPath);
+      _logger.LogInformation("Campaign started with output directory at: {Path}", campaignPath);
 
       if(!string.IsNullOrEmpty(ExecutionNotes))
         await CampaignOutputHelper.WriteExperimentNotes(campaignPath, ExecutionNotes);
@@ -96,7 +96,7 @@ public class CampaignExecutor : ICampaignExecutor
       if(analyzerId is not null)
       {
         var analyzer = _analyzerRepo.GetAnalyzerById(analyzerId);
-        _logger.LogInformation("Analyzer selected {}", analyzer?.Name ?? "NO ANALYZER");
+        _logger.LogInformation("Analyzer selected {AnalyzerName}", analyzer?.Name ?? "NO ANALYZER");
         await CampaignOutputHelper.OutputVersionFile(campaignPath, Template, analyzer);
       }
 
@@ -124,7 +124,7 @@ public class CampaignExecutor : ICampaignExecutor
         if(startupExecutorResult.ErrorString is not null || startupExecutorResult.ExperimentExecutor is null)
         {
           await _notifier.Notify("Campaign Failed!", $"ARES failed to run startup routine for {Template.Name}, campaign will shut down.", NotificationSeverityEnum.Error);
-          _logger.LogWarning("Failed to run campaign startup routine for campaign {}", Template.Name);
+          _logger.LogWarning("Failed to run campaign startup routine for campaign {Name}", Template.Name);
           executionSuccess = false;
           return new CampaignExecutionSummary();
         }
@@ -202,7 +202,7 @@ public class CampaignExecutor : ICampaignExecutor
           {
             Status.AnalysisState = AnalysisState.AnalysisError;
             await _notifier.Notify("Analysis Failure", $"Analysis was reported as successful, but no actual analysis was provided. {analysis?.ErrorString ?? "No error string provided"}", NotificationSeverityEnum.Error);
-            _logger.LogError("Failed to analyze. The analysis result came back as {}", analysis?.Result);
+            _logger.LogError("Failed to analyze. The analysis result came back as {Result}", analysis?.Result);
             executionSuccess = false;
             break;
           }
@@ -211,7 +211,7 @@ public class CampaignExecutor : ICampaignExecutor
           {
             Status.AnalysisState = AnalysisState.AnalysisError;
             await _notifier.Notify("Analysis Failure", $"Failed to analyze experiment result: {analysis.ErrorString}", NotificationSeverityEnum.Error);
-            _logger.LogError("Failed to analyze. Reason {}", analysis.ErrorString);
+            _logger.LogError("Failed to analyze. Reason {Error}", analysis.ErrorString);
             executionSuccess = false;
             break;           
           }
@@ -227,7 +227,7 @@ public class CampaignExecutor : ICampaignExecutor
           else if(analysis.AnalysisOutcome == Outcome.Warning) 
           { 
             await _notifier.Notify("Warning From Analyzer!", $"Analysis completed successfully, but the analyzer emitted a warning! {analysis.ErrorString}", NotificationSeverityEnum.Warning);
-            _logger.LogWarning("Analysis completed successfully, but the analyzer emitted a warning! {}", analysis.ErrorString);
+            _logger.LogWarning("Analysis completed successfully, but the analyzer emitted a warning! {Warning}", analysis.ErrorString);
           }
 
           Status.AnalysisState = AnalysisState.AnalysisComplete;
@@ -264,7 +264,7 @@ public class CampaignExecutor : ICampaignExecutor
         if(closeoutExecutorResult?.ErrorString is not null || closeoutExecutorResult?.ExperimentExecutor is null)
         {
           await _notifier.Notify("Closeout Script Failed!", closeoutExecutorResult?.ErrorString ?? "Unknown Closeout Script Failure", NotificationSeverityEnum.Error);
-          _logger.LogError("Closeout script failed: {}", closeoutExecutorResult?.ErrorString ?? "Unknown error");
+          _logger.LogError("Closeout script failed: {Error}", closeoutExecutorResult?.ErrorString ?? "Unknown error");
           executionSuccess = false;
           throw new CloseoutScriptFailedException(closeoutExecutorResult?.ErrorString ?? "Closeout failed, but no reason for failure was provided.");
         }
@@ -315,8 +315,8 @@ public class CampaignExecutor : ICampaignExecutor
     }
     catch(Exception ex)
     {
-      _logger.LogDebug($"Exception Caught in Execution! {ex.Message}");
-      _logger.LogDebug($"{ex.StackTrace}");
+      _logger.LogDebug("Exception Caught in Execution! {Exception}", ex.Message);
+      _logger.LogDebug("{Trace}", ex.StackTrace);
       throw;
     }
     finally
@@ -344,7 +344,7 @@ public class CampaignExecutor : ICampaignExecutor
     var result = new ExperimentExecutorResult();
     var experimentTemplate = template.CloneWithNewIds();
 
-    _logger.LogDebug("Going to try and generate an experiment executor for {}.", template.Name);
+    _logger.LogDebug("Going to try and generate an experiment executor for {TemplateName}.", template.Name);
     if(!experimentTemplate.IsResolved())
     {
       _logger.LogTrace("Experiment was not resolved");
@@ -395,7 +395,7 @@ public class CampaignExecutor : ICampaignExecutor
     experimentTemplate.Name = Template.Name;
 
     result.ExperimentExecutor = _experimentComposer.Compose(experimentTemplate);
-    _logger.LogTrace("Composed experiment template, {}", experimentTemplate.Name);
+    _logger.LogTrace("Composed experiment template, {TemplateName}", experimentTemplate.Name);
 
     return result;
   }
@@ -417,13 +417,13 @@ public class CampaignExecutor : ICampaignExecutor
       _executionReporter.Report(Status);
     });
 
-    _logger.LogDebug("About to execute the template {}", experimentExecutor.Template.Name);
+    _logger.LogDebug("About to execute the template {TemplateName}", experimentExecutor.Template.Name);
     return await experimentExecutor.Execute(token);
   }
 
   private async Task PostExperimentExecution(ExperimentExecutionSummary summary)
   {
-    _logger.LogDebug("About to run post experiment execution routine for {}", summary.ExperimentOverview.Template.Name);
+    _logger.LogDebug("About to run post experiment execution routine for {TemplateName}", summary.ExperimentOverview.Template.Name);
     foreach(var handler in _summaryHandlers)
     {
       await handler.Handle(summary);
