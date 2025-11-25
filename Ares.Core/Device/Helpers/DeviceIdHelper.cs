@@ -12,7 +12,7 @@ public class DeviceIdHelper(IDeviceCommandInterpreterRepo deviceCommandInterpret
       logger.LogDebug($"The following devices are found in the repo");
       foreach(var interpreter in deviceCommandInterpreterRepo)
       {
-        logger.LogDebug($"{interpreter.Device?.UniqueId ?? \"Unknown id\"} - {interpreter.Device?.Name ?? \"Unknown name\"}");
+        logger.LogDebug($"{interpreter.Device?.UniqueId} - {interpreter.Device?.Name}");
       }
 
       return "";
