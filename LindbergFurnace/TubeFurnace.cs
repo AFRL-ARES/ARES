@@ -19,7 +19,7 @@ public class TubeFurnace : SerialDevice<ITubeFurnaceConnection>, ITubeFurnace
     var initialState =
       new TubeFurnaceState
       {
-        Id = name,
+        Id = UniqueId,
         AssumedAddress = address,
       };
     _statePublisher.OnNext(initialState);

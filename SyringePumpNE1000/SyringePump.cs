@@ -324,7 +324,7 @@ public class SyringePump : SerialDevice<ISyringePumpConnection>, ISyringePump
       VolumeUnits = dispensedVolume.SystemVolumeUnit,
       WithdrawnVolume = (float)dispensedVolume.Withdrawn.Value,
       Status = rate.Status,
-      DeviceId = Name,
+      DeviceId = UniqueId,
       Phase = new Phase()
       {
         Number = phaseNumber,
