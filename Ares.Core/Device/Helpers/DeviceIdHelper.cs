@@ -6,17 +6,16 @@ public class DeviceIdHelper(IDeviceCommandInterpreterRepo deviceCommandInterpret
   public string DeviceIdToName(string id)
   {
     var device = deviceCommandInterpreterRepo.FirstOrDefault(dci => dci.Device.UniqueId == id);
-    if(device == null)
+    if (device != null) 
+      return device.Device.Name;
+    
+    logger.LogDebug($"Device was not found in the interpreter repo with id of {id}");
+    logger.LogDebug($"The following devices are found in the repo");
+    foreach(var interpreter in deviceCommandInterpreterRepo)
     {
-      logger.LogDebug($"Device was not found in the interpreter repo with id of {id}");
-      logger.LogDebug($"The following devices are found in the repo");
-      foreach(var interpreter in deviceCommandInterpreterRepo)
-      {
-        logger.LogDebug($"{interpreter.Device?.UniqueId} - {interpreter.Device?.Name}");
-      }
-
-      return "";
+      logger.LogDebug("{Id} - {Name}", interpreter.Device?.UniqueId, interpreter.Device?.Name);
     }
-    return device.Device.Name;
+
+    return "";
   }
 }
