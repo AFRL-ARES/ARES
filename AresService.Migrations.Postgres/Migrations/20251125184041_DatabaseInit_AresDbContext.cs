@@ -76,21 +76,6 @@ namespace AresService.Migrations.Postgres.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "CampaignExecutionStatuses",
-                columns: table => new
-                {
-                    UniqueId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CampaignId = table.Column<string>(type: "text", nullable: true),
-                    State = table.Column<int>(type: "integer", nullable: false),
-                    CreationTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()"),
-                    LastModified = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_CampaignExecutionStatuses", x => x.UniqueId);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "CampaignTags",
                 columns: table => new
                 {
@@ -347,6 +332,21 @@ namespace AresService.Migrations.Postgres.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "StepExecutionStatuses",
+                columns: table => new
+                {
+                    UniqueId = table.Column<Guid>(type: "uuid", nullable: false),
+                    StepId = table.Column<string>(type: "text", nullable: true),
+                    StepName = table.Column<string>(type: "text", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()"),
+                    LastModified = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_StepExecutionStatuses", x => x.UniqueId);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "SyringePumpStates",
                 columns: table => new
                 {
@@ -445,27 +445,6 @@ namespace AresService.Migrations.Postgres.Migrations
                         name: "FK_AnalyzerCapabilities_AnalyzerInfos_AnalyzerInfoId",
                         column: x => x.AnalyzerInfoId,
                         principalTable: "AnalyzerInfos",
-                        principalColumn: "UniqueId",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ExperimentExecutionStatuses",
-                columns: table => new
-                {
-                    UniqueId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ExperimentId = table.Column<string>(type: "text", nullable: true),
-                    CampaignExecutionStatusUniqueId = table.Column<Guid>(type: "uuid", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()"),
-                    LastModified = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ExperimentExecutionStatuses", x => x.UniqueId);
-                    table.ForeignKey(
-                        name: "FK_ExperimentExecutionStatuses_CampaignExecutionStatuses_Campa~",
-                        column: x => x.CampaignExecutionStatusUniqueId,
-                        principalTable: "CampaignExecutionStatuses",
                         principalColumn: "UniqueId",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -574,23 +553,25 @@ namespace AresService.Migrations.Postgres.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "StepExecutionStatuses",
+                name: "CommandExecutionStatuses",
                 columns: table => new
                 {
                     UniqueId = table.Column<Guid>(type: "uuid", nullable: false),
-                    StepId = table.Column<string>(type: "text", nullable: true),
-                    StepName = table.Column<string>(type: "text", nullable: true),
+                    CommandId = table.Column<string>(type: "text", nullable: true),
+                    CommandName = table.Column<string>(type: "text", nullable: true),
+                    DeviceName = table.Column<string>(type: "text", nullable: true),
+                    State = table.Column<string>(type: "text", nullable: false),
                     CreationTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()"),
-                    ExperimentExecutionStatusUniqueId = table.Column<Guid>(type: "uuid", nullable: true),
-                    LastModified = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()")
+                    LastModified = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()"),
+                    StepExecutionStatusUniqueId = table.Column<Guid>(type: "uuid", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_StepExecutionStatuses", x => x.UniqueId);
+                    table.PrimaryKey("PK_CommandExecutionStatuses", x => x.UniqueId);
                     table.ForeignKey(
-                        name: "FK_StepExecutionStatuses_ExperimentExecutionStatuses_Experimen~",
-                        column: x => x.ExperimentExecutionStatusUniqueId,
-                        principalTable: "ExperimentExecutionStatuses",
+                        name: "FK_CommandExecutionStatuses_StepExecutionStatuses_StepExecutio~",
+                        column: x => x.StepExecutionStatusUniqueId,
+                        principalTable: "StepExecutionStatuses",
                         principalColumn: "UniqueId",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -637,30 +618,6 @@ namespace AresService.Migrations.Postgres.Migrations
                         name: "FK_Planner_PlannerServiceCapabilities_PlannerServiceCapabiliti~",
                         column: x => x.PlannerServiceCapabilitiesUniqueId,
                         principalTable: "PlannerServiceCapabilities",
-                        principalColumn: "UniqueId",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "CommandExecutionStatuses",
-                columns: table => new
-                {
-                    UniqueId = table.Column<Guid>(type: "uuid", nullable: false),
-                    CommandId = table.Column<string>(type: "text", nullable: true),
-                    CommandName = table.Column<string>(type: "text", nullable: true),
-                    DeviceName = table.Column<string>(type: "text", nullable: true),
-                    State = table.Column<string>(type: "text", nullable: false),
-                    CreationTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()"),
-                    LastModified = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()"),
-                    StepExecutionStatusUniqueId = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_CommandExecutionStatuses", x => x.UniqueId);
-                    table.ForeignKey(
-                        name: "FK_CommandExecutionStatuses_StepExecutionStatuses_StepExecutio~",
-                        column: x => x.StepExecutionStatusUniqueId,
-                        principalTable: "StepExecutionStatuses",
                         principalColumn: "UniqueId",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -1143,11 +1100,6 @@ namespace AresService.Migrations.Postgres.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_ExperimentExecutionStatuses_CampaignExecutionStatusUniqueId",
-                table: "ExperimentExecutionStatuses",
-                column: "CampaignExecutionStatusUniqueId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_ExperimentExecutionSummaries_CampaignExecutionSummaryUnique~",
                 table: "ExperimentExecutionSummaries",
                 column: "CampaignExecutionSummaryUniqueId");
@@ -1247,11 +1199,6 @@ namespace AresService.Migrations.Postgres.Migrations
                 table: "PlannerServiceCapabilities",
                 column: "PlannerInfoId",
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_StepExecutionStatuses_ExperimentExecutionStatusUniqueId",
-                table: "StepExecutionStatuses",
-                column: "ExperimentExecutionStatusUniqueId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_StepExecutionSummaries_ExperimentExecutionSummaryUniqueId",
@@ -1440,16 +1387,10 @@ namespace AresService.Migrations.Postgres.Migrations
                 name: "PlannerServiceCapabilities");
 
             migrationBuilder.DropTable(
-                name: "ExperimentExecutionStatuses");
-
-            migrationBuilder.DropTable(
                 name: "StepExecutionSummaries");
 
             migrationBuilder.DropTable(
                 name: "PlannerInfos");
-
-            migrationBuilder.DropTable(
-                name: "CampaignExecutionStatuses");
 
             migrationBuilder.DropTable(
                 name: "ExperimentOverviews");

@@ -9,8 +9,10 @@ using AlicatMFC;
 using Ares.Core.EntityConfigurations;
 using Ares.Datamodel.Device;
 using AresService.Data;
+using Grpc.Core.Logging;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace AresService.DeviceStateLoggers.Mfc;
 
@@ -18,12 +20,14 @@ public class MfcStateLogger : IMfcStateLogger
 {
   private readonly IDbContextFactory<AresDbContext> _dbContextFactory;
   private readonly IMassFlowController _device;
+  private readonly ILogger<MfcStateLogger> _logger;
   private IDisposable _stateWatcher = Disposable.Empty;
 
-  public MfcStateLogger(IDbContextFactory<AresDbContext> dbContextFactory, IMassFlowController device)
+  public MfcStateLogger(IDbContextFactory<AresDbContext> dbContextFactory, IMassFlowController device, ILogger<MfcStateLogger> logger)
   {
     _dbContextFactory = dbContextFactory;
     _device = device;
+    _logger = logger;
   }
 
   public string DeviceId => _device.UniqueId;
@@ -46,9 +50,6 @@ public class MfcStateLogger : IMfcStateLogger
       _stateWatcher = Disposable.Empty;
       return;
     }
-
-    using var context = _dbContextFactory.CreateDbContext();
-    _ = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.UniqueId == _device.UniqueId && config.DeviceType == _device.GetType().FullName);
 
     var stream = _device.StateStream.Where(state => state is not null);
 
@@ -138,17 +139,21 @@ public class MfcStateLogger : IMfcStateLogger
     };
 
     mfcState.StatusCodes.AddRange(state.LiveData.StatusCodes.Select(s => s.ToString()));
-    context.MfcStates.Add(mfcState);
     // sometimes the context times out for some reason and we don't want
     // to just crash the service. Although this only happened during debugging
     // so far, so this may not be a problem during normal use.
     try
     {
+      context.MfcStates.Add(mfcState);
       await context.SaveChangesAsync();
     }
     catch(SqlException e)
     {
-      Debug.WriteLine($"Exception while saving MFC State: {e})");
+      _logger.LogInformation("Exception while saving MFC State: {Exception}", e);
+    }
+    catch(Exception e)
+    {
+      _logger.LogWarning("Exception while saving MFC State: {Exception}", e);
     }
   }
 }

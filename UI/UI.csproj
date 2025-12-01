@@ -20,7 +20,7 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.0" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="9.0.0" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
     <PackageReference Include="Radzen.Blazor" Version="8.3.0" />
     <PackageReference Include="ReactiveUI.Blazor" Version="22.2.1" />
     <PackageReference Include="ReactiveUI.Fody" Version="19.5.41" />

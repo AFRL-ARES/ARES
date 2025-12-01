@@ -78,13 +78,64 @@ public class CampaignExecutor : ICampaignExecutor
       LoggingType = Datamodel.Device.DeviceLoggingSettings.Types.LoggingType.OnChange
     });
 
+    var startTime = DateTime.UtcNow;
+    var experimentSummaries = new List<ExperimentExecutionSummary>();
+    var startupSummary = new ExperimentExecutionSummary();
+    var closeoutSummary = new ExperimentExecutionSummary();
+    
     try
     {
-      var startTime = DateTime.UtcNow;
+      var campaignPath = await InitializeCampaign(startTime);
+      
+      var analyses = new List<Analysis>();
+      
+      ResetStatus(token);
+      await NotifyCampaignStart();
 
-      //Init Campaign Directories
+      var executionSuccess = true;
+
+      if(Template.StartupTemplate is not null)
+      {
+        var result = await ExecuteStartup(analyses, experimentSummaries, token);
+        if(!result.Success)
+        {
+          _logger.LogError("Failed to run the campaign as the startup script failed to execute. {Summary}", result.Summary);
+          await _notifier.Notify("Campaign Failure", $"Startup script failed to run. ${result.Summary}", NotificationSeverityEnum.Error);
+          return new CampaignExecutionSummary();
+        }
+        startupSummary = result.Summary;
+      }
+
+      executionSuccess = await ExecuteExperimentLoop(campaignPath, analyses, experimentSummaries, token, executionSuccess);
+
+      _logger.LogDebug("The campaign loop is now finished. Moving onto the closeout script.");
+
+      if(Template.CloseoutTemplate is not null)
+      {
+        var result = await ExecuteCloseout(analyses, experimentSummaries, token, executionSuccess);
+        closeoutSummary = result.Summary;
+      }
+
+      await ReportFinalStatus(executionSuccess);
+    }
+    catch(Exception ex)
+    {
+      _logger.LogDebug("Exception Caught in Execution! {Exception}", ex.Message);
+      _logger.LogDebug("{Trace}", ex.StackTrace);
+      await ReportFinalStatus(false);
+    }
+    finally
+    {
+      await _stateLoggerManager.DisableOverrideAsync();
+    }
+    
+    return CreateCampaignSummary(startTime, experimentSummaries, startupSummary, closeoutSummary);
+  }
+
+  private async Task<string> InitializeCampaign(DateTime startTime)
+  {
       var campaignPath = await CampaignOutputHelper.InitializeOutputDirectories(Template, startTime);
-      _logger.LogInformation("Campaign started with output directory at: {}", campaignPath);
+      _logger.LogInformation("Campaign started with output directory at: {Path}", campaignPath);
 
       if(!string.IsNullOrEmpty(ExecutionNotes))
         await CampaignOutputHelper.WriteExperimentNotes(campaignPath, ExecutionNotes);
@@ -93,15 +144,18 @@ public class CampaignExecutor : ICampaignExecutor
         await CampaignOutputHelper.WriteExperimentTags(campaignPath, CampaignTags);
 
       var analyzerId = string.IsNullOrEmpty(Template.ExperimentTemplate.AnalyzerId) ? NoneAnalyzer.Id : Template.ExperimentTemplate.AnalyzerId;
-      if(analyzerId is not null)
-      {
-        var analyzer = _analyzerRepo.GetAnalyzerById(analyzerId);
-        _logger.LogInformation("Analyzer selected {}", analyzer?.Name ?? "NO ANALYZER");
-        await CampaignOutputHelper.OutputVersionFile(campaignPath, Template, analyzer);
-      }
+      if (analyzerId is null) 
+        return campaignPath;
+      
+      var analyzer = _analyzerRepo.GetAnalyzerById(analyzerId);
+      _logger.LogInformation("Analyzer selected {AnalyzerName}", analyzer?.Name ?? "NO ANALYZER");
+      await CampaignOutputHelper.OutputVersionFile(campaignPath, Template, analyzer);
 
-      var experimentSummaries = new List<ExperimentExecutionSummary>();
-      var analyses = new List<Analysis>();
+      return campaignPath;
+  }
+
+  private void ResetStatus(ExecutionControlToken token)
+  {
       Status = new CampaignExecutionStatus
       {
         CampaignId = Template.UniqueId,
@@ -111,38 +165,43 @@ public class CampaignExecutor : ICampaignExecutor
       _analysisRepo.ClearAnalyses();
       Status.State = token.IsPaused ? ExecutionState.Paused : ExecutionState.Running;
       _executionReporter.Report(Status);
+  }
 
+  private async Task NotifyCampaignStart()
+  {
       await _notifier.Notify("Campaign Started!", $"ARES has started a campaign named {Template.Name} successfully!", NotificationSeverityEnum.Success);
       _logger.LogInformation("Campaign started named {CampaignName}", Template.Name);
-      bool executionSuccess = true;
-      var experiment_count = 0;
-      var startupSummary = new ExperimentExecutionSummary();
-      if(Template.StartupTemplate is not null)
-      {
-        _logger.LogDebug("Startup template not null, will run startup script");
-        var startupExecutorResult = await GenerateExperimentExecutor(Template.StartupTemplate, analyses, experimentSummaries.Select(es => es.ExperimentOverview), token.CancellationToken);
-        if(startupExecutorResult.ErrorString is not null || startupExecutorResult.ExperimentExecutor is null)
-        {
-          await _notifier.Notify("Campaign Failed!", $"ARES failed to run startup routine for {Template.Name}, campaign will shut down.", NotificationSeverityEnum.Error);
-          _logger.LogWarning("Failed to run campaign startup routine for campaign {}", Template.Name);
-          executionSuccess = false;
-          return new CampaignExecutionSummary();
-        }
+  }
 
-        startupSummary = await ExecuteTemplate(startupExecutorResult.ExperimentExecutor, token);
-        startupSummary.ResultOutputPath = AresEnvironment.AresEnvironment.GetEnvironmentVariable(VariableType.CampaignStartupFolder);
-        await PostExperimentExecution(startupSummary);
-        _logger.LogDebug("Ran campaign startup template");
+  private async Task<(bool Success, ExperimentExecutionSummary Summary)> ExecuteStartup(List<Analysis> analyses, List<ExperimentExecutionSummary> experimentSummaries, ExecutionControlToken token)
+  {
+      _logger.LogDebug("Startup template not null, will run startup script");
+      var startupExecutorResult = await GenerateExperimentExecutor(Template.StartupTemplate, analyses, experimentSummaries.Select(es => es.ExperimentOverview), token.CancellationToken);
+      if(startupExecutorResult.ErrorString is not null || startupExecutorResult.ExperimentExecutor is null)
+      {
+        await _notifier.Notify("Campaign Failed!", $"ARES failed to run startup routine for {Template.Name}, campaign will shut down.", NotificationSeverityEnum.Error);
+        _logger.LogWarning("Failed to run campaign startup routine for campaign {Name}", Template.Name);
+        return (false, new ExperimentExecutionSummary());
       }
 
+      var startupSummary = await ExecuteTemplate(startupExecutorResult.ExperimentExecutor, token);
+      startupSummary.ResultOutputPath = AresEnvironment.AresEnvironment.GetEnvironmentVariable(VariableType.CampaignStartupFolder);
+      await PostExperimentExecution(startupSummary);
+      _logger.LogDebug("Ran campaign startup template");
+      return (true, startupSummary);
+  }
+
+  private async Task<bool> ExecuteExperimentLoop(string campaignPath, List<Analysis> analyses, List<ExperimentExecutionSummary> experimentSummaries, ExecutionControlToken token, bool executionSuccess)
+  {
+      var experimentCount = 0;
       while(!ShouldStop() && !token.IsCancelled && executionSuccess == true)
       {
-        var experimentFolder = $"Experiment_{++experiment_count}";
+        var experimentFolder = $"Experiment_{++experimentCount}";
         var experimentPath = CampaignOutputHelper.CreateExperimentSubFolder(campaignPath, experimentFolder);
 
         //Populate Internal Variables Related to Experiment
-        AresEnvironment.AresEnvironment.SetInternalVariable(InternalVariableType.CurrentExperimentNumber, experiment_count.ToString());
-        _logger.LogDebug("Set ARES environment variable {VarName} to {VarValue}", InternalVariableType.CurrentExperimentNumber, experiment_count);
+        AresEnvironment.AresEnvironment.SetInternalVariable(InternalVariableType.CurrentExperimentNumber, experimentCount.ToString());
+        _logger.LogDebug("Set ARES environment variable {VarName} to {VarValue}", InternalVariableType.CurrentExperimentNumber, experimentCount);
         var experimentExecutorResult = await GenerateExperimentExecutor(Template.ExperimentTemplate, analyses, experimentSummaries.Select(es => es.ExperimentOverview), token.CancellationToken);
 
         if(experimentExecutorResult.ErrorString is not null)
@@ -178,72 +237,9 @@ public class CampaignExecutor : ICampaignExecutor
         // and thus sending a null result to the analyzer might break it depending on the analyzer
         if(!token.IsCancelled)
         {
-          var metadata = new RequestMetadata 
-          { 
-            CampaignId = Template.UniqueId, 
-            CampaignName = Template.Name, 
-            ExperimentId = experimentExecutor.Template.UniqueId, 
-            SystemName = "ARES OS" 
-          };
-
-          Status.AnalysisState = AnalysisState.AnalysisInProgress;
-          _executionStatusSubject.OnNext(Status);
-          _executionReporter.Report(Status);
-          var analysis = await _analysisHelper.Analyze(
-            experimentExecutor.Template,
-            experimentSummary,
-            metadata,
-            token.CancellationToken);
-
-          // The following are top level checks for analysis failure in case the
-          // failure is not properly handled on the Analysis itself
-          // which also has support for "success" and "error" message
-          if (analysis is null || analysis.Result == float.NaN)
-          {
-            Status.AnalysisState = AnalysisState.AnalysisError;
-            await _notifier.Notify("Analysis Failure", $"Analysis was reported as successful, but no actual analysis was provided. {analysis?.ErrorString ?? "No error string provided"}", NotificationSeverityEnum.Error);
-            _logger.LogError("Failed to analyze. The analysis result came back as {}", analysis?.Result);
-            executionSuccess = false;
-            break;
-          }
-
-          if(analysis.AnalysisOutcome == Outcome.Failure)
-          {
-            Status.AnalysisState = AnalysisState.AnalysisError;
-            await _notifier.Notify("Analysis Failure", $"Failed to analyze experiment result: {analysis.ErrorString}", NotificationSeverityEnum.Error);
-            _logger.LogError("Failed to analyze. Reason {}", analysis.ErrorString);
-            executionSuccess = false;
-            break;           
-          }
-
-          else if(analysis.AnalysisOutcome == Outcome.Canceled)
-          {
-            Status.AnalysisState = AnalysisState.AnalysisError;
-            await _notifier.Notify("Analysis Canceled", "The requested analysis has been canceled", NotificationSeverityEnum.Info);
-            _logger.LogError("Failed to analyze. Reason: Analysis was canceled");
-            break;
-          }
-
-          else if(analysis.AnalysisOutcome == Outcome.Warning) 
-          { 
-            await _notifier.Notify("Warning From Analyzer!", $"Analysis completed successfully, but the analyzer emitted a warning! {analysis.ErrorString}", NotificationSeverityEnum.Warning);
-            _logger.LogWarning("Analysis completed successfully, but the analyzer emitted a warning! {}", analysis.ErrorString);
-          }
-
-          Status.AnalysisState = AnalysisState.AnalysisComplete;
-          _executionStatusSubject.OnNext(Status);
-          _executionReporter.Report(Status);
-          analyses.Add(analysis);
-
-          _analysisRepo.Add(analysis);
-          // Here the analysis has failed, but the analyzer properly reported why
-          // it failed via the analysis result.
-          if(analysis.ErrorString != string.Empty && string.IsNullOrEmpty(analysis.ErrorString))
-          {
-            await _notifier.Notify("Analysis Process Failed!", analysis.ErrorString, NotificationSeverityEnum.Error);
-            executionSuccess = false;
-            break;
-          }
+          var result = await AnalyzeResult(experimentExecutor, experimentSummary, analyses, token);
+          if (!result.Success) executionSuccess = false;
+          if (!result.Continue) break;
         }
         else
         {
@@ -253,28 +249,98 @@ public class CampaignExecutor : ICampaignExecutor
         await PostExperimentExecution(experimentSummary);
         experimentSummaries.Add(experimentSummary);
       }
+      return executionSuccess;
+  }
 
-      _logger.LogDebug("The campaign loop is now finished. Moving onto the closeout script.");
+  private async Task<(bool Success, bool Continue)> AnalyzeResult(ExperimentExecutor experimentExecutor, ExperimentExecutionSummary experimentSummary, List<Analysis> analyses, ExecutionControlToken token)
+  {
+      var metadata = new RequestMetadata 
+      { 
+        CampaignId = Template.UniqueId, 
+        CampaignName = Template.Name, 
+        ExperimentId = experimentExecutor.Template.UniqueId, 
+        SystemName = "ARES OS" 
+      };
 
-      var closeoutSummary = new ExperimentExecutionSummary();
-      if(Template.CloseoutTemplate is not null)
+      Status.AnalysisState = AnalysisState.AnalysisInProgress;
+      _executionStatusSubject.OnNext(Status);
+      _executionReporter.Report(Status);
+      var analysis = await _analysisHelper.Analyze(
+        experimentExecutor.Template,
+        experimentSummary,
+        metadata,
+        token.CancellationToken);
+
+      // The following are top level checks for analysis failure in case the
+      // failure is not properly handled on the Analysis itself
+      // which also has support for "success" and "error" message
+      if (analysis is null || analysis.Result == float.NaN)
       {
-        _logger.LogInformation("Closeout template is set. Running the closeout script.");
-        var closeoutExecutorResult = await GenerateExperimentExecutor(Template.CloseoutTemplate, analyses, experimentSummaries.Select(es => es.ExperimentOverview), token.CancellationToken);
-        if(closeoutExecutorResult?.ErrorString is not null || closeoutExecutorResult?.ExperimentExecutor is null)
-        {
-          await _notifier.Notify("Closeout Script Failed!", closeoutExecutorResult?.ErrorString ?? "Unknown Closeout Script Failure", NotificationSeverityEnum.Error);
-          _logger.LogError("Closeout script failed: {}", closeoutExecutorResult?.ErrorString ?? "Unknown error");
-          executionSuccess = false;
-          throw new CloseoutScriptFailedException(closeoutExecutorResult?.ErrorString ?? "Closeout failed, but no reason for failure was provided.");
-        }
-
-        closeoutSummary = await ExecuteTemplate(closeoutExecutorResult.ExperimentExecutor, token);
-        closeoutSummary.ResultOutputPath = AresEnvironment.AresEnvironment.GetEnvironmentVariable(VariableType.CampaignMiscFolder);
-        await PostExperimentExecution(closeoutSummary);
-        _logger.LogDebug("Closeout template finished running");
+        Status.AnalysisState = AnalysisState.AnalysisError;
+        await _notifier.Notify("Analysis Failure", $"Analysis was reported as successful, but no actual analysis was provided. {analysis?.ErrorString ?? "No error string provided"}", NotificationSeverityEnum.Error);
+        _logger.LogError("Failed to analyze. The analysis result came back as {Result}", analysis?.Result);
+        return (false, false);
       }
 
+      if(analysis.AnalysisOutcome == Outcome.Failure)
+      {
+        Status.AnalysisState = AnalysisState.AnalysisError;
+        await _notifier.Notify("Analysis Failure", $"Failed to analyze experiment result: {analysis.ErrorString}", NotificationSeverityEnum.Error);
+        _logger.LogError("Failed to analyze. Reason {Error}", analysis.ErrorString);
+        return (false, false);         
+      }
+
+      else if(analysis.AnalysisOutcome == Outcome.Canceled)
+      {
+        Status.AnalysisState = AnalysisState.AnalysisError;
+        await _notifier.Notify("Analysis Canceled", "The requested analysis has been canceled", NotificationSeverityEnum.Info);
+        _logger.LogError("Failed to analyze. Reason: Analysis was canceled");
+        return (true, false);
+      }
+
+      else if(analysis.AnalysisOutcome == Outcome.Warning) 
+      { 
+        await _notifier.Notify("Warning From Analyzer!", $"Analysis completed successfully, but the analyzer emitted a warning! {analysis.ErrorString}", NotificationSeverityEnum.Warning);
+        _logger.LogWarning("Analysis completed successfully, but the analyzer emitted a warning! {Warning}", analysis.ErrorString);
+      }
+
+      Status.AnalysisState = AnalysisState.AnalysisComplete;
+      _executionStatusSubject.OnNext(Status);
+      _executionReporter.Report(Status);
+      analyses.Add(analysis);
+
+      _analysisRepo.Add(analysis);
+      // Here the analysis has failed, but the analyzer properly reported why
+      // it failed via the analysis result.
+      if(analysis.ErrorString != string.Empty && string.IsNullOrEmpty(analysis.ErrorString))
+      {
+        await _notifier.Notify("Analysis Process Failed!", analysis.ErrorString, NotificationSeverityEnum.Error);
+        return (false, false);
+      }
+
+      return (true, true);
+  }
+
+  private async Task<(bool Success, ExperimentExecutionSummary Summary)> ExecuteCloseout(List<Analysis> analyses, List<ExperimentExecutionSummary> experimentSummaries, ExecutionControlToken token, bool executionSuccess)
+  {
+      _logger.LogInformation("Closeout template is set. Running the closeout script.");
+      var closeoutExecutorResult = await GenerateExperimentExecutor(Template.CloseoutTemplate, analyses, experimentSummaries.Select(es => es.ExperimentOverview), token.CancellationToken);
+      if(closeoutExecutorResult?.ErrorString is not null || closeoutExecutorResult?.ExperimentExecutor is null)
+      {
+        await _notifier.Notify("Closeout Script Failed!", closeoutExecutorResult?.ErrorString ?? "Unknown Closeout Script Failure", NotificationSeverityEnum.Error);
+        _logger.LogError("Closeout script failed: {Error}", closeoutExecutorResult?.ErrorString ?? "Unknown error");
+        throw new CloseoutScriptFailedException(closeoutExecutorResult?.ErrorString ?? "Closeout failed, but no reason for failure was provided.");
+      }
+
+      var closeoutSummary = await ExecuteTemplate(closeoutExecutorResult.ExperimentExecutor, token);
+      closeoutSummary.ResultOutputPath = AresEnvironment.AresEnvironment.GetEnvironmentVariable(VariableType.CampaignMiscFolder);
+      await PostExperimentExecution(closeoutSummary);
+      _logger.LogDebug("Closeout template finished running");
+      return (executionSuccess, closeoutSummary);
+  }
+
+  private async Task ReportFinalStatus(bool executionSuccess)
+  {
       if(executionSuccess)
       {
         Status.State = ExecutionState.Succeeded;
@@ -291,7 +357,10 @@ public class CampaignExecutor : ICampaignExecutor
       
 
       _executionReporter.Report(Status);
+  }
 
+  private CampaignExecutionSummary CreateCampaignSummary(DateTime startTime, List<ExperimentExecutionSummary> experimentSummaries, ExperimentExecutionSummary startupSummary, ExperimentExecutionSummary closeoutSummary)
+  {
       var campaignExecutionSummary = new CampaignExecutionSummary
       {
         UniqueId = Guid.NewGuid().ToString(),
@@ -310,19 +379,7 @@ public class CampaignExecutor : ICampaignExecutor
       campaignExecutionSummary.CloseoutExecutionSummary = closeoutSummary;
       ExecutionNotes = string.Empty;
       _logger.LogDebug("Finished the campaign execution function");
-
       return campaignExecutionSummary;
-    }
-    catch(Exception ex)
-    {
-      _logger.LogDebug($"Exception Caught in Execution! {ex.Message}");
-      _logger.LogDebug($"{ex.StackTrace}");
-      throw;
-    }
-    finally
-    {
-      await _stateLoggerManager.DisableOverrideAsync();
-    }
   }
 
   private bool ShouldStop()
@@ -344,7 +401,7 @@ public class CampaignExecutor : ICampaignExecutor
     var result = new ExperimentExecutorResult();
     var experimentTemplate = template.CloneWithNewIds();
 
-    _logger.LogDebug("Going to try and generate an experiment executor for {}.", template.Name);
+    _logger.LogDebug("Going to try and generate an experiment executor for {TemplateName}.", template.Name);
     if(!experimentTemplate.IsResolved())
     {
       _logger.LogTrace("Experiment was not resolved");
@@ -395,7 +452,7 @@ public class CampaignExecutor : ICampaignExecutor
     experimentTemplate.Name = Template.Name;
 
     result.ExperimentExecutor = _experimentComposer.Compose(experimentTemplate);
-    _logger.LogTrace("Composed experiment template, {}", experimentTemplate.Name);
+    _logger.LogTrace("Composed experiment template, {TemplateName}", experimentTemplate.Name);
 
     return result;
   }
@@ -417,13 +474,13 @@ public class CampaignExecutor : ICampaignExecutor
       _executionReporter.Report(Status);
     });
 
-    _logger.LogDebug("About to execute the template {}", experimentExecutor.Template.Name);
+    _logger.LogDebug("About to execute the template {TemplateName}", experimentExecutor.Template.Name);
     return await experimentExecutor.Execute(token);
   }
 
   private async Task PostExperimentExecution(ExperimentExecutionSummary summary)
   {
-    _logger.LogDebug("About to run post experiment execution routine for {}", summary.ExperimentOverview.Template.Name);
+    _logger.LogDebug("About to run post experiment execution routine for {TemplateName}", summary.ExperimentOverview.Template.Name);
     foreach(var handler in _summaryHandlers)
     {
       await handler.Handle(summary);

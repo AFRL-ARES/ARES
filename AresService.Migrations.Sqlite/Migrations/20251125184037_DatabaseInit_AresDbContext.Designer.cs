@@ -3,58 +3,52 @@ using System;
 using AresService.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace AresService.Migrations.SqlServer.Migrations
+namespace AresService.Migrations.Sqlite.Migrations
 {
     [DbContext(typeof(AresDbContext))]
-    [Migration("20251029161615_DatabaseInit_AresDbContext")]
+    [Migration("20251125184037_DatabaseInit_AresDbContext")]
     partial class DatabaseInit_AresDbContext
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.10")
-                .HasAnnotation("Relational:MaxIdentifierLength", 128);
-
-            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.0");
 
             modelBuilder.Entity("Ares.Datamodel.AnalysisOverview", b =>
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("AnalyzerInfo")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<Guid?>("ExperimentOverviewId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<double>("Result")
-                        .HasColumnType("float");
+                        .HasColumnType("REAL");
 
                     b.HasKey("UniqueId");
 
                     b.HasIndex("ExperimentOverviewId")
-                        .IsUnique()
-                        .HasFilter("[ExperimentOverviewId] IS NOT NULL");
+                        .IsUnique();
 
                     b.ToTable("AnalysisOverview");
                 });
@@ -63,26 +57,26 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("AnalysisOutcome")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("ErrorString")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<float>("Result")
-                        .HasColumnType("real");
+                        .HasColumnType("REAL");
 
                     b.HasKey("UniqueId");
 
@@ -93,26 +87,26 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<Guid>("AnalyzerInfoId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("SettingsSchema")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<long>("TimeoutSeconds")
-                        .HasColumnType("bigint");
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("UniqueId");
 
@@ -126,23 +120,23 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Url")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
@@ -153,32 +147,32 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Type")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Url")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Version")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
@@ -189,23 +183,23 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("AnalyzerId")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("Settings")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
@@ -216,86 +210,59 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("TagName")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
                     b.ToTable("CampaignTags");
                 });
 
-            modelBuilder.Entity("Ares.Datamodel.CampaignExecutionStatus", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("CampaignId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<int>("State")
-                        .HasColumnType("int");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("CampaignExecutionStatuses", (string)null);
-                });
-
             modelBuilder.Entity("Ares.Datamodel.CampaignExecutionSummary", b =>
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("CampaignId")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("CampaignName")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("CampaignNotes")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("CampaignTags")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<Guid?>("CloseoutExecutionSummaryUniqueId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<Guid?>("StartupExecutionSummaryUniqueId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
@@ -310,33 +277,33 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("CommandId")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("CommandName")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("DeviceName")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("State")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<Guid?>("StepExecutionStatusUniqueId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
@@ -349,29 +316,29 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("CommandDescription")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("CommandId")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("CommandName")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<Guid?>("StepExecutionSummaryUniqueId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
@@ -384,38 +351,37 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("AwaitUserInput")
-                        .HasColumnType("bit");
+                        .HasColumnType("INTEGER");
 
                     b.Property<Guid?>("CommandExecutionSummaryId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("Error")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("Result")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("Success")
-                        .HasColumnType("bit");
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("UniqueId");
 
                     b.HasIndex("CommandExecutionSummaryId")
-                        .IsUnique()
-                        .HasFilter("[CommandExecutionSummaryId] IS NOT NULL");
+                        .IsUnique();
 
                     b.ToTable("DeviceCommandResults", (string)null);
                 });
@@ -424,32 +390,32 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<Guid>("DeviceInfoId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("InputSchema")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("OutputSchema")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
@@ -462,23 +428,23 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("DeviceName")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("DeviceType")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.HasKey("UniqueId");
 
@@ -489,35 +455,35 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("SettingsSchema")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Type")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Url")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Version")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
@@ -528,29 +494,29 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("Deltas")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("DeviceId")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<long>("IntervalMs")
-                        .HasColumnType("bigint");
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<int>("LoggingType")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("UniqueId");
 
@@ -561,23 +527,23 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("DeviceId")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("Settings")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
@@ -588,26 +554,26 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("Data")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("DeviceId")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
@@ -618,23 +584,23 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Url")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
@@ -645,116 +611,83 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<Guid?>("CampaignExecutionSummaryId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<Guid?>("CommandExecutionSummaryId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<Guid?>("ExperimentResultId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("LocaltimeOffset")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<Guid?>("StepExecutionSummaryId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("TimeFinished")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("TimeStarted")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Timezone")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
                     b.HasIndex("CampaignExecutionSummaryId")
-                        .IsUnique()
-                        .HasFilter("[CampaignExecutionSummaryId] IS NOT NULL");
+                        .IsUnique();
 
                     b.HasIndex("CommandExecutionSummaryId")
-                        .IsUnique()
-                        .HasFilter("[CommandExecutionSummaryId] IS NOT NULL");
+                        .IsUnique();
 
                     b.HasIndex("ExperimentResultId")
-                        .IsUnique()
-                        .HasFilter("[ExperimentResultId] IS NOT NULL");
+                        .IsUnique();
 
                     b.HasIndex("StepExecutionSummaryId")
-                        .IsUnique()
-                        .HasFilter("[StepExecutionSummaryId] IS NOT NULL");
+                        .IsUnique();
 
                     b.ToTable("ExecutionInfos", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Datamodel.ExperimentExecutionStatus", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("CampaignExecutionStatusUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("ExperimentId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.HasKey("UniqueId");
-
-                    b.HasIndex("CampaignExecutionStatusUniqueId");
-
-                    b.ToTable("ExperimentExecutionStatuses", (string)null);
                 });
 
             modelBuilder.Entity("Ares.Datamodel.ExperimentExecutionSummary", b =>
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<Guid?>("CampaignExecutionSummaryUniqueId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("ExperimentId")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("ResultOutputPath")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
@@ -767,32 +700,31 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<Guid?>("ExperimentResultId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("Result")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<Guid?>("TemplateUniqueId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
                     b.HasIndex("ExperimentResultId")
-                        .IsUnique()
-                        .HasFilter("[ExperimentResultId] IS NOT NULL");
+                        .IsUnique();
 
                     b.HasIndex("TemplateUniqueId");
 
@@ -803,29 +735,29 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<long>("Index")
-                        .HasColumnType("bigint");
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<float>("Maximum")
-                        .HasColumnType("real");
+                        .HasColumnType("REAL");
 
                     b.Property<float>("Minimum")
-                        .HasColumnType("real");
+                        .HasColumnType("REAL");
 
                     b.Property<Guid>("ParameterMetadataUniqueId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
@@ -838,29 +770,29 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("PlannerName")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<Guid?>("PlannerServiceCapabilitiesUniqueId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Version")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
@@ -873,26 +805,26 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<Guid>("CampaignTemplateUniqueId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<Guid?>("ParameterUniqueId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<Guid?>("PlannerId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
@@ -909,23 +841,23 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Url")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
@@ -936,29 +868,29 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<Guid>("PlannerInfoId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("ServiceName")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("SettingsSchema")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<long>("TimeoutSeconds")
-                        .HasColumnType("bigint");
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("UniqueId");
 
@@ -972,32 +904,32 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Address")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Type")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Version")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
@@ -1008,23 +940,23 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("PlannerId")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Settings")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
@@ -1035,23 +967,23 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
@@ -1062,30 +994,25 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<Guid?>("ExperimentExecutionStatusUniqueId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("StepId")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("StepName")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
-
-                    b.HasIndex("ExperimentExecutionStatusUniqueId");
 
                     b.ToTable("StepExecutionStatuses", (string)null);
                 });
@@ -1094,23 +1021,23 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<Guid?>("ExperimentExecutionSummaryUniqueId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("StepId")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
@@ -1123,26 +1050,25 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("Name")
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
                     b.HasIndex("Name")
-                        .IsUnique()
-                        .HasFilter("[Name] IS NOT NULL");
+                        .IsUnique();
 
                     b.ToTable("CampaignTemplates", (string)null);
                 });
@@ -1151,32 +1077,32 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<Guid>("CommandTemplateId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("DeviceId")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("DeviceType")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
@@ -1190,23 +1116,23 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<long>("Index")
-                        .HasColumnType("bigint");
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<Guid>("StepTemplateUniqueId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
@@ -1219,49 +1145,46 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("AnalyzerId")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<Guid?>("CampaignCloseoutId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<Guid?>("CampaignExperimentId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<Guid?>("CampaignStartupId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("Resolved")
-                        .HasColumnType("bit");
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("UniqueId");
 
                     b.HasIndex("CampaignCloseoutId")
-                        .IsUnique()
-                        .HasFilter("[CampaignCloseoutId] IS NOT NULL");
+                        .IsUnique();
 
                     b.HasIndex("CampaignExperimentId")
-                        .IsUnique()
-                        .HasFilter("[CampaignExperimentId] IS NOT NULL");
+                        .IsUnique();
 
                     b.HasIndex("CampaignStartupId")
-                        .IsUnique()
-                        .HasFilter("[CampaignStartupId] IS NOT NULL");
+                        .IsUnique();
 
                     b.ToTable("ExperimentTemplates", (string)null);
                 });
@@ -1270,26 +1193,26 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("DataSchema")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<long>("Index")
-                        .HasColumnType("bigint");
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.HasKey("UniqueId");
 
@@ -1300,44 +1223,44 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<Guid?>("CommandTemplateUniqueId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<bool>("EnvironmentBased")
-                        .HasColumnType("bit");
+                        .HasColumnType("INTEGER");
 
                     b.Property<Guid?>("ExperimentOverviewUniqueId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<long>("Index")
-                        .HasColumnType("bigint");
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<bool>("Planned")
-                        .HasColumnType("bit");
+                        .HasColumnType("INTEGER");
 
                     b.Property<Guid?>("PlanningMetadataUniqueId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Value")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("VariableArgument")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("VariableType")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("UniqueId");
 
@@ -1354,59 +1277,59 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<Guid?>("CampaignTemplateUniqueId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<Guid?>("CommandMetadataUniqueId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<Guid?>("ExtraInfoUniqueId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<long>("Index")
-                        .HasColumnType("bigint");
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("InitialValue")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("NotPlannable")
-                        .HasColumnType("bit");
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("OutputName")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<Guid?>("ParameterId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("PlannerDescription")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("PlannerName")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Schema")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Unit")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("UseDefault")
-                        .HasColumnType("bit");
+                        .HasColumnType("INTEGER");
 
                     b.HasKey("UniqueId");
 
@@ -1417,8 +1340,7 @@ namespace AresService.Migrations.SqlServer.Migrations
                     b.HasIndex("ExtraInfoUniqueId");
 
                     b.HasIndex("ParameterId")
-                        .IsUnique()
-                        .HasFilter("[ParameterId] IS NOT NULL");
+                        .IsUnique();
 
                     b.ToTable("ParameterMetadata");
                 });
@@ -1427,29 +1349,29 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<Guid?>("ExperimentTemplateUniqueId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<long>("Index")
-                        .HasColumnType("bigint");
+                        .HasColumnType("INTEGER");
 
                     b.Property<bool>("IsParallel")
-                        .HasColumnType("bit");
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
@@ -1462,26 +1384,26 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("DeviceId")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<double?>("ManifoldTemperature")
-                        .HasColumnType("float");
+                        .HasColumnType("REAL");
 
                     b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
@@ -1492,44 +1414,44 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<double?>("AbsolutePressure")
-                        .HasColumnType("float");
+                        .HasColumnType("REAL");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("DeviceId")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Gas")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<double?>("MassFlow")
-                        .HasColumnType("float");
+                        .HasColumnType("REAL");
 
                     b.Property<double?>("Setpoint")
-                        .HasColumnType("float");
+                        .HasColumnType("REAL");
 
                     b.Property<string>("StatusCodes")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<double?>("Temperature")
-                        .HasColumnType("float");
+                        .HasColumnType("REAL");
 
                     b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
                     b.Property<double?>("VolumetricFlow")
-                        .HasColumnType("float");
+                        .HasColumnType("REAL");
 
                     b.HasKey("UniqueId");
 
@@ -1540,23 +1462,23 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("DeviceId")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
@@ -1567,23 +1489,23 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("DeviceId")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
@@ -1594,44 +1516,44 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("Address")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("DeviceId")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<double?>("DispensedVolume")
-                        .HasColumnType("float");
+                        .HasColumnType("REAL");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("RateUnit")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("VolumeUnit")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<double?>("WithdrawnVolume")
-                        .HasColumnType("float");
+                        .HasColumnType("REAL");
 
                     b.HasKey("UniqueId");
 
@@ -1642,35 +1564,35 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("DeviceId")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<double?>("Probe1Temperature")
-                        .HasColumnType("float");
+                        .HasColumnType("REAL");
 
                     b.Property<double?>("Probe2Temperature")
-                        .HasColumnType("float");
+                        .HasColumnType("REAL");
 
                     b.Property<double?>("Probe3Temperature")
-                        .HasColumnType("float");
+                        .HasColumnType("REAL");
 
                     b.Property<double?>("Probe4Temperature")
-                        .HasColumnType("float");
+                        .HasColumnType("REAL");
 
                     b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
@@ -1681,51 +1603,51 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<int>("CurrentPosition")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
-                    b.Property<long>("CustomStepSize")
-                        .HasColumnType("bigint");
+                    b.Property<uint>("CustomStepSize")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("DeviceId")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
-                    b.Property<long>("MaxAcceleration")
-                        .HasColumnType("bigint");
+                    b.Property<uint>("MaxAcceleration")
+                        .HasColumnType("INTEGER");
 
-                    b.Property<long>("MaxDeceleration")
-                        .HasColumnType("bigint");
+                    b.Property<uint>("MaxDeceleration")
+                        .HasColumnType("INTEGER");
 
-                    b.Property<long>("MaxSpeed")
-                        .HasColumnType("bigint");
+                    b.Property<uint>("MaxSpeed")
+                        .HasColumnType("INTEGER");
 
-                    b.Property<long>("StartingSpeed")
-                        .HasColumnType("bigint");
+                    b.Property<uint>("StartingSpeed")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("StatusMessages")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("StepMode")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("TargetPosition")
-                        .HasColumnType("int");
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
@@ -1736,29 +1658,29 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<double>("CurrentTemp")
-                        .HasColumnType("float");
+                        .HasColumnType("REAL");
 
                     b.Property<string>("DeviceId")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<double>("SetPointTemp")
-                        .HasColumnType("float");
+                        .HasColumnType("REAL");
 
                     b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
@@ -1769,32 +1691,31 @@ namespace AresService.Migrations.SqlServer.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<Guid?>("DeviceConfigId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("TypeUrl")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("TEXT");
 
                     b.Property<byte[]>("Value")
-                        .HasColumnType("varbinary(max)");
+                        .HasColumnType("BLOB");
 
                     b.HasKey("UniqueId");
 
                     b.HasIndex("DeviceConfigId")
-                        .IsUnique()
-                        .HasFilter("[DeviceConfigId] IS NOT NULL");
+                        .IsUnique();
 
                     b.ToTable("Any");
                 });
@@ -1887,14 +1808,6 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .OnDelete(DeleteBehavior.ClientCascade);
                 });
 
-            modelBuilder.Entity("Ares.Datamodel.ExperimentExecutionStatus", b =>
-                {
-                    b.HasOne("Ares.Datamodel.CampaignExecutionStatus", null)
-                        .WithMany("ExperimentExecutionStatuses")
-                        .HasForeignKey("CampaignExecutionStatusUniqueId")
-                        .OnDelete(DeleteBehavior.Cascade);
-                });
-
             modelBuilder.Entity("Ares.Datamodel.ExperimentExecutionSummary", b =>
                 {
                     b.HasOne("Ares.Datamodel.CampaignExecutionSummary", null)
@@ -1962,14 +1875,6 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .HasForeignKey("Ares.Datamodel.Planning.PlannerServiceCapabilities", "PlannerInfoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("Ares.Datamodel.StepExecutionStatus", b =>
-                {
-                    b.HasOne("Ares.Datamodel.ExperimentExecutionStatus", null)
-                        .WithMany("StepExecutionStatuses")
-                        .HasForeignKey("ExperimentExecutionStatusUniqueId")
-                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("Ares.Datamodel.StepExecutionSummary", b =>
@@ -2088,11 +1993,6 @@ namespace AresService.Migrations.SqlServer.Migrations
                     b.Navigation("Capabilities");
                 });
 
-            modelBuilder.Entity("Ares.Datamodel.CampaignExecutionStatus", b =>
-                {
-                    b.Navigation("ExperimentExecutionStatuses");
-                });
-
             modelBuilder.Entity("Ares.Datamodel.CampaignExecutionSummary", b =>
                 {
                     b.Navigation("ExecutionInfo");
@@ -2115,11 +2015,6 @@ namespace AresService.Migrations.SqlServer.Migrations
             modelBuilder.Entity("Ares.Datamodel.Device.DeviceInfo", b =>
                 {
                     b.Navigation("Commands");
-                });
-
-            modelBuilder.Entity("Ares.Datamodel.ExperimentExecutionStatus", b =>
-                {
-                    b.Navigation("StepExecutionStatuses");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.ExperimentExecutionSummary", b =>

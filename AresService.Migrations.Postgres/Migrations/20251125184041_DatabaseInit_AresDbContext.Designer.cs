@@ -5,45 +5,50 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace AresService.Migrations.Sqlite.Migrations
+namespace AresService.Migrations.Postgres.Migrations
 {
     [DbContext(typeof(AresDbContext))]
-    [Migration("20251029161607_DatabaseInit_AresDbContext")]
+    [Migration("20251125184041_DatabaseInit_AresDbContext")]
     partial class DatabaseInit_AresDbContext
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "9.0.10");
+            modelBuilder
+                .HasAnnotation("ProductVersion", "10.0.0")
+                .HasAnnotation("Relational:MaxIdentifierLength", 63);
+
+            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("Ares.Datamodel.AnalysisOverview", b =>
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("AnalyzerInfo")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("jsonb");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<Guid?>("ExperimentOverviewId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<double>("Result")
-                        .HasColumnType("REAL");
+                        .HasColumnType("double precision");
 
                     b.HasKey("UniqueId");
 
@@ -57,26 +62,26 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<int>("AnalysisOutcome")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("ErrorString")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<float>("Result")
-                        .HasColumnType("REAL");
+                        .HasColumnType("real");
 
                     b.HasKey("UniqueId");
 
@@ -87,26 +92,26 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("AnalyzerInfoId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("SettingsSchema")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("jsonb");
 
                     b.Property<long>("TimeoutSeconds")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("bigint");
 
                     b.HasKey("UniqueId");
 
@@ -120,23 +125,23 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Name")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<string>("Url")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.HasKey("UniqueId");
 
@@ -147,32 +152,32 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Description")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Name")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<string>("Type")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<string>("Url")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<string>("Version")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.HasKey("UniqueId");
 
@@ -183,23 +188,23 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("AnalyzerId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Settings")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("jsonb");
 
                     b.HasKey("UniqueId");
 
@@ -210,86 +215,59 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("TagName")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.HasKey("UniqueId");
 
                     b.ToTable("CampaignTags");
                 });
 
-            modelBuilder.Entity("Ares.Datamodel.CampaignExecutionStatus", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("CampaignId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
-
-                    b.Property<int>("State")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("CampaignExecutionStatuses", (string)null);
-                });
-
             modelBuilder.Entity("Ares.Datamodel.CampaignExecutionSummary", b =>
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("CampaignId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<string>("CampaignName")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<string>("CampaignNotes")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<string>("CampaignTags")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<Guid?>("CloseoutExecutionSummaryUniqueId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<Guid?>("StartupExecutionSummaryUniqueId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.HasKey("UniqueId");
 
@@ -304,33 +282,33 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("CommandId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<string>("CommandName")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("DeviceName")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("State")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<Guid?>("StepExecutionStatusUniqueId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.HasKey("UniqueId");
 
@@ -343,29 +321,29 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("CommandDescription")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<string>("CommandId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<string>("CommandName")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<Guid?>("StepExecutionSummaryUniqueId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.HasKey("UniqueId");
 
@@ -378,32 +356,32 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<bool>("AwaitUserInput")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("boolean");
 
                     b.Property<Guid?>("CommandExecutionSummaryId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Error")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Result")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("jsonb");
 
                     b.Property<bool>("Success")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("boolean");
 
                     b.HasKey("UniqueId");
 
@@ -417,32 +395,32 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Description")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<Guid>("DeviceInfoId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("InputSchema")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("jsonb");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Name")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<string>("OutputSchema")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("jsonb");
 
                     b.HasKey("UniqueId");
 
@@ -455,23 +433,23 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("DeviceName")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<string>("DeviceType")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.HasKey("UniqueId");
 
@@ -482,35 +460,35 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Description")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Name")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<string>("SettingsSchema")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("jsonb");
 
                     b.Property<string>("Type")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<string>("Url")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<string>("Version")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.HasKey("UniqueId");
 
@@ -521,29 +499,29 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Deltas")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<string>("DeviceId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<long>("IntervalMs")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("bigint");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<int>("LoggingType")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer");
 
                     b.HasKey("UniqueId");
 
@@ -554,23 +532,23 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("DeviceId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Settings")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("jsonb");
 
                     b.HasKey("UniqueId");
 
@@ -581,26 +559,26 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Data")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("jsonb");
 
                     b.Property<string>("DeviceId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("UniqueId");
 
@@ -611,23 +589,23 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Name")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<string>("Url")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.HasKey("UniqueId");
 
@@ -638,41 +616,41 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid?>("CampaignExecutionSummaryId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid?>("CommandExecutionSummaryId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<Guid?>("ExperimentResultId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("LocaltimeOffset")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<Guid?>("StepExecutionSummaryId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("TimeFinished")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime?>("TimeStarted")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Timezone")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.HasKey("UniqueId");
 
@@ -691,59 +669,30 @@ namespace AresService.Migrations.Sqlite.Migrations
                     b.ToTable("ExecutionInfos", (string)null);
                 });
 
-            modelBuilder.Entity("Ares.Datamodel.ExperimentExecutionStatus", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid?>("CampaignExecutionStatusUniqueId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
-
-                    b.Property<string>("ExperimentId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
-
-                    b.HasKey("UniqueId");
-
-                    b.HasIndex("CampaignExecutionStatusUniqueId");
-
-                    b.ToTable("ExperimentExecutionStatuses", (string)null);
-                });
-
             modelBuilder.Entity("Ares.Datamodel.ExperimentExecutionSummary", b =>
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid?>("CampaignExecutionSummaryUniqueId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("ExperimentId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("ResultOutputPath")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.HasKey("UniqueId");
 
@@ -756,26 +705,26 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<Guid?>("ExperimentResultId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Result")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("jsonb");
 
                     b.Property<Guid?>("TemplateUniqueId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.HasKey("UniqueId");
 
@@ -791,29 +740,29 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<long>("Index")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("bigint");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<float>("Maximum")
-                        .HasColumnType("REAL");
+                        .HasColumnType("real");
 
                     b.Property<float>("Minimum")
-                        .HasColumnType("REAL");
+                        .HasColumnType("real");
 
                     b.Property<Guid>("ParameterMetadataUniqueId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.HasKey("UniqueId");
 
@@ -826,29 +775,29 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Description")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("PlannerName")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<Guid?>("PlannerServiceCapabilitiesUniqueId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Version")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.HasKey("UniqueId");
 
@@ -861,26 +810,26 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("CampaignTemplateUniqueId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<Guid?>("ParameterUniqueId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid?>("PlannerId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.HasKey("UniqueId");
 
@@ -897,23 +846,23 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Name")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<string>("Url")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.HasKey("UniqueId");
 
@@ -924,29 +873,29 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<Guid>("PlannerInfoId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("ServiceName")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<string>("SettingsSchema")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("jsonb");
 
                     b.Property<long>("TimeoutSeconds")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("bigint");
 
                     b.HasKey("UniqueId");
 
@@ -960,32 +909,32 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Address")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Description")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Name")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<string>("Type")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<string>("Version")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.HasKey("UniqueId");
 
@@ -996,23 +945,23 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("PlannerId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<string>("Settings")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("jsonb");
 
                     b.HasKey("UniqueId");
 
@@ -1023,23 +972,23 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Description")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Name")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.HasKey("UniqueId");
 
@@ -1050,30 +999,25 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
-
-                    b.Property<Guid?>("ExperimentExecutionStatusUniqueId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("StepId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<string>("StepName")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.HasKey("UniqueId");
-
-                    b.HasIndex("ExperimentExecutionStatusUniqueId");
 
                     b.ToTable("StepExecutionStatuses", (string)null);
                 });
@@ -1082,23 +1026,23 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<Guid?>("ExperimentExecutionSummaryUniqueId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("StepId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.HasKey("UniqueId");
 
@@ -1111,20 +1055,20 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Name")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.HasKey("UniqueId");
 
@@ -1138,32 +1082,32 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("CommandTemplateId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Description")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<string>("DeviceId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<string>("DeviceType")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Name")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.HasKey("UniqueId");
 
@@ -1177,23 +1121,23 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<long>("Index")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("bigint");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<Guid>("StepTemplateUniqueId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.HasKey("UniqueId");
 
@@ -1206,35 +1150,35 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("AnalyzerId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<Guid?>("CampaignCloseoutId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid?>("CampaignExperimentId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid?>("CampaignStartupId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Name")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<bool>("Resolved")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("boolean");
 
                     b.HasKey("UniqueId");
 
@@ -1254,26 +1198,26 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("DataSchema")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("jsonb");
 
                     b.Property<string>("Description")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<long>("Index")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("bigint");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.HasKey("UniqueId");
 
@@ -1284,44 +1228,44 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid?>("CommandTemplateUniqueId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<bool>("EnvironmentBased")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("boolean");
 
                     b.Property<Guid?>("ExperimentOverviewUniqueId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<long>("Index")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("bigint");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<bool>("Planned")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("boolean");
 
                     b.Property<Guid?>("PlanningMetadataUniqueId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Value")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("jsonb");
 
                     b.Property<string>("VariableArgument")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<int>("VariableType")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer");
 
                     b.HasKey("UniqueId");
 
@@ -1338,59 +1282,59 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid?>("CampaignTemplateUniqueId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid?>("CommandMetadataUniqueId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<Guid?>("ExtraInfoUniqueId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<long>("Index")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("bigint");
 
                     b.Property<string>("InitialValue")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("jsonb");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Name")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<bool>("NotPlannable")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("boolean");
 
                     b.Property<string>("OutputName")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<Guid?>("ParameterId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("PlannerDescription")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<string>("PlannerName")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<string>("Schema")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("jsonb");
 
                     b.Property<string>("Unit")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<bool>("UseDefault")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("boolean");
 
                     b.HasKey("UniqueId");
 
@@ -1410,29 +1354,29 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<Guid?>("ExperimentTemplateUniqueId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<long>("Index")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("bigint");
 
                     b.Property<bool>("IsParallel")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("boolean");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Name")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.HasKey("UniqueId");
 
@@ -1445,26 +1389,26 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("DeviceId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<double?>("ManifoldTemperature")
-                        .HasColumnType("REAL");
+                        .HasColumnType("double precision");
 
                     b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("UniqueId");
 
@@ -1475,44 +1419,44 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<double?>("AbsolutePressure")
-                        .HasColumnType("REAL");
+                        .HasColumnType("double precision");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("DeviceId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<string>("Gas")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<double?>("MassFlow")
-                        .HasColumnType("REAL");
+                        .HasColumnType("double precision");
 
                     b.Property<double?>("Setpoint")
-                        .HasColumnType("REAL");
+                        .HasColumnType("double precision");
 
                     b.Property<string>("StatusCodes")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<double?>("Temperature")
-                        .HasColumnType("REAL");
+                        .HasColumnType("double precision");
 
                     b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<double?>("VolumetricFlow")
-                        .HasColumnType("REAL");
+                        .HasColumnType("double precision");
 
                     b.HasKey("UniqueId");
 
@@ -1523,23 +1467,23 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("DeviceId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("UniqueId");
 
@@ -1550,23 +1494,23 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("DeviceId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("UniqueId");
 
@@ -1577,44 +1521,44 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<int>("Address")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("DeviceId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<double?>("DispensedVolume")
-                        .HasColumnType("REAL");
+                        .HasColumnType("double precision");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("RateUnit")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("VolumeUnit")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<double?>("WithdrawnVolume")
-                        .HasColumnType("REAL");
+                        .HasColumnType("double precision");
 
                     b.HasKey("UniqueId");
 
@@ -1625,35 +1569,35 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("DeviceId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<double?>("Probe1Temperature")
-                        .HasColumnType("REAL");
+                        .HasColumnType("double precision");
 
                     b.Property<double?>("Probe2Temperature")
-                        .HasColumnType("REAL");
+                        .HasColumnType("double precision");
 
                     b.Property<double?>("Probe3Temperature")
-                        .HasColumnType("REAL");
+                        .HasColumnType("double precision");
 
                     b.Property<double?>("Probe4Temperature")
-                        .HasColumnType("REAL");
+                        .HasColumnType("double precision");
 
                     b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("UniqueId");
 
@@ -1664,51 +1608,51 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<int>("CurrentPosition")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer");
 
-                    b.Property<uint>("CustomStepSize")
-                        .HasColumnType("INTEGER");
+                    b.Property<long>("CustomStepSize")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("DeviceId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
-                    b.Property<uint>("MaxAcceleration")
-                        .HasColumnType("INTEGER");
+                    b.Property<long>("MaxAcceleration")
+                        .HasColumnType("bigint");
 
-                    b.Property<uint>("MaxDeceleration")
-                        .HasColumnType("INTEGER");
+                    b.Property<long>("MaxDeceleration")
+                        .HasColumnType("bigint");
 
-                    b.Property<uint>("MaxSpeed")
-                        .HasColumnType("INTEGER");
+                    b.Property<long>("MaxSpeed")
+                        .HasColumnType("bigint");
 
-                    b.Property<uint>("StartingSpeed")
-                        .HasColumnType("INTEGER");
+                    b.Property<long>("StartingSpeed")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("StatusMessages")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<string>("StepMode")
                         .IsRequired()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<int>("TargetPosition")
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("UniqueId");
 
@@ -1719,29 +1663,29 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<double>("CurrentTemp")
-                        .HasColumnType("REAL");
+                        .HasColumnType("double precision");
 
                     b.Property<string>("DeviceId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<double>("SetPointTemp")
-                        .HasColumnType("REAL");
+                        .HasColumnType("double precision");
 
                     b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("UniqueId");
 
@@ -1752,26 +1696,26 @@ namespace AresService.Migrations.Sqlite.Migrations
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<Guid?>("DeviceConfigId")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("TypeUrl")
-                        .HasColumnType("TEXT");
+                        .HasColumnType("text");
 
                     b.Property<byte[]>("Value")
-                        .HasColumnType("BLOB");
+                        .HasColumnType("bytea");
 
                     b.HasKey("UniqueId");
 
@@ -1869,14 +1813,6 @@ namespace AresService.Migrations.Sqlite.Migrations
                         .OnDelete(DeleteBehavior.ClientCascade);
                 });
 
-            modelBuilder.Entity("Ares.Datamodel.ExperimentExecutionStatus", b =>
-                {
-                    b.HasOne("Ares.Datamodel.CampaignExecutionStatus", null)
-                        .WithMany("ExperimentExecutionStatuses")
-                        .HasForeignKey("CampaignExecutionStatusUniqueId")
-                        .OnDelete(DeleteBehavior.Cascade);
-                });
-
             modelBuilder.Entity("Ares.Datamodel.ExperimentExecutionSummary", b =>
                 {
                     b.HasOne("Ares.Datamodel.CampaignExecutionSummary", null)
@@ -1944,14 +1880,6 @@ namespace AresService.Migrations.Sqlite.Migrations
                         .HasForeignKey("Ares.Datamodel.Planning.PlannerServiceCapabilities", "PlannerInfoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("Ares.Datamodel.StepExecutionStatus", b =>
-                {
-                    b.HasOne("Ares.Datamodel.ExperimentExecutionStatus", null)
-                        .WithMany("StepExecutionStatuses")
-                        .HasForeignKey("ExperimentExecutionStatusUniqueId")
-                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("Ares.Datamodel.StepExecutionSummary", b =>
@@ -2070,11 +1998,6 @@ namespace AresService.Migrations.Sqlite.Migrations
                     b.Navigation("Capabilities");
                 });
 
-            modelBuilder.Entity("Ares.Datamodel.CampaignExecutionStatus", b =>
-                {
-                    b.Navigation("ExperimentExecutionStatuses");
-                });
-
             modelBuilder.Entity("Ares.Datamodel.CampaignExecutionSummary", b =>
                 {
                     b.Navigation("ExecutionInfo");
@@ -2097,11 +2020,6 @@ namespace AresService.Migrations.Sqlite.Migrations
             modelBuilder.Entity("Ares.Datamodel.Device.DeviceInfo", b =>
                 {
                     b.Navigation("Commands");
-                });
-
-            modelBuilder.Entity("Ares.Datamodel.ExperimentExecutionStatus", b =>
-                {
-                    b.Navigation("StepExecutionStatuses");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.ExperimentExecutionSummary", b =>

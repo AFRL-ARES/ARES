@@ -38,7 +38,7 @@ public class AnalysisHelper
         ExperimentOverviewId = experimentSummary.ExperimentOverview.UniqueId
       };
 
-      _logger.LogInformation("Analysis completed {}", analysis.Result);
+      _logger.LogInformation("Analysis completed {Result}", analysis.Result);
       return analysis;
     }
     catch(RpcException e)

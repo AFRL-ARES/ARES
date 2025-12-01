@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace AresService.Migrations.SqlServer.Migrations
+namespace AresService.Migrations.Sqlite.Migrations
 {
     /// <inheritdoc />
     public partial class DatabaseInit_AresDbContext : Migration
@@ -15,12 +15,12 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "Analyses",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Result = table.Column<float>(type: "real", nullable: false),
-                    AnalysisOutcome = table.Column<int>(type: "int", nullable: false),
-                    ErrorString = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Result = table.Column<float>(type: "REAL", nullable: false),
+                    AnalysisOutcome = table.Column<int>(type: "INTEGER", nullable: false),
+                    ErrorString = table.Column<string>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -31,14 +31,14 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "AnalyzerInfos",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Type = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Version = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Url = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: true),
+                    Type = table.Column<string>(type: "TEXT", nullable: true),
+                    Description = table.Column<string>(type: "TEXT", nullable: true),
+                    Version = table.Column<string>(type: "TEXT", nullable: true),
+                    Url = table.Column<string>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -49,11 +49,11 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "Analyzers",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Url = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: true),
+                    Url = table.Column<string>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -64,11 +64,11 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "AnalyzerSettings",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    AnalyzerId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Settings = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    AnalyzerId = table.Column<string>(type: "TEXT", nullable: true),
+                    Settings = table.Column<string>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -76,28 +76,13 @@ namespace AresService.Migrations.SqlServer.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "CampaignExecutionStatuses",
-                columns: table => new
-                {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    CampaignId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    State = table.Column<int>(type: "int", nullable: false),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_CampaignExecutionStatuses", x => x.UniqueId);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "CampaignTags",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    TagName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    TagName = table.Column<string>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -108,10 +93,10 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "CampaignTemplates",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(450)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -122,12 +107,12 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "ChillerStates",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ManifoldTemperature = table.Column<double>(type: "float", nullable: true),
-                    Timestamp = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    DeviceId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    ManifoldTemperature = table.Column<double>(type: "REAL", nullable: true),
+                    Timestamp = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    DeviceId = table.Column<string>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -138,11 +123,11 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "DeviceConfigs",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    DeviceName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    DeviceType = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    DeviceName = table.Column<string>(type: "TEXT", nullable: true),
+                    DeviceType = table.Column<string>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -153,15 +138,15 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "DeviceInfos",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Type = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Version = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Url = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    SettingsSchema = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: true),
+                    Type = table.Column<string>(type: "TEXT", nullable: true),
+                    Description = table.Column<string>(type: "TEXT", nullable: true),
+                    Version = table.Column<string>(type: "TEXT", nullable: true),
+                    Url = table.Column<string>(type: "TEXT", nullable: true),
+                    SettingsSchema = table.Column<string>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -172,13 +157,13 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "DeviceLoggingSettings",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    DeviceId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    LoggingType = table.Column<int>(type: "int", nullable: false),
-                    IntervalMs = table.Column<long>(type: "bigint", nullable: false),
-                    Deltas = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    DeviceId = table.Column<string>(type: "TEXT", nullable: true),
+                    LoggingType = table.Column<int>(type: "INTEGER", nullable: false),
+                    IntervalMs = table.Column<long>(type: "INTEGER", nullable: false),
+                    Deltas = table.Column<string>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -189,11 +174,11 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "DeviceSettings",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    DeviceId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Settings = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    DeviceId = table.Column<string>(type: "TEXT", nullable: true),
+                    Settings = table.Column<string>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -204,12 +189,12 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "DeviceStates",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    DeviceId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Timestamp = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Data = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    DeviceId = table.Column<string>(type: "TEXT", nullable: true),
+                    Timestamp = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    Data = table.Column<string>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -220,18 +205,18 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "MfcStates",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    AbsolutePressure = table.Column<double>(type: "float", nullable: true),
-                    Temperature = table.Column<double>(type: "float", nullable: true),
-                    VolumetricFlow = table.Column<double>(type: "float", nullable: true),
-                    MassFlow = table.Column<double>(type: "float", nullable: true),
-                    Setpoint = table.Column<double>(type: "float", nullable: true),
-                    Gas = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    StatusCodes = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Timestamp = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    DeviceId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    AbsolutePressure = table.Column<double>(type: "REAL", nullable: true),
+                    Temperature = table.Column<double>(type: "REAL", nullable: true),
+                    VolumetricFlow = table.Column<double>(type: "REAL", nullable: true),
+                    MassFlow = table.Column<double>(type: "REAL", nullable: true),
+                    Setpoint = table.Column<double>(type: "REAL", nullable: true),
+                    Gas = table.Column<string>(type: "TEXT", nullable: true),
+                    StatusCodes = table.Column<string>(type: "TEXT", nullable: true),
+                    Timestamp = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    DeviceId = table.Column<string>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -242,14 +227,14 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "PlannerInfos",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Type = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Version = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Address = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: true),
+                    Type = table.Column<string>(type: "TEXT", nullable: true),
+                    Version = table.Column<string>(type: "TEXT", nullable: true),
+                    Address = table.Column<string>(type: "TEXT", nullable: true),
+                    Description = table.Column<string>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -260,11 +245,11 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "PlannerServices",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Url = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: true),
+                    Url = table.Column<string>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -275,11 +260,11 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "PlannerSettings",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    PlannerId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Settings = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    PlannerId = table.Column<string>(type: "TEXT", nullable: true),
+                    Settings = table.Column<string>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -290,11 +275,11 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "Projects",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: true),
+                    Description = table.Column<string>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -305,11 +290,11 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "RemoteDevices",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Url = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: true),
+                    Url = table.Column<string>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -320,11 +305,11 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "RestDeviceStateEntities",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Timestamp = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    DeviceId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Timestamp = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    DeviceId = table.Column<string>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -335,11 +320,11 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "RestSerialDeviceStateEntities",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Timestamp = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    DeviceId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Timestamp = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    DeviceId = table.Column<string>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -347,20 +332,35 @@ namespace AresService.Migrations.SqlServer.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "StepExecutionStatuses",
+                columns: table => new
+                {
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    StepId = table.Column<string>(type: "TEXT", nullable: true),
+                    StepName = table.Column<string>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_StepExecutionStatuses", x => x.UniqueId);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "SyringePumpStates",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Timestamp = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    DeviceId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    DispensedVolume = table.Column<double>(type: "float", nullable: true),
-                    WithdrawnVolume = table.Column<double>(type: "float", nullable: true),
-                    VolumeUnit = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    RateUnit = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Address = table.Column<int>(type: "int", nullable: false),
-                    Status = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Timestamp = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    DeviceId = table.Column<string>(type: "TEXT", nullable: true),
+                    DispensedVolume = table.Column<double>(type: "REAL", nullable: true),
+                    WithdrawnVolume = table.Column<double>(type: "REAL", nullable: true),
+                    VolumeUnit = table.Column<string>(type: "TEXT", nullable: false),
+                    RateUnit = table.Column<string>(type: "TEXT", nullable: false),
+                    Address = table.Column<int>(type: "INTEGER", nullable: false),
+                    Status = table.Column<string>(type: "TEXT", nullable: false),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -371,15 +371,15 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "Tc0304States",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Probe1Temperature = table.Column<double>(type: "float", nullable: true),
-                    Probe2Temperature = table.Column<double>(type: "float", nullable: true),
-                    Probe3Temperature = table.Column<double>(type: "float", nullable: true),
-                    Probe4Temperature = table.Column<double>(type: "float", nullable: true),
-                    Timestamp = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    DeviceId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Probe1Temperature = table.Column<double>(type: "REAL", nullable: true),
+                    Probe2Temperature = table.Column<double>(type: "REAL", nullable: true),
+                    Probe3Temperature = table.Column<double>(type: "REAL", nullable: true),
+                    Probe4Temperature = table.Column<double>(type: "REAL", nullable: true),
+                    Timestamp = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    DeviceId = table.Column<string>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -390,20 +390,20 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "TicStepperControllerStates",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Timestamp = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    DeviceId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    MaxAcceleration = table.Column<long>(type: "bigint", nullable: false),
-                    MaxDeceleration = table.Column<long>(type: "bigint", nullable: false),
-                    MaxSpeed = table.Column<long>(type: "bigint", nullable: false),
-                    StartingSpeed = table.Column<long>(type: "bigint", nullable: false),
-                    CustomStepSize = table.Column<long>(type: "bigint", nullable: false),
-                    StepMode = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    CurrentPosition = table.Column<int>(type: "int", nullable: false),
-                    TargetPosition = table.Column<int>(type: "int", nullable: false),
-                    StatusMessages = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Timestamp = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    DeviceId = table.Column<string>(type: "TEXT", nullable: true),
+                    MaxAcceleration = table.Column<uint>(type: "INTEGER", nullable: false),
+                    MaxDeceleration = table.Column<uint>(type: "INTEGER", nullable: false),
+                    MaxSpeed = table.Column<uint>(type: "INTEGER", nullable: false),
+                    StartingSpeed = table.Column<uint>(type: "INTEGER", nullable: false),
+                    CustomStepSize = table.Column<uint>(type: "INTEGER", nullable: false),
+                    StepMode = table.Column<string>(type: "TEXT", nullable: false),
+                    CurrentPosition = table.Column<int>(type: "INTEGER", nullable: false),
+                    TargetPosition = table.Column<int>(type: "INTEGER", nullable: false),
+                    StatusMessages = table.Column<string>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -414,13 +414,13 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "TubeFurnaceStateEntities",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Timestamp = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    DeviceId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CurrentTemp = table.Column<double>(type: "float", nullable: false),
-                    SetPointTemp = table.Column<double>(type: "float", nullable: false),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Timestamp = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    DeviceId = table.Column<string>(type: "TEXT", nullable: true),
+                    CurrentTemp = table.Column<double>(type: "REAL", nullable: false),
+                    SetPointTemp = table.Column<double>(type: "REAL", nullable: false),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -431,12 +431,12 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "AnalyzerCapabilities",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    TimeoutSeconds = table.Column<long>(type: "bigint", nullable: false),
-                    SettingsSchema = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    AnalyzerInfoId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    TimeoutSeconds = table.Column<long>(type: "INTEGER", nullable: false),
+                    SettingsSchema = table.Column<string>(type: "TEXT", nullable: true),
+                    AnalyzerInfoId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -450,39 +450,18 @@ namespace AresService.Migrations.SqlServer.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ExperimentExecutionStatuses",
-                columns: table => new
-                {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ExperimentId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CampaignExecutionStatusUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ExperimentExecutionStatuses", x => x.UniqueId);
-                    table.ForeignKey(
-                        name: "FK_ExperimentExecutionStatuses_CampaignExecutionStatuses_CampaignExecutionStatusUniqueId",
-                        column: x => x.CampaignExecutionStatusUniqueId,
-                        principalTable: "CampaignExecutionStatuses",
-                        principalColumn: "UniqueId",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "ExperimentTemplates",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    AnalyzerId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Resolved = table.Column<bool>(type: "bit", nullable: false),
-                    CampaignCloseoutId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    CampaignExperimentId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    CampaignStartupId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: true),
+                    AnalyzerId = table.Column<string>(type: "TEXT", nullable: true),
+                    Resolved = table.Column<bool>(type: "INTEGER", nullable: false),
+                    CampaignCloseoutId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    CampaignExperimentId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    CampaignStartupId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -509,12 +488,12 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "Any",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    TypeUrl = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Value = table.Column<byte[]>(type: "varbinary(max)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    DeviceConfigId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    TypeUrl = table.Column<string>(type: "TEXT", nullable: true),
+                    Value = table.Column<byte[]>(type: "BLOB", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    DeviceConfigId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -530,14 +509,14 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "DeviceCommandDescriptor",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    InputSchema = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    OutputSchema = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    DeviceInfoId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: true),
+                    Description = table.Column<string>(type: "TEXT", nullable: true),
+                    InputSchema = table.Column<string>(type: "TEXT", nullable: true),
+                    OutputSchema = table.Column<string>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    DeviceInfoId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -554,13 +533,13 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "PlannerServiceCapabilities",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ServiceName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    TimeoutSeconds = table.Column<long>(type: "bigint", nullable: false),
-                    SettingsSchema = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    PlannerInfoId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    ServiceName = table.Column<string>(type: "TEXT", nullable: true),
+                    TimeoutSeconds = table.Column<long>(type: "INTEGER", nullable: false),
+                    SettingsSchema = table.Column<string>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    PlannerInfoId = table.Column<Guid>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -574,23 +553,25 @@ namespace AresService.Migrations.SqlServer.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "StepExecutionStatuses",
+                name: "CommandExecutionStatuses",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    StepId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    StepName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    ExperimentExecutionStatusUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    CommandId = table.Column<string>(type: "TEXT", nullable: true),
+                    CommandName = table.Column<string>(type: "TEXT", nullable: true),
+                    DeviceName = table.Column<string>(type: "TEXT", nullable: true),
+                    State = table.Column<string>(type: "TEXT", nullable: false),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    StepExecutionStatusUniqueId = table.Column<Guid>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_StepExecutionStatuses", x => x.UniqueId);
+                    table.PrimaryKey("PK_CommandExecutionStatuses", x => x.UniqueId);
                     table.ForeignKey(
-                        name: "FK_StepExecutionStatuses_ExperimentExecutionStatuses_ExperimentExecutionStatusUniqueId",
-                        column: x => x.ExperimentExecutionStatusUniqueId,
-                        principalTable: "ExperimentExecutionStatuses",
+                        name: "FK_CommandExecutionStatuses_StepExecutionStatuses_StepExecutionStatusUniqueId",
+                        column: x => x.StepExecutionStatusUniqueId,
+                        principalTable: "StepExecutionStatuses",
                         principalColumn: "UniqueId",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -599,13 +580,13 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "StepTemplates",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    IsParallel = table.Column<bool>(type: "bit", nullable: false),
-                    Index = table.Column<long>(type: "bigint", nullable: false),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    ExperimentTemplateUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: true),
+                    IsParallel = table.Column<bool>(type: "INTEGER", nullable: false),
+                    Index = table.Column<long>(type: "INTEGER", nullable: false),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    ExperimentTemplateUniqueId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -622,13 +603,13 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "Planner",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    PlannerName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Version = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    PlannerServiceCapabilitiesUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    PlannerName = table.Column<string>(type: "TEXT", nullable: true),
+                    Description = table.Column<string>(type: "TEXT", nullable: true),
+                    Version = table.Column<string>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    PlannerServiceCapabilitiesUniqueId = table.Column<Guid>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -642,38 +623,14 @@ namespace AresService.Migrations.SqlServer.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "CommandExecutionStatuses",
-                columns: table => new
-                {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    CommandId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CommandName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    DeviceName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    State = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    StepExecutionStatusUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_CommandExecutionStatuses", x => x.UniqueId);
-                    table.ForeignKey(
-                        name: "FK_CommandExecutionStatuses_StepExecutionStatuses_StepExecutionStatusUniqueId",
-                        column: x => x.StepExecutionStatusUniqueId,
-                        principalTable: "StepExecutionStatuses",
-                        principalColumn: "UniqueId",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "CommandTemplates",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Index = table.Column<long>(type: "bigint", nullable: false),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    StepTemplateUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Index = table.Column<long>(type: "INTEGER", nullable: false),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    StepTemplateUniqueId = table.Column<Guid>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -690,14 +647,14 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "CommandMetadata",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    DeviceId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    DeviceType = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CommandTemplateId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: true),
+                    Description = table.Column<string>(type: "TEXT", nullable: true),
+                    DeviceId = table.Column<string>(type: "TEXT", nullable: true),
+                    DeviceType = table.Column<string>(type: "TEXT", nullable: true),
+                    CommandTemplateId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -714,12 +671,12 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "OutputMetadata",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    DataSchema = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Index = table.Column<long>(type: "bigint", nullable: false),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    DataSchema = table.Column<string>(type: "TEXT", nullable: true),
+                    Description = table.Column<string>(type: "TEXT", nullable: true),
+                    Index = table.Column<long>(type: "INTEGER", nullable: false),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -736,12 +693,12 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "AnalysisOverview",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ExperimentOverviewId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    Result = table.Column<double>(type: "float", nullable: false),
-                    AnalyzerInfo = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    ExperimentOverviewId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    Result = table.Column<double>(type: "REAL", nullable: false),
+                    AnalyzerInfo = table.Column<string>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -752,15 +709,15 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "CampaignExecutionSummaries",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    CampaignId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CampaignName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CampaignTags = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CampaignNotes = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    StartupExecutionSummaryUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    CloseoutExecutionSummaryUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    CampaignId = table.Column<string>(type: "TEXT", nullable: true),
+                    CampaignName = table.Column<string>(type: "TEXT", nullable: true),
+                    CampaignTags = table.Column<string>(type: "TEXT", nullable: true),
+                    CampaignNotes = table.Column<string>(type: "TEXT", nullable: true),
+                    StartupExecutionSummaryUniqueId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    CloseoutExecutionSummaryUniqueId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -771,12 +728,12 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "ExperimentExecutionSummaries",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ExperimentId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ResultOutputPath = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CampaignExecutionSummaryUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    ExperimentId = table.Column<string>(type: "TEXT", nullable: true),
+                    ResultOutputPath = table.Column<string>(type: "TEXT", nullable: true),
+                    CampaignExecutionSummaryUniqueId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -793,12 +750,12 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "ExperimentOverviews",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    TemplateUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    Result = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    ExperimentResultId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    TemplateUniqueId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    Result = table.Column<string>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    ExperimentResultId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -819,11 +776,11 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "StepExecutionSummaries",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    StepId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    ExperimentExecutionSummaryUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    StepId = table.Column<string>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    ExperimentExecutionSummaryUniqueId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -840,13 +797,13 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "CommandExecutionSummaries",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    CommandId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CommandName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CommandDescription = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    StepExecutionSummaryUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    CommandId = table.Column<string>(type: "TEXT", nullable: true),
+                    CommandName = table.Column<string>(type: "TEXT", nullable: true),
+                    CommandDescription = table.Column<string>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    StepExecutionSummaryUniqueId = table.Column<Guid>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -863,14 +820,14 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "DeviceCommandResults",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Result = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Success = table.Column<bool>(type: "bit", nullable: false),
-                    Error = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    AwaitUserInput = table.Column<bool>(type: "bit", nullable: false),
-                    CommandExecutionSummaryId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Result = table.Column<string>(type: "TEXT", nullable: true),
+                    Success = table.Column<bool>(type: "INTEGER", nullable: false),
+                    Error = table.Column<string>(type: "TEXT", nullable: true),
+                    AwaitUserInput = table.Column<bool>(type: "INTEGER", nullable: false),
+                    CommandExecutionSummaryId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -886,17 +843,17 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "ExecutionInfos",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    TimeStarted = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    TimeFinished = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Timezone = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    LocaltimeOffset = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CampaignExecutionSummaryId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    CommandExecutionSummaryId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    ExperimentResultId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    StepExecutionSummaryId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    TimeStarted = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    TimeFinished = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    Timezone = table.Column<string>(type: "TEXT", nullable: true),
+                    LocaltimeOffset = table.Column<string>(type: "TEXT", nullable: true),
+                    CampaignExecutionSummaryId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    CommandExecutionSummaryId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    ExperimentResultId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    StepExecutionSummaryId = table.Column<Guid>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -927,13 +884,13 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "Limits",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Minimum = table.Column<float>(type: "real", nullable: false),
-                    Maximum = table.Column<float>(type: "real", nullable: false),
-                    Index = table.Column<long>(type: "bigint", nullable: false),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    ParameterMetadataUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Minimum = table.Column<float>(type: "REAL", nullable: false),
+                    Maximum = table.Column<float>(type: "REAL", nullable: false),
+                    Index = table.Column<long>(type: "INTEGER", nullable: false),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    ParameterMetadataUniqueId = table.Column<Guid>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -944,23 +901,23 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "ParameterMetadata",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Unit = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Index = table.Column<long>(type: "bigint", nullable: false),
-                    OutputName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    NotPlannable = table.Column<bool>(type: "bit", nullable: false),
-                    UseDefault = table.Column<bool>(type: "bit", nullable: false),
-                    Schema = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    PlannerName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    PlannerDescription = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    InitialValue = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ExtraInfoUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    CampaignTemplateUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    CommandMetadataUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    ParameterId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: true),
+                    Unit = table.Column<string>(type: "TEXT", nullable: true),
+                    Index = table.Column<long>(type: "INTEGER", nullable: false),
+                    OutputName = table.Column<string>(type: "TEXT", nullable: true),
+                    NotPlannable = table.Column<bool>(type: "INTEGER", nullable: false),
+                    UseDefault = table.Column<bool>(type: "INTEGER", nullable: false),
+                    Schema = table.Column<string>(type: "TEXT", nullable: true),
+                    PlannerName = table.Column<string>(type: "TEXT", nullable: true),
+                    PlannerDescription = table.Column<string>(type: "TEXT", nullable: true),
+                    InitialValue = table.Column<string>(type: "TEXT", nullable: true),
+                    ExtraInfoUniqueId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    CampaignTemplateUniqueId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    CommandMetadataUniqueId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    ParameterId = table.Column<Guid>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -986,18 +943,18 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "Parameters",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Value = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Planned = table.Column<bool>(type: "bit", nullable: false),
-                    EnvironmentBased = table.Column<bool>(type: "bit", nullable: false),
-                    PlanningMetadataUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    VariableType = table.Column<int>(type: "int", nullable: false),
-                    VariableArgument = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Index = table.Column<long>(type: "bigint", nullable: false),
-                    CommandTemplateUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    ExperimentOverviewUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Value = table.Column<string>(type: "TEXT", nullable: true),
+                    Planned = table.Column<bool>(type: "INTEGER", nullable: false),
+                    EnvironmentBased = table.Column<bool>(type: "INTEGER", nullable: false),
+                    PlanningMetadataUniqueId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    VariableType = table.Column<int>(type: "INTEGER", nullable: false),
+                    VariableArgument = table.Column<string>(type: "TEXT", nullable: true),
+                    Index = table.Column<long>(type: "INTEGER", nullable: false),
+                    CommandTemplateUniqueId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    ExperimentOverviewUniqueId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -1024,12 +981,12 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "PlannerAllocations",
                 columns: table => new
                 {
-                    UniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    PlannerId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    ParameterUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    CampaignTemplateUniqueId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()"),
-                    LastModified = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "getdate()")
+                    UniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    PlannerId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    ParameterUniqueId = table.Column<Guid>(type: "TEXT", nullable: true),
+                    CampaignTemplateUniqueId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    CreationTime = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')"),
+                    LastModified = table.Column<DateTime>(type: "TEXT", nullable: false, defaultValueSql: "DATETIME('now')")
                 },
                 constraints: table =>
                 {
@@ -1056,8 +1013,7 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "IX_AnalysisOverview_ExperimentOverviewId",
                 table: "AnalysisOverview",
                 column: "ExperimentOverviewId",
-                unique: true,
-                filter: "[ExperimentOverviewId] IS NOT NULL");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_AnalyzerCapabilities_AnalyzerInfoId",
@@ -1069,8 +1025,7 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "IX_Any_DeviceConfigId",
                 table: "Any",
                 column: "DeviceConfigId",
-                unique: true,
-                filter: "[DeviceConfigId] IS NOT NULL");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_CampaignExecutionSummaries_CloseoutExecutionSummaryUniqueId",
@@ -1086,8 +1041,7 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "IX_CampaignTemplates_Name",
                 table: "CampaignTemplates",
                 column: "Name",
-                unique: true,
-                filter: "[Name] IS NOT NULL");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_CommandExecutionStatuses_StepExecutionStatusUniqueId",
@@ -1119,41 +1073,31 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "IX_DeviceCommandResults_CommandExecutionSummaryId",
                 table: "DeviceCommandResults",
                 column: "CommandExecutionSummaryId",
-                unique: true,
-                filter: "[CommandExecutionSummaryId] IS NOT NULL");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_ExecutionInfos_CampaignExecutionSummaryId",
                 table: "ExecutionInfos",
                 column: "CampaignExecutionSummaryId",
-                unique: true,
-                filter: "[CampaignExecutionSummaryId] IS NOT NULL");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_ExecutionInfos_CommandExecutionSummaryId",
                 table: "ExecutionInfos",
                 column: "CommandExecutionSummaryId",
-                unique: true,
-                filter: "[CommandExecutionSummaryId] IS NOT NULL");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_ExecutionInfos_ExperimentResultId",
                 table: "ExecutionInfos",
                 column: "ExperimentResultId",
-                unique: true,
-                filter: "[ExperimentResultId] IS NOT NULL");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_ExecutionInfos_StepExecutionSummaryId",
                 table: "ExecutionInfos",
                 column: "StepExecutionSummaryId",
-                unique: true,
-                filter: "[StepExecutionSummaryId] IS NOT NULL");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ExperimentExecutionStatuses_CampaignExecutionStatusUniqueId",
-                table: "ExperimentExecutionStatuses",
-                column: "CampaignExecutionStatusUniqueId");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_ExperimentExecutionSummaries_CampaignExecutionSummaryUniqueId",
@@ -1164,8 +1108,7 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "IX_ExperimentOverviews_ExperimentResultId",
                 table: "ExperimentOverviews",
                 column: "ExperimentResultId",
-                unique: true,
-                filter: "[ExperimentResultId] IS NOT NULL");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_ExperimentOverviews_TemplateUniqueId",
@@ -1176,22 +1119,19 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "IX_ExperimentTemplates_CampaignCloseoutId",
                 table: "ExperimentTemplates",
                 column: "CampaignCloseoutId",
-                unique: true,
-                filter: "[CampaignCloseoutId] IS NOT NULL");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_ExperimentTemplates_CampaignExperimentId",
                 table: "ExperimentTemplates",
                 column: "CampaignExperimentId",
-                unique: true,
-                filter: "[CampaignExperimentId] IS NOT NULL");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_ExperimentTemplates_CampaignStartupId",
                 table: "ExperimentTemplates",
                 column: "CampaignStartupId",
-                unique: true,
-                filter: "[CampaignStartupId] IS NOT NULL");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Limits_ParameterMetadataUniqueId",
@@ -1217,8 +1157,7 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "IX_ParameterMetadata_ParameterId",
                 table: "ParameterMetadata",
                 column: "ParameterId",
-                unique: true,
-                filter: "[ParameterId] IS NOT NULL");
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Parameters_CommandTemplateUniqueId",
@@ -1260,11 +1199,6 @@ namespace AresService.Migrations.SqlServer.Migrations
                 table: "PlannerServiceCapabilities",
                 column: "PlannerInfoId",
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_StepExecutionStatuses_ExperimentExecutionStatusUniqueId",
-                table: "StepExecutionStatuses",
-                column: "ExperimentExecutionStatusUniqueId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_StepExecutionSummaries_ExperimentExecutionSummaryUniqueId",
@@ -1453,16 +1387,10 @@ namespace AresService.Migrations.SqlServer.Migrations
                 name: "PlannerServiceCapabilities");
 
             migrationBuilder.DropTable(
-                name: "ExperimentExecutionStatuses");
-
-            migrationBuilder.DropTable(
                 name: "StepExecutionSummaries");
 
             migrationBuilder.DropTable(
                 name: "PlannerInfos");
-
-            migrationBuilder.DropTable(
-                name: "CampaignExecutionStatuses");
 
             migrationBuilder.DropTable(
                 name: "ExperimentOverviews");
