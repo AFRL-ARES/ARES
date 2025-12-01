@@ -9,7 +9,7 @@ service FlirCM3CameraRpc {
 	rpc CaptureImage(CaptureImageRequest) returns (CaptureImageResponse);
 	rpc GetImage(GetImageRequest) returns (GetImageResponse);
 	rpc GetDisplayImage(GetDisplayImageRequest) returns (GetDisplayImageResponse);
-	rpc GetLatestImagePath(google.protobuf.Empty) returns (GetImagePathResponse);
+	rpc GetLatestImagePath(GetImagePathRequest) returns (GetImagePathResponse);
 	rpc SetExposureTime(SetExposureTimeRequest) returns (google.protobuf.Empty);
 
 	rpc AddCM3Camera(config.FlirCM3Config) returns (google.protobuf.Empty);
@@ -46,6 +46,10 @@ message GetDisplayImageRequest {
 
 message GetDisplayImageResponse {
 	bytes display_image_data = 1;
+}
+
+message GetImagePathRequest {
+	string camera_id = 1;
 }
 
 message GetImagePathResponse {

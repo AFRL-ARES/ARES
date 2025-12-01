@@ -12,6 +12,7 @@ public class SimCM3Camera : AresDevice, IFlirCM3Camera
   public SimCM3Camera(string deviceName) : base(deviceName)
   {
     Status = new DeviceOperationalStatus();
+    Name = deviceName;
   }
 
   public override Task<bool> Activate(CancellationToken ct)

@@ -6,6 +6,7 @@ using AresService.DeviceManagers;
 using FlirCM3;
 using FlirCM3.Config;
 using FlirCM3.Services;
+using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 
@@ -45,11 +46,27 @@ public class FlirCM3CameraService : FlirCM3CameraRpc.FlirCM3CameraRpcBase
     return await camera.CaptureImage(request.SavePath);
   }
 
+  public override async Task<GetDisplayImageResponse> GetDisplayImage(GetDisplayImageRequest request, ServerCallContext context)
+  {
+    var camera = GetCamera(request.CameraId);
+    return new GetDisplayImageResponse() { DisplayImageData = ByteString.CopyFrom(camera.DisplayImageData) };
+  }
+
+  public override Task<GetImageResponse> GetImage(GetImageRequest request, ServerCallContext context)
+  {
+    var camera = GetCamera(request.CameraId);
+    return Task.FromResult(new GetImageResponse() { ImageData = ByteString.CopyFrom(camera.ImageData) });
+  }
+
+  public override Task<GetImagePathResponse> GetLatestImagePath(GetImagePathRequest request, ServerCallContext context)
+  {
+    var camera = GetCamera(request.CameraId);
+    return Task.FromResult(new GetImagePathResponse() { ImagePath = camera.LatestImagePath });
+  }
+
   public override Task<Empty> SetExposureTime(SetExposureTimeRequest request, ServerCallContext context)
   {
     var camera = GetCamera(request.CameraId);
-
-    //Do things with the camera here
     camera.SetExposureTime(request.ExposureTime);
 
     return Task.FromResult(new Empty());
@@ -80,14 +97,22 @@ public class FlirCM3CameraService : FlirCM3CameraRpc.FlirCM3CameraRpcBase
 
   public override Task<GetAllCamerasResponse> GetAllCM3Cameras(Empty request, ServerCallContext context)
   {
-    var cameraDescriptions = _deviceCommandInterpreterRepo
+    var response = new GetAllCamerasResponse();
+
+    try
+    {
+      var cameraDescriptions = _deviceCommandInterpreterRepo
       .Select(deviceInterpreter => deviceInterpreter.Device)
       .OfType<IFlirCM3Camera>()
       .Select(device => new CameraDescription { Id = device.UniqueId, Name = device.Name });
 
-    var response = new GetAllCamerasResponse();
-    response.Cameras.AddRange(cameraDescriptions);
+      response.Cameras.AddRange(cameraDescriptions);
 
-    return Task.FromResult(response);
+      return Task.FromResult(response);
+    }
+    catch(Exception)
+    {
+      return Task.FromResult(response);
+    }
   }
 }

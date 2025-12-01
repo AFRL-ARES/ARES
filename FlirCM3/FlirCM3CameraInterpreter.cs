@@ -49,6 +49,18 @@ public class FlirCM3CameraInterpreter : DeviceCommandInterpreter<IFlirCM3Camera,
           Description = "Returns a path to the latest image in the form of a string.",
           DataSchema = AresSchemaHelper.CreateSchema("Image Path", AresDataType.String)
         }
+      },
+
+      new()
+      {
+        DeviceId = Device.UniqueId,
+        Name = FlirCM3CommandType.GetLatestImage.ToString(),
+        Description = "A command that returns the latest captured image data in the form of a byte array.",
+        OutputMetadata = new OutputMetadata()
+        {
+          Description = "A byte array that contains the latest image data.",
+          DataSchema = AresSchemaHelper.CreateSchema("Image Data", AresDataType.ByteArray)
+        }
       }
     };
   }
@@ -78,6 +90,7 @@ public class FlirCM3CameraInterpreter : DeviceCommandInterpreter<IFlirCM3Camera,
         }
 
         await Device.SetExposureTime(exposureTime.Value.NumberValue);
+        result.Success = true;
         break;
 
       case FlirCM3CommandType.GetLatestImage:
