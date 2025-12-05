@@ -1,6 +1,7 @@
 ﻿@page "/dataviewer"
 @using System.Web
 @using Ares.Datamodel
+@using Ares.Datamodel.Extensions
 @using Ares.Services
 @using UI.Backend.Helpers
 @inject ContextMenuService ContextMenuService
@@ -112,7 +113,7 @@
                           <RadzenTreeItem Text=@($"Analyzer Type: {exp.ExperimentOverview.AnalysisOverview.AnalyzerInfo.Type}") />
                           <RadzenTreeItem Text="Analyzer Settings">
                             <ChildContent>
-                              @foreach(var setting in exp.ExperimentOverview.AnalysisOverview.AnalyzerInfo.Capabilities.SettingsSchema.Fields)
+                              @foreach(var setting in exp.ExperimentOverview.AnalysisOverview.AnalyzerInfo.Capabilities.SettingsSchema?.Fields ?? [])
                               {
                                 //TODO: Finish
                                 <RadzenTreeItem Text=@($"{setting.Key}")>
@@ -216,6 +217,15 @@
                 <b> Experiment Results </b>
                 @foreach(var result in ViewModel!.SelectedExperimentSummary.ExperimentOverview.Result.Fields)
                 {
+                  if(AresValueHelper.IsPrimitveType(result.Value))
+                  {
+                    <b> @result.Key : @result.Value </b>
+                  }
+                  else
+                  {
+                    <b>@result.Key : Complex Data </b>
+                  }
+
                   <b> @result.Key : @result.Value </b>
                 }
               }
