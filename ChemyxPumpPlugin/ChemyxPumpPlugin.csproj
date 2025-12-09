@@ -10,8 +10,4 @@
     <ProjectReference Include="..\Ares.Device.Serial\AresSerial\Ares.Device.Serial.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Commands\" />
-  </ItemGroup>
-
 </Project>

@@ -1,6 +1,5 @@
 ﻿using Ares.Device.Serial;
 using Ares.Device.Serial.Simulation;
-using System;
 using System.IO.Ports;
 
 namespace ChemyxPumpPlugin.Simulation;
