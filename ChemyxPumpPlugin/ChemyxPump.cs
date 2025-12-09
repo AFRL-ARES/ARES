@@ -4,11 +4,11 @@ using ChemyxPumpPlugin.Commands.Responses;
 
 namespace ChemyxPumpPlugin;
 
-public class ChemyxPump : SerialDevice<ChemyxPumpConnection>
+public class ChemyxPump : SerialDevice<IChemyxPumpConnection>
 {
   private const int DefaultPumpIndex = 1;
 
-  public ChemyxPump(string name, ChemyxPumpConnection connection) : base(name, connection)
+  public ChemyxPump(string name, IChemyxPumpConnection connection) : base(name, connection)
   {
     IsSimulated = connection is Simulation.SimChemyxPumpConnection;
   }

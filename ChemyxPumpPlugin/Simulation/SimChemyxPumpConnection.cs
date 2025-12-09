@@ -4,7 +4,7 @@ using System.IO.Ports;
 
 namespace ChemyxPumpPlugin.Simulation;
 
-internal class SimChemyxPumpConnection : AresSerialSimConnection, IChemyxPumpConnection
+public class SimChemyxPumpConnection : AresSerialSimConnection, IChemyxPumpConnection
 {
     private readonly SimChemyxPump _pump;
 

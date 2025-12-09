@@ -186,11 +186,24 @@ public class SimChemyxPump
       if(applyAll)
       {
         foreach(var pump in _pumps)
+        {
+          if(pump.Status == PumpStatus.Stopped)
+          {
+            pump.ElapsedMinutes = 0;
+            pump.DispensedVolume = 0;
+          }
           pump.Status = PumpStatus.Running;
+        }
       }
       else
       {
-        _pumps[pumpIndex - 1].Status = PumpStatus.Running;
+        var pump = _pumps[pumpIndex - 1];
+        if(pump.Status == PumpStatus.Stopped)
+        {
+          pump.ElapsedMinutes = 0;
+          pump.DispensedVolume = 0;
+        }
+        pump.Status = PumpStatus.Running;
       }
     }
 
