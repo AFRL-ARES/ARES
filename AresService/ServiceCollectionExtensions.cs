@@ -29,6 +29,8 @@ using AresService.DeviceStateLoggers.SyringePump;
 using AresService.DeviceStateLoggers.Tc0304;
 using AresService.DeviceStateLoggers.TicStepperController;
 using AresService.DeviceStateLoggers.TubeFurnace;
+using ChemyxPumpPlugin;
+using ChemyxPumpPlugin.Config;
 using Chiller.Config;
 using FlirCM3;
 using FlirCM3.Config;
@@ -89,6 +91,7 @@ public static class ServiceCollectionExtensions
     services.AddTransient<IDeviceDbLoader, SyringePumpDbLoader>();
     services.AddTransient<IDeviceDbLoader, ServoDbLoader>();
     services.AddTransient<IDeviceDbLoader, StepperControllerDbLoader>();
+    services.AddTransient<IDeviceDbLoader, ChemyxPumpDbLoader>();
     services.AddTransient<IDeviceDbLoader, TubeFurnaceDbLoader>();
     services.AddTransient<IDeviceDbLoader, ValveControllerDbLoader>();
     services.AddTransient<IDeviceDbLoader, FlirCM3CameraDbLoader>();
@@ -108,6 +111,7 @@ public static class ServiceCollectionExtensions
     services.AddTransient<IDeviceConfigManager<FlirCM3Config>, FlirCM3ConfigManager>();
     services.AddTransient<IDeviceConfigManager<VerdiConfig>, VerdiLaserConfigManager>();
     services.AddTransient<IDeviceConfigManager<ChillerConfig>, LaserChillerConfigManager>();
+    services.AddTransient<IDeviceConfigManager<ChemyxPumpConfig>,  ChemyxPumpConfigManager>();
     services.AddTransient<IDeviceConfigManager<RestDeviceConfig>, RestDeviceConfigManager>();
     services.AddTransient<IDeviceConfigManager<RestSerialConfig>, RestSerialDeviceConfigManager>();
 
@@ -121,6 +125,7 @@ public static class ServiceCollectionExtensions
     services.AddTransient<IDeviceManager<TubeFurnaceConfig, ITubeFurnace>, TubeFurnaceManager>();
     services.AddTransient<IDeviceManager<ValveControllerConfig, IValveController>, ValveControllerDeviceManager>();
     services.AddTransient<IDeviceManager<FlirCM3Config, IFlirCM3Camera>, FlirCM3CameraDeviceManager>();
+    services.AddTransient<IDeviceManager<ChemyxPumpConfig, IChemyxPump>, ChemyxPumpDeviceManager>();
     services.AddTransient<IDeviceManager<VerdiConfig, IVerdiV6Laser>, VerdiLaserDeviceManager>();
     services.AddTransient<IDeviceManager<ChillerConfig, ILaserChiller>, LaserChillerDeviceManager>();
     services.AddTransient<IDeviceManager<RestDeviceConfig, IRestDevice>, RestDeviceManager>();
@@ -134,6 +139,7 @@ public static class ServiceCollectionExtensions
     services.AddTransient<ISerialConnectionManager<IStepperControllerConnection>, StepperControllerSerialConnectionManager>();
     services.AddTransient<ISerialConnectionManager<ITubeFurnaceConnection>, TubeFurnaceSerialConnectionManager>();
     services.AddTransient<ISerialConnectionManager<IValveControllerConnection>, ValveControllerSerialConnectionManager>();
+    services.AddTransient<ISerialConnectionManager<IChemyxPumpConnection>, ChemyxPumpSerialConnectionManager>();
     services.AddTransient<ISerialConnectionManager<ILaserConnection>, VerdiLaserSerialConnectionManager>();
     services.AddTransient<ISerialConnectionManager<ILaserChillerConnection>, LaserChillerSerialConnectionManager>();
     services.AddTransient<ISerialConnectionManager<ISerialRestDeviceConnection>, SerialRestDeviceConnectionManager>();

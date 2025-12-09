@@ -1,0 +1,92 @@
+﻿@using ChemyxPumpPlugin.Services
+@using UI.Backend.ViewModels.Devices.ChemyxPump
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<ChemyxPumpUnitControlViewModel>
+@inject TooltipService tooltipService
+
+<RadzenCard Style="min-width: 250px">
+  <RadzenRow>
+    <RadzenText TextStyle="TextStyle.H6"> Chemyx Syringe Pump </RadzenText>
+  </RadzenRow>
+
+  <RadzenRow>
+    <!-- Pump One -->
+    <RadzenColumn Style="width:auto">
+      <RadzenLabel Text="Channel A" />
+    </RadzenColumn>
+
+    <!-- Pump Two -->
+    <RadzenColumn Style="width:auto">
+      <RadzenLabel Text="Channel B" />
+    </RadzenColumn>
+  </RadzenRow>
+
+  <RadzenRow>
+    <RadzenColumn Style="height: auto">
+      <RadzenDropDown Value="@ViewModel!.PumpOneSelectedUnit" TValue="Units" Data="@ViewModel!.AvailableUnits" ValueChanged="@ViewModel!.PumpOneUnitUpdated" />
+
+      <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+        <RadzenLabel Text="Rate:"/>
+        <RadzenNumeric @bind-Value="@ViewModel!.PumpOneRate" ShowUpDown="false"/>
+      </RadzenStack>
+
+      <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+        <RadzenLabel Text="Volume:" />
+        <RadzenNumeric @bind-Value="@ViewModel!.PumpOneVolume" ShowUpDown="false" />
+      </RadzenStack>
+
+      <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+        <RadzenLabel Text="Delay:" />
+        <RadzenNumeric @bind-Value="@ViewModel!.PumpOneDelay" ShowUpDown="false" />
+      </RadzenStack>
+
+      <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+        <RadzenLabel Text="Time:" />
+        <RadzenNumeric @bind-Value="@ViewModel!.PumpOneTime" ShowUpDown="false" />
+      </RadzenStack>
+
+    </RadzenColumn>
+
+    <RadzenColumn Style="height: auto">
+      <RadzenDropDown Value="@ViewModel!.PumpTwoSelectedUnit" TValue="Units" Data="@ViewModel!.AvailableUnits" ValueChanged="@ViewModel!.PumpTwoUnitUpdated" />
+
+      <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+        <RadzenLabel Text="Rate:" />
+        <RadzenNumeric @bind-Value="@ViewModel!.PumpTwoRate" ShowUpDown="false" />
+      </RadzenStack>
+
+      <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+        <RadzenLabel Text="Volume:" />
+        <RadzenNumeric @bind-Value="@ViewModel!.PumpTwoVolume" ShowUpDown="false" />
+      </RadzenStack>
+
+      <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+        <RadzenLabel Text="Delay:" />
+        <RadzenNumeric @bind-Value="@ViewModel!.PumpTwoDelay" ShowUpDown="false" />
+      </RadzenStack>
+
+      <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+        <RadzenLabel Text="Time:" />
+        <RadzenNumeric @bind-Value="@ViewModel!.PumpTwoTime" ShowUpDown="false" />
+      </RadzenStack>
+    </RadzenColumn>
+  </RadzenRow>
+
+  <RadzenRow>
+    <RadzenColumn>
+      <RadzenButton Click=@(_ => ViewModel!.StartPump(1)) Text="Start Pump" Icon="play_circle" ButtonStyle="ButtonStyle.Primary" />
+      <RadzenButton Click=@(_ => ViewModel!.PausePump(1)) Text="Pause Pump" Icon="pause_circle" ButtonStyle="ButtonStyle.Warning" />
+      <RadzenButton Click=@(_ => ViewModel!.StopPump(1)) Text="Stop Pump" Icon="stop_circle" ButtonStyle="ButtonStyle.Danger" />
+    </RadzenColumn>
+
+    <RadzenColumn>
+      <RadzenButton Click=@(_ => ViewModel!.StartPump(2)) Text="Start Pump" Icon="play_circle" ButtonStyle="ButtonStyle.Primary" />
+      <RadzenButton Click=@(_ => ViewModel!.PausePump(2)) Text="Pause Pump" Icon="pause_circle" ButtonStyle="ButtonStyle.Warning" />
+      <RadzenButton Click=@(_ => ViewModel!.StopPump(2)) Text="Stop Pump" Icon="stop_circle" ButtonStyle="ButtonStyle.Danger" />
+    </RadzenColumn>
+  </RadzenRow>
+
+</RadzenCard>
+
+@code {
+
+}

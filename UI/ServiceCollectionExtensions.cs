@@ -10,6 +10,7 @@ using Ares.Messages.DeviceStates.TubeFurnace;
 using Ares.Services;
 using Ares.Services.Device;
 using Ares.SyringePump.Ne1000.Messaging;
+using ChemyxPumpPlugin.Services;
 using Chiller.Services;
 using FlirCM3.Services;
 using Grpc.Health.V1;
@@ -32,6 +33,7 @@ using UI.Backend.ViewModels.Automation;
 using UI.Backend.ViewModels.Automation.CampaignEdit;
 using UI.Backend.ViewModels.Automation.CampaignEdit.Factories;
 using UI.Backend.ViewModels.Automation.Planning;
+using UI.Backend.ViewModels.Devices.ChemyxPump;
 using UI.Backend.ViewModels.Devices.CM3Camera;
 using UI.Backend.ViewModels.Devices.HerkulexDRS;
 using UI.Backend.ViewModels.Devices.LaserChiller;
@@ -45,6 +47,7 @@ using UI.Backend.ViewModels.DeviceStateLogging;
 using UI.Backend.ViewModels.Factories;
 using UI.Backend.ViewModels.Misc;
 using UI.Backend.ViewModels.Settings.Analysis;
+using UI.Backend.ViewModels.Settings.Device.ChemyxPump;
 using UI.Backend.ViewModels.Settings.Device.CM3Camera;
 using UI.Backend.ViewModels.Settings.Device.LaserChiller;
 using UI.Backend.ViewModels.Settings.Device.Mfc;
@@ -115,7 +118,6 @@ internal static class ServiceCollectionExtensions
     services.AddSingleton(_ => clientManager.GetClient<AresNotificationRpc.AresNotificationRpcClient>());
 
     //Device Clients
-    //services.AddScoped(_ => clientManager.GetClient<AresDevices.AresDevicesClient>());
     services.AddSingleton(_ => clientManager.GetClient<AresDevices.AresDevicesClient>());
     services.AddScoped(_ => clientManager.GetClient<MfcRpc.MfcRpcClient>());
     services.AddScoped(_ => clientManager.GetClient<SyringePumpRpc.SyringePumpRpcClient>());
@@ -129,6 +131,7 @@ internal static class ServiceCollectionExtensions
     services.AddScoped(_ => clientManager.GetClient<StepperControllerRpc.StepperControllerRpcClient>());
     services.AddScoped(_ => clientManager.GetClient<RestDeviceRpc.RestDeviceRpcClient>());
     services.AddScoped(_ => clientManager.GetClient<RestSerialDeviceRpc.RestSerialDeviceRpcClient>());
+    services.AddScoped(_ => clientManager.GetClient<ChemyxPumpRpc.ChemyxPumpRpcClient>());
 
     //Device State Logging Clients
     services.AddScoped(_ => clientManager.GetClient<MfcStateLogging.MfcStateLoggingClient>());
@@ -172,6 +175,7 @@ internal static class ServiceCollectionExtensions
     services.AddTransient<VerdiLaserSettingsListViewModel>();
     services.AddTransient<LaserChillerSettingsListViewModel>();
     services.AddTransient<RemoteDeviceSettingsListViewModel>();
+    services.AddTransient<ChemyxPumpSettingsListViewModel>();
 
     //Device Multi-view Models
     services.AddTransient<RestDeviceSettingsListViewModel>();
@@ -189,6 +193,7 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<VerdiLaserMultiViewModel>();
     services.AddScoped<LaserChillerMultiViewModel>();
     services.AddScoped<RemoteDeviceDirectorViewModel>();
+    services.AddScoped<ChemyxPumpMultiViewModel>();
 
     //Other View Models
     services.AddTransient<DeviceStatesViewModel>();

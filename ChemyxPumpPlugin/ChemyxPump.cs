@@ -4,16 +4,14 @@ using ChemyxPumpPlugin.Commands.Responses;
 
 namespace ChemyxPumpPlugin;
 
-public class ChemyxPump : SerialDevice<ChemyxPumpConnection>
+public class ChemyxPump : SerialDevice<IChemyxPumpConnection>, IChemyxPump
 {
   private const int DefaultPumpIndex = 1;
 
-  public ChemyxPump(string name, ChemyxPumpConnection connection) : base(name, connection)
+  public ChemyxPump(string name, bool dualPump, IChemyxPumpConnection connection) : base(name, connection)
   {
-    IsSimulated = connection is Simulation.SimChemyxPumpConnection;
+    DualPump = dualPump;
   }
-
-  public bool IsSimulated { get; }
 
   public async Task Start(int? pump = null, int mode = 0)
     => await Connection.Send(new StartCommand(pump, mode));
@@ -45,12 +43,13 @@ public class ChemyxPump : SerialDevice<ChemyxPumpConnection>
     return response.Value;
   }
 
-  public async Task<double?[]?> ReadLimitParameter(int? pump = null, int program = 0)
+  public async Task<LimitParameterResponse> ReadLimitParameter(int? pump = null, int program = 0)
   {
     var response = await Connection.Send(new ReadLimitParameterCommand(pump ?? DefaultPumpIndex, program), TimeSpan.FromSeconds(3));
     if(response is null)
       return null;
-    return [response.MaxRate, response.MinRate, response.MaxVolume, response.MinVolume];
+
+    return response;
   }
 
   public async Task<double?> SetDiameter(double diameter, int? pump = null)
@@ -62,12 +61,6 @@ public class ChemyxPump : SerialDevice<ChemyxPumpConnection>
   public async Task<double?> SetRate(double rate, int? pump = null)
   {
     var response = await Connection.Send(new SetRateCommand(pump ?? DefaultPumpIndex, rate), TimeSpan.FromSeconds(3));
-    return response.Value;
-  }
-
-  public async Task<double?> ChangeRate(double rate, int? pump = null)
-  {
-    var response = await Connection.Send(new ChangeRateCommand(pump ?? DefaultPumpIndex, rate), TimeSpan.FromSeconds(3));
     return response.Value;
   }
 
@@ -120,4 +113,10 @@ public class ChemyxPump : SerialDevice<ChemyxPumpConnection>
     }
   }
 
+  public ValueTask DisposeAsync()
+  {
+    throw new NotImplementedException();
+  }
+
+  public bool DualPump { get; set; } = false;
 }

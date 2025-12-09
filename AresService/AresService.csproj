@@ -37,6 +37,7 @@
     <ProjectReference Include="..\AresService.Migrations.Postgres\AresService.Migrations.Postgres.csproj" />
     <ProjectReference Include="..\AresService.Migrations.Sqlite\AresService.Migrations.Sqlite.csproj" />
     <ProjectReference Include="..\AresService.Migrations.SqlServer\AresService.Migrations.SqlServer.csproj" />
+    <ProjectReference Include="..\ChemyxPumpPlugin\ChemyxPumpPlugin.csproj" />
     <ProjectReference Include="..\FlirCM3\FlirCM3.csproj" />
     <ProjectReference Include="..\FlirCM3\FlirCM3.csproj" />
     <ProjectReference Include="..\HerkulexDRS\HerkulexDRS.csproj" />

@@ -15,6 +15,5 @@ public enum ChemyxPumpCommand
   SetRate,
   SetTime,
   SetDelay,
-  ChangeRate,
   SetUnits
 }
