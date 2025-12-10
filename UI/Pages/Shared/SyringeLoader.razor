@@ -9,7 +9,7 @@
       </clipPath>
     </defs>
 
-    <rect class=""
+    <rect class="liquid-fill"
           x="7" y="4" width="10" height="@(4 + SyringeLength)"
           fill="@FillColor"
           clip-path="url(#barrel-mask)" />
@@ -23,6 +23,7 @@
 </div>
 
 @code {
+  // doesn't work yet :)
   [Parameter]
   public double Progress { get; set; } = 0.0;
   [Parameter] 

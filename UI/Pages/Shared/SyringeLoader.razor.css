@@ -1,5 +1,5 @@
 ﻿.liquid-fill {
-	transform-origin: 12px 18px;
+	transform-origin: 12px 28px;
 	/* Use the variable if provided, otherwise default to 3s */
 	animation: pump var(--anim-duration, 3s) ease-in-out infinite;
 }
