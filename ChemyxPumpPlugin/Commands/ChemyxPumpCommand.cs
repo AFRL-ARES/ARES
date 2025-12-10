@@ -7,7 +7,6 @@ public enum ChemyxPumpCommand
   PausePump,
   PumpStatus,
   SetDiameter,
-  ViewParameter,
   DispensedVolume,
   ElapsedTime,
   SetVolume,

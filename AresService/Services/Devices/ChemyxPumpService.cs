@@ -215,9 +215,33 @@ public class ChemyxPumpService : ChemyxPumpRpc.ChemyxPumpRpcBase
     return new Empty();
   }
 
-  public override Task<ViewParametersResponse> GetViewParameters(GetViewParametersRequest request, ServerCallContext context)
+  public override async Task<ViewParametersResponse> GetViewParameters(GetViewParametersRequest request, ServerCallContext context)
   {
-    throw new NotImplementedException("I didn't wanna do this yet sorry :D");
+    var pump = GetPump(request.DeviceId);
+    var parameters = await pump.ViewParameters();
+    var response = new ViewParametersResponse();
+    if(parameters is null)
+      return response;
+
+    var pumpNum = 1;
+
+    foreach(var pumpParams in parameters.PumpParameters)
+    {
+      var protoParams = new PumpParams
+      {
+        PumpNumber = pumpNum++,
+        Unit = pumpParams.Units.ToProto(),
+        Diameter = pumpParams.Diameter,
+        Rate = pumpParams.Rate,
+        Time = pumpParams.Time.ToDuration(),
+        Volume = pumpParams.Volume,
+        Delay = pumpParams.Delay.ToDuration()
+      };
+
+      response.Params.Add(protoParams);
+    }
+
+    return response;
   }
 
   public override Task<GetAllPumpsResponse> GetAllPumps(Empty request, ServerCallContext context)

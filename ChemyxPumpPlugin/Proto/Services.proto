@@ -3,6 +3,7 @@ syntax = "proto3";
 package ChemyxPumpPlugin.services;
 
 import "google/protobuf/empty.proto";
+import "google/protobuf/duration.proto";
 import "ChemyxConfig.proto";
 
 service ChemyxPumpRpc {
@@ -72,8 +73,18 @@ message GetViewParametersRequest {
 	string device_id = 1;
 }
 
+message PumpParams {
+	sint32 pump_number = 1;
+	Units unit = 2;
+	double diameter = 3;
+	double rate = 4;
+	google.protobuf.Duration time = 5;
+	double volume = 6;
+	google.protobuf.Duration delay = 7;
+}
+
 message ViewParametersResponse {
-	string params = 1;
+	repeated PumpParams params = 1;
 }
 
 message GetDispensedVolumeRequest {

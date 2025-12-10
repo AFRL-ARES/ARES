@@ -43,7 +43,7 @@ public class ChemyxPump : SerialDevice<IChemyxPumpConnection>, IChemyxPump
     return response.Value;
   }
 
-  public async Task<LimitParameterResponse> ReadLimitParameter(int? pump = null, int program = 0)
+  public async Task<LimitParameterResponse?> ReadLimitParameter(int? pump = null, int program = 0)
   {
     var response = await Connection.Send(new ReadLimitParameterCommand(pump ?? DefaultPumpIndex, program), TimeSpan.FromSeconds(3));
     if(response is null)
@@ -91,7 +91,7 @@ public class ChemyxPump : SerialDevice<IChemyxPumpConnection>, IChemyxPump
     return (response.Rate.Value, response.Time.Value);
   }
 
-  public async Task<ChemyxPumpResponse?> ViewParameters()
+  public async Task<ViewParametersResponse?> ViewParameters()
     => await Connection.Send(new ViewParameterCommand(), TimeSpan.FromSeconds(3));
 
   public override async Task EnterSafeMode(CancellationToken ct)

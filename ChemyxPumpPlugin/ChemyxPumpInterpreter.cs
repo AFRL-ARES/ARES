@@ -57,13 +57,6 @@ public class ChemyxPumpInterpreter : DeviceCommandInterpreter<ChemyxPump, Chemyx
         break;
       }
 
-      case ChemyxPumpCommand.ViewParameter:
-      {
-        var response = await Device.ViewParameters();
-        result.Result = response is null ? AresStructHelper.CreateNullStruct("ViewParameter") : AresStructHelper.CreateStringStruct("ViewParameter", string.Join("\n", response.ResponseLines));
-        break;
-      }
-
       case ChemyxPumpCommand.DispensedVolume:
       {
         var value = await Device.GetDispensedVolume(pumpIndex);
@@ -207,12 +200,6 @@ public class ChemyxPumpInterpreter : DeviceCommandInterpreter<ChemyxPump, Chemyx
           new ParameterMetadata { Index = 0, Name = nameof(PumpIndex), Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.Number, false) },
           new ParameterMetadata { Index = 1, Name = nameof(Value), Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.Number, true) }
         }
-      },
-      new CommandMetadata
-      {
-        DeviceId = Device.UniqueId,
-        Name = nameof(ChemyxPumpCommand.ViewParameter),
-        Description = "View parameters."
       },
       new CommandMetadata
       {

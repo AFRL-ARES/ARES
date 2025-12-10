@@ -2,9 +2,9 @@
 
 namespace ChemyxPumpPlugin.Commands.Requests;
 
-internal class ViewParameterCommand : ChemyxPumpCommandBase<ChemyxPumpResponse>
+internal class ViewParameterCommand : ChemyxPumpCommandBase<ViewParametersResponse>
 {
-  public ViewParameterCommand() : base("view parameter", new ChemyxPumpResponseParser())
+  public ViewParameterCommand() : base("view parameter", new ViewParametersResponseParser())
   {
   }
 }

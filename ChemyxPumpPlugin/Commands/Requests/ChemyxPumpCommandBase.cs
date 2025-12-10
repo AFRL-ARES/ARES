@@ -4,7 +4,7 @@ using ChemyxPumpPlugin.Commands.Responses;
 
 namespace ChemyxPumpPlugin.Commands.Requests;
 
-internal abstract class ChemyxPumpCommandBase<TResponse> : SerialCommandWithResponse<TResponse> where TResponse : ChemyxPumpResponse
+internal abstract class ChemyxPumpCommandBase<TResponse> : SerialCommandWithResponse<TResponse> where TResponse : SerialResponse
 {
   private readonly string _commandText;
 
