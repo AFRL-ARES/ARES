@@ -5,7 +5,7 @@
 
 <RadzenCard Style="min-width: 250px">
   <RadzenRow>
-    <RadzenText TextStyle="TextStyle.H6"> Chemyx Syringe Pump </RadzenText>
+    <RadzenText TextStyle="TextStyle.H6">@ViewModel!.DeviceName</RadzenText>
   </RadzenRow>
 
   <RadzenRow>
@@ -23,50 +23,79 @@
   <RadzenRow>
     <RadzenColumn Style="height: auto">
       <RadzenDropDown Value="@ViewModel!.PumpOneSelectedUnit" TValue="Units" Data="@ViewModel!.AvailableUnits" ValueChanged="@ViewModel!.PumpOneUnitUpdated" />
+      <RadzenText Text="@ViewModel!.PumpOneParams?.Unit.ToString()" />
 
       <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
         <RadzenLabel Text="Rate:"/>
         <RadzenNumeric @bind-Value="@ViewModel!.PumpOneRate" ShowUpDown="false"/>
+        <RadzenText Text="@ViewModel!.PumpOneParams?.Rate.ToString()" />
       </RadzenStack>
 
       <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
         <RadzenLabel Text="Volume:" />
         <RadzenNumeric @bind-Value="@ViewModel!.PumpOneVolume" ShowUpDown="false" />
+        <RadzenText Text="@ViewModel!.PumpOneParams?.Volume.ToString()" />
       </RadzenStack>
 
       <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
         <RadzenLabel Text="Delay:" />
         <RadzenNumeric @bind-Value="@ViewModel!.PumpOneDelay" ShowUpDown="false" />
+        <RadzenText Text="@ViewModel!.PumpOneParams?.Delay.ToString()" />
       </RadzenStack>
 
       <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
         <RadzenLabel Text="Time:" />
         <RadzenNumeric @bind-Value="@ViewModel!.PumpOneTime" ShowUpDown="false" />
+        <RadzenText Text="@ViewModel!.PumpOneParams?.Time.ToString()" />
       </RadzenStack>
 
+      <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+        <RadzenLabel Text="Dispensed:" />
+        <RadzenText Text="@ViewModel!.PumpOneDispensed.ToString()" />
+      </RadzenStack>
+
+      <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+        <RadzenLabel Text="Elapsed:" />
+        <RadzenText Text="@ViewModel!.PumpOneElapsedMinutes.ToString()" />
+      </RadzenStack>
     </RadzenColumn>
 
     <RadzenColumn Style="height: auto">
       <RadzenDropDown Value="@ViewModel!.PumpTwoSelectedUnit" TValue="Units" Data="@ViewModel!.AvailableUnits" ValueChanged="@ViewModel!.PumpTwoUnitUpdated" />
+      <RadzenText Text="@ViewModel!.PumpTwoParams?.Unit.ToString()" />
 
       <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
         <RadzenLabel Text="Rate:" />
         <RadzenNumeric @bind-Value="@ViewModel!.PumpTwoRate" ShowUpDown="false" />
+        <RadzenText Text="@ViewModel!.PumpTwoParams?.Rate.ToString()" />
       </RadzenStack>
 
       <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
         <RadzenLabel Text="Volume:" />
         <RadzenNumeric @bind-Value="@ViewModel!.PumpTwoVolume" ShowUpDown="false" />
+        <RadzenText Text="@ViewModel!.PumpTwoParams?.Volume.ToString()" />
       </RadzenStack>
 
       <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
         <RadzenLabel Text="Delay:" />
         <RadzenNumeric @bind-Value="@ViewModel!.PumpTwoDelay" ShowUpDown="false" />
+        <RadzenText Text="@ViewModel!.PumpTwoParams?.Delay.ToString()" />
       </RadzenStack>
 
       <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
         <RadzenLabel Text="Time:" />
         <RadzenNumeric @bind-Value="@ViewModel!.PumpTwoTime" ShowUpDown="false" />
+        <RadzenText Text="@ViewModel!.PumpTwoParams?.Time.ToString()" />
+      </RadzenStack>
+
+      <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+        <RadzenLabel Text="Dispensed:" />
+        <RadzenText Text="@ViewModel!.PumpTwoDispensed.ToString()" />
+      </RadzenStack>
+
+      <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+        <RadzenLabel Text="Elapsed:" />
+        <RadzenText Text="@ViewModel!.PumpTwoElapsedMinutes.ToString()" />
       </RadzenStack>
     </RadzenColumn>
   </RadzenRow>
@@ -88,5 +117,10 @@
 </RadzenCard>
 
 @code {
+  protected override async Task OnInitializedAsync()
+  {
+    ViewModel!.StartStateRetriever();
 
+    await base.OnInitializedAsync();
+  }
 }

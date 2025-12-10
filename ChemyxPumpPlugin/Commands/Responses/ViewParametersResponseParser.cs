@@ -19,7 +19,15 @@ public partial class ViewParametersResponseParser : SerialResponseParser<ViewPar
       return false;
     }
 
-    if(genericResponse.ResponseLines.First().StartsWith("pump", StringComparison.OrdinalIgnoreCase))
+    if(genericResponse.CommandEcho != "view parameter")
+    {
+      response = null;
+      return false;
+    }
+
+    var lines = genericResponse.ResponseLines.Skip(1);
+
+    if(lines.First().StartsWith("pump", StringComparison.OrdinalIgnoreCase))
     {
       var split = SplitByPump(genericResponse.ResponseLines).ToArray();
       var multiParameters = split.Select(ParseParametersForPump).ToArray();

@@ -92,7 +92,7 @@ public class ChemyxPumpService : ChemyxPumpRpc.ChemyxPumpRpcBase
   {
     var pump = GetPump(request.DeviceId);
 
-    var volumeDispensed = await pump.GetDispensedVolume();
+    var volumeDispensed = await pump.GetDispensedVolume(request.PumpNumber);
     
     if(volumeDispensed is not null)
       return new DispensedVolumeResponse { VolumeDispense = (double)volumeDispensed };
@@ -104,7 +104,7 @@ public class ChemyxPumpService : ChemyxPumpRpc.ChemyxPumpRpcBase
   {
     var pump = GetPump(request.DeviceId);
 
-    var elapsedTime = await pump.GetElapsedTimeMinutes();
+    var elapsedTime = await pump.GetElapsedTimeMinutes(request.PumpNumber);
 
     if(elapsedTime is not null)
       return new ElapsedTimeResponse { ElapsedTime = (double)elapsedTime };
