@@ -84,4 +84,4 @@ ARES OS 2.0 relies on the following repositories for its operation foundation, c
   - https://github.com/AFRL-ARES/PyARES
 
 ## CLEARANCE
-ARES OS Clearance Number: ARES OS 2.x: AFRL-2025-5329
+Distribution A. Approved for public release: distribution unlimited. AFRL-2025-5329
