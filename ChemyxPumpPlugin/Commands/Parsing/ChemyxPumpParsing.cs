@@ -5,7 +5,7 @@ namespace ChemyxPumpPlugin.Commands.Parsing;
 
 internal static class ChemyxPumpParsing
 {
-  public static bool TryParse(byte[] buffer, out ChemyxPumpResponse response, out ArraySegment<byte>? dataToRemove)
+  public static bool TryParse(byte[] buffer, string originalCommand, out ChemyxPumpResponse response, out ArraySegment<byte>? dataToRemove)
   {
     response = default!;
     dataToRemove = null;
@@ -23,6 +23,11 @@ internal static class ChemyxPumpParsing
     var lines = trimmed.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
 
     var commandEcho = lines.FirstOrDefault() ?? string.Empty;
+    if(commandEcho != originalCommand)
+    {
+      return false;
+    }
+
     var payload = lines.Skip(1).ToArray();
 
     response = new ChemyxPumpResponse(commandEcho, payload, raw);

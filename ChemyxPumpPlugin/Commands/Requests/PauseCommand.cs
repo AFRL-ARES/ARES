@@ -4,7 +4,7 @@ namespace ChemyxPumpPlugin.Commands.Requests;
 
 internal class PauseCommand : ChemyxPumpCommandBase<ChemyxPumpResponse>
 {
-  public PauseCommand(int? pump) : base(BuildCommand(pump, "pause"), new ChemyxPumpResponseParser())
+  public PauseCommand(int? pump) : base(BuildCommand(pump, "pause"), new ChemyxPumpResponseParser(BuildCommand(pump, "pause")))
   {
   }
 

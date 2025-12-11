@@ -7,16 +7,18 @@ namespace ChemyxPumpPlugin.Commands.Responses;
 internal class NumericResponseParser<TResponse> : SerialResponseParser<TResponse> where TResponse : NumericResponse
 {
   private readonly Func<string, string[], string, double?, TResponse> _factory;
+  private readonly string _originalCommand;
 
-  public NumericResponseParser(Func<string, string[], string, double?, TResponse> factory)
+  public NumericResponseParser(Func<string, string[], string, double?, TResponse> factory, string originalCommand)
   {
     _factory = factory;
+    _originalCommand = originalCommand;
   }
 
   public override bool TryParseResponse(byte[] buffer, out TResponse? response, out ArraySegment<byte>? dataToRemove)
   {
     response = null;
-    if(!ChemyxPumpParsing.TryParse(buffer, out var baseResponse, out dataToRemove))
+    if(!ChemyxPumpParsing.TryParse(buffer, _originalCommand, out var baseResponse, out dataToRemove))
       return false;
 
     var line = baseResponse.ResponseLines.FirstOrDefault();

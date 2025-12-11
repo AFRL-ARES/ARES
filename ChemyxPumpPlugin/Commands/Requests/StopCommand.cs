@@ -4,7 +4,7 @@ namespace ChemyxPumpPlugin.Commands.Requests;
 
 internal class StopCommand : ChemyxPumpCommandBase<ChemyxPumpResponse>
 {
-  public StopCommand(int? pump) : base(BuildCommand(pump, "stop"), new ChemyxPumpResponseParser())
+  public StopCommand(int? pump) : base(BuildCommand(pump, "stop"), new ChemyxPumpResponseParser(BuildCommand(pump, "stop")))
   {
   }
 

@@ -4,7 +4,7 @@ namespace ChemyxPumpPlugin.Commands.Requests;
 
 internal class ViewParameterCommand : ChemyxPumpCommandBase<ViewParametersResponse>
 {
-  public ViewParameterCommand() : base("view parameter", new ViewParametersResponseParser())
+  public ViewParameterCommand() : base("view parameter", new ViewParametersResponseParser("view parameter"))
   {
   }
 }

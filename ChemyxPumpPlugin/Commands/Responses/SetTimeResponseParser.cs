@@ -6,10 +6,17 @@ namespace ChemyxPumpPlugin.Commands.Responses;
 
 internal class SetTimeResponseParser : SerialResponseParser<SetTimeResponse>
 {
+  private readonly string _originalCommand;
+
+  public SetTimeResponseParser(string originalCommand)
+  {
+    _originalCommand = originalCommand;
+  }
+
   public override bool TryParseResponse(byte[] buffer, out SetTimeResponse? response, out ArraySegment<byte>? dataToRemove)
   {
     response = null;
-    if(!ChemyxPumpParsing.TryParse(buffer, out var baseResponse, out dataToRemove))
+    if(!ChemyxPumpParsing.TryParse(buffer, _originalCommand, out var baseResponse, out dataToRemove))
       return false;
 
     double? rate = null;

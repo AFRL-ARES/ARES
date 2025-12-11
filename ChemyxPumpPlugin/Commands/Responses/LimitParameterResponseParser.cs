@@ -6,10 +6,17 @@ namespace ChemyxPumpPlugin.Commands.Responses;
 
 internal class LimitParameterResponseParser : SerialResponseParser<LimitParameterResponse>
 {
+  private readonly string _originalCommand;
+
+  public LimitParameterResponseParser(string originalCommand)
+  {
+    _originalCommand = originalCommand;
+  }
+
   public override bool TryParseResponse(byte[] buffer, out LimitParameterResponse? response, out ArraySegment<byte>? dataToRemove)
   {
     response = null;
-    if(!ChemyxPumpParsing.TryParse(buffer, out var baseResponse, out dataToRemove))
+    if(!ChemyxPumpParsing.TryParse(buffer, _originalCommand, out var baseResponse, out dataToRemove))
       return false;
 
     var line = baseResponse.ResponseLines.FirstOrDefault();

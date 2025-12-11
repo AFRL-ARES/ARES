@@ -9,17 +9,18 @@ namespace ChemyxPumpPlugin.Commands.Responses;
 
 public partial class ViewParametersResponseParser : SerialResponseParser<ViewParametersResponse>
 {
+  private readonly string _originalCommand;
+
+  public ViewParametersResponseParser(string originalCommand)
+  {
+    _originalCommand = originalCommand;
+  }
+
   public override bool TryParseResponse(byte[] buffer, out ViewParametersResponse? response, out ArraySegment<byte>? dataToRemove)
   {
-    var basicParse = ChemyxPumpParsing.TryParse(buffer, out var genericResponse, out dataToRemove);
+    var basicParse = ChemyxPumpParsing.TryParse(buffer, _originalCommand, out var genericResponse, out dataToRemove);
 
     if(!basicParse)
-    {
-      response = null;
-      return false;
-    }
-
-    if(genericResponse.CommandEcho != "view parameter")
     {
       response = null;
       return false;

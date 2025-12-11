@@ -4,7 +4,7 @@ namespace ChemyxPumpPlugin.Commands.Requests;
 
 internal class StartCommand : ChemyxPumpCommandBase<ChemyxPumpResponse>
 {
-  public StartCommand(int? pump, int mode) : base(BuildCommand(pump, $"start {mode}"), new ChemyxPumpResponseParser())
+  public StartCommand(int? pump, int mode) : base(BuildCommand(pump, $"start {mode}"), new ChemyxPumpResponseParser(BuildCommand(pump, $"start {mode}")))
   {
   }
 
