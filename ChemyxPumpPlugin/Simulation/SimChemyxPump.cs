@@ -98,7 +98,7 @@ public class SimChemyxPump
 
     Task.Delay(delay).ContinueWith(_ =>
     {
-      var cmd = Encoding.ASCII.GetString(command);
+      var cmd = Encoding.UTF8.GetString(command);
       ProcessCommand(cmd);
     });
   }
@@ -434,6 +434,6 @@ public class SimChemyxPump
     }
 
     sb.Append('>');
-    _byteSender(Encoding.ASCII.GetBytes(sb.ToString()));
+    _byteSender(Encoding.UTF8.GetBytes(sb.ToString()));
   }
 }

@@ -15,7 +15,7 @@ public interface IChemyxPump : ISerialDevice<IChemyxPumpConnection>, IAsyncDispo
 
   public Task<double?> GetDispensedVolume(int? pump = null);
 
-  public Task<double?> GetElapsedTimeMinutes(int? pump = null);
+  public Task<TimeSpan?> GetElapsedTime(int? pump = null);
 
   public Task<LimitParameterResponse?> ReadLimitParameter(int? pump = null, int program = 0);
 
@@ -27,9 +27,9 @@ public interface IChemyxPump : ISerialDevice<IChemyxPumpConnection>, IAsyncDispo
 
   public Task<double?> SetUnits(int units, int? pump = null);
 
-  public Task<double?> SetDelay(double delayMinutes, int? pump = null);
+  public Task<TimeSpan?> SetDelay(TimeSpan delay, int? pump = null);
 
-  public Task<(double rate, double time)?> SetTime(double minutes, int? pump = null);
+  public Task<(double rate, TimeSpan time)?> SetTime(TimeSpan time, int? pump = null);
 
   Task<ViewParametersResponse?> ViewParameters();
 

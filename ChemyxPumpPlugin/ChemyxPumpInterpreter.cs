@@ -48,103 +48,115 @@ public class ChemyxPumpInterpreter : DeviceCommandInterpreter<ChemyxPump, Chemyx
         break;
 
       case ChemyxPumpCommand.SetDiameter:
-      {
-        var value = GetNumberParam(nameof(Value));
-        if(!value.HasValue)
-          return Failure("SetDiameter requires a numeric Value parameter.");
-        var response = await Device.SetDiameter(value.Value, pumpIndex);
-        result.Result = response.HasValue ? AresStructHelper.CreateNumberStruct("Diameter", response.Value) : AresStructHelper.CreateNullStruct("Diameter");
-        break;
-      }
-
-      case ChemyxPumpCommand.DispensedVolume:
-      {
-        var value = await Device.GetDispensedVolume(pumpIndex);
-        result.Result = value.HasValue ? AresStructHelper.CreateNumberStruct("Volume", value.Value) : AresStructHelper.CreateNullStruct("Volume");
-        break;
-      }
-
-      case ChemyxPumpCommand.ElapsedTime:
-      {
-        var value = await Device.GetElapsedTimeMinutes(pumpIndex);
-        result.Result = value.HasValue ? AresStructHelper.CreateNumberStruct("Minutes", value.Value) : AresStructHelper.CreateNullStruct("Minutes");
-        break;
-      }
-
-      case ChemyxPumpCommand.SetVolume:
-      {
-        var value = GetNumberParam(nameof(Value));
-        if(!value.HasValue)
-          return Failure("SetVolume requires a numeric Value parameter.");
-        var response = await Device.SetVolume(value.Value, pumpIndex);
-        result.Result = response.HasValue ? AresStructHelper.CreateNumberStruct("Volume", response.Value) : AresStructHelper.CreateNullStruct("Volume");
-        break;
-      }
-
-      case ChemyxPumpCommand.ReadLimitParameter:
-      {
-        var program = (int?)GetNumberParam(nameof(ProgramIndex), 0) ?? 0;
-        var values = await Device.ReadLimitParameter(pumpIndex, program);
-        if(values is null)
         {
-          result.Result = AresStructHelper.CreateNullStruct("Limits");
+          var value = GetNumberParam(nameof(Value));
+          if(!value.HasValue)
+            return Failure("SetDiameter requires a numeric Value parameter.");
+          var response = await Device.SetDiameter(value.Value, pumpIndex);
+          result.Result = response.HasValue ? AresStructHelper.CreateNumberStruct("Diameter", response.Value) : AresStructHelper.CreateNullStruct("Diameter");
           break;
         }
-        result.Result = AresStructHelper.CreateNumberStruct("MaxRate", values.MaxRate)
-          .AddNumber("MinRate", values.MinRate)
-          .AddNumber("MaxVolume", values.MaxVolume)
-          .AddNumber("MinVolume", values.MinVolume);
-        break;
-      }
+
+      case ChemyxPumpCommand.DispensedVolume:
+        {
+          var value = await Device.GetDispensedVolume(pumpIndex);
+          result.Result = value.HasValue ? AresStructHelper.CreateNumberStruct("Volume", value.Value) : AresStructHelper.CreateNullStruct("Volume");
+          break;
+        }
+
+      case ChemyxPumpCommand.ElapsedTime:
+        {
+          var value = await Device.GetElapsedTime(pumpIndex);
+          result.Result = value.HasValue ? AresStructHelper.CreateNumberStruct("ElapsedMinutes", value.Value.TotalMinutes) : AresStructHelper.CreateNullStruct("Minutes");
+          break;
+        }
+
+      case ChemyxPumpCommand.SetVolume:
+        {
+          var value = GetNumberParam(nameof(Value));
+          if(!value.HasValue)
+            return Failure("SetVolume requires a numeric Value parameter.");
+          var response = await Device.SetVolume(value.Value, pumpIndex);
+          result.Result = response.HasValue ? AresStructHelper.CreateNumberStruct("Volume", response.Value) : AresStructHelper.CreateNullStruct("Volume");
+          break;
+        }
+
+      case ChemyxPumpCommand.ReadLimitParameter:
+        {
+          var program = (int?)GetNumberParam(nameof(ProgramIndex), 0) ?? 0;
+          var values = await Device.ReadLimitParameter(pumpIndex, program);
+          if(values is null)
+          {
+            result.Result = AresStructHelper.CreateNullStruct("Limits");
+            break;
+          }
+          result.Result = AresStructHelper.CreateNumberStruct("MaxRate", values.MaxRate)
+            .AddNumber("MinRate", values.MinRate)
+            .AddNumber("MaxVolume", values.MaxVolume)
+            .AddNumber("MinVolume", values.MinVolume);
+          break;
+        }
 
       case ChemyxPumpCommand.SetRate:
-      {
-        var value = GetNumberParam(nameof(Value));
-        if(!value.HasValue)
-          return Failure("SetRate requires a numeric Value parameter.");
-        var response = await Device.SetRate(value.Value, pumpIndex);
-        result.Result = response.HasValue ? AresStructHelper.CreateNumberStruct("Rate", response.Value) : AresStructHelper.CreateNullStruct("Rate");
-        break;
-      }
+        {
+          var value = GetNumberParam(nameof(Value));
+          if(!value.HasValue)
+            return Failure("SetRate requires a numeric Value parameter.");
+          var response = await Device.SetRate(value.Value, pumpIndex);
+          result.Result = response.HasValue ? AresStructHelper.CreateNumberStruct("Rate", response.Value) : AresStructHelper.CreateNullStruct("Rate");
+          break;
+        }
 
 
       case ChemyxPumpCommand.SetDelay:
-      {
-        var value = GetNumberParam(nameof(Value));
-        if(!value.HasValue)
-          return Failure("SetDelay requires a numeric Value parameter.");
-        var response = await Device.SetDelay(value.Value, pumpIndex);
-        result.Result = response.HasValue ? AresStructHelper.CreateNumberStruct("Delay", response.Value) : AresStructHelper.CreateNullStruct("Delay");
-        break;
-      }
+        {
+          var value = GetNumberParam(nameof(Value));
+          if(!value.HasValue)
+            return Failure("SetDelay requires a numeric Value parameter.");
+          var delayReq = TimeSpan.FromSeconds(value.Value);
+          var response = await Device.SetDelay(delayReq, pumpIndex);
+
+          if(!response.HasValue)
+          {
+            result.Result = AresStructHelper.CreateNullStruct("Delay");
+          }
+          else
+          {
+            result.Result = AresStructHelper.CreateNumberStruct("Delay", response.Value.TotalSeconds);
+          }
+          break;
+        }
 
       case ChemyxPumpCommand.SetTime:
-      {
-        var value = GetNumberParam(nameof(Value));
-        if(!value.HasValue)
-          return Failure("SetTime requires a numeric Value parameter.");
-        var response = await Device.SetTime(value.Value, pumpIndex);
-        if(response.HasValue)
         {
-          result.Result = AresStructHelper.CreateNumberStruct("Rate", response.Value.rate)
-            .AddNumber("Time", response.Value.time);
+          var value = GetNumberParam(nameof(Value));
+          if(!value.HasValue)
+            return Failure("SetTime requires a numeric Value parameter.");
+
+          var timeSpan = TimeSpan.FromMinutes(value.Value);
+          var response = await Device.SetTime(timeSpan, pumpIndex);
+          if(response.HasValue)
+          {
+            var responseTime = response.Value.time.TotalMinutes;
+            result.Result = AresStructHelper.CreateNumberStruct("Rate", response.Value.rate)
+              .AddNumber("Time", responseTime);
+          }
+          else
+          {
+            result.Result = AresStructHelper.CreateNullStruct("SetTime");
+          }
+          break;
         }
-        else
-        {
-          result.Result = AresStructHelper.CreateNullStruct("SetTime");
-        }
-        break;
-      }
 
       case ChemyxPumpCommand.SetUnits:
-      {
-        var value = GetNumberParam(nameof(Value));
-        if(!value.HasValue)
-          return Failure("SetUnits requires a numeric Value parameter.");
-        var response = await Device.SetUnits((int)value.Value, pumpIndex);
-        result.Result = response.HasValue ? AresStructHelper.CreateNumberStruct("Units", response.Value) : AresStructHelper.CreateNullStruct("Units");
-        break;
-      }
+        {
+          var value = GetNumberParam(nameof(Value));
+          if(!value.HasValue)
+            return Failure("SetUnits requires a numeric Value parameter.");
+          var response = await Device.SetUnits((int)value.Value, pumpIndex);
+          result.Result = response.HasValue ? AresStructHelper.CreateNumberStruct("Units", response.Value) : AresStructHelper.CreateNullStruct("Units");
+          break;
+        }
 
       default:
         return Failure($"Unsupported command {deviceCommandEnum}");
@@ -214,7 +226,7 @@ public class ChemyxPumpInterpreter : DeviceCommandInterpreter<ChemyxPump, Chemyx
         DeviceId = Device.UniqueId,
         Name = nameof(ChemyxPumpCommand.ElapsedTime),
         Description = "Get elapsed time (minutes).",
-        OutputMetadata = new OutputMetadata { Description = "Minutes", DataSchema = AresSchemaHelper.CreateSchema("Minutes", AresDataType.Number), Index = 0 },
+        OutputMetadata = new OutputMetadata { Description = "ElapsedMinutes", DataSchema = AresSchemaHelper.CreateSchema("Minutes", AresDataType.Number), Index = 0 },
         ParameterMetadatas = { new ParameterMetadata { Index = 0, Name = nameof(PumpIndex), Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.Number, false) } }
       },
       new CommandMetadata

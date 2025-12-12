@@ -104,12 +104,12 @@ public class ChemyxPumpService : ChemyxPumpRpc.ChemyxPumpRpcBase
   {
     var pump = GetPump(request.DeviceId);
 
-    var elapsedTime = await pump.GetElapsedTimeMinutes(request.PumpNumber);
+    var elapsedTime = await pump.GetElapsedTime(request.PumpNumber);
 
     if(elapsedTime is not null)
-      return new ElapsedTimeResponse { ElapsedTime = (double)elapsedTime };
+      return new ElapsedTimeResponse { ElapsedTime = elapsedTime.Value.ToDuration() };
 
-    return new ElapsedTimeResponse { ElapsedTime = -1.0 };
+    return new ElapsedTimeResponse { ElapsedTime = null };
   }
 
   public override async Task<LimitParameterResponse> GetLimitParameter(GetLimitParameterRequest request, ServerCallContext context)
@@ -135,10 +135,10 @@ public class ChemyxPumpService : ChemyxPumpRpc.ChemyxPumpRpcBase
   {
     var pump = GetPump(request.DeviceId);
     if(request.HasPumpNumber)
-      pump.SetDelay(request.DesiredDelay, request.PumpNumber);
+      pump.SetDelay(request.DesiredDelay.ToTimeSpan(), request.PumpNumber);
 
     else
-      pump.SetDelay(request.DesiredDelay);
+      pump.SetDelay(request.DesiredDelay.ToTimeSpan());
     return Task.FromResult(new Empty());
   }
 
@@ -167,10 +167,10 @@ public class ChemyxPumpService : ChemyxPumpRpc.ChemyxPumpRpcBase
   {
     var pump = GetPump(request.DeviceId);
     if(request.HasPumpNumber)
-      pump.SetTime(request.DesiredTime, request.PumpNumber);
+      pump.SetTime(request.DesiredTime.ToTimeSpan(), request.PumpNumber);
 
     else
-      pump.SetTime(request.DesiredTime);
+      pump.SetTime(request.DesiredTime.ToTimeSpan());
 
     return Task.FromResult(new Empty());
   }
