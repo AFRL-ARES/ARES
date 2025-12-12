@@ -3,7 +3,14 @@
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<ChemyxPumpUnitControlViewModel>
 @inject TooltipService tooltipService
 
-<RadzenCard Style="min-width: 250px">
+<RadzenStack Orientation="Orientation.Horizontal">
+  @foreach(var vm in ViewModel!.PumpViewModels)
+  {
+    <IndividualPump ViewModel="@vm" />
+  }
+</RadzenStack>
+
+@*<RadzenCard Style="min-width: 250px">
   <RadzenRow>
     <RadzenText TextStyle="TextStyle.H6">@ViewModel!.DeviceName</RadzenText>
   </RadzenRow>
@@ -115,12 +122,11 @@
   </RadzenRow>
 
 </RadzenCard>
+*@
 
 @code {
   protected override async Task OnInitializedAsync()
   {
-    ViewModel!.StartStateRetriever();
-
     await base.OnInitializedAsync();
   }
 }
