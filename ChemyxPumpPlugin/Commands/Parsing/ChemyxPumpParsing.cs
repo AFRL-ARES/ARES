@@ -17,21 +17,53 @@ internal static class ChemyxPumpParsing
     if(terminatorIdx < 0)
       return false;
 
-    var length = terminatorIdx + 1;
-    var raw = Encoding.ASCII.GetString(buffer, 0, length);
-    var trimmed = raw.TrimEnd('>', '\r', '\n', '\0');
-    var lines = trimmed.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
-
-    var commandEcho = lines.FirstOrDefault() ?? string.Empty;
-    if(commandEcho != originalCommand)
+    var utfProxy = Encoding.UTF8.GetString(buffer);
+    var useLast = utfProxy.EndsWith('>');
+    var commandResponses = utfProxy.Split('>', StringSplitOptions.None);
+    if(!useLast)
     {
-      return false;
+      commandResponses = commandResponses.SkipLast(1).ToArray();
+    }
+    var startIdx = 0;
+
+    for(var i = 0; i < commandResponses.Length; i++)
+    {
+      var cmdResponse = commandResponses[i];
+      Console.WriteLine($"Trying to parse {ToPrintableUtf8(buffer)}");
+      var lines = cmdResponse.Split(["\r\n", "\n", "\r"], StringSplitOptions.RemoveEmptyEntries);
+      var commandEcho = lines.FirstOrDefault() ?? string.Empty;
+      if(commandEcho != originalCommand)
+      {
+        startIdx += cmdResponse.Length - 1;
+        continue;
+      }
+      var payload = lines.Skip(1).ToArray();
+      response = new ChemyxPumpResponse(commandEcho, payload, cmdResponse);
+      dataToRemove = new ArraySegment<byte>(buffer, startIdx, cmdResponse.Length + i + 1);
+      return true;
     }
 
-    var payload = lines.Skip(1).ToArray();
+    return false;
+  }
 
-    response = new ChemyxPumpResponse(commandEcho, payload, raw);
-    dataToRemove = new ArraySegment<byte>(buffer, 0, length);
-    return true;
+  public static string ToPrintableUtf8(byte[] bytes)
+  {
+    string text = Encoding.UTF8.GetString(bytes);
+    var sb = new StringBuilder();
+
+    foreach(char c in text)
+    {
+      // Use Unicode categories to detect control chars
+      if(char.IsControl(c))
+      {
+        sb.Append($"\\u{((int)c):X4}");
+      }
+      else
+      {
+        sb.Append(c);
+      }
+    }
+
+    return sb.ToString();
   }
 }
