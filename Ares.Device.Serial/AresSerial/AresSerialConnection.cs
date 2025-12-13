@@ -6,6 +6,7 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Reactive.Threading.Tasks;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using Ares.Device.Serial.Commands;
@@ -127,7 +128,6 @@ public abstract class AresSerialConnection : IAresSerialConnection
 
     var observable = Observable.Create<T>(observer =>
     {
-      Console.WriteLine("Creating observer");
       var subscription = replay.Subscribe(observer);
 
       return Disposable.Create(() =>
@@ -136,7 +136,6 @@ public abstract class AresSerialConnection : IAresSerialConnection
 
         if(replay.HasObservers == false)
         {
-          Console.WriteLine("Disposing observer");
           upstream.Dispose();
           replay.Dispose();
 
@@ -146,9 +145,7 @@ public abstract class AresSerialConnection : IAresSerialConnection
           }
         }
       });
-    })
-      .Replay()
-      .RefCount();
+    });
 
     await _sendLock.WaitAsync();
     try
@@ -215,20 +212,21 @@ public abstract class AresSerialConnection : IAresSerialConnection
 
   private void StartBufferProcessor()
   {
-    Task.Factory.StartNew(_ =>
-    {
-      try
+    Task.Factory.StartNew(() =>
       {
-        while(!_listenerCancellationTokenSource.Token.IsCancellationRequested)
-          ProcessBufferCore();
-      }
-      // TODO maybe there's a cleaner way to do this 
-      catch(ObjectDisposedException)
-      {
-      }
-    },
+        try
+        {
+          while(!_listenerCancellationTokenSource.Token.IsCancellationRequested)
+            ProcessBufferCore();
+        }
+        // TODO maybe there's a cleaner way to do this 
+        catch(ObjectDisposedException)
+        {
+        }
+      },
       _listenerCancellationTokenSource.Token,
-      TaskCreationOptions.LongRunning);
+      TaskCreationOptions.LongRunning,
+      TaskScheduler.Default);
   }
 
   protected internal abstract void CloseCore();
@@ -261,34 +259,28 @@ public abstract class AresSerialConnection : IAresSerialConnection
         {
           if(_buffer.Any())
           {
-            var currentData = _buffer.ToArray();
             var unparsedMultiParsers = _multiResponseQueue.Where(multiResponseCmd => _singleResponseQueue.All(singleResponseCmd => singleResponseCmd.ResponseParser.GetType() != multiResponseCmd.ResponseParser.GetType())).ToArray();
-            var considerableParsers = _singleResponseQueue.Concat(unparsedMultiParsers);
-            var parsedResponses = considerableParsers.Select(cmd =>
+            var considerableParsers = _singleResponseQueue.Concat(unparsedMultiParsers).ToArray();
+
+            foreach(var commandWithResponse in considerableParsers)
             {
-              var parsed = cmd.ResponseParser.TryParseResponse(currentData, out var response, out var dataToRemove);
-              if(parsed && response is not null)
-                response.RequestId = cmd.Id;
-
-              return (Parsed: parsed, Response: response, DataToRemove: dataToRemove, CommandToRemove: cmd);
-            }).Where(proxy => proxy.Parsed && proxy.DataToRemove is not null).ToArray();
-
-            // TODO check for overlapping arrays maybe?
-            var orderedArraySegs = parsedResponses.Select(tuple => tuple.DataToRemove)
-              .OrderBy(bytes => bytes!.Value.Offset)
-              .Distinct();
-
-            foreach(var arrSegment in orderedArraySegs)
-            {
-              _buffer.RemoveBytes(arrSegment!.Value);
-              totalBytesRemoved += arrSegment.Value.Count;
+              var currentData = _buffer.ToArray();
+              var parsed = commandWithResponse.ResponseParser.TryParseResponse(currentData, out var response, out var dataToRemove);
+              if(dataToRemove is not null)
+              {
+                _buffer.RemoveBytes(dataToRemove.Value);
+                totalBytesRemoved += dataToRemove.Value.Count;
+              }
+              
+              if(!parsed || response is null)
+              {
+                continue;
+              }
+              
+              _responsePublisher.OnNext((commandWithResponse, response));
             }
-
-            foreach(var (Parsed, Response, DataToRemove, CommandToRemove) in parsedResponses)
-              if(Parsed)
-                _responsePublisher.OnNext((CommandToRemove, Response!));
           }
-
+          
           RemoveStaleBufferEntries();
         }
 
