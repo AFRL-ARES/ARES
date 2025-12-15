@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.Threading;
 
 namespace ChemyxPumpPlugin.Simulation;
 
@@ -29,6 +30,7 @@ public class SimChemyxPump
   private readonly PumpState[] _pumps;
   private readonly Random _random = new();
   private readonly object _randomLock = new();
+  private readonly SemaphoreSlim _sendSemaphore = new(1, 1);
   private DateTime _lastUpdate = DateTime.UtcNow;
 
   public SimChemyxPump(Action<byte[]> byteSender)
@@ -434,6 +436,23 @@ public class SimChemyxPump
     }
 
     sb.Append('>');
-    _byteSender(Encoding.UTF8.GetBytes(sb.ToString()));
+    var sbString = sb.ToString();
+    Task.Run(async () =>
+    {
+      //await _sendSemaphore.WaitAsync();
+      try
+      {
+        foreach(var responseChar in sbString)
+        {
+          _byteSender(Encoding.UTF8.GetBytes([responseChar]));
+          await Task.Delay(5);
+        }
+      }
+      finally
+      {
+        //_sendSemaphore.Release();
+      }
+    });
+    //_byteSender(Encoding.UTF8.GetBytes(sb.ToString()));
   }
 }

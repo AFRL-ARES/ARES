@@ -13,7 +13,7 @@ internal class SerialPortTests
   public async Task AresSerialPort_Returns_Good_Response_From_Simple_Request()
   {
     const string stringToTest = "<-Oh Hello->";
-    var port = new TestConnection(new SerialPortConnectionInfo(0, Parity.Even, 0, StopBits.None));
+    var port = new TestConnectionWithDelay(new SerialPortConnectionInfo(0, Parity.Even, 0, StopBits.None));
     var response = await port.Send(new SomeCommandWithResponse(stringToTest));
     // Assert.That(await port.DataBufferState.FirstAsync(), Is.Empty);
     Assert.That(response, Is.Not.Null);
@@ -113,7 +113,7 @@ internal class SerialPortTests
     const string stringToTest2 = "!-Noice-!";
     const string stringToTest3 = "<-This Is A Test->";
     const string stringToTest4 = "!-More Tests-!";
-    var port = new TestConnection(new SerialPortConnectionInfo(0, Parity.Even, 0, StopBits.None));
+    var port = new TestConnectionWithDelay(new SerialPortConnectionInfo(0, Parity.Even, 0, StopBits.None));
     var test1 = port.Send(new SomeCommandWithResponse(stringToTest1));
     var test2 = port.Send(new SomeCommandWithResponse2(stringToTest2));
     var test3 = port.Send(new SomeCommandWithResponse(stringToTest3));
@@ -150,7 +150,7 @@ internal class SerialPortTests
   {
     const string stringToTest = "<-Oh Hello->";
     const string stringToTest2 = "<-This Is A Test->";
-    var port = new TestConnection(new SerialPortConnectionInfo(0, Parity.Even, 0, StopBits.None));
+    var port = new TestConnectionWithDelay(new SerialPortConnectionInfo(0, Parity.Even, 0, StopBits.None));
     var responseObserver = port.GetTransactionStream<SomeResponse>().Select(r => r.Response);
     var cmdStream = await port.Send(new SomeCommandWithStreamedResponse(stringToTest));
     // keep the stream alive so it doesn't dispose prematurely
@@ -177,7 +177,7 @@ internal class SerialPortTests
   {
     const string stringToTest = "<-Oh Hello->";
     const string stringToTest2 = "<-This Is A Test->";
-    var port = new TestConnection(new SerialPortConnectionInfo(0, Parity.Even, 0, StopBits.None));
+    var port = new TestConnectionWithDelay(new SerialPortConnectionInfo(0, Parity.Even, 0, StopBits.None));
     var cmdStream = await port.Send(new SomeCommandWithStreamedResponse(stringToTest));
     var responseObserver = cmdStream.Take(2).Do(s => Console.WriteLine($"The observer got: {s.Response}")).Timeout(TimeSpan.FromSeconds(5)).ToArray();
     cmdStream.Subscribe(s => Console.WriteLine($"The subscriber got: {s.Response}"));
@@ -198,7 +198,7 @@ internal class SerialPortTests
   {
     const string stringToTest = "<-Oh Hello->";
     const string stringToTest2 = "<-This Is A Test->";
-    var port = new TestConnection(new SerialPortConnectionInfo(0, Parity.Even, 0, StopBits.None));
+    var port = new TestConnectionWithDelay(new SerialPortConnectionInfo(0, Parity.Even, 0, StopBits.None));
     var responseObserver = port.GetTransactionStream<SomeResponse>();
     var getTest1FirstResponse = responseObserver.Take(1);
     _ = await port.Send(new SomeCommandWithStreamedResponse(stringToTest));
@@ -226,11 +226,31 @@ internal class SerialPortTests
 
   [Test]
   [CancelAfter(5000)]
+  public async Task AresSerialPort_TestingCorruptionProneDevices()
+  {
+    const string stringToTest1 = "<-This is a rather long string 1 that I'm going to send multiple times and try to parse it :)->";
+    const string stringToTest2 = "<-This is a rather long string 2 that I'm going to send multiple times and try to parse it :)->";
+    const string stringToTest3 = "<-This is a rather long string 3 that I'm going to send multiple times and try to parse it :)->";
+    var port = new TestCorruptableConnection(new SerialPortConnectionInfo(0, Parity.Even, 0, StopBits.None));
+    try
+    {
+      var response1 = await port.Send(new SomeCommandWithResponse(stringToTest1), TimeSpan.FromMilliseconds(100));
+      var response2 = await port.Send(new SomeCommandWithResponse(stringToTest2), TimeSpan.FromMilliseconds(100));
+    }
+    catch(TimeoutException)
+    {}
+    
+    var response3 = await port.Send(new SomeCommandWithResponse(stringToTest3), TimeSpan.FromSeconds(10));
+    Assert.That(response3.Response, Is.EqualTo(stringToTest3));
+  }
+
+  [Test]
+  [CancelAfter(5000)]
   public async Task AresSerialPort_Subscription_To_Response_Stream_Works_Without_Sending_Command()
   {
     const string stringToTest = "<-Oh Hello->";
     const string stringToTest2 = "<-This Is A Test->";
-    var port = new TestConnection(new SerialPortConnectionInfo(0, Parity.Even, 0, StopBits.None));
+    var port = new TestConnectionWithDelay(new SerialPortConnectionInfo(0, Parity.Even, 0, StopBits.None));
     var test1Observable = port.GetTransactionStream<SomeResponse>();
     var test2Observable = port.GetTransactionStream<SomeResponse>();
     var test1ObservableResponseWaiter = Task.Run(async () =>
@@ -381,11 +401,11 @@ internal class SomeCommandWithResponse2 : SerialCommandWithResponse<SomeResponse
   protected override byte[] Serialize()
     => Encoding.ASCII.GetBytes(OtherMessage);
 }
-public class TestConnection : AresSerialSimConnection
+public class TestConnectionWithDelay : AresSerialSimConnection
 {
   private bool _isProcessing;
 
-  public TestConnection(SerialPortConnectionInfo connectionInfo) : base(connectionInfo, "SIM1")
+  public TestConnectionWithDelay(SerialPortConnectionInfo connectionInfo) : base(connectionInfo, "SIM1")
   {
   }
 
@@ -409,6 +429,33 @@ public class TestConnection : AresSerialSimConnection
     });
   }
 }
+
+public class TestCorruptableConnection : AresSerialSimConnection
+{
+  public TestCorruptableConnection(SerialPortConnectionInfo connectionInfo) : base(connectionInfo, "SIM1")
+  {
+  }
+
+  public override void SendInternally(byte[] bytes)
+  {
+    // having the _isProcessing check will make the test fail if the thread adding to the buffer is the
+    // same one as the one processing the buffer
+    // if(_isProcessing)
+    // {
+    //   Console.WriteLine($"Got something, but i'm still processing: {Encoding.ASCII.GetString(bytes)}");
+    //   return;
+    // }
+    Console.WriteLine($"Got something: {Encoding.ASCII.GetString(bytes)}");
+    Task.Run(async () => {
+      foreach(var b in bytes)
+      {
+        AddDataReceived([b]);
+        await Task.Delay(10);
+      }
+    });
+  }
+}
+
 public class TestPort2 : AresSerialSimConnection
 {
 
@@ -429,5 +476,17 @@ public class TestPort2 : AresSerialSimConnection
       await Task.Delay(200);
       AddDataReceived(slice3);
     });
+  }
+}
+
+public class VerySlowPort : AresSerialSimConnection
+{
+
+  public VerySlowPort(SerialPortConnectionInfo connectionInfo) : base(connectionInfo, "SlowSIM")
+  {
+  }
+  public override void SendInternally(byte[] bytes)
+  {
+    throw new NotImplementedException();
   }
 }

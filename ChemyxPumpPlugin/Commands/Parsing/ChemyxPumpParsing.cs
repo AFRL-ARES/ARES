@@ -34,7 +34,7 @@ internal static class ChemyxPumpParsing
       var commandEcho = lines.FirstOrDefault() ?? string.Empty;
       if(commandEcho != originalCommand)
       {
-        startIdx += cmdResponse.Length - 1;
+        startIdx += cmdResponse.Length + 1; // account for the response payload plus its '>' terminator
         continue;
       }
       var payload = lines.Skip(1).ToArray();

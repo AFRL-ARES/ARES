@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
 using AlicatMFC;
 using AlicatMFC.Simulation;
 
@@ -41,13 +42,13 @@ public class MfcSerialConnectionManager : ISerialConnectionManager<IMfcConnectio
     return hardwareConnection;
   }
 
-  public void RemoveConnection(IMfcConnection connection)
+  public async Task RemoveConnection(IMfcConnection connection)
   {
-    connection.Dispose();
+    await connection.DisposeAsync();
     _connectionRepository.Remove(connection);
   }
 
-  public void RemoveConnection(string portName, bool simulated = false)
+  public async Task RemoveConnection(string portName, bool simulated = false)
   {
     var existingConnections = _connectionRepository.Where(port => port.Name == portName);
     if (simulated)
@@ -59,7 +60,7 @@ public class MfcSerialConnectionManager : ISerialConnectionManager<IMfcConnectio
     if (connection is null)
       return;
 
-    connection.Dispose();
+    await connection.DisposeAsync();
     _connectionRepository.Remove(connection);
   }
 }

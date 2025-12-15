@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
 using RestSerialDevice;
 using RestSerialDevice.Simulation;
 
@@ -41,13 +42,13 @@ public class SerialRestDeviceConnectionManager : ISerialConnectionManager<ISeria
     return hardwareConnection;
   }
 
-  public void RemoveConnection(ISerialRestDeviceConnection hardwareConnection)
+  public async Task RemoveConnection(ISerialRestDeviceConnection hardwareConnection)
   {
-    hardwareConnection.Dispose();
+    await hardwareConnection.DisposeAsync();
     _connectionRepository?.Remove(hardwareConnection);
   }
 
-  public void RemoveConnection(string portName, bool simulated = false)
+  public async Task RemoveConnection(string portName, bool simulated = false)
   {
     var existingConnections = _connectionRepository.Where(port => port.Name == portName);
     if(simulated)
@@ -60,7 +61,7 @@ public class SerialRestDeviceConnectionManager : ISerialConnectionManager<ISeria
     if(connection is null)
       return;
 
-    connection.Dispose();
+    await connection.DisposeAsync();
     _connectionRepository.Remove(connection);
   }
 }

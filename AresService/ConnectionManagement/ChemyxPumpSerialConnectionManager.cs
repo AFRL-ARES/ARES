@@ -2,6 +2,7 @@
 using ChemyxPumpPlugin.Simulation;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace AresService.ConnectionManagement;
 
@@ -41,7 +42,7 @@ public class ChemyxPumpSerialConnectionManager : ISerialConnectionManager<IChemy
     return hardwareConnection;
   }
 
-  public void RemoveConnection(string portName, bool simulated = false)
+  public async Task RemoveConnection(string portName, bool simulated = false)
   {
     var existingConnections = _connectionRepository.Where(port => port.Name == portName);
     if(simulated)
@@ -53,13 +54,13 @@ public class ChemyxPumpSerialConnectionManager : ISerialConnectionManager<IChemy
     if(connection is null)
       return;
 
-    connection.Dispose();
+    await connection.DisposeAsync();
     _connectionRepository.Remove(connection);
   }
 
-  public void RemoveConnection(IChemyxPumpConnection connection)
+  public async Task RemoveConnection(IChemyxPumpConnection connection)
   {
-    connection.Dispose();
+    await connection.DisposeAsync();
     _connectionRepository.Remove(connection);
   }
 }

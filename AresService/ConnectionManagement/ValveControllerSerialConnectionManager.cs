@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
 using ValveController;
 using ValveController.Simulated;
 
@@ -42,13 +43,13 @@ public class ValveControllerSerialConnectionManager : ISerialConnectionManager<I
     return hardwareConnection;
   }
 
-  public void RemoveConnection(IValveControllerConnection connection)
+  public async Task RemoveConnection(IValveControllerConnection connection)
   {
-    connection.Dispose();
+    await connection.DisposeAsync();
     _connectionRepository.Remove(connection);
   }
 
-  public void RemoveConnection(string portName, bool simulated = false)
+  public async Task RemoveConnection(string portName, bool simulated = false)
   {
     var existingConnections = _connectionRepository.Where(port => port.Name == portName);
     if(simulated)
@@ -60,7 +61,7 @@ public class ValveControllerSerialConnectionManager : ISerialConnectionManager<I
     if(connection is null)
       return;
 
-    connection.Dispose();
+    await connection.DisposeAsync();
     _connectionRepository.Remove(connection);
   }
 }

@@ -22,6 +22,9 @@ public abstract class AresSerialConnection : IAresSerialConnection
   private readonly IList<ISerialCommandWithResponse> _multiResponseQueue = [];
   private readonly ISubject<(ISerialCommandWithResponse, SerialResponse)> _responsePublisher = new Subject<(ISerialCommandWithResponse, SerialResponse)>();
   private readonly TimeSpan _sendBuffer;
+  private readonly TimeSpan _receiveMargin;
+  private DateTimeOffset _lastReceived = DateTimeOffset.MinValue;
+  private readonly Task _bufferProcessor;
   private readonly TimeSpan _defaultTimeout;
   private readonly TimeSpan _staleBufferEntryDuration;
   private readonly SemaphoreSlim _sendLock = new(1);
@@ -32,18 +35,15 @@ public abstract class AresSerialConnection : IAresSerialConnection
   /// </summary>
   /// <param name="connectionInfo">Information about the serial connection needed to connect</param>
   /// <param name="portName">Name of the port</param>
-  /// <param name="sendBuffer">
-  /// Can be set if there needs to be a buffer between each command send. Can be helpful
-  /// if there are multiple devices on one connection and they get overwhelmed with commands from each other.
-  /// </param>
   protected internal AresSerialConnection(SerialPortConnectionInfo connectionInfo, string portName, SerialConnectionOptions? options = null)
   {
     _sendBuffer = options?.SendBuffer ?? TimeSpan.Zero;
     _defaultTimeout = options?.SendTimeout ?? TimeSpan.FromDays(10);
     _staleBufferEntryDuration = options?.StaleBufferEntryDuration ?? TimeSpan.FromSeconds(10);
+    _receiveMargin = options?.DataReceiveInterval ?? TimeSpan.FromMilliseconds(50);
     ConnectionInfo = connectionInfo;
     Name = portName;
-    StartBufferProcessor();
+    _bufferProcessor = StartBufferProcessor();
   }
 
   protected SerialPortConnectionInfo ConnectionInfo { get; }
@@ -74,7 +74,7 @@ public abstract class AresSerialConnection : IAresSerialConnection
         .Take(1)
         .Select(transaction => transaction.Response)
         .Timeout(timeout)
-        .Catch(Observable.Return<T?>(null))
+        .Catch<T?, TimeoutException>(_ => Observable.Return<T?>(null))
         .ToTask();
 
     await _sendLock.WaitAsync();
@@ -88,17 +88,21 @@ public abstract class AresSerialConnection : IAresSerialConnection
     }
     finally
     {
+      // wait until the device finishes sending data in case we've timed out
+      while(DateTimeOffset.UtcNow - _lastReceived < _receiveMargin)
+      {
+        await Task.Delay(_receiveMargin);
+      }
       _sendLock.Release();
+
       lock(_singleResponseQueue)
       {
         _singleResponseQueue.Remove(command);
       }
     }
 
-    if(response is null)
-      throw new TimeoutException($"Receiving message of type {typeof(T).Name} timed out");
+    return response ?? throw new TimeoutException($"Receiving message of type {typeof(T).Name} timed out");
 
-    return response;
   }
 
   public Task<T> Send<T>(SerialCommandWithResponse<T> command, TimeSpan timeout) where T : SerialResponse
@@ -134,15 +138,15 @@ public abstract class AresSerialConnection : IAresSerialConnection
       {
         subscription.Dispose();
 
-        if(replay.HasObservers == false)
-        {
-          upstream.Dispose();
-          replay.Dispose();
+        if(replay.HasObservers)
+          return;
+        
+        upstream.Dispose();
+        replay.Dispose();
 
-          lock(_multiResponseQueue)
-          {
-            _multiResponseQueue.Remove(command);
-          }
+        lock(_multiResponseQueue)
+        {
+          _multiResponseQueue.Remove(command);
         }
       });
     });
@@ -201,41 +205,23 @@ public abstract class AresSerialConnection : IAresSerialConnection
   public string Name { get; }
   public bool IsOpen { get; protected set; }
 
-  public virtual void Dispose()
+  private Task StartBufferProcessor()
   {
-    _listenerCancellationTokenSource.Cancel();
-    Close();
-    _bufferEvent.Dispose();
-    _listenerCancellationTokenSource.Dispose();
-    _sendLock.Dispose();
-  }
-
-  private void StartBufferProcessor()
-  {
-    Task.Factory.StartNew(() =>
+    return Task.Run(() =>
       {
-        try
-        {
-          while(!_listenerCancellationTokenSource.Token.IsCancellationRequested)
-            ProcessBufferCore();
-        }
-        // TODO maybe there's a cleaner way to do this 
-        catch(ObjectDisposedException)
-        {
-        }
+        while(!_listenerCancellationTokenSource.Token.IsCancellationRequested)
+          ProcessBufferCore();
       },
-      _listenerCancellationTokenSource.Token,
-      TaskCreationOptions.LongRunning,
-      TaskScheduler.Default);
+      _listenerCancellationTokenSource.Token);
   }
 
-  protected internal abstract void CloseCore();
+  protected abstract void CloseCore();
 
-  public virtual void Listen()
+  protected virtual void Listen()
   {
   }
 
-  public virtual void StopListening()
+  protected virtual void StopListening()
   {
   }
 
@@ -298,6 +284,7 @@ public abstract class AresSerialConnection : IAresSerialConnection
     lock(_bufferLock)
     {
       _buffer.Add(new SerialBlock(dataReceived, DateTime.UtcNow));
+      _lastReceived = DateTimeOffset.UtcNow;
     }
 
     _bufferEvent.Set();
@@ -306,4 +293,24 @@ public abstract class AresSerialConnection : IAresSerialConnection
   protected abstract void Open(string portName);
 
   internal bool BufferEmpty => _buffer.Count == 0;
+  
+  public virtual async ValueTask DisposeAsync()
+  {
+    await _listenerCancellationTokenSource.CancelAsync();
+    await _bufferProcessor;
+    Close();
+    await CastAndDispose(_bufferEvent);
+    await CastAndDispose(_listenerCancellationTokenSource);
+    await CastAndDispose(_sendLock);
+
+    return;
+
+    static async ValueTask CastAndDispose(IDisposable resource)
+    {
+      if(resource is IAsyncDisposable resourceAsyncDisposable)
+        await resourceAsyncDisposable.DisposeAsync();
+      else
+        resource.Dispose();
+    }
+  }
 }
