@@ -1,6 +1,8 @@
 ﻿@using DynamicData.Binding
+@using UI.Backend.Devices
 @using UI.Backend.ViewModels.Devices.Mfc
 
+@implements IDashboardControlWidget
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<MfcDirectorControlViewModel>
 
 @if (ViewModel!.ConnectedSerialDeviceUnitControlVms.Any())
@@ -24,4 +26,7 @@
     ViewModel.Start(TimeSpan.FromSeconds(5));
     return base.OnInitializedAsync();
   }
+
+  public int DefaultWidth => 20;
+  public int DefaultHeight => 35;
 }

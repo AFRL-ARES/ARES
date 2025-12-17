@@ -1,4 +1,5 @@
 ﻿@page "/"
+@using UI.Backend.Devices
 @using UI.Backend.ViewModels
 @using UI.Pages.Shared.Devices.CM3Camera
 @using UI.Pages.Shared.Devices.DataLogger
@@ -16,9 +17,7 @@
 @using UI.Pages.Shared.Misc
 @using UI.Pages.Shared.Sortable
 
-
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<IndexViewModel>
-
 @inject IJSRuntime JS
 
 
@@ -28,17 +27,44 @@
     <ManualExecutionWidget />
   </div>
 
-  <SortableList Id="deviceMultiViews" Items="MultiViews" Context="item" OnUpdate="@SortList">
-    <SortableItemTemplate>
-      <div style="margin-bottom: 10px; margin-top: 10px; user-select: none">
-        <DynamicComponent Type="@item"/>
-      </div>
-    </SortableItemTemplate>
-  </SortableList>
+  <div class="grid-stack" id="my-dashboard">
+      @foreach(var deviceType in MultiViews)
+      {
+        //Fallback Values
+        var width = 0;
+        var height = 0;
+
+        if(typeof(IDashboardControlWidget).IsAssignableFrom(deviceType))
+        {
+          var wProp = deviceType.GetProperty("DefaultWidth");
+          var hProp = deviceType.GetProperty("DefaultHeight");
+
+          // You might need Activator.CreateInstance if they are instance properties
+          var instance = Activator.CreateInstance(deviceType) as IDashboardControlWidget;
+          if (instance != null)
+          {
+            width = instance.DefaultWidth;
+            height = instance.DefaultHeight;
+          }
+        }
+     
+        <div class="grid-stack-item" gs-w="@width" gs-h="@height">
+          <div class="grid-stack-item-content">
+            <div style="overflow-y: auto; height: 100%">
+              <DynamicComponent Type="@deviceType" />
+            </div>
+          </div>
+        </div>
+      }
+  </div>
 
 </div>
 
 @code {
+  // This holds the reference to your specific JS file
+  private IJSObjectReference? _module;
+  private DotNetObjectReference<Index>? _objRef;
+
   public List<Type> MultiViews = new List<Type>() 
   { 
     typeof(RemoteDeviceDirectorView),
@@ -75,5 +101,42 @@
     }
 
     StateHasChanged();
+  }
+
+  protected override async Task OnAfterRenderAsync(bool firstRender)
+  {
+    if(firstRender)
+    {
+      _objRef = DotNetObjectReference.Create(this);
+
+      _module = await JS.InvokeAsync<IJSObjectReference>("import", "./Pages/Index.razor.js");
+
+      await _module.InvokeVoidAsync("initDashboard", "my-dashboard", _objRef);
+    }
+
+    await base.OnAfterRenderAsync(firstRender);
+  }
+
+  [JSInvokable]
+  public void OnDashboardUpdate(object updates)
+  {
+    Console.WriteLine("Dashboard Updated vis JS!");
+  }
+
+  async ValueTask DisposeAsync()
+  {
+    if (_module is not null)
+    {
+      await _module.DisposeAsync();
+    }
+    _objRef?.Dispose();
+  }
+
+  public async Task RefreshWidgetSize(string componentId)
+  {
+    if (_module != null)
+    {
+      await _module.InvokeVoidAsync("resizeWidget", componentId);
+    }
   }
 }
