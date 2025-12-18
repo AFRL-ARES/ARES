@@ -1,16 +1,19 @@
-﻿using ChemyxPumpPlugin.Services;
+﻿using ChemyxPumpPlugin;
+using ChemyxPumpPlugin.Services;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 
 namespace UI.Backend.ViewModels.Devices.ChemyxPump;
 
-public class IndividualPumpViewModel : ReactiveObject
+public class IndividualPumpViewModel : ReactiveObject, IAsyncDisposable
 {
   private readonly int _pumpNumber;
   private readonly string _deviceId;
   private readonly ChemyxPumpRpc.ChemyxPumpRpcClient _client;
   private CancellationTokenSource _cts;
+  private Task _listeners = Task.CompletedTask;
+
 
   public IndividualPumpViewModel(int pumpNumber, string deviceId, ChemyxPumpRpc.ChemyxPumpRpcClient client)
   {
@@ -18,56 +21,63 @@ public class IndividualPumpViewModel : ReactiveObject
     _deviceId = deviceId;
     _client = client;
     _cts = new CancellationTokenSource();
-
-    //AutoUpdateParams(_cts.Token);
-    //AutoUpdateState(_cts.Token);
   }
 
-  private void AutoUpdateState(CancellationToken token)
+  public void Start()
   {
-    Task.Run(async () =>
-    {
-      while(!token.IsCancellationRequested)
-      {
-        try
-        {
-          await UpdateState(token);
-          await Task.Delay(TimeSpan.FromMilliseconds(750));
-        }
-        catch(Exception)
-        {
-          await Task.Delay(TimeSpan.FromSeconds(5));
-        }
-      }
-    }, token);
+    _listeners = Task.WhenAll(
+      AutoUpdateParams(_cts.Token),
+      AutoUpdateState(_cts.Token)
+    );
   }
 
-  private void AutoUpdateParams(CancellationToken token)
+  public async Task ForceUpdate()
   {
-    Task.Run(async () =>
+    await UpdateState();
+    await RetrieveParams();
+  }
+
+  private async Task AutoUpdateState(CancellationToken token)
+  {
+    while(!token.IsCancellationRequested)
     {
-      while(!token.IsCancellationRequested)
+      try
       {
-        try
-        {
-          await RetrieveParams(token);
-          await Task.Delay(TimeSpan.FromSeconds(30));
-        }
-        catch(Exception)
-        {
-          await Task.Delay(TimeSpan.FromMinutes(1));
-        }
+        await UpdateState(token);
+        await Task.Delay(TimeSpan.FromMilliseconds(500), token);
       }
-    }, token);
+      catch(Exception)
+      {
+        await Task.Delay(TimeSpan.FromSeconds(5), token);
+      }
+    }
+  }
+
+  private async Task AutoUpdateParams(CancellationToken token)
+  {
+    while(!token.IsCancellationRequested)
+    {
+      try
+      {
+        await RetrieveParams(token);
+        await Task.Delay(TimeSpan.FromSeconds(10), token);
+      }
+      catch(Exception)
+      {
+        await Task.Delay(TimeSpan.FromMinutes(1), token);
+      }
+    }
   }
 
   public async Task UpdateState(CancellationToken? token = null)
   {
     var elapsed = await _client.GetElapsedTimeAsync(new GetElapsedTimeRequest { DeviceId = _deviceId, PumpNumber = _pumpNumber }, cancellationToken: token ?? CancellationToken.None);
     var dispensed = await _client.GetDispensedVolumeAsync(new GetDispensedVolumeRequest { DeviceId = _deviceId, PumpNumber = _pumpNumber }, cancellationToken: token ?? CancellationToken.None);
+    var status = await _client.GetPumpStatusAsync(new PumpStatusRequest { DeviceId = _deviceId, PumpNumber = _pumpNumber });
 
-    Elapsed = elapsed.ElapsedTime.ToTimeSpan();
+    Elapsed = elapsed.ElapsedTime?.ToTimeSpan() ?? TimeSpan.Zero;
     Dispensed = dispensed.VolumeDispense;
+    Status = (PumpStatus)status.PumpStatus;
   }
 
   public async Task RetrieveParams(CancellationToken? token = null)
@@ -84,7 +94,7 @@ public class IndividualPumpViewModel : ReactiveObject
     Volume = parameters.Volume;
     Delay = parameters.Delay.ToTimeSpan();
     Time = parameters.Time.ToTimeSpan();
-    SelectedUnit = parameters.Unit;
+    PumpUnit = parameters.Unit;
   }
 
   public async Task StartPump()
@@ -135,7 +145,10 @@ public class IndividualPumpViewModel : ReactiveObject
   }
 
   [Reactive]
-  public Units SelectedUnit { get; private set; }
+  public PumpStatus Status { get; set; } = PumpStatus.Stopped;
+
+  [Reactive]
+  public Units PumpUnit { get; private set; }
 
   [Reactive]
   public double Rate { get; private set; }
@@ -155,11 +168,19 @@ public class IndividualPumpViewModel : ReactiveObject
   [Reactive]
   public TimeSpan Time { get; private set; }
 
-  public static Units[] AvailableUnits { get; } = System.Enum.GetValues<Units>();
+  public static Units[] AvailableUnits { get; } = System.Enum.GetValues<Units>().Where(u => u != Units.Unknown).ToArray();
 
-  public async Task UpdateMemes()
+  public async ValueTask DisposeAsync()
   {
-    await RetrieveParams();
-    //await UpdateState();
+    await _cts.CancelAsync();
+    try
+    {
+      await _listeners;
+    }
+    catch
+    {
+    }
   }
+
+  public string UniqueId => $"_deviceId-{_pumpNumber}";
 }

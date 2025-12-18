@@ -2,6 +2,7 @@
 @using ChemyxPumpPlugin.Services
 @using System.Reactive.Linq
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<IndividualPumpViewModel>
+@implements IAsyncDisposable
 
 @if(ViewModel == null)
 {
@@ -23,7 +24,7 @@ else
           </div>
 
           <div class="progress" style="height: 25px;">
-            <div class="progress-bar progress-bar-striped progress-bar-animated @GetProgressColor()"
+            <div class="progress-bar progress-bar-striped @(ViewModel.Status != ChemyxPumpPlugin.PumpStatus.Stopped ? "progress-bar-animated" : "") @GetProgressColor()"
                  role="progressbar"
                  style="width: @(CalculateProgress())%;"
                  aria-valuenow="@ViewModel.Dispensed"
@@ -63,7 +64,7 @@ else
 
         <div class="col-md-4">
           <label class="form-label">Units</label>
-          <select class="form-select" value="@ViewModel.SelectedUnit" @onchange="@(e => UpdateUnit(e.Value))">
+          <select class="form-select" value="@ViewModel.PumpUnit" @onchange="@(e => UpdateUnit(e.Value))">
             @foreach(var unit in IndividualPumpViewModel.AvailableUnits)
             {
               <option value="@unit">@unit</option>
@@ -102,7 +103,7 @@ else
       </div>
 
       <div class="mt-3 text-end">
-        <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewModel.UpdateMemes()">
+        <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewModel.ForceUpdate()">
           <i class="oi oi-reload"></i> Refresh Params
         </button>
       </div>
@@ -111,11 +112,11 @@ else
 }
 
 @code {
-  // Helper to calculate percentage safely
-  private double CalculateProgress()
+  double CalculateProgress()
   {
     if(ViewModel!.Volume <= 0) return 0;
     var percent = (ViewModel.Dispensed / ViewModel.Volume) * 100;
+    percent = Math.Round(percent, 1);
     return Math.Clamp(percent, 0, 100);
   }
 
@@ -123,6 +124,7 @@ else
   private string GetProgressColor()
   {
     var p = CalculateProgress();
+    if(ViewModel!.Status == ChemyxPumpPlugin.PumpStatus.Paused) return "bg-warning";
     if(p >= 100) return "bg-success";
     if(p > 0) return "bg-primary";
     return "bg-secondary";
@@ -170,5 +172,16 @@ else
     {
       await ViewModel!.SetTime(result);
     }
+  }
+
+  public ValueTask DisposeAsync()
+  {
+    return ViewModel!.DisposeAsync();
+  }
+
+  protected override void OnInitialized()
+  {
+    ViewModel!.Start();
+    base.OnInitialized();
   }
 }

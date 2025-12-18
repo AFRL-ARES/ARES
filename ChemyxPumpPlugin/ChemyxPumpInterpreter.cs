@@ -2,6 +2,7 @@
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Templates;
 using Ares.Device;
+using ChemyxPumpPlugin.Commands;
 
 namespace ChemyxPumpPlugin;
 
@@ -43,8 +44,8 @@ public class ChemyxPumpInterpreter : DeviceCommandInterpreter<ChemyxPump, Chemyx
         break;
 
       case ChemyxPumpCommand.PumpStatus:
-        var status = await Device.GetStatus(pumpIndex);
-        result.Result = status.HasValue ? AresStructHelper.CreateNumberStruct("Status", status.Value) : AresStructHelper.CreateNullStruct("Status");
+        var status = Device.GetStatus(pumpIndex);
+        result.Result = status.HasValue ? AresStructHelper.CreateNumberStruct("Status", (int)status.Value) : AresStructHelper.CreateNullStruct("Status");
         break;
 
       case ChemyxPumpCommand.SetDiameter:
@@ -59,14 +60,14 @@ public class ChemyxPumpInterpreter : DeviceCommandInterpreter<ChemyxPump, Chemyx
 
       case ChemyxPumpCommand.DispensedVolume:
         {
-          var value = await Device.GetDispensedVolume(pumpIndex);
+          var value = Device.GetDispensedVolume(pumpIndex);
           result.Result = value.HasValue ? AresStructHelper.CreateNumberStruct("Volume", value.Value) : AresStructHelper.CreateNullStruct("Volume");
           break;
         }
 
       case ChemyxPumpCommand.ElapsedTime:
         {
-          var value = await Device.GetElapsedTime(pumpIndex);
+          var value = Device.GetElapsedTime(pumpIndex);
           result.Result = value.HasValue ? AresStructHelper.CreateNumberStruct("ElapsedMinutes", value.Value.TotalMinutes) : AresStructHelper.CreateNullStruct("Minutes");
           break;
         }
@@ -84,7 +85,7 @@ public class ChemyxPumpInterpreter : DeviceCommandInterpreter<ChemyxPump, Chemyx
       case ChemyxPumpCommand.ReadLimitParameter:
         {
           var program = (int?)GetNumberParam(nameof(ProgramIndex), 0) ?? 0;
-          var values = await Device.ReadLimitParameter(pumpIndex, program);
+          var values = Device.ReadLimitParameter(pumpIndex);
           if(values is null)
           {
             result.Result = AresStructHelper.CreateNullStruct("Limits");
@@ -153,7 +154,9 @@ public class ChemyxPumpInterpreter : DeviceCommandInterpreter<ChemyxPump, Chemyx
           var value = GetNumberParam(nameof(Value));
           if(!value.HasValue)
             return Failure("SetUnits requires a numeric Value parameter.");
-          var response = await Device.SetUnits((int)value.Value, pumpIndex);
+
+          var units = (PumpUnits)(int)value.Value;
+          var response = await Device.SetUnits(units, pumpIndex);
           result.Result = response.HasValue ? AresStructHelper.CreateNumberStruct("Units", response.Value) : AresStructHelper.CreateNullStruct("Units");
           break;
         }
@@ -247,8 +250,7 @@ public class ChemyxPumpInterpreter : DeviceCommandInterpreter<ChemyxPump, Chemyx
         Description = "Read limit parameters.",
         ParameterMetadatas =
         {
-          new ParameterMetadata { Index = 0, Name = nameof(PumpIndex), Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.Number, false) },
-          new ParameterMetadata { Index = 1, Name = nameof(ProgramIndex), Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.Number, false) }
+          new ParameterMetadata { Index = 0, Name = nameof(PumpIndex), Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.Number, false) }
         },
         OutputMetadata = new OutputMetadata
         {

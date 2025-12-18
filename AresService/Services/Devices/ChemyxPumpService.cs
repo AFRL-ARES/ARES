@@ -92,7 +92,7 @@ public class ChemyxPumpService : ChemyxPumpRpc.ChemyxPumpRpcBase
   {
     var pump = GetPump(request.DeviceId);
 
-    var volumeDispensed = await pump.GetDispensedVolume(request.PumpNumber);
+    var volumeDispensed = pump.GetDispensedVolume(request.PumpNumber);
     
     if(volumeDispensed is not null)
       return new DispensedVolumeResponse { VolumeDispense = (double)volumeDispensed };
@@ -104,7 +104,7 @@ public class ChemyxPumpService : ChemyxPumpRpc.ChemyxPumpRpcBase
   {
     var pump = GetPump(request.DeviceId);
 
-    var elapsedTime = await pump.GetElapsedTime(request.PumpNumber);
+    var elapsedTime = pump.GetElapsedTime(request.PumpNumber);
 
     if(elapsedTime is not null)
       return new ElapsedTimeResponse { ElapsedTime = elapsedTime.Value.ToDuration() };
@@ -115,7 +115,9 @@ public class ChemyxPumpService : ChemyxPumpRpc.ChemyxPumpRpcBase
   public override async Task<LimitParameterResponse> GetLimitParameter(GetLimitParameterRequest request, ServerCallContext context)
   {
     var pump = GetPump(request.DeviceId);
-    var response = await pump.ReadLimitParameter();
+    var response = pump.ReadLimitParameter(request.PumpNumber);
+    if(response is null)
+      return new LimitParameterResponse();
 
     return new LimitParameterResponse { MaxRate = response.MaxRate, MaxVolume = response.MaxVolume, MinRate = response.MinRate, MinVolume = response.MinVolume };
   }
@@ -123,7 +125,7 @@ public class ChemyxPumpService : ChemyxPumpRpc.ChemyxPumpRpcBase
   public override async Task<PumpStatusResponse> GetPumpStatus(PumpStatusRequest request, ServerCallContext context)
   {
     var pump = GetPump(request.DeviceId);
-    var response = await pump.GetStatus();
+    var response = pump.GetStatus(request.PumpNumber);
 
     if(response is not null)
       return new PumpStatusResponse { PumpStatus = (int)response };
@@ -178,12 +180,11 @@ public class ChemyxPumpService : ChemyxPumpRpc.ChemyxPumpRpcBase
   public override Task<Empty> SetUnits(SetUnitsRequest request, ServerCallContext context)
   {
     var pump = GetPump(request.DeviceId);
-    
     if(request.HasPumpNumber)
-      pump.SetUnits(request.PumpNumber, (int)request.Unit);
+      pump.SetUnits(request.Unit.FromProto(), request.PumpNumber);
 
     else
-      pump.SetUnits((int)request.Unit);
+      pump.SetUnits(request.Unit.FromProto());
 
     return Task.FromResult(new Empty());
   }
@@ -218,7 +219,7 @@ public class ChemyxPumpService : ChemyxPumpRpc.ChemyxPumpRpcBase
   public override async Task<ViewParametersResponse> GetViewParameters(GetViewParametersRequest request, ServerCallContext context)
   {
     var pump = GetPump(request.DeviceId);
-    var parameters = await pump.ViewParameters();
+    var parameters = pump.ViewParameters;
     var response = new ViewParametersResponse();
     if(parameters is null)
       return response;

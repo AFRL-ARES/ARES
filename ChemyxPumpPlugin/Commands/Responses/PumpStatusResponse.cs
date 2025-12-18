@@ -4,8 +4,8 @@ public class PumpStatusResponse : ChemyxPumpResponse
 {
   public PumpStatusResponse(string commandEcho, string[] responseLines, string raw, int? status) : base(commandEcho, responseLines, raw)
   {
-    Status = status;
+    Status = (PumpStatus?)status;
   }
 
-  public int? Status { get; }
+  public PumpStatus? Status { get; }
 }

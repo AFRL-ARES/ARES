@@ -6,7 +6,7 @@
 <RadzenStack Orientation="Orientation.Horizontal">
   @foreach(var vm in ViewModel!.PumpViewModels)
   {
-    <IndividualPump ViewModel="@vm" />
+    <IndividualPump @key="vm.UniqueId" ViewModel="@vm" />
   }
 </RadzenStack>
 

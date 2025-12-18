@@ -37,7 +37,10 @@ public class ChemyxPumpDeviceManager : IDeviceManager<ChemyxPumpConfig, IChemyxP
       UniqueId = id
     };
 
-    await device.Activate(CancellationToken.None);
+    var activationResult = await device.Activate(CancellationToken.None);
+    if (activationResult)
+      device.StartPolling();
+
     var interpreter = new ChemyxPumpInterpreter(device);
     _deviceCommandInterpreterRepo.Add(interpreter);
 
@@ -72,6 +75,7 @@ public class ChemyxPumpDeviceManager : IDeviceManager<ChemyxPumpConfig, IChemyxP
     if(pumpInterpreter?.Device is not IChemyxPump pump)
       return;
 
+    await pump.StopPolling();
     await pump.DisposeAsync();
     _deviceCommandInterpreterRepo.Remove(pumpInterpreter);
     var connection = pump.Connection;
@@ -81,7 +85,7 @@ public class ChemyxPumpDeviceManager : IDeviceManager<ChemyxPumpConfig, IChemyxP
       .Any(device => device.Connection == connection);
 
     if(!connectionInUse)
-      _connectionManager.RemoveConnection(connection);
+      await _connectionManager.RemoveConnection(connection);
   }
 
   public async Task<IChemyxPump[]> Load(IEnumerable<LoadableConfig<ChemyxPumpConfig>> configs)

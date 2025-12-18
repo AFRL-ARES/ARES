@@ -29,7 +29,6 @@ internal static class ChemyxPumpParsing
     for(var i = 0; i < commandResponses.Length; i++)
     {
       var cmdResponse = commandResponses[i];
-      Console.WriteLine($"Trying to parse {ToPrintableUtf8(buffer)}");
       var lines = cmdResponse.Split(["\r\n", "\n", "\r"], StringSplitOptions.RemoveEmptyEntries);
       var commandEcho = lines.FirstOrDefault() ?? string.Empty;
       if(commandEcho != originalCommand)
@@ -39,18 +38,16 @@ internal static class ChemyxPumpParsing
       }
       var payload = lines.Skip(1).ToArray();
       response = new ChemyxPumpResponse(commandEcho, payload, cmdResponse);
-      dataToRemove = new ArraySegment<byte>(buffer, startIdx, cmdResponse.Length + i + 1);
+      dataToRemove = new ArraySegment<byte>(buffer, startIdx, cmdResponse.Length + 1);
       return true;
     }
 
     return false;
   }
 
-  public static string ToPrintableUtf8(byte[] bytes)
+  public static string ToPrintable(string text)
   {
-    string text = Encoding.UTF8.GetString(bytes);
     var sb = new StringBuilder();
-
     foreach(char c in text)
     {
       // Use Unicode categories to detect control chars
@@ -65,5 +62,11 @@ internal static class ChemyxPumpParsing
     }
 
     return sb.ToString();
+  }
+
+  public static string ToPrintableUtf8(byte[] bytes)
+  {
+    string text = Encoding.UTF8.GetString(bytes);
+    return ToPrintable(text);
   }
 }

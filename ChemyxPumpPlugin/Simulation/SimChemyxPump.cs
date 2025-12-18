@@ -5,13 +5,6 @@ namespace ChemyxPumpPlugin.Simulation;
 
 public class SimChemyxPump
 {
-  private enum PumpStatus
-  {
-    Stopped = 0,
-    Running = 1,
-    Paused = 2
-  }
-
   private sealed class PumpState
   {
     public double Units { get; set; }
@@ -396,7 +389,7 @@ public class SimChemyxPump
     SendResponse(originalCommand, "125.9622 0.0002 106.0288 0.0141");
   }
 
-  private void HandleViewParameters(string originalCommand)
+  private async void HandleViewParameters(string originalCommand)
   {
     var lines = new List<string> { " " };
 
@@ -415,7 +408,7 @@ public class SimChemyxPump
       }
     }
 
-    SendResponse(originalCommand, lines.ToArray());
+    await SendResponse(originalCommand, lines.ToArray());
   }
 
   private void SendInvalid(string originalCommand)
@@ -423,7 +416,7 @@ public class SimChemyxPump
     SendResponse(originalCommand, "Invalid Command!");
   }
 
-  private void SendResponse(string commandEcho, params string[] responseLines)
+  private Task SendResponse(string commandEcho, params string[] responseLines)
   {
     var sb = new StringBuilder();
     sb.Append(commandEcho);
@@ -437,22 +430,14 @@ public class SimChemyxPump
 
     sb.Append('>');
     var sbString = sb.ToString();
-    Task.Run(async () =>
+    //Console.WriteLine($"I have processed the command {commandEcho} and will be sending back a response");
+    return Task.Run(async () =>
     {
-      //await _sendSemaphore.WaitAsync();
-      try
+      foreach(var responseChar in sbString)
       {
-        foreach(var responseChar in sbString)
-        {
-          _byteSender(Encoding.UTF8.GetBytes([responseChar]));
-          await Task.Delay(5);
-        }
-      }
-      finally
-      {
-        //_sendSemaphore.Release();
+        _byteSender(Encoding.UTF8.GetBytes([responseChar]));
+        //await Task.Delay(1);
       }
     });
-    //_byteSender(Encoding.UTF8.GetBytes(sb.ToString()));
   }
 }
