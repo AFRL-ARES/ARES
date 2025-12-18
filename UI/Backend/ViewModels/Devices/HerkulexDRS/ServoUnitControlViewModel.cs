@@ -1,4 +1,5 @@
 ﻿using HerkulexDRS.Services;
+using UI.Pages.Shared.Devices.Servo;
 
 namespace UI.Backend.ViewModels.Devices.HerkulexDRS;
 
@@ -9,6 +10,8 @@ public class ServoUnitControlViewModel : DeviceUnitControlViewModel
   public ServoUnitControlViewModel(string deviceId, string deviceName, HerkulexDRSRpc.HerkulexDRSRpcClient client) : base(deviceId, deviceName)
   {
     _client = client;
+    ViewType = typeof(ServoControlWidgetView);
+    DefaultWidth = 20;
   }
 
   public void PistonUp()

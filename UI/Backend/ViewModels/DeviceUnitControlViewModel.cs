@@ -16,7 +16,5 @@ public abstract class DeviceUnitControlViewModel : ReactiveObject
 
   public int DefaultWidth { get; set; } = 20;
 
-  public int DefaultHeight { get; set; } = 20;
-
   public Type? ViewType { get; set; }
 }

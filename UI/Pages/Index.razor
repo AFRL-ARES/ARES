@@ -16,7 +16,6 @@
 @using UI.Pages.Shared.Devices.Servo
 @using UI.Pages.Shared.Devices.VerdiV6Laser
 @using UI.Pages.Shared.Misc
-@using UI.Pages.Shared.Sortable
 
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<IndexViewModel>
 @inject IJSRuntime JS
@@ -33,15 +32,12 @@
       {
         //Fallback Values
         var width = viewModel.DefaultWidth;
-        var height = viewModel.DefaultHeight;
      
-        <div class="grid-stack-item" @key="viewModel.DeviceId" gs-w="@width" gs-h="@height">
+        <div class="grid-stack-item" @key="viewModel.DeviceId" gs-w="@width" gs-size-to-content="true">
           <div class="grid-stack-item-content">
-            <div style="overflow-y: auto; height: 100%">
-              <DashboardWidget>
-                <DynamicComponent Type="@viewModel.ViewType" Parameters="@CreateViewArguments(viewModel!)"/>
-              </DashboardWidget>
-            </div>
+            <DashboardWidget>
+              <DynamicComponent Type="@viewModel.ViewType" Parameters="@CreateViewArguments(viewModel!)"/>
+            </DashboardWidget>
           </div>
         </div>
       }
@@ -61,23 +57,30 @@
     if(firstRender)
     {
       _objRef = DotNetObjectReference.Create(this);
-
       _module = await JS.InvokeAsync<IJSObjectReference>("import", "./Pages/Index.razor.js");
-
       await _module.InvokeVoidAsync("initDashboard", "my-dashboard", _objRef);
     }
 
     else
     {
       if (_module is not null)
+      {
         await _module.InvokeVoidAsync("refreshGrid", "my-dashboard");
+        await _module.InvokeVoidAsync("resizeToContent", "my-dashboard");
+      }
     }
-    await base.OnAfterRenderAsync(firstRender);
+
+    //await base.OnAfterRenderAsync(firstRender);
+  }
+
+  private void ViewModelsUpdated()
+  {
+    StateHasChanged();
   }
 
   protected override void OnInitialized()
   {
-    ViewModelRepo.Connect().Subscribe(_ => InvokeAsync(StateHasChanged));
+    ViewModelRepo.Connect().Subscribe(_ => InvokeAsync(ViewModelsUpdated));
   }
 
   [JSInvokable]

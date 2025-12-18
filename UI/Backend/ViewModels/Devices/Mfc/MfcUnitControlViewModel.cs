@@ -22,8 +22,7 @@ public class MfcUnitControlViewModel : DeviceUnitControlViewModel, IAsyncDisposa
     ViewType = typeof(MfcUnitControl);
     Initialize();
 
-    DefaultHeight = 36;
-    DefaultWidth = 20;
+    DefaultWidth = 19;
   }
 
   public string MfcName { get; }
