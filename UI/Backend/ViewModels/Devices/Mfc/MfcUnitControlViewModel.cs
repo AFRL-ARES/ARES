@@ -1,12 +1,13 @@
 ﻿using Ares.Alicat.Mfc.Messaging;
 using DynamicData;
 using ReactiveUI.Fody.Helpers;
+using UI.Pages.Shared.Devices.Mfc;
 using UnitsNet;
 using UnitsNet.Units;
 
 namespace UI.Backend.ViewModels.Devices.Mfc;
 
-public class MfcUnitControlViewModel : SerialDeviceUnitViewModel, IAsyncDisposable
+public class MfcUnitControlViewModel : DeviceUnitControlViewModel, IAsyncDisposable
 {
   private readonly DeviceRequest _deviceRequest;
   private readonly MfcRpc.MfcRpcClient _mfcClient;
@@ -18,7 +19,11 @@ public class MfcUnitControlViewModel : SerialDeviceUnitViewModel, IAsyncDisposab
     MfcName = mfcName;
     _deviceRequest = new DeviceRequest { DeviceId = DeviceId };
     _mfcClient = mfcClient;
+    ViewType = typeof(MfcUnitControl);
     Initialize();
+
+    DefaultHeight = 36;
+    DefaultWidth = 20;
   }
 
   public string MfcName { get; }

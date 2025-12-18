@@ -8,7 +8,7 @@ using ReactiveUI;
 
 namespace UI.Backend.ViewModels;
 
-public abstract class UsbDeviceConnectorViewModel<TDeviceUnitVm> : ReactiveObject, IAsyncDisposable where TDeviceUnitVm : UsbDeviceUnitViewModel
+public abstract class UsbDeviceConnectorViewModel<TDeviceUnitVm> : ReactiveObject, IAsyncDisposable where TDeviceUnitVm : DeviceUnitControlViewModel
 {
   private readonly ISourceCache<TDeviceUnitVm, string> _connectedUsbDeviceUnitControlVmsSource = new SourceCache<TDeviceUnitVm, string>(vm => vm.DeviceName);
   private readonly AresDevices.AresDevicesClient _devicesClient;

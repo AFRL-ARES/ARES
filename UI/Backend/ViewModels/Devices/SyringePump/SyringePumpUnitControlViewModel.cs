@@ -4,7 +4,7 @@ using ReactiveUI.Fody.Helpers;
 
 namespace UI.Backend.ViewModels.SyringePump;
 
-public class SyringePumpUnitControlViewModel : SerialDeviceUnitViewModel, IAsyncDisposable
+public class SyringePumpUnitControlViewModel : DeviceUnitControlViewModel, IAsyncDisposable
 {
   private SyringePumpRpc.SyringePumpRpcClient _syringePumpClient;
   private DeviceRequest _deviceRequest;

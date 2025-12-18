@@ -2,7 +2,7 @@
 
 namespace UI.Backend.ViewModels.Devices.HerkulexDRS;
 
-public class ServoUnitControlViewModel : SerialDeviceUnitViewModel
+public class ServoUnitControlViewModel : DeviceUnitControlViewModel
 {
   private readonly HerkulexDRSRpc.HerkulexDRSRpcClient _client;
 

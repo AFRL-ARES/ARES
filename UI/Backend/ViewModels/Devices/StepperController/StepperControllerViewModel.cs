@@ -3,7 +3,7 @@ using TicStepperController.Messaging;
 
 namespace UI.Backend.ViewModels.StepperController;
 
-public class StepperControllerViewModel : SerialDeviceUnitViewModel, IAsyncDisposable
+public class StepperControllerViewModel : DeviceUnitControlViewModel, IAsyncDisposable
 {
   private readonly StepperControllerRpc.StepperControllerRpcClient _client;
   private readonly CancellationTokenSource _stateUpdateTokenSource = new();

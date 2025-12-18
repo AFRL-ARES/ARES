@@ -3,7 +3,7 @@ using ReactiveUI.Fody.Helpers;
 
 namespace UI.Backend.ViewModels.Devices.CM3Camera;
 
-public class CM3CameraUnitControlViewModel : UsbDeviceUnitViewModel
+public class CM3CameraUnitControlViewModel : DeviceUnitControlViewModel
 {
   private readonly FlirCM3CameraRpc.FlirCM3CameraRpcClient _client;
 

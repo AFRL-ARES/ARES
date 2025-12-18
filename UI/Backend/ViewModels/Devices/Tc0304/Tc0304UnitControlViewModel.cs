@@ -4,7 +4,7 @@ using UnitsNet;
 
 namespace UI.Backend.ViewModels.Tc0304;
 
-public class Tc0304UnitControlViewModel : SerialDeviceUnitViewModel, IAsyncDisposable
+public class Tc0304UnitControlViewModel : DeviceUnitControlViewModel, IAsyncDisposable
 {
   private readonly TC0304Rpc.TC0304RpcClient _client;
   private readonly CancellationTokenSource _stateUpdateTokenSource = new();

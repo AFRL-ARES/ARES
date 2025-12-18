@@ -1,5 +1,6 @@
 ﻿@page "/"
 @using UI.Backend.Devices
+@using UI.Backend.Repos
 @using UI.Backend.ViewModels
 @using UI.Pages.Shared.Devices.CM3Camera
 @using UI.Pages.Shared.Devices.DataLogger
@@ -19,7 +20,7 @@
 
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<IndexViewModel>
 @inject IJSRuntime JS
-
+@inject IDeviceControlViewModelRepo ViewModelRepo
 
 <PageTitle>Dashboard</PageTitle>
 <div class="d-flex flex-column gap-2">
@@ -28,30 +29,18 @@
   </div>
 
   <div class="grid-stack" id="my-dashboard">
-      @foreach(var deviceType in MultiViews)
+      @foreach(var viewModel in ViewModelRepo.Items)
       {
         //Fallback Values
-        var width = 0;
-        var height = 0;
-
-        if(typeof(IDashboardControlWidget).IsAssignableFrom(deviceType))
-        {
-          var wProp = deviceType.GetProperty("DefaultWidth");
-          var hProp = deviceType.GetProperty("DefaultHeight");
-
-          // You might need Activator.CreateInstance if they are instance properties
-          var instance = Activator.CreateInstance(deviceType) as IDashboardControlWidget;
-          if (instance != null)
-          {
-            width = instance.DefaultWidth;
-            height = instance.DefaultHeight;
-          }
-        }
+        var width = viewModel.DefaultWidth;
+        var height = viewModel.DefaultHeight;
      
-        <div class="grid-stack-item" gs-w="@width" gs-h="@height">
+        <div class="grid-stack-item" @key="viewModel.DeviceId" gs-w="@width" gs-h="@height">
           <div class="grid-stack-item-content">
             <div style="overflow-y: auto; height: 100%">
-              <DynamicComponent Type="@deviceType" />
+              <DashboardWidget>
+                <DynamicComponent Type="@viewModel.ViewType" Parameters="@CreateViewArguments(viewModel!)"/>
+              </DashboardWidget>
             </div>
           </div>
         </div>
@@ -65,43 +54,7 @@
   private IJSObjectReference? _module;
   private DotNetObjectReference<Index>? _objRef;
 
-  public List<Type> MultiViews = new List<Type>() 
-  { 
-    typeof(RemoteDeviceDirectorView),
-    typeof(DataLoggerMultiView), 
-    typeof(MfcDirectorControl), 
-    typeof(SyringePumpWorkspaceControl),
-    typeof(TubeFurnaceMultiControl),
-    typeof(ServoMultiView),
-    typeof(StepperControllerMultiView),
-    typeof(ValveControllerMultiView),
-    typeof(CM3CameraMultiView),
-    typeof(VerdiLaserMultiView),
-    typeof(LaserChillerMultiView),
-    typeof(RestDeviceMultiView),
-    typeof(SerialRestDeviceMultiView)
-  };
-
-  private void SortList((int oldIndex, int newIndex) indices)
-  {
-    // deconstruct the tuple
-    var (oldIndex, newIndex) = indices;
-
-    var items = this.MultiViews;
-    var itemToMove = items[oldIndex];
-    items.RemoveAt(oldIndex);
-
-    if(newIndex < items.Count)
-    {
-      items.Insert(newIndex, itemToMove);
-    }
-    else
-    {
-      items.Add(itemToMove);
-    }
-
-    StateHasChanged();
-  }
+  private Dictionary<string, object> CreateViewArguments(DeviceUnitControlViewModel viewModel) => new Dictionary<string, object>() { { "ViewModel", viewModel } };
 
   protected override async Task OnAfterRenderAsync(bool firstRender)
   {
@@ -114,12 +67,23 @@
       await _module.InvokeVoidAsync("initDashboard", "my-dashboard", _objRef);
     }
 
+    else
+    {
+      if (_module is not null)
+        await _module.InvokeVoidAsync("refreshGrid", "my-dashboard");
+    }
     await base.OnAfterRenderAsync(firstRender);
+  }
+
+  protected override void OnInitialized()
+  {
+    ViewModelRepo.Connect().Subscribe(_ => InvokeAsync(StateHasChanged));
   }
 
   [JSInvokable]
   public void OnDashboardUpdate(object updates)
   {
+    //TODO: Save dashboard changes
     Console.WriteLine("Dashboard Updated vis JS!");
   }
 
@@ -130,13 +94,5 @@
       await _module.DisposeAsync();
     }
     _objRef?.Dispose();
-  }
-
-  public async Task RefreshWidgetSize(string componentId)
-  {
-    if (_module != null)
-    {
-      await _module.InvokeVoidAsync("resizeWidget", componentId);
-    }
   }
 }

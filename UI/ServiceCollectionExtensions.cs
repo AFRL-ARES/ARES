@@ -25,8 +25,10 @@ using TubeFurnace.Messaging;
 using UI.Areas.Identity;
 using UI.Authentication;
 using UI.Backend.Devices;
+using UI.Backend.Factories;
 using UI.Backend.Helpers;
 using UI.Backend.Notifications;
+using UI.Backend.Repos;
 using UI.Backend.ViewModels;
 using UI.Backend.ViewModels.Automation;
 using UI.Backend.ViewModels.Automation.CampaignEdit;
@@ -90,6 +92,7 @@ internal static class ServiceCollectionExtensions
     services.BindViewModels();
     services.BindViewModelFactories();
     services.AddScoped<ICombinedDeviceGetter, CombinedDeviceGetter>();
+    services.AddSingleton<IDeviceControlViewModelRepo, DeviceControlViewModelRepo>();
     services.AddSingleton<INotificationRepository, NotificationRepository>();
 
     services.AddSingleton<DeviceAdapterRepository>();
@@ -117,18 +120,18 @@ internal static class ServiceCollectionExtensions
     //Device Clients
     //services.AddScoped(_ => clientManager.GetClient<AresDevices.AresDevicesClient>());
     services.AddSingleton(_ => clientManager.GetClient<AresDevices.AresDevicesClient>());
-    services.AddScoped(_ => clientManager.GetClient<MfcRpc.MfcRpcClient>());
-    services.AddScoped(_ => clientManager.GetClient<SyringePumpRpc.SyringePumpRpcClient>());
-    services.AddScoped(_ => clientManager.GetClient<TubeFurnaceRpc.TubeFurnaceRpcClient>());
-    services.AddScoped(_ => clientManager.GetClient<TC0304Rpc.TC0304RpcClient>());
-    services.AddScoped(_ => clientManager.GetClient<HerkulexDRSRpc.HerkulexDRSRpcClient>());
-    services.AddScoped(_ => clientManager.GetClient<FlirCM3CameraRpc.FlirCM3CameraRpcClient>());
-    services.AddScoped(_ => clientManager.GetClient<ValveControllerRpc.ValveControllerRpcClient>());
-    services.AddScoped(_ => clientManager.GetClient<VerdiV6Rpc.VerdiV6RpcClient>());
-    services.AddScoped(_ => clientManager.GetClient<ChillerRpc.ChillerRpcClient>());
-    services.AddScoped(_ => clientManager.GetClient<StepperControllerRpc.StepperControllerRpcClient>());
-    services.AddScoped(_ => clientManager.GetClient<RestDeviceRpc.RestDeviceRpcClient>());
-    services.AddScoped(_ => clientManager.GetClient<RestSerialDeviceRpc.RestSerialDeviceRpcClient>());
+    services.AddSingleton(_ => clientManager.GetClient<MfcRpc.MfcRpcClient>());
+    services.AddSingleton(_ => clientManager.GetClient<SyringePumpRpc.SyringePumpRpcClient>());
+    services.AddSingleton(_ => clientManager.GetClient<TubeFurnaceRpc.TubeFurnaceRpcClient>());
+    services.AddSingleton(_ => clientManager.GetClient<TC0304Rpc.TC0304RpcClient>());
+    services.AddSingleton(_ => clientManager.GetClient<HerkulexDRSRpc.HerkulexDRSRpcClient>());
+    services.AddSingleton(_ => clientManager.GetClient<FlirCM3CameraRpc.FlirCM3CameraRpcClient>());
+    services.AddSingleton(_ => clientManager.GetClient<ValveControllerRpc.ValveControllerRpcClient>());
+    services.AddSingleton(_ => clientManager.GetClient<VerdiV6Rpc.VerdiV6RpcClient>());
+    services.AddSingleton(_ => clientManager.GetClient<ChillerRpc.ChillerRpcClient>());
+    services.AddSingleton(_ => clientManager.GetClient<StepperControllerRpc.StepperControllerRpcClient>());
+    services.AddSingleton(_ => clientManager.GetClient<RestDeviceRpc.RestDeviceRpcClient>());
+    services.AddSingleton(_ => clientManager.GetClient<RestSerialDeviceRpc.RestSerialDeviceRpcClient>());
 
     //Device State Logging Clients
     services.AddScoped(_ => clientManager.GetClient<MfcStateLogging.MfcStateLoggingClient>());
@@ -172,31 +175,14 @@ internal static class ServiceCollectionExtensions
     services.AddTransient<VerdiLaserSettingsListViewModel>();
     services.AddTransient<LaserChillerSettingsListViewModel>();
     services.AddTransient<RemoteDeviceSettingsListViewModel>();
-
-    //Device Multi-view Models
     services.AddTransient<RestDeviceSettingsListViewModel>();
     services.AddTransient<SerialRestDeviceSettingsListViewModel>();
-
-    //Device Control ViewModels
-    services.AddScoped<MfcDirectorControlViewModel>();
-    services.AddScoped<SyringePumpWorkspaceControlViewModel>();
-    services.AddScoped<Tc0304MultiViewModel>();
-    services.AddScoped<ServoMultiViewModel>();
-    services.AddScoped<CM3CameraMultiViewModel>();
-    services.AddScoped<ValveControllerMultiViewModel>();
-    services.AddScoped<TubeFurnaceMultiViewModel>();
-    services.AddScoped<StepperControllerMultiViewModel>();
-    services.AddScoped<VerdiLaserMultiViewModel>();
-    services.AddScoped<LaserChillerMultiViewModel>();
-    services.AddScoped<RemoteDeviceDirectorViewModel>();
 
     //Other View Models
     services.AddTransient<DeviceStatesViewModel>();
     services.AddTransient<DeviceStateExporterViewModel>();
     services.AddScoped<ManualPlannerViewModel>();
     services.AddScoped<ManualExecutionWidgetViewModel>();
-    services.AddScoped<RestDeviceMultiViewModel>();
-    services.AddScoped<SerialRestDeviceMultiViewModel>();
     services.AddScoped<LoggingSettingsListViewModel>();
   }
   private static void BindViewModelFactories(this IServiceCollection services)
@@ -213,5 +199,12 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<PlanningDesignerFactory>();
     services.AddScoped<AnalyzerInputDesignerVmFactory>();
     services.AddScoped<DeviceStateFilterViewModelFactory>();
+    services.AddSingleton<MFCDeviceControlViewModelFactory>();
+    services.AddSingleton<SyringePumpDeviceControlViewModelFactory>();
+    services.AddSingleton<Tc0304DeviceControlViewModelFactory>();
+    services.AddSingleton<ServoDeviceControlViewModelFactory>();
+    services.AddSingleton<ValveControllerDeviceControlViewModelFactory>();
+    services.AddSingleton<TubeFurnaceDeviceControlViewModelFactory>();
+    services.AddSingleton<StepperControllerDeviceControlViewModelFactory>();
   }
 }

@@ -32,11 +32,15 @@
   });
 }
 
-export function resizeWidget(elementId) {
-  // Find the specific grid item by the data-id we set
-  let el = document.querySelector(`.grid-stack-item[data-id='${elementId}']`);
-  if (el && el.gridstackNode && el.gridstackNode.grid) {
-    // Tell GridStack to re-measure this specific item
-    el.gridstackNode.grid.resizeToContent(el);
+export function refreshGrid(id) {
+  var el = document.getElementById(id);
+
+  // Check if the grid is already initialized on this element
+  if (el && el.gridstack) {
+    var grid = el.gridstack;
+
+    // This is the magic command. 
+    // It tells GridStack: "Look at my children. If any aren't widgets yet, make them widgets."
+    grid.makeWidget('.grid-stack-item');
   }
 }

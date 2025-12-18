@@ -7,7 +7,7 @@ using ReactiveUI;
 
 namespace UI.Backend.ViewModels;
 
-public abstract class SerialDeviceConnectorViewModel<TDeviceUnitVm> : ReactiveObject, IAsyncDisposable where TDeviceUnitVm : SerialDeviceUnitViewModel
+public abstract class SerialDeviceConnectorViewModel<TDeviceUnitVm> : ReactiveObject, IAsyncDisposable where TDeviceUnitVm : DeviceUnitControlViewModel
 {
   private readonly ISourceCache<TDeviceUnitVm, string> _connectedSerialDeviceUnitControlVmsSource =
   new SourceCache<TDeviceUnitVm, string>(vm => vm.DeviceId);

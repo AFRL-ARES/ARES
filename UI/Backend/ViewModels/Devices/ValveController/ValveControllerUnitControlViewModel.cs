@@ -2,7 +2,7 @@
 
 namespace UI.Backend.ViewModels.Devices.ValveController;
 
-public class ValveControllerUnitControlViewModel : SerialDeviceUnitViewModel
+public class ValveControllerUnitControlViewModel : DeviceUnitControlViewModel
 {
   private readonly ValveControllerRpc.ValveControllerRpcClient _client;
 

@@ -3,7 +3,7 @@ using ReactiveUI.Fody.Helpers;
 
 namespace UI.Backend.ViewModels.Devices.LaserChiller;
 
-public class LaserChillerUnitControlViewModel : SerialDeviceUnitViewModel
+public class LaserChillerUnitControlViewModel : DeviceUnitControlViewModel
 {
   private readonly ChillerRpc.ChillerRpcClient _client;
 

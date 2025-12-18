@@ -1,4 +1,5 @@
 ﻿using UI.Backend.Devices;
+using UI.Backend.Factories;
 using UI.Services.Notification;
 
 namespace UI;
@@ -7,20 +8,48 @@ public class ServiceStarter : IHostedService
 {
   private readonly INotificationReceivingService _notificationReceivingService;
   private readonly DeviceAdapterManager _deviceAdapterManager;
+  private readonly MFCDeviceControlViewModelFactory _mfcViewModelFactory;
+  private readonly ServoDeviceControlViewModelFactory _servoViewModelFactory;
+  private readonly StepperControllerDeviceControlViewModelFactory _stepperControllerViewModelFactory;
+  private readonly SyringePumpDeviceControlViewModelFactory _syringePumpViewModelFactory;
+  private readonly Tc0304DeviceControlViewModelFactory _tc0304ViewModelFactory;
+  private readonly TubeFurnaceDeviceControlViewModelFactory _tubeFurnaceViewModelFactory;
+  private readonly ValveControllerDeviceControlViewModelFactory _valveControllerViewModelFactory;
 
   public ServiceStarter(
     INotificationReceivingService notificationReceivingService,
     IServiceProvider serviceProvider,
-    DeviceAdapterManager deviceAdapterManager)
+    DeviceAdapterManager deviceAdapterManager,
+    MFCDeviceControlViewModelFactory mfcViewModelFactory, 
+    ServoDeviceControlViewModelFactory servoViewModelFactory,
+    StepperControllerDeviceControlViewModelFactory stepperControllerViewModelFactory,
+    SyringePumpDeviceControlViewModelFactory syringePumpViewModelFactory,
+    Tc0304DeviceControlViewModelFactory tc0304ViewModelFactory,
+    TubeFurnaceDeviceControlViewModelFactory tubeFurnaceViewModelFactory,
+    ValveControllerDeviceControlViewModelFactory valveControllerViewModelFactory)
   {
     _notificationReceivingService = notificationReceivingService;
     _deviceAdapterManager = deviceAdapterManager;
+    _mfcViewModelFactory = mfcViewModelFactory;
+    _servoViewModelFactory = servoViewModelFactory;
+    _stepperControllerViewModelFactory = stepperControllerViewModelFactory;
+    _syringePumpViewModelFactory = syringePumpViewModelFactory;
+    _tc0304ViewModelFactory = tc0304ViewModelFactory;
+    _tubeFurnaceViewModelFactory = tubeFurnaceViewModelFactory;
+    _valveControllerViewModelFactory = valveControllerViewModelFactory;
   }
 
   public Task StartAsync(CancellationToken cancellationToken)
   {
     _notificationReceivingService.StartNotificationStream();
     _deviceAdapterManager.Activate();
+    _mfcViewModelFactory.Start(TimeSpan.FromSeconds(5));
+    _servoViewModelFactory.Start(TimeSpan.FromSeconds(5));
+    _stepperControllerViewModelFactory.Start(TimeSpan.FromSeconds(5));
+    _syringePumpViewModelFactory.Start(TimeSpan.FromSeconds(5));
+    _tc0304ViewModelFactory.Start(TimeSpan.FromSeconds(5));
+    _tubeFurnaceViewModelFactory.Start(TimeSpan.FromSeconds(5));
+    _valveControllerViewModelFactory.Start(TimeSpan.FromSeconds(5));
     return Task.CompletedTask;
   }
 

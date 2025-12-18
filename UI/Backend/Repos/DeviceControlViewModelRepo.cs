@@ -1,0 +1,38 @@
+﻿using DynamicData;
+using UI.Backend.ViewModels;
+
+namespace UI.Backend.Repos
+{
+  public class DeviceControlViewModelRepo : IDeviceControlViewModelRepo
+  {
+    private SourceList<DeviceUnitControlViewModel> _deviceViewModelList = new();
+    public int Count => _deviceViewModelList.Count;
+
+    public IObservable<IChangeSet<DeviceUnitControlViewModel>> Connect(Func<DeviceUnitControlViewModel, bool>? predicate = null)
+    {
+      return _deviceViewModelList.Connect(predicate);
+    }
+
+    public void Dispose()
+    {
+      _deviceViewModelList?.Dispose();
+    }
+
+    public void Edit(Action<IExtendedList<DeviceUnitControlViewModel>> updateAction)
+    {
+      _deviceViewModelList.Edit(updateAction);
+    }
+
+    public IObservable<IChangeSet<DeviceUnitControlViewModel>> Preview(Func<DeviceUnitControlViewModel, bool>? predicate = null)
+    {
+      return _deviceViewModelList.Preview(predicate);
+    }
+
+    public IObservable<int> CountChanged => _deviceViewModelList.CountChanged;
+
+    public IEnumerable<DeviceUnitControlViewModel> Items => _deviceViewModelList.Items;
+
+    IReadOnlyList<DeviceUnitControlViewModel> IObservableList<DeviceUnitControlViewModel  >.Items => _deviceViewModelList.Items;
+
+  }
+}
