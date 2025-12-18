@@ -10,6 +10,7 @@ public class LaserChillerUnitControlViewModel : DeviceUnitControlViewModel
   public LaserChillerUnitControlViewModel(string deviceId, string deviceName, ChillerRpc.ChillerRpcClient client) : base(deviceId, deviceName)
   {
     _client = client;
+    ViewType = typeof(LaserChillerUnitControlViewModel);
   }
 
   public async Task SetChillerTemperature()

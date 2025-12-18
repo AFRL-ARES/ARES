@@ -1,5 +1,6 @@
 ﻿using ReactiveUI.Fody.Helpers;
 using Tc0304.Services;
+using UI.Pages.Shared.Devices.DataLogger;
 using UnitsNet;
 
 namespace UI.Backend.ViewModels.Tc0304;
@@ -14,6 +15,9 @@ public class Tc0304UnitControlViewModel : DeviceUnitControlViewModel, IAsyncDisp
   {
     _client = client;
     StartStateUpdater();
+
+    ViewType = typeof(Tc0304ControlWidgetView);
+    DefaultWidth = 22;
   }
 
   [Reactive]

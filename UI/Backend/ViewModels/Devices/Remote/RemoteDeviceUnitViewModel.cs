@@ -1,6 +1,7 @@
 ﻿using Ares.Datamodel;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
+using System.ComponentModel.Design;
 using UI.Backend.Devices;
 
 namespace UI.Backend.ViewModels.Devices.Remote;

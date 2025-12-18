@@ -1,6 +1,7 @@
 ﻿using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using TubeFurnace.Messaging;
+using UI.Pages.Shared.Devices.TubeFurnace;
 using UnitsNet;
 using UnitsNet.Units;
 
@@ -18,6 +19,9 @@ public class TubeFurnaceViewModel : DeviceUnitControlViewModel, IAsyncDisposable
     _tubeFurnaceClient = tubeFurnaceClient;
     _stateUpdateTokenSource = new();
     StartStateUpdater();
+
+    ViewType = typeof(TubeFurnaceControl);
+    DefaultWidth = 18;
   }
 
   private void StartStateUpdater()

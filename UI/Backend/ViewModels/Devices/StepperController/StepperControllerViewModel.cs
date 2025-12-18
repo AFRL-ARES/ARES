@@ -1,5 +1,6 @@
 ﻿using ReactiveUI.Fody.Helpers;
 using TicStepperController.Messaging;
+using UI.Pages.Shared.Devices.StepperController;
 
 namespace UI.Backend.ViewModels.StepperController;
 
@@ -13,6 +14,8 @@ public class StepperControllerViewModel : DeviceUnitControlViewModel, IAsyncDisp
   {
     _client = client;
     StartStateUpdater();
+    ViewType = typeof(StepperControllerWidgetView);
+    DefaultWidth = 18;
   }
 
   #region Properties

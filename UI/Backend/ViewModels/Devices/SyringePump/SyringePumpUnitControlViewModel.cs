@@ -1,6 +1,7 @@
 ﻿using Ares.SyringePump.Ne1000.Messaging;
 using DynamicData.Binding;
 using ReactiveUI.Fody.Helpers;
+using UI.Pages.Shared.Devices.SyringePump;
 
 namespace UI.Backend.ViewModels.SyringePump;
 
@@ -16,6 +17,8 @@ public class SyringePumpUnitControlViewModel : DeviceUnitControlViewModel, IAsyn
     _deviceRequest = new DeviceRequest { DeviceId = DeviceId };
     Initialize();
     this.WhenValueChanged(vm => vm.CurrentState).Subscribe(_ => UpdateStatus());
+    ViewType = typeof(SyringePumpUnitControl);
+    DefaultWidth = 35;
   }
 
   private void UpdateStatus()

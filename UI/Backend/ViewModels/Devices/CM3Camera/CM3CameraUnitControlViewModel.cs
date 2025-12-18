@@ -10,6 +10,7 @@ public class CM3CameraUnitControlViewModel : DeviceUnitControlViewModel
   public CM3CameraUnitControlViewModel(string deviceId, string deviceName, FlirCM3CameraRpc.FlirCM3CameraRpcClient client) : base(deviceId, deviceName)
   {
     _client = client;
+    ViewType = typeof(CM3CameraUnitControlViewModel);
   }
 
   public async Task SetExposureTime()

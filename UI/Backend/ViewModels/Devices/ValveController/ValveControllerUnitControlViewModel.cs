@@ -1,4 +1,5 @@
-﻿using ValveController.Services;
+﻿using UI.Pages.Shared.Devices.ValveController;
+using ValveController.Services;
 
 namespace UI.Backend.ViewModels.Devices.ValveController;
 
@@ -9,6 +10,7 @@ public class ValveControllerUnitControlViewModel : DeviceUnitControlViewModel
   public ValveControllerUnitControlViewModel(string deviceId, string deviceName, ValveControllerRpc.ValveControllerRpcClient client) : base(deviceId, deviceName)
   {
     _client = client;
+    ViewType = typeof(ValveControllerWidgetView);
   }
 
   public void EngageRelayOne()
