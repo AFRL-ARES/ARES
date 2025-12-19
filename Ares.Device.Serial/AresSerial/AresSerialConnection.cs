@@ -60,7 +60,7 @@ public abstract class AresSerialConnection : IAresSerialConnection
     Listen();
   }
 
-  public async Task<T> Send<T>(SerialCommandWithResponse<T> command, TimeSpan timeout, Func<T, bool>? filter) where T : SerialResponse
+  public async Task<T> Send<T>(SerialCommandWithResponse<T> command, TimeSpan timeout, CancellationToken token, Func<T, bool>? filter) where T : SerialResponse
   {
     if(command is SerialCommandWithStreamedResponse<T>)
       throw new InvalidOperationException(
@@ -74,8 +74,8 @@ public abstract class AresSerialConnection : IAresSerialConnection
         .Select(transaction => transaction.Response)
         .Timeout(timeout)
         //.Catch<T?, TimeoutException>(_ => Observable.Return<T?>(null))
-        .ToTask();
-    await _sendLock.WaitAsync();
+        .ToTask(token);
+    await _sendLock.WaitAsync(token);
     lock(_singleResponseQueue)
     {
       _singleResponseQueue.Add(command);
@@ -133,16 +133,25 @@ public abstract class AresSerialConnection : IAresSerialConnection
     return sb.ToString();
   }
   public Task<T> Send<T>(SerialCommandWithResponse<T> command, TimeSpan timeout) where T : SerialResponse
-    => Send(command, timeout, null);
+    => Send(command, timeout, CancellationToken.None, null);
+
+  public Task<T> Send<T>(SerialCommandWithResponse<T> command, TimeSpan timeout, CancellationToken token) where T : SerialResponse
+  => Send(command, timeout, token, null);
 
   public Task<T> Send<T>(SerialCommandWithResponse<T> command, Func<T, bool> filter) where T : SerialResponse
-    => Send(command, _defaultTimeout, filter);
+    => Send(command, _defaultTimeout, CancellationToken.None, filter);
 
   public Task<T> Send<T>(SerialCommandWithResponse<T> command) where T : SerialResponse
     => Send(command, _defaultTimeout);
+  public Task<T> Send<T>(SerialCommandWithResponse<T> command, CancellationToken token) where T : SerialResponse
+    => Send(command, _defaultTimeout, token, null);
 
-  public async Task<IObservable<T>> Send<T>(SerialCommandWithStreamedResponse<T> command) where T : SerialResponse
+  public Task<T> Send<T>(SerialCommandWithResponse<T> command, Func<T, bool> filter, CancellationToken token) where T : SerialResponse
+    => Send(command, _defaultTimeout, token, filter);
+
+  public async Task<IObservable<T>> SendAndStream<T>(SerialCommandWithStreamedResponse<T> command, CancellationToken? token) where T : SerialResponse
   {
+    var ct = token ?? CancellationToken.None;
     lock(_multiResponseQueue)
     {
       var existingParser = _multiResponseQueue.OfType<SerialCommandWithStreamedResponse<T>>().FirstOrDefault();
@@ -167,7 +176,7 @@ public abstract class AresSerialConnection : IAresSerialConnection
 
         if(replay.HasObservers)
           return;
-        
+
         upstream.Dispose();
         replay.Dispose();
 
@@ -178,12 +187,12 @@ public abstract class AresSerialConnection : IAresSerialConnection
       });
     });
 
-    await _sendLock.WaitAsync();
+    await _sendLock.WaitAsync(ct);
     try
     {
       SendOutboundMessage(command);
       if(_sendBuffer > TimeSpan.Zero)
-        await Task.Delay(_sendBuffer);
+        await Task.Delay(_sendBuffer, ct);
     }
     finally
     {
@@ -274,7 +283,7 @@ public abstract class AresSerialConnection : IAresSerialConnection
           {
             var unparsedMultiParsers = _multiResponseQueue.Where(multiResponseCmd => _singleResponseQueue.All(singleResponseCmd => singleResponseCmd.ResponseParser.GetType() != multiResponseCmd.ResponseParser.GetType())).ToArray();
             var considerableParsers = _singleResponseQueue.Concat(unparsedMultiParsers).ToArray();
-            
+
             foreach(var commandWithResponse in considerableParsers)
             {
               var currentData = _buffer.ToArray();
@@ -284,7 +293,7 @@ public abstract class AresSerialConnection : IAresSerialConnection
                 _buffer.RemoveBytes(dataToRemove.Value);
                 totalBytesRemoved += dataToRemove.Value.Count;
               }
-              
+
               if(!parsed || response is null)
               {
                 continue;
@@ -318,7 +327,7 @@ public abstract class AresSerialConnection : IAresSerialConnection
   protected abstract void Open(string portName);
 
   internal bool BufferEmpty => _buffer.Count == 0;
-  
+
   public virtual async ValueTask DisposeAsync()
   {
     await _listenerCancellationTokenSource.CancelAsync();

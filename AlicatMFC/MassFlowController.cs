@@ -150,7 +150,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     GenericLineResponse? result = null;
     try
     {
-      result = await Connection.Send(command, TimeSpan.FromSeconds(10), response => response.Id == targetId);
+      result = await Connection.Send(command, TimeSpan.FromSeconds(10), CancellationToken.None, response => response.Id == targetId);
     }
     catch(TimeoutException)
     {
@@ -747,7 +747,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
 
   private Task<IObservable<T>> Send<T>(MfcCommandWithStreamedResponse<T> command) where T : CommandResponse
   {
-    return Connection.Send(command);
+    return Connection.SendAndStream(command);
   }
 
   private Task Send(MfcCommand command)
