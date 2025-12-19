@@ -122,7 +122,7 @@ public class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   public Task PauseCampaign()
     => _automationClient.PauseExecutionAsync(new Empty()).ResponseAsync;
 
-  public Task ResumeCampaign()
+  public Task ResumeCampaign() 
     => _automationClient.ResumeExecutionAsync(new Empty()).ResponseAsync;
 
   public async Task ExecutionNotesUploaded(UploadChangeEventArgs args)

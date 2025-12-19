@@ -81,4 +81,7 @@ ARES OS 2.0 relies on the following repositories for its operation foundation, c
 - **ARES Datamodel:** Defines the universal **Protobuf/gRPC contracts** used for communication between the ARES Service, UI, and all custom components.
   - https://github.com/AFRL-ARES/ARES-Datamodel
 - **PyARES:** The official ARES Python library for building custom planners, analyzers and devices, enabling support beyond the native C# environment.
-  - https://github.com/AFRL-ARES/PyARES 
+  - https://github.com/AFRL-ARES/PyARES
+
+## CLEARANCE
+Distribution A. Approved for public release: distribution unlimited. AFRL-2025-5329
