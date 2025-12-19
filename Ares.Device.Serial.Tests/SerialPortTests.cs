@@ -241,7 +241,7 @@ internal class SerialPortTests
     }
     catch(TimeoutException)
     {}
-    
+    await Task.Delay(1000);
     var response3 = await port.Send(new SomeCommandWithResponse(stringToTest3), TimeSpan.FromSeconds(10), token);
     Assert.That(response3.Response, Is.EqualTo(stringToTest3));
   }
