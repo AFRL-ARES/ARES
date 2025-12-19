@@ -173,8 +173,15 @@ public class ChemyxPump : SerialDevice<IChemyxPumpConnection>, IChemyxPump
     {
       while(!token.IsCancellationRequested)
       {
+        try
+        {
         ViewParameters = await PollViewParameters();
         await Task.Delay(TimeSpan.FromSeconds(30), token);
+      }
+        catch(Exception ex)
+        {
+          Console.WriteLine(ex);
+        }
       }
     }, token);
   }

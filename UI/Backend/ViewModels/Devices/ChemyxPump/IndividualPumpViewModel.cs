@@ -48,7 +48,7 @@ public class IndividualPumpViewModel : ReactiveObject, IAsyncDisposable
       }
       catch(Exception)
       {
-        await Task.Delay(TimeSpan.FromSeconds(5), token);
+        await Task.Delay(TimeSpan.FromSeconds(1), token);
       }
     }
   }
@@ -64,7 +64,6 @@ public class IndividualPumpViewModel : ReactiveObject, IAsyncDisposable
       }
       catch(Exception)
       {
-        await Task.Delay(TimeSpan.FromMinutes(1), token);
       }
     }
   }
