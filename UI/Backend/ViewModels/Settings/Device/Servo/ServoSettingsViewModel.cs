@@ -1,9 +1,11 @@
 ﻿using Ares.Datamodel.Device;
 using Ares.Services.Device;
+using CommunityToolkit.Mvvm.Messaging;
 using Grpc.Core;
 using HerkulexDRS.Config;
 using HerkulexDRS.Services;
 using ReactiveUI;
+using UI.Backend.Devices;
 
 namespace UI.Backend.ViewModels.Settings.Device.Servo;
 
@@ -12,16 +14,19 @@ public class ServoSettingsViewModel : ReactiveObject
   private readonly HerkulexDRSRpc.HerkulexDRSRpcClient _servoClient;
   private readonly DeviceConfig _deviceConfig;
   private readonly AresDevices.AresDevicesClient _devicesClient;
+  private readonly IMessenger _messenger;
 
   public ServoSettingsViewModel(DeviceConfig deviceConfig,
     HerkulexDRSRpc.HerkulexDRSRpcClient servoClient,
     AresDevices.AresDevicesClient devicesClient,
+    IMessenger messenger,
     Func<Task> onRemoveCallback)
   {
     _deviceConfig = deviceConfig;
     _servoClient = servoClient;
     ServoConfig = deviceConfig.ConfigData.Unpack<ServoConfig>();
     _devicesClient = devicesClient;
+    _messenger = messenger;
     OnRemoveCallback = onRemoveCallback;
     EditViewModel = new ServoConfigEditViewModel(_servoClient, _devicesClient, ServoConfig);
   }
@@ -58,8 +63,8 @@ public class ServoSettingsViewModel : ReactiveObject
   public async Task Remove()
   {
     await _servoClient.RemoveServoAsync(new HerkulexRequest { HerkulexId = _deviceConfig.UniqueId });
+    _messenger.Send(new DeviceDeletedMessage(_deviceConfig.UniqueId));
     await OnRemoveCallback();
   }
-
 }
 

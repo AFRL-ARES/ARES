@@ -2,6 +2,7 @@
 using Ares.Services.Device;
 using Chiller.Config;
 using Chiller.Services;
+using CommunityToolkit.Mvvm.Messaging;
 using LaserChiller;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
@@ -12,10 +13,13 @@ public class LaserChillerSettingsListViewModel : ReactiveObject
 {
   private readonly ChillerRpc.ChillerRpcClient _chillerClient;
   private readonly AresDevices.AresDevicesClient _devicesClient;
-  public LaserChillerSettingsListViewModel(AresDevices.AresDevicesClient devicesClient, ChillerRpc.ChillerRpcClient chillerClient)
+  private readonly IMessenger _messenger;
+
+  public LaserChillerSettingsListViewModel(AresDevices.AresDevicesClient devicesClient, ChillerRpc.ChillerRpcClient chillerClient, IMessenger messenger)
   {
     _chillerClient = chillerClient;
     _devicesClient = devicesClient;
+    _messenger = messenger;
     UpdateConfigs();
   }
 
@@ -24,7 +28,7 @@ public class LaserChillerSettingsListViewModel : ReactiveObject
 
   private void UpdateViewModels(IEnumerable<DeviceConfig> deviceConfigs)
   {
-    var viewModels = deviceConfigs.Select(config => new LaserChillerSettingsViewModel(config, _chillerClient, _devicesClient, OnConfigRemoved));
+    var viewModels = deviceConfigs.Select(config => new LaserChillerSettingsViewModel(config, _chillerClient, _devicesClient, _messenger, OnConfigRemoved));
     SettingsViewModels = viewModels;
   }
 

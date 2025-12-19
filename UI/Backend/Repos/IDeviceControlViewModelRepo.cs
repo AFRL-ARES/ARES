@@ -5,5 +5,6 @@ namespace UI.Backend.Repos
 {
   public interface IDeviceControlViewModelRepo : ISourceList<DeviceUnitControlViewModel>
   {
+    void Initialize();
   }
 }

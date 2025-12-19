@@ -1,5 +1,6 @@
 ﻿using Ares.Datamodel.Device;
 using Ares.Services.Device;
+using CommunityToolkit.Mvvm.Messaging;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using ValveController;
@@ -12,11 +13,15 @@ public class ValveControllerSettingsListViewModel : ReactiveObject
 {
   private readonly ValveControllerRpc.ValveControllerRpcClient _valveControllerClient;
   private readonly AresDevices.AresDevicesClient _devicesClient;
+  private readonly IMessenger _messenger;
 
-  public ValveControllerSettingsListViewModel(AresDevices.AresDevicesClient devicesClient, ValveControllerRpc.ValveControllerRpcClient valveControllerRpcClient)
+  public ValveControllerSettingsListViewModel(AresDevices.AresDevicesClient devicesClient, 
+    ValveControllerRpc.ValveControllerRpcClient valveControllerRpcClient, 
+    IMessenger messenger)
   {
     _devicesClient = devicesClient;
     _valveControllerClient = valveControllerRpcClient;
+    _messenger = messenger;
     UpdateConfigs();
   }
 
@@ -25,7 +30,7 @@ public class ValveControllerSettingsListViewModel : ReactiveObject
 
   private void UpdateViewModels(IEnumerable<DeviceConfig> deviceConfigs)
   {
-    var viewModels = deviceConfigs.Select(config => new ValveControllerSettingsViewModel(config, _valveControllerClient, _devicesClient, OnConfigRemoved));
+    var viewModels = deviceConfigs.Select(config => new ValveControllerSettingsViewModel(config, _valveControllerClient, _devicesClient, _messenger, OnConfigRemoved));
     SettingsViewModels = viewModels;
   }
 

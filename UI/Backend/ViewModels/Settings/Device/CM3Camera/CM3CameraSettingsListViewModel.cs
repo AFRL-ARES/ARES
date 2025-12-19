@@ -1,5 +1,6 @@
 ﻿using Ares.Datamodel.Device;
 using Ares.Services.Device;
+using CommunityToolkit.Mvvm.Messaging;
 using FlirCM3;
 using FlirCM3.Config;
 using FlirCM3.Services;
@@ -12,17 +13,19 @@ namespace UI.Backend.ViewModels.Settings.Device.CM3Camera
   {
     private readonly FlirCM3CameraRpc.FlirCM3CameraRpcClient _client;
     private readonly AresDevices.AresDevicesClient _devicesClient;
+    private IMessenger _messenger;
 
-    public CM3CameraSettingsListViewModel(AresDevices.AresDevicesClient devicesClient, FlirCM3CameraRpc.FlirCM3CameraRpcClient cameraClient)
+    public CM3CameraSettingsListViewModel(AresDevices.AresDevicesClient devicesClient, FlirCM3CameraRpc.FlirCM3CameraRpcClient cameraClient, IMessenger messenger)
     {
       _client = cameraClient;
       _devicesClient = devicesClient;
+      _messenger = messenger;
       UpdateConfigs();
     }
 
     private void UpdateViewModels(IEnumerable<DeviceConfig> deviceConfigs)
     {
-      var viewModels = deviceConfigs.Select(config => new CM3CameraSettingsViewModel(config, _client, _devicesClient, OnConfigRemoved));
+      var viewModels = deviceConfigs.Select(config => new CM3CameraSettingsViewModel(config, _client, _devicesClient, _messenger, OnConfigRemoved));
       SettingsViewModels = viewModels;
     }
 

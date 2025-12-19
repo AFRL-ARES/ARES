@@ -3,6 +3,7 @@ using Ares.Alicat.Mfc.Config;
 using Ares.Alicat.Mfc.Messaging;
 using Ares.Datamodel.Device;
 using Ares.Services.Device;
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.Logging;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
@@ -13,12 +14,14 @@ public class MfcSettingsListViewModel : ReactiveObject
 {
   private readonly AresDevices.AresDevicesClient _devicesClient;
   private readonly MfcRpc.MfcRpcClient _mfcClient;
+  private readonly IMessenger _messenger;
   private readonly ILoggerFactory _loggerFactory;
 
-  public MfcSettingsListViewModel(AresDevices.AresDevicesClient devicesClient, MfcRpc.MfcRpcClient mfcClient, ILoggerFactory loggerFactory)
+  public MfcSettingsListViewModel(AresDevices.AresDevicesClient devicesClient, MfcRpc.MfcRpcClient mfcClient, IMessenger messenger, ILoggerFactory loggerFactory)
   {
     _devicesClient = devicesClient;
     _mfcClient = mfcClient;
+    _messenger = messenger;
     _loggerFactory = loggerFactory;
     _ = UpdateConfigs();
   }
@@ -28,7 +31,7 @@ public class MfcSettingsListViewModel : ReactiveObject
 
   private void UpdateViewModels(IEnumerable<DeviceConfig> deviceConfigs)
   {
-    var viewModels = deviceConfigs.Select(config => new MfcSettingsViewModel(config, _mfcClient, _devicesClient, _loggerFactory, OnConfigRemoved)).ToArray();
+    var viewModels = deviceConfigs.Select(config => new MfcSettingsViewModel(config, _mfcClient, _devicesClient, _loggerFactory, _messenger, OnConfigRemoved)).ToArray();
     SettingsViewModels = viewModels;
   }
 

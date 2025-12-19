@@ -1,10 +1,12 @@
 ﻿using Ares.Datamodel.Device;
 using Ares.Services.Device;
+using CommunityToolkit.Mvvm.Messaging;
 using Grpc.Core;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using TicStepperController.Config;
 using TicStepperController.Messaging;
+using UI.Backend.Devices;
 
 namespace UI.Backend.ViewModels.Settings.Device.StepperController;
 
@@ -13,15 +15,18 @@ public class StepperControllerSettingsViewModel : ReactiveObject
   private readonly DeviceConfig _deviceConfig;
   private readonly AresDevices.AresDevicesClient _devicesClient;
   private readonly StepperControllerRpc.StepperControllerRpcClient _stepperControllerClient;
+  private readonly IMessenger _messenger;
 
   public StepperControllerSettingsViewModel(DeviceConfig deviceConfig,
     StepperControllerRpc.StepperControllerRpcClient stepperControllerClient,
     AresDevices.AresDevicesClient devicesClient,
+    IMessenger messenger,
     Func<Task> onRemoveCallback)
   {
     _deviceConfig = deviceConfig;
     StepperControllerConfig = deviceConfig.ConfigData.Unpack<StepperControllerConfig>();
     _stepperControllerClient = stepperControllerClient;
+    _messenger = messenger;
     _devicesClient = devicesClient;
     OnRemoveCallback = onRemoveCallback;
     EditViewModel = new StepperControllerConfigEditViewModel(_stepperControllerClient, _devicesClient, StepperControllerConfig);
@@ -65,6 +70,7 @@ public class StepperControllerSettingsViewModel : ReactiveObject
   public async Task Remove()
   {
     await _stepperControllerClient.RemoveStepperControllerAsync(new TicRequest { TicId = _deviceConfig.UniqueId });
+    _messenger.Send(new DeviceDeletedMessage(_deviceConfig.UniqueId));
     await OnRemoveCallback();
   }
 
@@ -87,7 +93,6 @@ public class StepperControllerSettingsViewModel : ReactiveObject
 
   [Reactive]
   public bool DeviceActive { get; private set; }
-
   public uint MaxAcceleration { get; private set; }
   public uint MaxDeceleration { get; private set; }
   public uint CurrentLimit { get; private set; }

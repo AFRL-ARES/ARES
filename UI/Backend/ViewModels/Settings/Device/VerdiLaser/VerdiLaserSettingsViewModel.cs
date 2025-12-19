@@ -1,7 +1,9 @@
 ﻿using Ares.Datamodel.Device;
 using Ares.Services.Device;
+using CommunityToolkit.Mvvm.Messaging;
 using Grpc.Core;
 using ReactiveUI;
+using UI.Backend.Devices;
 using VerdiV6.Config;
 using VerdiV6.Services;
 
@@ -12,16 +14,19 @@ namespace UI.Backend.ViewModels.Settings.Device.VerdiLaser
     private readonly VerdiV6Rpc.VerdiV6RpcClient _laserClient;
     private readonly DeviceConfig _deviceConfig;
     private readonly AresDevices.AresDevicesClient _devicesClient;
+    private readonly IMessenger _messenger;
 
     public VerdiLaserSettingsViewModel(DeviceConfig deviceConfig,
       VerdiV6Rpc.VerdiV6RpcClient laserClient,
       AresDevices.AresDevicesClient devicesClient,
+      IMessenger messenger,
       Func<Task> onRemoveCallback)
     {
       _deviceConfig = deviceConfig;
       _laserClient = laserClient;
       LaserConfig = deviceConfig.ConfigData.Unpack<VerdiConfig>();
       _devicesClient = devicesClient;
+      _messenger = messenger;
       OnRemoveCallback = onRemoveCallback;
       EditViewModel = new VerdiLaserConfigEditViewModel(_laserClient, _devicesClient, LaserConfig);
     }
@@ -63,6 +68,7 @@ namespace UI.Backend.ViewModels.Settings.Device.VerdiLaser
     public async Task Remove()
     {
       await _laserClient.RemoveLaserAsync(new DeviceRequest { DeviceId = _deviceConfig.UniqueId });
+      _messenger.Send(new DeviceDeletedMessage(_deviceConfig.UniqueId));
       await OnRemoveCallback();
     }
 

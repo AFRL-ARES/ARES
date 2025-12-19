@@ -5,6 +5,7 @@ using ReactiveUI;
 using LindbergFurnace;
 using TubeFurnace.Config;
 using TubeFurnace.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
 
 namespace UI.Backend.ViewModels.Settings.Device.TubeFurnace
 {
@@ -12,11 +13,13 @@ namespace UI.Backend.ViewModels.Settings.Device.TubeFurnace
   {
     private readonly TubeFurnaceRpc.TubeFurnaceRpcClient _tubeFurnaceClient;
     private readonly AresDevices.AresDevicesClient _devicesClient;
+    private readonly IMessenger _messenger;
 
-    public TubeFurnaceSettingsListViewModel(AresDevices.AresDevicesClient devicesClient, TubeFurnaceRpc.TubeFurnaceRpcClient tubeFurnaceClient)
+    public TubeFurnaceSettingsListViewModel(AresDevices.AresDevicesClient devicesClient, TubeFurnaceRpc.TubeFurnaceRpcClient tubeFurnaceClient, IMessenger messenger)
     {
       _devicesClient = devicesClient;
       _tubeFurnaceClient = tubeFurnaceClient;
+      _messenger = messenger;
       UpdateConfigs();
     }
 
@@ -25,7 +28,7 @@ namespace UI.Backend.ViewModels.Settings.Device.TubeFurnace
 
     private void UpdateViewModels(IEnumerable<DeviceConfig> deviceConfigs)
     {
-      var viewModels = deviceConfigs.Select(config => new TubeFurnaceSettingsViewModel(config, _tubeFurnaceClient, _devicesClient, OnConfigRemoved));
+      var viewModels = deviceConfigs.Select(config => new TubeFurnaceSettingsViewModel(config, _tubeFurnaceClient, _devicesClient, _messenger, OnConfigRemoved));
       SettingsViewModels = viewModels;
     }
 

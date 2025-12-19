@@ -1,5 +1,6 @@
 ﻿using UI.Backend.Devices;
 using UI.Backend.Factories;
+using UI.Backend.Repos;
 using UI.Services.Notification;
 
 namespace UI;
@@ -7,6 +8,7 @@ namespace UI;
 public class ServiceStarter : IHostedService
 {
   private readonly INotificationReceivingService _notificationReceivingService;
+  private readonly IDeviceControlViewModelRepo _deviceControlViewModelRepo;
   private readonly DeviceAdapterManager _deviceAdapterManager;
   private readonly MFCDeviceControlViewModelFactory _mfcViewModelFactory;
   private readonly ServoDeviceControlViewModelFactory _servoViewModelFactory;
@@ -20,6 +22,7 @@ public class ServiceStarter : IHostedService
   public ServiceStarter(
     INotificationReceivingService notificationReceivingService,
     IServiceProvider serviceProvider,
+    IDeviceControlViewModelRepo deviceControlViewModelRepo,
     DeviceAdapterManager deviceAdapterManager,
     MFCDeviceControlViewModelFactory mfcViewModelFactory, 
     ServoDeviceControlViewModelFactory servoViewModelFactory,
@@ -31,6 +34,7 @@ public class ServiceStarter : IHostedService
     CM3CamDeviceControlViewModelFactory cm3CameraViewModelFactory)
   {
     _notificationReceivingService = notificationReceivingService;
+    _deviceControlViewModelRepo = deviceControlViewModelRepo;
     _deviceAdapterManager = deviceAdapterManager;
     _mfcViewModelFactory = mfcViewModelFactory;
     _servoViewModelFactory = servoViewModelFactory;
@@ -45,6 +49,7 @@ public class ServiceStarter : IHostedService
   public Task StartAsync(CancellationToken cancellationToken)
   {
     _notificationReceivingService.StartNotificationStream();
+    _deviceControlViewModelRepo.Initialize();
     _deviceAdapterManager.Activate();
     _mfcViewModelFactory.Start(TimeSpan.FromSeconds(5));
     _servoViewModelFactory.Start(TimeSpan.FromSeconds(5));

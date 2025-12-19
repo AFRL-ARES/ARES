@@ -2,10 +2,12 @@
 using Ares.Alicat.Mfc.Messaging;
 using Ares.Datamodel.Device;
 using Ares.Services.Device;
+using CommunityToolkit.Mvvm.Messaging;
 using DynamicData;
 using Grpc.Core;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
+using UI.Backend.Devices;
 
 namespace UI.Backend.ViewModels.Settings.Device.Mfc;
 
@@ -14,18 +16,21 @@ public class MfcSettingsViewModel : ReactiveObject
   private readonly DeviceConfig _deviceConfig;
   private readonly AresDevices.AresDevicesClient _devicesClient;
   private readonly MfcRpc.MfcRpcClient _mfcClient;
+  private readonly IMessenger _messenger;
   private readonly ILogger<MfcSettingsViewModel> _logger;
 
   public MfcSettingsViewModel(DeviceConfig deviceConfig,
     MfcRpc.MfcRpcClient mfcClient,
     AresDevices.AresDevicesClient devicesClient,
     ILoggerFactory loggerFactory,
+    IMessenger messenger,
     Func<Task> onRemoveCallback)
   {
     _deviceConfig = deviceConfig;
     MfcConfig = deviceConfig.ConfigData.Unpack<MfcConfig>();
     _mfcClient = mfcClient;
     _devicesClient = devicesClient;
+    _messenger = messenger;
     OnRemoveCallback = onRemoveCallback;
     EditViewModel = new MfcConfigEditViewModel(_mfcClient, _devicesClient, MfcConfig, loggerFactory.CreateLogger<MfcConfigEditViewModel>());
     _logger = loggerFactory.CreateLogger<MfcSettingsViewModel>();
@@ -110,6 +115,7 @@ public class MfcSettingsViewModel : ReactiveObject
   public async Task Remove()
   {
     await _mfcClient.RemoveMfcAsync(new MfcRemoveRequest { MfcId = _deviceConfig.UniqueId });
+    _messenger.Send(new DeviceDeletedMessage(_deviceConfig.UniqueId));
     await OnRemoveCallback();
   }
 

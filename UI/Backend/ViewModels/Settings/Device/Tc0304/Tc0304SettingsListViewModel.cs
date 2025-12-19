@@ -5,6 +5,7 @@ using ReactiveUI.Fody.Helpers;
 using TC0304;
 using Tc0304.Config;
 using Tc0304.Services;
+using CommunityToolkit.Mvvm.Messaging;
 
 namespace UI.Backend.ViewModels.Settings.Device.Tc0304;
 
@@ -12,11 +13,13 @@ public class Tc0304SettingsListViewModel : ReactiveObject
 {
   private readonly TC0304Rpc.TC0304RpcClient _dataloggerClient;
   private readonly AresDevices.AresDevicesClient _devicesClient;
+  private readonly IMessenger _messenger;
 
-  public Tc0304SettingsListViewModel(AresDevices.AresDevicesClient devicesClient, TC0304Rpc.TC0304RpcClient dataloggerClient)
+  public Tc0304SettingsListViewModel(AresDevices.AresDevicesClient devicesClient, TC0304Rpc.TC0304RpcClient dataloggerClient, IMessenger messenger)
   {
     _devicesClient = devicesClient;
     _dataloggerClient = dataloggerClient;
+    _messenger = messenger;
     UpdateConfigs();
   }
 
@@ -25,7 +28,7 @@ public class Tc0304SettingsListViewModel : ReactiveObject
 
   private void UpdateViewModels(IEnumerable<DeviceConfig> deviceConfigs)
   {
-    var viewModels = deviceConfigs.Select(config => new Tc0304SettingsViewModel(config, _dataloggerClient, _devicesClient, OnConfigRemoved));
+    var viewModels = deviceConfigs.Select(config => new Tc0304SettingsViewModel(config, _dataloggerClient, _devicesClient, _messenger, OnConfigRemoved));
     SettingsViewModels = viewModels;
   }
 

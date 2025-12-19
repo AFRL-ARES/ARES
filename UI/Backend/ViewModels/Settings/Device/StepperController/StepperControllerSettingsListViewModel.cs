@@ -1,5 +1,6 @@
 ﻿using Ares.Datamodel.Device;
 using Ares.Services.Device;
+using CommunityToolkit.Mvvm.Messaging;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using TicStepperController;
@@ -12,11 +13,13 @@ public class StepperControllerSettingsListViewModel : ReactiveObject
 {
   private readonly StepperControllerRpc.StepperControllerRpcClient _stepperControllerClient;
   private readonly AresDevices.AresDevicesClient _devicesClient;
+  private readonly IMessenger _messenger;
 
-  public StepperControllerSettingsListViewModel(AresDevices.AresDevicesClient devicesClient, StepperControllerRpc.StepperControllerRpcClient stepperControllerClient)
+  public StepperControllerSettingsListViewModel(AresDevices.AresDevicesClient devicesClient, StepperControllerRpc.StepperControllerRpcClient stepperControllerClient, IMessenger messenger)
   {
     _devicesClient = devicesClient;
     _stepperControllerClient = stepperControllerClient;
+    _messenger = messenger;
     UpdateConfigs();
   }
 
@@ -25,7 +28,7 @@ public class StepperControllerSettingsListViewModel : ReactiveObject
 
   private void UpdateViewModels(IEnumerable<DeviceConfig> deviceConfigs)
   {
-    var viewModels = deviceConfigs.Select(config => new StepperControllerSettingsViewModel(config, _stepperControllerClient, _devicesClient, OnConfigRemoved));
+    var viewModels = deviceConfigs.Select(config => new StepperControllerSettingsViewModel(config, _stepperControllerClient, _devicesClient, _messenger, OnConfigRemoved));
     SettingsViewModels = viewModels;
   }
 

@@ -22,12 +22,6 @@ public class SyringePumpDeviceControlViewModelFactory : DeviceConnectorViewModel
     _deviceControlViewModelRepo = deviceControlViewModelRepo;
   }
 
-  public void Connect()
-  {
-    var connectRequest = new ConnectRequest { DeviceId = SelectedDeviceId, PortName = SelectedSerialPort };
-    var connectionResponse = _syringePumpClient.Connect(connectRequest);
-  }
-
   protected override void CreateAndAddViewModel(string deviceId, string deviceName)
     => _deviceControlViewModelRepo.Add(new SyringePumpUnitControlViewModel(deviceId, deviceName, _syringePumpClient));
 

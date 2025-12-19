@@ -79,13 +79,6 @@ public abstract class DeviceConnectorViewModelFactory<TDeviceUnitVm> : ReactiveO
     }
   }
 
-  public string[]? DiscoveredSerialPorts { get; set; }
-
-  public string? SelectedSerialPort { get; set; }
-
-  public string[]? DiscoveredDeviceIds { get; set; }
-
-  public string? SelectedDeviceId { get; set; }
   public ReadOnlyObservableCollection<TDeviceUnitVm> ConnectedDeviceUnitControlVms { get; }
 
 }

@@ -1,5 +1,6 @@
 ﻿using Ares.Datamodel.Device;
 using Ares.Services.Device;
+using CommunityToolkit.Mvvm.Messaging;
 using HerkulexDRS;
 using HerkulexDRS.Config;
 using HerkulexDRS.Services;
@@ -12,10 +13,13 @@ public class ServoSettingsListViewModel : ReactiveObject
 {
   private readonly HerkulexDRSRpc.HerkulexDRSRpcClient _servoClient;
   private readonly AresDevices.AresDevicesClient _devicesClient;
-  public ServoSettingsListViewModel(AresDevices.AresDevicesClient devicesClient, HerkulexDRSRpc.HerkulexDRSRpcClient servoClient)
+  private readonly IMessenger _messenger;
+
+  public ServoSettingsListViewModel(AresDevices.AresDevicesClient devicesClient, HerkulexDRSRpc.HerkulexDRSRpcClient servoClient, IMessenger messenger)
   {
     _servoClient = servoClient;
     _devicesClient = devicesClient;
+    _messenger = messenger;
     UpdateConfigs();
   }
 
@@ -24,7 +28,7 @@ public class ServoSettingsListViewModel : ReactiveObject
 
   private void UpdateViewModels(IEnumerable<DeviceConfig> deviceConfigs)
   {
-    var viewModels = deviceConfigs.Select(config => new ServoSettingsViewModel(config, _servoClient, _devicesClient, OnConfigRemoved));
+    var viewModels = deviceConfigs.Select(config => new ServoSettingsViewModel(config, _servoClient, _devicesClient, _messenger, OnConfigRemoved));
     SettingsViewModels = viewModels;
   }
 
