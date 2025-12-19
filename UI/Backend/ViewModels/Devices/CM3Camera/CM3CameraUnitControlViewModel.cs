@@ -1,5 +1,6 @@
 ﻿using FlirCM3.Services;
 using ReactiveUI.Fody.Helpers;
+using UI.Pages.Shared.Devices.CM3Camera;
 
 namespace UI.Backend.ViewModels.Devices.CM3Camera;
 
@@ -10,7 +11,8 @@ public class CM3CameraUnitControlViewModel : DeviceUnitControlViewModel
   public CM3CameraUnitControlViewModel(string deviceId, string deviceName, FlirCM3CameraRpc.FlirCM3CameraRpcClient client) : base(deviceId, deviceName)
   {
     _client = client;
-    ViewType = typeof(CM3CameraUnitControlViewModel);
+    ViewType = typeof(CM3CameraControlWidgetView);
+    DefaultWidth = 30;
   }
 
   public async Task SetExposureTime()

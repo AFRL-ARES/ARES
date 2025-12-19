@@ -206,5 +206,6 @@ internal static class ServiceCollectionExtensions
     services.AddSingleton<ValveControllerDeviceControlViewModelFactory>();
     services.AddSingleton<TubeFurnaceDeviceControlViewModelFactory>();
     services.AddSingleton<StepperControllerDeviceControlViewModelFactory>();
+    services.AddSingleton<CM3CamDeviceControlViewModelFactory>();
   }
 }

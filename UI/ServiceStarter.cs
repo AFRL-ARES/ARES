@@ -15,6 +15,7 @@ public class ServiceStarter : IHostedService
   private readonly Tc0304DeviceControlViewModelFactory _tc0304ViewModelFactory;
   private readonly TubeFurnaceDeviceControlViewModelFactory _tubeFurnaceViewModelFactory;
   private readonly ValveControllerDeviceControlViewModelFactory _valveControllerViewModelFactory;
+  private readonly CM3CamDeviceControlViewModelFactory _cm3CameraViewModelFactory;
 
   public ServiceStarter(
     INotificationReceivingService notificationReceivingService,
@@ -26,7 +27,8 @@ public class ServiceStarter : IHostedService
     SyringePumpDeviceControlViewModelFactory syringePumpViewModelFactory,
     Tc0304DeviceControlViewModelFactory tc0304ViewModelFactory,
     TubeFurnaceDeviceControlViewModelFactory tubeFurnaceViewModelFactory,
-    ValveControllerDeviceControlViewModelFactory valveControllerViewModelFactory)
+    ValveControllerDeviceControlViewModelFactory valveControllerViewModelFactory,
+    CM3CamDeviceControlViewModelFactory cm3CameraViewModelFactory)
   {
     _notificationReceivingService = notificationReceivingService;
     _deviceAdapterManager = deviceAdapterManager;
@@ -37,6 +39,7 @@ public class ServiceStarter : IHostedService
     _tc0304ViewModelFactory = tc0304ViewModelFactory;
     _tubeFurnaceViewModelFactory = tubeFurnaceViewModelFactory;
     _valveControllerViewModelFactory = valveControllerViewModelFactory;
+    _cm3CameraViewModelFactory = cm3CameraViewModelFactory;
   }
 
   public Task StartAsync(CancellationToken cancellationToken)
@@ -50,6 +53,7 @@ public class ServiceStarter : IHostedService
     _tc0304ViewModelFactory.Start(TimeSpan.FromSeconds(5));
     _tubeFurnaceViewModelFactory.Start(TimeSpan.FromSeconds(5));
     _valveControllerViewModelFactory.Start(TimeSpan.FromSeconds(5));
+    _cm3CameraViewModelFactory.Start(TimeSpan.FromSeconds(5));
     return Task.CompletedTask;
   }
 
