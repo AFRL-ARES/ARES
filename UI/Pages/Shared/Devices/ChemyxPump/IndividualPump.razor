@@ -1,114 +1,81 @@
 ﻿@using UI.Backend.ViewModels.Devices.ChemyxPump
 @using ChemyxPumpPlugin.Services
 @using System.Reactive.Linq
+@using Radzen
+@using Radzen.Blazor
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<IndividualPumpViewModel>
 @implements IAsyncDisposable
 
 @if(ViewModel == null)
 {
-  <p><em>Loading Pump...</em></p>
+  <div class="text-center p-2">
+    <RadzenProgressBar Circular="true" Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" Style="width: 30px; height: 30px;" />
+  </div>
 }
 else
 {
-  <div class="card shadow-sm mb-4">
-    <div class="card-header bg-light d-flex justify-content-between align-items-center">
-      <h5 class="m-0">💉 Pump #@ViewModel.PumpNumber</h5>
+  <RadzenCard Variant="Variant.Outlined" Style="max-width: 300px; padding: 0;" class="rz-shadow-2">
+    @* Header Section *@
+    <div class="rz-p-2 rz-background-color-base-600 d-flex justify-content-between align-items-center" style="border-bottom: 1px solid var(--rz-grid-cell-border);">
+      <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H6" class="rz-m-0 rz-font-weight-bold">
+        💉 Pump #@ViewModel.PumpNumber
+      </RadzenText>
+      <RadzenBadge BadgeStyle="@GetStatusBadgeStyle()" Text="@ViewModel.Status.ToString()" IsPill="true" />
     </div>
 
-    <div class="card-body">
-      <div class="row mb-4">
+    <div class="rz-p-3">
+      @* Progress Section *@
+      <div class="d-flex justify-content-between rz-color-info-darker rz-mb-1" style="font-size: 0.75rem;">
+        <span>@ViewModel.Dispensed.ToString("0.##") / @ViewModel.Volume.ToString("0.##")</span>
+        <span>@ViewModel.Elapsed.ToString(@"hh\:mm\:ss")</span>
+      </div>
+
+      <div class="progress rz-mb-4" style="height: 16px;">
+        <div class="progress-bar progress-bar-striped @(ViewModel.Status != ChemyxPumpPlugin.PumpStatus.Stopped ? "progress-bar-animated" : "") @GetProgressColor()"
+             role="progressbar"
+             style="width: @(CalculateProgress())%;"
+             aria-valuenow="@ViewModel.Dispensed"
+             aria-valuemin="0"
+             aria-valuemax="@ViewModel.Volume">
+          @CalculateProgress().ToString("F0")%
+        </div>
+      </div>
+
+      @* Control Buttons *@
+      <div class="d-flex rz-gap-1 rz-mb-4">
+        <RadzenButton Icon="play_arrow" Click="@ViewModel.StartPump" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.Small" class="rz-w-100" Tooltip="Start" />
+        <RadzenButton Icon="pause" Click="@ViewModel.PausePump" ButtonStyle="ButtonStyle.Warning" Size="ButtonSize.Small" class="rz-w-100" Tooltip="Pause" />
+        <RadzenButton Icon="stop" Click="@ViewModel.StopPump" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" class="rz-w-100" Tooltip="Stop" />
+        <RadzenButton Icon="refresh" Click="@(() => ViewModel.ForceUpdate())" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" class="rz-w-100" Tooltip="Refresh" />
+      </div>
+
+      @* Input Grid *@
+      <div class="row g-2">
         <div class="col-12">
-          <div class="d-flex justify-content-between mb-1">
-            <span><strong>Dispensed:</strong> @ViewModel.Dispensed.ToString("F2") / @ViewModel.Volume.ToString("F2")</span>
-            <span><strong>Elapsed:</strong> @ViewModel.Elapsed.ToString(@"hh\:mm\:ss")</span>
-          </div>
-
-          <div class="progress" style="height: 25px;">
-            <div class="progress-bar progress-bar-striped @(ViewModel.Status != ChemyxPumpPlugin.PumpStatus.Stopped ? "progress-bar-animated" : "") @GetProgressColor()"
-                 role="progressbar"
-                 style="width: @(CalculateProgress())%;"
-                 aria-valuenow="@ViewModel.Dispensed"
-                 aria-valuemin="0"
-                 aria-valuemax="@ViewModel.Volume">
-              @CalculateProgress().ToString("F0")%
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="d-flex justify-content-center gap-2 mb-4">
-        <button class="btn btn-success btn-lg" @onclick="ViewModel.StartPump">
-          <i class="oi oi-play-circle"></i> Start
-        </button>
-        <button class="btn btn-warning btn-lg" @onclick="ViewModel.PausePump">
-          <i class="oi oi-media-pause"></i> Pause
-        </button>
-        <button class="btn btn-danger btn-lg" @onclick="ViewModel.StopPump">
-          <i class="oi oi-media-stop"></i> Stop
-        </button>
-      </div>
-
-      <hr />
-
-      <div class="row g-3">
-        <div class="col-md-4">
-          <label class="form-label">Rate</label>
-          <div class="input-group">
-            <input type="number" step="0.01"
-                   class="form-control"
-                   value="@ViewModel.Rate"
-                   @onchange="@(e => UpdateRate(e.Value))" />
-            <span class="input-group-text">Rate</span>
+          <RadzenText TextStyle="TextStyle.Caption" class="rz-mb-1 rz-display-block">Rate & Unit</RadzenText>
+          <div class="d-flex rz-gap-1">
+            <RadzenNumeric TValue="double" Value="@ViewModel.Rate" Change="@(args => UpdateRate(args))" Step="0.01" Style="width: 40%;" />
+            <RadzenDropDown TValue="string" Data="@IndividualPumpViewModel.AvailableUnits" Value="@ViewModel.PumpUnit.ToString()" Change="@(args => UpdateUnit(args))" Style="width: 60%;" />
           </div>
         </div>
 
-        <div class="col-md-4">
-          <label class="form-label">Units</label>
-          <select class="form-select" value="@ViewModel.PumpUnit" @onchange="@(e => UpdateUnit(e.Value))">
-            @foreach(var unit in IndividualPumpViewModel.AvailableUnits)
-            {
-              <option value="@unit">@unit</option>
-            }
-          </select>
+        <div class="col-12">
+          <RadzenText TextStyle="TextStyle.Caption" class="rz-mb-1 rz-display-block">Target Volume</RadzenText>
+          <RadzenNumeric TValue="double" Value="@ViewModel.Volume" Change="@(args => UpdateVolume(args))" Step="0.1" Size="NumericSize.Small" class="w-100" />
         </div>
 
-        <div class="col-md-4">
-          <label class="form-label">Target Volume</label>
-          <div class="input-group">
-            <input type="number" step="0.1"
-                   class="form-control"
-                   value="@ViewModel.Volume"
-                   @onchange="@(e => UpdateVolume(e.Value))" />
-            <span class="input-group-text">Vol</span>
-          </div>
+        <div class="col-6">
+          <RadzenText TextStyle="TextStyle.Caption" class="rz-mb-1 rz-display-block">Delay</RadzenText>
+          <RadzenTextBox Value="@ViewModel.Delay.ToString()" Change="@(args => UpdateDelay(args))" Size="TextBoxSize.Small" class="w-100" />
         </div>
 
-        <div class="col-md-6">
-          <label class="form-label">Delay (HH:MM:SS)</label>
-          <input type="text"
-                 class="form-control"
-                 value="@ViewModel.Delay.ToString()"
-                 @onchange="@(e => UpdateDelay(e.Value))"
-                 placeholder="00:00:00" />
+        <div class="col-6">
+          <RadzenText TextStyle="TextStyle.Caption" class="rz-mb-1 rz-display-block">Time</RadzenText>
+          <RadzenTextBox Value="@ViewModel.Time.ToString()" Change="@(args => UpdateTime(args))" Size="TextBoxSize.Small" class="w-100" />
         </div>
-
-        <div class="col-md-6">
-          <label class="form-label">Target Time (HH:MM:SS)</label>
-          <input type="text"
-                 class="form-control"
-                 value="@ViewModel.Time.ToString()"
-                 @onchange="@(e => UpdateTime(e.Value))"
-                 placeholder="00:00:00" />
-        </div>
-      </div>
-
-      <div class="mt-3 text-end">
-        <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewModel.ForceUpdate()">
-          <i class="oi oi-reload"></i> Refresh Params
-        </button>
       </div>
     </div>
-  </div>
+  </RadzenCard>
 }
 
 @code {
@@ -116,8 +83,7 @@ else
   {
     if(ViewModel!.Volume <= 0) return 0;
     var percent = (ViewModel.Dispensed / ViewModel.Volume) * 100;
-    percent = Math.Round(percent, 1);
-    return Math.Clamp(percent, 0, 100);
+    return Math.Clamp(Math.Round(percent, 1), 0, 100);
   }
 
   // Dynamic color based on completion
@@ -130,54 +96,39 @@ else
     return "bg-secondary";
   }
 
-  // --- Interaction Handlers ---
-  // We use @onchange (trigger on blur/enter) rather than @bind-value:event="oninput"
-  // to avoid sending an RPC command to the hardware on every single keystroke.
-
-  private async Task UpdateRate(object? value)
+  private BadgeStyle GetStatusBadgeStyle()
   {
-    if(double.TryParse(value?.ToString(), out double result))
+    return ViewModel!.Status switch
     {
-      await ViewModel!.SetRate(result);
-    }
+      ChemyxPumpPlugin.PumpStatus.Running => BadgeStyle.Success,
+      ChemyxPumpPlugin.PumpStatus.Paused => BadgeStyle.Warning,
+      ChemyxPumpPlugin.PumpStatus.Stopped => BadgeStyle.Secondary,
+      _ => BadgeStyle.Light
+    };
   }
 
-  private async Task UpdateVolume(object? value)
-  {
-    if(double.TryParse(value?.ToString(), out double result))
-    {
-      await ViewModel!.SetVolume(result);
-    }
-  }
+  private async Task UpdateRate(double value) => await ViewModel!.SetRate(value);
+  private async Task UpdateVolume(double value) => await ViewModel!.SetVolume(value);
 
-  private async Task UpdateUnit(object? value)
+  private async Task UpdateUnit(object value)
   {
     if(Enum.TryParse<Units>(value?.ToString(), out var result))
-    {
       await ViewModel!.SetUnit(result);
-    }
   }
 
-  private async Task UpdateDelay(object? value)
+  private async Task UpdateDelay(string value)
   {
-    if(TimeSpan.TryParse(value?.ToString(), out var result))
-    {
+    if(TimeSpan.TryParse(value, out var result))
       await ViewModel!.SetDelay(result);
-    }
   }
 
-  private async Task UpdateTime(object? value)
+  private async Task UpdateTime(string value)
   {
-    if(TimeSpan.TryParse(value?.ToString(), out var result))
-    {
+    if(TimeSpan.TryParse(value, out var result))
       await ViewModel!.SetTime(result);
-    }
   }
 
-  public ValueTask DisposeAsync()
-  {
-    return ViewModel!.DisposeAsync();
-  }
+  public ValueTask DisposeAsync() => ViewModel!.DisposeAsync();
 
   protected override void OnInitialized()
   {
