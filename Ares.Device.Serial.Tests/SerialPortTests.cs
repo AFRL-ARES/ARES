@@ -434,7 +434,7 @@ public class TestConnectionWithDelay : AresSerialSimConnection
 
 public class TestCorruptableConnection : AresSerialSimConnection
 {
-  public TestCorruptableConnection(SerialPortConnectionInfo connectionInfo) : base(connectionInfo, "SIM1")
+  public TestCorruptableConnection(SerialPortConnectionInfo connectionInfo) : base(connectionInfo, "SIM1", new SerialConnectionOptions() { DataReceiveInterval = TimeSpan.FromMilliseconds(150)})
   {
   }
 
