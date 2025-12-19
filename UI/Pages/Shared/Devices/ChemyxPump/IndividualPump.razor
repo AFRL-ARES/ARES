@@ -59,7 +59,12 @@ else
           </div>
         </div>
 
-        <div class="col-12">
+        <div class="col-6">
+          <RadzenText TextStyle="TextStyle.Caption" class="rz-mb-1 rz-display-block">Syringe Diameter (mm)</RadzenText>
+          <RadzenNumeric TValue="double" Value="@ViewModel.Diameter" Change="@(args => UpdateDiameter(args))" Step="0.01" Size="NumericSize.Small" class="w-100" />
+        </div>
+
+        <div class="col-6">
           <RadzenText TextStyle="TextStyle.Caption" class="rz-mb-1 rz-display-block">Target Volume</RadzenText>
           <RadzenNumeric TValue="double" Value="@ViewModel.Volume" Change="@(args => UpdateVolume(args))" Step="0.1" Size="NumericSize.Small" class="w-100" />
         </div>
@@ -127,6 +132,8 @@ else
     if(TimeSpan.TryParse(value, out var result))
       await ViewModel!.SetTime(result);
   }
+
+  private async Task UpdateDiameter(double value) => await ViewModel!.SetDiameter(value);
 
   public ValueTask DisposeAsync() => ViewModel!.DisposeAsync();
 

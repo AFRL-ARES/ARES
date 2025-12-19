@@ -11,7 +11,7 @@ public class IndividualPumpViewModel : ReactiveObject, IAsyncDisposable
   private readonly int _pumpNumber;
   private readonly string _deviceId;
   private readonly ChemyxPumpRpc.ChemyxPumpRpcClient _client;
-  private CancellationTokenSource _cts;
+  private readonly CancellationTokenSource _cts;
   private Task _listeners = Task.CompletedTask;
 
 
@@ -95,6 +95,7 @@ public class IndividualPumpViewModel : ReactiveObject, IAsyncDisposable
     Delay = parameters.Delay.ToTimeSpan();
     Time = parameters.Time.ToTimeSpan();
     PumpUnit = parameters.Unit;
+    Diameter = parameters.Diameter;
   }
 
   public async Task StartPump()
@@ -144,6 +145,12 @@ public class IndividualPumpViewModel : ReactiveObject, IAsyncDisposable
     await RetrieveParams();
   }
 
+  public async Task SetDiameter(double diameter)
+  {
+    await _client.SetDiameterAsync(new SetDiameterRequest { DeviceId = _deviceId, PumpNumber = PumpNumber, Diameter = diameter }).ResponseAsync;
+    await RetrieveParams();
+  }
+
   [Reactive]
   public PumpStatus Status { get; set; } = PumpStatus.Stopped;
 
@@ -155,6 +162,9 @@ public class IndividualPumpViewModel : ReactiveObject, IAsyncDisposable
 
   [Reactive]
   public double Volume { get; private set; }
+
+  [Reactive]
+  public double Diameter { get; private set; }
 
   [Reactive]
   public double Dispensed { get; private set; }
