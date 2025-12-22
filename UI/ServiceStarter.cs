@@ -18,6 +18,7 @@ public class ServiceStarter : IHostedService
   private readonly TubeFurnaceDeviceControlViewModelFactory _tubeFurnaceViewModelFactory;
   private readonly ValveControllerDeviceControlViewModelFactory _valveControllerViewModelFactory;
   private readonly CM3CamDeviceControlViewModelFactory _cm3CameraViewModelFactory;
+  private readonly RemoteDeviceControlViewModelFactory _remoteDeviceViewModelFactory;
 
   public ServiceStarter(
     INotificationReceivingService notificationReceivingService,
@@ -31,7 +32,8 @@ public class ServiceStarter : IHostedService
     Tc0304DeviceControlViewModelFactory tc0304ViewModelFactory,
     TubeFurnaceDeviceControlViewModelFactory tubeFurnaceViewModelFactory,
     ValveControllerDeviceControlViewModelFactory valveControllerViewModelFactory,
-    CM3CamDeviceControlViewModelFactory cm3CameraViewModelFactory)
+    CM3CamDeviceControlViewModelFactory cm3CameraViewModelFactory,
+    RemoteDeviceControlViewModelFactory remoteDeviceViewModelFactory)
   {
     _notificationReceivingService = notificationReceivingService;
     _deviceControlViewModelRepo = deviceControlViewModelRepo;
@@ -44,9 +46,10 @@ public class ServiceStarter : IHostedService
     _tubeFurnaceViewModelFactory = tubeFurnaceViewModelFactory;
     _valveControllerViewModelFactory = valveControllerViewModelFactory;
     _cm3CameraViewModelFactory = cm3CameraViewModelFactory;
+    _remoteDeviceViewModelFactory = remoteDeviceViewModelFactory;
   }
 
-  public Task StartAsync(CancellationToken cancellationToken)
+  public async Task StartAsync(CancellationToken cancellationToken)
   {
     _notificationReceivingService.StartNotificationStream();
     _deviceControlViewModelRepo.Initialize();
@@ -59,11 +62,21 @@ public class ServiceStarter : IHostedService
     _tubeFurnaceViewModelFactory.Start(TimeSpan.FromSeconds(5));
     _valveControllerViewModelFactory.Start(TimeSpan.FromSeconds(5));
     _cm3CameraViewModelFactory.Start(TimeSpan.FromSeconds(5));
-    return Task.CompletedTask;
+    _remoteDeviceViewModelFactory.Start(TimeSpan.FromSeconds(5));
   }
 
-  public Task StopAsync(CancellationToken cancellationToken)
+  public async Task StopAsync(CancellationToken cancellationToken)
   {
-    throw new NotImplementedException();
+    _deviceControlViewModelRepo.Dispose();
+    await _deviceAdapterManager.DisposeAsync();
+    await _mfcViewModelFactory.DisposeAsync();
+    await _servoViewModelFactory.DisposeAsync();
+    await _stepperControllerViewModelFactory.DisposeAsync();
+    await _syringePumpViewModelFactory.DisposeAsync();
+    await _tc0304ViewModelFactory.DisposeAsync();
+    await _tubeFurnaceViewModelFactory.DisposeAsync();
+    await _valveControllerViewModelFactory.DisposeAsync();
+    await _cm3CameraViewModelFactory.DisposeAsync();
+    await _remoteDeviceViewModelFactory.DisposeAsync();
   }
 }
