@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
 using TicStepperController;
 
 namespace AresService.ConnectionManagement;
@@ -38,7 +39,7 @@ public class StepperControllerSerialConnectionManager : ISerialConnectionManager
     return hardwareConnection;
   }
 
-  public void RemoveConnection(string portName, bool simulated = false)
+  public async Task RemoveConnection(string portName, bool simulated = false)
   {
     var existingConnections = _connectionRepository.Where(port => port.Name == portName);
     if (simulated)
@@ -50,13 +51,13 @@ public class StepperControllerSerialConnectionManager : ISerialConnectionManager
     if (connection is null)
       return;
 
-    connection.Dispose();
+    await connection.DisposeAsync();
     _connectionRepository.Remove(connection);
   }
 
-  public void RemoveConnection(IStepperControllerConnection connection)
+  public async Task RemoveConnection(IStepperControllerConnection connection)
   {
-    connection.Dispose();
+    await connection.DisposeAsync();
     _connectionRepository.Remove(connection);
   }
 }

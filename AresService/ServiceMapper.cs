@@ -30,6 +30,7 @@ public static class ServiceMapper
     routeBuilder.MapGrpcService<ValveControllerService>();
     routeBuilder.MapGrpcService<VerdiV6LaserService>();
     routeBuilder.MapGrpcService<LaserChillerService>();
+    routeBuilder.MapGrpcService<ChemyxPumpService>();
     routeBuilder.MapGrpcService<RestDeviceService>();
     routeBuilder.MapGrpcService<RestSerialDeviceService>();
     routeBuilder.MapGrpcService<DeviceStateExportService>();

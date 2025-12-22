@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
 using LindbergFurnace;
 
 namespace AresService.ConnectionManagement
@@ -39,7 +40,7 @@ namespace AresService.ConnectionManagement
       return hardwareConnection;
     }
 
-    public void RemoveConnection(string portName, bool simulated = false)
+    public async Task RemoveConnection(string portName, bool simulated = false)
     {
       var existingConnections = _connectionRepository.Where(port => port.Name == portName);
       if (simulated)
@@ -51,13 +52,13 @@ namespace AresService.ConnectionManagement
       if (connection is null)
         return;
 
-      connection.Dispose();
+      await connection.DisposeAsync();
       _connectionRepository.Remove(connection);
     }
 
-    public void RemoveConnection(ITubeFurnaceConnection connection)
+    public async Task RemoveConnection(ITubeFurnaceConnection connection)
     {
-      connection.Dispose();
+      await connection.DisposeAsync();
       _connectionRepository.Remove(connection);
     }
   }

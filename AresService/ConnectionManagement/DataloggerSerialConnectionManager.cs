@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
 using TC0304;
 
 namespace AresService.ConnectionManagement;
@@ -40,13 +41,13 @@ public class DataloggerSerialConnectionManager : ISerialConnectionManager<IDatal
     return hardwareConnection;
   }
 
-  public void RemoveConnection(IDataloggerThermometerConnection connection)
+  public async Task RemoveConnection(IDataloggerThermometerConnection connection)
   {
-    connection.Dispose();
+    await connection.DisposeAsync();
     _connectionRepository.Remove(connection);
   }
 
-  public void RemoveConnection(string portName, bool simulated = false)
+  public async Task RemoveConnection(string portName, bool simulated = false)
   {
     var existingConnections = _connectionRepository.Where(port => port.Name == portName);
     if (simulated)
@@ -58,7 +59,7 @@ public class DataloggerSerialConnectionManager : ISerialConnectionManager<IDatal
     if (connection is null)
       return;
 
-    connection.Dispose();
+    await connection.DisposeAsync();
     _connectionRepository.Remove(connection);
   }
 }

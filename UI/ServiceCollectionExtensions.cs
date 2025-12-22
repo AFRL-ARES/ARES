@@ -10,6 +10,7 @@ using Ares.Messages.DeviceStates.TubeFurnace;
 using Ares.Services;
 using Ares.Services.Device;
 using Ares.SyringePump.Ne1000.Messaging;
+using ChemyxPumpPlugin.Services;
 using Chiller.Services;
 using FlirCM3.Services;
 using Grpc.Health.V1;
@@ -34,19 +35,11 @@ using UI.Backend.ViewModels.Automation;
 using UI.Backend.ViewModels.Automation.CampaignEdit;
 using UI.Backend.ViewModels.Automation.CampaignEdit.Factories;
 using UI.Backend.ViewModels.Automation.Planning;
-using UI.Backend.ViewModels.Devices.CM3Camera;
-using UI.Backend.ViewModels.Devices.HerkulexDRS;
-using UI.Backend.ViewModels.Devices.LaserChiller;
-using UI.Backend.ViewModels.Devices.Mfc;
-using UI.Backend.ViewModels.Devices.Remote;
-using UI.Backend.ViewModels.Devices.RestDevice;
-using UI.Backend.ViewModels.Devices.SerialRestDevice;
-using UI.Backend.ViewModels.Devices.ValveController;
-using UI.Backend.ViewModels.Devices.VerdiLaser;
 using UI.Backend.ViewModels.DeviceStateLogging;
 using UI.Backend.ViewModels.Factories;
 using UI.Backend.ViewModels.Misc;
 using UI.Backend.ViewModels.Settings.Analysis;
+using UI.Backend.ViewModels.Settings.Device.ChemyxPump;
 using UI.Backend.ViewModels.Settings.Device.CM3Camera;
 using UI.Backend.ViewModels.Settings.Device.LaserChiller;
 using UI.Backend.ViewModels.Settings.Device.Mfc;
@@ -62,10 +55,6 @@ using UI.Backend.ViewModels.Settings.Device.ValveController;
 using UI.Backend.ViewModels.Settings.Device.VerdiLaser;
 using UI.Backend.ViewModels.Settings.Logging;
 using UI.Backend.ViewModels.Settings.Planning;
-using UI.Backend.ViewModels.StepperController;
-using UI.Backend.ViewModels.SyringePump;
-using UI.Backend.ViewModels.Tc0304;
-using UI.Backend.ViewModels.TubeFurnace;
 using UI.Services.CampaignEdit;
 using UI.Services.Grpc;
 using UI.Services.ServerHealth;
@@ -118,7 +107,6 @@ internal static class ServiceCollectionExtensions
     services.AddSingleton(_ => clientManager.GetClient<AresNotificationRpc.AresNotificationRpcClient>());
 
     //Device Clients
-    //services.AddScoped(_ => clientManager.GetClient<AresDevices.AresDevicesClient>());
     services.AddSingleton(_ => clientManager.GetClient<AresDevices.AresDevicesClient>());
     services.AddSingleton(_ => clientManager.GetClient<MfcRpc.MfcRpcClient>());
     services.AddSingleton(_ => clientManager.GetClient<SyringePumpRpc.SyringePumpRpcClient>());
@@ -132,6 +120,7 @@ internal static class ServiceCollectionExtensions
     services.AddSingleton(_ => clientManager.GetClient<StepperControllerRpc.StepperControllerRpcClient>());
     services.AddSingleton(_ => clientManager.GetClient<RestDeviceRpc.RestDeviceRpcClient>());
     services.AddSingleton(_ => clientManager.GetClient<RestSerialDeviceRpc.RestSerialDeviceRpcClient>());
+    services.AddSingleton(_ => clientManager.GetClient<ChemyxPumpRpc.ChemyxPumpRpcClient>());
 
     //Device State Logging Clients
     services.AddScoped(_ => clientManager.GetClient<MfcStateLogging.MfcStateLoggingClient>());
@@ -177,6 +166,7 @@ internal static class ServiceCollectionExtensions
     services.AddTransient<RemoteDeviceSettingsListViewModel>();
     services.AddTransient<RestDeviceSettingsListViewModel>();
     services.AddTransient<SerialRestDeviceSettingsListViewModel>();
+    services.AddTransient<ChemyxPumpSettingsListViewModel>();
 
     //Other View Models
     services.AddTransient<DeviceStatesViewModel>();
@@ -208,5 +198,6 @@ internal static class ServiceCollectionExtensions
     services.AddSingleton<StepperControllerDeviceControlViewModelFactory>();
     services.AddSingleton<CM3CamDeviceControlViewModelFactory>();
     services.AddSingleton<RemoteDeviceControlViewModelFactory>();
+    services.AddSingleton<ChemyxPumpControlViewModelFactory>();
   }
 }

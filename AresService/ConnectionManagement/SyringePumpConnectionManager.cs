@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
 using SyringePumpNE1000;
 using SyringePumpNE1000.Simulation;
 
@@ -41,13 +42,13 @@ public class SyringePumpConnectionManager : ISerialConnectionManager<ISyringePum
     return hardwareConnection;
   }
 
-  public void RemoveConnection(ISyringePumpConnection connection)
+  public async Task RemoveConnection(ISyringePumpConnection connection)
   {
-    connection.Dispose();
+    await connection.DisposeAsync();
     _connectionRepository.Remove(connection);
   }
 
-  public void RemoveConnection(string portName, bool simulated = false)
+  public async Task RemoveConnection(string portName, bool simulated = false)
   {
     var existingConnections = _connectionRepository.Where(port => port.Name == portName);
     if(simulated)
@@ -59,7 +60,7 @@ public class SyringePumpConnectionManager : ISerialConnectionManager<ISyringePum
     if(connection is null)
       return;
 
-    connection.Dispose();
+    await connection.DisposeAsync();
     _connectionRepository.Remove(connection);
   }
 }

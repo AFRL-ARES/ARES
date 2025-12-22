@@ -1,0 +1,18 @@
+﻿@using ChemyxPumpPlugin.Services
+@using UI.Backend.ViewModels.Devices.ChemyxPump
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<ChemyxPumpUnitControlViewModel>
+@inject TooltipService tooltipService
+
+<RadzenRow>
+  <RadzenText TextStyle="TextStyle.H6">@ViewModel!.DeviceName</RadzenText>
+</RadzenRow>
+<RadzenStack Orientation="Orientation.Horizontal">
+  @foreach(var vm in ViewModel!.PumpViewModels)
+  {
+    <IndividualPump @key="vm.UniqueId" ViewModel="@vm" />
+  }
+</RadzenStack>
+
+@code {
+
+}

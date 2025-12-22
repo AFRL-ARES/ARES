@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
 using VerdiV6Laser;
 using VerdiV6Laser.Simulated;
 
@@ -40,13 +41,13 @@ public class VerdiLaserSerialConnectionManager : ISerialConnectionManager<ILaser
     return hardwareConnection;
   }
 
-  public void RemoveConnection(ILaserConnection connection)
+  public async Task RemoveConnection(ILaserConnection connection)
   {
-    connection.Dispose();
+    await connection.DisposeAsync();
     _connectionRepository.Remove(connection);
   }
 
-  public void RemoveConnection(string portName, bool simulated = false)
+  public async Task RemoveConnection(string portName, bool simulated = false)
   {
     var existingConnections = _connectionRepository.Where(port => port.Name == portName);
     if(simulated)
@@ -58,7 +59,7 @@ public class VerdiLaserSerialConnectionManager : ISerialConnectionManager<ILaser
     if(connection is null)
       return;
 
-    connection.Dispose();
+    await connection.DisposeAsync();
     _connectionRepository.Remove(connection);
   }
 }

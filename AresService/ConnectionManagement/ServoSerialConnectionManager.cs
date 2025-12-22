@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
 using HerkulexDRS;
 using HerkulexDRS.Simulation;
 
@@ -40,13 +41,13 @@ public class ServoSerialConnectionManager : ISerialConnectionManager<IServoConne
     return hardwareConnection;
   }
 
-  public void RemoveConnection(IServoConnection connection)
+  public async Task RemoveConnection(IServoConnection connection)
   {
-    connection.Dispose();
+    await connection.DisposeAsync();
     _connectionRepository.Remove(connection);
   }
 
-  public void RemoveConnection(string portName, bool simulated = false)
+  public async Task RemoveConnection(string portName, bool simulated = false)
   {
     var existingConnections = _connectionRepository.Where(port => port.Name == portName);
     if(simulated)
@@ -58,7 +59,7 @@ public class ServoSerialConnectionManager : ISerialConnectionManager<IServoConne
     if(connection is null)
       return;
 
-    connection.Dispose();
+    await connection.DisposeAsync();
     _connectionRepository.Remove(connection);
   }
 }

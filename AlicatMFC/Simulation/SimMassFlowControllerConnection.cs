@@ -13,9 +13,9 @@ public class SimMassFlowControllerConnection : AresSerialSimConnection, IMfcConn
   {
   }
 
-  public override void Dispose()
+  public override async ValueTask DisposeAsync()
   {
-    base.Dispose();
+    await base.DisposeAsync();
     foreach(var alicatSim in _alicatSims)
       alicatSim.Dispose();
   }

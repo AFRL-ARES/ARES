@@ -19,6 +19,7 @@ public class ServiceStarter : IHostedService
   private readonly ValveControllerDeviceControlViewModelFactory _valveControllerViewModelFactory;
   private readonly CM3CamDeviceControlViewModelFactory _cm3CameraViewModelFactory;
   private readonly RemoteDeviceControlViewModelFactory _remoteDeviceViewModelFactory;
+  private readonly ChemyxPumpControlViewModelFactory _chemyxPumpViewModelFactory;
 
   public ServiceStarter(
     INotificationReceivingService notificationReceivingService,
@@ -33,7 +34,8 @@ public class ServiceStarter : IHostedService
     TubeFurnaceDeviceControlViewModelFactory tubeFurnaceViewModelFactory,
     ValveControllerDeviceControlViewModelFactory valveControllerViewModelFactory,
     CM3CamDeviceControlViewModelFactory cm3CameraViewModelFactory,
-    RemoteDeviceControlViewModelFactory remoteDeviceViewModelFactory)
+    RemoteDeviceControlViewModelFactory remoteDeviceViewModelFactory,
+    ChemyxPumpControlViewModelFactory chemyxPumpViewModelFactory)
   {
     _notificationReceivingService = notificationReceivingService;
     _deviceControlViewModelRepo = deviceControlViewModelRepo;
@@ -47,6 +49,7 @@ public class ServiceStarter : IHostedService
     _valveControllerViewModelFactory = valveControllerViewModelFactory;
     _cm3CameraViewModelFactory = cm3CameraViewModelFactory;
     _remoteDeviceViewModelFactory = remoteDeviceViewModelFactory;
+    _chemyxPumpViewModelFactory = chemyxPumpViewModelFactory;
   }
 
   public async Task StartAsync(CancellationToken cancellationToken)
@@ -63,6 +66,7 @@ public class ServiceStarter : IHostedService
     _valveControllerViewModelFactory.Start(TimeSpan.FromSeconds(5));
     _cm3CameraViewModelFactory.Start(TimeSpan.FromSeconds(5));
     _remoteDeviceViewModelFactory.Start(TimeSpan.FromSeconds(5));
+    _chemyxPumpViewModelFactory.Start(TimeSpan.FromSeconds(5));
   }
 
   public async Task StopAsync(CancellationToken cancellationToken)
@@ -78,5 +82,6 @@ public class ServiceStarter : IHostedService
     await _valveControllerViewModelFactory.DisposeAsync();
     await _cm3CameraViewModelFactory.DisposeAsync();
     await _remoteDeviceViewModelFactory.DisposeAsync();
+    await _chemyxPumpViewModelFactory.DisposeAsync();
   }
 }

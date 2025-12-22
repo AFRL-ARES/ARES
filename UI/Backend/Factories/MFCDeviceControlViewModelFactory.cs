@@ -12,7 +12,7 @@ namespace UI.Backend.Factories;
 public class MFCDeviceControlViewModelFactory : DeviceConnectorViewModelFactory<MfcUnitControlViewModel>
 {
   private readonly MfcRpc.MfcRpcClient _mfcClient;
-  private IDeviceControlViewModelRepo _deviceControlViewModelRepo;
+  private readonly IDeviceControlViewModelRepo _deviceControlViewModelRepo;
 
   public MFCDeviceControlViewModelFactory(AresDevices.AresDevicesClient devicesClient,
     MfcRpc.MfcRpcClient mfcClient,
