@@ -1,6 +1,7 @@
 ﻿using Ares.Device.Serial.Commands;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
@@ -24,7 +25,7 @@ public abstract class AresSerialConnection : IAresSerialConnection
   private readonly ISubject<(ISerialCommandWithResponse, SerialResponse)> _responsePublisher = new Subject<(ISerialCommandWithResponse, SerialResponse)>();
   private readonly TimeSpan _sendBuffer;
   private readonly TimeSpan _receiveMargin;
-  private DateTimeOffset _lastReceived = DateTimeOffset.MinValue;
+  private Stopwatch _lastReceived = Stopwatch.StartNew();
   private readonly Task _bufferProcessor;
   private readonly TimeSpan _defaultTimeout;
   private readonly TimeSpan _staleBufferEntryDuration;
@@ -91,8 +92,11 @@ public abstract class AresSerialConnection : IAresSerialConnection
     }
     catch(TimeoutException)
     {
-      // wait until the device finishes sending data in case we've timed out
-      while(DateTimeOffset.UtcNow - _lastReceived < _receiveMargin)
+      await Task.Delay(_receiveMargin);
+
+      // Wait until the device finishes sending data
+      // We check how much time has passed since the last AddDataReceived call
+      while(_lastReceived.Elapsed < _receiveMargin)
       {
         await Task.Delay(_receiveMargin);
       }
@@ -318,7 +322,7 @@ public abstract class AresSerialConnection : IAresSerialConnection
     lock(_bufferLock)
     {
       _buffer.Add(new SerialBlock(dataReceived, DateTime.UtcNow));
-      _lastReceived = DateTimeOffset.UtcNow;
+      _lastReceived.Restart();
     }
 
     _bufferEvent.Set();
