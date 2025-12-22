@@ -232,18 +232,15 @@ internal class SerialPortTests
   {
     const string stringToTest1 = "<-This is a rather long string 1 that I'm going to send multiple times and try to parse it :)->";
     const string stringToTest2 = "<-This is a rather long string 2 that I'm going to send multiple times and try to parse it :)->";
-    const string stringToTest3 = "<-This is a rather long string 3 that I'm going to send multiple times and try to parse it :)->";
     var port = new TestCorruptableConnection(new SerialPortConnectionInfo(0, Parity.Even, 0, StopBits.None));
     try
     {
       var response1 = await port.Send(new SomeCommandWithResponse(stringToTest1), TimeSpan.FromMilliseconds(100), token);
-      var response2 = await port.Send(new SomeCommandWithResponse(stringToTest2), TimeSpan.FromMilliseconds(100), token);
     }
     catch(TimeoutException)
     {}
-    await Task.Delay(1000);
-    var response3 = await port.Send(new SomeCommandWithResponse(stringToTest3), TimeSpan.FromSeconds(10), token);
-    Assert.That(response3.Response, Is.EqualTo(stringToTest3));
+    var response2 = await port.Send(new SomeCommandWithResponse(stringToTest2), TimeSpan.FromSeconds(10), token);
+    Assert.That(response2.Response, Is.EqualTo(stringToTest2));
   }
 
   [Test]
