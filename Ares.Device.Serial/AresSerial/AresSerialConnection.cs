@@ -279,6 +279,7 @@ public abstract class AresSerialConnection : IAresSerialConnection
     }
     var totalBytesRemoved = 0;
     lock(_bufferLock)
+    {
       lock(_singleResponseQueue)
         lock(_multiResponseQueue)
         {
@@ -307,9 +308,11 @@ public abstract class AresSerialConnection : IAresSerialConnection
             }
           }
         }
-
-    if(totalBytesRemoved == 0)
-      _bufferEvent.Reset();
+      if(totalBytesRemoved == 0)
+      {
+        _bufferEvent.Reset();
+      }
+    }
   }
 
   private void RemoveStaleBufferEntries()
@@ -323,9 +326,8 @@ public abstract class AresSerialConnection : IAresSerialConnection
     {
       _buffer.Add(new SerialBlock(dataReceived, DateTime.UtcNow));
       _lastReceived.Restart();
+      _bufferEvent.Set();
     }
-
-    _bufferEvent.Set();
   }
 
   protected abstract void Open(string portName);

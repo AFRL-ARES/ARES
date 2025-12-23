@@ -87,6 +87,9 @@ public class IndividualPumpViewModel : ReactiveObject, IAsyncDisposable
     };
 
     var parametersResponse = await _client.GetViewParametersAsync(paramsRequest, cancellationToken: token ?? CancellationToken.None);
+    if(parametersResponse.Params.Count == 0)
+      return;
+
     var parameters = parametersResponse.Params[_pumpNumber - 1];
 
     Rate = parameters.Rate;
