@@ -1,10 +1,11 @@
 ﻿using Ares.SyringePump.Ne1000.Messaging;
 using DynamicData.Binding;
 using ReactiveUI.Fody.Helpers;
+using UI.Pages.Shared.Devices.SyringePump;
 
 namespace UI.Backend.ViewModels.SyringePump;
 
-public class SyringePumpUnitControlViewModel : SerialDeviceUnitViewModel, IAsyncDisposable
+public class SyringePumpUnitControlViewModel : DeviceUnitControlViewModel, IAsyncDisposable
 {
   private SyringePumpRpc.SyringePumpRpcClient _syringePumpClient;
   private DeviceRequest _deviceRequest;
@@ -16,6 +17,8 @@ public class SyringePumpUnitControlViewModel : SerialDeviceUnitViewModel, IAsync
     _deviceRequest = new DeviceRequest { DeviceId = DeviceId };
     Initialize();
     this.WhenValueChanged(vm => vm.CurrentState).Subscribe(_ => UpdateStatus());
+    ViewType = typeof(SyringePumpUnitControl);
+    DefaultWidth = 35;
   }
 
   private void UpdateStatus()

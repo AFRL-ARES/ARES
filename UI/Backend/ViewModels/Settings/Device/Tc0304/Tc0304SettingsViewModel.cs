@@ -1,9 +1,11 @@
 ﻿using Ares.Datamodel.Device;
 using Ares.Services.Device;
+using CommunityToolkit.Mvvm.Messaging;
 using Grpc.Core;
 using ReactiveUI;
 using Tc0304.Config;
 using Tc0304.Services;
+using UI.Backend.Devices;
 
 namespace UI.Backend.ViewModels.Settings.Device.Tc0304;
 
@@ -12,16 +14,19 @@ public class Tc0304SettingsViewModel : ReactiveObject
   private readonly TC0304Rpc.TC0304RpcClient _dataloggerClient;
   private readonly DeviceConfig _deviceConfig;
   private readonly AresDevices.AresDevicesClient _devicesClient;
+  private readonly IMessenger _messenger;
 
   public Tc0304SettingsViewModel(DeviceConfig deviceConfig,
     TC0304Rpc.TC0304RpcClient dataloggerClient,
     AresDevices.AresDevicesClient devicesClient,
+    IMessenger messenger,
     Func<Task> onRemoveCallback)
   {
     _deviceConfig = deviceConfig;
     DataloggerConfig = deviceConfig.ConfigData.Unpack<Tc0304Config>();
     _dataloggerClient = dataloggerClient;
     _devicesClient = devicesClient;
+    _messenger = messenger;
     OnRemoveCallback = onRemoveCallback;
     EditViewModel = new Tc0304ConfigEditViewModel(_dataloggerClient, _devicesClient, DataloggerConfig);
   }
@@ -67,6 +72,7 @@ public class Tc0304SettingsViewModel : ReactiveObject
   public async Task Remove()
   {
     await _dataloggerClient.RemoveTc0304Async(new Tc0304Request { Tc0304Id = _deviceConfig.UniqueId });
+    _messenger.Send(new DeviceDeletedMessage(_deviceConfig.UniqueId));
     await OnRemoveCallback();
   }
 }

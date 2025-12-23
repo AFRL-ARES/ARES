@@ -3,13 +3,14 @@ using ReactiveUI.Fody.Helpers;
 
 namespace UI.Backend.ViewModels.Devices.LaserChiller;
 
-public class LaserChillerUnitControlViewModel : SerialDeviceUnitViewModel
+public class LaserChillerUnitControlViewModel : DeviceUnitControlViewModel
 {
   private readonly ChillerRpc.ChillerRpcClient _client;
 
   public LaserChillerUnitControlViewModel(string deviceId, string deviceName, ChillerRpc.ChillerRpcClient client) : base(deviceId, deviceName)
   {
     _client = client;
+    ViewType = typeof(LaserChillerUnitControlViewModel);
   }
 
   public async Task SetChillerTemperature()

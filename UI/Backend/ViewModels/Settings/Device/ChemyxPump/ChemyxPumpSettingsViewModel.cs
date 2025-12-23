@@ -2,8 +2,10 @@
 using Ares.Services.Device;
 using ChemyxPumpPlugin.Config;
 using ChemyxPumpPlugin.Services;
+using CommunityToolkit.Mvvm.Messaging;
 using Grpc.Core;
 using ReactiveUI;
+using UI.Backend.Devices;
 
 namespace UI.Backend.ViewModels.Settings.Device.ChemyxPump;
 
@@ -12,15 +14,17 @@ public class ChemyxPumpSettingsViewModel : ReactiveObject
   private readonly ChemyxPumpRpc.ChemyxPumpRpcClient _pumpClient;
   private readonly DeviceConfig _deviceConfig;
   private readonly AresDevices.AresDevicesClient _devicesClient;
-
+  private readonly IMessenger _deviceDeletionMessenger;
   public ChemyxPumpSettingsViewModel(DeviceConfig deviceConfig,
     ChemyxPumpRpc.ChemyxPumpRpcClient pumpClient,
     AresDevices.AresDevicesClient devicesClient,
+    IMessenger deviceDeletionMessenger,
     Func<Task> onRemoveCallback)
   {
     _deviceConfig = deviceConfig;
     _pumpClient = pumpClient;
     _devicesClient = devicesClient;
+    _deviceDeletionMessenger = deviceDeletionMessenger;
     PumpConfig = deviceConfig.ConfigData.Unpack<ChemyxPumpConfig>();
     OnRemoveCallback = onRemoveCallback;
     EditViewModel = new ChemyxPumpConfigEditViewModel(_pumpClient, _devicesClient, PumpConfig);
@@ -58,6 +62,7 @@ public class ChemyxPumpSettingsViewModel : ReactiveObject
   public async Task Remove()
   {
     await _pumpClient.RemoveChemyxPumpAsync(new PumpRequest { DeviceId = _deviceConfig.UniqueId });
+    _deviceDeletionMessenger.Send(new DeviceDeletedMessage(_deviceConfig.UniqueId));
     await OnRemoveCallback();
   }
 }

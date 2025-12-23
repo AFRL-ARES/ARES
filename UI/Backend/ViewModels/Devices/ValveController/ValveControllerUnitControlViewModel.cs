@@ -1,14 +1,16 @@
-﻿using ValveController.Services;
+﻿using UI.Pages.Shared.Devices.ValveController;
+using ValveController.Services;
 
 namespace UI.Backend.ViewModels.Devices.ValveController;
 
-public class ValveControllerUnitControlViewModel : SerialDeviceUnitViewModel
+public class ValveControllerUnitControlViewModel : DeviceUnitControlViewModel
 {
   private readonly ValveControllerRpc.ValveControllerRpcClient _client;
 
   public ValveControllerUnitControlViewModel(string deviceId, string deviceName, ValveControllerRpc.ValveControllerRpcClient client) : base(deviceId, deviceName)
   {
     _client = client;
+    ViewType = typeof(ValveControllerWidgetView);
   }
 
   public void EngageRelayOne()

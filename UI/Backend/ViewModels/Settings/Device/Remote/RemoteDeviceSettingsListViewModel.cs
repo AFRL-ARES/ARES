@@ -2,6 +2,7 @@
 using Ares.Datamodel.Device;
 using Ares.Services;
 using Ares.Services.Device;
+using CommunityToolkit.Mvvm.Messaging;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
@@ -13,10 +14,13 @@ public class RemoteDeviceSettingsListViewModel : ReactiveObject
 {
   private readonly AresDevices.AresDevicesClient _devicesClient;
   private readonly INotificationReceivingService _notificationService;
-  public RemoteDeviceSettingsListViewModel(AresDevices.AresDevicesClient devicesClient, INotificationReceivingService notificationService)
+  private readonly IMessenger _deviceDeletionMessenger;
+
+  public RemoteDeviceSettingsListViewModel(AresDevices.AresDevicesClient devicesClient, INotificationReceivingService notificationService, IMessenger deviceDeletionMessenger)
   {
     _devicesClient = devicesClient;
     _notificationService = notificationService;
+    _deviceDeletionMessenger = deviceDeletionMessenger;
     SettingsViewModels = [];
     _ = UpdateAvailableDevices();
   }
@@ -45,7 +49,7 @@ public class RemoteDeviceSettingsListViewModel : ReactiveObject
   private void UpdateViewModels(IEnumerable<DeviceInfo> remoteDevices)
   {
     SettingsViewModels.Clear();
-    var viewModels = remoteDevices.Select(info => new RemoteDeviceSettingsViewModel(_devicesClient, _notificationService, info, OnDeviceRemoved)).ToArray();
+    var viewModels = remoteDevices.Select(info => new RemoteDeviceSettingsViewModel(_devicesClient, _notificationService, info, _deviceDeletionMessenger, OnDeviceRemoved)).ToArray();
     foreach (var vm in viewModels)
     {
       SettingsViewModels.Add(vm);

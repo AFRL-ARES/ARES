@@ -4,9 +4,11 @@ using Ares.Datamodel;
 using Ares.Datamodel.Device;
 using Ares.Services;
 using Ares.Services.Device;
+using CommunityToolkit.Mvvm.Messaging;
 using Grpc.Core;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
+using UI.Backend.Devices;
 using UI.Services.Notification;
 
 namespace UI.Backend.ViewModels.Settings.Device.Remote;
@@ -17,16 +19,19 @@ public class RemoteDeviceSettingsViewModel : ReactiveObject
   private readonly INotificationReceivingService _notificationService;
   private readonly DeviceInfo _deviceInfo;
   private readonly ObservableAsPropertyHelper<bool> _isBusy;
+  private readonly IMessenger _deviceDeletionMessenger;
 
   public RemoteDeviceSettingsViewModel(
       AresDevices.AresDevicesClient devicesService,
       INotificationReceivingService notificationService,
       DeviceInfo deviceInfo,
+      IMessenger deviceDeletionMessenger,
       Func<Task> onRemoveCallback)
   {
     _devicesClient = devicesService;
     _notificationService = notificationService;
     _deviceInfo = deviceInfo;
+    _deviceDeletionMessenger = deviceDeletionMessenger;
 
     Name = _deviceInfo.Name;
     Address = _deviceInfo.Url;
@@ -128,6 +133,7 @@ public class RemoteDeviceSettingsViewModel : ReactiveObject
   private async Task RemoveAsync(Func<Task> onRemoveCallback)
   {
     var request = new RemoveRemoteDeviceRequest() { DeviceId = _deviceInfo.UniqueId };
+    _deviceDeletionMessenger.Send(new DeviceDeletedMessage(_deviceInfo.UniqueId));
     await _devicesClient.RemoveRemoteDeviceAsync(request);
     await onRemoveCallback();
   }

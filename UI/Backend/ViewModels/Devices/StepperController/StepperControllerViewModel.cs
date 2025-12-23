@@ -1,9 +1,10 @@
 ﻿using ReactiveUI.Fody.Helpers;
 using TicStepperController.Messaging;
+using UI.Pages.Shared.Devices.StepperController;
 
 namespace UI.Backend.ViewModels.StepperController;
 
-public class StepperControllerViewModel : SerialDeviceUnitViewModel, IAsyncDisposable
+public class StepperControllerViewModel : DeviceUnitControlViewModel, IAsyncDisposable
 {
   private readonly StepperControllerRpc.StepperControllerRpcClient _client;
   private readonly CancellationTokenSource _stateUpdateTokenSource = new();
@@ -13,6 +14,8 @@ public class StepperControllerViewModel : SerialDeviceUnitViewModel, IAsyncDispo
   {
     _client = client;
     StartStateUpdater();
+    ViewType = typeof(StepperControllerWidgetView);
+    DefaultWidth = 18;
   }
 
   #region Properties

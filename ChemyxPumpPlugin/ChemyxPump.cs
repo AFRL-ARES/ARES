@@ -222,24 +222,21 @@ public class ChemyxPump : SerialDevice<IChemyxPumpConnection>, IChemyxPump
             limitParameters.Add(limit);
           }
 
-          if(DualPump)
-          {
-            status = await PollStatus(2);
-            if(status.HasValue)
-              pumpStatuses.Add(status.Value);
+          status = await PollStatus(2);
+          if(status.HasValue)
+            pumpStatuses.Add(status.Value);
 
-            dispensed = await PollDispensedVolume(2);
-            if(dispensed.HasValue)
-              dispensedVolumes.Add(dispensed.Value);
+          dispensed = await PollDispensedVolume(2);
+          if(dispensed.HasValue)
+            dispensedVolumes.Add(dispensed.Value);
 
-            elapsed = await PollElapsedTime(2);
-            if(elapsed.HasValue)
-              elapsedTimes.Add(elapsed.Value);
+          elapsed = await PollElapsedTime(2);
+          if(elapsed.HasValue)
+            elapsedTimes.Add(elapsed.Value);
 
-            limit = await PollLimitParameter(2);
-            if(limit is not null)
-              limitParameters.Add(limit);
-          }
+          limit = await PollLimitParameter(2);
+          if(limit is not null)
+            limitParameters.Add(limit);
 
           PumpStatuses = pumpStatuses.Any() ? pumpStatuses.ToArray() : null;
           DispensedVolumes = dispensedVolumes.Any() ? dispensedVolumes.ToArray() : null;
@@ -267,18 +264,27 @@ public class ChemyxPump : SerialDevice<IChemyxPumpConnection>, IChemyxPump
 
   public PumpStatus? GetStatus(int? pump = null)
   {
+    if(PumpStatuses is null || PumpStatuses.Length == 0 || pump > PumpStatuses.Count())
+      return PumpStatus.Stopped;
+
     pump -= 1;
     return PumpStatuses?[pump ?? 0];
   }
 
   public double? GetDispensedVolume(int? pump = null)
   {
+    if(DispensedVolumes is null || DispensedVolumes.Length == 0 || pump > DispensedVolumes.Count())
+      return 0;
+
     pump -= 1;
     return DispensedVolumes?[pump ?? 0];
   }
 
   public TimeSpan? GetElapsedTime(int? pump = null)
   {
+    if(ElapsedTimes is null || ElapsedTimes.Length == 0 || pump > ElapsedTimes.Count())
+      return TimeSpan.FromSeconds(0);
+
     pump -= 1;
     return ElapsedTimes?[pump ?? 0];
   }

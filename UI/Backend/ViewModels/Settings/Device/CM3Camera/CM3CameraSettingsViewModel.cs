@@ -1,9 +1,11 @@
 ﻿using Ares.Datamodel.Device;
 using Ares.Services.Device;
+using CommunityToolkit.Mvvm.Messaging;
 using FlirCM3.Config;
 using FlirCM3.Services;
 using Grpc.Core;
 using ReactiveUI;
+using UI.Backend.Devices;
 
 namespace UI.Backend.ViewModels.Settings.Device.CM3Camera;
 
@@ -12,15 +14,18 @@ public class CM3CameraSettingsViewModel : ReactiveObject
   private readonly FlirCM3CameraRpc.FlirCM3CameraRpcClient _cameraClient;
   private readonly DeviceConfig _deviceConfig;
   private readonly AresDevices.AresDevicesClient _devicesClient;
+  private readonly IMessenger _deviceDeletionMessenger;
 
   public CM3CameraSettingsViewModel(DeviceConfig deviceConfig,
     FlirCM3CameraRpc.FlirCM3CameraRpcClient cameraClient,
     AresDevices.AresDevicesClient devicesClient,
+    IMessenger deviceDeletionMessenger,
     Func<Task> onRemoveCallBack)
   {
     _cameraClient = cameraClient;
     _deviceConfig = deviceConfig;
     _devicesClient = devicesClient;
+    _deviceDeletionMessenger = deviceDeletionMessenger;
     FlirCM3Config = deviceConfig.ConfigData.Unpack<FlirCM3Config>();
     OnRemoveCallback = onRemoveCallBack;
     EditViewModel = new FlirCM3ConfigEditViewModel(_cameraClient, _devicesClient, FlirCM3Config);
@@ -60,8 +65,9 @@ public class CM3CameraSettingsViewModel : ReactiveObject
   public async Task Remove()
   {
     await _cameraClient.RemoveCM3CameraAsync(new RemoveCameraRequest { DeviceId = _deviceConfig.UniqueId });
+    _deviceDeletionMessenger.Send(new DeviceDeletedMessage(_deviceConfig.UniqueId));
+    await OnRemoveCallback();
   }
-
 
   public FlirCM3Config FlirCM3Config { get; }
 

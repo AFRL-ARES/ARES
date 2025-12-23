@@ -1,10 +1,12 @@
 ﻿using Ares.Datamodel.Device;
 using Ares.Services.Device;
+using CommunityToolkit.Mvvm.Messaging;
 using Grpc.Core;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using TubeFurnace.Config;
 using TubeFurnace.Messaging;
+using UI.Backend.Devices;
 
 namespace UI.Backend.ViewModels.Settings.Device.TubeFurnace
 {
@@ -13,16 +15,19 @@ namespace UI.Backend.ViewModels.Settings.Device.TubeFurnace
     private readonly DeviceConfig _deviceConfig;
     private readonly AresDevices.AresDevicesClient _devicesClient;
     private readonly TubeFurnaceRpc.TubeFurnaceRpcClient _tubeFurnaceClient;
+    private readonly IMessenger _messenger;
 
     public TubeFurnaceSettingsViewModel(DeviceConfig deviceConfig,
       TubeFurnaceRpc.TubeFurnaceRpcClient tubeFurnaceClient,
       AresDevices.AresDevicesClient devicesClient,
+      IMessenger messenger,
       Func<Task> onRemoveCallback)
     {
       _deviceConfig = deviceConfig;
       TubeFurnaceConfig = deviceConfig.ConfigData.Unpack<TubeFurnaceConfig>();
       _tubeFurnaceClient = tubeFurnaceClient;
       _devicesClient = devicesClient;
+      _messenger = messenger;
       OnRemoveCallback = onRemoveCallback;
       EditViewModel = new TubeFurnaceConfigEditViewModel(_tubeFurnaceClient, _devicesClient, TubeFurnaceConfig);
     }
@@ -65,6 +70,7 @@ namespace UI.Backend.ViewModels.Settings.Device.TubeFurnace
     public async Task Remove()
     {
       await _tubeFurnaceClient.RemoveTubeFurnaceAsync(new TubeFurnaceRequest { TubeFurnaceId = _deviceConfig.UniqueId });
+      _messenger.Send(new DeviceDeletedMessage(_deviceConfig.UniqueId));
       await OnRemoveCallback();
     }
 

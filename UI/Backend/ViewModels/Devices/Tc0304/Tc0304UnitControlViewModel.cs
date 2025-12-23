@@ -1,10 +1,11 @@
 ﻿using ReactiveUI.Fody.Helpers;
 using Tc0304.Services;
+using UI.Pages.Shared.Devices.DataLogger;
 using UnitsNet;
 
 namespace UI.Backend.ViewModels.Tc0304;
 
-public class Tc0304UnitControlViewModel : SerialDeviceUnitViewModel, IAsyncDisposable
+public class Tc0304UnitControlViewModel : DeviceUnitControlViewModel, IAsyncDisposable
 {
   private readonly TC0304Rpc.TC0304RpcClient _client;
   private readonly CancellationTokenSource _stateUpdateTokenSource = new();
@@ -14,6 +15,9 @@ public class Tc0304UnitControlViewModel : SerialDeviceUnitViewModel, IAsyncDispo
   {
     _client = client;
     StartStateUpdater();
+
+    ViewType = typeof(Tc0304ControlWidgetView);
+    DefaultWidth = 22;
   }
 
   [Reactive]

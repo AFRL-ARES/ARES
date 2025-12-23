@@ -1,8 +1,10 @@
 ﻿using Ares.Datamodel.Device;
 using Ares.Services.Device;
 using Ares.SyringePump.Ne1000.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
 using Grpc.Core;
 using ReactiveUI;
+using UI.Backend.Devices;
 
 namespace UI.Backend.ViewModels.Settings.Device.SyringePump;
 
@@ -11,16 +13,19 @@ public class SyringePumpSettingsViewModel : ReactiveObject
   private readonly DeviceConfig _deviceConfig;
   private readonly AresDevices.AresDevicesClient _devicesClient;
   private readonly SyringePumpRpc.SyringePumpRpcClient _syringePumpClient;
+  private readonly IMessenger _messenger;
 
   public SyringePumpSettingsViewModel(DeviceConfig deviceConfig,
     SyringePumpRpc.SyringePumpRpcClient syringePumpClient,
     AresDevices.AresDevicesClient devicesClient,
+    IMessenger messenger,
     Func<Task> onRemoveCallback)
   {
     _deviceConfig = deviceConfig;
     SyringePumpConfig = deviceConfig.ConfigData.Unpack<SyringePumpConfig>();
     _syringePumpClient = syringePumpClient;
     _devicesClient = devicesClient;
+    _messenger = messenger;
     OnRemoveCallback = onRemoveCallback;
     EditViewModel = new SyringePumpConfigEditViewModel(_syringePumpClient, _devicesClient, SyringePumpConfig);
   }
@@ -61,6 +66,7 @@ public class SyringePumpSettingsViewModel : ReactiveObject
   public async Task Remove()
   {
     await _syringePumpClient.RemoveSyringePumpAsync(new SyringePumpRemoveRequest { DeviceId = _deviceConfig.UniqueId });
+    _messenger.Send(new DeviceDeletedMessage(_deviceConfig.UniqueId));
     await OnRemoveCallback();
   }
 }

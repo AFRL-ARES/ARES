@@ -1,7 +1,9 @@
 ﻿using Ares.Datamodel.Device;
 using Ares.Services.Device;
+using CommunityToolkit.Mvvm.Messaging;
 using Grpc.Core;
 using ReactiveUI;
+using UI.Backend.Devices;
 using ValveController.Config;
 using ValveController.Services;
 
@@ -12,16 +14,19 @@ public class ValveControllerSettingsViewModel : ReactiveObject
   private readonly ValveControllerRpc.ValveControllerRpcClient _valveControllerClient;
   private readonly DeviceConfig _deviceConfig;
   private readonly AresDevices.AresDevicesClient _devicesClient;
+  private readonly IMessenger _messenger;
 
   public ValveControllerSettingsViewModel(DeviceConfig deviceConfig,
     ValveControllerRpc.ValveControllerRpcClient valveControllerClient,
     AresDevices.AresDevicesClient devicesClient,
+    IMessenger messenger,
     Func<Task> onRemoveCallback)
   {
     _valveControllerClient = valveControllerClient;
     _deviceConfig = deviceConfig;
     ValveControllerConfig = deviceConfig.ConfigData.Unpack<ValveControllerConfig>();
     _devicesClient = devicesClient;
+    _messenger = messenger;
     OnRemoveCallback = onRemoveCallback;
     EditViewModel = new ValveControllerConfigEditViewModel(_valveControllerClient, _devicesClient, ValveControllerConfig);
   }
@@ -61,6 +66,7 @@ public class ValveControllerSettingsViewModel : ReactiveObject
   public async Task Remove()
   {
     await _valveControllerClient.RemoveValveControllerAsync(new ValveControllerRequest { DeviceId = _deviceConfig.UniqueId });
+    _messenger.Send(new DeviceDeletedMessage(_deviceConfig.UniqueId));
     await OnRemoveCallback();
   }
 }

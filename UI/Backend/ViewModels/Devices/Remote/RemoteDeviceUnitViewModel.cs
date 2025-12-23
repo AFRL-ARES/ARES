@@ -1,20 +1,22 @@
 ﻿using Ares.Datamodel;
-using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using UI.Backend.Devices;
+using UI.Pages.Shared.Devices.Remote;
 
 namespace UI.Backend.ViewModels.Devices.Remote;
 
-public class RemoteDeviceUnitViewModel : ReactiveObject, IAsyncDisposable
+public class RemoteDeviceUnitViewModel : DeviceUnitControlViewModel, IAsyncDisposable
 {
   private readonly IAresDeviceAdapter _deviceAdapter;
   private IDisposable? _stateListener;
   private IDisposable? _statusListener;
 
-  public RemoteDeviceUnitViewModel(IAresDeviceAdapter deviceAdapter)
+  public RemoteDeviceUnitViewModel(IAresDeviceAdapter deviceAdapter) : base(deviceAdapter.Id, deviceAdapter.Name)
   {
     _deviceAdapter = deviceAdapter;
     StartStateUpdater();
+
+    ViewType = typeof(RemoteDeviceUnitView);
   }
 
   private void StartStateUpdater()

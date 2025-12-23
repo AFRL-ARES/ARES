@@ -2,7 +2,7 @@
 
 namespace UI.Backend.ViewModels.Devices.RestDevice;
 
-public class RestDeviceUnitControlViewModel : UsbDeviceUnitViewModel
+public class RestDeviceUnitControlViewModel : DeviceUnitControlViewModel
 {
   private readonly RestDeviceRpc.RestDeviceRpcClient _client;
 

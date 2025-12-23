@@ -1,16 +1,18 @@
 ﻿using DynamicData.Binding;
 using ReactiveUI.Fody.Helpers;
+using UI.Pages.Shared.Devices.VerdiV6Laser;
 using VerdiV6.Services;
 
 namespace UI.Backend.ViewModels.Devices.VerdiLaser;
 
-public class VerdiLaserUnitControlViewModel : SerialDeviceUnitViewModel
+public class VerdiLaserUnitControlViewModel : DeviceUnitControlViewModel
 {
   private readonly VerdiV6Rpc.VerdiV6RpcClient _client;
   public VerdiLaserUnitControlViewModel(string id, string deviceName, VerdiV6Rpc.VerdiV6RpcClient client) : base(id, deviceName)
   {
     _client = client;
     this.WhenPropertyChanged(t => t.LaserOn).Subscribe(_ => LaserToggleClicked());
+    ViewType = typeof(VerdiLaserControlWidgetView);
   }
 
   public async Task SetLaserPower()

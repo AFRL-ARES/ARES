@@ -1,12 +1,13 @@
 ﻿using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 using TubeFurnace.Messaging;
+using UI.Pages.Shared.Devices.TubeFurnace;
 using UnitsNet;
 using UnitsNet.Units;
 
 namespace UI.Backend.ViewModels.TubeFurnace;
 
-public class TubeFurnaceViewModel : SerialDeviceUnitViewModel, IAsyncDisposable
+public class TubeFurnaceViewModel : DeviceUnitControlViewModel, IAsyncDisposable
 {
   private readonly TubeFurnaceRpc.TubeFurnaceRpcClient _tubeFurnaceClient;
   private Task _stateListener = Task.CompletedTask;
@@ -18,6 +19,9 @@ public class TubeFurnaceViewModel : SerialDeviceUnitViewModel, IAsyncDisposable
     _tubeFurnaceClient = tubeFurnaceClient;
     _stateUpdateTokenSource = new();
     StartStateUpdater();
+
+    ViewType = typeof(TubeFurnaceControl);
+    DefaultWidth = 18;
   }
 
   private void StartStateUpdater()
