@@ -1,6 +1,6 @@
 ﻿using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 using System.ComponentModel.DataAnnotations;
 using Ares.Services.Device;
 using TubeFurnace.Config;
@@ -8,7 +8,7 @@ using TubeFurnace.Messaging;
 
 namespace UI.Backend.ViewModels.Settings.Device.TubeFurnace
 {
-  public class TubeFurnaceConfigEditViewModel : ReactiveObject
+  public partial class TubeFurnaceConfigEditViewModel : ReactiveObject
   {
     private readonly TubeFurnaceRpc.TubeFurnaceRpcClient _tubeFurnaceClient;
     private readonly AresDevices.AresDevicesClient _devicesClient;
@@ -60,7 +60,7 @@ namespace UI.Backend.ViewModels.Settings.Device.TubeFurnace
     }
 
     [Reactive]
-    public IEnumerable<string>? AvailablePorts { get; private set; }
+    public partial IEnumerable<string>? AvailablePorts { get; private set; }
 
     public async Task UpdateAvailableSerialPorts()
     {
@@ -72,14 +72,14 @@ namespace UI.Backend.ViewModels.Settings.Device.TubeFurnace
 
     [Reactive]
     [Required]
-    public string? Port { get; set; }
+    public partial string? Port { get; set; }
 
     [Required]
     public int? Address { get; set; }
 
 
     [Reactive]
-    public bool Simulated { get; set; }
+    public partial bool Simulated { get; set; }
 
     public bool Modified => _config.Name != Name
           || _config.PortName != Port

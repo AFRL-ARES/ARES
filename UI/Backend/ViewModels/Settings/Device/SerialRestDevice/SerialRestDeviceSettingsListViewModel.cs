@@ -64,14 +64,14 @@ public class SerialRestDeviceSettingsListViewModel : ReactiveObject
 using Ares.Datamodel.Device;
 using Ares.Services.Device;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 using RestSerialDevice;
 using RestSerialDevice.Config;
 using RestSerialDevice.Services;
 
 namespace UI.Backend.ViewModels.Settings.Device.SerialRestDevice;
 
-public class SerialRestDeviceSettingsListViewModel : ReactiveObject
+public partial class SerialRestDeviceSettingsListViewModel : ReactiveObject
 {
     private readonly RestSerialDeviceRpc.RestSerialDeviceRpcClient _restClient;
     private readonly AresDevices.AresDevicesClient _devicesClient;
@@ -84,7 +84,7 @@ public class SerialRestDeviceSettingsListViewModel : ReactiveObject
     }
 
     [Reactive]
-    public IEnumerable<SerialRestDeviceSettingsViewModel>? SettingsViewModels { get; private set; }
+    public partial IEnumerable<SerialRestDeviceSettingsViewModel>? SettingsViewModels { get; private set; }
 
     private void UpdateViewModels(IEnumerable<DeviceConfig> deviceConfigs)
     {
@@ -115,5 +115,3 @@ public class SerialRestDeviceSettingsListViewModel : ReactiveObject
         await UpdateConfigs();
     }
 }
-
-

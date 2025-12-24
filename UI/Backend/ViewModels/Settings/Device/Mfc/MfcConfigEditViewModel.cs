@@ -4,12 +4,12 @@ using Ares.Alicat.Mfc.Messaging;
 using Ares.Services.Device;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 using Enum = System.Enum;
 
 namespace UI.Backend.ViewModels.Settings.Device.Mfc;
 
-public class MfcConfigEditViewModel : ReactiveObject
+public partial class MfcConfigEditViewModel : ReactiveObject
 {
   private readonly AresDevices.AresDevicesClient _devicesClient;
   private readonly MfcRpc.MfcRpcClient _mfcClient;
@@ -34,6 +34,7 @@ public class MfcConfigEditViewModel : ReactiveObject
     Simulated = _mfcConfig.Simulated;
     HasValve = _mfcConfig.HasValve;
     SelectedMfcType = _mfcConfig.MfcType == MfcType.None ? MfcType.Normal : _mfcConfig.MfcType;
+    SetpointSource = SetpointSource.UnknownSource;
   }
 
   public MfcConfigEditViewModel(MfcRpc.MfcRpcClient mfcClient, AresDevices.AresDevicesClient devicesClient, ILogger<MfcConfigEditViewModel> logger)
@@ -44,6 +45,7 @@ public class MfcConfigEditViewModel : ReactiveObject
     _mfcConfig = new MfcConfig();
     _ = UpdateAvailableSerialPorts();
     NewConfig = true;
+    SetpointSource = SetpointSource.UnknownSource;
   }
 
   [Required]
@@ -77,7 +79,7 @@ public class MfcConfigEditViewModel : ReactiveObject
   public MfcType SelectedMfcType { get; set; } = MfcType.Normal;
 
   [Reactive]
-  public SetpointSource SetpointSource { get; private set; } = SetpointSource.UnknownSource;
+  public partial SetpointSource SetpointSource { get; private set; }
 
   public SetpointSource[] AvailableSetpointSources { get; } =
     Enum.GetValues<SetpointSource>().Except([SetpointSource.UnknownSource]).ToArray();
@@ -85,10 +87,10 @@ public class MfcConfigEditViewModel : ReactiveObject
   public bool Simulated { get; set; }
 
   [Reactive]
-  public IEnumerable<char>? AvailableIds { get; private set; }
+  public partial IEnumerable<char>? AvailableIds { get; private set; }
 
   [Reactive]
-  public IEnumerable<string>? AvailablePorts { get; private set; }
+  public partial IEnumerable<string>? AvailablePorts { get; private set; }
 
   public bool Modified => _mfcConfig.Id != Id || _mfcConfig.Name != Name || _mfcConfig.PortName != Port || _mfcConfig.Simulated != Simulated || _mfcConfig.HasValve != HasValve || _mfcConfig.MfcType != SelectedMfcType;
 

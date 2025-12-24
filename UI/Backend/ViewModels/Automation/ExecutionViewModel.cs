@@ -2,7 +2,7 @@
 using Google.Protobuf.WellKnownTypes;
 using Radzen;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 using System.Collections.ObjectModel;
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
@@ -16,7 +16,7 @@ using System.Reactive.Linq;
 
 namespace UI.Backend.ViewModels.Automation;
 
-public class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
+public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 {
   private readonly AresAutomation.AresAutomationClient _automationClient;
   private readonly AresAnalyzerManagementService.AresAnalyzerManagementServiceClient _analyzerService;
@@ -31,6 +31,7 @@ public class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     _automationClient = automationClient;
     _notificationService = notificationService;
     _analyzerService = analyzerService;
+    PlannerAdapterInfos = [];
   }
 
   public async Task<bool> EnsureStopConditionSet()
@@ -228,30 +229,30 @@ public class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   }
 
   [Reactive]
-  public ExperimentStopConditionResponse? CurrentStopCondition { get; set; }
+  public partial ExperimentStopConditionResponse? CurrentStopCondition { get; set; }
   public double DesiredResult { get; set; }
   public double DesiredLeeway { get; set; }
   public int DesiredReplanRate { get; set; } = 1;
   [Reactive]
-  public bool CampaignActive { get; set; }
+  public partial bool CampaignActive { get; set; }
   [Reactive]
-  public bool CampaignPaused { get; set; }
+  public partial bool CampaignPaused { get; set; }
   [Reactive]
-  public CampaignTemplateSummary? SelectedTemplateSummary { get; set; }
+  public partial CampaignTemplateSummary? SelectedTemplateSummary { get; set; }
   [Reactive]
-  public CampaignTemplate? CampaignTemplate { get; set; }
+  public partial CampaignTemplate? CampaignTemplate { get; set; }
   [Reactive]
-  public ExecutionState? CampaignExecutionState { get; set; }
+  public partial ExecutionState? CampaignExecutionState { get; set; }
   [Reactive]
-  public AnalysisState? AnalysisState { get; set; }
+  public partial AnalysisState? AnalysisState { get; set; }
   [Reactive]
-  public PlannerState? PlannerState { get; set; }
+  public partial PlannerState? PlannerState { get; set; }
   [Reactive]
-  public ExperimentExecutionStatus? ExperimentStatus { get; private set; }
+  public partial ExperimentExecutionStatus? ExperimentStatus { get; private set; }
   [Reactive]
-  public HashSet<PlannerServiceInfo?> PlannerAdapterInfos { get; set; } = [];
+  public partial HashSet<PlannerServiceInfo?> PlannerAdapterInfos { get; set; }
   [Reactive]
-  public AnalyzerInfo? AnalyzerInfo { get; set; }
+  public partial AnalyzerInfo? AnalyzerInfo { get; set; }
   public uint ExperimentsToRun { get; set; }
   public string ExecutionNotes { get; set; } = string.Empty;
   public CampaignExecutionSummary? TestCampaignExecutionSummary { get; private set; }

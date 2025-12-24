@@ -3,14 +3,14 @@ using Ares.Services.Device;
 using CommunityToolkit.Mvvm.Messaging;
 using Grpc.Core;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 using TubeFurnace.Config;
 using TubeFurnace.Messaging;
 using UI.Backend.Devices;
 
 namespace UI.Backend.ViewModels.Settings.Device.TubeFurnace
 {
-  public class TubeFurnaceSettingsViewModel : ReactiveObject
+  public partial class TubeFurnaceSettingsViewModel : ReactiveObject
   {
     private readonly DeviceConfig _deviceConfig;
     private readonly AresDevices.AresDevicesClient _devicesClient;
@@ -85,6 +85,6 @@ namespace UI.Backend.ViewModels.Settings.Device.TubeFurnace
     }
 
     [Reactive]
-    public bool DeviceActive { get; private set; }
+    public partial bool DeviceActive { get; private set; }
   }
 }

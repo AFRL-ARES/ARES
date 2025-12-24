@@ -5,12 +5,12 @@ using Ares.Services.Device;
 using CommunityToolkit.Mvvm.Messaging;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 using UI.Services.Notification;
 
 namespace UI.Backend.ViewModels.Settings.Device.Remote;
 
-public class RemoteDeviceSettingsListViewModel : ReactiveObject
+public partial class RemoteDeviceSettingsListViewModel : ReactiveObject
 {
   private readonly AresDevices.AresDevicesClient _devicesClient;
   private readonly INotificationReceivingService _notificationService;
@@ -87,7 +87,7 @@ public class RemoteDeviceSettingsListViewModel : ReactiveObject
   public void PushNotification(AresNotification notification) => _notificationService.PushNotification(notification);
   
   [Reactive] 
-  public bool IsLoading { get; private set; }
+  public partial bool IsLoading { get; private set; }
 
   public ObservableCollection<RemoteDeviceSettingsViewModel> SettingsViewModels { get; }
 }

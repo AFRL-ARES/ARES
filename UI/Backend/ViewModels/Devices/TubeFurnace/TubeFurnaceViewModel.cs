@@ -1,5 +1,5 @@
 ﻿using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 using TubeFurnace.Messaging;
 using UI.Pages.Shared.Devices.TubeFurnace;
 using UnitsNet;
@@ -7,7 +7,7 @@ using UnitsNet.Units;
 
 namespace UI.Backend.ViewModels.TubeFurnace;
 
-public class TubeFurnaceViewModel : DeviceUnitControlViewModel, IAsyncDisposable
+public partial class TubeFurnaceViewModel : DeviceUnitControlViewModel, IAsyncDisposable
 {
   private readonly TubeFurnaceRpc.TubeFurnaceRpcClient _tubeFurnaceClient;
   private Task _stateListener = Task.CompletedTask;
@@ -89,13 +89,13 @@ public class TubeFurnaceViewModel : DeviceUnitControlViewModel, IAsyncDisposable
     }
   }
   [Reactive]
-  public double? CurrentTemperatureValue { get; private set; }
+  public partial double? CurrentTemperatureValue { get; private set; }
   [Reactive]
-  public double? TargetTemperatureValue { get; set; }
+  public partial double? TargetTemperatureValue { get; set; }
   [Reactive]
-  public DurationUnit RampRateDurationUnit { get; set; }
+  public partial DurationUnit RampRateDurationUnit { get; set; }
   [Reactive]
-  public double? TargetRampRateTemperatureValue { get; set; }
+  public partial double? TargetRampRateTemperatureValue { get; set; }
   [Reactive]
-  public double? CurrentRampRateTemperatureValue { get; set; }
+  public partial double? CurrentRampRateTemperatureValue { get; set; }
 }

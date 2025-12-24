@@ -1,11 +1,11 @@
 ﻿using DynamicData.Binding;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 using UI.Pages.Shared.Devices.VerdiV6Laser;
 using VerdiV6.Services;
 
 namespace UI.Backend.ViewModels.Devices.VerdiLaser;
 
-public class VerdiLaserUnitControlViewModel : DeviceUnitControlViewModel
+public partial class VerdiLaserUnitControlViewModel : DeviceUnitControlViewModel
 {
   private readonly VerdiV6Rpc.VerdiV6RpcClient _client;
   public VerdiLaserUnitControlViewModel(string id, string deviceName, VerdiV6Rpc.VerdiV6RpcClient client) : base(id, deviceName)
@@ -56,5 +56,5 @@ public class VerdiLaserUnitControlViewModel : DeviceUnitControlViewModel
   public bool IsLaserShutterOn { get; set; }
 
   [Reactive]
-  public bool LaserOn { get; set; }
+  public partial bool LaserOn { get; set; }
 }

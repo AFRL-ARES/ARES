@@ -1,6 +1,6 @@
 ﻿using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 using System.ComponentModel.DataAnnotations;
 using Ares.Services.Device;
 using TicStepperController.Config;
@@ -8,7 +8,7 @@ using TicStepperController.Messaging;
 
 namespace UI.Backend.ViewModels.Settings.Device.StepperController;
 
-public class StepperControllerConfigEditViewModel : ReactiveObject
+public partial class StepperControllerConfigEditViewModel : ReactiveObject
 {
   private readonly StepperControllerRpc.StepperControllerRpcClient _stepperClient;
   private readonly AresDevices.AresDevicesClient _devicesClient;
@@ -22,6 +22,8 @@ public class StepperControllerConfigEditViewModel : ReactiveObject
     _config = new StepperControllerConfig();
     NewConfig = true;
     _ = UpdateAvailableSerialPorts();
+    StepAngle = 1.8;
+    CustomStepSize = 1;
   }
 
   public StepperControllerConfigEditViewModel(StepperControllerRpc.StepperControllerRpcClient stepperClient, AresDevices.AresDevicesClient devicesClient,
@@ -31,6 +33,8 @@ public class StepperControllerConfigEditViewModel : ReactiveObject
     _devicesClient = devicesClient;
     _config = config;
     _ = UpdateAvailableSerialPorts();
+    StepAngle = 1.8;
+    CustomStepSize = 1;
     LoadConfig(config);
   }
 
@@ -71,7 +75,7 @@ public class StepperControllerConfigEditViewModel : ReactiveObject
   }
 
   [Reactive]
-  public IEnumerable<string>? AvailablePorts { get; private set; }
+  public partial IEnumerable<string>? AvailablePorts { get; private set; }
 
   public async Task UpdateAvailableSerialPorts()
   {
@@ -83,52 +87,52 @@ public class StepperControllerConfigEditViewModel : ReactiveObject
 
   [Reactive]
   [Required]
-  public string? Port { get; set; }
+  public partial string? Port { get; set; }
 
   [Reactive]
   [Range(100, 2_147_483_647, ErrorMessage = "Acceleration must be a value from 100 to 2,147,483,647 microsteps per 100 s²")]
-  public uint? MaxAcceleration { get; set; }
+  public partial uint? MaxAcceleration { get; set; }
 
   [Reactive]
   [Range(100, 2_147_483_647, ErrorMessage = "Deceleration must be a value from 100 to 2,147,483,647 microsteps per 100 s²")]
-  public uint? MaxDeceleration { get; set; }
+  public partial uint? MaxDeceleration { get; set; }
 
   [Reactive]
   [Range(0, 500_000_000, ErrorMessage = "Starting speed must be a value from 0 to 500,000,000 microsteps per 10,000 s")]
-  public uint? StartingSpeed { get; set; }
+  public partial uint? StartingSpeed { get; set; }
 
   [Reactive]
   [Range(1, uint.MaxValue, ErrorMessage = "Custom step size must be greater than 0")]
-  public uint? CustomStepSize { get; set; } = 1;
+  public partial uint? CustomStepSize { get; set; }
 
   [Reactive]
   [Range(100, 500_000_000, ErrorMessage = "Max speed must be a value from 0 to 500,000,000 microsteps per 10,000 s")]
-  public uint? MaxSpeed { get; set; }
+  public partial uint? MaxSpeed { get; set; }
 
   [Reactive]
   [Range(0, 64, ErrorMessage = "Current Limit must be between 0 and 64")]
-  public uint? CurrentLimit { get; set; }
+  public partial uint? CurrentLimit { get; set; }
 
   [Reactive]
-  public StepMode StepMode { get; set; }
+  public partial StepMode StepMode { get; set; }
 
   [Reactive]
-  public bool Simulated { get; set; }
+  public partial bool Simulated { get; set; }
 
   [Reactive]
-  public bool DynamicStepCalculation { get; set; } //Determines whether a spool is set to dynamically calculate its steps
+  public partial bool DynamicStepCalculation { get; set; } //Determines whether a spool is set to dynamically calculate its steps
 
   [Reactive]
-  public double? InitialSpoolRadius { get; set; }
+  public partial double? InitialSpoolRadius { get; set; }
 
   [Reactive]
-  public double? FilterPaperThickness { get; set; }
+  public partial double? FilterPaperThickness { get; set; }
 
   [Reactive]
-  public double? LinearStepSize { get; set; }
+  public partial double? LinearStepSize { get; set; }
 
   [Reactive]
-  public double? StepAngle { get; set; } = 1.8;
+  public partial double? StepAngle { get; set; }
 
   public bool Modified => _config.Name != Name
         || _config.PortName != Port

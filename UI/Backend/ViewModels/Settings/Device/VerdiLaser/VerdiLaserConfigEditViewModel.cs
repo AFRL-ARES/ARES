@@ -1,6 +1,6 @@
 ﻿using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 using System.ComponentModel.DataAnnotations;
 using Ares.Services.Device;
 using VerdiV6.Config;
@@ -8,7 +8,7 @@ using VerdiV6.Services;
 
 namespace UI.Backend.ViewModels.Settings.Device.VerdiLaser
 {
-  public class VerdiLaserConfigEditViewModel : ReactiveObject
+  public partial class VerdiLaserConfigEditViewModel : ReactiveObject
   {
     private readonly VerdiV6Rpc.VerdiV6RpcClient _laserClient;
     private readonly VerdiConfig _config;
@@ -57,7 +57,7 @@ namespace UI.Backend.ViewModels.Settings.Device.VerdiLaser
     public bool Simulated { get; set; }
 
     [Reactive]
-    public IEnumerable<string>? AvailablePorts { get; private set; }
+    public partial IEnumerable<string>? AvailablePorts { get; private set; }
 
     public bool Modified => _config.Name != Name || _config.PortName != Port || _config.Simulated != Simulated;
 

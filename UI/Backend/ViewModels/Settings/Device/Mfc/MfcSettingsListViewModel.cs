@@ -6,11 +6,11 @@ using Ares.Services.Device;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.Logging;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 
 namespace UI.Backend.ViewModels.Settings.Device.Mfc;
 
-public class MfcSettingsListViewModel : ReactiveObject
+public partial class MfcSettingsListViewModel : ReactiveObject
 {
   private readonly AresDevices.AresDevicesClient _devicesClient;
   private readonly MfcRpc.MfcRpcClient _mfcClient;
@@ -27,7 +27,7 @@ public class MfcSettingsListViewModel : ReactiveObject
   }
 
   [Reactive]
-  public IEnumerable<MfcSettingsViewModel>? SettingsViewModels { get; private set; }
+  public partial IEnumerable<MfcSettingsViewModel>? SettingsViewModels { get; private set; }
 
   private void UpdateViewModels(IEnumerable<DeviceConfig> deviceConfigs)
   {

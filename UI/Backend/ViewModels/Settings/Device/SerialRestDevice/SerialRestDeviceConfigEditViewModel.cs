@@ -38,11 +38,11 @@ using RestSerialDevice.Config;
 using RestSerialDevice.Services;
 using Microsoft.Build.Framework;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 
 namespace UI.Backend.ViewModels.Settings.Device.SerialRestDevice;
 
-public class SerialRestDeviceConfigEditViewModel : ReactiveObject
+public partial class SerialRestDeviceConfigEditViewModel : ReactiveObject
 {
   private readonly RestSerialDeviceRpc.RestSerialDeviceRpcClient _client;
   private readonly RestSerialConfig _config;
@@ -91,7 +91,7 @@ public class SerialRestDeviceConfigEditViewModel : ReactiveObject
   public bool Simulated { get; set; }
 
   [Reactive]
-  public IEnumerable<string>? AvailablePorts { get; private set; }
+  public partial IEnumerable<string>? AvailablePorts { get; private set; }
 
   public bool Modified => _config.Name != Name || _config.PortName != Port || _config.Simulated != Simulated;
 
@@ -106,4 +106,3 @@ public class SerialRestDeviceConfigEditViewModel : ReactiveObject
   public RestSerialConfig Save()
     => Modified ? new RestSerialConfig { Name = Name, PortName = Port, Simulated = Simulated } : _config;
 }
-

@@ -2,14 +2,14 @@
 using Ares.Services.Device;
 using CommunityToolkit.Mvvm.Messaging;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 using ValveController;
 using ValveController.Config;
 using ValveController.Services;
 
 namespace UI.Backend.ViewModels.Settings.Device.ValveController;
 
-public class ValveControllerSettingsListViewModel : ReactiveObject
+public partial class ValveControllerSettingsListViewModel : ReactiveObject
 {
   private readonly ValveControllerRpc.ValveControllerRpcClient _valveControllerClient;
   private readonly AresDevices.AresDevicesClient _devicesClient;
@@ -26,7 +26,7 @@ public class ValveControllerSettingsListViewModel : ReactiveObject
   }
 
   [Reactive]
-  public IEnumerable<ValveControllerSettingsViewModel>? SettingsViewModels { get; private set; }
+  public partial IEnumerable<ValveControllerSettingsViewModel>? SettingsViewModels { get; private set; }
 
   private void UpdateViewModels(IEnumerable<DeviceConfig> deviceConfigs)
   {

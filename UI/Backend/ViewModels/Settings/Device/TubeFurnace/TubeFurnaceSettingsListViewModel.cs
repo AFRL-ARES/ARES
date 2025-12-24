@@ -1,6 +1,6 @@
 ﻿using Ares.Datamodel.Device;
 using Ares.Services.Device;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 using ReactiveUI;
 using LindbergFurnace;
 using TubeFurnace.Config;
@@ -9,7 +9,7 @@ using CommunityToolkit.Mvvm.Messaging;
 
 namespace UI.Backend.ViewModels.Settings.Device.TubeFurnace
 {
-  public class TubeFurnaceSettingsListViewModel : ReactiveObject
+  public partial class TubeFurnaceSettingsListViewModel : ReactiveObject
   {
     private readonly TubeFurnaceRpc.TubeFurnaceRpcClient _tubeFurnaceClient;
     private readonly AresDevices.AresDevicesClient _devicesClient;
@@ -24,7 +24,7 @@ namespace UI.Backend.ViewModels.Settings.Device.TubeFurnace
     }
 
     [Reactive]
-    public IEnumerable<TubeFurnaceSettingsViewModel>? SettingsViewModels { get; private set; }
+    public partial IEnumerable<TubeFurnaceSettingsViewModel>? SettingsViewModels { get; private set; }
 
     private void UpdateViewModels(IEnumerable<DeviceConfig> deviceConfigs)
     {

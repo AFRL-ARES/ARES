@@ -1,14 +1,14 @@
 ﻿using Ares.Datamodel.Device;
 using Ares.Services.Device;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 using RestDevice;
 using RestDevice.Config;
 using RestDevice.Services;
 
 namespace UI.Backend.ViewModels.Settings.Device.RestDevice;
 
-public class RestDeviceSettingsListViewModel : ReactiveObject
+public partial class RestDeviceSettingsListViewModel : ReactiveObject
 {
   private readonly RestDeviceRpc.RestDeviceRpcClient _restClient;
   private readonly AresDevices.AresDevicesClient _devicesClient;
@@ -21,7 +21,7 @@ public class RestDeviceSettingsListViewModel : ReactiveObject
   }
 
   [Reactive]
-  public IEnumerable<RestDeviceSettingsViewModel>? SettingsViewModels { get; private set; }
+  public partial IEnumerable<RestDeviceSettingsViewModel>? SettingsViewModels { get; private set; }
 
   private void UpdateViewModels(IEnumerable<DeviceConfig> deviceConfigs)
   {

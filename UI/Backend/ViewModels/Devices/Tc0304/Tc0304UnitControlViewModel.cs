@@ -1,11 +1,11 @@
-﻿using ReactiveUI.Fody.Helpers;
+﻿using ReactiveUI.SourceGenerators;
 using Tc0304.Services;
 using UI.Pages.Shared.Devices.DataLogger;
 using UnitsNet;
 
 namespace UI.Backend.ViewModels.Tc0304;
 
-public class Tc0304UnitControlViewModel : DeviceUnitControlViewModel, IAsyncDisposable
+public partial class Tc0304UnitControlViewModel : DeviceUnitControlViewModel, IAsyncDisposable
 {
   private readonly TC0304Rpc.TC0304RpcClient _client;
   private readonly CancellationTokenSource _stateUpdateTokenSource = new();
@@ -21,22 +21,22 @@ public class Tc0304UnitControlViewModel : DeviceUnitControlViewModel, IAsyncDisp
   }
 
   [Reactive]
-  public bool BatteryLow { get; private set; }
+  public partial bool BatteryLow { get; private set; }
 
   [Reactive]
-  public bool HoldActive { get; private set; }
+  public partial bool HoldActive { get; private set; }
 
   [Reactive]
-  public Temperature? T1Temp { get; private set; }
+  public partial Temperature? T1Temp { get; private set; }
 
   [Reactive]
-  public Temperature? T2Temp { get; private set; }
+  public partial Temperature? T2Temp { get; private set; }
 
   [Reactive]
-  public Temperature? T3Temp { get; private set; }
+  public partial Temperature? T3Temp { get; private set; }
 
   [Reactive]
-  public Temperature? T4Temp { get; private set; }
+  public partial Temperature? T4Temp { get; private set; }
 
   public string Probe1Name { get; set; } = "Probe 1";
   public string Probe2Name { get; set; } = "Probe 2";

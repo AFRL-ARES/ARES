@@ -1,7 +1,7 @@
 ﻿using Ares.Datamodel.Device;
 using Ares.Services.Device;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 using TC0304;
 using Tc0304.Config;
 using Tc0304.Services;
@@ -9,7 +9,7 @@ using CommunityToolkit.Mvvm.Messaging;
 
 namespace UI.Backend.ViewModels.Settings.Device.Tc0304;
 
-public class Tc0304SettingsListViewModel : ReactiveObject
+public partial class Tc0304SettingsListViewModel : ReactiveObject
 {
   private readonly TC0304Rpc.TC0304RpcClient _dataloggerClient;
   private readonly AresDevices.AresDevicesClient _devicesClient;
@@ -24,7 +24,7 @@ public class Tc0304SettingsListViewModel : ReactiveObject
   }
 
   [Reactive]
-  public IEnumerable<Tc0304SettingsViewModel>? SettingsViewModels { get; private set; }
+  public partial IEnumerable<Tc0304SettingsViewModel>? SettingsViewModels { get; private set; }
 
   private void UpdateViewModels(IEnumerable<DeviceConfig> deviceConfigs)
   {

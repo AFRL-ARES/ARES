@@ -3,12 +3,12 @@ using Ares.Services.Device;
 using Ares.SyringePump.Ne1000.Messaging;
 using CommunityToolkit.Mvvm.Messaging;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 using SyringePumpNE1000;
 
 namespace UI.Backend.ViewModels.Settings.Device.SyringePump;
 
-public class SyringePumpSettingsListViewModel : ReactiveObject
+public partial class SyringePumpSettingsListViewModel : ReactiveObject
 {
   private readonly AresDevices.AresDevicesClient _devicesClient;
   private readonly SyringePumpRpc.SyringePumpRpcClient _syringePumpClient;
@@ -23,7 +23,7 @@ public class SyringePumpSettingsListViewModel : ReactiveObject
   }
 
   [Reactive]
-  public IEnumerable<SyringePumpSettingsViewModel>? SettingsViewModels { get; private set; }
+  public partial IEnumerable<SyringePumpSettingsViewModel>? SettingsViewModels { get; private set; }
 
   private void UpdateViewModels(IEnumerable<DeviceConfig> deviceConfigs)
   {

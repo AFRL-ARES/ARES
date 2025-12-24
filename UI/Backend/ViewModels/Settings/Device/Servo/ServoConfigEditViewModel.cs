@@ -4,11 +4,11 @@ using HerkulexDRS.Config;
 using HerkulexDRS.Services;
 using Microsoft.Build.Framework;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 
 namespace UI.Backend.ViewModels.Settings.Device.Servo;
 
-public class ServoConfigEditViewModel : ReactiveObject
+public partial class ServoConfigEditViewModel : ReactiveObject
 {
   private readonly HerkulexDRSRpc.HerkulexDRSRpcClient _client;
   private readonly ServoConfig _config;
@@ -57,7 +57,7 @@ public class ServoConfigEditViewModel : ReactiveObject
   public bool Simulated { get; set; }
 
   [Reactive]
-  public IEnumerable<string>? AvailablePorts { get; private set; }
+  public partial IEnumerable<string>? AvailablePorts { get; private set; }
 
   public bool Modified => _config.Name != Name || _config.PortName != Port || _config.Simulated != Simulated;
 

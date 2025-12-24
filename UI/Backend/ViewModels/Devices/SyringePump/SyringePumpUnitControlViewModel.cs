@@ -1,11 +1,11 @@
 ﻿using Ares.SyringePump.Ne1000.Messaging;
 using DynamicData.Binding;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 using UI.Pages.Shared.Devices.SyringePump;
 
 namespace UI.Backend.ViewModels.SyringePump;
 
-public class SyringePumpUnitControlViewModel : DeviceUnitControlViewModel, IAsyncDisposable
+public partial class SyringePumpUnitControlViewModel : DeviceUnitControlViewModel, IAsyncDisposable
 {
   private SyringePumpRpc.SyringePumpRpcClient _syringePumpClient;
   private DeviceRequest _deviceRequest;
@@ -15,6 +15,8 @@ public class SyringePumpUnitControlViewModel : DeviceUnitControlViewModel, IAsyn
   {
     _syringePumpClient = syringePumpClient;
     _deviceRequest = new DeviceRequest { DeviceId = DeviceId };
+    CurrentState = new StateResponse();
+    Status = "Not Connected";
     Initialize();
     this.WhenValueChanged(vm => vm.CurrentState).Subscribe(_ => UpdateStatus());
     ViewType = typeof(SyringePumpUnitControl);
@@ -129,25 +131,25 @@ public class SyringePumpUnitControlViewModel : DeviceUnitControlViewModel, IAsyn
   }
 
   [Reactive]
-  public int TargetAddress { get; set; }
+  public partial int TargetAddress { get; set; }
   [Reactive]
-  public float TargetDiameterMm { get; set; }
+  public partial float TargetDiameterMm { get; set; }
   [Reactive]
-  public float TargetVolumeMl { get; set; }
+  public partial float TargetVolumeMl { get; set; }
   [Reactive]
-  public float TargetRateMmpm { get; set; }
+  public partial float TargetRateMmpm { get; set; }
   [Reactive]
-  public int TargetPhase { get; set; }
+  public partial int TargetPhase { get; set; }
   [Reactive]
-  public Commands TargetFunction { get; set; }
+  public partial Commands TargetFunction { get; set; }
   [Reactive]
-  public Direction TargetDirection { get; set; }
+  public partial Direction TargetDirection { get; set; }
   [Reactive]
-  public Direction ActiveDirection { get; set; }
+  public partial Direction ActiveDirection { get; set; }
   [Reactive]
-  public StateResponse CurrentState { get; private set; } = new StateResponse();
+  public partial StateResponse CurrentState { get; private set; }
   [Reactive]
-  public string Status { get; private set; } = "Not Connected";
+  public partial string Status { get; private set; }
   [Reactive]
-  public VolumeUnit VolumeUnit { get; set; }
+  public partial VolumeUnit VolumeUnit { get; set; }
 }

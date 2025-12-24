@@ -1,6 +1,6 @@
 ﻿using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 using System.ComponentModel.DataAnnotations;
 using Ares.Services.Device;
 using ValveController.Config;
@@ -8,7 +8,7 @@ using ValveController.Services;
 
 namespace UI.Backend.ViewModels.Settings.Device.ValveController;
 
-public class ValveControllerConfigEditViewModel : ReactiveObject
+public partial class ValveControllerConfigEditViewModel : ReactiveObject
 {
   private readonly ValveControllerRpc.ValveControllerRpcClient _client;
   private readonly ValveControllerConfig _config;
@@ -58,7 +58,7 @@ public class ValveControllerConfigEditViewModel : ReactiveObject
   public bool Simulated { get; set; }
 
   [Reactive]
-  public IEnumerable<string>? AvailablePorts { get; private set; }
+  public partial IEnumerable<string>? AvailablePorts { get; private set; }
 
   public bool Modified => _config.Name != Name || _config.PortName != Port || _config.Simulated != Simulated;
 

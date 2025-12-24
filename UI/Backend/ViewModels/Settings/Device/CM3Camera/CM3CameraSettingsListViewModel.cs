@@ -5,11 +5,11 @@ using FlirCM3;
 using FlirCM3.Config;
 using FlirCM3.Services;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 
 namespace UI.Backend.ViewModels.Settings.Device.CM3Camera
 {
-  public class CM3CameraSettingsListViewModel : ReactiveObject
+  public partial class CM3CameraSettingsListViewModel : ReactiveObject
   {
     private readonly FlirCM3CameraRpc.FlirCM3CameraRpcClient _client;
     private readonly AresDevices.AresDevicesClient _devicesClient;
@@ -53,6 +53,6 @@ namespace UI.Backend.ViewModels.Settings.Device.CM3Camera
     }
 
     [Reactive]
-    public IEnumerable<CM3CameraSettingsViewModel>? SettingsViewModels { get; private set; }
+    public partial IEnumerable<CM3CameraSettingsViewModel>? SettingsViewModels { get; private set; }
   }
 }

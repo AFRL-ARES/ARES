@@ -1,10 +1,10 @@
 ﻿using FlirCM3.Services;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 using UI.Pages.Shared.Devices.CM3Camera;
 
 namespace UI.Backend.ViewModels.Devices.CM3Camera;
 
-public class CM3CameraUnitControlViewModel : DeviceUnitControlViewModel
+public partial class CM3CameraUnitControlViewModel : DeviceUnitControlViewModel
 {
   private readonly FlirCM3CameraRpc.FlirCM3CameraRpcClient _client;
 
@@ -30,11 +30,11 @@ public class CM3CameraUnitControlViewModel : DeviceUnitControlViewModel
   }
 
   [Reactive]
-  public double ExposureTime { get; set; }
+  public partial double ExposureTime { get; set; }
 
   [Reactive]
-  public byte[]? ImageData { get; set; }
+  public partial byte[]? ImageData { get; set; }
 
   [Reactive]
-  public byte[]? DisplayData { get; set; }
+  public partial byte[]? DisplayData { get; set; }
 }

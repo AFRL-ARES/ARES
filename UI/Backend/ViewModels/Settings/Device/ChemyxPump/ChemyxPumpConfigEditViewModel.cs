@@ -4,12 +4,12 @@ using ChemyxPumpPlugin.Services;
 using Google.Protobuf.WellKnownTypes;
 using HerkulexDRS.Config;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 using System.ComponentModel.DataAnnotations;
 
 namespace UI.Backend.ViewModels.Settings.Device.ChemyxPump;
 
-public class ChemyxPumpConfigEditViewModel : ReactiveObject
+public partial class ChemyxPumpConfigEditViewModel : ReactiveObject
 {
   private readonly ChemyxPumpRpc.ChemyxPumpRpcClient _pumpClient;
   private readonly ChemyxPumpConfig _config;
@@ -57,7 +57,7 @@ public class ChemyxPumpConfigEditViewModel : ReactiveObject
   public bool DualPump { get; set; }
 
   [Reactive]
-  public IEnumerable<string>? AvailablePorts { get; private set; }
+  public partial IEnumerable<string>? AvailablePorts { get; private set; }
 
   public bool Modified => _config.Name != Name || _config.PortName != Port || _config.Simulated != Simulated || _config.DualPump != DualPump;
 

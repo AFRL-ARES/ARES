@@ -1,9 +1,9 @@
 ﻿using Chiller.Services;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 
 namespace UI.Backend.ViewModels.Devices.LaserChiller;
 
-public class LaserChillerUnitControlViewModel : DeviceUnitControlViewModel
+public partial class LaserChillerUnitControlViewModel : DeviceUnitControlViewModel
 {
   private readonly ChillerRpc.ChillerRpcClient _client;
 
@@ -39,6 +39,6 @@ public class LaserChillerUnitControlViewModel : DeviceUnitControlViewModel
   }
 
   [Reactive]
-  public double CurrentManifoldTemperature { get; set; }
+  public partial double CurrentManifoldTemperature { get; set; }
   public double DesiredTemperature { get; set; }
 }

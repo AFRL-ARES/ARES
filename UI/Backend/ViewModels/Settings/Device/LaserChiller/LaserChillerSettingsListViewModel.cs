@@ -5,11 +5,11 @@ using Chiller.Services;
 using CommunityToolkit.Mvvm.Messaging;
 using LaserChiller;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 
 namespace UI.Backend.ViewModels.Settings.Device.LaserChiller;
 
-public class LaserChillerSettingsListViewModel : ReactiveObject
+public partial class LaserChillerSettingsListViewModel : ReactiveObject
 {
   private readonly ChillerRpc.ChillerRpcClient _chillerClient;
   private readonly AresDevices.AresDevicesClient _devicesClient;
@@ -24,7 +24,7 @@ public class LaserChillerSettingsListViewModel : ReactiveObject
   }
 
   [Reactive]
-  public IEnumerable<LaserChillerSettingsViewModel>? SettingsViewModels { get; private set; }
+  public partial IEnumerable<LaserChillerSettingsViewModel>? SettingsViewModels { get; private set; }
 
   private void UpdateViewModels(IEnumerable<DeviceConfig> deviceConfigs)
   {

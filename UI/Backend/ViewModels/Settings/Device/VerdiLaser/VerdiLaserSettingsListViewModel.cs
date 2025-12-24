@@ -2,14 +2,14 @@
 using Ares.Services.Device;
 using CommunityToolkit.Mvvm.Messaging;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 using VerdiV6.Config;
 using VerdiV6.Services;
 using VerdiV6Laser;
 
 namespace UI.Backend.ViewModels.Settings.Device.VerdiLaser
 {
-  public class VerdiLaserSettingsListViewModel : ReactiveObject
+  public partial class VerdiLaserSettingsListViewModel : ReactiveObject
   {
     private readonly VerdiV6Rpc.VerdiV6RpcClient _laserClient;
     private readonly AresDevices.AresDevicesClient _devicesClient;
@@ -24,7 +24,7 @@ namespace UI.Backend.ViewModels.Settings.Device.VerdiLaser
     }
 
     [Reactive]
-    public IEnumerable<VerdiLaserSettingsViewModel>? SettingsViewModels { get; private set; }
+    public partial IEnumerable<VerdiLaserSettingsViewModel>? SettingsViewModels { get; private set; }
 
     private void UpdateViewModels(IEnumerable<DeviceConfig> deviceConfigs)
     {

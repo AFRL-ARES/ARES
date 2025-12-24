@@ -1,13 +1,13 @@
 ﻿using Ares.Alicat.Mfc.Messaging;
 using DynamicData;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 using UI.Pages.Shared.Devices.Mfc;
 using UnitsNet;
 using UnitsNet.Units;
 
 namespace UI.Backend.ViewModels.Devices.Mfc;
 
-public class MfcUnitControlViewModel : DeviceUnitControlViewModel, IAsyncDisposable
+public partial class MfcUnitControlViewModel : DeviceUnitControlViewModel, IAsyncDisposable
 {
   private readonly DeviceRequest _deviceRequest;
   private readonly MfcRpc.MfcRpcClient _mfcClient;
@@ -28,46 +28,46 @@ public class MfcUnitControlViewModel : DeviceUnitControlViewModel, IAsyncDisposa
   public string MfcName { get; }
 
   [Reactive]
-  public int TargetGas { get; set; }
+  public partial int TargetGas { get; set; }
 
   [Reactive]
-  public double? TargetSetpoint { get; set; }
+  public partial double? TargetSetpoint { get; set; }
 
   [Reactive]
-  public bool CapturingLiveData { get; private set; }
+  public partial bool CapturingLiveData { get; private set; }
 
   [Reactive]
-  public IEnumerable<GasInfoEntry>? AvailableGases { get; set; }
+  public partial IEnumerable<GasInfoEntry>? AvailableGases { get; set; }
 
   [Reactive]
-  public string? SelectedGas { get; set; }
+  public partial string? SelectedGas { get; set; }
 
   [Reactive]
-  public char? AssumedId { get; set; }
+  public partial char? AssumedId { get; set; }
 
   [Reactive]
-  public bool HasValve { get; private set; }
+  public partial bool HasValve { get; private set; }
 
   [Reactive]
-  public Temperature? Temperature { get; set; }
+  public partial Temperature? Temperature { get; set; }
 
   [Reactive]
-  public Pressure? AbsolutePressure { get; set; }
+  public partial Pressure? AbsolutePressure { get; set; }
 
   [Reactive]
-  public VolumeFlow? VolumetricFlow { get; set; }
+  public partial VolumeFlow? VolumetricFlow { get; set; }
 
   [Reactive]
-  public StandardVolumeFlow? MassFlow { get; set; }
+  public partial StandardVolumeFlow? MassFlow { get; set; }
 
   [Reactive]
-  public StandardVolumeFlow? Setpoint { get; set; }
+  public partial StandardVolumeFlow? Setpoint { get; set; }
 
   [Reactive]
-  public double? ValveDrive { get; set; }
+  public partial double? ValveDrive { get; set; }
 
   [Reactive]
-  public bool HasValidData { get; private set; }
+  public partial bool HasValidData { get; private set; }
 
   public ISourceList<Status> StatusCodes { get; } = new SourceList<Status>();
 

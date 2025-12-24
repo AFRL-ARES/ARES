@@ -6,12 +6,12 @@ using CommunityToolkit.Mvvm.Messaging;
 using DynamicData;
 using Grpc.Core;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 using UI.Backend.Devices;
 
 namespace UI.Backend.ViewModels.Settings.Device.Mfc;
 
-public class MfcSettingsViewModel : ReactiveObject
+public partial class MfcSettingsViewModel : ReactiveObject
 {
   private readonly DeviceConfig _deviceConfig;
   private readonly AresDevices.AresDevicesClient _devicesClient;
@@ -34,12 +34,13 @@ public class MfcSettingsViewModel : ReactiveObject
     OnRemoveCallback = onRemoveCallback;
     EditViewModel = new MfcConfigEditViewModel(_mfcClient, _devicesClient, MfcConfig, loggerFactory.CreateLogger<MfcConfigEditViewModel>());
     _logger = loggerFactory.CreateLogger<MfcSettingsViewModel>();
+    SelectedSetpointSource = SetpointSource.UnknownSource;
   }
 
   public MfcConfig MfcConfig { get; }
 
   [Reactive]
-  public bool DeviceActive { get; set; }
+  public partial bool DeviceActive { get; set; }
 
   public Func<Task> OnRemoveCallback { get; }
 
@@ -58,10 +59,10 @@ public class MfcSettingsViewModel : ReactiveObject
     Enum.GetValues<SetpointSource>().Except([SetpointSource.UnknownSource]).ToArray();
 
   [Reactive]
-  public SetpointSource SelectedSetpointSource { get; private set; } = SetpointSource.UnknownSource;
+  public partial SetpointSource SelectedSetpointSource { get; private set; }
 
   [Reactive]
-  public bool SetpointSourceUpdating { get; private set; }
+  public partial bool SetpointSourceUpdating { get; private set; }
 
   public async Task Init()
   {

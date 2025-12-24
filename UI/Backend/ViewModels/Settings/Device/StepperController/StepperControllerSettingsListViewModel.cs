@@ -2,14 +2,14 @@
 using Ares.Services.Device;
 using CommunityToolkit.Mvvm.Messaging;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 using TicStepperController;
 using TicStepperController.Config;
 using TicStepperController.Messaging;
 
 namespace UI.Backend.ViewModels.Settings.Device.StepperController;
 
-public class StepperControllerSettingsListViewModel : ReactiveObject
+public partial class StepperControllerSettingsListViewModel : ReactiveObject
 {
   private readonly StepperControllerRpc.StepperControllerRpcClient _stepperControllerClient;
   private readonly AresDevices.AresDevicesClient _devicesClient;
@@ -24,7 +24,7 @@ public class StepperControllerSettingsListViewModel : ReactiveObject
   }
 
   [Reactive]
-  public IEnumerable<StepperControllerSettingsViewModel>? SettingsViewModels { get; private set; }
+  public partial IEnumerable<StepperControllerSettingsViewModel>? SettingsViewModels { get; private set; }
 
   private void UpdateViewModels(IEnumerable<DeviceConfig> deviceConfigs)
   {

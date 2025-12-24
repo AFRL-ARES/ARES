@@ -1,11 +1,11 @@
 ﻿using Ares.Datamodel;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 using UI.Backend.Devices;
 using UI.Pages.Shared.Devices.Remote;
 
 namespace UI.Backend.ViewModels.Devices.Remote;
 
-public class RemoteDeviceUnitViewModel : DeviceUnitControlViewModel, IAsyncDisposable
+public partial class RemoteDeviceUnitViewModel : DeviceUnitControlViewModel, IAsyncDisposable
 {
   private readonly IAresDeviceAdapter _deviceAdapter;
   private IDisposable? _stateListener;
@@ -26,10 +26,10 @@ public class RemoteDeviceUnitViewModel : DeviceUnitControlViewModel, IAsyncDispo
   }
 
   [Reactive]
-  public AresStruct? DeviceState { get; private set; }
+  public partial AresStruct? DeviceState { get; private set; }
 
   [Reactive]
-  public ConnectionStatus ConnectionStatus { get; private set; }
+  public partial ConnectionStatus ConnectionStatus { get; private set; }
 
   public string DeviceName => _deviceAdapter.Name;
 

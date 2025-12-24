@@ -4,11 +4,11 @@ using ChemyxPumpPlugin.Config;
 using ChemyxPumpPlugin.Services;
 using CommunityToolkit.Mvvm.Messaging;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 
 namespace UI.Backend.ViewModels.Settings.Device.ChemyxPump;
 
-public class ChemyxPumpSettingsListViewModel : ReactiveObject
+public partial class ChemyxPumpSettingsListViewModel : ReactiveObject
 {
   private readonly ChemyxPumpRpc.ChemyxPumpRpcClient _client;
   private readonly AresDevices.AresDevicesClient _devicesClient;
@@ -23,7 +23,7 @@ public class ChemyxPumpSettingsListViewModel : ReactiveObject
   }
 
   [Reactive]
-  public IEnumerable<ChemyxPumpSettingsViewModel>? SettingsViewModels { get; private set; }
+  public partial IEnumerable<ChemyxPumpSettingsViewModel>? SettingsViewModels { get; private set; }
   
   private void UpdateViewModels(IEnumerable<DeviceConfig> deviceConfigs)
   {

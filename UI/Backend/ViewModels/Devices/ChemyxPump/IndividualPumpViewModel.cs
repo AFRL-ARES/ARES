@@ -2,11 +2,11 @@
 using ChemyxPumpPlugin.Services;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 
 namespace UI.Backend.ViewModels.Devices.ChemyxPump;
 
-public class IndividualPumpViewModel : ReactiveObject, IAsyncDisposable
+public partial class IndividualPumpViewModel : ReactiveObject, IAsyncDisposable
 {
   private readonly int _pumpNumber;
   private readonly string _deviceId;
@@ -21,6 +21,7 @@ public class IndividualPumpViewModel : ReactiveObject, IAsyncDisposable
     _deviceId = deviceId;
     _client = client;
     _cts = new CancellationTokenSource();
+    Status = PumpStatus.Stopped;
   }
 
   public void Start()
@@ -154,31 +155,31 @@ public class IndividualPumpViewModel : ReactiveObject, IAsyncDisposable
   }
 
   [Reactive]
-  public PumpStatus Status { get; set; } = PumpStatus.Stopped;
+  public partial PumpStatus Status { get; set; }
 
   [Reactive]
-  public Units PumpUnit { get; private set; }
+  public partial Units PumpUnit { get; private set; }
 
   [Reactive]
-  public double Rate { get; private set; }
+  public partial double Rate { get; private set; }
 
   [Reactive]
-  public double Volume { get; private set; }
+  public partial double Volume { get; private set; }
 
   [Reactive]
-  public double Diameter { get; private set; }
+  public partial double Diameter { get; private set; }
 
   [Reactive]
-  public double Dispensed { get; private set; }
+  public partial double Dispensed { get; private set; }
 
   [Reactive]
-  public TimeSpan Elapsed { get; private set; }
+  public partial TimeSpan Elapsed { get; private set; }
 
   [Reactive]
-  public TimeSpan Delay { get; private set; }
+  public partial TimeSpan Delay { get; private set; }
 
   [Reactive]
-  public TimeSpan Time { get; private set; }
+  public partial TimeSpan Time { get; private set; }
 
   public static Units[] AvailableUnits { get; } = System.Enum.GetValues<Units>().Where(u => u != Units.Unknown).ToArray();
 

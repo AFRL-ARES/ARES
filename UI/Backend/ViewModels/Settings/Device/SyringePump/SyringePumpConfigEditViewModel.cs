@@ -3,11 +3,11 @@ using Ares.Services.Device;
 using Ares.SyringePump.Ne1000.Messaging;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 
 namespace UI.Backend.ViewModels.Settings.Device.SyringePump;
 
-public class SyringePumpConfigEditViewModel : ReactiveObject
+public partial class SyringePumpConfigEditViewModel : ReactiveObject
 {
   private readonly AresDevices.AresDevicesClient _devicesClient;
   private readonly SyringePumpRpc.SyringePumpRpcClient _syringePumpClient;
@@ -65,7 +65,7 @@ public class SyringePumpConfigEditViewModel : ReactiveObject
   public bool Simulated { get; set; }
 
   [Reactive]
-  public IEnumerable<string>? AvailablePorts { get; private set; }
+  public partial IEnumerable<string>? AvailablePorts { get; private set; }
 
   public bool Modified => _syringePumpConfig.Name != Name || _syringePumpConfig.PortName != Port || _syringePumpConfig.Simulated != Simulated || _syringePumpConfig.Address != Address;
 

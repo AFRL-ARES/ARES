@@ -2,13 +2,13 @@
 using Ares.Services.Device;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 using Tc0304.Config;
 using Tc0304.Services;
 
 namespace UI.Backend.ViewModels.Settings.Device.Tc0304;
 
-public class Tc0304ConfigEditViewModel : ReactiveObject
+public partial class Tc0304ConfigEditViewModel : ReactiveObject
 {
   private readonly TC0304Rpc.TC0304RpcClient _client;
   private readonly Tc0304Config _config;
@@ -59,7 +59,7 @@ public class Tc0304ConfigEditViewModel : ReactiveObject
   public bool Simulated { get; set; }
 
   [Reactive]
-  public IEnumerable<string>? AvailablePorts { get; private set; }
+  public partial IEnumerable<string>? AvailablePorts { get; private set; }
 
   public bool Modified => _config.Name != Name || _config.PortName != Port || _config.Simulated != Simulated;
 

@@ -3,14 +3,14 @@ using Ares.Services.Device;
 using CommunityToolkit.Mvvm.Messaging;
 using Grpc.Core;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 using TicStepperController.Config;
 using TicStepperController.Messaging;
 using UI.Backend.Devices;
 
 namespace UI.Backend.ViewModels.Settings.Device.StepperController;
 
-public class StepperControllerSettingsViewModel : ReactiveObject
+public partial class StepperControllerSettingsViewModel : ReactiveObject
 {
   private readonly DeviceConfig _deviceConfig;
   private readonly AresDevices.AresDevicesClient _devicesClient;
@@ -92,7 +92,7 @@ public class StepperControllerSettingsViewModel : ReactiveObject
   }
 
   [Reactive]
-  public bool DeviceActive { get; private set; }
+  public partial bool DeviceActive { get; private set; }
   public uint MaxAcceleration { get; private set; }
   public uint MaxDeceleration { get; private set; }
   public uint CurrentLimit { get; private set; }

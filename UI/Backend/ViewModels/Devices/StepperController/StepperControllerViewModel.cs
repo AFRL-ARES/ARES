@@ -1,10 +1,10 @@
-﻿using ReactiveUI.Fody.Helpers;
+﻿using ReactiveUI.SourceGenerators;
 using TicStepperController.Messaging;
 using UI.Pages.Shared.Devices.StepperController;
 
 namespace UI.Backend.ViewModels.StepperController;
 
-public class StepperControllerViewModel : DeviceUnitControlViewModel, IAsyncDisposable
+public partial class StepperControllerViewModel : DeviceUnitControlViewModel, IAsyncDisposable
 {
   private readonly StepperControllerRpc.StepperControllerRpcClient _client;
   private readonly CancellationTokenSource _stateUpdateTokenSource = new();
@@ -21,25 +21,25 @@ public class StepperControllerViewModel : DeviceUnitControlViewModel, IAsyncDisp
   #region Properties
 
   [Reactive]
-  public uint MaxAcceleration { get; private set; }
+  public partial uint MaxAcceleration { get; private set; }
   [Reactive]
-  public uint MaxDeceleration { get; private set; }
+  public partial uint MaxDeceleration { get; private set; }
   [Reactive]
-  public uint MaxSpeed { get; private set; }
+  public partial uint MaxSpeed { get; private set; }
   [Reactive]
-  public uint StartingSpeed { get; private set; }
+  public partial uint StartingSpeed { get; private set; }
   [Reactive]
-  public StepMode StepMode { get; private set; }
+  public partial StepMode StepMode { get; private set; }
   [Reactive]
-  public int CurrentPosition { get; private set; }
+  public partial int CurrentPosition { get; private set; }
   [Reactive]
-  public int TargetPosition { get; private set; }
+  public partial int TargetPosition { get; private set; }
   [Reactive]
-  public MiscFlags? MiscFlags { get; private set; }
+  public partial MiscFlags? MiscFlags { get; private set; }
   [Reactive]
-  public ErrorStatus? ErrorStatus { get; private set; }
+  public partial ErrorStatus? ErrorStatus { get; private set; }
   [Reactive]
-  public ErrorsOccurred? ErrorsOccurred { get; private set; }
+  public partial ErrorsOccurred? ErrorsOccurred { get; private set; }
 
   #endregion
 

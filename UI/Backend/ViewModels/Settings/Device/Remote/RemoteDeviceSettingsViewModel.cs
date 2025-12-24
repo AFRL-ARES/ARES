@@ -7,13 +7,13 @@ using Ares.Services.Device;
 using CommunityToolkit.Mvvm.Messaging;
 using Grpc.Core;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 using UI.Backend.Devices;
 using UI.Services.Notification;
 
 namespace UI.Backend.ViewModels.Settings.Device.Remote;
 
-public class RemoteDeviceSettingsViewModel : ReactiveObject
+public partial class RemoteDeviceSettingsViewModel : ReactiveObject
 {
   private readonly AresDevices.AresDevicesClient _devicesClient;
   private readonly INotificationReceivingService _notificationService;
@@ -36,6 +36,11 @@ public class RemoteDeviceSettingsViewModel : ReactiveObject
     Name = _deviceInfo.Name;
     Address = _deviceInfo.Url;
     Type = _deviceInfo.Type;
+    Version = "";
+    Description = "";
+    StateMessage = "";
+    SettingsSchema = new();
+    Settings = new();
 
     var config = new RemoteDeviceConfig { Name = deviceInfo.Name, UniqueId = deviceInfo.UniqueId, Url = deviceInfo.Url };
     EditViewModel = new RemoteDeviceConfigEditViewModel(config);
@@ -67,25 +72,25 @@ public class RemoteDeviceSettingsViewModel : ReactiveObject
   }
 
   [Reactive]
-  public string Name { get; private set; }
+  public partial string Name { get; private set; }
   [Reactive]
-  public string Address { get; private set; }
+  public partial string Address { get; private set; }
   [Reactive]
-  public string Type { get; private set; }
+  public partial string Type { get; private set; }
   [Reactive]
-  public string Version { get; private set; } = "";
+  public partial string Version { get; private set; }
   [Reactive]
-  public string Description { get; set; } = "";
+  public partial string Description { get; set; }
   [Reactive]
-  public OperationalState OperationalState { get; private set; }
+  public partial OperationalState OperationalState { get; private set; }
   [Reactive]
-  public string StateMessage { get; private set; } = "";
+  public partial string StateMessage { get; private set; }
   [Reactive]
-  public AresDataSchema SettingsSchema { get; private set; } = new();
+  public partial AresDataSchema SettingsSchema { get; private set; }
   [Reactive]
-  public AresStruct Settings { get; private set; } = new();
+  public partial AresStruct Settings { get; private set; }
   [Reactive]
-  public bool DeviceActive { get; private set; }
+  public partial bool DeviceActive { get; private set; }
 
   public RemoteDeviceConfigEditViewModel EditViewModel { get; }
   public bool IsBusy => _isBusy.Value;

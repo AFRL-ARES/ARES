@@ -2,13 +2,13 @@
 using Chiller.Services;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 using System.ComponentModel.DataAnnotations;
 using Ares.Services.Device;
 
 namespace UI.Backend.ViewModels.Settings.Device.LaserChiller;
 
-public class LaserChillerConfigEditViewModel : ReactiveObject
+public partial class LaserChillerConfigEditViewModel : ReactiveObject
 {
   private readonly ChillerRpc.ChillerRpcClient _chillerClient;
   private readonly ChillerConfig _config;
@@ -56,7 +56,7 @@ public class LaserChillerConfigEditViewModel : ReactiveObject
   public bool Simulated { get; set; }
 
   [Reactive]
-  public IEnumerable<string>? AvailablePorts { get; private set; }
+  public partial IEnumerable<string>? AvailablePorts { get; private set; }
 
   public bool Modified => _config.Name != Name || _config.PortName != Port || _config.Simulated != Simulated;
 

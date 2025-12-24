@@ -5,11 +5,11 @@ using HerkulexDRS;
 using HerkulexDRS.Config;
 using HerkulexDRS.Services;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 
 namespace UI.Backend.ViewModels.Settings.Device.Servo;
 
-public class ServoSettingsListViewModel : ReactiveObject
+public partial class ServoSettingsListViewModel : ReactiveObject
 {
   private readonly HerkulexDRSRpc.HerkulexDRSRpcClient _servoClient;
   private readonly AresDevices.AresDevicesClient _devicesClient;
@@ -24,7 +24,7 @@ public class ServoSettingsListViewModel : ReactiveObject
   }
 
   [Reactive]
-  public IEnumerable<ServoSettingsViewModel>? SettingsViewModels { get; private set; }
+  public partial IEnumerable<ServoSettingsViewModel>? SettingsViewModels { get; private set; }
 
   private void UpdateViewModels(IEnumerable<DeviceConfig> deviceConfigs)
   {
