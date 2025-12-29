@@ -43,13 +43,13 @@ public partial class ParameterEditorViewModel : ReactiveObject
 
   public ParameterEditorViewModel(ParameterMetadata existingMetadata, IEnumerable<string> availableOutputs, UnitCategoryHelper unitHelper)
   {
+    CategoryOptions = [];
+    UnitOptions = [];
     _unitHelper = unitHelper;
     ParameterMetadata = existingMetadata;
     AvailableOutputs = availableOutputs.ToArray();
     HasInitialValue = existingMetadata.InitialValue != null;
     InitialValue = existingMetadata.InitialValue;
-    CategoryOptions = [];
-    UnitOptions = [];
   }
 
   public ParameterMetadata ParameterMetadata

@@ -1,19 +1,16 @@
-﻿// 1. Module-level variable to hold the Blazor reference
-// We need this because 'handleResponsiveGrid' doesn't receive it as an argument
-let _componentInstance = null;
+﻿let _componentInstance = null;
 let currentMode = 'desktop';
 
-// 2. Centralized Configuration
-// This ensures your margin/float/drag settings are identical in both modes
+
 function getGridOptions(columnCount) {
   return {
     column: columnCount,
-    cellHeight: 10,        // Kept your original setting
+    cellHeight: 10,
     margin: 5,
     float: true,
     acceptWidgets: true,
     disableResize: true,
-    oneColumnSize: 900,    // Handled by GridStack natively for mobile
+    oneColumnSize: 900,
     draggable: {
       handle: '.grid-stack-item-content',
       scroll: true
@@ -21,7 +18,6 @@ function getGridOptions(columnCount) {
   };
 }
 
-// 3. Helper to re-attach events (used in Init and Resize)
 function attachEvents(grid) {
   if (!_componentInstance) return;
 
@@ -101,9 +97,7 @@ function handleResponsiveGrid(gridId) {
   var grid = el.gridstack;
   var newColCount = 100; // Default Desktop
 
-  // Determine target columns
   if (width < 900) {
-    // Mobile handled automatically by oneColumnMode
     return;
   } else if (width < 1600) {
     newColCount = 50; // Laptop/Tablet Zoom
@@ -111,9 +105,6 @@ function handleResponsiveGrid(gridId) {
 
   // Only update if changed
   if (grid.getColumn() !== newColCount) {
-    // The Magic Trick: 'none' tells GridStack NOT to scale the widgets down.
-    // So a w=20 widget stays w=20. 
-    // In a 50-col grid, w=20 is twice as big as in a 100-col grid.
     grid.column(newColCount, 'none');
   }
 }
