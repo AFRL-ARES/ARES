@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.15.0" />
     <ProjectReference Include="..\AresService.Data\AresService.Data.csproj" />
   </ItemGroup>
 
