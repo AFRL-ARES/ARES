@@ -370,3 +370,4 @@ FodyWeavers.xsd
 *.db-wal
 
 .DS_store
+Data/
