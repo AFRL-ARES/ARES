@@ -23,7 +23,7 @@
 	  <PackageReference Include="DynamicData" Version="9.4.1" />
 	  <PackageReference Include="Grpc.Net.Client" Version="2.71.0" />
 	  <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.0" />
-	  <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />
+	  <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.1" />
 	  <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
 	  <PackageReference Include="Protobuf.System.Text.Json" Version="1.4.1" />
 	  <PackageReference Include="System.ServiceModel.Primitives" Version="10.0.652802" />
