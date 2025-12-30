@@ -48,7 +48,6 @@ else
     {
       await ViewModel!.AddNewConfig(viewModel.Save());
       DialogService.Close();
-      NotificationService.Notify(NotificationSeverity.Success, $"Successfully added Servo {viewModel.Name}");
     }
     catch (Grpc.Core.RpcException e)
     {
