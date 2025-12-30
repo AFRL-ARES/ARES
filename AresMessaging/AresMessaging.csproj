@@ -40,6 +40,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+  	<PackageReference Include="Grpc.Net.Client" Version="2.76.0" />
     <Protobuf Include="DeviceStateLogging\LaserChiller\ChillerState.proto" GrpcServices="None" />
     <Protobuf Include="DeviceStateLogging\LaserChiller\ChillerStateLogging.proto" AdditionalImportDirs="$(DataModelProtoPath)" />
     <Protobuf Include="DeviceStateLogging\Mfc\MfcStateLogging.proto" GrpcServices="Both" AdditionalImportDirs="$(DataModelProtoPath)" />
