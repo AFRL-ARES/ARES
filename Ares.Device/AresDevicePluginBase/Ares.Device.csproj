@@ -36,6 +36,8 @@
 
   <ItemGroup>
     <PackageReference Include="ARES.Datamodel" Version="0.15.3-beta.1" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.76.0" />
+  <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.3" />
     <PackageReference Include="System.Reactive" Version="6.1.0" />
   </ItemGroup>
 
