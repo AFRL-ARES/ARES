@@ -69,9 +69,9 @@ export const language = {
         cases: {
           '@keywords': 'keyword',
           '@constants': 'constant',
-          '@default': 'identifier',
           '@flowKeywords': 'keyword.flow',
-          '@specialKeywords': 'keyword.special'
+          '@specialKeywords': 'keyword.special',
+          '@default': 'identifier',
         },
       }],
 

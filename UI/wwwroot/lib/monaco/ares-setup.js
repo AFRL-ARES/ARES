@@ -27,10 +27,14 @@ export function registerAresLanguage() {
     base: 'vs-dark',
     inherit: true,
     rules: [
-      { token: 'identifier.function', foreground: 'DCDCAA' },
-      { token: 'keyword.flow', foreground: 'C586C0' },
-      { token: 'keyword.special', foreground: 'CE9178' }
+      { token: 'identifier.function', foreground: '#DCDCAA' },
+      { token: 'keyword.flow', foreground: '#C586C0' },
+      { token: 'keyword.special', foreground: '#CE9178' }
     ],
     colors: {}
   });
+  
+  monaco.editor.setTheme('ares-dark');
+  
+  console.log("Apparently set the theme");
 }
