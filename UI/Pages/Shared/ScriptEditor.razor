@@ -5,6 +5,8 @@
 @code {
   private StandaloneCodeEditor _editor;
 
+  public Task<string> GetScript() => _editor.GetValue();
+  
   protected override async Task OnAfterRenderAsync(bool firstRender)
   {
     if(firstRender)

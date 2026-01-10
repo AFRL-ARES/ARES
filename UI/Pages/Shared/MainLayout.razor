@@ -73,10 +73,11 @@
                     <div class="ares-footer">
                       <AresFooter>
                       <div class="d-flex flex-row justify-content-end align-items-center">
-                        @* <div>
+                          @* <div>
                           <span>Logged in as @context.User.Identity?.Name</span>
                           <a href="Identity/Account/Logout" class="mx-2">Logout</a>
                         </div> *@
+                          <RadzenAppearanceToggle />
                         <RadzenButton Click="@ShowEmergencyStopDialog" Text="Emergency Stop" Icon="report" ButtonStyle="ButtonStyle.Danger" />
                       </div>
                       </AresFooter>
