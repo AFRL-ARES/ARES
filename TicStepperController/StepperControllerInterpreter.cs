@@ -3,6 +3,7 @@ using Ares.Datamodel;
 using Ares.Device;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Templates;
+using Ares.Datamodel.Factories;
 
 namespace TicStepperController;
 public class StepperControllerInterpreter : DeviceCommandInterpreter<IStepperController, StepperControllerCommand>
@@ -52,14 +53,14 @@ public class StepperControllerInterpreter : DeviceCommandInterpreter<IStepperCon
         DeviceId = Device.UniqueId,
         Name = StepperControllerCommand.HaltAndSetPosition.ToString(),
         Description = "This command stops the motor abruptly without respecting the deceleration limit and sets the “Current position” variable, which represents what position the Tic currently thinks the motor is in. Besides stopping the motor and setting the current position, this command also clears the “position uncertain” flag, sets the input state to “halt”, and clears the “input after scaling” variable.",
-        ParameterMetadatas = { new ParameterMetadata { Index = 0, Name = StepperControllerCommandParameter.Position.ToString() , Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.Number, true) } }
+        ParameterMetadatas = { new ParameterMetadata { Index = 0, Name = StepperControllerCommandParameter.Position.ToString() , Schema = AresSchemaBuilder.Entry(AresDataType.Number).AsOptional().Build() } }
       },
       new()
       {
         DeviceId = Device.UniqueId,
         Name = StepperControllerCommand.SetTargetPosition.ToString(),
         Description = "This command sets the target position of the Tic, in microsteps.",
-        ParameterMetadatas = { new ParameterMetadata { Index = 0, Name = StepperControllerCommandParameter.Position.ToString(), Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.Number, true) } }
+        ParameterMetadatas = { new ParameterMetadata { Index = 0, Name = StepperControllerCommandParameter.Position.ToString(), Schema = AresSchemaBuilder.Entry(AresDataType.Number).AsOptional().Build() } }
       },
       new()
       {

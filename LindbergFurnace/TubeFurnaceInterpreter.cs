@@ -4,6 +4,7 @@ using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Templates;
 using LindbergFurnace.Commands;
 using UnitsNet;
+using Ares.Datamodel.Factories;
 
 namespace LindbergFurnace;
 
@@ -67,7 +68,7 @@ public class TubeFurnaceInterpreter : DeviceCommandInterpreter<ITubeFurnace, Tub
         DeviceId = Device.UniqueId,
         Name = TubeFurnaceCommand.SetSetpoint.ToString(),
         Description = "Set's an updated set point for the tube furnace, defined by the user.",
-        ParameterMetadatas = { new ParameterMetadata { Index = 0, Name = "Setpoint", Unit = "Degrees Celsius", Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.Number, true) } }
+        ParameterMetadatas = { new ParameterMetadata { Index = 0, Name = "Setpoint", Unit = "Degrees Celsius", Schema = AresSchemaBuilder.Entry(AresDataType.Number).AsOptional().Build() } }
       },
 
       new() {

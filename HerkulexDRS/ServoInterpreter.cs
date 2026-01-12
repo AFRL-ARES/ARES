@@ -2,6 +2,7 @@
 using Ares.Device;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Templates;
+using Ares.Datamodel.Factories;
 
 namespace HerkulexDRS;
 public class ServoInterpreter : DeviceCommandInterpreter<Servo, ServoCommand>
@@ -30,7 +31,7 @@ public class ServoInterpreter : DeviceCommandInterpreter<Servo, ServoCommand>
         OutputMetadata = new OutputMetadata()
         {
           Description = "Servo Position",
-          DataSchema = AresSchemaHelper.CreateSchema("ServoPosition", AresDataType.Number)
+          DataSchema = AresSchemaBuilder.Create("ServoPosition", AresDataType.Number).Build()
         }
       },
 
