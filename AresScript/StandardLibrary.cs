@@ -1,5 +1,6 @@
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel;
+using Ares.Datamodel.Factories;
 
 namespace AresScript;
 
@@ -16,8 +17,8 @@ public static class StandardLibrary
 
         return Task.FromResult(AresValueHelper.CreateUnit());
       },
-    AresSchemaHelper.CreateSchema("args", AresDataType.Any),
-    AresSchemaHelper.CreateSchema("", AresDataType.Unit),
+    AresSchemaBuilder.Create("args", AresDataType.Any).Build(),
+    AresSchemaBuilder.Create(AresDataType.Unit).Build(),
     "Prints the given value/s of any ARES type to console."),
     
     new("range", (args, _) => {
@@ -61,11 +62,12 @@ public static class StandardLibrary
 
       return Task.FromResult(AresValueHelper.CreateNumberArray(numbers));
     },
-    AresSchemaHelper.EmptySchema()
-      .AddEntry("start", AresDataType.Number, true, "The starting number.")
-      .AddEntry("stop", AresDataType.Number, false, "The non-inclusive stopping number.")
-      .AddEntry("step", AresDataType.Number, true, "The step size."),
-    AresSchemaHelper.CreateSchema("num_array", AresDataType.NumberArray),
+    AresSchemaBuilder.Empty()
+      .AddEntry("start", AresSchemaBuilder.NumberEntry().AsOptional().WithDescription("The starting number").Build())
+      .AddEntry("stop", AresSchemaBuilder.NumberEntry().WithDescription("The non-inclusive stopping number.").Build())
+      .AddEntry("step", AresSchemaBuilder.NumberEntry().AsOptional().WithDescription("The step size.").Build())
+      .Build(),
+    AresSchemaBuilder.Create("num_array", AresDataType.NumberArray).Build(),
     "Generates a list of numbers in a range."),
     
     new("sleep", async (args, token) => {
@@ -82,10 +84,12 @@ public static class StandardLibrary
       await Task.Delay(TimeSpan.FromMilliseconds(args[0].NumberValue), token);
       return AresValueHelper.CreateUnit();
     },
-    AresSchemaHelper.EmptySchema()
-      .AddEntry("time", AresDataType.Number, false, "Number of milliseconds to sleep", "ms"),
-    AresSchemaHelper.CreateSchema("", AresDataType.Unit),
-      "Sleep for a given number of milliseconds"
+    AresSchemaBuilder.Create("time", AresDataType.Number)
+      .WithDescription("Number of milliseconds to sleep")
+      .WithUnit("ms")
+      .Build(),
+    AresSchemaBuilder.Create("", AresDataType.Unit).Build(),
+    "Sleep for a given number of milliseconds"
     )
   ];
 }

@@ -5,6 +5,7 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
+using Ares.Datamodel.Factories;
 
 namespace AresScript;
 
@@ -24,8 +25,8 @@ public class ScriptRunner
 
       return Task.FromResult(AresValueHelper.CreateUnit());
       },
-    AresSchemaHelper.CreateSchema("args", AresDataType.Any),
-    AresSchemaHelper.CreateSchema("", AresDataType.Unit),
+    AresSchemaBuilder.Create("args", AresDataType.Any).Build(),
+    AresSchemaBuilder.Create(AresDataType.Unit).Build(),
     "Prints the given value/s of any ARES type to output.");
   }
   

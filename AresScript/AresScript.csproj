@@ -10,7 +10,7 @@
     <PackageReference Include="Antlr4.Runtime.Standard" Version="4.13.1" />
     <PackageReference Include="Antlr4BuildTasks" Version="12.11.0" />
     <PackageReference Include="System.Reactive" Version="6.1.0" />
-    <PackageReference Include="ARES.Datamodel" Version="0.16.0-alpha.10" /> 
+    <PackageReference Include="ARES.Datamodel" Version="0.16.0-alpha.15" /> 
   </ItemGroup>
 
   <ItemGroup>
