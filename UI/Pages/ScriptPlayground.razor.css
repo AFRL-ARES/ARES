@@ -74,6 +74,7 @@
   flex: 1;
   min-height: 0;
   padding: 0.75rem;
+  overflow: auto;
 }
 
 .script-playground__editor .script-playground__pane-body {
