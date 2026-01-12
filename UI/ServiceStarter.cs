@@ -54,7 +54,7 @@ public class ServiceStarter : IHostedService
 
   public async Task StartAsync(CancellationToken cancellationToken)
   {
-    await _notificationReceivingService.InitializeAsync();
+    _notificationReceivingService.StartNotificationStream();
     _deviceControlViewModelRepo.Initialize();
     _deviceAdapterManager.Activate();
     _mfcViewModelFactory.Start(TimeSpan.FromSeconds(5));
