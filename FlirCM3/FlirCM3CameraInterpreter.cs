@@ -4,6 +4,7 @@ using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Templates;
 using FlirCM3.Commands;
 using FlirCM3.Enums;
+using Ares.Datamodel.Factories;
 
 namespace FlirCM3;
 
@@ -22,11 +23,11 @@ public class FlirCM3CameraInterpreter : DeviceCommandInterpreter<IFlirCM3Camera,
         DeviceId = Device.UniqueId,
         Name = FlirCM3CommandType.CaptureImage.ToString(),
         Description = "A command that tells the attached camera to capture a single image.",
-        ParameterMetadatas = { new ParameterMetadata {Index = 0, Name = FlirCM3CommandParameter.SavePath.ToString(), Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.String, true) } },
+        ParameterMetadatas = { new ParameterMetadata {Index = 0, Name = FlirCM3CommandParameter.SavePath.ToString(), Schema = AresSchemaBuilder.Entry(AresDataType.String).AsOptional().Build() } },
         OutputMetadata = new OutputMetadata()
         {
           Description = "Returns a byte array representing the image data.",
-          DataSchema = AresSchemaHelper.CreateSchema("Image Data", AresDataType.ByteArray),
+          DataSchema = AresSchemaBuilder.Create("Image Data", AresDataType.ByteArray).Build(),
           Index = 0
         }
       },
@@ -36,7 +37,7 @@ public class FlirCM3CameraInterpreter : DeviceCommandInterpreter<IFlirCM3Camera,
         DeviceId = Device.UniqueId,
         Name = FlirCM3CommandType.SetExposureTime.ToString(),
         Description = "A command that sets the exposure time of the attached camera.",
-        ParameterMetadatas = { new ParameterMetadata {Index = 0, Name = FlirCM3CommandParameter.ExposureTime.ToString(), Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.Number, true) } }
+        ParameterMetadatas = { new ParameterMetadata {Index = 0, Name = FlirCM3CommandParameter.ExposureTime.ToString(), Schema = AresSchemaBuilder.Entry(AresDataType.Number).AsOptional().Build() } }
       },
 
       new()
@@ -47,7 +48,7 @@ public class FlirCM3CameraInterpreter : DeviceCommandInterpreter<IFlirCM3Camera,
         OutputMetadata = new OutputMetadata()
         {
           Description = "Returns a path to the latest image in the form of a string.",
-          DataSchema = AresSchemaHelper.CreateSchema("Image Path", AresDataType.String)
+          DataSchema = AresSchemaBuilder.Create("Image Path", AresDataType.String).Build()
         }
       },
 
@@ -59,7 +60,7 @@ public class FlirCM3CameraInterpreter : DeviceCommandInterpreter<IFlirCM3Camera,
         OutputMetadata = new OutputMetadata()
         {
           Description = "A byte array that contains the latest image data.",
-          DataSchema = AresSchemaHelper.CreateSchema("Image Data", AresDataType.ByteArray)
+          DataSchema = AresSchemaBuilder.Create("Image Data", AresDataType.ByteArray).Build()
         }
       }
     };

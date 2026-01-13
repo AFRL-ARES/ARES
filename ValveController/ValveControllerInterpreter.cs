@@ -2,6 +2,7 @@
 using Ares.Device;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Templates;
+using Ares.Datamodel.Factories;
 
 namespace ValveController;
 public class ValveControllerInterpreter : DeviceCommandInterpreter<ValveController, ValveControllerCommand>
@@ -20,7 +21,7 @@ public class ValveControllerInterpreter : DeviceCommandInterpreter<ValveControll
         OutputMetadata = new OutputMetadata()
         {
           Description = "Returns the current engagement status of the relay channels.",
-          DataSchema = AresSchemaHelper.CreateSchema("Relay1", AresDataType.Boolean).AddEntry("Relay2", AresDataType.Boolean),
+          DataSchema = AresSchemaBuilder.Create("Relay1", AresDataType.Boolean).AddEntry("Relay2", AresSchemaBuilder.Entry(AresDataType.Boolean).Build()).Build(),
           Index = 0
         }
       },

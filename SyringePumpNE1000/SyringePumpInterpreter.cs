@@ -3,6 +3,7 @@ using Ares.Device;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Templates;
 using UnitsNet;
+using Ares.Datamodel.Factories;
 
 
 namespace SyringePumpNE1000;
@@ -142,7 +143,7 @@ public class SyringePumpInterpreter : DeviceCommandInterpreter<ISyringePump, Syr
             new()
             { Index = 0,
               Name = "Phase",
-              Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.Number, true)
+              Schema = AresSchemaBuilder.Entry(AresDataType.Number).AsOptional().Build()
             }
           }
         }
@@ -161,7 +162,7 @@ public class SyringePumpInterpreter : DeviceCommandInterpreter<ISyringePump, Syr
             {
               Index = 0,
               Name = "Phase Function",
-              Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.Number, true)
+              Schema = AresSchemaBuilder.Entry(AresDataType.Number).AsOptional().Build()
             }
           }
         }
@@ -175,7 +176,7 @@ public class SyringePumpInterpreter : DeviceCommandInterpreter<ISyringePump, Syr
         OutputMetadata = new OutputMetadata
         {
           Description = "The current Phase of the syringe pump.",
-          DataSchema = AresSchemaHelper.CreateSchema("Phase Number", AresDataType.Number),
+          DataSchema = AresSchemaBuilder.Create("Phase Number", AresDataType.Number).Build(),
           UniqueId = Guid.NewGuid().ToString()
         }
       },
@@ -194,7 +195,7 @@ public class SyringePumpInterpreter : DeviceCommandInterpreter<ISyringePump, Syr
               Index = 0,
               Name = "Diameter",
               Unit = "Millimeters",
-              Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.Number, true)
+              Schema = AresSchemaBuilder.Entry(AresDataType.Number).AsOptional().Build()
             }
           }
         }
@@ -221,7 +222,7 @@ public class SyringePumpInterpreter : DeviceCommandInterpreter<ISyringePump, Syr
               Index = 0,
               Name = "Function Rate",
               Unit = "mL/min",
-              Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.Number, true)
+              Schema = AresSchemaBuilder.Entry(AresDataType.Number).AsOptional().Build()
             }
           }
         }
@@ -238,7 +239,7 @@ public class SyringePumpInterpreter : DeviceCommandInterpreter<ISyringePump, Syr
         DeviceId = Device.UniqueId,
         Name = SyringePumpCommand.SetProgramFunctionVolumeToBeDispensed.ToString(),
         Description = string.Empty,
-        ParameterMetadatas = {new ParameterMetadata[] { new() { Index = 0, Name = "Volume", Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.Number, true) } } }
+        ParameterMetadatas = {new ParameterMetadata[] { new() { Index = 0, Name = "Volume", Schema = AresSchemaBuilder.Entry(AresDataType.Number).AsOptional().Build() } } }
       },
 
       new()
@@ -258,7 +259,7 @@ public class SyringePumpInterpreter : DeviceCommandInterpreter<ISyringePump, Syr
         DeviceId = Device.UniqueId,
         Name = SyringePumpCommand.SetProgramFunctionPumpingDirection.ToString(),
         Description = string.Empty,
-        ParameterMetadatas = {new ParameterMetadata[] { new() { Index = 0, Name = "Pumping Direction", Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.Number, true) } } }
+        ParameterMetadatas = {new ParameterMetadata[] { new() { Index = 0, Name = "Pumping Direction", Schema = AresSchemaBuilder.Entry(AresDataType.Number).AsOptional().Build() } } }
       },
 
       new()

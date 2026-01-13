@@ -2,6 +2,7 @@
 using AlicatMFC.Commands;
 using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
+using Ares.Datamodel.Factories;
 using Ares.Datamodel.Templates;
 using Ares.Device;
 using UnitsNet;
@@ -145,7 +146,7 @@ public class MassFlowControllerInterpreter : DeviceCommandInterpreter<IMassFlowC
             Index = 0,
             Name = MassFlowControllerCommandParameter.Setpoint.ToString(),
             Unit = StandardVolumeFlowUnit.StandardLiterPerMinute.ToString(),
-            Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.Number, true)
+            Schema = AresSchemaBuilder.Entry(AresDataType.Number).AsOptional().Build()
           }
         }
       },
@@ -160,7 +161,7 @@ public class MassFlowControllerInterpreter : DeviceCommandInterpreter<IMassFlowC
           {
             Index = 0,
             Name = MassFlowControllerCommandParameter.DeviceId.ToString(),
-            Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.String, true)
+            Schema = AresSchemaBuilder.Entry(AresDataType.String).AsOptional().Build()
           }
         }
       },
@@ -187,7 +188,7 @@ public class MassFlowControllerInterpreter : DeviceCommandInterpreter<IMassFlowC
           {
             Index = 0,
             Name = MassFlowControllerCommandParameter.GasNumber.ToString(),
-            Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.String, true)
+            Schema = AresSchemaBuilder.Entry(AresDataType.String).AsOptional().Build()
           }
         }
       },
@@ -199,7 +200,7 @@ public class MassFlowControllerInterpreter : DeviceCommandInterpreter<IMassFlowC
         OutputMetadata = new OutputMetadata
         {
           Description = "Current setpoint",
-          DataSchema = AresSchemaHelper.CreateSchema(MfcDataTypes.Setpoint.Key, MfcDataTypes.Setpoint.Value)
+          DataSchema = AresSchemaBuilder.Create(MfcDataTypes.Setpoint.Key, MfcDataTypes.Setpoint.Value).Build()
         }
       }
     };
@@ -218,7 +219,7 @@ public class MassFlowControllerInterpreter : DeviceCommandInterpreter<IMassFlowC
             {
               Index = 0,
               Name = MassFlowControllerCommandParameter.ValvePercent.ToString(),
-              Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.Number, false)
+              Schema = AresSchemaBuilder.Entry(AresDataType.Number).Build()
             }
           }
         }
@@ -277,7 +278,7 @@ public class MassFlowControllerInterpreter : DeviceCommandInterpreter<IMassFlowC
           {
             Index = 0,
             Name = MassFlowControllerCommandParameter.MixNumber.ToString(),
-            Schema = AresSchemaHelper.CreateSchemaEntry(AresDataType.String, true)
+            Schema = AresSchemaBuilder.Entry(AresDataType.String).AsOptional().Build()
           }
         }
       },
