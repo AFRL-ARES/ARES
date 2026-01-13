@@ -43,6 +43,10 @@ public class AresScriptingService : Ares.Services.AresScriptingService.AresScrip
       {
         _logger.LogError("RpcException while trying to write to the grpc stream: {Exception}", e);
       }
+      catch(Exception e)
+      {
+        _logger.LogError($"Exception while reading script output. {e}");
+      }
     }
     var readTask = ReadOutputAsync();
     
