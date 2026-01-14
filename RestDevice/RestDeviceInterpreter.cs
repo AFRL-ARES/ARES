@@ -5,6 +5,7 @@ using Ares.Datamodel.Templates;
 using RestDevice.Enums;
 using RestDevice.Generics;
 using RestDevice.Structure;
+using Ares.Datamodel.Factories;
 
 namespace RestDevice;
 
@@ -103,7 +104,7 @@ public class RestDeviceInterpreter : DeviceCommandInterpreter<IRestDevice, RestD
     //TODO: Handle multiple outputs?
     var outputMetadata = new OutputMetadata()
     {
-      DataSchema = AresSchemaHelper.CreateSchema(output.Name, ConvertGenericTypeToAresType(output.Type)),
+      DataSchema = AresSchemaBuilder.Create(output.Name, ConvertGenericTypeToAresType(output.Type)).Build(),
       Description = output.Description,
       Index = 0,
       UniqueId = output.UniqueId

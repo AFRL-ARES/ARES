@@ -5,6 +5,7 @@ using RestSerialDevice.Structure;
 using RestSerialDevice.Generics;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Templates;
+using Ares.Datamodel.Factories;
 
 namespace RestSerialDevice;
 
@@ -45,7 +46,7 @@ public class SerialRestDeviceInterpreter : DeviceCommandInterpreter<SerialRestDe
     //TODO: Handle multiple outputs?
     var outputMetadata = new OutputMetadata()
     {
-      DataSchema = AresSchemaHelper.CreateSchema(output.Name, ConvertGenericTypeToAresType(output.Type)),
+      DataSchema = AresSchemaBuilder.Create(output.Name, ConvertGenericTypeToAresType(output.Type)).Build(),
       Description = output.Description,
       Index = 0,
     };

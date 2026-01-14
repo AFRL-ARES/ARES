@@ -105,6 +105,7 @@ internal static class ServiceCollectionExtensions
     services.AddScoped(_ => clientManager.GetClient<AresAnalysisService.AresAnalysisServiceClient>());
     services.AddScoped(_ => clientManager.GetClient<AresSafetyService.AresSafetyServiceClient>());
     services.AddSingleton(_ => clientManager.GetClient<AresNotificationRpc.AresNotificationRpcClient>());
+    services.AddSingleton(_ => clientManager.GetClient<AresScriptingService.AresScriptingServiceClient>());
 
     //Device Clients
     services.AddSingleton(_ => clientManager.GetClient<AresDevices.AresDevicesClient>());
@@ -147,6 +148,7 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<CustomStepBuilderViewModel>();
     services.AddScoped<ExecutionHistoryViewModel>();
     services.AddScoped<ExecutionViewModel>();
+    services.AddScoped<ScriptPlaygroundViewModel>();
 
     //Device Settings List View Models
     services.AddTransient<DeviceStatesViewModel>();

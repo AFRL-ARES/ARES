@@ -1,4 +1,5 @@
-﻿using AresService.Services.Authentication;
+﻿using Ares.Core.Grpc.Services;
+using AresService.Services.Authentication;
 using AresService.Services.Devices;
 using AresService.Services.DeviceStateLogging;
 using AresService.Services.OperationalState;
@@ -34,5 +35,6 @@ public static class ServiceMapper
     routeBuilder.MapGrpcService<RestDeviceService>();
     routeBuilder.MapGrpcService<RestSerialDeviceService>();
     routeBuilder.MapGrpcService<DeviceStateExportService>();
+    routeBuilder.MapGrpcService<AresScriptingService>();
   }
 }
