@@ -21,8 +21,7 @@ public partial class RemoteDeviceSettingsViewModel : ReactiveObject
   private readonly ObservableAsPropertyHelper<bool> _isBusy;
   private readonly IMessenger _deviceDeletionMessenger;
 
-  public RemoteDeviceSettingsViewModel(
-      AresDevices.AresDevicesClient devicesService,
+  public RemoteDeviceSettingsViewModel(AresDevices.AresDevicesClient devicesService,
       INotificationReceivingService notificationService,
       DeviceInfo deviceInfo,
       IMessenger deviceDeletionMessenger,

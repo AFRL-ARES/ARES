@@ -11,10 +11,21 @@
     <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
       <RadzenIcon Icon="router" Style="font-size: 3rem; color: var(--rz-primary);" />
       <RadzenStack Gap="0">
-        <RadzenText TextStyle="TextStyle.H4" Style="margin: 0;">@DeviceName</RadzenText>
-        <RadzenText TextStyle="TextStyle.Body2" Style="color: var(--rz-text-secondary);">
-          Status: <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="Online" />
-        </RadzenText>
+        <RadzenText TextStyle="TextStyle.H4" Style="margin: 0; padding-bottom: 0.5rem;">@DeviceName</RadzenText>
+        @if(OperationalState == OperationalState.Active)
+        {
+          <RadzenText TextStyle="TextStyle.Body2" Style="color: var(--rz-text-secondary);">
+            Status: <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="Online" />
+          </RadzenText>
+        }
+
+        else
+        {
+          <RadzenText TextStyle="TextStyle.Body2" Style="color: var(--rz-text-secondary);">
+            Status: <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="Offline" />
+          </RadzenText>
+        }
+
       </RadzenStack>
     </RadzenStack>
   </RadzenCard>
@@ -99,6 +110,9 @@
 
   [Parameter]
   public DeviceCommandDescriptor[] DeviceCommands { get; set; } = [];
+
+  [Parameter]
+  public OperationalState OperationalState { get; set; } = new();
 
 
   private void OpenInvokeDialog(DeviceCommandDescriptor cmd)
