@@ -18,11 +18,8 @@ internal class RequiredDeviceInterpretersValidator : ICampaignValidator
     var requiredDeviceIds = template.ExperimentTemplate.StepTemplates.SelectMany(stepTemp =>
         stepTemp.CommandTemplates.Select(cmdTemp => cmdTemp.Metadata.DeviceId)).Distinct().ToArray();
 
-    var existingRequiredDevices = requiredDeviceIds.Select(deviceId =>
-        _deviceCommandInterpreterRepo
-        .FirstOrDefault(interpreter => interpreter.Device.UniqueId.Equals(deviceId)))
-      .OfType<IDeviceCommandInterpreter<IAresDevice>>()
-      .Select(interpreter => interpreter.Device)
+    var existingRequiredDevices = requiredDeviceIds
+      .Select(_deviceCommandInterpreterRepo.GetAresDevice)
       .ToArray();
 
     var missingDeviceIds = requiredDeviceIds

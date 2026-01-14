@@ -29,8 +29,7 @@ public class VerdiV6LaserService : VerdiV6Rpc.VerdiV6RpcBase
   private IVerdiV6Laser GetLaser(string id)
   {
     var laser = _deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
-      .OfType<IVerdiV6Laser>()
+      .GetAresDevices<IVerdiV6Laser>()
       .FirstOrDefault(l => l.UniqueId == id);
 
     if(laser is null)
@@ -113,8 +112,7 @@ public class VerdiV6LaserService : VerdiV6Rpc.VerdiV6RpcBase
   public override Task<GetAllLasersResponse> GetAllLasers(Empty request, ServerCallContext context)
   {
     var devices = _deviceCommandInterpreterRepo
-      .Select(deviceInterpreter => deviceInterpreter.Device)
-      .OfType<IVerdiV6Laser>()
+      .GetAresDevices<IVerdiV6Laser>()
       .Select(laser => new DeviceDescription { Id = laser.UniqueId, Name = laser.Name });
     var response = new GetAllLasersResponse();
     response.Devices.AddRange(devices);

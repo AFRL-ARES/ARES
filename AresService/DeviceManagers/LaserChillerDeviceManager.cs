@@ -53,18 +53,17 @@ public class LaserChillerDeviceManager : IDeviceManager<ChillerConfig, ILaserChi
 
   public async Task Remove(string chillerId)
   {
-    var chillerInterpreter = _deviceCommandInterpreterRepo
-      .FirstOrDefault(interpreter => interpreter.Device.UniqueId == chillerId);
+    var chiller = _deviceCommandInterpreterRepo
+      .GetAresDevice<ILaserChiller>(chillerId);
 
-    if(chillerInterpreter?.Device is not ILaserChiller chiller)
+    if(chiller is null)
       return;
 
     await chiller.DisposeAsync();
-    _deviceCommandInterpreterRepo.Remove(chillerInterpreter);
+    _deviceCommandInterpreterRepo.Remove(chiller.UniqueId);
     var connection = chiller.Connection;
     var connectionInUse = _deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
-      .OfType<ISerialDevice<ILaserChillerConnection>>()
+      .GetAresDevices<ISerialDevice<ILaserChillerConnection>>()
       .Any(device => device.Connection == connection);
 
     if(!connectionInUse)
@@ -74,9 +73,7 @@ public class LaserChillerDeviceManager : IDeviceManager<ChillerConfig, ILaserChi
   public async Task<ILaserChiller> Update(string id, ChillerConfig config)
   {
     var existingChiller = _deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
-      .OfType<ILaserChiller>()
-      .FirstOrDefault(device => device.UniqueId == id);
+      .GetAresDevice<ILaserChiller>(id);
 
     if(existingChiller is null)
       return await Create(config);

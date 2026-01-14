@@ -53,9 +53,7 @@ public class TubeFurnaceManager : IDeviceManager<TubeFurnaceConfig, ITubeFurnace
   public async Task<ITubeFurnace> Update(string id, TubeFurnaceConfig config)
   {
     var existingFurnace = _deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
-      .OfType<ITubeFurnace>()
-      .FirstOrDefault(device => device.UniqueId == id);
+      .GetAresDevice<ITubeFurnace>(id);
 
     if(existingFurnace is null)
       return await Create(config);
@@ -73,19 +71,18 @@ public class TubeFurnaceManager : IDeviceManager<TubeFurnaceConfig, ITubeFurnace
 
   public Task Remove(string tubeFurnaceId)
   {
-    var tubeFurnaceInterpreter = _deviceCommandInterpreterRepo
-      .FirstOrDefault(interpreter => interpreter.Device.UniqueId == tubeFurnaceId);
+    var tubeFurnace = _deviceCommandInterpreterRepo
+      .GetAresDevice<ITubeFurnace>(tubeFurnaceId);
 
-    if(tubeFurnaceInterpreter?.Device is not ITubeFurnace tubeFurnace)
+    if(tubeFurnace is null)
       return Task.CompletedTask;
 
     _deviceStateLoggerRepo.Remove(tubeFurnace.Name);
     tubeFurnace.Dispose();
-    _deviceCommandInterpreterRepo.Remove(tubeFurnaceInterpreter);
+    _deviceCommandInterpreterRepo.Remove(tubeFurnace.UniqueId);
     var connection = tubeFurnace.Connection;
     var connectionInUse = _deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
-      .OfType<ISerialDevice<ITubeFurnaceConnection>>()
+      .GetAresDevices<ISerialDevice<ITubeFurnaceConnection>>()
       .Any(device => device.Connection == connection);
 
     if(!connectionInUse)

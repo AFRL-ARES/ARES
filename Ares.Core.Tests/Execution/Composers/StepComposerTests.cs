@@ -22,28 +22,28 @@ internal class StepComposerTests
     {
       Index = 0,
       UniqueId = Guid.NewGuid().ToString(),
-      Metadata = new CommandMetadata { UniqueId = Guid.NewGuid().ToString(), DeviceId = "TestName" }
+      Metadata = new CommandMetadata { UniqueId = Guid.NewGuid().ToString(), DeviceId = "TestDeviceId" }
     };
 
     var commandTemplate2 = new CommandTemplate
     {
       Index = 1,
       UniqueId = Guid.NewGuid().ToString(),
-      Metadata = new CommandMetadata { UniqueId = Guid.NewGuid().ToString(), DeviceId = "TestName" }
+      Metadata = new CommandMetadata { UniqueId = Guid.NewGuid().ToString(), DeviceId = "TestDeviceId" }
     };
 
     var commandTemplate3 = new CommandTemplate
     {
       Index = 2,
       UniqueId = Guid.NewGuid().ToString(),
-      Metadata = new CommandMetadata { UniqueId = Guid.NewGuid().ToString(), DeviceId = "TestName" }
+      Metadata = new CommandMetadata { UniqueId = Guid.NewGuid().ToString(), DeviceId = "TestDeviceId" }
     };
 
     var commandTemplate4 = new CommandTemplate
     {
       Index = 3,
       UniqueId = Guid.NewGuid().ToString(),
-      Metadata = new CommandMetadata { UniqueId = Guid.NewGuid().ToString(), DeviceId = "TestName" }
+      Metadata = new CommandMetadata { UniqueId = Guid.NewGuid().ToString(), DeviceId = "TestDeviceId" }
     };
 
     var stepTemplate = new StepTemplate
@@ -62,6 +62,7 @@ internal class StepComposerTests
   {
     var interpreterMock = new Mock<IDeviceCommandInterpreter<IAresDevice>>();
     interpreterMock.SetupGet(interpreter => interpreter.Device.Name).Returns("TestName");
+    interpreterMock.SetupGet(interpreter => interpreter.Device.UniqueId).Returns("TestDeviceId");
     _commandInterpreters = new DeviceCommandInterpreterRepo()
     {
       interpreterMock.Object

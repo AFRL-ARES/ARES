@@ -30,8 +30,7 @@ public class FlirCM3CameraService : FlirCM3CameraRpc.FlirCM3CameraRpcBase
   private IFlirCM3Camera GetCamera(string id)
   {
     var camera = _deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
-      .OfType<IFlirCM3Camera>()
+      .GetAresDevices<IFlirCM3Camera>()
       .FirstOrDefault(cam => cam.UniqueId == id);
 
     if(camera is null)
@@ -102,8 +101,7 @@ public class FlirCM3CameraService : FlirCM3CameraRpc.FlirCM3CameraRpcBase
     try
     {
       var cameraDescriptions = _deviceCommandInterpreterRepo
-      .Select(deviceInterpreter => deviceInterpreter.Device)
-      .OfType<IFlirCM3Camera>()
+      .GetAresDevices<IFlirCM3Camera>()
       .Select(device => new CameraDescription { Id = device.UniqueId, Name = device.Name });
 
       response.Cameras.AddRange(cameraDescriptions);

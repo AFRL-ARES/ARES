@@ -64,9 +64,7 @@ public class Tc0304Manager : IDeviceManager<Tc0304Config, IDataloggerThermometer
   public async Task<IDataloggerThermometer> Update(string id, Tc0304Config config)
   {
     var existingLogger = _deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
-      .OfType<IDataloggerThermometer>()
-      .FirstOrDefault(device => device.UniqueId == id);
+      .GetAresDevice<IDataloggerThermometer>(id);
 
     if (existingLogger is null)
       return await Create(config);
@@ -83,19 +81,18 @@ public class Tc0304Manager : IDeviceManager<Tc0304Config, IDataloggerThermometer
 
   public async Task Remove(string dataloggerId)
   {
-    var dataloggerInterpreter = _deviceCommandInterpreterRepo
-      .FirstOrDefault(interpreter => interpreter.Device.UniqueId == dataloggerId);
+    var logger = _deviceCommandInterpreterRepo
+      .GetAresDevice<IDataloggerThermometer>(dataloggerId);
 
-    if (dataloggerInterpreter?.Device is not IDataloggerThermometer logger)
+    if (logger is null)
       return;
 
     await _stateLoggerManager.RemoveLogger(logger.UniqueId);
     await logger.DisposeAsync();
-    _deviceCommandInterpreterRepo.Remove(dataloggerInterpreter);
+    _deviceCommandInterpreterRepo.Remove(logger.UniqueId);
     var connection = logger.Connection;
     var connectionInUse = _deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
-      .OfType<ISerialDevice<IDataloggerThermometerConnection>>()
+      .GetAresDevices<ISerialDevice<IDataloggerThermometerConnection>>()
       .Any(device => device.Connection == connection);
 
     if (!connectionInUse)

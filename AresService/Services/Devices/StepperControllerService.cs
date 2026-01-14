@@ -242,8 +242,7 @@ public class StepperControllerService : StepperControllerRpc.StepperControllerRp
   public override Task<GetAllControllersResponse> GetAllControllers(Empty request, ServerCallContext context)
   {
     var devices = _deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
-      .OfType<IStepperController>()
+      .GetAresDevices<IStepperController>()
       .Select(controller => new DeviceDescription { Id = controller.UniqueId, Name = controller.Name });
 
     var response = new GetAllControllersResponse();
@@ -255,8 +254,7 @@ public class StepperControllerService : StepperControllerRpc.StepperControllerRp
   private IStepperController GetStepperController(string id)
   {
     var controller = _deviceCommandInterpreterRepo
-      .Select(dci => dci.Device)
-      .OfType<IStepperController>()
+      .GetAresDevices<IStepperController>()
       .FirstOrDefault(sc => sc.UniqueId == id);
 
     if(controller is null)

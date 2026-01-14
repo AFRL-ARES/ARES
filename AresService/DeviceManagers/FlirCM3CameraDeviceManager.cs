@@ -56,22 +56,20 @@ public class FlirCM3CameraDeviceManager : IDeviceManager<FlirCM3Config, IFlirCM3
 
   public async Task Remove(string managerId)
   {
-    var cameraInterpreter = _deviceCommandInterpreterRepo
-  .FirstOrDefault(interpreter => interpreter.Device.UniqueId == managerId);
+    var cm3Camera = _deviceCommandInterpreterRepo
+      .GetAresDevice<IFlirCM3Camera>(managerId);
 
-    if(cameraInterpreter?.Device is not IFlirCM3Camera cm3Camera)
+    if(cm3Camera is null)
       return;
 
     await cm3Camera.DisposeAsync();
-    _deviceCommandInterpreterRepo.Remove(cameraInterpreter);
+    _deviceCommandInterpreterRepo.Remove(cm3Camera.UniqueId);
   }
 
   public async Task<IFlirCM3Camera> Update(string deviceId, FlirCM3Config config)
   {
     var existingCamera = _deviceCommandInterpreterRepo
-    .Select(interpreter => interpreter.Device)
-    .OfType<IFlirCM3Camera>()
-    .FirstOrDefault(device => device.UniqueId == deviceId);
+    .GetAresDevice<IFlirCM3Camera>(deviceId);
 
     if(existingCamera is null)
       return await Create(config);

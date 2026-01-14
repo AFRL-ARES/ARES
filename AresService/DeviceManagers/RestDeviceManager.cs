@@ -53,21 +53,20 @@ public class RestDeviceManager : IDeviceManager<RestDeviceConfig, IRestDevice>
 
   public async Task Remove(string managerId)
   {
-    var deviceInterpreter = _deviceCommandInterpreterRepo.FirstOrDefault(interpreter => interpreter.Device.UniqueId == managerId);
+    var restDevice = _deviceCommandInterpreterRepo
+      .GetAresDevice<IRestDevice>(managerId);
 
-    if(deviceInterpreter?.Device is not IRestDevice restDevice)
+    if(restDevice is null)
       return;
 
     await restDevice.DisposeAsync();
-    _deviceCommandInterpreterRepo.Remove(deviceInterpreter);
+    _deviceCommandInterpreterRepo.Remove(restDevice.UniqueId);
   }
 
   public async Task<IRestDevice> Update(string id, RestDeviceConfig config)
   {
     var existingCameraManager = _deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
-      .OfType<IRestDevice>()
-      .FirstOrDefault(device => device.UniqueId == id);
+      .GetAresDevice<IRestDevice>(id);
 
     if(existingCameraManager is null)
       return await Create(config);
