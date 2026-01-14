@@ -21,8 +21,7 @@ public partial class RemoteDeviceSettingsViewModel : ReactiveObject
   private readonly ObservableAsPropertyHelper<bool> _isBusy;
   private readonly IMessenger _deviceDeletionMessenger;
 
-  public RemoteDeviceSettingsViewModel(
-      AresDevices.AresDevicesClient devicesService,
+  public RemoteDeviceSettingsViewModel(AresDevices.AresDevicesClient devicesService,
       INotificationReceivingService notificationService,
       DeviceInfo deviceInfo,
       IMessenger deviceDeletionMessenger,
@@ -36,6 +35,7 @@ public partial class RemoteDeviceSettingsViewModel : ReactiveObject
     Name = _deviceInfo.Name;
     Address = _deviceInfo.Url;
     Type = _deviceInfo.Type;
+    DeviceCommands = _deviceInfo.Commands.ToArray();
     Version = "";
     Description = "";
     StateMessage = "";
@@ -91,7 +91,8 @@ public partial class RemoteDeviceSettingsViewModel : ReactiveObject
   public partial AresStruct Settings { get; private set; }
   [Reactive]
   public partial bool DeviceActive { get; private set; }
-
+  [Reactive]
+  public partial DeviceCommandDescriptor[] DeviceCommands { get; private set; }
   public RemoteDeviceConfigEditViewModel EditViewModel { get; }
   public bool IsBusy => _isBusy.Value;
 
