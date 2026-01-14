@@ -17,7 +17,6 @@ public class ServoDeviceManager : IDeviceManager<ServoConfig, IServo>
   private readonly ISerialConnectionManager<IServoConnection> _connectionManager;
   private readonly IDeviceCommandInterpreterRepo _deviceCommandInterpreterRepo;
 
-
   public ServoDeviceManager(IDeviceCommandInterpreterRepo deviceCommandInterpreterRepo,
     ISerialConnectionManager<IServoConnection> connectionManager)
   {
@@ -82,7 +81,7 @@ public class ServoDeviceManager : IDeviceManager<ServoConfig, IServo>
       .Any(device => device.Connection == connection);
 
     if(!connectionInUse)
-      _connectionManager.RemoveConnection(connection);
+      await _connectionManager.RemoveConnection(connection);
   }
 
   public async Task<IServo[]> Load(IEnumerable<LoadableConfig<ServoConfig>> configs)

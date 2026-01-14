@@ -36,6 +36,7 @@ public partial class RemoteDeviceSettingsViewModel : ReactiveObject
     Name = _deviceInfo.Name;
     Address = _deviceInfo.Url;
     Type = _deviceInfo.Type;
+    DeviceCommands = _deviceInfo.Commands.ToArray();
     Version = "";
     Description = "";
     StateMessage = "";
@@ -91,7 +92,8 @@ public partial class RemoteDeviceSettingsViewModel : ReactiveObject
   public partial AresStruct Settings { get; private set; }
   [Reactive]
   public partial bool DeviceActive { get; private set; }
-
+  [Reactive]
+  public partial DeviceCommandDescriptor[] DeviceCommands { get; private set; }
   public RemoteDeviceConfigEditViewModel EditViewModel { get; }
   public bool IsBusy => _isBusy.Value;
 

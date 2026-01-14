@@ -337,15 +337,25 @@ public class DevicesService(
 
   private DeviceInfo GetInfo(IAresDevice device)
   {
-    return new DeviceInfo
+    var info = new DeviceInfo
     {
       Name = device.Name,
       UniqueId = device.UniqueId,
       Description = device.Description,
       Type = device.Type,
-      Url = device is RemoteDevice remoteDevice ? remoteDevice.Address.ToString() : "",
       Version = device.Version,
-      SettingsSchema = device is RemoteDevice rDevice ? rDevice.SettingSchema : null
     };
+
+    if(device is RemoteDevice remoteDevice)
+    {
+      info.Url = remoteDevice.Address.ToString();
+      info.SettingsSchema = remoteDevice.SettingSchema;
+      info.Commands.AddRange(remoteDevice.CommandDescriptors);
+    }
+
+    else
+      info.SettingsSchema = null;
+
+    return info;
   }
 }
