@@ -1,4 +1,6 @@
-export const language = {
+import type {languages} from 'monaco-editor';
+
+export const language: languages.IMonarchLanguage = {
   defaultToken: '',
   tokenPostfix: '.ares',
 

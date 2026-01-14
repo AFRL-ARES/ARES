@@ -49,7 +49,7 @@ public class InterpreterTests
     parser.RemoveErrorListeners();
     parser.AddErrorListener(new ThrowingParserErrorListener());
     var programCtx = parser.program();
-    var env = new Environment();
+    var env = new AresScriptEnvironment();
     env.AssignSystemFunctions(StandardLibrary.Functions);
     var visitor = new AresBaseInterpreter(env, cancellationToken);
 
@@ -67,7 +67,7 @@ public class InterpreterTests
     parser.RemoveErrorListeners();
     parser.AddErrorListener(new ThrowingParserErrorListener());
     var programCtx = parser.program();
-    var env = new Environment();
+    var env = new AresScriptEnvironment();
     env.AssignSystemFunctions(StandardLibrary.Functions);
     var visitor = new AresValidationInterpreter(env);
 

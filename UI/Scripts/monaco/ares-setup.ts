@@ -5,7 +5,7 @@ import { conf } from './areslang.language-configuration.js';
  * Registers the ARES language with Monaco Editor.
  * This should be called once before the editor is initialized with the 'ares' language.
  */
-export function registerAresLanguage() {
+export function registerAresLanguage(): void {
   if (typeof monaco === 'undefined') {
     console.error('Monaco Editor is not loaded. Ensure BlazorMonaco is properly initialized.');
     return;
@@ -13,7 +13,7 @@ export function registerAresLanguage() {
 
   // Register the language ID if it hasn't been registered yet
   const languages = monaco.languages.getLanguages();
-  if (!languages.some(lang => lang.id === 'ares')) {
+  if (!languages.some((lang: { id: string }) => lang.id === 'ares')) {
     monaco.languages.register({ id: 'ares' });
   }
 
@@ -33,8 +33,8 @@ export function registerAresLanguage() {
     ],
     colors: {}
   });
-  
+
   monaco.editor.setTheme('ares-dark');
   
-  console.log("Apparently set the theme");
+  //monaco.languages.registerCompletionItemProvider("ares")
 }

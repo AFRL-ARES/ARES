@@ -6,7 +6,7 @@ This directory contains the Monaco Editor language definition for ARES.
 
 To use this language in a Blazor project using the `BlazorMonaco` package, follow these steps:
 
-1. **Serve the files**: Ensure the files in this directory are available in your `wwwroot` folder (e.g., `wwwroot/monaco/`).
+1. **Compile the scripts**: Ensure TypeScript is compiled so the output lives under `wwwroot/js/monaco/`.
 2. **Register the language**: Import and call the registration function in your Razor component.
 
 ### Example Razor Component Usage
@@ -25,8 +25,8 @@ To use this language in a Blazor project using the `BlazorMonaco` package, follo
         {
             // Import the setup script as a JS Module
             // Ensure the path matches your actual file structure in wwwroot
-            var module = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./monaco/ares-setup.js");
-            
+            var module = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/monaco/ares-setup.js");
+
             // Register the language with Monaco
             await module.InvokeVoidAsync("registerAresLanguage");
         }
@@ -46,6 +46,6 @@ To use this language in a Blazor project using the `BlazorMonaco` package, follo
 ```
 
 ## Files
-- `areslang.monarch.js`: Tokenization rules (syntax highlighting).
-- `areslang.language-configuration.js`: Language features (brackets, comments, indentation).
-- `ares-setup.js`: Glue script to register the language with the Monaco global instance.
+- `areslang.monarch.ts`: Tokenization rules (syntax highlighting).
+- `areslang.language-configuration.ts`: Language features (brackets, comments, indentation).
+- `ares-setup.ts`: Glue script to register the language with the Monaco global instance.

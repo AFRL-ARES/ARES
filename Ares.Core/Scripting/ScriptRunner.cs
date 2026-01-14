@@ -1,13 +1,13 @@
-using Antlr4.Runtime;
-using AresScript.Generated;
-using System;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using Antlr4.Runtime;
 using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
+using AresScript;
+using AresScript.Generated;
 
-namespace AresScript;
+namespace Ares.Core.Scripting;
 
 public class ScriptRunner
 {
@@ -41,7 +41,7 @@ public class ScriptRunner
     //parser.RemoveErrorListeners();
     //parser.AddErrorListener(new ThrowingParserErrorListener());
     var programCtx = parser.program();
-    var env = new Environment();
+    var env = new AresScriptEnvironment();
     env.AssignSystemFunctions(StandardLibrary.Functions);
     env.FunctionTable[Print.Id] = Print;
     var visitor = new AresBaseInterpreter(env, cancellationToken);

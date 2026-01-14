@@ -57,15 +57,13 @@ namespace Antlr4CodeCompletion.Core.CodeCompletion
 
         #region Public methods
 
-        public CandidatesCollection GetCandidates(int caretTokenIndex = 0, ParserRuleContext context = null) => this.CollectCandidates(caretTokenIndex, context);
-
         /// <summary>
         /// This is the main entry point. The caret token index specifies the token stream index for the token which currently
         /// covers the caret (or any other position you want to get code completion candidates for).
         /// Optionally you can pass in a parser rule context which limits the ATN walk to only that or called rules. This can significantly
         /// speed up the retrieval process but might miss some candidates (if they are outside of the given context).
         /// </summary>
-        public CandidatesCollection CollectCandidates(int caretTokenIndex, ParserRuleContext context)
+        public CandidatesCollection CollectCandidates(int caretTokenIndex, ParserRuleContext? context = null)
         {
             this.shortcutMap.Clear();
             this.candidates.Rules.Clear();

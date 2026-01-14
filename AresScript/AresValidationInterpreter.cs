@@ -6,12 +6,12 @@ namespace AresScript;
 
 public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
 {
-  private readonly Environment _locals = new();
+  private readonly AresScriptEnvironment _locals = new();
   private int _functionDepth;
 
-  public AresValidationInterpreter(Environment environment)
+  public AresValidationInterpreter(AresScriptEnvironment aresScriptEnvironment)
   {
-    _locals = environment;
+    _locals = aresScriptEnvironment;
   }
 
   protected override Task DefaultResult => Task.CompletedTask;

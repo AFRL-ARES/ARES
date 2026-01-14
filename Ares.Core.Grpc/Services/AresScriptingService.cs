@@ -1,9 +1,9 @@
 using System.Threading.Tasks;
 using Ares.Services;
-using AresScript;
 using Grpc.Core;
 using System;
 using System.Threading.Channels;
+using Ares.Core.Scripting;
 using Microsoft.Extensions.Logging;
 
 namespace Ares.Core.Grpc.Services;

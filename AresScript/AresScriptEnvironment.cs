@@ -3,11 +3,11 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace AresScript;
 
-public class Environment
+public class AresScriptEnvironment
 {
   private readonly Stack<ScriptScope> _scopes = [];
 
-  public Environment()
+  public AresScriptEnvironment()
   {
     var global = new ScriptScope("global");
     _scopes.Push(global);

@@ -9,19 +9,19 @@ namespace AresScript;
 
 public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 {
-  protected readonly Environment Locals;
+  protected readonly AresScriptEnvironment Locals;
   private readonly CancellationToken _cancellationToken;
 
   protected override Task<AresValue> DefaultResult => Task.FromResult(AresValueHelper.CreateUnit());
 
   public AresBaseInterpreter(CancellationToken cancellationToken = default)
-    : this(new Environment(), cancellationToken)
+    : this(new AresScriptEnvironment(), cancellationToken)
   {
   }
 
-  public AresBaseInterpreter(Environment environment, CancellationToken cancellationToken = default)
+  public AresBaseInterpreter(AresScriptEnvironment aresScriptEnvironment, CancellationToken cancellationToken = default)
   {
-    Locals = environment ?? throw new ArgumentNullException(nameof(environment));
+    Locals = aresScriptEnvironment ?? throw new ArgumentNullException(nameof(aresScriptEnvironment));
     _cancellationToken = cancellationToken;
   }
 
