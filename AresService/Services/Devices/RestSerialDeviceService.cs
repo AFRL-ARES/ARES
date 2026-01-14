@@ -28,8 +28,7 @@ public class RestSerialDeviceService : RestSerialDeviceRpc.RestSerialDeviceRpcBa
   private ISerialRestDevice? GetRestSerialDevice(string id)
   {
     var device = _deviceCommandInterpreterRepo
-        .Select(interpreter => interpreter.Device)
-        .OfType<ISerialRestDevice>()
+        .GetAresDevices<ISerialRestDevice>()
         .FirstOrDefault(d => d.UniqueId == id); // <--- Add filtering by name
     return device;
   }
@@ -93,8 +92,7 @@ public class RestSerialDeviceService : RestSerialDeviceRpc.RestSerialDeviceRpcBa
       ServerCallContext context)
   {
     var devices = _deviceCommandInterpreterRepo
-        .Select(deviceInterpreter => deviceInterpreter.Device)
-        .OfType<ISerialRestDevice>()
+        .GetAresDevices<ISerialRestDevice>()
         .Select(device => new DeviceDescription { Id = device.UniqueId, Name = device.Name });
 
     var response = new GetAllGenericSerialDevicesResponse();

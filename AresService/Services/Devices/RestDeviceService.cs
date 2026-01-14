@@ -30,8 +30,7 @@ public class RestDeviceService : RestDeviceRpc.RestDeviceRpcBase
   private IRestDevice? GetRestDevice(string name)
   {
     var device = _deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
-      .OfType<IRestDevice>()
+      .GetAresDevices<IRestDevice>()
       .FirstOrDefault();
 
     return device;
@@ -97,8 +96,7 @@ public class RestDeviceService : RestDeviceRpc.RestDeviceRpcBase
   public override Task<GetAllRestDevicesResponse> GetAllRestDevices(Empty request, ServerCallContext context)
   {
     var devices = _deviceCommandInterpreterRepo
-      .Select(deviceInterpeter => deviceInterpeter.Device)
-      .OfType<IRestDevice>()
+      .GetAresDevices<IRestDevice>()
       .Select(device => new RestDeviceDescription { Id = device.UniqueId, Name = device.Name });
 
     var response = new GetAllRestDevicesResponse();

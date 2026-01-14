@@ -63,15 +63,15 @@ public class StepperControllerManager : IDeviceManager<StepperControllerConfig, 
 
   public async Task Remove(string deviceId)
   {
-    var dataloggerInterpreter = _deviceCommandInterpreters
-      .FirstOrDefault(interpreter => interpreter.Device.UniqueId == deviceId);
+    var controller = _deviceCommandInterpreters
+      .GetAresDevice<IStepperController>(deviceId);
 
-    if (dataloggerInterpreter?.Device is not IStepperController controller)
+    if (controller is null)
       return;
 
     await _stateLoggerManager.RemoveLogger(controller.UniqueId);
     await controller.DisposeAsync();
-    _deviceCommandInterpreters.Remove(dataloggerInterpreter);
+    _deviceCommandInterpreters.Remove(controller.UniqueId);
     var connection = controller.Connection;
     var connectionInUse = _deviceCommandInterpreters
       .Select(interpreter => interpreter.Device)
@@ -85,9 +85,7 @@ public class StepperControllerManager : IDeviceManager<StepperControllerConfig, 
   public async Task<IStepperController> Update(string id, StepperControllerConfig config)
   {
     var device = _deviceCommandInterpreters
-      .Select(dci => dci.Device)
-      .OfType<IStepperController>()
-      .FirstOrDefault(sc => sc.UniqueId == id);
+      .GetAresDevice<IStepperController>(id);
 
     if (device is null)
       return await Load(id, config);

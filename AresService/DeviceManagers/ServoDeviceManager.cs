@@ -17,7 +17,6 @@ public class ServoDeviceManager : IDeviceManager<ServoConfig, IServo>
   private readonly ISerialConnectionManager<IServoConnection> _connectionManager;
   private readonly IDeviceCommandInterpreterRepo _deviceCommandInterpreterRepo;
 
-
   public ServoDeviceManager(IDeviceCommandInterpreterRepo deviceCommandInterpreterRepo,
     ISerialConnectionManager<IServoConnection> connectionManager)
   {
@@ -48,9 +47,7 @@ public class ServoDeviceManager : IDeviceManager<ServoConfig, IServo>
   public async Task<IServo> Update(string deviceId, ServoConfig config)
   {
     var existingServo = _deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
-      .OfType<IServo>()
-      .FirstOrDefault(device => device.UniqueId == deviceId);
+      .GetAresDevice<IServo>(deviceId);
 
     if(existingServo is null)
       return await Create(config);
@@ -65,24 +62,23 @@ public class ServoDeviceManager : IDeviceManager<ServoConfig, IServo>
     return await Load(deviceId, config);
   }
 
-  public async Task Remove(string servoName)
+  public async Task Remove(string servoId)
   {
-    var servoInterpreter = _deviceCommandInterpreterRepo
-      .FirstOrDefault(interpreter => interpreter.Device.Name == servoName);
+    var servo = _deviceCommandInterpreterRepo
+      .GetAresDevice<IServo>(servoId);
 
-    if(servoInterpreter?.Device is not IServo servo)
+    if(servo is null)
       return;
 
     await servo.DisposeAsync();
-    _deviceCommandInterpreterRepo.Remove(servoInterpreter);
+    _deviceCommandInterpreterRepo.Remove(servo.UniqueId);
     var connection = servo.Connection;
     var connectionInUse = _deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
-      .OfType<ISerialDevice<IServoConnection>>()
+      .GetAresDevices<ISerialDevice<IServoConnection>>()
       .Any(device => device.Connection == connection);
 
     if(!connectionInUse)
-      _connectionManager.RemoveConnection(connection);
+      await _connectionManager.RemoveConnection(connection);
   }
 
   public async Task<IServo[]> Load(IEnumerable<LoadableConfig<ServoConfig>> configs)

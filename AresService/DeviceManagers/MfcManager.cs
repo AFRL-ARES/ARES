@@ -80,9 +80,7 @@ public class MfcManager : IDeviceManager<MfcConfig, IMassFlowController>
   public async Task<IMassFlowController> Update(string id, MfcConfig config)
   {
     var existingMfc = _deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
-      .OfType<IMassFlowController>()
-      .FirstOrDefault(device => device.UniqueId == id);
+      .GetAresDevice<IMassFlowController>(id);
 
     if(existingMfc is null)
       return await Create(config);
@@ -99,15 +97,15 @@ public class MfcManager : IDeviceManager<MfcConfig, IMassFlowController>
 
   public async Task Remove(string mfcId)
   {
-    var mfcInterpreter = _deviceCommandInterpreterRepo
-      .FirstOrDefault(interpreter => interpreter.Device.UniqueId == mfcId);
+    var mfc = _deviceCommandInterpreterRepo
+      .GetAresDevice<IMassFlowController>(mfcId);
 
-    if(mfcInterpreter?.Device is not IMassFlowController mfc)
+    if(mfc is null)
       return;
 
     await mfc.DisposeAsync();
     await _stateLoggerManager.RemoveLogger(mfc.UniqueId);
-    _deviceCommandInterpreterRepo.Remove(mfcInterpreter);
+    _deviceCommandInterpreterRepo.Remove(mfc.UniqueId);
     var connection = mfc.Connection;
     var connectionInUse = _deviceCommandInterpreterRepo
       .Select(interpreter => interpreter.Device)

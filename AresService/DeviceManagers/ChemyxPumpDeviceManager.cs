@@ -49,39 +49,36 @@ public class ChemyxPumpDeviceManager : IDeviceManager<ChemyxPumpConfig, IChemyxP
 
   public async Task<IChemyxPump> Update(string deviceId, ChemyxPumpConfig config)
   {
-    var existingPumps = _deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
-      .OfType<IChemyxPump>()
-      .FirstOrDefault(device => device.UniqueId == deviceId);
+    var existingPump = _deviceCommandInterpreterRepo
+      .GetAresDevice<IChemyxPump>(deviceId);
 
-    if(existingPumps is null)
+    if(existingPump is null)
       return await Create(config);
 
     // if nothing changed, don't bother re-adding the device
-    if(existingPumps.Connection.Name == config.PortName)
-      if((existingPumps.Connection is SimChemyxPumpConnection && config.Simulated) || (existingPumps.Connection is ChemyxPumpConnection && !config.Simulated))
-        return existingPumps;
+    if(existingPump.Connection.Name == config.PortName)
+      if((existingPump.Connection is SimChemyxPumpConnection && config.Simulated) || (existingPump.Connection is ChemyxPumpConnection && !config.Simulated))
+        return existingPump;
 
-    await Remove(existingPumps.UniqueId);
+    await Remove(existingPump.UniqueId);
 
     return await Load(deviceId, config);
   }
 
-  public async Task Remove(string pumpName)
+  public async Task Remove(string pumpId)
   {
-    var pumpInterpreter = _deviceCommandInterpreterRepo
-      .FirstOrDefault(interpreter => interpreter.Device.Name == pumpName);
+    var pump = _deviceCommandInterpreterRepo
+      .GetAresDevice<ChemyxPump>(pumpId);
 
-    if(pumpInterpreter?.Device is not IChemyxPump pump)
+    if(pump is null)
       return;
 
     await pump.StopPolling();
     await pump.DisposeAsync();
-    _deviceCommandInterpreterRepo.Remove(pumpInterpreter);
+    _deviceCommandInterpreterRepo.Remove(pump.UniqueId);
     var connection = pump.Connection;
     var connectionInUse = _deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
-      .OfType<ISerialDevice<IChemyxPumpConnection>>()
+      .GetAresDevices<ISerialDevice<IChemyxPumpConnection>>()
       .Any(device => device.Connection == connection);
 
     if(!connectionInUse)

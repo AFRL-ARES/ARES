@@ -57,7 +57,7 @@ public class DevicesService(
   public override Task<ListAresDevicesResponse> ListAresDevices(Empty _, ServerCallContext context)
   {
     var aresDeviceMessages = deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
+      .GetAresDevices()
       .Select(GetInfo);
 
     var response = new ListAresDevicesResponse
@@ -85,7 +85,7 @@ public class DevicesService(
   public override Task<CommandMetadatasResponse> GetCommandMetadatas(CommandMetadatasRequest request, ServerCallContext context)
   {
     var interpreter = deviceCommandInterpreterRepo
-      .First(commandInterpreter => commandInterpreter.Device.UniqueId == request.DeviceId);
+      .GetCommandInterpreterByDeviceId(request.DeviceId);
 
     var commands = interpreter.CommandsToIndexedMetadatas();
 
@@ -98,7 +98,7 @@ public class DevicesService(
   public override async Task<DeviceExecutionResult> ExecuteCommand(CommandTemplate request, ServerCallContext context)
   {
     var interpreter = deviceCommandInterpreterRepo
-      .First(commandInterpreter => commandInterpreter.Device.Name == request.Metadata.DeviceId);
+      .GetCommandInterpreterByDeviceId(request.UniqueId);
 
     try
     {
@@ -120,8 +120,7 @@ public class DevicesService(
   private IAresDevice GetAresDevice(string id)
   {
     var aresDevice = deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
-      .FirstOrDefault(device => device.UniqueId == id);
+      .GetAresDevice(id);
 
     if(aresDevice is null)
       throw new InvalidOperationException($"Could not find ARES device with id: {id}");
@@ -144,7 +143,7 @@ public class DevicesService(
 
   public override Task<RemoteDeviceConfigResponse> GetAllRemoteDevicesConfigs(Empty request, ServerCallContext context)
   {
-    var remoteDevices = deviceCommandInterpreterRepo.Select(dci => dci.Device).OfType<RemoteDevice>().ToArray();
+    var remoteDevices = deviceCommandInterpreterRepo.GetAresDevices<RemoteDevice>().ToArray();
 
     var response = new RemoteDeviceConfigResponse();
     var configs = remoteDevices.Select(rd => new RemoteDeviceConfig { Name = rd.Name, UniqueId = rd.UniqueId, Url = rd.Address.ToString() });
@@ -156,7 +155,7 @@ public class DevicesService(
 
   public override Task<ListAresRemoteDevicesResponse> ListRemoteAresDevices(Empty request, ServerCallContext context)
   {
-    var remoteDevices = deviceCommandInterpreterRepo.Select(dci => dci.Device).OfType<RemoteDevice>().ToArray();
+    var remoteDevices = deviceCommandInterpreterRepo.GetAresDevices<RemoteDevice>().ToArray();
 
     var response = new ListAresRemoteDevicesResponse();
     var infos = remoteDevices.Select(GetInfo);
@@ -217,7 +216,7 @@ public class DevicesService(
 
   public override Task<DeviceInfo> GetDeviceInfo(DeviceInfoRequest request, ServerCallContext context)
   {
-    var device = deviceCommandInterpreterRepo.Select(dci => dci.Device).FirstOrDefault(d => d.UniqueId == request.DeviceId);
+    var device = deviceCommandInterpreterRepo.GetAresDevice(request.DeviceId);
     if(device is null)
       return Task.FromResult(new DeviceInfo());
 
@@ -228,7 +227,7 @@ public class DevicesService(
 
   public override Task<AresStruct> GetDeviceSettings(DeviceSettingsRequest request, ServerCallContext context)
   {
-    var device = deviceCommandInterpreterRepo.Select(dci => dci.Device).FirstOrDefault(d => d.UniqueId == request.DeviceId);
+    var device = deviceCommandInterpreterRepo.GetAresDevice(request.DeviceId);
     if(device is not RemoteDevice remoteDevice)
     {
       return Task.FromResult(new AresStruct());
@@ -242,7 +241,7 @@ public class DevicesService(
 
   public override Task<Empty> SetDeviceSettings(DeviceSettings request, ServerCallContext context)
   {
-    var device = deviceCommandInterpreterRepo.Select(dci => dci.Device).FirstOrDefault(d => d.UniqueId == request.DeviceId);
+    var device = deviceCommandInterpreterRepo.GetAresDevice(request.DeviceId);
     if(device is not RemoteDevice remoteDevice)
     {
       return Task.FromResult(new Empty());
@@ -256,7 +255,7 @@ public class DevicesService(
   public override Task<DeviceStateResponse> GetDeviceState(DeviceStateRequest request, ServerCallContext context)
   {
     // We can do the non-remote devices later
-    var device = deviceCommandInterpreterRepo.Select(dci => dci.Device).OfType<RemoteDevice>().FirstOrDefault(d => d.UniqueId == request.DeviceId);
+    var device = deviceCommandInterpreterRepo.GetAresDevice<RemoteDevice>(request.DeviceId);
     if(device is null)
     {
       return Task.FromResult(new DeviceStateResponse());
@@ -271,7 +270,7 @@ public class DevicesService(
       IServerStreamWriter<DeviceStateResponse> responseStream,
       ServerCallContext context)
   {
-    var device = deviceCommandInterpreterRepo.Select(dci => dci.Device).OfType<RemoteDevice>().FirstOrDefault(d => d.UniqueId == request.DeviceId);
+    var device = deviceCommandInterpreterRepo.GetAresDevice<RemoteDevice>(request.DeviceId);
     if(device is null || request.PollingSettings.PollingType == PollingType.None)
     {
       return;
@@ -301,7 +300,7 @@ public class DevicesService(
   public override Task<DeviceStateSchemaResponse> GetDeviceStateSchema(DeviceStateSchemaRequest request, ServerCallContext context)
   {
     // We can do the non-remote devices later
-    var device = deviceCommandInterpreterRepo.Select(dci => dci.Device).OfType<RemoteDevice>().FirstOrDefault(d => d.UniqueId == request.DeviceId);
+    var device = deviceCommandInterpreterRepo.GetAresDevice<RemoteDevice>(request.DeviceId);
     if(device is null)
     {
       return Task.FromResult(new DeviceStateSchemaResponse { Schema = new AresDataSchema() });
@@ -337,15 +336,25 @@ public class DevicesService(
 
   private DeviceInfo GetInfo(IAresDevice device)
   {
-    return new DeviceInfo
+    var info = new DeviceInfo
     {
       Name = device.Name,
       UniqueId = device.UniqueId,
       Description = device.Description,
       Type = device.Type,
-      Url = device is RemoteDevice remoteDevice ? remoteDevice.Address.ToString() : "",
       Version = device.Version,
-      SettingsSchema = device is RemoteDevice rDevice ? rDevice.SettingSchema : null
     };
+
+    if(device is RemoteDevice remoteDevice)
+    {
+      info.Url = remoteDevice.Address.ToString();
+      info.SettingsSchema = remoteDevice.SettingSchema;
+      info.Commands.AddRange(remoteDevice.CommandDescriptors);
+    }
+
+    else
+      info.SettingsSchema = null;
+
+    return info;
   }
 }

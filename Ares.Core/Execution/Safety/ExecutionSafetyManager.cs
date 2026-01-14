@@ -13,10 +13,8 @@ public class ExecutionSafetyManager : IExecutionSafetyManager
 
   public async Task EnterSafeMode()
   {
-    var deviceInterpreters = _deviceCommandInterpreterRepo.GetEnumerator();
-    while(deviceInterpreters.MoveNext())
+    foreach(var device in _deviceCommandInterpreterRepo.GetAresDevices())
     {
-      var device = deviceInterpreters.Current.Device;
       await device.EnterSafeMode();
     }
   }

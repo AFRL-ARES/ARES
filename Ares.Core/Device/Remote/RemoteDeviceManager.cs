@@ -129,7 +129,7 @@ internal class RemoteDeviceManager(
 
   public Task UpdateDeviceSettings(DeviceSettings deviceSettings)
   {
-    var aresDevice = _deviceCommandInterpreters.FirstOrDefault(dci => dci.Device.UniqueId == deviceSettings.DeviceId)?.Device;
+    var aresDevice = _deviceCommandInterpreters.GetAresDevice(deviceSettings.DeviceId);
     if(aresDevice is not RemoteDevice device)
     {
       return Task.CompletedTask;

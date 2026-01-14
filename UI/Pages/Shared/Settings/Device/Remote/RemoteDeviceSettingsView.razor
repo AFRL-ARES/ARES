@@ -7,7 +7,8 @@
 <DeviceSettingsContainer 
   EditCallback="EditCallback"
   SettingsCallback="SettingCallback"
-  RemoveCallback="RemoveCallback" 
+  RemoveCallback="RemoveCallback"
+  ShowDeviceInfoCallback="DisplayDeviceInfoCallback"
   Name="@ViewModel!.Name" 
   DeviceOperationalStatusGetter="@ViewModel!.GetOperationalStatus">
   <div style="display: flex; flex-direction: column">
@@ -44,6 +45,13 @@
     {
       await ViewModel!.RemoveCommand.Execute();
     }
+  }
+
+  private async Task DisplayDeviceInfoCallback()
+  {
+    var status = await ViewModel!.GetOperationalStatus();
+    var options = new DialogOptions() { Width = "800px" };
+    await DialogService.OpenAsync("Device Capabilities", ds => @<DeviceInfoContainer DeviceName="@ViewModel!.Name" DeviceCommands="@ViewModel!.DeviceCommands" OperationalState="@status.OperationalState"/>, options);
   }
 
   private async Task RefreshCallback()

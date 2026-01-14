@@ -27,10 +27,8 @@ public class AresSafetyManagementService : AresSafetyService.AresSafetyServiceBa
       //Stop current campaign execution
       _executionManager.Stop();
 
-      var deviceInterpreters = _deviceInterpreterRepo.GetEnumerator();
-      while(deviceInterpreters.MoveNext())
+      foreach(var device in _deviceInterpreterRepo.GetAresDevices())
       {
-        var device = deviceInterpreters.Current.Device;
         device.EnterSafeMode();
       }
 

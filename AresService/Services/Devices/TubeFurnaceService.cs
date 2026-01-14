@@ -40,8 +40,7 @@ public class TubeFurnaceService : TubeFurnaceRpc.TubeFurnaceRpcBase
   public override Task<GetAllTubeFurnacesResponse> GetAllTubeFurnaces(Empty request, ServerCallContext context)
   {
     var tubeFurnaceDescriptions = _deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
-      .OfType<ITubeFurnace>()
+      .GetAresDevices<ITubeFurnace>()
       .Select(device => new TubeFurnaceDeviceDescription { AssumedAddress = (int)device.StateStream.Take(1).ToTask().Result.AssumedAddress, Name = device.Name, Id = device.UniqueId });
 
     var response = new GetAllTubeFurnacesResponse();
@@ -55,7 +54,7 @@ public class TubeFurnaceService : TubeFurnaceRpc.TubeFurnaceRpcBase
 
     if(device is not null)
       await device.GetSetpoint();
-    
+
     return new Empty();
   }
 
@@ -64,12 +63,12 @@ public class TubeFurnaceService : TubeFurnaceRpc.TubeFurnaceRpcBase
     var device = GetTubeFurnace(request.DeviceRequest.TubeFurnaceId);
     if(device is null)
     {
-      await _notifier.Notify("Setpoint Error!", 
-        $"Attempted to set the setpoint value for Tube Furnace with an ID of {request.DeviceRequest.TubeFurnaceId}, but none was found.", 
+      await _notifier.Notify("Setpoint Error!",
+        $"Attempted to set the setpoint value for Tube Furnace with an ID of {request.DeviceRequest.TubeFurnaceId}, but none was found.",
         NotificationSeverityEnum.Error);
       return new Empty();
     }
-      
+
     var temperature = Temperature.FromDegreesCelsius(request.DegreesCelsius);
     await device.SetSetpoint(temperature);
     return new Empty();
@@ -79,9 +78,9 @@ public class TubeFurnaceService : TubeFurnaceRpc.TubeFurnaceRpcBase
   {
     var device = GetTubeFurnace(request.TubeFurnaceId);
 
-    if(device is not null) 
+    if(device is not null)
       await device.GetCurrentTemperature();
-    
+
     return new Empty();
   }
 
@@ -97,8 +96,8 @@ public class TubeFurnaceService : TubeFurnaceRpc.TubeFurnaceRpcBase
   {
     var tubeFurnace = GetTubeFurnace(request.TubeFurnaceId);
 
-    if (tubeFurnace is null)
-      return new TubeFurnaceState() { CurrentTemperature = -1.0, Id = "INVALID", AssumedAddress = -1};
+    if(tubeFurnace is null)
+      return new TubeFurnaceState() { CurrentTemperature = -1.0, Id = "INVALID", AssumedAddress = -1 };
     ;
     var currentState = await tubeFurnace.StateStream.Take(1).ToTask();
     return currentState;
@@ -114,8 +113,7 @@ public class TubeFurnaceService : TubeFurnaceRpc.TubeFurnaceRpcBase
   private ITubeFurnace? GetTubeFurnace(string id)
   {
     var tubeFurnace = _deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
-      .OfType<ITubeFurnace>()
+      .GetAresDevices<ITubeFurnace>()
       .FirstOrDefault(device => device.UniqueId == id);
 
     return tubeFurnace;

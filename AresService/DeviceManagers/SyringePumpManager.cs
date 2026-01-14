@@ -52,9 +52,7 @@ public class SyringePumpManager : IDeviceManager<SyringePumpConfig, ISyringePump
   public async Task<ISyringePump> Update(string id, SyringePumpConfig config)
   {
     var existingPump = _deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
-      .OfType<ISyringePump>()
-      .FirstOrDefault(device => device.UniqueId == id);
+      .GetAresDevice<ISyringePump>(id);
 
     if(existingPump is null)
       return await Create(config);
@@ -71,19 +69,18 @@ public class SyringePumpManager : IDeviceManager<SyringePumpConfig, ISyringePump
 
   public async Task Remove(string syringePumpId)
   {
-    var syringePumpInterpreter = _deviceCommandInterpreterRepo
-      .FirstOrDefault(interpreter => interpreter.Device.UniqueId == syringePumpId);
+    var syringePump = _deviceCommandInterpreterRepo
+      .GetAresDevice<ISyringePump>(syringePumpId);
 
-    if(syringePumpInterpreter?.Device is not ISyringePump syringePump)
+    if(syringePump is null)
       return;
 
     await _stateLoggerManager.RemoveLogger(syringePump.UniqueId);
     await syringePump.DisposeAsync();
-    _deviceCommandInterpreterRepo.Remove(syringePumpInterpreter);
+    _deviceCommandInterpreterRepo.Remove(syringePump.UniqueId);
     var connection = syringePump.Connection;
     var connectionInUse = _deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
-      .OfType<ISerialDevice<ISyringePumpConnection>>()
+      .GetAresDevices<ISerialDevice<ISyringePumpConnection>>()
       .Any(device => device.Connection == connection);
 
     if(!connectionInUse)

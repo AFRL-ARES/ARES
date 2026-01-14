@@ -58,9 +58,7 @@ public class SerialRestDeviceManager : IDeviceManager<RestSerialConfig, ISerialR
   public async Task<ISerialRestDevice> Update(string id, RestSerialConfig config)
   {
     var existingRestDevice = _deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
-      .OfType<ISerialRestDevice>()
-      .FirstOrDefault(device => device.UniqueId == id);
+      .GetAresDevice<ISerialRestDevice>(id);
 
     if(existingRestDevice is null)
       return await Create(config);
@@ -77,18 +75,17 @@ public class SerialRestDeviceManager : IDeviceManager<RestSerialConfig, ISerialR
 
   public async Task Remove(string restDeviceId)
   {
-    var restDeviceInterpreter = _deviceCommandInterpreterRepo
-      .FirstOrDefault(interpreter => interpreter.Device.UniqueId == restDeviceId);
+    var restDevice = _deviceCommandInterpreterRepo
+      .GetAresDevice<ISerialRestDevice>(restDeviceId);
 
-    if(restDeviceInterpreter?.Device is not ISerialRestDevice restDevice)
+    if(restDevice is null)
       return;
 
     await restDevice.DisposeAsync();
-    _deviceCommandInterpreterRepo.Remove(restDeviceInterpreter);
+    _deviceCommandInterpreterRepo.Remove(restDevice.UniqueId);
     var connection = restDevice.Connection;
     var connectionInUse = _deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
-      .OfType<ISerialDevice<ISerialRestDeviceConnection>>()
+      .GetAresDevices<ISerialDevice<ISerialRestDeviceConnection>>()
       .Any(device => device.Connection == connection);
 
     if(!connectionInUse)

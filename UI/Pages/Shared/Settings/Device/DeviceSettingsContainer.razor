@@ -14,9 +14,25 @@
           <div class="device-status-@_deviceOperationalStatus.OperationalState.ToString().ToLower()">
             @_deviceOperationalStatus.OperationalState.ToString()
           </div>
-          <div>
-            @_deviceOperationalStatus.Message
-          </div>
+          @if(_deviceOperationalStatus.OperationalState == OperationalState.Active)
+          {
+            <div>
+              @_deviceOperationalStatus.Message
+            </div>
+          }
+          else if(_deviceOperationalStatus.OperationalState == OperationalState.Inactive)
+          {
+            <div>
+              Couldn't connect to @Name. Is it running?
+            </div>
+          }
+          else
+          {
+            <div>
+              Error when connecting to device! Check notification history.
+            </div>
+          }
+          
         </div>
       }
       else
@@ -27,6 +43,7 @@
   }
   <div class="d-flex device-settings-actions">
     <vr />
+    <button class="btn btn-sm btn-outline-primary rounded-2 device-action-button" type="button" disabled="@(ShowDeviceInfoCallback is null)" @onclick="InfoClicked"><RadzenIcon Icon="info" /></button>
     <button class="btn btn-sm btn-outline-primary rounded-2 device-action-button" type="button" disabled="@(EditCallback is null)" @onclick="EditClicked"><RadzenIcon Icon="edit"/></button>
     <button class="btn btn-sm btn-outline-primary rounded-2 device-action-button" type="button" disabled="@(SettingsCallback is null)" @onclick="SettingsClicked"><RadzenIcon Icon="settings" /></button>
     <button class="btn btn-sm btn-outline-danger rounded-2 device-action-button" type="button" disabled="@(RemoveCallback is null)" @onclick="RemoveClicked"><RadzenIcon Icon="delete_outline" /></button>
@@ -57,6 +74,9 @@
   public Func<Task<DeviceOperationalStatus?>>? DeviceOperationalStatusGetter { get; set; }
 
   [Parameter]
+  public Func<Task>? ShowDeviceInfoCallback { get; set; }
+
+  [Parameter]
   public string Name { get; set; } = "No name?";
 
   private DeviceOperationalStatus? _deviceOperationalStatus;
@@ -83,6 +103,11 @@
   private Task RemoveClicked()
   {
     return RemoveCallback is not null ? RemoveCallback() : Task.CompletedTask;
+  }
+
+  private Task InfoClicked()
+  {
+    return ShowDeviceInfoCallback is not null ? ShowDeviceInfoCallback() : Task.CompletedTask;
   }
 
   private async Task UpdateDeviceOperationalStatus()

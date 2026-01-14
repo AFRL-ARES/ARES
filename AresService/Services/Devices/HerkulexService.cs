@@ -27,8 +27,7 @@ public class HerkulexService : HerkulexDRSRpc.HerkulexDRSRpcBase
   private IServo GetServo(string id)
   {
     var servo = _deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
-      .OfType<IServo>()
+      .GetAresDevices<IServo>()
       .FirstOrDefault(device => device.UniqueId == id);
 
     if(servo is null)
@@ -76,7 +75,7 @@ public class HerkulexService : HerkulexDRSRpc.HerkulexDRSRpcBase
 
   public override Task<GetAllServosResponse> GetAllServos(Empty request, ServerCallContext context)
   {
-    var deviceDescriptions = _deviceCommandInterpreterRepo.Select(deviceInterpreter => deviceInterpreter.Device).OfType<IServo>().Select(servoDood => new DeviceDescription { Id = servoDood.UniqueId, Name = servoDood.Name });
+    var deviceDescriptions = _deviceCommandInterpreterRepo.GetAresDevices<IServo>().Select(servoDood => new DeviceDescription { Id = servoDood.UniqueId, Name = servoDood.Name });
     var response = new GetAllServosResponse();
     response.Devices.AddRange(deviceDescriptions);
     return Task.FromResult(response);

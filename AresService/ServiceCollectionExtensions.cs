@@ -72,6 +72,7 @@ public static class ServiceCollectionExtensions
     services.AddNotificationHandlers();
     services.BindStateExporters();
 
+    // TODO: What? -AB
     services.RemoveAll<IDeviceCommandInterpreterRepo>();
     services.AddSingleton<IDeviceCommandInterpreterRepo, DeviceCommandInterpreterRepo>();
 

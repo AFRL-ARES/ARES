@@ -48,9 +48,7 @@ namespace AresService.DeviceManagers
     public async Task<IVerdiV6Laser> Update(string id, VerdiConfig config)
     {
       var existingLaser = _deviceCommandInterpreterRepo
-        .Select(interpreter => interpreter.Device)
-        .OfType<IVerdiV6Laser>()
-        .FirstOrDefault(device => device.UniqueId == id);
+        .GetAresDevice<IVerdiV6Laser>(id);
 
       if(existingLaser is null)
         return await Create(config);
@@ -67,18 +65,17 @@ namespace AresService.DeviceManagers
 
     public async Task Remove(string laserId)
     {
-      var laserInterpreter = _deviceCommandInterpreterRepo
-        .FirstOrDefault(interpreter => interpreter.Device.UniqueId == laserId);
+      var laser = _deviceCommandInterpreterRepo
+        .GetAresDevice<IVerdiV6Laser>(laserId);
 
-      if(laserInterpreter?.Device is not IVerdiV6Laser laser)
+      if(laser is null)
         return;
 
       await laser.DisposeAsync();
-      _deviceCommandInterpreterRepo.Remove(laserInterpreter);
+      _deviceCommandInterpreterRepo.Remove(laser.UniqueId);
       var connection = laser.Connection;
       var connectionInUse = _deviceCommandInterpreterRepo
-        .Select(interpreter => interpreter.Device)
-        .OfType<ISerialDevice<ILaserConnection>>()
+        .GetAresDevices<ISerialDevice<ILaserConnection>>()
         .Any(device => device.Connection == connection);
 
       if(!connectionInUse)

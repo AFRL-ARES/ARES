@@ -55,8 +55,7 @@ public class MfcService : MfcRpc.MfcRpcBase
   private IMassFlowController GetMfc(string id)
   {
     var mfc = _deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
-      .OfType<IMassFlowController>()
+      .GetAresDevices<IMassFlowController>()
       .FirstOrDefault(device => device.UniqueId == id);
 
     if(mfc is null)
@@ -167,8 +166,8 @@ public class MfcService : MfcRpc.MfcRpcBase
 
   public override Task<GetAllMfcsResponse> GetAllMfcs(Empty request, ServerCallContext context)
   {
-    var mfcs = _deviceCommandInterpreterRepo.Select(interpreter => interpreter.Device)
-      .OfType<IMassFlowController>()
+    var mfcs = _deviceCommandInterpreterRepo
+      .GetAresDevices<IMassFlowController>()
       .Select(device => new MfcDeviceDescription { Id = device.UniqueId, Name = device.Name });
 
     var response = new GetAllMfcsResponse();

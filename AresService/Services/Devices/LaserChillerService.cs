@@ -30,8 +30,7 @@ public class LaserChillerService : ChillerRpc.ChillerRpcBase
   private ILaserChiller GetChiller(string id)
   {
     var chiller = _deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
-      .OfType<ILaserChiller>()
+      .GetAresDevices<ILaserChiller>()
       .FirstOrDefault(d => d.UniqueId == id);
 
     if(chiller is null)
@@ -96,7 +95,7 @@ public class LaserChillerService : ChillerRpc.ChillerRpcBase
 
   public override Task<GetAllChillersResponse> GetAllChillers(Empty request, ServerCallContext context)
   {
-    var chillers = _deviceCommandInterpreterRepo.Select(deviceInterpreter => deviceInterpreter.Device).OfType<ILaserChiller>().Select(chiller => new ChillerDescription { Id = chiller.UniqueId, Name = chiller.Name });
+    var chillers = _deviceCommandInterpreterRepo.GetAresDevices<ILaserChiller>().Select(chiller => new ChillerDescription { Id = chiller.UniqueId, Name = chiller.Name });
     var response = new GetAllChillersResponse();
     response.Chillers.AddRange(chillers);
     return Task.FromResult(response);

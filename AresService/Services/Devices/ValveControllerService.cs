@@ -30,8 +30,7 @@ public class ValveControllerService : ValveControllerRpc.ValveControllerRpcBase
   private IValveController GetValveController(string id)
   {
     var valveController = _deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
-      .OfType<IValveController>()
+      .GetAresDevices<IValveController>()
       .FirstOrDefault(device => device.UniqueId == id);
 
     if(valveController is null)
@@ -97,7 +96,9 @@ public class ValveControllerService : ValveControllerRpc.ValveControllerRpcBase
 
   public override Task<GetAllValveControllersResponse> GetAllValveControllers(Empty request, ServerCallContext context)
   {
-    var deviceDescriptions = _deviceCommandInterpreterRepo.Select(deviceInterpreter => deviceInterpreter.Device).OfType<IValveController>().Select(valveController => new DeviceDescription { Id = valveController.UniqueId, Name = valveController.Name });
+    var deviceDescriptions = _deviceCommandInterpreterRepo
+      .GetAresDevices<IValveController>()
+      .Select(valveController => new DeviceDescription { Id = valveController.UniqueId, Name = valveController.Name });
     var response = new GetAllValveControllersResponse();
     response.Devices.AddRange(deviceDescriptions);
     return Task.FromResult(response);

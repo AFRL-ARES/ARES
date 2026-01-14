@@ -28,15 +28,13 @@ public class StepComposer : ICommandComposer<StepTemplate, StepExecutor>
           commandTemplate =>
           {
             var deviceId = commandTemplate.Metadata?.DeviceId;
+            if(deviceId is null)
+            {
+              throw new InvalidOperationException("Device ID was null when attempting to retrieve the command interpreter");
+            }
             var commandInterpreter =
               _interpreterRepo
-                .First(interpreter =>
-                {
-                  var device = interpreter.Device;
-                  // Prefer match by UniqueId; fall back to Name. Guard against nulls.
-                  return (deviceId is not null && string.Equals(device.UniqueId, deviceId, StringComparison.Ordinal))
-                         || (deviceId is not null && string.Equals(device.Name, deviceId, StringComparison.Ordinal));
-                });
+                .GetCommandInterpreterByDeviceId(deviceId);
 
             var command = commandInterpreter.TemplateToDeviceCommand(commandTemplate);
             var executable = new CommandExecutor(command, commandTemplate, _notifier);

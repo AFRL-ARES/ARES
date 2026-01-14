@@ -30,8 +30,7 @@ public class ChemyxPumpService : ChemyxPumpRpc.ChemyxPumpRpcBase
   private IChemyxPump GetPump(string id)
   {
     var pump = _deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
-      .OfType<IChemyxPump>()
+      .GetAresDevices<IChemyxPump>()
       .FirstOrDefault(device => device.UniqueId == id);
 
     if(pump is null)
@@ -248,8 +247,7 @@ public class ChemyxPumpService : ChemyxPumpRpc.ChemyxPumpRpcBase
   public override Task<GetAllPumpsResponse> GetAllPumps(Empty request, ServerCallContext context)
   {
     var deviceDescriptions = _deviceCommandInterpreterRepo
-      .Select(deviceInterpreter => deviceInterpreter.Device)
-      .OfType<IChemyxPump>()
+      .GetAresDevices<IChemyxPump>()
       .Select(pump => new ChemyxPumpDeviceDescription { Id = pump.UniqueId, Name = pump.Name, DualPump = pump.DualPump });
 
     var response = new GetAllPumpsResponse();

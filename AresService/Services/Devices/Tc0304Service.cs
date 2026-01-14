@@ -37,8 +37,7 @@ public class Tc0304Service : TC0304Rpc.TC0304RpcBase
   private IDataloggerThermometer? GetDataLogger(string id)
   {
     var dataLogger = _deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
-      .OfType<IDataloggerThermometer>()
+      .GetAresDevices<IDataloggerThermometer>()
       .FirstOrDefault(device => device.UniqueId == id);
 
     return dataLogger;
@@ -115,8 +114,7 @@ public class Tc0304Service : TC0304Rpc.TC0304RpcBase
   public override Task<GetAllTc0304sResponse> GetAllTc0304s(Empty request, ServerCallContext context)
   {
     var dataLoggers = _deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
-      .OfType<IDataloggerThermometer>()
+      .GetAresDevices<IDataloggerThermometer>()
       .Select(thermometer => new DeviceDescription { Id = thermometer.UniqueId, Name = thermometer.Name });
 
     var response = new GetAllTc0304sResponse();
@@ -128,8 +126,7 @@ public class Tc0304Service : TC0304Rpc.TC0304RpcBase
   public override async Task<GetTemperaturesResponse> GetTemperatures(DeviceRequest request, ServerCallContext context)
   {
     var thermometer = _deviceCommandInterpreterRepo
-      .Select(dci => dci.Device)
-      .OfType<IDataloggerThermometer>()
+      .GetAresDevices<IDataloggerThermometer>()
       .FirstOrDefault(d => d.UniqueId == request.DeviceId);
     if (thermometer is null)
     {

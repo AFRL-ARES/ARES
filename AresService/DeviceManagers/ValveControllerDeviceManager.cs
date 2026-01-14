@@ -46,9 +46,7 @@ public class ValveControllerDeviceManager : IDeviceManager<ValveControllerConfig
   public async Task<IValveController> Update(string id, ValveControllerConfig config)
   {
     var existingValveController = _deviceCommandInterpreterRepo
-  .Select(interpreter => interpreter.Device)
-  .OfType<IValveController>()
-  .FirstOrDefault(device => device.UniqueId == id);
+      .GetAresDevice<IValveController>(id);
 
     if(existingValveController is null)
       return await Create(config);
@@ -65,18 +63,17 @@ public class ValveControllerDeviceManager : IDeviceManager<ValveControllerConfig
 
   public async Task Remove(string valveControllerId)
   {
-    var valveControllerInterpreter = _deviceCommandInterpreterRepo
-  .FirstOrDefault(interpreter => interpreter.Device.UniqueId == valveControllerId);
+    var valveController = _deviceCommandInterpreterRepo
+      .GetAresDevice<IValveController>(valveControllerId);
 
-    if(valveControllerInterpreter?.Device is not IValveController valveController)
+    if(valveController is null)
       return;
 
     await valveController.DisposeAsync();
-    _deviceCommandInterpreterRepo.Remove(valveControllerInterpreter);
+    _deviceCommandInterpreterRepo.Remove(valveController.UniqueId);
     var connection = valveController.Connection;
     var connectionInUse = _deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
-      .OfType<ISerialDevice<IValveControllerConnection>>()
+      .GetAresDevices<ISerialDevice<IValveControllerConnection>>()
       .Any(device => device.Connection == connection);
 
     if(!connectionInUse)

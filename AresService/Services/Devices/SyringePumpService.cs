@@ -25,9 +25,9 @@ public class SyringePumpService : SyringePumpRpc.SyringePumpRpcBase
 
   public override Task<GetAllSyringePumpsResponse> GetAllSyringePumps(Empty request, ServerCallContext context)
   {
-    var syringePumps = _deviceCommandInterpreterRepo.Select(interpreter => interpreter.Device)
-    .OfType<ISyringePump>()
-    .Select(device => new SyringePumpDeviceDescription { AssumedAddress = (int)device.AssumedAddress, Name = device.Name, Id = device.UniqueId });
+    var syringePumps = _deviceCommandInterpreterRepo
+      .GetAresDevices<ISyringePump>()
+      .Select(device => new SyringePumpDeviceDescription { AssumedAddress = (int)device.AssumedAddress, Name = device.Name, Id = device.UniqueId });
 
     var response = new GetAllSyringePumpsResponse();
     response.SyringePumps.AddRange(syringePumps);
@@ -37,8 +37,7 @@ public class SyringePumpService : SyringePumpRpc.SyringePumpRpcBase
   private ISyringePump? GetSyringePump(string id)
   {
     var syringePump = _deviceCommandInterpreterRepo
-      .Select(interpreter => interpreter.Device)
-      .OfType<ISyringePump>()
+      .GetAresDevices<ISyringePump>()
       .FirstOrDefault(device => device.UniqueId == id);
 
     return syringePump;
