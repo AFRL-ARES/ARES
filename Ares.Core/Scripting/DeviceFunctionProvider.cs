@@ -73,7 +73,8 @@ public class DeviceFunctionProvider(IDeviceCommandInterpreterRepo interpreterRep
             },
             inputSchema,
             outputSchema,
-            metadata.Description ?? string.Empty));
+            metadata.Description ?? string.Empty,
+            devicePrefix));
       }
     }
 
@@ -115,13 +116,13 @@ public class DeviceFunctionProvider(IDeviceCommandInterpreterRepo interpreterRep
 
   private static bool IsAsciiIdentifierChar(char value)
   {
-    return IsAsciiIdentifierStart(value) || (value >= '0' && value <= '9');
+    return IsAsciiIdentifierStart(value) || value is >= '0' and <= '9';
   }
 
   private static bool IsAsciiIdentifierStart(char value)
   {
-    return (value >= 'a' && value <= 'z')
-      || (value >= 'A' && value <= 'Z')
-      || value == '_';
+    return value is >= 'a' and <= 'z'
+      or (>= 'A' and <= 'Z')
+      or '_';
   }
 }

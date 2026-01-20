@@ -16,6 +16,7 @@ using Ares.Core.Execution.StartConditions;
 using Ares.Core.Execution.StopConditions;
 using Ares.Core.Notifications;
 using Ares.Core.Planning;
+using Ares.Core.Scripting;
 using Ares.Core.Validation.Campaign;
 using Ares.Datamodel.Templates;
 using Microsoft.Extensions.DependencyInjection;
@@ -57,6 +58,8 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<IDesiredAnalysisResultFactory, DesiredAnalysisResultFactory>();
     services.AddSingleton<DeviceIdHelper>();
     services.AddSingleton<INotifier, Notifier>();
+
+    services.AddSingleton<ISystemFunctionProvider, DeviceFunctionProvider>();
 
     services.BindComposers();
     services.BindStartConditions();
