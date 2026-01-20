@@ -45,6 +45,23 @@ public class TubeFurnaceInterpreter : DeviceCommandInterpreter<ITubeFurnace, Tub
         await Device.GetCurrentTemperature();
         break;
 
+      case TubeFurnaceCommand.SetAndWaitForSetpoint:
+        var waitedSetpoint = parameters.FirstOrDefault(param => param.Metadata.Name == TubeFurnaceParameter.Setpoint.ToString());
+        var delta = parameters.FirstOrDefault(param => param.Metadata.Name == TubeFurnaceParameter.TemperatureDelta.ToString());
+        var timeout = parameters.FirstOrDefault(param => param.Metadata.Name == TubeFurnaceParameter.Timeout.ToString());
+
+        if(waitedSetpoint is null || delta is null || timeout is null)
+        {
+          result.Success = false;
+          result.Error = "Tried to set and wait for furnace setpoint, but not all parameters were provided!";
+          break;
+        }
+
+        var tempWaitedSetpoint = new Temperature(waitedSetpoint.Value.NumberValue, UnitsNet.Units.TemperatureUnit.DegreeCelsius);
+
+        await Device.SetAndWaitForSetpoint(tempWaitedSetpoint, delta.Value.NumberValue, timeout.Value.NumberValue);
+        break;
+
       default:
         throw new InvalidOperationException("Received an unknown command type for the Tube Furnace!");
     }
@@ -75,6 +92,39 @@ public class TubeFurnaceInterpreter : DeviceCommandInterpreter<ITubeFurnace, Tub
         DeviceId = Device.UniqueId,
         Name = TubeFurnaceCommand.GetCurrentTemperature.ToString(),
         Description = "Get's the current temperature of the tube furnace."
+      },
+
+      new()
+      {
+        DeviceId = Device.UniqueId,
+        Name = TubeFurnaceCommand.SetAndWaitForSetpoint.ToString(),
+        Description = "Set's an updated set point for the tube furnace, and waits until the furnace reaches that temperature within the defined delta or the timeout value is exceeded. A negative one timeout will be treated as no timeout.",
+        ParameterMetadatas = 
+        { 
+          new ParameterMetadata 
+          { 
+            Index = 0, 
+            Name = TubeFurnaceParameter.Setpoint.ToString(), 
+            Unit = "Degrees Celsius", 
+            Schema = AresSchemaBuilder.Entry(AresDataType.Number).AsOptional().Build() 
+          },
+          
+          new ParameterMetadata
+          {
+            Index = 1,
+            Name = TubeFurnaceParameter.Timeout.ToString(),
+            Unit = "Seconds",
+            Schema = AresSchemaBuilder.Entry(AresDataType.Number).AsOptional().Build()
+          },
+
+          new ParameterMetadata
+          {
+            Index = 2,
+            Name = TubeFurnaceParameter.TemperatureDelta.ToString(),
+            Unit = "Delta",
+            Schema = AresSchemaBuilder.Entry(AresDataType.Number).AsOptional().Build()
+          }
+        }
       }
     };
   }
