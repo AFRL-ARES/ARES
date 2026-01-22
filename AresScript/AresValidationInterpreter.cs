@@ -6,12 +6,15 @@ namespace AresScript;
 
 public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
 {
-  private readonly AresScriptEnvironment _locals = new();
+  private readonly AresScriptEnvironment _environment = new();
   private int _functionDepth;
+  private readonly ValidationMode _mode;
+  private readonly Stack<IReadOnlyList<string>> _pendingFunctionParameters = new();
 
-  public AresValidationInterpreter(AresScriptEnvironment aresScriptEnvironment)
+  public AresValidationInterpreter(AresScriptEnvironment aresScriptEnvironment, ValidationMode mode = ValidationMode.Strict)
   {
-    _locals = aresScriptEnvironment;
+    _environment = aresScriptEnvironment;
+    _mode = mode;
   }
 
   protected override Task DefaultResult => Task.CompletedTask;
@@ -45,10 +48,18 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
 
   public override async Task VisitFuncBlock(AresLangParser.FuncBlockContext context)
   {
-    _locals.EnterScope();
+    _environment.EnterScope();
     _functionDepth++;
     try
     {
+      if(_pendingFunctionParameters.Count > 0)
+      {
+        foreach(var parameter in _pendingFunctionParameters.Peek())
+        {
+          _environment.AssignVariable(parameter, AresValueHelper.CreateNull());
+        }
+      }
+
       foreach(var stmt in context.statement())
       {
         await Visit(stmt);
@@ -57,7 +68,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     finally
     {
       _functionDepth--;
-      _locals.ExitScope();
+      _environment.ExitScope();
     }
   }
 
@@ -71,32 +82,55 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
   public override async Task VisitAssignStmt(AresLangParser.AssignStmtContext context)
   {
     var assignment = context.assignment();
-    await Visit(assignment.lvalue());
-    await Visit(assignment.expression());
+    var lvalue = assignment.lvalue();
+    var expr = assignment.expression();
+    if(lvalue is null || expr is null)
+    {
+      if(_mode == ValidationMode.Strict)
+      {
+        throw new InvalidOperationException($"Incomplete assignment. {context.Start.Line}:{context.Start.Column}");
+      }
 
-    if(assignment.lvalue() is AresLangParser.LValueIdContext idContext)
+      return;
+    }
+
+    await Visit(lvalue);
+    await Visit(expr);
+
+    if(lvalue is AresLangParser.LValueIdContext idContext)
     {
       var id = idContext.ID().GetText();
-      var functionId = TryResolveFunctionId(assignment.expression());
-      if(functionId is not null && _locals.TryGetSystemFunction(functionId, out var _)
-          || functionId is not null && _locals.TryGetUserFunction(functionId, out var _))
+      var functionId = TryResolveFunctionId(expr);
+      if(functionId is not null && _environment.TryGetSystemFunction(functionId, out var _)
+          || functionId is not null && _environment.TryGetUserFunction(functionId, out var _))
       {
-        _locals[id] = AresValueHelper.CreateFunction(functionId);
+        _environment[id] = AresValueHelper.CreateFunction(functionId);
       }
-      else if(functionId is not null && _locals.TryGetValue(functionId, out var value) && value.FunctionValue is not null)
+      else if(functionId is not null && _environment.TryGetValue(functionId, out var value) && value.FunctionValue is not null)
       {
-        _locals[id] = AresValueHelper.CreateFunction(value.FunctionValue.FunctionId);
+        _environment[id] = AresValueHelper.CreateFunction(value.FunctionValue.FunctionId);
       }
       else
       {
-        _locals[id] = AresValueHelper.CreateNull();
+        _environment[id] = AresValueHelper.CreateNull();
       }
     }
   }
 
   public override async Task VisitExprStmt(AresLangParser.ExprStmtContext context)
   {
-    await Visit(context.expression());
+    var expr = context.expression();
+    if(expr is null)
+    {
+      if(_mode == ValidationMode.Strict)
+      {
+        throw new InvalidOperationException($"Incomplete expression. {context.Start.Line}:{context.Start.Column}");
+      }
+
+      return;
+    }
+
+    await Visit(expr);
   }
 
   public override async Task VisitReturnStmt(AresLangParser.ReturnStmtContext context)
@@ -110,7 +144,18 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
   public override async Task VisitAssertStmt(AresLangParser.AssertStmtContext context)
   {
     var assertContext = context.assertStatement();
-    foreach(var expr in assertContext.expression())
+    var expressions = assertContext.expression();
+    if(expressions.Length == 0)
+    {
+      if(_mode == ValidationMode.Strict)
+      {
+        throw new InvalidOperationException($"Incomplete assert statement. {context.Start.Line}:{context.Start.Column}");
+      }
+
+      return;
+    }
+
+    foreach(var expr in expressions)
     {
       await Visit(expr);
     }
@@ -118,26 +163,165 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
 
   public override async Task VisitWhileStmt([NotNull] AresLangParser.WhileStmtContext context)
   {
-    await Visit(context.whileStatement().expression());
-    await Visit(context.whileStatement().loopBlock());
+    var stmt = context.whileStatement();
+    if(stmt is null)
+    {
+      return;
+    }
+
+    var condition = stmt.expression();
+    var block = stmt.loopBlock();
+    if(condition is null || block is null)
+    {
+      if(_mode == ValidationMode.Strict)
+      {
+        throw new InvalidOperationException($"Incomplete while statement. {context.Start.Line}:{context.Start.Column}");
+      }
+
+      return;
+    }
+
+    await Visit(condition);
+    await Visit(block);
   }
 
   public override async Task VisitForStmt([NotNull] AresLangParser.ForStmtContext context)
   {
-    await Visit(context.forStatement().expression());
-    await Visit(context.forStatement().loopBlock());
+    var stmt = context.forStatement();
+    if(stmt is null)
+    {
+      return;
+    }
+
+    var id = stmt.ID();
+    var expression = stmt.expression();
+    var block = stmt.loopBlock();
+    if(id is null || expression is null || block is null)
+    {
+      if(_mode == ValidationMode.Strict)
+      {
+        throw new InvalidOperationException($"Incomplete for statement. {context.Start.Line}:{context.Start.Column}");
+      }
+
+      return;
+    }
+
+    await Visit(expression);
+    _environment.EnterScope();
+    try
+    {
+      _environment.AssignVariable(id.GetText(), AresValueHelper.CreateNull());
+      await Visit(block);
+    }
+    finally
+    {
+      _environment.ExitScope();
+    }
+  }
+
+  public override async Task VisitIfStmt([NotNull] AresLangParser.IfStmtContext context)
+  {
+    var stmt = context.ifStatement();
+    if(stmt is null)
+    {
+      return;
+    }
+
+    var expressions = stmt.expression();
+    var blocks = stmt.block();
+    if(expressions.Length == 0 || blocks.Length == 0)
+    {
+      if(_mode == ValidationMode.Strict)
+      {
+        throw new InvalidOperationException($"Incomplete if statement. {context.Start.Line}:{context.Start.Column}");
+      }
+
+      return;
+    }
+
+    if(blocks.Length < expressions.Length || blocks.Length > expressions.Length + 1)
+    {
+      if(_mode == ValidationMode.Strict)
+      {
+        throw new InvalidOperationException($"Incomplete if statement. {context.Start.Line}:{context.Start.Column}");
+      }
+
+      return;
+    }
+
+    for(var i = 0; i < expressions.Length; i++)
+    {
+      await Visit(expressions[i]);
+      await Visit(blocks[i]);
+    }
+
+    if(blocks.Length > expressions.Length)
+    {
+      await Visit(blocks[^1]);
+    }
   }
 
   public override async Task VisitFunctionDecl([NotNull] AresLangParser.FunctionDeclContext context)
   {
-    var functionId = context.functionDeclaration().ID(0).GetText();
-    var paramIds = context.functionDeclaration().ID()[1..].Select(p => p.GetText()).ToArray();
-    var block = context.functionDeclaration().funcBlock();
+    var decl = context.functionDeclaration();
+    var ids = decl.ID();
+    if(ids.Length == 0)
+    {
+      if(_mode == ValidationMode.Strict)
+      {
+        throw new InvalidOperationException($"Incomplete function declaration. {context.Start.Line}:{context.Start.Column}");
+      }
+      return;
+    }
+
+    var functionId = ids[0].GetText();
+    var paramIds = ids.Skip(1).Select(p => p.GetText()).ToArray();
+    var block = decl.funcBlock();
+    if(block is null)
+    {
+      if(_mode == ValidationMode.Strict)
+      {
+        throw new InvalidOperationException($"Incomplete function declaration. {context.Start.Line}:{context.Start.Column}");
+      }
+      return;
+    }
 
     var userFunc = new AresScriptFunction(functionId, paramIds, block);
-    _locals.AssignFunction(functionId, userFunc);
+    _environment.AssignFunction(functionId, userFunc);
 
-    await Visit(block);
+    _pendingFunctionParameters.Push(paramIds);
+    try
+    {
+      await Visit(block);
+    }
+    finally
+    {
+      _pendingFunctionParameters.Pop();
+    }
+  }
+
+  public override Task VisitId([NotNull] AresLangParser.IdContext context)
+  {
+    var id = context.ID().GetText();
+    if(_environment.TryGetValue(id, out _)
+      || _environment.TryGetSystemFunction(id, out _)
+      || _environment.TryGetUserFunction(id, out _))
+    {
+      return Task.CompletedTask;
+    }
+
+    if(_mode == ValidationMode.Strict)
+    {
+      throw new InvalidOperationException($"Unknown identifier '{id}'. {context.Start.Line}:{context.Start.Column}");
+    }
+
+    return Task.CompletedTask;
+  }
+
+  public enum ValidationMode
+  {
+    Strict,
+    Lenient
   }
 
   public override async Task VisitFunctionCall(AresLangParser.FunctionCallContext ctx)
@@ -194,12 +378,12 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       return;
     }
 
-    if(_locals.TryGetValue(functionId, out var aliasValue) && aliasValue.FunctionValue is not null)
+    if(_environment.TryGetValue(functionId, out var aliasValue) && aliasValue.FunctionValue is not null)
     {
       functionId = aliasValue.FunctionValue.FunctionId;
     }
 
-    if(_locals.TryGetSystemFunction(functionId, out var _))
+    if(_environment.TryGetSystemFunction(functionId, out var _))
     {
       if(keywordArgs.Count > 0)
       {
@@ -208,7 +392,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       return;
     }
 
-    if(_locals.TryGetUserFunction(functionId, out var userFn))
+    if(_environment.TryGetUserFunction(functionId, out var userFn))
     {
       if(positionalArgs.Count > userFn.Parameters.Count)
       {

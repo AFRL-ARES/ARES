@@ -136,6 +136,60 @@ public class AresScriptEnvironment
     return _systemScopes.SelectMany(scope => scope.SystemFunctions.Values).ToArray();
   }
 
+  public IReadOnlyList<KeyValuePair<string, AresValue>> GetAllSystemVariables()
+  {
+    var seen = new HashSet<string>(StringComparer.Ordinal);
+    var results = new List<KeyValuePair<string, AresValue>>();
+    foreach(var scope in _systemScopes)
+    {
+      foreach(var kv in scope.Variables)
+      {
+        if(seen.Add(kv.Key))
+        {
+          results.Add(kv);
+        }
+      }
+    }
+
+    return results;
+  }
+
+  public IReadOnlyList<string> GetAllUserVariableNames()
+  {
+    var seen = new HashSet<string>(StringComparer.Ordinal);
+    var results = new List<string>();
+    foreach(var scope in _userScopes)
+    {
+      foreach(var key in scope.Variables.Keys)
+      {
+        if(seen.Add(key))
+        {
+          results.Add(key);
+        }
+      }
+    }
+
+    return results;
+  }
+
+  public IReadOnlyList<AresScriptFunction> GetAllUserFunctions()
+  {
+    var seen = new HashSet<string>(StringComparer.Ordinal);
+    var results = new List<AresScriptFunction>();
+    foreach(var scope in _userScopes)
+    {
+      foreach(var func in scope.Functions.Values)
+      {
+        if(seen.Add(func.Name))
+        {
+          results.Add(func);
+        }
+      }
+    }
+
+    return results;
+  }
+
   public int Depth => _userScopes.Count;
 
   // Only for vars

@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using Ares.Services;
 using Grpc.Core;
 using System;
+using System.IO;
 using System.Threading.Channels;
 using Ares.Core.Scripting;
 using Microsoft.Extensions.Logging;
@@ -11,6 +12,8 @@ using System.Linq;
 using AresScript;
 using Ares.Datamodel.Scripting;
 using System.Text.RegularExpressions;
+using AresScript.Generated;
+using Antlr4.Runtime;
 
 namespace Ares.Core.Grpc.Services;
 
@@ -83,11 +86,13 @@ public partial class AresScriptingService : Ares.Services.AresScriptingService.A
     return Task.FromResult(response);
   }
 
-  public override Task<CompletionResponse> GetCompletions(CompletionRequest request, ServerCallContext context)
+  public override async Task<CompletionResponse> GetCompletions(CompletionRequest request, ServerCallContext context)
   {
-    var environment = _environmentBuilder.Build();
+    var environment = await BuildEnvironmentForCompletions(request.Script);
     var catalog = BuildAutocompleteCatalog(environment);
     var systemFunctions = environment.GetAllSystemFunctions();
+    var userFunctions = environment.GetAllUserFunctions();
+    var userVariables = environment.GetAllUserVariableNames();
     var items = new List<CompletionItem>();
 
     if(TryGetParentIdentifier(request.Script, request.CursorLine, request.CursorColumn, out var parentIdentifier))
@@ -133,6 +138,22 @@ public partial class AresScriptingService : Ares.Services.AresScriptingService.A
           OutputSchema = func.OutputSchema
         }));
 
+      items.AddRange(userFunctions.Select(func => new CompletionItem
+      {
+        Label = func.Name,
+        InsertText = func.Name,
+        Detail = "User function",
+        Kind = CompletionItemKind.Function
+      }));
+
+      items.AddRange(userVariables.Select(name => new CompletionItem
+      {
+        Label = name,
+        InsertText = name,
+        Detail = "User variable",
+        Kind = CompletionItemKind.Variable
+      }));
+
       items.AddRange(catalog.Globals.Select(global => new CompletionItem
       {
         Label = global.Name,
@@ -146,12 +167,84 @@ public partial class AresScriptingService : Ares.Services.AresScriptingService.A
 
     var response = new CompletionResponse();
     response.Items.AddRange(items);
-    return Task.FromResult(response);
+    return response;
+  }
+
+  public override async Task<ValidateScriptResponse> ValidateScript(ValidateScriptRequest request, ServerCallContext context)
+  {
+    var diagnostics = new List<Diagnostic>();
+
+    var stream = new AntlrInputStream(request.Script ?? string.Empty);
+    var lexer = new AresIndentationLexer(stream);
+    var lexerListener = new CollectingLexerErrorListener(diagnostics);
+    lexer.RemoveErrorListeners();
+    lexer.AddErrorListener(lexerListener);
+
+    var tokenStream = new CommonTokenStream(lexer);
+    var parser = new AresLangParser(tokenStream);
+    var parserListener = new CollectingParserErrorListener(diagnostics);
+    parser.RemoveErrorListeners();
+    parser.AddErrorListener(parserListener);
+
+    AresLangParser.ProgramContext? programCtx = null;
+    try
+    {
+      programCtx = parser.program();
+    }
+    catch(Exception ex)
+    {
+      AppendDiagnosticFromException(diagnostics, ex);
+    }
+
+    if(programCtx is not null)
+    {
+      var environment = _environmentBuilder.Build();
+      var validator = new AresValidationInterpreter(environment, AresValidationInterpreter.ValidationMode.Strict);
+      try
+      {
+        await validator.Visit(programCtx);
+      }
+      catch(Exception ex)
+      {
+        AppendDiagnosticFromException(diagnostics, ex);
+      }
+    }
+
+    var response = new ValidateScriptResponse();
+    response.Diagnostics.AddRange(diagnostics);
+    return response;
+  }
+
+  private async Task<AresScriptEnvironment> BuildEnvironmentForCompletions(string script)
+  {
+    var environment = _environmentBuilder.Build();
+    if(string.IsNullOrWhiteSpace(script))
+    {
+      return environment;
+    }
+
+    try
+    {
+      var stream = new AntlrInputStream(script);
+      var lexer = new AresIndentationLexer(stream);
+      var tokenStream = new CommonTokenStream(lexer);
+      var parser = new AresLangParser(tokenStream);
+      var programCtx = parser.program();
+      var validator = new AresValidationInterpreter(environment, AresValidationInterpreter.ValidationMode.Lenient);
+      await validator.Visit(programCtx);
+    }
+    catch
+    {
+      // Ignore parse/validation errors for autocomplete; fall back to system scope.
+    }
+
+    return environment;
   }
 
   private static AutocompleteCatalogResponse BuildAutocompleteCatalog(AresScriptEnvironment env)
   {
     var systemFunctions = env.GetAllSystemFunctions();
+    var systemVariables = env.GetAllSystemVariables();
     var namespaceMap = new Dictionary<string, NamespaceSymbol>(StringComparer.Ordinal);
 
     foreach(var func in systemFunctions)
@@ -195,6 +288,13 @@ public partial class AresScriptingService : Ares.Services.AresScriptingService.A
         InputSchema = func.InputSchema,
         OutputSchema = func.OutputSchema
       }));
+    response.Globals.AddRange(systemVariables.Select(kv => new GlobalVariableSymbol
+    {
+      Name = kv.Key,
+      Description = string.Empty,
+      Schema = new Ares.Datamodel.SchemaEntry { Type = Ares.Datamodel.AresDataType.UnspecifiedType },
+      Value = kv.Value
+    }));
     return response;
   }
 
@@ -258,4 +358,84 @@ public partial class AresScriptingService : Ares.Services.AresScriptingService.A
 
   [GeneratedRegex(@"([A-Za-z_][A-Za-z0-9_]*)\s*$")]
   private static partial Regex IdentifierRegex();
+
+  [GeneratedRegex(@"(\d+):(\d+)\s*$")]
+  private static partial Regex LineColumnRegex();
+
+  private static void AppendDiagnosticFromException(ICollection<Diagnostic> diagnostics, Exception ex)
+  {
+    var message = ex.Message ?? "Validation error";
+    var line = 1;
+    var column = 1;
+
+    var match = LineColumnRegex().Match(message);
+    if(match.Success
+      && int.TryParse(match.Groups[1].Value, out var parsedLine)
+      && int.TryParse(match.Groups[2].Value, out var parsedColumn))
+    {
+      line = parsedLine;
+      column = parsedColumn;
+    }
+
+    diagnostics.Add(new Diagnostic
+    {
+      StartLine = line,
+      StartColumn = column,
+      EndLine = line,
+      EndColumn = column,
+      Message = message,
+      Severity = DiagnosticSeverity.Error,
+      Code = string.Empty
+    });
+  }
+
+  private sealed class CollectingLexerErrorListener : IAntlrErrorListener<int>
+  {
+    private readonly ICollection<Diagnostic> _diagnostics;
+
+    public CollectingLexerErrorListener(ICollection<Diagnostic> diagnostics)
+    {
+      _diagnostics = diagnostics;
+    }
+
+    public void SyntaxError(TextWriter output, IRecognizer recognizer, int offendingSymbol, int line, int charPositionInLine,
+      string msg, RecognitionException e)
+    {
+      _diagnostics.Add(CreateDiagnostic(line, charPositionInLine, msg));
+    }
+  }
+
+  private sealed class CollectingParserErrorListener : BaseErrorListener
+  {
+    private readonly ICollection<Diagnostic> _diagnostics;
+
+    public CollectingParserErrorListener(ICollection<Diagnostic> diagnostics)
+    {
+      _diagnostics = diagnostics;
+    }
+
+    public override void SyntaxError(TextWriter output, IRecognizer recognizer, IToken offendingSymbol, int line, int charPositionInLine,
+      string msg, RecognitionException e)
+    {
+      _diagnostics.Add(CreateDiagnostic(line, charPositionInLine, msg, offendingSymbol));
+    }
+  }
+
+  private static Diagnostic CreateDiagnostic(int line, int charPositionInLine, string message, IToken? offendingSymbol = null)
+  {
+    var startColumn = Math.Max(1, charPositionInLine + 1);
+    var tokenLength = offendingSymbol?.Text?.Length ?? 1;
+    var endColumn = Math.Max(startColumn, startColumn + tokenLength - 1);
+
+    return new Diagnostic
+    {
+      StartLine = Math.Max(1, line),
+      StartColumn = startColumn,
+      EndLine = Math.Max(1, line),
+      EndColumn = endColumn,
+      Message = message,
+      Severity = DiagnosticSeverity.Error,
+      Code = string.Empty
+    };
+  }
 }

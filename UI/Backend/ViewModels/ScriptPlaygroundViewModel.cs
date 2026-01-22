@@ -14,10 +14,11 @@ public partial class ScriptPlaygroundViewModel : ReactiveObject
   private CancellationTokenSource _cancellationTokenSource = new();
   private readonly ISubject<string> _scriptOutput = new Subject<string>();
 
-  public ScriptPlaygroundViewModel(AresScriptingService.AresScriptingServiceClient scriptingClient, MonacoCompletionProvider completionProvider)
+  public ScriptPlaygroundViewModel(AresScriptingService.AresScriptingServiceClient scriptingClient, MonacoCompletionProvider completionProvider, MonacoDiagnosticsProvider diagnosticsProvider)
   {
     _scriptingClient = scriptingClient;
     CompletionProvider = completionProvider;
+    DiagnosticsProvider = diagnosticsProvider;
     ScriptOutput = _scriptOutput.AsObservable();
   }
 
@@ -54,4 +55,5 @@ public partial class ScriptPlaygroundViewModel : ReactiveObject
 
   public IObservable<string> ScriptOutput { get; }
   public MonacoCompletionProvider CompletionProvider { get; }
+  public MonacoDiagnosticsProvider DiagnosticsProvider { get; }
 }

@@ -18,26 +18,9 @@ export class AresLangAutocompleteProvider implements languages.CompletionItemPro
     this.autoCompleteService = autoCompleteService;
   }
 
-  triggerCharacters?: string[] | undefined = ['.', '('];
+  triggerCharacters?: string[] | undefined = ['.'];
 
   provideCompletionItems(model: editor.ITextModel, position: Position, context: languages.CompletionContext, token: CancellationToken): languages.ProviderResult<languages.CompletionList> {
-    //const suggestions: languages.CompletionItem[] = [
-    //  {
-    //    label: 'sleep',
-    //    kind: monaco.languages.CompletionItemKind.Function,
-    //    insertText: 'sleep($1)',
-    //    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-    //    detail: 'sleep(ms)',
-    //    documentation: 'Pause execution for the given milliseconds.',
-    //    range: {
-    //      startLineNumber: position.lineNumber,
-    //      startColumn: position.column,
-    //      endLineNumber: position.lineNumber,
-    //      endColumn: position.column,
-    //    },
-    //  },
-    //];
-
     return this.autoCompleteService
       .invokeMethodAsync("GetCompletionItems", model.getValue(), position.lineNumber, position.column)
       .then((suggestions) => ({ suggestions: suggestions as languages.CompletionItem[] }));

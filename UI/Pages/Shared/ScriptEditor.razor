@@ -9,6 +9,9 @@
   [Parameter]
   public MonacoCompletionProvider? CompletionProvider { get; set; }
 
+  [Parameter]
+  public MonacoDiagnosticsProvider? DiagnosticsProvider { get; set; }
+
   public Task<string> GetScript() => _editor.GetValue();
 
   protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -29,6 +32,15 @@
         var reference = DotNetObjectReference.Create(CompletionProvider);
 
         await completionModule.InvokeVoidAsync("setupAutoComplete", reference);
+      }
+
+      if(DiagnosticsProvider is not null)
+      {
+        var diagnosticsModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/monaco/ares-diagnostics-setup.js");
+
+        var reference = DotNetObjectReference.Create(DiagnosticsProvider);
+
+        await diagnosticsModule.InvokeVoidAsync("setupDiagnostics", reference);
       }
     }
   }
