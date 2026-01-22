@@ -1,0 +1,79 @@
+﻿/* RightSidebar.razor.css */
+
+.vis-sidebar {
+	/* Layout & Positioning */
+	position: fixed;
+	top: 0;
+	right: 0;
+	height: 100vh;
+	z-index: 1000;
+	/* Appearance */
+	background-color: #2b3e50;
+	color: white;
+	box-shadow: -2px 0 8px rgba(0,0,0,0.2);
+	/* Animation Logic */
+	width: 60px; /* Default collapsed width */
+	transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+	overflow-x: hidden; /* Hides text when collapsed */
+	white-space: nowrap; /* Prevents text wrapping */
+}
+
+	.vis-sidebar.extended {
+		width: 250px;
+	}
+
+/* Toggle Button */
+.vis-toggle-btn {
+	height: 60px;
+	width: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	background-color: #1f2d3a;
+	font-weight: bold;
+	user-select: none;
+}
+
+	.vis-toggle-btn:hover {
+		background-color: #3e566d;
+	}
+
+/* Navigation Links */
+.vis-nav-list {
+	display: flex;
+	flex-direction: column;
+	padding-top: 10px;
+}
+
+.vis-nav-item {
+	display: flex;
+	align-items: center;
+	padding: 15px 20px;
+	color: #ecf0f1;
+	text-decoration: none;
+	transition: background 0.2s;
+}
+
+	.vis-nav-item:hover {
+		background-color: #3e566d;
+	}
+
+	.vis-nav-item .vis-icon {
+		min-width: 20px; /* Ensure icon doesn't shrink */
+		text-align: center;
+		margin-right: 15px;
+		font-size: 1.2rem;
+	}
+
+	.vis-nav-item .text {
+		font-size: 1rem;
+		opacity: 0; /* Fade text out slightly faster than width change */
+		transition: opacity 0.2s;
+	}
+
+/* Show text when extended */
+.vis-sidebar.extended .vis-nav-item .text {
+	opacity: 1;
+	transition-delay: 0.1s;
+}

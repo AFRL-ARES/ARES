@@ -196,6 +196,7 @@ public class Program
     builder.Services.AddSerilog((services, lc) => lc
       .ReadFrom.Configuration(builder.Configuration)
       .ReadFrom.Services(services)
+      .WriteTo.Console()
       .Enrich.FromLogContext());
 
     ConfigureDatabaseServices(services, configuration);

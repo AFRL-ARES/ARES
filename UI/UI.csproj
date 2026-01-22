@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Pages\Shared\Components\RightSidebar.razor.css" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="ARES.Datamodel" Version="0.16.0" />
     <PackageReference Include="BlazorMonaco" Version="3.4.0" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
@@ -30,6 +34,7 @@
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageReference Include="Serilog.Enrichers.Context" Version="4.6.5" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="10.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.0" />
     <PackageReference Include="UnitsNet" Version="5.75.0" />
@@ -70,6 +75,10 @@
 
   <ItemGroup>
     <_ContentIncludedByDefault Remove="Pages\Shared\Settings\Device\StepperController\StepperControllerSettingsView.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Pages\Shared\Components\RightSidebar.razor.css" />
   </ItemGroup>
 
 </Project>

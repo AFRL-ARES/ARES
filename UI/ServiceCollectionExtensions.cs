@@ -149,6 +149,7 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<ExecutionHistoryViewModel>();
     services.AddScoped<ExecutionViewModel>();
     services.AddScoped<ScriptPlaygroundViewModel>();
+    services.AddScoped<VisualizationViewModel>();
 
     //Device Settings List View Models
     services.AddTransient<DeviceStatesViewModel>();

@@ -58,6 +58,7 @@ builder.Services.AddHostedService<ServiceStarter>();
 builder.Services.AddSerilog((services, lc) => lc
   .ReadFrom.Configuration(builder.Configuration)
   .ReadFrom.Services(services)
+  .WriteTo.Console()
   .Enrich.FromLogContext());
 
 var app = builder.Build();
