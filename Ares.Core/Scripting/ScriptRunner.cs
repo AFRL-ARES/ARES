@@ -12,11 +12,13 @@ namespace Ares.Core.Scripting;
 public class ScriptRunner
 {
   private readonly ISubject<string> _outputSubject = new Subject<string>();
+  private readonly AresScriptEnvironment _initialEnvironment;
 
-  public ScriptRunner()
+  public ScriptRunner(AresScriptEnvironment? initialEnvironment = null)
   {
     ScriptOutput = _outputSubject.AsObservable();
-    Print = new AresSystemFunction("print", (args, _) => {
+    Print = new AresSystemFunction("print", "print", (args, _) =>
+    {
       var stringy = args.Select(v => v.Stringify());
       foreach(var s in stringy)
       {
@@ -24,12 +26,14 @@ public class ScriptRunner
       }
 
       return Task.FromResult(AresValueHelper.CreateUnit());
-      },
+    },
     AresSchemaBuilder.Create("args", AresDataType.Any).Build(),
     AresSchemaBuilder.Create(AresDataType.Unit).Build(),
+    "",
     "Prints the given value/s of any ARES type to output.");
+    _initialEnvironment = initialEnvironment ?? new AresScriptEnvironment();
   }
-  
+
   public async Task RunScriptAsync(string script, CancellationToken cancellationToken = default)
   {
     var stream = new AntlrInputStream(script);
@@ -41,15 +45,15 @@ public class ScriptRunner
     //parser.RemoveErrorListeners();
     //parser.AddErrorListener(new ThrowingParserErrorListener());
     var programCtx = parser.program();
-    var env = new AresScriptEnvironment();
-    env.AssignSystemFunctions(StandardLibrary.Functions);
-    env.FunctionTable[Print.Id] = Print;
+    var env = _initialEnvironment;
+    env.EnterSystemScope("SandboxRunner");
+    env.AssignSystemFunctions(Print);
     var visitor = new AresBaseInterpreter(env, cancellationToken);
 
     await visitor.Visit(programCtx);
   }
-  
+
   private AresSystemFunction Print { get; }
-  
+
   public IObservable<string> ScriptOutput { get; }
 }

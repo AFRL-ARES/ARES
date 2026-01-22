@@ -27,7 +27,7 @@ public class DeviceFunctionProvider(IDeviceCommandInterpreterRepo interpreterRep
       foreach(var metadata in commandMetadatas)
       {
         var commandName = SanitizeIdentifier(metadata.Name);
-        var functionId = $"{devicePrefix}_{commandName}";
+        var functionId = $"devices::{devicePrefix}::{commandName}";
         var parameterMetadatas = metadata.ParameterMetadatas.OrderBy(p => p.Index).ToArray();
 
         var inputSchema = BuildInputSchema(parameterMetadatas);
@@ -36,6 +36,7 @@ public class DeviceFunctionProvider(IDeviceCommandInterpreterRepo interpreterRep
         functions.Add(
           new AresSystemFunction(
             functionId,
+            commandName,
             async (args, token) =>
             {
               if(args.Count > parameterMetadatas.Length)
@@ -73,8 +74,9 @@ public class DeviceFunctionProvider(IDeviceCommandInterpreterRepo interpreterRep
             },
             inputSchema,
             outputSchema,
-            metadata.Description ?? string.Empty,
-            devicePrefix));
+            devicePrefix,
+            metadata.Description ?? string.Empty
+            ));
       }
     }
 

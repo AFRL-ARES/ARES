@@ -4,6 +4,7 @@ using Ares.Services;
 using Grpc.Core;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
+using UI.JsInterops;
 
 namespace UI.Backend.ViewModels;
 
@@ -13,12 +14,13 @@ public partial class ScriptPlaygroundViewModel : ReactiveObject
   private CancellationTokenSource _cancellationTokenSource = new();
   private readonly ISubject<string> _scriptOutput = new Subject<string>();
 
-  public ScriptPlaygroundViewModel(AresScriptingService.AresScriptingServiceClient scriptingClient)
+  public ScriptPlaygroundViewModel(AresScriptingService.AresScriptingServiceClient scriptingClient, MonacoCompletionProvider completionProvider)
   {
     _scriptingClient = scriptingClient;
+    CompletionProvider = completionProvider;
     ScriptOutput = _scriptOutput.AsObservable();
   }
-  
+
   public async Task StartScript(string script)
   {
     _cancellationTokenSource = new();
@@ -49,6 +51,7 @@ public partial class ScriptPlaygroundViewModel : ReactiveObject
 
   [Reactive]
   public partial bool ScriptRunning { get; private set; }
-  
+
   public IObservable<string> ScriptOutput { get; }
+  public MonacoCompletionProvider CompletionProvider { get; }
 }

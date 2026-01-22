@@ -35,6 +35,4 @@ export function registerAresLanguage(): void {
   });
 
   monaco.editor.setTheme('ares-dark');
-  
-  //monaco.languages.registerCompletionItemProvider("ares")
-}
+  }

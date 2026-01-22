@@ -60,6 +60,7 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<INotifier, Notifier>();
 
     services.AddSingleton<ISystemFunctionProvider, DeviceFunctionProvider>();
+    services.AddSingleton<BaseEnvironmentBuilder>();
 
     services.BindComposers();
     services.BindStartConditions();

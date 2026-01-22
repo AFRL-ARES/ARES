@@ -8,7 +8,7 @@ public static class StandardLibrary
 {
   public static AresSystemFunction[] Functions { get; } =
   [
-    new AresSystemFunction("print", (args, _) =>
+    new AresSystemFunction("print", "print", (args, _) =>
       {
         foreach (var arg in args)
         {
@@ -19,9 +19,10 @@ public static class StandardLibrary
       },
     AresSchemaBuilder.Create("args", AresDataType.Any).Build(),
     AresSchemaBuilder.Create(AresDataType.Unit).Build(),
+    "",
     "Prints the given value/s of any ARES type to console."),
     
-    new("range", (args, _) => {
+    new("range", "range", (args, _) => {
       double start = 0;
       double stop = 0;
       double step = 1;
@@ -68,9 +69,10 @@ public static class StandardLibrary
       .AddEntry("step", AresSchemaBuilder.NumberEntry().AsOptional().WithDescription("The step size.").Build())
       .Build(),
     AresSchemaBuilder.Create("num_array", AresDataType.NumberArray).Build(),
+    "",
     "Generates a list of numbers in a range."),
     
-    new("sleep", async (args, token) => {
+    new("sleep", "sleep", async (args, token) => {
       if(args.Count != 1)
       {
         throw new ArgumentException("Expected exactly 1 argument for duration.", nameof(args));
@@ -89,6 +91,7 @@ public static class StandardLibrary
       .WithUnit("ms")
       .Build(),
     AresSchemaBuilder.Create("", AresDataType.Unit).Build(),
+    "",
     "Sleep for a given number of milliseconds"
     )
   ];

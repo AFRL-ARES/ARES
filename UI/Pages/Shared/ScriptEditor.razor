@@ -1,22 +1,35 @@
-﻿@inject IJSRuntime JSRuntime
+﻿@using UI.JsInterops
+@inject IJSRuntime JSRuntime
 
 <StandaloneCodeEditor CssClass="h-100" @ref="_editor" Id="ares-editor" ConstructionOptions="EditorConstructionOptions" />
 
 @code {
   private StandaloneCodeEditor _editor;
 
+  [Parameter]
+  public MonacoCompletionProvider? CompletionProvider { get; set; }
+
   public Task<string> GetScript() => _editor.GetValue();
-  
+
   protected override async Task OnAfterRenderAsync(bool firstRender)
   {
     if(firstRender)
     {
       // Import the setup script as a JS Module
       // Ensure the path matches your actual file structure in wwwroot
-      var module = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/monaco/ares-setup.js");
-      
+      var setupModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/monaco/ares-setup.js");
+
       // Register the language with Monaco
-      await module.InvokeVoidAsync("registerAresLanguage");
+      await setupModule.InvokeVoidAsync("registerAresLanguage");
+
+      if(CompletionProvider is not null)
+      {
+        var completionModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/monaco/ares-autocomplete-setup.js");
+
+        var reference = DotNetObjectReference.Create(CompletionProvider);
+
+        await completionModule.InvokeVoidAsync("setupAutoComplete", reference);
+      }
     }
   }
 

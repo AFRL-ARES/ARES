@@ -11,6 +11,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.28.0",
   "devDependencies": {
+    "@microsoft/dotnet-js-interop": "^10.0.0",
     "eslint": "^9.39.2",
     "monaco-editor": "^0.54.0"
   }

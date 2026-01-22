@@ -55,6 +55,7 @@ using UI.Backend.ViewModels.Settings.Device.ValveController;
 using UI.Backend.ViewModels.Settings.Device.VerdiLaser;
 using UI.Backend.ViewModels.Settings.Logging;
 using UI.Backend.ViewModels.Settings.Planning;
+using UI.JsInterops;
 using UI.Services.CampaignEdit;
 using UI.Services.Grpc;
 using UI.Services.ServerHealth;
@@ -86,6 +87,7 @@ internal static class ServiceCollectionExtensions
 
     services.AddSingleton<DeviceAdapterRepository>();
     services.AddSingleton<DeviceAdapterManager>();
+    services.AddSingleton<MonacoCompletionProvider>();
   }
 
   public static void BindClients(this IServiceCollection services)

@@ -9,24 +9,27 @@ using Google.Protobuf.WellKnownTypes;
 using System.Collections.Generic;
 using System.Linq;
 using AresScript;
+using Ares.Datamodel.Scripting;
+using System.Text.RegularExpressions;
 
 namespace Ares.Core.Grpc.Services;
 
-public class AresScriptingService : Ares.Services.AresScriptingService.AresScriptingServiceBase
+public partial class AresScriptingService : Ares.Services.AresScriptingService.AresScriptingServiceBase
 {
   private readonly ILogger<AresScriptingService> _logger;
-  private readonly IEnumerable<ISystemFunctionProvider> _systemFunctionProviders;
-  private const char FunctionSeparator = '_';
+  private readonly BaseEnvironmentBuilder _environmentBuilder;
 
-  public AresScriptingService(ILogger<AresScriptingService> logger, IEnumerable<ISystemFunctionProvider> systemFunctionProviders)
+  public AresScriptingService(ILogger<AresScriptingService> logger, BaseEnvironmentBuilder environmentBuilder)
   {
     _logger = logger;
-    _systemFunctionProviders = systemFunctionProviders;
+    _environmentBuilder = environmentBuilder;
+
   }
   public override async Task ExecuteScript(ScriptExecutionRequest request, IServerStreamWriter<ScriptExecutionOutput> responseStream, ServerCallContext context)
   {
     var channel = Channel.CreateBounded<string>(new BoundedChannelOptions(100));
-    var runner = new ScriptRunner();
+    var env = _environmentBuilder.Build();
+    var runner = new ScriptRunner(env);
     runner.ScriptOutput.Subscribe(output =>
     {
       if(!channel.Writer.TryWrite(output))
@@ -65,6 +68,7 @@ public class AresScriptingService : Ares.Services.AresScriptingService.AresScrip
     }
     catch(Exception e)
     {
+      channel.Writer.TryWrite($"Run failed: {e}");
       channel.Writer.TryComplete(e);
       _logger.LogError("Script runner failed: {Exception}", e);
       throw;
@@ -72,54 +76,33 @@ public class AresScriptingService : Ares.Services.AresScriptingService.AresScrip
     await readTask;
   }
 
-  public override Task<AvailableDeviceCommandsResponse> GetAvailableDeviceCommands(Empty request, ServerCallContext context)
-  {
-    var aresFunctions = _systemFunctionProviders
-      .OfType<DeviceFunctionProvider>()
-      .SelectMany(sfp => sfp.GetFunctions())
-      .ToArray();
-      
-    var functionDescriptions = aresFunctions.Select(func =>
-    {
-      return new AresFunctionDescription
-      {
-        Id = func.Id,
-        InputSchema = func.InputSchema,
-        OutputSchema = func.OutputSchema,
-        Description = func.Description
-      };
-    }).ToArray();
-
-    var response = new AvailableDeviceCommandsResponse();
-    response.Functions.AddRange(functionDescriptions);
-    return Task.FromResult(response);
-  }
-
   public override Task<AutocompleteCatalogResponse> GetAutocompleteCatalog(Empty request, ServerCallContext context)
   {
-    var response = BuildAutocompleteCatalog();
+    var environment = _environmentBuilder.Build();
+    var response = BuildAutocompleteCatalog(environment);
     return Task.FromResult(response);
   }
 
   public override Task<CompletionResponse> GetCompletions(CompletionRequest request, ServerCallContext context)
   {
-    var catalog = BuildAutocompleteCatalog();
-    var systemFunctions = _systemFunctionProviders.SelectMany(sfp => sfp.GetFunctions()).ToArray();
+    var environment = _environmentBuilder.Build();
+    var catalog = BuildAutocompleteCatalog(environment);
+    var systemFunctions = environment.GetAllSystemFunctions();
     var items = new List<CompletionItem>();
 
     if(TryGetParentIdentifier(request.Script, request.CursorLine, request.CursorColumn, out var parentIdentifier))
     {
-      var device = catalog.Devices.FirstOrDefault(d => string.Equals(d.Identifier, parentIdentifier, StringComparison.Ordinal));
-      if(device is not null)
+      var ns = catalog.Namespaces.FirstOrDefault(n => string.Equals(n.Identifier, parentIdentifier, StringComparison.Ordinal));
+      if(ns is not null)
       {
-        items.AddRange(device.Functions.Select(func => new CompletionItem
+        items.AddRange(ns.Functions.Select(func => new CompletionItem
         {
           Label = func.Name,
           InsertText = func.Name,
           Detail = func.Description,
           Documentation = func.Description,
           Kind = CompletionItemKind.Function,
-          ParentIdentifier = device.Identifier,
+          ParentIdentifier = ns.Identifier,
           InputSchema = func.InputSchema,
           OutputSchema = func.OutputSchema
         }));
@@ -127,13 +110,13 @@ public class AresScriptingService : Ares.Services.AresScriptingService.AresScrip
     }
     else
     {
-      items.AddRange(catalog.Devices.Select(device => new CompletionItem
+      items.AddRange(catalog.Namespaces.Select(ns => new CompletionItem
       {
-        Label = device.Identifier,
-        InsertText = device.Identifier,
-        Detail = device.DisplayName,
-        Documentation = device.Description,
-        Kind = CompletionItemKind.Device,
+        Label = ns.Identifier,
+        InsertText = ns.Identifier,
+        Detail = ns.DisplayName,
+        Documentation = ns.Description,
+        Kind = MapNamespaceKindToCompletionKind(ns.Kind),
         ParentIdentifier = string.Empty
       }));
 
@@ -141,8 +124,8 @@ public class AresScriptingService : Ares.Services.AresScriptingService.AresScrip
         .Where(func => string.IsNullOrWhiteSpace(func.Namespace))
         .Select(func => new CompletionItem
         {
-          Label = func.Id,
-          InsertText = func.Id,
+          Label = func.Name,
+          InsertText = func.Name,
           Detail = func.Description,
           Documentation = func.Description,
           Kind = CompletionItemKind.Function,
@@ -166,34 +149,31 @@ public class AresScriptingService : Ares.Services.AresScriptingService.AresScrip
     return Task.FromResult(response);
   }
 
-  private AutocompleteCatalogResponse BuildAutocompleteCatalog()
+  private static AutocompleteCatalogResponse BuildAutocompleteCatalog(AresScriptEnvironment env)
   {
-    var aresFunctions = _systemFunctionProviders.SelectMany(sfp => sfp.GetFunctions()).ToArray();
-    var deviceMap = new Dictionary<string, DeviceSymbol>(StringComparer.Ordinal);
+    var systemFunctions = env.GetAllSystemFunctions();
+    var namespaceMap = new Dictionary<string, NamespaceSymbol>(StringComparer.Ordinal);
 
-    foreach(var func in aresFunctions)
+    foreach(var func in systemFunctions)
     {
-      if(!TryResolveDeviceFunction(func, out var deviceIdentifier, out var functionName))
+      var namespaceName = func.Namespace;
+      if(!namespaceMap.TryGetValue(func.Namespace, out var ns))
       {
-        continue;
-      }
-
-      if(!deviceMap.TryGetValue(deviceIdentifier, out var device))
-      {
-        device = new DeviceSymbol
+        ns = new NamespaceSymbol
         {
-          DeviceId = deviceIdentifier,
-          Identifier = deviceIdentifier,
-          DisplayName = deviceIdentifier,
-          Description = string.Empty
+          NamespaceId = namespaceName,
+          Identifier = namespaceName,
+          DisplayName = namespaceName,
+          Description = string.Empty,
+          Kind = NamespaceKind.Device
         };
-        deviceMap[deviceIdentifier] = device;
+        namespaceMap[namespaceName] = ns;
       }
 
-      device.Functions.Add(new FunctionSymbol
+      ns.Functions.Add(new FunctionSymbol
       {
         Id = func.Id,
-        Name = functionName,
+        Name = func.Name,
         Description = func.Description,
         InputSchema = func.InputSchema,
         OutputSchema = func.OutputSchema
@@ -204,13 +184,13 @@ public class AresScriptingService : Ares.Services.AresScriptingService.AresScrip
     {
       CatalogVersion = string.Empty
     };
-    response.Devices.AddRange(deviceMap.Values);
-    response.GlobalFunctions.AddRange(aresFunctions
+    response.Namespaces.AddRange(namespaceMap.Values);
+    response.GlobalFunctions.AddRange(systemFunctions
       .Where(func => string.IsNullOrWhiteSpace(func.Namespace))
       .Select(func => new FunctionSymbol
       {
         Id = func.Id,
-        Name = func.Id,
+        Name = func.Name,
         Description = func.Description,
         InputSchema = func.InputSchema,
         OutputSchema = func.OutputSchema
@@ -218,49 +198,15 @@ public class AresScriptingService : Ares.Services.AresScriptingService.AresScrip
     return response;
   }
 
-  private static bool TryResolveDeviceFunction(AresSystemFunction func, out string deviceIdentifier, out string functionName)
+  private static CompletionItemKind MapNamespaceKindToCompletionKind(NamespaceKind kind)
   {
-    deviceIdentifier = string.Empty;
-    functionName = string.Empty;
-
-    if(!string.IsNullOrWhiteSpace(func.Namespace))
+    return kind switch
     {
-      deviceIdentifier = func.Namespace;
-      if(!string.IsNullOrWhiteSpace(func.Id))
-      {
-        var separatorIdx = func.Id.IndexOf(FunctionSeparator);
-        if(separatorIdx > 0 && separatorIdx < func.Id.Length - 1)
-        {
-          var prefix = func.Id[..separatorIdx];
-          functionName = string.Equals(prefix, func.Namespace, StringComparison.Ordinal)
-            ? func.Id[(separatorIdx + 1)..]
-            : func.Id;
-        }
-        else
-        {
-          functionName = func.Id;
-        }
-
-        return true;
-      }
-
-      return false;
-    }
-
-    if(string.IsNullOrWhiteSpace(func.Id))
-    {
-      return false;
-    }
-
-    var separatorIndex = func.Id.IndexOf(FunctionSeparator);
-    if(separatorIndex <= 0 || separatorIndex >= func.Id.Length - 1)
-    {
-      return false;
-    }
-
-    deviceIdentifier = func.Id[..separatorIndex];
-    functionName = func.Id[(separatorIndex + 1)..];
-    return true;
+      NamespaceKind.Device => CompletionItemKind.Device,
+      NamespaceKind.Planner => CompletionItemKind.Planner,
+      NamespaceKind.Analyzer => CompletionItemKind.Analyzer,
+      _ => CompletionItemKind.Unspecified
+    };
   }
 
   private static bool TryGetParentIdentifier(string script, int cursorLine, int cursorColumn, out string parentIdentifier)
@@ -306,44 +252,10 @@ public class AresScriptingService : Ares.Services.AresScriptingService.AresScrip
 
   private static string ExtractTrailingIdentifier(string text)
   {
-    if(string.IsNullOrEmpty(text))
-    {
-      return string.Empty;
-    }
-
-    var end = text.Length - 1;
-    while(end >= 0 && char.IsWhiteSpace(text[end]))
-    {
-      end--;
-    }
-
-    if(end < 0)
-    {
-      return string.Empty;
-    }
-
-    var start = end;
-    while(start >= 0 && IsIdentifierChar(text[start]))
-    {
-      start--;
-    }
-
-    start++;
-    if(start > end || !IsIdentifierStart(text[start]))
-    {
-      return string.Empty;
-    }
-
-    return text.Substring(start, end - start + 1);
+    var match = IdentifierRegex().Match(text);
+    return match.Success ? match.Groups[1].Value : string.Empty;
   }
 
-  private static bool IsIdentifierChar(char value)
-  {
-    return IsIdentifierStart(value) || char.IsDigit(value);
-  }
-
-  private static bool IsIdentifierStart(char value)
-  {
-    return value == '_' || char.IsLetter(value);
-  }
+  [GeneratedRegex(@"([A-Za-z_][A-Za-z0-9_]*)\s*$")]
+  private static partial Regex IdentifierRegex();
 }

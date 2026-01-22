@@ -78,7 +78,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       var id = idContext.ID().GetText();
       var functionId = TryResolveFunctionId(assignment.expression());
-      if(functionId is not null && _locals.TryGetAresFunction(functionId, out var _)
+      if(functionId is not null && _locals.TryGetSystemFunction(functionId, out var _)
           || functionId is not null && _locals.TryGetUserFunction(functionId, out var _))
       {
         _locals[id] = AresValueHelper.CreateFunction(functionId);
@@ -199,7 +199,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       functionId = aliasValue.FunctionValue.FunctionId;
     }
 
-    if(_locals.TryGetAresFunction(functionId, out var _))
+    if(_locals.TryGetSystemFunction(functionId, out var _))
     {
       if(keywordArgs.Count > 0)
       {

@@ -9,7 +9,7 @@ namespace AresScript;
 
 public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 {
-  protected readonly AresScriptEnvironment Locals;
+  protected readonly AresScriptEnvironment Environment;
   private readonly CancellationToken _cancellationToken;
 
   protected override Task<AresValue> DefaultResult => Task.FromResult(AresValueHelper.CreateUnit());
@@ -21,7 +21,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
   public AresBaseInterpreter(AresScriptEnvironment aresScriptEnvironment, CancellationToken cancellationToken = default)
   {
-    Locals = aresScriptEnvironment ?? throw new ArgumentNullException(nameof(aresScriptEnvironment));
+    Environment = aresScriptEnvironment ?? throw new ArgumentNullException(nameof(aresScriptEnvironment));
     _cancellationToken = cancellationToken;
   }
 
@@ -261,7 +261,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     foreach(var item in items)
     {
       ThrowIfCancellationRequested();
-      Locals[iterVar] = item;
+      Environment[iterVar] = item;
       try
       {
         await Visit(context.forStatement().loopBlock());
@@ -290,13 +290,13 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
   public override Task<AresValue> VisitLValueId(AresLangParser.LValueIdContext context)
   {
     var baseId = context.ID().GetText();
-    if(Locals.TryGetValueCurrentScope(baseId, out var value))
+    if(Environment.TryGetValueCurrentScope(baseId, out var value))
     {
       return Task.FromResult(value);
     }
 
-    Locals[baseId] = AresValueHelper.CreateNull();
-    return Task.FromResult(Locals[baseId]);
+    Environment[baseId] = AresValueHelper.CreateNull();
+    return Task.FromResult(Environment[baseId]);
   }
 
   public override async Task<AresValue> VisitLValueMember(AresLangParser.LValueMemberContext context)
@@ -381,7 +381,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     var block = context.functionDeclaration().funcBlock();
 
     var userFunc = new AresScriptFunction(functionId, paramIds, block);
-    Locals.AssignFunction(functionId, userFunc);
+    Environment.AssignFunction(functionId, userFunc);
 
     return Task.FromResult(AresValueHelper.CreateFunction(functionId));
   }
@@ -429,12 +429,12 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
   public override Task<AresValue> VisitId(AresLangParser.IdContext context)
   {
     var id = context.ID().GetText();
-    if(Locals.TryGetAresFunction(id, out var _) || Locals.TryGetUserFunction(id, out var _))
+    if(Environment.TryGetSystemFunction(id, out var _) || Environment.TryGetUserFunction(id, out var _))
     {
       return Task.FromResult(AresValueHelper.CreateFunction(id));
     }
 
-    return Task.FromResult(Locals[context.ID().GetText()]);
+    return Task.FromResult(Environment[context.ID().GetText()]);
   }
 
   public override async Task<AresValue> VisitParens([NotNull] AresLangParser.ParensContext context)
@@ -597,7 +597,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
       }
     }
 
-    if(Locals.TryGetAresFunction(id, out var aresFn))
+    if(Environment.TryGetSystemFunction(id, out var aresFn))
     {
       if(keywordArgs.Count > 0)
       {
@@ -608,15 +608,15 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
       return await aresFn.Body(positionalArgs, _cancellationToken);
     }
 
-    if(!Locals.TryGetUserFunction(id, out var userFn))
+    if(!Environment.TryGetUserFunction(id, out var userFn))
       throw new InvalidOperationException($"Function '{id}' not found");
     
     ThrowIfCancellationRequested();
-    if(Locals.Depth > 100)
+    if(Environment.Depth > 100)
     {
       throw new InvalidOperationException("Maximum function call depth reached.");
     }
-    Locals.EnterScope();
+    Environment.EnterScope();
     try
     {
       if(positionalArgs.Count > userFn.Parameters.Count)
@@ -628,7 +628,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
       for(var i = 0; i < positionalArgs.Count; i++)
       {
-        Locals[userFn.Parameters[i]] = positionalArgs[i];
+        Environment[userFn.Parameters[i]] = positionalArgs[i];
       }
 
       foreach(var (name, value) in keywordArgs)
@@ -644,13 +644,13 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
           throw new InvalidOperationException($"Function '{id}' got multiple values for argument '{name}'");
         }
 
-        Locals[name] = value;
+        Environment[name] = value;
       }
 
       for(var i = positionalArgs.Count; i < userFn.Parameters.Count; i++)
       {
         var name = userFn.Parameters[i];
-        if(!Locals.TryGetValueCurrentScope(name, out var _))
+        if(!Environment.TryGetValueCurrentScope(name, out var _))
         {
           throw new InvalidOperationException($"Function '{id}' missing required argument '{name}'");
         }
@@ -673,7 +673,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     }
     finally
     {
-      Locals.ExitScope();
+      Environment.ExitScope();
     }
     
   }
