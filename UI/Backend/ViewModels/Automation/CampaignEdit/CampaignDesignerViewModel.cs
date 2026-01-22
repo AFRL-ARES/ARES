@@ -96,9 +96,11 @@ public partial class CampaignDesignerViewModel : ReactiveObject
     CloseoutDesigner = _closeoutDesignerFactory.Create(campaignTemplate.CloseoutTemplate);
     PlanningDesigner = await _planningDesignerFactory.Create(campaignTemplate);
     var commandDesigners = ExperimentDesigner?.StepDesigners?.SelectMany(sd => sd.CommandDesigners) ?? [];
+    var startupDesigners = StartupDesigner?.StartupStepDesigners?.SelectMany(ssd => ssd.CommandDesigners) ?? [];
+
     if(CampaignTemplate.ExperimentTemplate is not null)
     {
-      AnalyzerDesignerViewModel = _analyzerInputDesignerFactory.Create(campaignTemplate.ExperimentTemplate, commandDesigners);
+      AnalyzerDesignerViewModel = _analyzerInputDesignerFactory.Create(campaignTemplate.ExperimentTemplate, commandDesigners, startupDesigners);
     }
   }
 

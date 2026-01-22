@@ -13,5 +13,5 @@ public class AnalyzerInputDesignerVmFactory
     _analysisServiceClient = analysisServiceClient;
   }
 
-  public AnalyzerDesignerViewModel Create(ExperimentTemplate experimentTemplate, IEnumerable<CommandDesignerViewModel> commandDesignerViewModels) => new(_analysisServiceClient, _analyzerManagementClient, experimentTemplate, commandDesignerViewModels);
+  public AnalyzerDesignerViewModel Create(ExperimentTemplate experimentTemplate, IEnumerable<CommandDesignerViewModel> commandDesignerViewModels, IEnumerable<CommandDesignerViewModel> startupCommandDesignerViewModels) => new(_analysisServiceClient, _analyzerManagementClient, experimentTemplate, commandDesignerViewModels, startupCommandDesignerViewModels);
 }

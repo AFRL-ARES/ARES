@@ -42,7 +42,7 @@ public class ValidationService : AresValidation.AresValidationBase
       return response;
     }
 
-    var result = await GoodAnalyzerValidator.Validate(request.ExperimentTemplate, _analyzerRepo);
+    var result = await GoodAnalyzerValidator.Validate(request.ExperimentTemplate, null, _analyzerRepo);
     response.Success = result.Success;
     response.Messages.AddRange(result.Messages);
 

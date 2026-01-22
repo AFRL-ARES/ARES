@@ -105,7 +105,7 @@ public class CampaignExecutor : ICampaignExecutor
       startupSummary = startupResult.Summary;
       
 
-      executionSuccess = await ExecuteExperimentLoop(campaignPath, analyses, experimentSummaries, token, executionSuccess);
+      executionSuccess = await ExecuteExperimentLoop(campaignPath, analyses, experimentSummaries, token, executionSuccess, startupResult.Summary);
 
       _logger.LogDebug("The campaign loop is now finished. Moving onto the closeout script.");
 
@@ -190,7 +190,7 @@ public class CampaignExecutor : ICampaignExecutor
     return (true, startupSummary);
   }
 
-  private async Task<bool> ExecuteExperimentLoop(string campaignPath, List<Analysis> analyses, List<ExperimentExecutionSummary> experimentSummaries, ExecutionControlToken token, bool executionSuccess)
+  private async Task<bool> ExecuteExperimentLoop(string campaignPath, List<Analysis> analyses, List<ExperimentExecutionSummary> experimentSummaries, ExecutionControlToken token, bool executionSuccess, ExperimentExecutionSummary startupSummary)
   {
     var experimentCount = 0;
     while(!ShouldStop() && !token.IsCancelled && executionSuccess == true)
@@ -236,7 +236,7 @@ public class CampaignExecutor : ICampaignExecutor
       // and thus sending a null result to the analyzer might break it depending on the analyzer
       if(!token.IsCancelled)
       {
-        var result = await AnalyzeResult(experimentExecutor, experimentSummary, analyses, token);
+        var result = await AnalyzeResult(experimentExecutor, experimentSummary, startupSummary, analyses, token);
         if (!result.Success) executionSuccess = false;
         if (!result.Continue) break;
       }
@@ -251,7 +251,7 @@ public class CampaignExecutor : ICampaignExecutor
     return executionSuccess;
   }
 
-  private async Task<(bool Success, bool Continue)> AnalyzeResult(ExperimentExecutor experimentExecutor, ExperimentExecutionSummary experimentSummary, List<Analysis> analyses, ExecutionControlToken token)
+  private async Task<(bool Success, bool Continue)> AnalyzeResult(ExperimentExecutor experimentExecutor, ExperimentExecutionSummary experimentSummary, ExperimentExecutionSummary startupSummary, List<Analysis> analyses, ExecutionControlToken token)
   {
     var metadata = new RequestMetadata 
     { 
@@ -267,6 +267,7 @@ public class CampaignExecutor : ICampaignExecutor
     var analysis = await _analysisHelper.Analyze(
       experimentExecutor.Template,
       experimentSummary,
+      startupSummary,
       metadata,
       token.CancellationToken);
 
