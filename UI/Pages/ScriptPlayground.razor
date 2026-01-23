@@ -37,7 +37,10 @@
                 <span>Script Editor</span>
             </div>
             <div class="script-playground__pane-body">
-                <ScriptEditor CompletionProvider="@ViewModel!.CompletionProvider" DiagnosticsProvider="@ViewModel!.DiagnosticsProvider" @ref="_editor" />
+                <ScriptEditor CompletionProvider="@ViewModel!.CompletionProvider"
+                              DiagnosticsProvider="@ViewModel!.DiagnosticsProvider"
+                              SemanticTokensProvider="@ViewModel!.SemanticTokensProvider"
+                              @ref="_editor" />
             </div>
         </div>
 

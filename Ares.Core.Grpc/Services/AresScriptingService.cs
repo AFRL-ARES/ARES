@@ -339,6 +339,13 @@ public partial class AresScriptingService : Ares.Services.AresScriptingService.A
       return false;
     }
 
+    var lastOpenParen = prefix.LastIndexOf('(');
+    var lastCloseParen = prefix.LastIndexOf(')');
+    if(lastOpenParen > dotIndex && lastOpenParen > lastCloseParen)
+    {
+      return false;
+    }
+
     var left = prefix[..dotIndex];
     var identifier = ExtractTrailingIdentifier(left);
     if(string.IsNullOrEmpty(identifier))

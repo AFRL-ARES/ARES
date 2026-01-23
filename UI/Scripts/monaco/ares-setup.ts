@@ -1,5 +1,6 @@
 import { language } from './areslang.monarch.js';
 import { conf } from './areslang.language-configuration.js';
+//import { editor } from 'monaco-editor';
 
 /**
  * Registers the ARES language with Monaco Editor.
@@ -28,11 +29,14 @@ export function registerAresLanguage(): void {
     inherit: true,
     rules: [
       { token: 'identifier.function', foreground: '#DCDCAA' },
+      { token: 'function', foreground: '#DCDCAA' },
       { token: 'keyword.flow', foreground: '#C586C0' },
-      { token: 'keyword.special', foreground: '#CE9178' }
+      { token: 'keyword.special', foreground: '#CE9178' },
+      { token: 'variable', foreground: '#9CDCFE' },
+      { token: 'namespace', foreground: '#4EC9B0' }
     ],
     colors: {}
   });
-
+  
   monaco.editor.setTheme('ares-dark');
-  }
+}

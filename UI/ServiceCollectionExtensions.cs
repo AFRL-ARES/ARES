@@ -89,6 +89,7 @@ internal static class ServiceCollectionExtensions
     services.AddSingleton<DeviceAdapterManager>();
     services.AddSingleton<MonacoCompletionProvider>();
     services.AddSingleton<MonacoDiagnosticsProvider>();
+    services.AddSingleton<MonacoSemanticTokensProvider>();
   }
 
   public static void BindClients(this IServiceCollection services)

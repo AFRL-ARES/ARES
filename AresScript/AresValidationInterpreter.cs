@@ -1,4 +1,5 @@
 using Antlr4.Runtime.Misc;
+using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
 using AresScript.Generated;
 
@@ -10,11 +11,13 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
   private int _functionDepth;
   private readonly ValidationMode _mode;
   private readonly Stack<IReadOnlyList<string>> _pendingFunctionParameters = new();
+  private readonly AresTypeInferenceInterpreter _typeInference;
 
   public AresValidationInterpreter(AresScriptEnvironment aresScriptEnvironment, ValidationMode mode = ValidationMode.Strict)
   {
     _environment = aresScriptEnvironment;
     _mode = mode;
+    _typeInference = new AresTypeInferenceInterpreter(_environment);
   }
 
   protected override Task DefaultResult => Task.CompletedTask;
@@ -315,7 +318,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       throw new InvalidOperationException($"Unknown identifier '{id}'. {context.Start.Line}:{context.Start.Column}");
     }
 
-    return Task.CompletedTask;
+    return Task.FromResult("");
   }
 
   public enum ValidationMode
@@ -328,7 +331,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
   {
     await Visit(ctx.expression());
 
-    var positionalArgs = new List<AresLangParser.ExpressionContext>();
+      var positionalArgs = new List<AresLangParser.ExpressionContext>();
     var keywordArgs = new Dictionary<string, AresLangParser.ExpressionContext>(StringComparer.Ordinal);
     var seenKeywordArg = false;
 
@@ -383,12 +386,14 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       functionId = aliasValue.FunctionValue.FunctionId;
     }
 
-    if(_environment.TryGetSystemFunction(functionId, out var _))
+    if(_environment.TryGetSystemFunction(functionId, out var systemFn))
     {
       if(keywordArgs.Count > 0)
       {
         throw new InvalidOperationException($"Runtime function '{functionId}' does not support keyword arguments");
       }
+
+      ValidateSystemFunctionArgs(systemFn, positionalArgs, keywordArgs, ctx);
       return;
     }
 
@@ -420,7 +425,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
         var name = userFn.Parameters[i];
         if(!keywordArgs.ContainsKey(name))
         {
-          throw new InvalidOperationException($"Function '{functionId}' missing required argument '{name}'");
+          throw new InvalidOperationException($"Function '{functionId}' missing required argument '{name}'. {ctx.Start.Line}:{ctx.Start.Column}");
         }
       }
 
@@ -429,8 +434,66 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
 
     if(_functionDepth == 0)
     {
-      throw new InvalidOperationException($"Function '{functionId}' not found");
+      throw new InvalidOperationException($"Function '{functionId}' not found. {ctx.Start.Line}:{ctx.Start.Column}");
     }
+  }
+
+  private void ValidateSystemFunctionArgs(AresSystemFunction function, IReadOnlyList<AresLangParser.ExpressionContext> positionalArgs, IReadOnlyDictionary<string, AresLangParser.ExpressionContext> keywordArgs, AresLangParser.FunctionCallContext ctx)
+  {
+    var schema = function.InputSchema;
+    if(schema is null || (schema.Fields.Count == 0 && keywordArgs.Count == 0))
+    {
+      return;
+    }
+
+    foreach(var (name, expr) in keywordArgs)
+    {
+      if(!schema.Fields.TryGetValue(name, out var expected))
+      {
+        throw new InvalidOperationException($"Function '{function.Id}' got an unexpected keyword argument '{name}'. {ctx.Start.Line}:{ctx.Start.Column}");
+      }
+
+      var actual = _typeInference.Visit(expr);
+      if(!IsCompatible(expected, actual))
+      {
+        throw new InvalidOperationException($"Function '{function.Id}' argument '{name}' type mismatch. {ctx.Start.Line}:{ctx.Start.Column}");
+      }
+    }
+
+    if(positionalArgs.Count == 1 && keywordArgs.Count == 0 && schema.Fields.Count == 1)
+    {
+      var expected = schema.Fields.Values.First();
+      var actual = _typeInference.Visit(positionalArgs[0]);
+      if(!IsCompatible(expected, actual))
+      {
+        throw new InvalidOperationException($"Function '{function.Id}' argument type mismatch. {ctx.Start.Line}:{ctx.Start.Column}");
+      }
+    }
+  }
+
+  private static bool IsCompatible(SchemaEntry expected, SchemaEntry actual)
+  {
+    if(expected.Type == AresDataType.Any || expected.Type == AresDataType.UnspecifiedType)
+    {
+      return true;
+    }
+
+    if(actual.Type == AresDataType.Any || actual.Type == AresDataType.UnspecifiedType)
+    {
+      return true;
+    }
+
+    if(expected.Optional && actual.Type == AresDataType.Null)
+    {
+      return true;
+    }
+
+    if(expected.Type == actual.Type)
+    {
+      return true;
+    }
+
+    return false;
   }
 
   private static int FindParameterIndex(IReadOnlyList<string> parameters, string name)
@@ -444,8 +507,13 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     return -1;
   }
 
-  private static string? TryResolveFunctionId(AresLangParser.ExpressionContext expression)
+  private string? TryResolveFunctionId(AresLangParser.ExpressionContext expression)
   {
+    if(TryResolveValue(expression, out var value) && value.FunctionValue is not null)
+    {
+      return value.FunctionValue.FunctionId;
+    }
+
     var current = expression;
     while(true)
     {
@@ -463,5 +531,31 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
 
       return null;
     }
+  }
+
+  private bool TryResolveValue(AresLangParser.ExpressionContext expression, out AresValue value)
+  {
+    value = AresValueHelper.CreateNull();
+
+    if(expression is AresLangParser.AtomExprContext atomExpr)
+    {
+      if(atomExpr.atom() is AresLangParser.IdContext id)
+      {
+        return _environment.TryGetValue(id.ID().GetText(), out value);
+      }
+    }
+
+    if(expression is AresLangParser.MemberAccessContext memberAccess)
+    {
+      if(TryResolveValue(memberAccess.expression(), out var baseValue)
+        && baseValue.StructValue is not null
+        && baseValue.StructValue.Fields.TryGetValue(memberAccess.ID().GetText(), out var member))
+      {
+        value = member;
+        return true;
+      }
+    }
+
+    return false;
   }
 }

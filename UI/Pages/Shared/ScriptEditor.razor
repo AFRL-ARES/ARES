@@ -12,6 +12,9 @@
   [Parameter]
   public MonacoDiagnosticsProvider? DiagnosticsProvider { get; set; }
 
+  [Parameter]
+  public MonacoSemanticTokensProvider? SemanticTokensProvider { get; set; }
+
   public Task<string> GetScript() => _editor.GetValue();
 
   protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -42,6 +45,15 @@
 
         await diagnosticsModule.InvokeVoidAsync("setupDiagnostics", reference);
       }
+
+      if(SemanticTokensProvider is not null)
+      {
+        var semanticModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/monaco/ares-semantic-setup.js");
+
+        var reference = DotNetObjectReference.Create(SemanticTokensProvider);
+
+        await semanticModule.InvokeVoidAsync("setupSemanticTokens", reference);
+      }
     }
   }
 
@@ -51,6 +63,7 @@
     {
       Language = "ares",
       AutomaticLayout = true,
+      SemanticHighlightingEnabled = true,
       Value = "# Welcome to ARES\ndef main():\n    return True\n"
     };
   }
