@@ -77,8 +77,4 @@
     <_ContentIncludedByDefault Remove="Pages\Shared\Settings\Device\StepperController\StepperControllerSettingsView.razor" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Content Include="Pages\Shared\Components\RightSidebar.razor.css" />
-  </ItemGroup>
-
 </Project>

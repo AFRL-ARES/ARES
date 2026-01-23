@@ -35,6 +35,7 @@ using UI.Backend.ViewModels.Automation;
 using UI.Backend.ViewModels.Automation.CampaignEdit;
 using UI.Backend.ViewModels.Automation.CampaignEdit.Factories;
 using UI.Backend.ViewModels.Automation.Planning;
+using UI.Backend.ViewModels.Components;
 using UI.Backend.ViewModels.DeviceStateLogging;
 using UI.Backend.ViewModels.Factories;
 using UI.Backend.ViewModels.Misc;
@@ -57,6 +58,7 @@ using UI.Backend.ViewModels.Settings.Logging;
 using UI.Backend.ViewModels.Settings.Planning;
 using UI.Services.CampaignEdit;
 using UI.Services.Grpc;
+using UI.Services.Providers;
 using UI.Services.ServerHealth;
 using UI.Services.ServerHealthNotification;
 using ValveController.Services;
@@ -78,6 +80,7 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<IdentityUser>>();
     services.AddSingleton<UnitCategoryHelper>();
     services.AddScoped<CampaignEditContext>();
+    services.BindProviders();
     services.BindViewModels();
     services.BindViewModelFactories();
     services.AddScoped<ICombinedDeviceGetter, CombinedDeviceGetter>();
@@ -149,6 +152,7 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<ExecutionHistoryViewModel>();
     services.AddScoped<ExecutionViewModel>();
     services.AddScoped<ScriptPlaygroundViewModel>();
+    services.AddScoped<VisualizationSidebarViewModel>();
     services.AddScoped<VisualizationViewModel>();
 
     //Device Settings List View Models
@@ -202,5 +206,10 @@ internal static class ServiceCollectionExtensions
     services.AddSingleton<CM3CamDeviceControlViewModelFactory>();
     services.AddSingleton<RemoteDeviceControlViewModelFactory>();
     services.AddSingleton<ChemyxPumpControlViewModelFactory>();
+  }
+
+  public static void BindProviders(this IServiceCollection services)
+  {
+    services.AddSingleton<IVisualizationProvider, VisualizationProvider>();
   }
 }

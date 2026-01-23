@@ -1,5 +1,10 @@
-﻿namespace UI.Services.Providers;
+﻿using Ares.Datamodel;
+using Ares.Datamodel.Device;
 
-public interface IVisualizationProvider
+namespace UI.Services.Providers;
+
+public interface IVisualizationProvider : IDisposable
 {
+  Task<AresDataSchema> GetDeviceStateOptions(string deviceId);
+  IObservable<IReadOnlyList<DeviceInfo>> AvailableDevicesStream { get; }
 }
