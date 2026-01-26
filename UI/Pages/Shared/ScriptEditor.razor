@@ -15,6 +15,9 @@
   [Parameter]
   public MonacoSemanticTokensProvider? SemanticTokensProvider { get; set; }
 
+  [Parameter]
+  public MonacoHoverProvider? HoverProvider { get; set; }
+
   public Task<string> GetScript() => _editor.GetValue();
 
   protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -53,6 +56,15 @@
         var reference = DotNetObjectReference.Create(SemanticTokensProvider);
 
         await semanticModule.InvokeVoidAsync("setupSemanticTokens", reference);
+      }
+
+      if(HoverProvider is not null)
+      {
+        var hoverModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/monaco/ares-hover-setup.js");
+
+        var reference = DotNetObjectReference.Create(HoverProvider);
+
+        await hoverModule.InvokeVoidAsync("setupHover", reference);
       }
     }
   }

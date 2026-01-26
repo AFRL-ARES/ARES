@@ -90,6 +90,7 @@ internal static class ServiceCollectionExtensions
     services.AddSingleton<MonacoCompletionProvider>();
     services.AddSingleton<MonacoDiagnosticsProvider>();
     services.AddSingleton<MonacoSemanticTokensProvider>();
+    services.AddSingleton<MonacoHoverProvider>();
   }
 
   public static void BindClients(this IServiceCollection services)
