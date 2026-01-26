@@ -32,7 +32,6 @@
 
 
   <ItemGroup>
-    <ProjectReference Include="..\Antlr4CodeCompletion.Core\Antlr4CodeCompletion.Core.csproj" />
     <ProjectReference Include="..\Ares.Device\AresDevicePluginBase\Ares.Device.csproj" />
     <ProjectReference Include="..\AresScript\AresScript.csproj" />
   </ItemGroup>
