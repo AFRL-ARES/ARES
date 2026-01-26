@@ -11,6 +11,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 {
   protected readonly AresScriptEnvironment Environment;
   private readonly CancellationToken _cancellationToken;
+  private int _lvalueResolutionDepth;
 
   protected override Task<AresValue> DefaultResult => Task.FromResult(AresValueHelper.CreateUnit());
 
@@ -140,7 +141,16 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     var assignment = context.assignment();
     if(assignment.lvalue() is AresLangParser.LValueIndexContext indexContext)
     {
-      var container = await Visit(indexContext.lvalue());
+      _lvalueResolutionDepth++;
+      AresValue container;
+      try
+      {
+        container = await Visit(indexContext.lvalue());
+      }
+      finally
+      {
+        _lvalueResolutionDepth--;
+      }
       var indexVal = await Visit(indexContext.expression());
       if(!indexVal.HasNumberValue)
       {
@@ -295,13 +305,28 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
       return Task.FromResult(value);
     }
 
+    if(_lvalueResolutionDepth > 0 && Environment.TryGetUserValue(baseId, out var outerValue))
+    {
+      return Task.FromResult(outerValue);
+    }
+
     Environment[baseId] = AresValueHelper.CreateNull();
     return Task.FromResult(Environment[baseId]);
   }
 
   public override async Task<AresValue> VisitLValueMember(AresLangParser.LValueMemberContext context)
   {
-    var value = await Visit(context.lvalue());
+    _lvalueResolutionDepth++;
+    AresValue value;
+    try
+    {
+      value = await Visit(context.lvalue());
+    }
+    finally
+    {
+      _lvalueResolutionDepth--;
+    }
+
     if(value.StructValue is null)
     {
       throw new InvalidOperationException($"Expected a struct value, currently {value.KindCase}. {context.Start.Line}:{context.Start.Column}");
@@ -319,7 +344,17 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
   public override async Task<AresValue> VisitLValueIndex(AresLangParser.LValueIndexContext context)
   {
-    var currentValue = await Visit(context.lvalue());
+    _lvalueResolutionDepth++;
+    AresValue currentValue;
+    try
+    {
+      currentValue = await Visit(context.lvalue());
+    }
+    finally
+    {
+      _lvalueResolutionDepth--;
+    }
+
     if(currentValue.KindCase != AresValue.KindOneofCase.BytesValue
         && currentValue.KindCase != AresValue.KindOneofCase.StringArrayValue
         && currentValue.KindCase != AresValue.KindOneofCase.NumberArrayValue

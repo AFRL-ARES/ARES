@@ -59,6 +59,19 @@ public class AresScriptEnvironment
     return false;
   }
 
+  public bool TryGetUserValue(string id, [NotNullWhen(true)] out AresValue? value)
+  {
+    foreach(var scope in _userScopes)
+    {
+      var valueExists = scope.Variables.TryGetValue(id, out value);
+      if(valueExists && value is not null)
+        return true;
+    }
+
+    value = null;
+    return false;
+  }
+
   public bool TryGetValueCurrentScope(string id, [NotNullWhen(true)] out AresValue? value)
   {
     var scope = _userScopes.Peek();

@@ -430,7 +430,7 @@ public class InterpreterTests
     var script = "missing()";
 
     var ex = Assert.ThrowsAsync<InvalidOperationException>(() => ValidateScriptAsync(script));
-    Assert.That(ex?.Message, Does.Contain("Function 'missing' not found"));
+    Assert.That(ex?.Message, Does.Contain("Unknown identifier 'missing'"));
     return Task.CompletedTask;
   }
 
@@ -524,6 +524,45 @@ public class InterpreterTests
         return x
       assert inner() == 2
       assert x == 1
+      """;
+    await RunScriptAsync(script);
+  }
+
+  [Test]
+  public async Task Inner_Scope_Reassignment_Does_Not_Update_Outer()
+  {
+    var script = """
+      count = 1
+      def inner():
+        count = 2
+      inner()
+      assert count == 1
+      """;
+    await RunScriptAsync(script);
+  }
+
+  [Test]
+  public async Task Inner_Scope_Member_Assignment_Updates_Outer_Struct()
+  {
+    var script = """
+      s = { "x": 1 }
+      def inner():
+        s.x = 2
+      inner()
+      assert s.x == 2
+      """;
+    await RunScriptAsync(script);
+  }
+
+  [Test]
+  public async Task Inner_Scope_Index_Assignment_Updates_Outer_Collection()
+  {
+    var script = """
+      items = [1, 2, 3]
+      def inner():
+        items[1] = 9
+      inner()
+      assert items[1] == 9
       """;
     await RunScriptAsync(script);
   }
