@@ -19,7 +19,7 @@ namespace UI.JsInterops;
 public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServiceClient aresScriptingServiceClient)
 {
   private readonly AresScriptingService.AresScriptingServiceClient _aresScriptingServiceClient = aresScriptingServiceClient;
-  private AutocompleteCatalogResponse? _cachedCatalog;
+  private AutocompleteCatalog? _cachedCatalog;
 
   [JSInvokable]
   public async Task<string?> GetHoverText(string script, int line, int column, string identifier)
@@ -33,7 +33,7 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
     {
       CursorColumn = column,
       CursorLine = line,
-      Script = script ?? string.Empty
+      Script = script
     };
 
     var completions = await _aresScriptingServiceClient.GetCompletionsAsync(request);
@@ -61,8 +61,8 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
     }
 
     AppendDescription(sb, item.Detail, item.Documentation);
-    AppendSchemaSection(sb, "Inputs", item.InputSchema);
-    AppendSchemaSection(sb, "Outputs", item.OutputSchema);
+    AppendDataSchemaSection(sb, "Inputs", item.InputSchema);
+    AppendSchemaEntrySection(sb, "Output", item.OutputSchema);
 
     if(item.Schema is not null)
     {
@@ -100,7 +100,7 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
     }
   }
 
-  private static void AppendSchemaSection(StringBuilder sb, string title, AresDataSchema? schema)
+  private static void AppendDataSchemaSection(StringBuilder sb, string title, AresDataSchema? schema)
   {
     if(schema is null || schema.Fields.Count == 0)
     {
@@ -156,6 +156,11 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
     }
 
     var catalog = await GetAutocompleteCatalog();
+    if(catalog is null)
+    {
+      return null;
+    }
+
     var env = BuildEnvironmentForInference(catalog);
     var program = TryParseProgram(script);
     if(program is null)
@@ -177,14 +182,15 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
     return collector.FoundSchema;
   }
 
-  private async Task<AutocompleteCatalogResponse> GetAutocompleteCatalog()
+  private async Task<AutocompleteCatalog?> GetAutocompleteCatalog()
   {
     if(_cachedCatalog is not null)
     {
       return _cachedCatalog;
     }
 
-    _cachedCatalog = await _aresScriptingServiceClient.GetAutocompleteCatalogAsync(new Empty());
+    var response = await _aresScriptingServiceClient.GetAutocompleteCatalogAsync(new Empty());
+    _cachedCatalog = response.Catalog;
     return _cachedCatalog;
   }
 
@@ -204,7 +210,7 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
     }
   }
 
-  private static AresScriptEnvironment BuildEnvironmentForInference(AutocompleteCatalogResponse catalog)
+  private static AresScriptEnvironment BuildEnvironmentForInference(AutocompleteCatalog catalog)
   {
     var env = new AresScriptEnvironment();
     var functions = catalog.GlobalFunctions
@@ -222,7 +228,7 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
     var id = string.IsNullOrWhiteSpace(function.Id) ? function.Name : function.Id;
     var name = string.IsNullOrWhiteSpace(function.Name) ? id : function.Name;
     var inputSchema = function.InputSchema ?? new AresDataSchema();
-    var outputSchema = function.OutputSchema ?? new AresDataSchema();
+    var outputSchema = function.OutputSchema ?? new SchemaEntry();
     var description = function.Description ?? string.Empty;
     return new AresSystemFunction(id, name, DummyFunction, inputSchema, outputSchema, namespaceName, description);
   }

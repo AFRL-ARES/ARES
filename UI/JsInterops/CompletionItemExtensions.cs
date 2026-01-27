@@ -1,13 +1,13 @@
-﻿namespace UI.JsInterops;
-
-using System;
-using Ares.Services;
-using CompletionItemKind = BlazorMonaco.Languages.CompletionItemKind;
+﻿using CompletionItemKind = BlazorMonaco.Languages.CompletionItemKind;
 using MonacoCompletionItem = BlazorMonaco.Languages.CompletionItem;
+using AresCompletionItem = Ares.Datamodel.Scripting.CompletionItem;
+using AresCompletionItemKind = Ares.Datamodel.Scripting.CompletionItemKind;
+
+namespace UI.JsInterops;
 
 public static class CompletionItemExtensions
 {
-  public static MonacoCompletionItem ToMonacoCompletionItem(this CompletionItem completionItem)
+  public static MonacoCompletionItem ToMonacoCompletionItem(this AresCompletionItem completionItem)
   {
     ArgumentNullException.ThrowIfNull(completionItem);
 
@@ -33,17 +33,17 @@ public static class CompletionItemExtensions
     return item;
   }
 
-  private static CompletionItemKind MapKind(Ares.Services.CompletionItemKind kind)
+  private static CompletionItemKind MapKind(AresCompletionItemKind kind)
   {
     return kind switch
     {
-      Ares.Services.CompletionItemKind.Device => CompletionItemKind.Class,
-      Ares.Services.CompletionItemKind.Planner => CompletionItemKind.Module,
-      Ares.Services.CompletionItemKind.Analyzer => CompletionItemKind.Interface,
-      Ares.Services.CompletionItemKind.Function => CompletionItemKind.Function,
-      Ares.Services.CompletionItemKind.Variable => CompletionItemKind.Variable,
-      Ares.Services.CompletionItemKind.Struct => CompletionItemKind.Struct,
-      Ares.Services.CompletionItemKind.Keyword => CompletionItemKind.Keyword,
+      AresCompletionItemKind.Device => CompletionItemKind.Class,
+      AresCompletionItemKind.Planner => CompletionItemKind.Module,
+      AresCompletionItemKind.Analyzer => CompletionItemKind.Interface,
+      AresCompletionItemKind.Function => CompletionItemKind.Function,
+      AresCompletionItemKind.Variable => CompletionItemKind.Variable,
+      AresCompletionItemKind.Struct => CompletionItemKind.Struct,
+      AresCompletionItemKind.Keyword => CompletionItemKind.Keyword,
       _ => CompletionItemKind.Text
     };
   }

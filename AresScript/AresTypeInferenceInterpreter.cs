@@ -122,7 +122,7 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
     var functionId = TryResolveFunctionId(context.expression());
     if(functionId is not null && _environment.TryGetSystemFunction(functionId, out var systemFunc))
     {
-      return OutputSchemaToEntry(systemFunc.OutputSchema);
+      return systemFunc.OutputSchema;
     }
 
     return AresSchemaBuilder.Entry(AresDataType.Any).Build();
@@ -178,11 +178,6 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
     }
 
     return AresSchemaBuilder.Entry(AresDataType.Any).Build();
-  }
-
-  private static SchemaEntry OutputSchemaToEntry(AresDataSchema schema)
-  {
-    return CreateStructEntry(schema);
   }
 
   private static SchemaEntry CreateStructEntry(AresDataSchema schema)

@@ -31,7 +31,10 @@ public class DeviceFunctionProvider(IDeviceCommandInterpreterRepo interpreterRep
         var parameterMetadatas = metadata.ParameterMetadatas.OrderBy(p => p.Index).ToArray();
 
         var inputSchema = BuildInputSchema(parameterMetadatas);
-        var outputSchema = metadata.OutputMetadata?.DataSchema ?? AresSchemaBuilder.Create(AresDataType.Unit).Build();
+
+        var outputSchema = metadata.OutputMetadata?.DataSchema is null
+          ? AresSchemaBuilder.Entry(AresDataType.Unit).Build()
+          : AresSchemaBuilder.Entry(AresDataType.Struct).WithStructSchema(metadata.OutputMetadata.DataSchema).Build();
 
         functions.Add(
           new AresSystemFunction(

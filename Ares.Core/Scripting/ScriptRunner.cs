@@ -28,7 +28,7 @@ public class ScriptRunner
       return Task.FromResult(AresValueHelper.CreateUnit());
     },
     AresSchemaBuilder.Create("args", AresDataType.Any).Build(),
-    AresSchemaBuilder.Create(AresDataType.Unit).Build(),
+    AresSchemaBuilder.Entry(AresDataType.Unit).Build(),
     "",
     "Prints the given value/s of any ARES type to output.");
     _initialEnvironment = initialEnvironment ?? new AresScriptEnvironment();

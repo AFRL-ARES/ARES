@@ -18,7 +18,7 @@ public static class StandardLibrary
         return Task.FromResult(AresValueHelper.CreateUnit());
       },
     AresSchemaBuilder.Create("args", AresDataType.Any).Build(),
-    AresSchemaBuilder.Create(AresDataType.Unit).Build(),
+    AresSchemaBuilder.Entry(AresDataType.Unit).Build(),
     "",
     "Prints the given value/s of any ARES type to console."),
     
@@ -68,7 +68,7 @@ public static class StandardLibrary
       .AddEntry("stop", AresSchemaBuilder.NumberEntry().WithDescription("The non-inclusive stopping number.").Build())
       .AddEntry("step", AresSchemaBuilder.NumberEntry().AsOptional().WithDescription("The step size.").Build())
       .Build(),
-    AresSchemaBuilder.Create("num_array", AresDataType.NumberArray).Build(),
+    AresSchemaBuilder.Entry(AresDataType.NumberArray).Build(),
     "",
     "Generates a list of numbers in a range."),
     
@@ -90,7 +90,7 @@ public static class StandardLibrary
       .WithDescription("Number of milliseconds to sleep")
       .WithUnit("ms")
       .Build(),
-    AresSchemaBuilder.Create("", AresDataType.Unit).Build(),
+    AresSchemaBuilder.Entry(AresDataType.Unit).Build(),
     "",
     "Sleep for a given number of milliseconds"
     )
