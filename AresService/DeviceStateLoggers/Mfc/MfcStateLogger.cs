@@ -51,7 +51,7 @@ public class MfcStateLogger : IMfcStateLogger
       return;
     }
 
-    var stream = _device.StateStream.Where(state => state is not null);
+    var stream = _device.InternalStateStream.Where(state => state is not null);
 
     if(Settings.LoggingType == DeviceLoggingSettings.Types.LoggingType.Interval)
     {
@@ -94,7 +94,7 @@ public class MfcStateLogger : IMfcStateLogger
 
   public async Task UpdateState(DateTime timestamp)
   {
-    var state = await _device.StateStream.Take(1);
+    var state = await _device.InternalStateStream.Take(1);
     if(state.LiveData is null)
       return;
 

@@ -15,6 +15,7 @@ public interface IAresDevice : IDisposable
   string Description { get; }
   DeviceOperationalStatus Status { get; }
   IObservable<DeviceOperationalStatus> StatusObservable { get; }
+  IObservable<AresStruct> StateStream { get; }
   Task<bool> Activate(CancellationToken ct = default);
   Task EnterSafeMode(CancellationToken ct = default);
   Task<AresStruct> GetState();

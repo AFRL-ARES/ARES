@@ -6,7 +6,7 @@ namespace RestSerialDevice;
 
 public interface ISerialRestDevice : ISerialDevice<ISerialRestDeviceConnection>, IAsyncDisposable
 {
-  IObservable<ReadDataResponse?> StateStream { get; }
+  IObservable<ReadDataResponse?> InternalStateStream { get; }
   Task<ReadDataResponse> GetAndUpdateState();
   public List<KeyValuePair<string, string>> Data { get; }
   public string DeviceId { get; }

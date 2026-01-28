@@ -5,7 +5,7 @@ namespace TC0304;
 
 public interface IDataloggerThermometer : ISerialDevice<IDataloggerThermometerConnection>, IAsyncDisposable
 {
-  IObservable<DataResponse?> StateStream { get; }
+  IObservable<DataResponse?> InternalStateStream { get; }
   Task<DataResponse> GetAndUpdateState();
   Task<double?[]> GetTemperatures();
   DataResponse? GetInternalState();

@@ -42,7 +42,7 @@ public class SyringePumpStateLogger : ISyringePumpStateLogger
     using var context = _dbContextFactory.CreateDbContext();
     _ = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.UniqueId == _syringePump.UniqueId && config.DeviceType == _syringePump.GetType().FullName);
 
-    var stream = _syringePump.StateStream;
+    var stream = _syringePump.InternalStateStream;
 
     if(Settings.LoggingType == DeviceLoggingSettings.Types.LoggingType.Interval)
     {

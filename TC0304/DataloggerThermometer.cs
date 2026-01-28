@@ -10,12 +10,14 @@ namespace TC0304;
 
 public class DataloggerThermometer : SerialDevice<IDataloggerThermometerConnection>, IDataloggerThermometer
 {
-  private readonly ISubject<DataResponse?> _stateSubject = new BehaviorSubject<DataResponse?>(default);
+  private readonly ISubject<DataResponse?> _internalStateSubject = new BehaviorSubject<DataResponse?>(default);
+  private readonly BehaviorSubject<AresStruct> _stateSubject = new(new AresStruct());
   private CancellationTokenSource _internalStateUpdateTokenSource = new();
   private Task? _stateUpdater;
 
   public DataloggerThermometer(string name, IDataloggerThermometerConnection connection) : base(name, connection)
   {
+    InternalStateStream = _internalStateSubject.AsObservable();
     StateStream = _stateSubject.AsObservable();
   }
 
@@ -27,18 +29,20 @@ public class DataloggerThermometer : SerialDevice<IDataloggerThermometerConnecti
     T4Name = "Probe 4"
   };
 
-  public IObservable<DataResponse?> StateStream { get; }
+  public IObservable<DataResponse?> InternalStateStream { get; }
+
+  public override IObservable<AresStruct> StateStream { get; }
 
   public async Task<DataResponse> GetAndUpdateState()
   {
     var response = await Connection.Send(new DataRequest());
-    _stateSubject.OnNext(response);
+    _internalStateSubject.OnNext(response);
     return response;
   }
 
   public override async Task<AresStruct> GetState()
   {
-    var state = await _stateSubject.Take(1);
+    var state = await _internalStateSubject.Take(1);
 
     return AresStateBuilder.Create()
       .Add("T1 Probe", state?.T1Probe?.DegreesCelsius ?? double.MinValue)
@@ -63,7 +67,7 @@ public class DataloggerThermometer : SerialDevice<IDataloggerThermometerConnecti
   }
 
   public DataResponse? GetInternalState()
-    => StateStream.Take(1).Wait();
+    => InternalStateStream.Take(1).Wait();
 
   public async Task StartStateUpdater(TimeSpan interval)
   {
@@ -96,7 +100,7 @@ public class DataloggerThermometer : SerialDevice<IDataloggerThermometerConnecti
     if(_stateUpdater is not null)
       await _stateUpdater;
     _internalStateUpdateTokenSource.Dispose();
-    _stateSubject.OnCompleted();
+    _internalStateSubject.OnCompleted();
   }
 
   public override async Task<bool> Activate(CancellationToken ct)
@@ -132,7 +136,7 @@ public class DataloggerThermometer : SerialDevice<IDataloggerThermometerConnecti
           try
           {
             var response = await Connection.Send(new DataRequest(), TimeSpan.FromSeconds(5));
-            _stateSubject.OnNext(response);
+            _internalStateSubject.OnNext(response);
           }
           catch(TimeoutException)
           { }

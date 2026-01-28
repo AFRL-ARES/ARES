@@ -43,7 +43,7 @@ public class LaserChillerService : ChillerRpc.ChillerRpcBase
   public override Task<ManifoldTemperatureResponse> GetManifoldTemperature(ChillerRequest request, ServerCallContext context)
   {
     var chiller = GetChiller(request.ChillerId);
-    var temperature = chiller.StateStream.Take(1).Wait();
+    var temperature = chiller.InternalStateStream.Take(1).Wait();
 
     if(temperature is null)
       return Task.FromResult(new ManifoldTemperatureResponse());

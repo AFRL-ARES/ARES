@@ -3,10 +3,14 @@ using Ares.Device;
 using Ares.Device.Serial;
 using HerkulexDRS.Commands;
 using HerkulexDRS.Responses;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 
 namespace HerkulexDRS;
 public class Servo : SerialDevice<IServoConnection>, IServo
 {
+  private readonly BehaviorSubject<AresStruct> _stateSubject = new(new AresStruct());
+
   public Servo(string name, IServoConnection connection) : base(name, connection)
   {
 
@@ -67,5 +71,6 @@ public class Servo : SerialDevice<IServoConnection>, IServo
     await PistonDown();
   }
 
+  public override IObservable<AresStruct> StateStream => _stateSubject.AsObservable();
   public bool PistonRaised { get; set; } = false;
 }

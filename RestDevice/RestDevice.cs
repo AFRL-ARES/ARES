@@ -17,6 +17,7 @@ public class RestDevice : AresRestDevice, IRestDevice
   private readonly HttpClient _deviceClient = new HttpClient();
   private readonly Uri _address;
   private readonly ISubject<ReadDataJsonResponse?> _statePublisher = new BehaviorSubject<ReadDataJsonResponse?>(default);
+  private readonly BehaviorSubject<AresStruct> _stateSubject = new(new AresStruct());
   private CancellationTokenSource _stateUpdaterCancellation = new();
   private Task _stateUpdater = Task.CompletedTask;
 
@@ -31,7 +32,7 @@ public class RestDevice : AresRestDevice, IRestDevice
       Timeout = TimeSpan.FromSeconds(15)
     };
 
-    StateStream = _statePublisher.AsObservable();
+    InternalStateStream = _statePublisher.AsObservable();
     var initialState = new ReadDataJsonResponse();
     _statePublisher.OnNext(initialState);
   }
@@ -252,6 +253,6 @@ public class RestDevice : AresRestDevice, IRestDevice
   public List<RestDeviceMethod> Functions { get; set; } = [];
   public List<RestDeviceVariable> Variables { get; set; } = [];
   public bool IsExternalDeviceConnected { get; set; }
-  public IObservable<ReadDataJsonResponse?> StateStream { get; }
-
+  public IObservable<ReadDataJsonResponse?> InternalStateStream { get; }
+  public override IObservable<AresStruct> StateStream => _stateSubject.AsObservable();
 }

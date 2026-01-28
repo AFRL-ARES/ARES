@@ -15,7 +15,7 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
 {
   private readonly GrpcChannel _channel;
   private DeviceCommandDescriptor[] _commands = [];
-  private readonly BehaviorSubject<AresStruct?> _stateSubject = new(new AresStruct());
+  private readonly BehaviorSubject<AresStruct> _stateSubject = new(new AresStruct());
   private CancellationTokenSource _stateStreamCts = new();
   private DevicePollingSettings _pollingSettings = new()
   {
@@ -53,7 +53,7 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     }
   }
 
-  public IObservable<AresStruct?> StateStream => _stateSubject.AsObservable();
+  public override IObservable<AresStruct> StateStream => _stateSubject.AsObservable();
   public AresStruct? CurrentState => _stateSubject.Value;
   public AresDataSchema StateSchema { get; private set; } = new();
 

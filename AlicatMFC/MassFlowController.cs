@@ -10,7 +10,6 @@ using Ares.Alicat.Mfc.Config;
 using Ares.Alicat.Mfc.Messaging;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
-using Ares.Datamodel.Extensions;
 using Ares.Device;
 using Ares.Device.Serial;
 using Microsoft.Extensions.Logging;
@@ -26,6 +25,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
 {
   private readonly int _expectedDataFormatEntryCount;
   private readonly BehaviorSubject<MfcState?> _statePublisher = new(default);
+  private readonly BehaviorSubject<AresStruct> _stateSubject = new(new AresStruct());
   private CancellationTokenSource _stateGetterLoopTokenSource = new();
   private CompositeDisposable _stateWatchers = new();
   private Task _stateUpdater = Task.CompletedTask;
@@ -36,7 +36,8 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     HasValve = hasValve;
     MfcType = mfcType;
     _logger = logger;
-    StateStream = _statePublisher.AsObservable();
+    InternalStateStream = _statePublisher.AsObservable();
+    StateStream = _stateSubject.AsObservable();
     AssumedId = id;
     _stateWatchers = new CompositeDisposable
     {
@@ -495,7 +496,9 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
 
   public char AssumedId { get; private set; }
 
-  public IObservable<MfcState?> StateStream { get; }
+  public IObservable<MfcState?> InternalStateStream { get; }
+
+  public override IObservable<AresStruct> StateStream { get; }
 
   public string FirmwareVersion { get; private set; } = string.Empty;
   public bool HasValve { get; }

@@ -102,7 +102,7 @@ public class MassFlowControllerInterpreter : DeviceCommandInterpreter<IMassFlowC
         break;
 
       case MassFlowControllerCommand.GetSetpoint:
-        var data = await Device.StateStream.Take(1);
+        var data = await Device.InternalStateStream.Take(1);
         var setpt = data.LiveData?.Setpoint?.Value;
         if(setpt is not null)
         {

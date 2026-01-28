@@ -15,10 +15,12 @@ namespace LindbergFurnace;
 public class TubeFurnace : SerialDevice<ITubeFurnaceConnection>, ITubeFurnace
 {
   private readonly ISubject<TubeFurnaceState> _statePublisher = new BehaviorSubject<TubeFurnaceState>(new TubeFurnaceState());
+  private readonly BehaviorSubject<AresStruct> _stateSubject = new(new AresStruct());
+
 
   public TubeFurnace(string name, int address, ITubeFurnaceConnection connection) : base(name, connection)
   {
-    StateStream = _statePublisher.AsObservable();
+    InternalStateStream = _statePublisher.AsObservable();
     var initialState =
       new TubeFurnaceState
       {
@@ -30,7 +32,7 @@ public class TubeFurnace : SerialDevice<ITubeFurnaceConnection>, ITubeFurnace
 
   public async Task GetSetpoint()
   {
-    var currentState = await StateStream.Take(1);
+    var currentState = await InternalStateStream.Take(1);
 
     var request = new ReadMultipleRegistersRequest(currentState.AssumedAddress, Register.SP1, 1);
     var response = await Connection.Send(request);
@@ -52,14 +54,14 @@ public class TubeFurnace : SerialDevice<ITubeFurnaceConnection>, ITubeFurnace
     var temperatureInt = int.Parse(temperatureAsciiHex, NumberStyles.HexNumber);
     var temperature = Temperature.FromDegreesCelsius(temperatureInt);
 
-    var currentState = await StateStream.Take(1);
+    var currentState = await InternalStateStream.Take(1);
     currentState.CurrentTemperature = temperature.DegreesCelsius;
     _statePublisher.OnNext(currentState);
   }
 
   public async Task<int> GetCurrentAddress()
   {
-    var currentState = await StateStream.Take(1);
+    var currentState = await InternalStateStream.Take(1);
     if(currentState is not null)
       return currentState.AssumedAddress;
 
@@ -70,7 +72,7 @@ public class TubeFurnace : SerialDevice<ITubeFurnaceConnection>, ITubeFurnace
   {
     await SetSetpoint(targetTemperature);
 
-    var task = StateStream
+    var task = InternalStateStream
       .Where(state => Math.Abs(targetTemperature.DegreesCelsius - state.CurrentTemperature) <= delta)
       .FirstAsync()
       .ToTask(ct);
@@ -122,7 +124,7 @@ public class TubeFurnace : SerialDevice<ITubeFurnaceConnection>, ITubeFurnace
 
   public override async Task<AresStruct> GetState()
   {
-    var currentState = await StateStream.Take(1);
+    var currentState = await InternalStateStream.Take(1);
 
     return
       AresStateBuilder.Create()
@@ -133,5 +135,7 @@ public class TubeFurnace : SerialDevice<ITubeFurnaceConnection>, ITubeFurnace
       .Add("Id", currentState.Id)
       .Build();
   }
-  public IObservable<TubeFurnaceState> StateStream { get; }
+  public IObservable<TubeFurnaceState> InternalStateStream { get; }
+
+  public override IObservable<AresStruct> StateStream => _stateSubject.AsObservable();
 }

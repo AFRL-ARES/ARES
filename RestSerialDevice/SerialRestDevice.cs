@@ -16,7 +16,8 @@ namespace RestSerialDevice;
 public class SerialRestDevice : SerialDevice<ISerialRestDeviceConnection>, ISerialRestDevice
 {
   
-  private readonly ISubject<ReadDataResponse?> _stateSubject = new BehaviorSubject<ReadDataResponse?>(default);
+  private readonly ISubject<ReadDataResponse?> _internalStateSubject = new BehaviorSubject<ReadDataResponse?>(default);
+  private readonly BehaviorSubject<AresStruct> _stateSubject = new(new AresStruct());
   private CancellationTokenSource _internalStateUpdateTokenSource = new();
   private Task? _stateUpdater;
   private readonly HttpClient _deviceClient = new HttpClient();
@@ -25,7 +26,7 @@ public class SerialRestDevice : SerialDevice<ISerialRestDeviceConnection>, ISeri
 
   public SerialRestDevice(string deviceName, ISerialRestDeviceConnection connection) : base(deviceName, connection)
   {
-    StateStream = _stateSubject.AsObservable();
+    InternalStateStream = _internalStateSubject.AsObservable();
   }
   
 
@@ -127,12 +128,14 @@ public class SerialRestDevice : SerialDevice<ISerialRestDeviceConnection>, ISeri
     Functions = response.Methods; 
   }
 
-  public IObservable<ReadDataResponse?> StateStream { get; }
+  public IObservable<ReadDataResponse?> InternalStateStream { get; }
+
+  public override IObservable<AresStruct> StateStream => _stateSubject.AsObservable();
 
   public async Task<ReadDataResponse> GetAndUpdateState()
   {
     var response = await Connection.Send(new ReadDataRequest());
-    _stateSubject.OnNext(response);
+    _internalStateSubject.OnNext(response);
     return response;
   }
   public override async Task<AresStruct> GetState()
@@ -148,7 +151,7 @@ public class SerialRestDevice : SerialDevice<ISerialRestDeviceConnection>, ISeri
 
 
   public ReadDataResponse? GetInternalState()
-  => StateStream.Take(1).Wait();
+  => InternalStateStream.Take(1).Wait();
 
   public async Task StartStateUpdater(TimeSpan interval)
   {
@@ -181,7 +184,7 @@ public class SerialRestDevice : SerialDevice<ISerialRestDeviceConnection>, ISeri
           try
           {
             var response = await Connection.Send(new ReadDataRequest(), TimeSpan.FromSeconds(5));
-            _stateSubject.OnNext(response);
+            _internalStateSubject.OnNext(response);
           }
           catch (TimeoutException)
           {

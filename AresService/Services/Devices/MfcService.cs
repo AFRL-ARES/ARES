@@ -75,7 +75,7 @@ public class MfcService : MfcRpc.MfcRpcBase
   public override async Task<StateResponse> GetState(DeviceRequest request, ServerCallContext context)
   {
     var mfc = GetMfc(request.DeviceId);
-    var latestState = await mfc.StateStream.Take(1);
+    var latestState = await mfc.InternalStateStream.Take(1);
     return latestState.ToProto();
   }
 
@@ -84,7 +84,7 @@ public class MfcService : MfcRpc.MfcRpcBase
     var mfc = GetMfc(request.DeviceId);
     try
     {
-      var latestState = await mfc.StateStream.Skip(1).Take(1);
+      var latestState = await mfc.InternalStateStream.Skip(1).Take(1);
       return latestState.ToProto();
     }
     catch(InvalidOperationException)

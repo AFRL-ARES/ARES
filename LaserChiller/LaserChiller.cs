@@ -1,5 +1,4 @@
 ﻿using Ares.Datamodel;
-using Ares.Datamodel.Extensions;
 using Ares.Device;
 using Ares.Device.Serial;
 using LaserChiller.Commands.Requests;
@@ -11,12 +10,14 @@ namespace LaserChiller;
 
 public class LaserChiller : SerialDevice<ILaserChillerConnection>, ILaserChiller
 {
-  private readonly ISubject<GetManifoldTemperatureResponse?> _stateSubject = new BehaviorSubject<GetManifoldTemperatureResponse?>(default);
+  private readonly ISubject<GetManifoldTemperatureResponse?> _internalStateSubject = new BehaviorSubject<GetManifoldTemperatureResponse?>(default);
+  private readonly BehaviorSubject<AresStruct> _stateSubject = new(new AresStruct());
   private CancellationTokenSource _internalStateUpdateTokenSource = new();
   private Task? _stateUpdater;
 
   public LaserChiller(string name, ILaserChillerConnection connection) : base(name, connection)
   {
+    InternalStateStream = _internalStateSubject.AsObservable();
     StateStream = _stateSubject.AsObservable();
   }
 
@@ -52,12 +53,12 @@ public class LaserChiller : SerialDevice<ILaserChillerConnection>, ILaserChiller
   public async Task<GetManifoldTemperatureResponse> GetAndUpdateState()
   {
     var response = await Connection.Send(new GetManifoldTemperatureCommand());
-    _stateSubject.OnNext(response);
+    _internalStateSubject.OnNext(response);
     return response;
   }
 
   public GetManifoldTemperatureResponse? GetInternalState()
-  => StateStream.Take(1).Wait();
+  => InternalStateStream.Take(1).Wait();
 
   public override Task<AresStruct> GetState()
   {
@@ -79,7 +80,7 @@ public class LaserChiller : SerialDevice<ILaserChillerConnection>, ILaserChiller
           try
           {
             var response = await Connection.Send(new GetManifoldTemperatureCommand(), TimeSpan.FromSeconds(5));
-            _stateSubject.OnNext(response);
+            _internalStateSubject.OnNext(response);
           }
           catch(TimeoutException)
           { }
@@ -149,7 +150,9 @@ public class LaserChiller : SerialDevice<ILaserChillerConnection>, ILaserChiller
     throw new NotImplementedException();
   }
 
-  public IObservable<GetManifoldTemperatureResponse?> StateStream { get; }
+  public IObservable<GetManifoldTemperatureResponse?> InternalStateStream { get; }
+
+  public override IObservable<AresStruct> StateStream { get; }
 
   public double CurrentTemperature { get; set; }
 

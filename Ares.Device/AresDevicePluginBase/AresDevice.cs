@@ -65,6 +65,7 @@ public abstract class AresDevice : IAresDevice
   }
 
   public IObservable<DeviceOperationalStatus> StatusObservable => _statusSubject.AsObservable();
+  public abstract IObservable<AresStruct> StateStream { get; }
 
   public string Version { get; protected set; } = "0.0.0";
   public string Type { get; protected set; } = "";

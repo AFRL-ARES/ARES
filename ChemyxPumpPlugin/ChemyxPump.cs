@@ -4,18 +4,22 @@ using Ares.Device.Serial;
 using ChemyxPumpPlugin.Commands;
 using ChemyxPumpPlugin.Commands.Requests;
 using ChemyxPumpPlugin.Commands.Responses;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 
 namespace ChemyxPumpPlugin;
 
 public class ChemyxPump : SerialDevice<IChemyxPumpConnection>, IChemyxPump
 {
   private const int DefaultPumpIndex = 1;
+  private readonly BehaviorSubject<AresStruct> _stateSubject = new(new AresStruct());
   private CancellationTokenSource _internalPollToken = new();
   private Task _internalPollers = Task.CompletedTask;
 
   public ChemyxPump(string name, bool dualPump, IChemyxPumpConnection connection) : base(name, connection)
   {
     DualPump = dualPump;
+    StateStream = _stateSubject.AsObservable();
   }
   public async Task Start(int? pump = null, int mode = 0)
     => await Connection.Send(new StartCommand(pump, mode));
@@ -283,6 +287,8 @@ public class ChemyxPump : SerialDevice<IChemyxPumpConnection>, IChemyxPump
     })
     .Build());
   }
+
+  public override IObservable<AresStruct> StateStream { get; }
 
   public PumpStatus[]? PumpStatuses { get; private set; }
 

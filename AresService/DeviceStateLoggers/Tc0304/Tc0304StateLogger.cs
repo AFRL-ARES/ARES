@@ -55,7 +55,7 @@ public class Tc0304StateLogger : ITc0304StateLogger
     using var context = _dbContextFactory.CreateDbContext();
     _ = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.UniqueId == _device.UniqueId && config.DeviceType == _device.GetType().FullName);
 
-    var stream = _device.StateStream.Where(state => state is not null);
+    var stream = _device.InternalStateStream.Where(state => state is not null);
 
     if(Settings.LoggingType == DeviceLoggingSettings.Types.LoggingType.Interval)
     {
@@ -86,7 +86,7 @@ public class Tc0304StateLogger : ITc0304StateLogger
 
   public async Task UpdateState(DateTime timestamp)
   {
-    var state = await _device.StateStream.Take(1);
+    var state = await _device.InternalStateStream.Take(1);
     await using var context = _dbContextFactory.CreateDbContext();
     var tc0304State = new Tc0304State
     {

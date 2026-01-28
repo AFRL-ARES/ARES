@@ -15,6 +15,7 @@ namespace TicStepperController;
 public class StepperController : SerialDevice<IStepperControllerConnection>, IStepperController
 {
   private ISubject<Messaging.TicState> _stateSubject = new BehaviorSubject<Messaging.TicState>(new Messaging.TicState());
+
   private Task _stateUpdater = Task.CompletedTask;
   private CancellationTokenSource _stateUpdaterCancellation = new CancellationTokenSource();
   private readonly ILogger _logger;

@@ -15,13 +15,15 @@ namespace SyringePumpNE1000;
 public class SyringePump : SerialDevice<ISyringePumpConnection>, ISyringePump
 {
   private readonly ISubject<StateResponse> _statePublisher = new BehaviorSubject<StateResponse>(new StateResponse());
+  private readonly BehaviorSubject<AresStruct> _stateSubject = new(new AresStruct());
   private CancellationTokenSource _stateUpdaterCancellation = new CancellationTokenSource();
   private Task _stateUpdater = Task.CompletedTask;
 
   // < safe command protocol> => < STX > < length > < command data > < CRC 16 > < ETX >
   public SyringePump(string identifier, uint address, ISyringePumpConnection connection) : base(identifier, connection)
   {
-    StateStream = _statePublisher.AsObservable();
+    InternalStateStream = _statePublisher.AsObservable();
+    StateStream = _stateSubject.AsObservable();
     AssumedAddress = address;
     FirmwareVersion = string.Empty;
 
@@ -32,8 +34,9 @@ public class SyringePump : SerialDevice<ISyringePumpConnection>, ISyringePump
     _statePublisher.OnNext(initialState);
   }
 
-  public IObservable<StateResponse> StateStream { get; }
+  public IObservable<StateResponse> InternalStateStream { get; }
 
+  public override IObservable<AresStruct> StateStream { get; }
   public async Task SetPhase(int phase)
   {
     var currentState = await GetCurrentState();
@@ -242,7 +245,7 @@ public class SyringePump : SerialDevice<ISyringePumpConnection>, ISyringePump
     return response.Address;
   }
 
-  public Task<StateResponse> GetCurrentState() => StateStream.Take(1).ToTask();
+  public Task<StateResponse> GetCurrentState() => InternalStateStream.Take(1).ToTask();
 
   private async Task MonitorDispense()
   {

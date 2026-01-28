@@ -4,12 +4,16 @@ using Ares.Device;
 using FlirCM3.Config;
 using FlirCM3.Services;
 using Spinnaker;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 
 namespace FlirCM3.Simulation;
 
 public class SimCM3Camera : AresDevice, IFlirCM3Camera
 {
   private readonly string _simResultImage = "test_result.tiff";
+  private readonly BehaviorSubject<AresStruct> _stateSubject = new(new AresStruct());
+
 
   public SimCM3Camera(string deviceName) : base(deviceName)
   {
@@ -102,6 +106,7 @@ public class SimCM3Camera : AresDevice, IFlirCM3Camera
     throw new NotImplementedException();
   }
 
+  public override IObservable<AresStruct> StateStream => _stateSubject.AsObservable();
   public string Name { get; set; }
   public DeviceOperationalStatus Status { get; set; }
   public double Width { get; set; }

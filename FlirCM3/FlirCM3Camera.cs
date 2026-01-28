@@ -6,6 +6,8 @@ using FlirCM3.Config;
 using FlirCM3.Services;
 using Google.Protobuf;
 using SpinnakerNET;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 
 namespace FlirCM3;
 
@@ -14,12 +16,15 @@ public class FlirCM3Camera : AresUSBDevice, IFlirCM3Camera
   private readonly ManagedSystem _managedSystem;
   private readonly IManagedImageProcessor _imageProcessor;
   private readonly IManagedCamera _camera;
+  private readonly BehaviorSubject<AresStruct> _stateSubject = new(new AresStruct());
+
 
   public FlirCM3Camera(string deviceName) : base(deviceName)
   {
     _managedSystem = new ManagedSystem();
     _imageProcessor = new ManagedImageProcessor();
     _camera = _managedSystem.GetCameras().First();
+    StateStream = _stateSubject.AsObservable();
   }
 
   public override Task<bool> Activate(CancellationToken ct)
@@ -142,4 +147,6 @@ public class FlirCM3Camera : AresUSBDevice, IFlirCM3Camera
   public byte[] DisplayImageData { get; set; } = Array.Empty<byte>();
 
   public string LatestImagePath { get; set; } = string.Empty;
+
+  public override IObservable<AresStruct> StateStream { get; }
 }

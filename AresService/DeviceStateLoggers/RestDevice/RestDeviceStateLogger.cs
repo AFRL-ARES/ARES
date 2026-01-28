@@ -48,7 +48,7 @@ public class RestDeviceStateLogger : IRestDeviceStateLogger
     using var context = _dbContextFactory.CreateDbContext();
     _ = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.UniqueId == _device.UniqueId && config.DeviceType == _device.GetType().FullName);
 
-    var stream = _device.StateStream.Where(state => state is not null);
+    var stream = _device.InternalStateStream.Where(state => state is not null);
 
     if(Settings.LoggingType == DeviceLoggingSettings.Types.LoggingType.Interval)
     {

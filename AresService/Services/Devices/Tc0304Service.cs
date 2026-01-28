@@ -59,7 +59,7 @@ public class Tc0304Service : TC0304Rpc.TC0304RpcBase
     var dataLogger = GetDataLogger(request.DeviceId);
     if(dataLogger is not null)
     {
-      var data = dataLogger.StateStream.Take(1).Wait();
+      var data = dataLogger.InternalStateStream.Take(1).Wait();
       response.Data = data?.ToProto();
       return Task.FromResult(response);
     }

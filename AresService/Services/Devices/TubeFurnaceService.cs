@@ -41,7 +41,7 @@ public class TubeFurnaceService : TubeFurnaceRpc.TubeFurnaceRpcBase
   {
     var tubeFurnaceDescriptions = _deviceCommandInterpreterRepo
       .GetAresDevices<ITubeFurnace>()
-      .Select(device => new TubeFurnaceDeviceDescription { AssumedAddress = (int)device.StateStream.Take(1).ToTask().Result.AssumedAddress, Name = device.Name, Id = device.UniqueId });
+      .Select(device => new TubeFurnaceDeviceDescription { AssumedAddress = (int)device.InternalStateStream.Take(1).ToTask().Result.AssumedAddress, Name = device.Name, Id = device.UniqueId });
 
     var response = new GetAllTubeFurnacesResponse();
     response.TubeFurnaces.AddRange(tubeFurnaceDescriptions);
@@ -99,7 +99,7 @@ public class TubeFurnaceService : TubeFurnaceRpc.TubeFurnaceRpcBase
     if(tubeFurnace is null)
       return new TubeFurnaceState() { CurrentTemperature = -1.0, Id = "INVALID", AssumedAddress = -1 };
     ;
-    var currentState = await tubeFurnace.StateStream.Take(1).ToTask();
+    var currentState = await tubeFurnace.InternalStateStream.Take(1).ToTask();
     return currentState;
   }
 

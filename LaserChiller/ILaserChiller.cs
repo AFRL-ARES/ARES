@@ -21,5 +21,5 @@ public interface ILaserChiller : ISerialDevice<ILaserChillerConnection>, IAsyncD
 
   public double TargetTemperature { get; }
 
-  IObservable<GetManifoldTemperatureResponse?> StateStream { get; }
+  IObservable<GetManifoldTemperatureResponse?> InternalStateStream { get; }
 }

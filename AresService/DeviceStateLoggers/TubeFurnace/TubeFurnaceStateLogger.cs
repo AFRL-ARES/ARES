@@ -44,7 +44,7 @@ public class TubeFurnaceStateLogger : ITubeFurnaceStateLogger
     using var context = _dbContextFactory.CreateDbContext();
     _ = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.UniqueId == _tubeFurnace.UniqueId && config.DeviceType == _tubeFurnace.GetType().FullName);
 
-    var stream = _tubeFurnace.StateStream;
+    var stream = _tubeFurnace.InternalStateStream;
 
     if(Settings.LoggingType == DeviceLoggingSettings.Types.LoggingType.Interval)
     {

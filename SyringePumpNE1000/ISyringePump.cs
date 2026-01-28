@@ -28,5 +28,5 @@ public interface ISyringePump : ISerialDevice<ISyringePumpConnection>, IAsyncDis
   Task<int> QueryPhase();
   Task<StateResponse> GetCurrentState();
   uint AssumedAddress { get; }
-  IObservable<StateResponse> StateStream { get; }
+  IObservable<StateResponse> InternalStateStream { get; }
 }
