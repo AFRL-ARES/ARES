@@ -15,7 +15,7 @@ public interface ILaserChiller : ISerialDevice<ILaserChillerConnection>, IAsyncD
 
   Task StartStateUpdater();
 
-  GetManifoldTemperatureResponse? GetState();
+  GetManifoldTemperatureResponse? GetInternalState();
 
   public double CurrentTemperature { get; }
 

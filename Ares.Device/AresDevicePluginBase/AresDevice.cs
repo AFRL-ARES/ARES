@@ -3,6 +3,7 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
+using Ares.Datamodel;
 using Ares.Datamodel.Device;
 
 namespace Ares.Device;
@@ -72,6 +73,7 @@ public abstract class AresDevice : IAresDevice
 
   public abstract Task<bool> Activate(CancellationToken ct);
   public abstract Task EnterSafeMode(CancellationToken ct);
+  public abstract Task<AresStruct> GetState();
 
   public void Dispose()
   {

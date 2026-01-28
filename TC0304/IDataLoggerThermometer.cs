@@ -8,7 +8,7 @@ public interface IDataloggerThermometer : ISerialDevice<IDataloggerThermometerCo
   IObservable<DataResponse?> StateStream { get; }
   Task<DataResponse> GetAndUpdateState();
   Task<double?[]> GetTemperatures();
-  DataResponse? GetState();
+  DataResponse? GetInternalState();
   Task StartStateUpdater(TimeSpan interval);
   Task StartStateUpdater();
   Task StopStateUpdater();

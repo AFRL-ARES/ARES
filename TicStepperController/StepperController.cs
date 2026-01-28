@@ -1,4 +1,6 @@
-﻿using Ares.Device.Serial;
+﻿using Ares.Datamodel;
+using Ares.Device;
+using Ares.Device.Serial;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Reactive.Linq;
@@ -301,6 +303,23 @@ public class StepperController : SerialDevice<IStepperControllerConnection>, ISt
   {
     var state = await GetStateFromDevice();
     _stateSubject.OnNext(state);
+  }
+
+  public override async Task<AresStruct> GetState()
+  {
+    var latestState = await _stateSubject.Take(1);
+
+    return AresStateBuilder.Create()
+      .Add("Current Position", latestState.CurrentPosition)
+      .Add("Current Limit", latestState.CurrentLimit)
+      .Add("Custom Step Size", latestState.CustomStepSize)
+      .Add("Starting Speed", latestState.StartingSpeed)
+      .Add("Max Acceleration", latestState.MaxAcceleration)
+      .Add("Max Deceleration", latestState.MaxDeceleration)
+      .Add("Max Speed", latestState.MaxSpeed)
+      .Add("Step Mode", latestState.StepMode.ToString())
+      .Add("Target Position", latestState.TargetPosition)
+      .Build();
   }
 
   private async Task<Messaging.TicState> GetStateFromDevice()

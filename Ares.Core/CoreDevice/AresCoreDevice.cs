@@ -1,4 +1,5 @@
-﻿using Ares.Datamodel.Device;
+﻿using Ares.Datamodel;
+using Ares.Datamodel.Device;
 using Ares.Device;
 
 namespace Ares.Core.CoreDevice;
@@ -21,6 +22,11 @@ public class AresCoreDevice : AresDevice
   public override Task EnterSafeMode(CancellationToken ct)
   {
     return Task.CompletedTask;
+  }
+
+  public override Task<AresStruct> GetState()
+  {
+    return Task.FromResult(new AresStruct());
   }
 
   public Task Sleep(TimeSpan timeSpan, CancellationToken ct)

@@ -1,4 +1,6 @@
-﻿using Ares.Device.Serial;
+﻿using Ares.Datamodel;
+using Ares.Device;
+using Ares.Device.Serial;
 using ValveController.Commands;
 using ValveController.Commands.RelayOne;
 using ValveController.Commands.RelayTwo;
@@ -90,6 +92,15 @@ public class ValveController : SerialDevice<IValveControllerConnection>, IValveC
   public ValueTask DisposeAsync()
   {
     return ValueTask.CompletedTask;
+  }
+
+  public override Task<AresStruct> GetState()
+  {
+    return Task.FromResult(
+      AresStateBuilder.Create()
+      .Add("Relay One Engaged", RelayOneEngaged)
+      .Add("Relay Two Engaged", RelayTwoEngaged)
+      .Build());
   }
 
   public bool RelayOneEngaged { get; set; } = false;

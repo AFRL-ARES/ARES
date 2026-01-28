@@ -1,4 +1,6 @@
-﻿using Ares.Datamodel.Device;
+﻿using Ares.Datamodel;
+using Ares.Datamodel.Device;
+using Ares.Device;
 using Ares.Device.USB;
 using FlirCM3.Config;
 using FlirCM3.Services;
@@ -43,6 +45,21 @@ public class FlirCM3Camera : AresUSBDevice, IFlirCM3Camera
   {
     //It's a camera...
     return Task.CompletedTask;
+  }
+
+  public override Task<AresStruct> GetState()
+  {
+    return Task.FromResult(
+      AresStateBuilder.Create()
+      .Add("Width", _camera.Width.Value)
+      .Add("Height", _camera.Height.Value)
+      .Add("OffsetX", _camera.OffsetX.Value)
+      .Add("OffsetY", _camera.OffsetY.Value)
+      .Add("Exposure Time", _camera.ExposureTime.Value)
+      .Add("Gain", _camera.Gain.Value)
+      .Add("Black Level", _camera.BlackLevel.Value)
+      .Add("Pixel Format", _camera.PixelFormat.Value.ToString())
+      .Build());
   }
 
   public ValueTask DisposeAsync()

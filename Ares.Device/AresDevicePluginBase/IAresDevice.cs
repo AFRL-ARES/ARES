@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Ares.Datamodel;
 using Ares.Datamodel.Device;
 
 namespace Ares.Device;
@@ -16,4 +17,5 @@ public interface IAresDevice : IDisposable
   IObservable<DeviceOperationalStatus> StatusObservable { get; }
   Task<bool> Activate(CancellationToken ct = default);
   Task EnterSafeMode(CancellationToken ct = default);
+  Task<AresStruct> GetState();
 }

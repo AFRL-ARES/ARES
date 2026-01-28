@@ -1,7 +1,9 @@
-﻿using Ares.Datamodel.Device;
+﻿using Ares.Datamodel;
+using Ares.Datamodel.Device;
 using Ares.Device;
 using FlirCM3.Config;
 using FlirCM3.Services;
+using Spinnaker;
 
 namespace FlirCM3.Simulation;
 
@@ -21,6 +23,21 @@ public class SimCM3Camera : AresDevice, IFlirCM3Camera
     Status.Message = "Successfully activated simulated camera!";
 
     return Task.FromResult(true);
+  }
+
+  public override Task<AresStruct> GetState()
+  {
+    return Task.FromResult(
+      AresStateBuilder.Create()
+      .Add("Width", Width)
+      .Add("Height", Height)
+      .Add("OffsetX", OffsetX)
+      .Add("OffsetY", OffsetY)
+      .Add("Exposure Time", ExposureTime)
+      .Add("Gain", Gain)
+      .Add("Black Level", BlackLevel)
+      .Add("Pixel Format", "Simulated Camera, no format")
+      .Build());
   }
 
   public async Task<CaptureImageResponse> CaptureImage(string basePath)

@@ -1,4 +1,7 @@
-﻿using Ares.Device.Serial;
+﻿using Ares.Datamodel;
+using Ares.Datamodel.Extensions;
+using Ares.Device;
+using Ares.Device.Serial;
 using LaserChiller.Commands.Requests;
 using LaserChiller.Commands.Responses;
 using System.Reactive.Linq;
@@ -53,8 +56,17 @@ public class LaserChiller : SerialDevice<ILaserChillerConnection>, ILaserChiller
     return response;
   }
 
-  public GetManifoldTemperatureResponse? GetState()
+  public GetManifoldTemperatureResponse? GetInternalState()
   => StateStream.Take(1).Wait();
+
+  public override Task<AresStruct> GetState()
+  {
+    return Task.FromResult(
+      AresStateBuilder.Create()
+      .Add("CurrentTemperature", CurrentTemperature)
+      .Add("TargetTemperature", TargetTemperature)
+      .Build());
+  }
 
   private async Task StartStateUpdater(TimeSpan interval, CancellationToken token)
   {

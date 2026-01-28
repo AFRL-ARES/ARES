@@ -111,6 +111,11 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     }
   }
 
+  public override Task<AresStruct> GetState()
+  {
+    return Task.FromResult(_stateSubject.Value ?? new AresStruct());
+  }
+
   internal async Task FetchOperationalStatus()
   {
     try

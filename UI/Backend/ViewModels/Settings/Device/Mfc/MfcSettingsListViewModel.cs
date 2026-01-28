@@ -4,7 +4,6 @@ using Ares.Alicat.Mfc.Messaging;
 using Ares.Datamodel.Device;
 using Ares.Services.Device;
 using CommunityToolkit.Mvvm.Messaging;
-using Microsoft.Extensions.Logging;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 

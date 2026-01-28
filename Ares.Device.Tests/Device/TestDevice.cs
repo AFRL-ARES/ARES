@@ -1,4 +1,6 @@
-﻿namespace Ares.Device.Tests.Device;
+﻿using Ares.Datamodel;
+
+namespace Ares.Device.Tests.Device;
 
 public class TestDevice : AresDevice
 {
@@ -12,4 +14,7 @@ public class TestDevice : AresDevice
 
   public override Task<bool> Activate(CancellationToken ct)
     => Task.FromResult(true);
+
+  public override Task<AresStruct> GetState()
+    => Task.FromResult(new AresStruct());
 }

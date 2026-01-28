@@ -8,7 +8,10 @@ using AlicatMFC.Commands.Responses;
 using AlicatMFC.Commands.Responses.Streamed;
 using Ares.Alicat.Mfc.Config;
 using Ares.Alicat.Mfc.Messaging;
+using Ares.Datamodel;
 using Ares.Datamodel.Device;
+using Ares.Datamodel.Extensions;
+using Ares.Device;
 using Ares.Device.Serial;
 using Microsoft.Extensions.Logging;
 using UnitsNet;
@@ -299,6 +302,37 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     {
       FirmwareVersion = string.Empty;
     }
+  }
+
+  public override Task<AresStruct> GetState()
+  {
+    var newState = AresStateBuilder.Create()
+      .Add("Id", AssumedId.ToString())
+      .Add("Name", Name)
+      .Add("HasValve", HasValve)
+      .Add("Firmware", FirmwareVersion)
+
+      .AddStruct("LiveData", b =>
+      {
+        b.Add("Absolute Pressure", LiveData?.AbsolutePressure?.Value ?? -1.0)
+        .Add("Temperature", LiveData?.Temperature?.Value ?? -1.0)
+        .Add("Flow", LiveData?.MassFlow?.Value ?? -1.0);
+      })
+
+      .AddList("Gases", Gases, gas =>
+      {
+        var gasStruct = AresStateBuilder.Create()
+        .Add("Gas", gas.Gas)
+        .Add("Id", gas.Id.ToString())
+        .Add("Index", gas.Index)
+        .Add("IsEndMarker", gas.IsEndMarker)
+        .Build();
+
+        return new AresValue { StructValue = gasStruct };
+      })
+      .Build();
+
+    return Task.FromResult(newState);
   }
 
   private void UpdateBasisDataFrames()
@@ -691,6 +725,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
       existingEntries.Remove(staleEntry);
 
     existingEntries.Add(formatEntry);
+    DataFrameFormatEntries = existingEntries;
     var newState = currentState with { DataFrameFormatEntries = existingEntries };
     _statePublisher.OnNext(newState);
   }
@@ -708,6 +743,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
       existingEntries.Remove(staleEntry);
 
     existingEntries.Add(manufactureEntry);
+    ManufacturerInfo = existingEntries;
     var newState = currentState with { ManufacturerInfo = existingEntries };
     _statePublisher.OnNext(newState);
   }
@@ -727,6 +763,7 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
       existingEntries.Remove(staleEntry);
 
     existingEntries.Add(gasEntry);
+    Gases = existingEntries;
     var newState = currentState with { Gases = existingEntries };
     _statePublisher.OnNext(newState);
   }
@@ -774,4 +811,9 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
     await StopUpdateLoop();
     await StartUpdateLoop(TimeSpan.FromMilliseconds(500));
   }
+
+  public List<GasInfoEntry> Gases { get; set; }
+  public List<ManufacturerInfoEntry> ManufacturerInfo { get; set; }
+  public List<DataFrameFormatEntry> DataFrameFormatEntries { get; set; }
+  public LiveDataResponse LiveData { get; set; }
 }

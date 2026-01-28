@@ -1,4 +1,6 @@
-﻿using Ares.Device.Serial;
+﻿using Ares.Datamodel;
+using Ares.Device;
+using Ares.Device.Serial;
 using LindbergFurnace.Commands;
 using LindbergFurnace.Commands.Requests;
 using System.Globalization;
@@ -116,6 +118,20 @@ public class TubeFurnace : SerialDevice<ITubeFurnaceConnection>, ITubeFurnace
     var setpointWrite = new RegisterReadWrite { Register = Register.SP1, UpperDigit = (byte)(degreesCelsius >> 8), LowerDigit = (byte)degreesCelsius };
     var request = new WriteMultipleRegistersRequest(1, setpointWrite);
     var response = await Connection.Send(request);
+  }
+
+  public override async Task<AresStruct> GetState()
+  {
+    var currentState = await StateStream.Take(1);
+
+    return
+      AresStateBuilder.Create()
+      .Add("Current Temperature", currentState.CurrentTemperature)
+      .Add("Target Setpoint", currentState.TargetSetpoint)
+      .Add("Setpoint", currentState.Setpoint)
+      .Add("Assumed Address", currentState.AssumedAddress)
+      .Add("Id", currentState.Id)
+      .Build();
   }
   public IObservable<TubeFurnaceState> StateStream { get; }
 }

@@ -1,4 +1,6 @@
-﻿using Ares.Device.Serial;
+﻿using Ares.Datamodel;
+using Ares.Device;
+using Ares.Device.Serial;
 using ChemyxPumpPlugin.Commands;
 using ChemyxPumpPlugin.Commands.Requests;
 using ChemyxPumpPlugin.Commands.Responses;
@@ -8,9 +10,7 @@ namespace ChemyxPumpPlugin;
 public class ChemyxPump : SerialDevice<IChemyxPumpConnection>, IChemyxPump
 {
   private const int DefaultPumpIndex = 1;
-
   private CancellationTokenSource _internalPollToken = new();
-
   private Task _internalPollers = Task.CompletedTask;
 
   public ChemyxPump(string name, bool dualPump, IChemyxPumpConnection connection) : base(name, connection)
@@ -250,6 +250,38 @@ public class ChemyxPump : SerialDevice<IChemyxPumpConnection>, IChemyxPump
         }
       }
     }, token);
+  }
+
+  public override Task<AresStruct> GetState()
+  {
+    return Task.FromResult(AresStateBuilder.Create()
+    .AddList("PumpStatuses", PumpStatuses ?? [], status =>
+    {
+      // Create a child struct for the status object
+      var statusStruct = AresStateBuilder.Create()
+      .Add("Status", status.ToString())
+      .Build();
+
+      return new AresValue { StructValue = statusStruct };
+    })
+
+    .AddList("DispensedVolumes", DispensedVolumes ?? [], vol =>
+        new AresValue { NumberValue = vol })
+
+    .AddList("ElapsedTimes", ElapsedTimes ?? [], time =>
+        new AresValue { StringValue = time.ToString(@"hh\:mm\:ss") })
+
+    .AddList("LimitParameters", LimitParameters ?? [], limit =>
+    {
+      var limitStruct = AresStateBuilder.Create()
+      .Add("MaxVolume", limit.MaxVolume)
+      .Add("MaxRate", limit.MaxRate)
+      .Add("MinRate", limit.MinRate)
+      .Build();
+
+      return new AresValue { StructValue = limitStruct };
+    })
+    .Build());
   }
 
   public PumpStatus[]? PumpStatuses { get; private set; }

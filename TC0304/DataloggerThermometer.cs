@@ -1,4 +1,6 @@
-﻿using Ares.Device.Serial;
+﻿using Ares.Datamodel;
+using Ares.Device;
+using Ares.Device.Serial;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Tc0304.DataModel;
@@ -34,6 +36,18 @@ public class DataloggerThermometer : SerialDevice<IDataloggerThermometerConnecti
     return response;
   }
 
+  public override async Task<AresStruct> GetState()
+  {
+    var state = await _stateSubject.Take(1);
+
+    return AresStateBuilder.Create()
+      .Add("T1 Probe", state?.T1Probe?.DegreesCelsius ?? double.MinValue)
+      .Add("T2 Probe", state?.T2Probe?.DegreesCelsius ?? double.MinValue)
+      .Add("T3 Probe", state?.T3Probe?.DegreesCelsius ?? double.MinValue)
+      .Add("T4 Probe", state?.T4Probe?.DegreesCelsius ?? double.MinValue)
+      .Build();
+  }
+
   public async Task<double?[]> GetTemperatures()
   {
     var response = await GetAndUpdateState();
@@ -48,7 +62,7 @@ public class DataloggerThermometer : SerialDevice<IDataloggerThermometerConnecti
     return temperatures;
   }
 
-  public DataResponse? GetState()
+  public DataResponse? GetInternalState()
     => StateStream.Take(1).Wait();
 
   public async Task StartStateUpdater(TimeSpan interval)

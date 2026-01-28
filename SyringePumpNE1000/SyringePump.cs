@@ -1,4 +1,6 @@
-﻿using Ares.Device.Serial;
+﻿using Ares.Datamodel;
+using Ares.Device;
+using Ares.Device.Serial;
 using Ares.SyringePump.Ne1000.Messaging;
 using SyringePumpNE1000.Commands.Requests;
 using SyringePumpNE1000.Commands.Responses;
@@ -297,6 +299,22 @@ public class SyringePump : SerialDevice<ISyringePumpConnection>, ISyringePump
   {
     var state = await GetStateFromDevice();
     _statePublisher.OnNext(state);
+  }
+
+  public override async Task<AresStruct> GetState()
+  {
+    var state = await _statePublisher.Take(1);
+
+    return AresStateBuilder.Create()
+      .Add("Firmware Version", state.FirmwareVersion)
+      .Add("DiameterMm", state.DiameterMm)
+      .Add("Phase Rate", state.Phase.Rate)
+      .Add("Phase Unit", state.Phase.Unit)
+      .Add("Volume Units", state.VolumeUnits.ToString())
+      .Add("Withdrawn Volume", state.WithdrawnVolume)
+      .Add("Address", state.Address)
+      .Add("Rate Units", state.RateUnits.ToString())
+      .Build();
   }
 
   private async Task<StateResponse> GetStateFromDevice()

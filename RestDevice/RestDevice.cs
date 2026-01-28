@@ -8,6 +8,7 @@ using System.Reactive.Subjects;
 using System.Text.Json;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
+using Ares.Device;
 
 namespace RestDevice;
 
@@ -89,6 +90,17 @@ public class RestDevice : AresRestDevice, IRestDevice
 
     _statePublisher.OnNext(jsonResponse);
     return jsonResponse;
+  }
+
+  public override async Task<AresStruct> GetState()
+  {
+    //TODO: This doesn't quite work yet, as the rest device doesn't conform to the typical ARES standards.
+    //We'll either need to force it to do so, or have logic that carefully parses this data to try and convert it
+    //to use things like AresStructs and AresValues.
+    var newState = AresStateBuilder.Create().Build();
+    var newesetStatedata = await GetAndUpdateState();
+
+    return newState;
   }
 
   private void StartStateUpdater(TimeSpan interval)

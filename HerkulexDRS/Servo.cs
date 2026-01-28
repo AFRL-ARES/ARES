@@ -1,4 +1,6 @@
-﻿using Ares.Device.Serial;
+﻿using Ares.Datamodel;
+using Ares.Device;
+using Ares.Device.Serial;
 using HerkulexDRS.Commands;
 using HerkulexDRS.Responses;
 
@@ -49,6 +51,14 @@ public class Servo : SerialDevice<IServoConnection>, IServo
     {
       return new SerialDeviceValidationResult(false, e.Message);
     }
+  }
+
+  public override Task<AresStruct> GetState()
+  {
+    return Task.FromResult(
+      AresStateBuilder.Create()
+      .Add("Piston Raised", PistonRaised)
+      .Build());
   }
 
   public override async Task EnterSafeMode(CancellationToken ct)

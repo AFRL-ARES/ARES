@@ -1,4 +1,6 @@
-﻿using Ares.Device.Serial;
+﻿using Ares.Datamodel;
+using Ares.Device;
+using Ares.Device.Serial;
 using VerdiV6Laser.Commands;
 using VerdiV6Laser.Commands.Requests;
 
@@ -56,6 +58,17 @@ namespace VerdiV6Laser
       return Shutter;
     }
 
+    public override Task<AresStruct> GetState()
+    {
+      return Task.FromResult(
+        AresStateBuilder.Create()
+        .Add("Current Laser Power", CurrentPower)
+        .Add("Desired Laser Power", DesiredPower)
+        .Add("Shutter", Shutter)
+        .Build()
+        );
+    }
+
     public async Task ActivateLaser()
     {
       var request = new SetPowerRequest(DesiredPower);
@@ -108,7 +121,5 @@ namespace VerdiV6Laser
     public double CurrentPower { get; set; } = 0.01;
     public double DesiredPower { get; set; }
     public bool Shutter { get; set; } = false;
-    public Guid Id { get; } = Guid.NewGuid();
-
   }
 }
