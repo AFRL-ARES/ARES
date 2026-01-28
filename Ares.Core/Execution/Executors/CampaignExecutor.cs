@@ -78,14 +78,14 @@ public class CampaignExecutor : ICampaignExecutor
       LoggingType = Datamodel.Device.DeviceLoggingSettings.Types.LoggingType.OnChange
     });
 
-    var startTime = DateTime.UtcNow;
+    var campaignStartTime = DateTime.UtcNow;
     var experimentSummaries = new List<ExperimentExecutionSummary>();
     ExperimentExecutionSummary startupSummary = new();
     ExperimentExecutionSummary closeoutSummary = new();
     
     try
     {
-      var campaignPath = await InitializeCampaign(startTime);
+      var campaignPath = await InitializeCampaign(campaignStartTime);
       
       var analyses = new List<Analysis>();
       
@@ -126,7 +126,7 @@ public class CampaignExecutor : ICampaignExecutor
       await _stateLoggerManager.DisableOverrideAsync();
     }
     
-    return CreateCampaignSummary(startTime, experimentSummaries, startupSummary, closeoutSummary);
+    return CreateCampaignSummary(campaignStartTime, experimentSummaries, startupSummary, closeoutSummary);
   }
 
   private async Task<string> InitializeCampaign(DateTime startTime)
@@ -197,6 +197,7 @@ public class CampaignExecutor : ICampaignExecutor
     {
       var experimentFolder = $"Experiment_{++experimentCount}";
       var experimentPath = CampaignOutputHelper.CreateExperimentSubFolder(campaignPath, experimentFolder);
+      var startTime = DateTime.UtcNow;
 
       //Populate Internal Variables Related to Experiment
       AresEnvironment.AresEnvironment.SetInternalVariable(InternalVariableType.CurrentExperimentNumber, experimentCount.ToString());
@@ -258,7 +259,8 @@ public class CampaignExecutor : ICampaignExecutor
       CampaignId = Template.UniqueId, 
       CampaignName = Template.Name, 
       ExperimentId = experimentExecutor.Template.UniqueId, 
-      SystemName = "ARES OS" 
+      SystemName = "ARES OS",
+      ExperimentStartTime = experimentSummary.ExecutionInfo.TimeStarted
     };
 
     Status.AnalysisState = AnalysisState.AnalysisInProgress;
@@ -412,7 +414,14 @@ public class CampaignExecutor : ICampaignExecutor
         _executionStatusSubject.OnNext(Status);
         _executionReporter.Report(Status);
         _logger.LogTrace("Analyses count is {count} and replan rate {rate}", analyses.Count(), ReplanRate);
-        var metadata = new RequestMetadata { CampaignId = Template.UniqueId, CampaignName = Template.Name, ExperimentId = template.UniqueId, SystemName = "ARES OS" };
+        var metadata = new RequestMetadata 
+        { 
+          CampaignId = Template.UniqueId, 
+          CampaignName = Template.Name, 
+          ExperimentId = template.UniqueId, 
+          SystemName = "ARES OS",
+          ExperimentStartTime = DateTime.UtcNow.ToUniversalTime().ToTimestamp()
+        };
         var resolveSuccess = await _planningHelper.TryResolveParameters(Template.PlannerAllocations, metadata, experimentTemplate.GetAllPlannedParameters(), analyses, previousExperiments, cancellationToken);
         if(!resolveSuccess)
         {
@@ -476,7 +485,8 @@ public class CampaignExecutor : ICampaignExecutor
     });
 
     _logger.LogDebug("About to execute the template {TemplateName}", experimentExecutor.Template.Name);
-    return await experimentExecutor.Execute(token);
+    var result = await experimentExecutor.Execute(token);
+    return result;
   }
 
   private async Task PostExperimentExecution(ExperimentExecutionSummary summary)
