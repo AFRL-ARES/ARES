@@ -6,7 +6,7 @@ public class SystemScope(string name = "")
 {
   public string Name { get; } = name;
 
-  public Dictionary<string, AresValue> Variables { get; } = [];
+  public Dictionary<string, AresSystemValue> Variables { get; } = [];
 
-  public Dictionary<string, AresSystemFunction> SystemFunctions { get; } = [];
+  public Dictionary<string, AresSystemFunction> Functions { get; } = [];
 }

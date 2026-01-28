@@ -50,7 +50,8 @@ public class AresScriptEnvironment
 
     foreach(var scope in _systemScopes)
     {
-      var valueExists = scope.Variables.TryGetValue(id, out value);
+      var valueExists = scope.Variables.TryGetValue(id, out var sysVal);
+      value = sysVal?.ToAresValue();
       if(valueExists && value is not null)
         return true;
     }
@@ -78,7 +79,7 @@ public class AresScriptEnvironment
     return scope.Variables.TryGetValue(id, out value);
   }
 
-  public bool TryGetSystemValue(string id, [NotNullWhen(true)] out AresValue? value)
+  public bool TryGetSystemValue(string id, [NotNullWhen(true)] out AresSystemValue? value)
   {
     foreach(var scope in _systemScopes)
     {
@@ -121,7 +122,7 @@ public class AresScriptEnvironment
   {
     foreach(var scope in _systemScopes)
     {
-      if(scope.SystemFunctions.TryGetValue(id, out func))
+      if(scope.Functions.TryGetValue(id, out func))
       {
         return true; 
       }
@@ -135,7 +136,7 @@ public class AresScriptEnvironment
   {
     foreach(var scope in _systemScopes)
     {
-      if(scope.SystemFunctions.ContainsKey(id))
+      if(scope.Functions.ContainsKey(id))
       {
         return true;
       }
@@ -146,13 +147,13 @@ public class AresScriptEnvironment
 
   public AresSystemFunction[] GetAllSystemFunctions()
   {
-    return _systemScopes.SelectMany(scope => scope.SystemFunctions.Values).ToArray();
+    return _systemScopes.SelectMany(scope => scope.Functions.Values).ToArray();
   }
 
-  public IReadOnlyList<KeyValuePair<string, AresValue>> GetAllSystemVariables()
+  public IReadOnlyList<KeyValuePair<string, AresSystemValue>> GetAllSystemVariables()
   {
     var seen = new HashSet<string>(StringComparer.Ordinal);
-    var results = new List<KeyValuePair<string, AresValue>>();
+    var results = new List<KeyValuePair<string, AresSystemValue>>();
     foreach(var scope in _systemScopes)
     {
       foreach(var kv in scope.Variables)
@@ -256,11 +257,11 @@ public class AresScriptEnvironment
     var scope = _systemScopes.Peek();
     foreach(var f in functions)
     {
-      scope.SystemFunctions[f.Id] = f;
+      scope.Functions[f.Id] = f;
     }
   }
 
-  public void AssignSystemVariables(IEnumerable<KeyValuePair<string, AresValue>> variables)
+  public void AssignSystemVariables(IEnumerable<KeyValuePair<string, AresSystemValue>> variables)
   {
     var scope = _systemScopes.Peek();
     foreach(var (key, value) in variables)

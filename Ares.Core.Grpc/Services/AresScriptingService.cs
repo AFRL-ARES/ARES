@@ -6,12 +6,9 @@ using System.Threading.Channels;
 using Ares.Core.Scripting;
 using Microsoft.Extensions.Logging;
 using Google.Protobuf.WellKnownTypes;
-using System.Collections.Generic;
-using System.Linq;
 using AresScript;
+using AresScript.ScriptAnalysis;
 using Ares.Datamodel.Scripting;
-using Ares.Datamodel;
-using System.Text;
 
 namespace Ares.Core.Grpc.Services;
 
@@ -91,105 +88,14 @@ public partial class AresScriptingService : Ares.Services.AresScriptingService.A
   public override async Task<CompletionResponse> GetCompletions(CompletionRequest request, ServerCallContext context)
   {
     var environment = _environmentBuilder.Build();
-    await AresScriptAnalysis.BuildEnvironmentForCompletions(environment, request.Script);
-    var catalog = AresScriptAnalysis.BuildAutocompleteCatalog(environment);
-    var systemFunctions = environment.GetAllSystemFunctions();
-    var userFunctions = environment.GetAllUserFunctions();
-    var userVariables = environment.GetAllUserVariableNames();
-    var items = new List<CompletionItem>();
-
-    if(AresScriptAnalysis.TryGetParentIdentifier(request.Script, request.CursorLine, request.CursorColumn, out var parentIdentifier))
-    {
-      var ns = catalog.Namespaces.FirstOrDefault(n => string.Equals(n.Identifier, parentIdentifier, StringComparison.Ordinal));
-      if(ns is not null)
-      {
-        items.AddRange(ns.Functions.Select(func => new CompletionItem
-        {
-          Label = func.Name,
-          InsertText = BuildSnippet(func.Name, func.InputSchema),
-          Detail = func.Description,
-          Documentation = func.Description,
-          Kind = CompletionItemKind.Function,
-          ParentIdentifier = ns.Identifier,
-          InputSchema = func.InputSchema,
-          OutputSchema = func.OutputSchema
-        }));
-      }
-    }
-    else
-    {
-      items.AddRange(catalog.Namespaces.Select(ns => new CompletionItem
-      {
-        Label = ns.Identifier,
-        InsertText = ns.Identifier,
-        Detail = ns.DisplayName,
-        Documentation = ns.Description,
-        Kind = AresScriptAnalysis.MapNamespaceKindToCompletionKind(ns.Kind),
-        ParentIdentifier = string.Empty
-      }));
-
-      items.AddRange(systemFunctions
-        .Where(func => string.IsNullOrWhiteSpace(func.Namespace))
-        .Select(func => new CompletionItem
-        {
-          Label = func.Name,
-          InsertText = BuildSnippet(func.Name, func.InputSchema),
-          Detail = func.Description,
-          Documentation = func.Description,
-          Kind = CompletionItemKind.Function,
-          InputSchema = func.InputSchema,
-          OutputSchema = func.OutputSchema
-        }));
-
-      items.AddRange(userFunctions.Select(func => new CompletionItem
-      {
-        Label = func.Name,
-        InsertText = func.Name,
-        Detail = "User function",
-        Kind = CompletionItemKind.Function
-      }));
-
-      items.AddRange(userVariables.Select(name => new CompletionItem
-      {
-        Label = name,
-        InsertText = name,
-        Detail = "User variable",
-        Kind = CompletionItemKind.Variable
-      }));
-
-      items.AddRange(catalog.Globals.Select(global => new CompletionItem
-      {
-        Label = global.Name,
-        InsertText = global.Name,
-        Detail = global.Description,
-        Documentation = global.Description,
-        Kind = CompletionItemKind.Variable,
-        Schema = global.Schema
-      }));
-    }
-
+    var items = await AresScriptAnalysis.BuildCompletionsAsync(
+      environment,
+      request.Script,
+      request.CursorLine,
+      request.CursorColumn);
     var response = new CompletionResponse();
     response.Items.AddRange(items);
     return response;
-  }
-
-  private static string BuildSnippet(string funcName, AresDataSchema schema)
-  {
-    var builder = new StringBuilder();
-    builder.Append(funcName);
-    builder.Append('(');
-    var requiredFields = schema.Fields.Where(field => !field.Value.Optional).ToList();
-    for(var i = 0; i < requiredFields.Count; i++)
-    {
-      var fieldElement = requiredFields[i];
-      builder.Append($"${{{i + 1}:{fieldElement.Key}}}");
-      if(i < requiredFields.Count - 1)
-      {
-        builder.Append(',');
-      }
-    }
-    builder.Append(')');
-    return builder.ToString();
   }
 
   public override async Task<ValidateScriptResponse> ValidateScript(ValidateScriptRequest request, ServerCallContext context)
