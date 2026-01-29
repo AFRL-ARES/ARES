@@ -2,7 +2,7 @@ using Antlr4.Runtime;
 using Ares.Datamodel.Scripting;
 using AresScript.Generated;
 using System.Text.RegularExpressions;
-using AresScript;
+using AresScript.Interpreters;
 
 namespace AresScript.ScriptAnalysis;
 

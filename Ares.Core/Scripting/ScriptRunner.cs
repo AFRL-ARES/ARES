@@ -6,6 +6,7 @@ using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
 using AresScript;
 using AresScript.Generated;
+using AresScript.Interpreters;
 
 namespace Ares.Core.Scripting;
 

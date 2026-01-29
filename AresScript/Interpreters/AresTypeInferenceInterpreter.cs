@@ -3,8 +3,12 @@ using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
 using AresScript.Generated;
 
-namespace AresScript;
+namespace AresScript.Interpreters;
 
+/// <summary>
+/// Interpreter specifically to gather the types of symbols so they can be displayed via hover
+/// or otherwise validated when used as inputs/outputs
+/// </summary>
 public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEntry>
 {
   private readonly AresScriptEnvironment _environment;
@@ -76,10 +80,10 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
     return CreateListEntry(AresSchemaBuilder.Entry(AresDataType.Any).Build());
   }
 
-  public override SchemaEntry VisitObject(AresLangParser.ObjectContext context)
+  public override SchemaEntry VisitStruct(AresLangParser.StructContext context)
   {
     var schema = new AresDataSchema();
-    foreach(var pair in context.obj().pair())
+    foreach(var pair in context.structure().pair())
     {
       var key = pair.ID()?.GetText() ?? Unquote(pair.STRING().GetText());
       var value = Visit(pair.expression());
@@ -197,7 +201,7 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
 
   private string? TryResolveFunctionId(AresLangParser.ExpressionContext expression)
   {
-    if(TryResolveValue(expression, out var value) && value.FunctionValue is not null)
+    if(TryResolveValue(expression, out var value) && value?.FunctionValue is not null)
     {
       return value.FunctionValue.FunctionId;
     }
@@ -221,7 +225,7 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
     }
   }
 
-  private bool TryResolveValue(AresLangParser.ExpressionContext expression, out AresValue value)
+  private bool TryResolveValue(AresLangParser.ExpressionContext expression, out AresValue? value)
   {
     value = AresValueHelper.CreateNull();
 
@@ -236,7 +240,7 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
     if(expression is AresLangParser.MemberAccessContext memberAccess)
     {
       if(TryResolveValue(memberAccess.expression(), out var baseValue)
-        && baseValue.StructValue is not null
+        && baseValue?.StructValue is not null
         && baseValue.StructValue.Fields.TryGetValue(memberAccess.ID().GetText(), out var member))
       {
         value = member;

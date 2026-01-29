@@ -116,7 +116,7 @@ argument:
 	ID '=' expression # KeywordArg
 	| expression      # PositionalArg;
 
-// Basic atoms: literals, identifiers, parenthesized expressions, arrays, objects
+// Basic atoms: literals, identifiers, parenthesized expressions, arrays, structs
 atom:
 	INT											# Int
 	| FLOAT										# Float
@@ -126,14 +126,14 @@ atom:
 	| ID										# Id
 	| LPAREN expression RPAREN						# Parens
 	| LBRACK (expression (',' expression)*)? RBRACK	# Array
-	| obj										# Object;
+	| structure										# Struct;
 
-// Key-Value pairs for objects. Python can apparently support expressions as keys, but that seems a
+// Key-Value pairs for structs. Python can apparently support expressions as keys, but that seems a
 // bit overkill for ARES scripts, so we'll limit it to just identifiers and strings for now
 pair: (ID | STRING) ':' expression;
 
 // JSON-like struct definition TODO: Decide if we should actually support structs in AresScript
-obj: LBRACE (pair ((',' pair))*)? RBRACE;
+structure: LBRACE (pair ((',' pair))*)? RBRACE;
 
 // --- Lexer Rules (Tokens) ---
 

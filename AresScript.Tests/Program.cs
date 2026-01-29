@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using Antlr4.Runtime;
 using AresScript.Generated;
+using AresScript.Interpreters;
 using NUnit.Framework;
 
 namespace AresScript.Tests;

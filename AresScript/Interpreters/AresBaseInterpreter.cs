@@ -5,8 +5,11 @@ using AresScript.Generated;
 using System.Text.RegularExpressions;
 using Google.Protobuf;
 
-namespace AresScript;
+namespace AresScript.Interpreters;
 
+/// <summary>
+/// The main script execution interpreter. It executes the system functions.
+/// </summary>
 public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 {
   protected readonly AresScriptEnvironment Environment;
@@ -129,7 +132,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     if(assertContext.expression().Length > 1)
     {
       var messageValue = await Visit(assertContext.expression(1));
-      message = $"Assertion failed: {FormatAresValue(messageValue)}";
+      message = $"Assertion failed: {messageValue.Stringify()}";
     }
 
     throw new InvalidOperationException($"{message}. {context.Start.Line}:{context.Start.Column}");
@@ -510,10 +513,10 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     return AresValueHelper.CreateList(aresVals);
   }
 
-  public override async Task<AresValue> VisitObject([NotNull] AresLangParser.ObjectContext context)
+  public override async Task<AresValue> VisitStruct([NotNull] AresLangParser.StructContext context)
   {
     var aresStruct = new AresStruct();
-    foreach(var pair in context.obj().pair())
+    foreach(var pair in context.structure().pair())
     {
       var key = pair.ID()?.GetText() ?? Unquote(pair.STRING().GetText());
       var value = await Visit(pair.expression());
@@ -866,27 +869,9 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
   public static string Unquote(string raw)
   {
-    var unquoted = raw.Substring(1, raw.Length - 2);
+    var unquoted = raw[1..^1];
     var value = Regex.Unescape(unquoted);
 
     return value;
-  }
-
-  private static string FormatAresValue(AresValue value)
-  {
-    return value.KindCase switch
-    {
-      AresValue.KindOneofCase.NullValue => "None",
-      AresValue.KindOneofCase.BoolValue => value.BoolValue.ToString(),
-      AresValue.KindOneofCase.StringValue => value.StringValue,
-      AresValue.KindOneofCase.NumberValue => value.NumberValue.ToString(),
-      AresValue.KindOneofCase.BytesValue => BitConverter.ToString(value.BytesValue.ToByteArray()),
-      AresValue.KindOneofCase.StringArrayValue => string.Join(", ", value.StringArrayValue.Strings),
-      AresValue.KindOneofCase.NumberArrayValue => string.Join(", ", value.NumberArrayValue.Numbers),
-      AresValue.KindOneofCase.ListValue => $"[{string.Join(", ", value.ListValue.Values.Select(v => v.KindCase))}]",
-      AresValue.KindOneofCase.StructValue => $"{{{string.Join(", ", value.StructValue.Fields.Select(kv => $"{kv.Key}: {kv.Value.KindCase}"))}}}",
-      AresValue.KindOneofCase.UnitValue => "()",
-      _ => "Unknown value"
-    };
   }
 }

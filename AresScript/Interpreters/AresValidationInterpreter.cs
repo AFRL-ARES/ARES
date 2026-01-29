@@ -3,8 +3,12 @@ using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
 using AresScript.Generated;
 
-namespace AresScript;
+namespace AresScript.Interpreters;
 
+/// <summary>
+/// Interpreter specifically to validate the script in order to provide underline support and
+/// pre-run validation to make sure we check as many things as possible before running
+/// </summary>
 public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
 {
   private readonly AresScriptEnvironment _environment = new();

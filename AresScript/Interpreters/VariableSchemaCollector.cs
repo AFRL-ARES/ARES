@@ -4,7 +4,7 @@ using Ares.Datamodel;
 using Ares.Datamodel.Factories;
 using AresScript.Generated;
 
-namespace AresScript.ScriptAnalysis;
+namespace AresScript.Interpreters;
 
 public sealed class VariableSchemaCollector : AresLangBaseVisitor<object?>
 {
