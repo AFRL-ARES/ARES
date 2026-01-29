@@ -97,45 +97,37 @@
         @if (ViewModel!.DisplayExecutionSummary && (CampaignStartupStatuses.Any() || ExperimentExecutionStatuses.Any()))
         {
           <div class="border border-1 rounded-2 p-2 padded-item scrollable-summary">
-            @if(CampaignStartupStatuses.Any())
-            {
-              var startupStatus = CampaignStartupStatuses.Last();
-              <div class="d-flex flex-column">
-                <ul class="tree">
-                  <li>
-                    <h6> Campaign Startup </h6>
-                    <ul>
-                      @foreach(var startupStepStatus in startupStatus.StartupExecutionStatuses)
-                      {
-                        <li>
-                          <details open="@ShouldDisplayStartupSteps()">
-                            <summary>@startupStepStatus.StepName</summary>
-                            <ul>
-                              @foreach(var commandStatus in startupStepStatus.CommandExecutionStatuses)
-                              {
-                                <li>
-                                  <div>@commandStatus.DeviceName: @commandStatus.CommandName -- @commandStatus.State</div>
-                                </li>
-                              }
-                            </ul>
-                          </details>
-                        </li>
-                      }
-                    </ul>
-                  </li>
-                </ul>
-              </div>
-            }
-
             @if(ExperimentExecutionStatuses.Any())
             {
               @for(var i = 0; i < ExperimentExecutionStatuses.Count; i++)
               {
                 var experimentStatus = ExperimentExecutionStatuses[i];
                 var latestExperiment = i == ExperimentExecutionStatuses.Count - 1;
+                var hasStartup = ViewModel!.CampaignTemplate?.StartupTemplate.StepTemplates.Count != 0;
+                var hasCloseout = ViewModel!.CampaignTemplate?.CloseoutTemplate.StepTemplates.Count != 0;
+                var expDisplayString = hasStartup ? $"Experiment {i}" : $"Experiment {i + 1}";
                 <ul class="tree">
                   <li>
-                    <h6>Experiment: @experimentStatus.ExperimentId</h6>
+                    @if(i == 0 && hasStartup)
+                    {
+                      <h6>Startup Script</h6>
+                    }
+
+                    else if(hasStartup && hasCloseout && i == ViewModel!.ExperimentsToRun + 1)
+                    {
+                      <h6>Closeout Script</h6>
+                    }
+
+                    else if(!hasStartup && hasCloseout && i == ViewModel!.ExperimentsToRun)
+                    {
+                      <h6>Closeout Script</h6>
+                    }
+
+                    else
+                    {
+                      <h6>@expDisplayString</h6>
+                    }
+
                     <ul>
                       @foreach(var stepStatus in experimentStatus.StepExecutionStatuses)
                       {
@@ -158,38 +150,6 @@
                 </ul>
               }
             }
-
-            @if(ShouldDisplayCloseout())
-            {
-              var closeoutStatus = CampaignCloseoutStatuses.LastOrDefault();
-              @if(closeoutStatus is not null)
-              {
-                <ul class="tree">
-                  <li>
-                    <h6> Campaign Closeout </h6>
-                    <ul>
-                      @foreach(var closeoutStepStatus in closeoutStatus.CloseoutExecutionStatuses)
-                      {
-                        <li>
-                          <details open="@ShouldDisplayCloseoutSteps()">
-                            <summary>@closeoutStepStatus.StepName</summary>
-                            <ul>
-                              @foreach(var commandStatus in closeoutStepStatus.CommandExecutionStatuses)
-                              {
-                                <li>
-                                  <div>@commandStatus.DeviceName: @commandStatus.CommandName -- @commandStatus.State</div>
-                                </li>
-                              }
-                            </ul>
-                          </details>
-                        </li>
-                      }
-                    </ul>
-                  </li>
-                </ul>
-              }
-            }
-
           </div>
         }
 
@@ -317,12 +277,8 @@
   List<CampaignTemplateSummary> campaigns = new();
   Task? _experimentStatusWatcher;
   Task? _campaignStateWatcher;
-  Task? _startupStatusWatcher;
-  Task? _closeoutStatusWatcher;
   CancellationTokenSource? _experimentStatusWatcherCancellationTokenSource;
   CancellationTokenSource? _campaignStateWatcherCancellationTokenSource;
-  CancellationTokenSource? _startupStatusWatcherCancellationTokenSource;
-  CancellationTokenSource? _closeoutStatusWatcherCancellationTokenSource;
   ObservableCollection<ExperimentExecutionStatus> ExperimentExecutionStatuses { get; } = new ObservableCollection<ExperimentExecutionStatus>();
   ObservableCollection<CampaignStartupStatus> CampaignStartupStatuses { get; } = new ObservableCollection<CampaignStartupStatus>();
   ObservableCollection<CampaignCloseoutStatus> CampaignCloseoutStatuses { get; } = new ObservableCollection<CampaignCloseoutStatus>();
@@ -352,14 +308,7 @@
     _experimentStatusWatcher = SetupExperimentWatch(_experimentStatusWatcherCancellationTokenSource.Token);
 
     _campaignStateWatcherCancellationTokenSource = new CancellationTokenSource();
-    //ViewModel!.SetupCampaignStateWatch(_campaignStateWatcherCancellationTokenSource.Token);
     _campaignStateWatcher = SetupCampaignStateWatch(_campaignStateWatcherCancellationTokenSource.Token);
-
-    _startupStatusWatcherCancellationTokenSource = new CancellationTokenSource();
-    _startupStatusWatcher = SetupStartupWatch(_startupStatusWatcherCancellationTokenSource.Token);
-
-    _closeoutStatusWatcherCancellationTokenSource = new CancellationTokenSource();
-    _closeoutStatusWatcher = SetupCloseoutWatch(_closeoutStatusWatcherCancellationTokenSource.Token);
   }
 
   protected override void Dispose(bool disposing)
@@ -367,11 +316,6 @@
     _experimentStatusWatcherCancellationTokenSource?.Cancel();
     _campaignStateWatcherCancellationTokenSource?.Cancel();
     base.Dispose(disposing);
-  }
-
-  private bool ShouldDisplayStartupSteps()
-  {
-    return !ExperimentExecutionStatuses.Any();
   }
 
   private bool ShouldDisplayExperimentSteps(int currentStatusIndex)
@@ -382,29 +326,6 @@
       return isCurrentExperiment;
 
     return CampaignCloseoutStatuses.Count != CampaignStartupStatuses.Count && currentStatusIndex == ExperimentExecutionStatuses.Count - 1;
-  }
-
-  private bool ShouldDisplayCloseoutSteps()
-  {
-    return CampaignCloseoutStatuses.Any(); 
-  }
-
-  private bool ShouldDisplayCloseout()
-  {
-    var lastExperiment = ExperimentExecutionStatuses.LastOrDefault();
-
-    if (lastExperiment is null)
-      return false;
-
-    var lastStep = lastExperiment.StepExecutionStatuses.LastOrDefault();
-
-    if(lastStep is not null)
-    {
-      var lastCommandExecutionState = lastStep.CommandExecutionStatuses.Last().State;
-      return lastCommandExecutionState == ExecutionState.Succeeded || lastCommandExecutionState == ExecutionState.Failed && CampaignCloseoutStatuses.Any();
-    }
-
-    return false;
   }
 
   private string GenerateStopConditionDisplayName()
@@ -470,68 +391,6 @@
         var existingCommands = existingStatus.GetCommandExecutionStatuses();
 
         foreach (var existingCommand in existingCommands)
-        {
-          var newCommand = incomingCommands.FirstOrDefault(c => c.CommandId == existingCommand.CommandId);
-          existingCommand.State = newCommand?.State ?? ExecutionState.Undefined;
-        }
-
-        await InvokeAsync(() => StateHasChanged());
-      }
-    }, token);
-  }
-
-  protected Task SetupStartupWatch(CancellationToken token)
-  {
-    return Task.Run(async () =>
-    {
-      Thread.CurrentThread.Name = "Startup State Watch Thread";
-      var stream = AutomationClient.GetStartupExecutionStatusStream(new Empty());
-      while (await stream.ResponseStream.MoveNext(token) && !token.IsCancellationRequested)
-      {
-        var status = stream.ResponseStream.Current;
-        var existingStatus = CampaignStartupStatuses.FirstOrDefault(s => s.CampaignId == status.CampaignId);
-        if (existingStatus is null)
-        {
-          CampaignStartupStatuses.Add(status);
-          existingStatus = status;
-          continue;
-        }
-
-        var incomingCommands = status.GetStartupExecutionStatuses();
-        var existingCommands = existingStatus.GetStartupExecutionStatuses();
-
-        foreach (var existingCommand in existingCommands)
-        {
-          var newCommand = incomingCommands.FirstOrDefault(c => c.CommandId == existingCommand.CommandId);
-          existingCommand.State = newCommand?.State ?? ExecutionState.Undefined;
-        }
-
-        await InvokeAsync(() => StateHasChanged());
-      }
-    }, token);
-  }
-
-  protected Task SetupCloseoutWatch(CancellationToken token)
-  {
-    return Task.Run(async () =>
-    {
-      Thread.CurrentThread.Name = "Closeout State Watch Thread";
-      var stream = AutomationClient.GetCloseoutExecutionStatusStream(new Empty());
-      while(await stream.ResponseStream.MoveNext(token) && !token.IsCancellationRequested)
-      {
-        var status = stream.ResponseStream.Current;
-        var existingStatus = CampaignCloseoutStatuses.FirstOrDefault(s => s.CampaignId == status.CampaignId);
-        if(existingStatus is null)
-        {
-          CampaignCloseoutStatuses.Add(status);
-          existingStatus = status;
-          continue;
-        }
-
-        var incomingCommands = status.GetStartupExecutionStatuses();
-        var existingCommands = existingStatus.GetStartupExecutionStatuses();
-
-        foreach(var existingCommand in existingCommands)
         {
           var newCommand = incomingCommands.FirstOrDefault(c => c.CommandId == existingCommand.CommandId);
           existingCommand.State = newCommand?.State ?? ExecutionState.Undefined;
