@@ -136,7 +136,7 @@ public class StepperControllerInterpreter : DeviceCommandInterpreter<IStepperCon
         }
         catch(TimeoutException)
         {
-          var state = await Device.StateStream.FirstAsync();
+          var state = await Device.InternalStateStream.FirstAsync();
           result.Success = false;
           result.Error = $"Stepper Motor {Device.Name} did not achieve target position of {targetPosition} within {timeout}. Current position: {state.CurrentPosition}";
         }
@@ -148,7 +148,7 @@ public class StepperControllerInterpreter : DeviceCommandInterpreter<IStepperCon
         }
         catch(TimeoutException)
         {
-          var state = await Device.StateStream.FirstAsync();
+          var state = await Device.InternalStateStream.FirstAsync();
           result.Success = false;
           result.Error = $"Stepper Motor {Device.Name} did not achieve target position of {state.TargetPosition} within {timeout}. Current position: {state.CurrentPosition}";
         }
@@ -160,7 +160,7 @@ public class StepperControllerInterpreter : DeviceCommandInterpreter<IStepperCon
         }
         catch(TimeoutException)
         {
-          var state = await Device.StateStream.FirstAsync();
+          var state = await Device.InternalStateStream.FirstAsync();
           result.Success = false;
           result.Error = $"Stepper Motor {Device.Name} did not achieve target position of {state.TargetPosition} within {timeout}. Current position: {state.CurrentPosition}";
         }
@@ -172,7 +172,7 @@ public class StepperControllerInterpreter : DeviceCommandInterpreter<IStepperCon
         }
         catch(TimeoutException)
         {
-          var state = await Device.StateStream.FirstAsync();
+          var state = await Device.InternalStateStream.FirstAsync();
           result.Success = false;
           result.Error = $"Stepper Motor {Device.Name} did not achieve target position of {state.TargetPosition} within {timeout}. Current position: {state.CurrentPosition}";
         }

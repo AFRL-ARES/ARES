@@ -14,15 +14,15 @@ using TicStepperController.Proto.Extensions;
 namespace TicStepperController;
 public class StepperController : SerialDevice<IStepperControllerConnection>, IStepperController
 {
-  private ISubject<Messaging.TicState> _stateSubject = new BehaviorSubject<Messaging.TicState>(new Messaging.TicState());
-
+  private ISubject<Messaging.TicState> _internalStateSubject = new BehaviorSubject<Messaging.TicState>(new Messaging.TicState());
+  private readonly BehaviorSubject<AresStruct> _stateSubject = new(new AresStruct());
   private Task _stateUpdater = Task.CompletedTask;
   private CancellationTokenSource _stateUpdaterCancellation = new CancellationTokenSource();
   private readonly ILogger _logger;
 
   public StepperController(string name, IStepperControllerConnection connection, ILogger<IStepperController>? logger = null) : base(name, connection)
   {
-    StateStream = _stateSubject.AsObservable();
+    InternalStateStream = _internalStateSubject.AsObservable();
     if(logger is not null)
       _logger = logger;
     else
@@ -276,7 +276,9 @@ public class StepperController : SerialDevice<IStepperControllerConnection>, ISt
     return StopStateUpdater();
   }
 
-  public IObservable<Messaging.TicState> StateStream { get; }
+  public IObservable<Messaging.TicState> InternalStateStream { get; }
+
+  public override IObservable<AresStruct> StateStream => _stateSubject.AsObservable();
 
   public uint UserStepSize { get; set; } = 1;
 
@@ -303,12 +305,12 @@ public class StepperController : SerialDevice<IStepperControllerConnection>, ISt
   private async Task UpdateState()
   {
     var state = await GetStateFromDevice();
-    _stateSubject.OnNext(state);
+    _internalStateSubject.OnNext(state);
   }
 
   public override async Task<AresStruct> GetState()
   {
-    var latestState = await _stateSubject.Take(1);
+    var latestState = await _internalStateSubject.Take(1);
 
     return AresStateBuilder.Create()
       .Add("Current Position", latestState.CurrentPosition)
@@ -358,7 +360,7 @@ public class StepperController : SerialDevice<IStepperControllerConnection>, ISt
 
   public async Task NextStep(TimeSpan? timeout)
   {
-    var state = await StateStream.Take(1);
+    var state = await InternalStateStream.Take(1);
     if(state is null)
       return;
 
@@ -385,7 +387,7 @@ public class StepperController : SerialDevice<IStepperControllerConnection>, ISt
 
   public async Task HalfStep(TimeSpan? timeout)
   {
-    var state = await StateStream.Take(1);
+    var state = await InternalStateStream.Take(1);
     if(state is null)
       return;
 
@@ -423,7 +425,7 @@ public class StepperController : SerialDevice<IStepperControllerConnection>, ISt
 
   public async Task PreviousStep(TimeSpan? timeout)
   {
-    var state = await StateStream.Take(1);
+    var state = await InternalStateStream.Take(1);
     if(state is null)
       return;
 
@@ -452,7 +454,7 @@ public class StepperController : SerialDevice<IStepperControllerConnection>, ISt
   public async Task WaitForTargetPosition(TimeSpan timeout)
   {
     var startTime = DateTime.UtcNow;
-    var state = await StateStream.Take(1);
+    var state = await InternalStateStream.Take(1);
     var targetPosition = state.TargetPosition;
     while(DateTime.UtcNow - startTime < timeout)
     {
@@ -468,7 +470,7 @@ public class StepperController : SerialDevice<IStepperControllerConnection>, ISt
   {
     _stateUpdaterCancellation.Cancel();
     await _stateUpdater;
-    _stateSubject.OnCompleted();
+    _internalStateSubject.OnCompleted();
   }
 
   public double? InitialSpoolRadius { get; set; }

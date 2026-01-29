@@ -52,7 +52,7 @@ public class StepperControllerService : StepperControllerRpc.StepperControllerRp
   /// <returns></returns>
   private static async Task<StepperControllerConfig> FillConfig(IStepperController controller, StepperControllerConfig config)
   {
-    var state = await controller.StateStream.Where(s => s.Valid).Take(1);
+    var state = await controller.InternalStateStream.Where(s => s.Valid).Take(1);
     var newConfig = config.Clone();
     newConfig.MaxAcceleration = state.MaxAcceleration;
     newConfig.MaxDeceleration = state.MaxDeceleration;
@@ -98,7 +98,7 @@ public class StepperControllerService : StepperControllerRpc.StepperControllerRp
   public override async Task<TicState> GetState(TicRequest request, ServerCallContext context)
   {
     var controller = GetStepperController(request.TicId);
-    var currentState = await controller.StateStream.Where(state => state.Valid).Take(1);
+    var currentState = await controller.InternalStateStream.Where(state => state.Valid).Take(1);
 
     return currentState;
   }

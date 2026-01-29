@@ -1,6 +1,8 @@
 ﻿using Ares.Datamodel;
 using Ares.Device;
 using Ares.Device.Serial;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using VerdiV6Laser.Commands;
 using VerdiV6Laser.Commands.Requests;
 
@@ -8,8 +10,11 @@ namespace VerdiV6Laser
 {
   public class VerdiV6Laser : SerialDevice<ILaserConnection>, IVerdiV6Laser
   {
+    private readonly BehaviorSubject<AresStruct> _stateSubject = new(new AresStruct());
+
     public VerdiV6Laser(string name, ILaserConnection connection) : base(name, connection)
     {
+      UpdateState();
     }
 
     public async Task<double> GetLaserPower()
@@ -58,16 +63,9 @@ namespace VerdiV6Laser
       return Shutter;
     }
 
-    public override Task<AresStruct> GetState()
-    {
-      return Task.FromResult(
-        AresStateBuilder.Create()
-        .Add("Current Laser Power", CurrentPower)
-        .Add("Desired Laser Power", DesiredPower)
-        .Add("Shutter", Shutter)
-        .Build()
-        );
-    }
+    public override Task<AresStruct> GetState() 
+      => Task.FromResult(_stateSubject.Value);
+    
 
     public async Task ActivateLaser()
     {
@@ -96,6 +94,17 @@ namespace VerdiV6Laser
       await GetLaserShutter();
     }
 
+    public void UpdateState()
+    {
+      var newState = AresStateBuilder.Create()
+        .Add("Current Laser Power", CurrentPower)
+        .Add("Desired Laser Power", DesiredPower)
+        .Add("Shutter", Shutter)
+        .Build();
+
+      _stateSubject.OnNext(newState);
+    }
+
     public ValueTask DisposeAsync()
     {
       return new ValueTask();
@@ -117,6 +126,8 @@ namespace VerdiV6Laser
       //TODO: IMPLEMENT ME!!!
       throw new NotImplementedException();
     }
+
+    public override IObservable<AresStruct> StateStream => _stateSubject.AsObservable();
 
     public double CurrentPower { get; set; } = 0.01;
     public double DesiredPower { get; set; }

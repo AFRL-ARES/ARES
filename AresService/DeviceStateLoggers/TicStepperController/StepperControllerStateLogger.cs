@@ -47,7 +47,7 @@ internal class StepperControllerStateLogger : IStepperControllerStateLogger
       return Task.CompletedTask;
     }
 
-    var stream = _device.StateStream.Where(state => state.Valid);
+    var stream = _device.InternalStateStream.Where(state => state.Valid);
 
     if(Settings.LoggingType == DeviceLoggingSettings.Types.LoggingType.Interval)
     {

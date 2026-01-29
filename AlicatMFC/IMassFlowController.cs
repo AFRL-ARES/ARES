@@ -11,7 +11,6 @@ public interface IMassFlowController : ISerialDevice<IMfcConnection>, IAsyncDisp
   char AssumedId { get; }
   bool HasValve { get; }
   MfcType MfcType { get; }
-  IObservable<MfcState?> InternalStateStream { get; }
 
   Task Start();
   Task<bool> QueryManufacturerInfo();

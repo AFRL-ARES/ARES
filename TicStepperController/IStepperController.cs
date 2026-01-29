@@ -52,7 +52,7 @@ public interface IStepperController : ISerialDevice<IStepperControllerConnection
   Task PreviousStep(TimeSpan? timeout = null);
   Task HalfStep(TimeSpan? timeout = null);
 
-  IObservable<Messaging.TicState> StateStream { get; }
+  IObservable<Messaging.TicState> InternalStateStream { get; }
   uint UserStepSize { get; set; }
   Task Start();
   Task Stop();

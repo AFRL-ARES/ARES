@@ -1,6 +1,8 @@
 ﻿using Ares.Datamodel;
 using Ares.Device;
 using Ares.Device.Serial;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using ValveController.Commands;
 using ValveController.Commands.RelayOne;
 using ValveController.Commands.RelayTwo;
@@ -9,6 +11,8 @@ using ValveController.Commands.Responses;
 namespace ValveController;
 public class ValveController : SerialDevice<IValveControllerConnection>, IValveController
 {
+  private readonly BehaviorSubject<AresStruct> _stateSubject = new(new AresStruct());
+
   public ValveController(string name, IValveControllerConnection connection) : base(name, connection)
   {
 
@@ -95,15 +99,21 @@ public class ValveController : SerialDevice<IValveControllerConnection>, IValveC
   }
 
   public override Task<AresStruct> GetState()
+    => Task.FromResult(_stateSubject.Value);
+
+  public void UpdateState()
   {
-    return Task.FromResult(
-      AresStateBuilder.Create()
+    var newState = AresStateBuilder.Create()
       .Add("Relay One Engaged", RelayOneEngaged)
       .Add("Relay Two Engaged", RelayTwoEngaged)
-      .Build());
+      .Build();
+
+    _stateSubject.OnNext(newState);
   }
 
   public bool RelayOneEngaged { get; set; } = false;
 
   public bool RelayTwoEngaged { get; set; } = false;
+
+  public override IObservable<AresStruct> StateStream => _stateSubject.AsObservable();
 }
