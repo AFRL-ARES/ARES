@@ -67,7 +67,7 @@ public sealed record AresSystemValue
     => new(AresSystemValueKind.Struct, null, description, fields.AsReadOnly(), null, structKind);
 
   public static AresSystemValue Function(AresSystemFunction function)
-    => From(AresValueHelper.CreateFunction(function.Id), function.Name).WithFunction(function);
+    => From(AresValueHelper.CreateFunction(function.Id), function.Description).WithFunction(function);
 
   public AresSystemValue WithDescription(string? description) => this with { Description = description };
   public AresSystemValue WithStructKind(AresSystemStructKind structKind)
