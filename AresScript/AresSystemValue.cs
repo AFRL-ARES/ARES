@@ -9,8 +9,8 @@ public sealed record AresSystemValue
 {
   public AresSystemValueKind Kind { get; }
   internal AresValue? RawValue { get; }
-  public IReadOnlyDictionary<string, AresSystemValue>? StructFields { get; }
-  internal IReadOnlyList<AresSystemValue>? ListValues { get; }
+  public IDictionary<string, AresSystemValue>? StructFields { get; }
+  internal IList<AresSystemValue>? ListValues { get; }
   public AresSystemStructKind StructKind { get; set; }
   internal AresSystemFunction? SystemFunction { get; set; }
 
@@ -20,8 +20,8 @@ public sealed record AresSystemValue
     AresSystemValueKind kind,
     AresValue? rawValue,
     string? description,
-    IReadOnlyDictionary<string, AresSystemValue>? structFields,
-    IReadOnlyList<AresSystemValue>? listValues,
+    IDictionary<string, AresSystemValue>? structFields,
+    IList<AresSystemValue>? listValues,
     AresSystemStructKind structKind)
   {
     Kind = kind;
@@ -55,16 +55,23 @@ public sealed record AresSystemValue
     => From(AresValueHelper.CreateList(values), description);
   public static AresSystemValue List(IEnumerable<AresSystemValue> values, string? description = null)
     => new(AresSystemValueKind.List, null, description, null, values.ToList(), AresSystemStructKind.Generic);
+
   public static AresSystemValue Struct(
     AresStruct value,
     string? description = null,
     AresSystemStructKind structKind = AresSystemStructKind.Generic)
     => From(AresValueHelper.CreateStruct(value), description) with { StructKind = structKind };
+
   public static AresSystemValue Struct(
     IDictionary<string, AresSystemValue> fields,
     string? description = null,
     AresSystemStructKind structKind = AresSystemStructKind.Generic)
-    => new(AresSystemValueKind.Struct, null, description, fields.AsReadOnly(), null, structKind);
+    => new(AresSystemValueKind.Struct, null, description, fields, null, structKind);
+
+  public static AresSystemValue Struct(
+    string? description = null,
+    AresSystemStructKind structKind = AresSystemStructKind.Generic)
+    => new(AresSystemValueKind.Struct, null, description, new Dictionary<string, AresSystemValue>(), null, structKind);
 
   public static AresSystemValue Function(AresSystemFunction function)
     => From(AresValueHelper.CreateFunction(function.Id), function.Description).WithFunction(function);

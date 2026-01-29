@@ -1,6 +1,4 @@
 using AresScript;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Ares.Core.Scripting;
 
@@ -20,29 +18,28 @@ public class BaseEnvironmentBuilder(IEnumerable<ISystemFunctionProvider> systemF
     // let's stick with global scope for now
     env.AssignSystemFunctions(StandardLibrary.Functions);
     env.AssignSystemFunctions(functions);
-    env.AssignSystemVariables(BuildNamespaceVariables(env));
+    env.AssignSystemVariables(BuildSystemValues(env));
 
     return env;
   }
 
-  private static IEnumerable<KeyValuePair<string, AresSystemValue>> BuildNamespaceVariables(AresScriptEnvironment environment)
+  private static IEnumerable<KeyValuePair<string, AresSystemValue>> BuildSystemValues(AresScriptEnvironment environment)
   {
     var rootVariables = new Dictionary<string, AresSystemValue>(StringComparer.Ordinal);
     var functions = environment.GetAllSystemFunctions();
 
     foreach(var func in functions)
     {
+      var fieldName = string.IsNullOrWhiteSpace(func.Name) ? func.Id : func.Name;
       if(string.IsNullOrWhiteSpace(func.Namespace))
       {
-        var globalName = string.IsNullOrWhiteSpace(func.Name) ? func.Id : func.Name;
-        if(!string.IsNullOrWhiteSpace(globalName) && !rootVariables.ContainsKey(globalName))
+        if(!string.IsNullOrWhiteSpace(fieldName) && !rootVariables.ContainsKey(fieldName))
         {
-          rootVariables[globalName] = AresSystemValue.Function(func);
+          rootVariables[fieldName] = AresSystemValue.Function(func);
         }
         continue;
       }
 
-      var fieldName = string.IsNullOrWhiteSpace(func.Name) ? func.Id : func.Name;
       if(string.IsNullOrWhiteSpace(fieldName))
       {
         continue;
@@ -63,45 +60,34 @@ public class BaseEnvironmentBuilder(IEnumerable<ISystemFunctionProvider> systemF
 
   private static void AddFunctionToPath(
     IDictionary<string, AresSystemValue> root,
-    IReadOnlyList<string> pathSegments,
+    string[] pathSegments,
     string fieldName,
     AresSystemFunction func)
   {
-    var current = root;
-    for(var i = 0; i < pathSegments.Count; i++)
+    if(pathSegments.Length == 0)
     {
-      var segment = pathSegments[i];
-      if(string.IsNullOrWhiteSpace(segment))
-      {
-        continue;
-      }
-
-      if(!current.TryGetValue(segment, out var value)
-        || value.Kind != AresSystemValue.AresSystemValueKind.Struct
-        || value.StructFields is null)
-      {
-        var fields = new Dictionary<string, AresSystemValue>(StringComparer.Ordinal);
-        var structValue = AresSystemValue.Struct(fields);
-        current[segment] = structValue;
-        current = fields;
-        continue;
-      }
-
-      if(value.StructFields is Dictionary<string, AresSystemValue> dict)
-      {
-        current = dict;
-      }
-      else
-      {
-        var fields = new Dictionary<string, AresSystemValue>(value.StructFields, StringComparer.Ordinal);
-        current[segment] = AresSystemValue.Struct(fields, value.Description, value.StructKind);
-        current = fields;
-      }
+      var funcValue = AresSystemValue.Function(func);
+      root[fieldName] = funcValue;
+      return;
     }
 
-    if(!current.ContainsKey(fieldName))
+    var segment = pathSegments.Last();
+
+    var valueExists = root.TryGetValue(segment, out var value);
+
+    if(!valueExists || value is null)
     {
-      current[fieldName] = AresSystemValue.Function(func);
+      var newRoot = AresSystemValue.Struct();
+      root[segment] = newRoot;
+      AddFunctionToPath(newRoot.StructFields!, pathSegments[..^1], fieldName, func);
+      return;
     }
+
+    if(value.Kind != AresSystemValue.AresSystemValueKind.Struct || value.StructFields is null)
+    {
+      throw new InvalidOperationException($"Value {segment} already exists and is not a struct, but rather a {value.Kind}");
+    }
+
+    AddFunctionToPath(value.StructFields, pathSegments[..^1], fieldName, func);
   }
 }
