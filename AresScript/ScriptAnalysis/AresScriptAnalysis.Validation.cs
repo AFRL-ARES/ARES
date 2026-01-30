@@ -8,7 +8,7 @@ namespace AresScript.ScriptAnalysis;
 
 public static partial class AresScriptAnalysis
 {
-  public static async Task<IReadOnlyList<Diagnostic>> ValidateScriptAsync(
+  public static async Task<Diagnostic[]> ValidateScriptAsync(
     string? script,
     AresScriptEnvironment environment,
     AresValidationInterpreter.ValidationMode mode = AresValidationInterpreter.ValidationMode.Strict)
@@ -50,7 +50,7 @@ public static partial class AresScriptAnalysis
       }
     }
 
-    return diagnostics;
+    return diagnostics.ToArray();
   }
 
   [GeneratedRegex(@"(\d+):(\d+)\s*$")]

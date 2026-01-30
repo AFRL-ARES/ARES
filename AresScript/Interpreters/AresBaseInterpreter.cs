@@ -449,7 +449,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
   public override Task<AresValue> VisitString([NotNull] AresLangParser.StringContext context)
   {
     var raw = context.STRING().GetText();
-    return Task.FromResult(AresValueHelper.CreateString(Unquote(raw)));
+    return Task.FromResult(AresValueHelper.CreateString(InterpreterHelpers.Unquote(raw)));
   }
 
   public override Task<AresValue> VisitBool([NotNull] AresLangParser.BoolContext context)
@@ -518,7 +518,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     var aresStruct = new AresStruct();
     foreach(var pair in context.structure().pair())
     {
-      var key = pair.ID()?.GetText() ?? Unquote(pair.STRING().GetText());
+      var key = pair.ID()?.GetText() ?? InterpreterHelpers.Unquote(pair.STRING().GetText());
       var value = await Visit(pair.expression());
       aresStruct.AddValue(key, value);
     }
@@ -866,12 +866,4 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
   }
 
   #endregion
-
-  public static string Unquote(string raw)
-  {
-    var unquoted = raw[1..^1];
-    var value = Regex.Unescape(unquoted);
-
-    return value;
-  }
 }

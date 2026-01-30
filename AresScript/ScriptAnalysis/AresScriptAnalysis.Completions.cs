@@ -10,7 +10,7 @@ namespace AresScript.ScriptAnalysis;
 
 public static partial class AresScriptAnalysis
 {
-  public static async Task<AresScriptEnvironment> BuildEnvironmentForCompletions(AresScriptEnvironment environment, string script)
+  private static async Task<AresScriptEnvironment> BuildEnvironmentForCompletions(AresScriptEnvironment environment, string script)
   {
     if(string.IsNullOrWhiteSpace(script))
     {

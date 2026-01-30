@@ -2,6 +2,7 @@ using Antlr4.Runtime.Misc;
 using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
 using AresScript.Generated;
+using Google.Protobuf.WellKnownTypes;
 
 namespace AresScript.Interpreters;
 
@@ -14,7 +15,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
   private readonly AresScriptEnvironment _environment = new();
   private int _functionDepth;
   private readonly ValidationMode _mode;
-  private readonly Stack<IReadOnlyList<string>> _pendingFunctionParameters = new();
+  private readonly Stack<string[]> _pendingFunctionParameters = new();
   private readonly AresTypeInferenceInterpreter _typeInference;
 
   public AresValidationInterpreter(AresScriptEnvironment aresScriptEnvironment, ValidationMode mode = ValidationMode.Strict)
@@ -108,18 +109,27 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       var id = idContext.ID().GetText();
       var functionId = TryResolveFunctionId(expr);
-      if(functionId is not null && _environment.TryGetSystemFunction(functionId, out var _)
-          || functionId is not null && _environment.TryGetUserFunction(functionId, out var _))
+      if(functionId is not null)
       {
-        _environment[id] = AresValueHelper.CreateFunction(functionId);
+        if(_environment.TryGetSystemFunction(functionId, out var _) || _environment.TryGetUserFunction(functionId, out var _))
+        {
+          _environment[id] = AresValueHelper.CreateFunction(functionId);
+        }
+        else if(_environment.TryGetValue(functionId, out var value) && value.FunctionValue is not null)
+        {
+          _environment[id] = AresValueHelper.CreateFunction(value.FunctionValue.FunctionId);
+        }
       }
-      else if(functionId is not null && _environment.TryGetValue(functionId, out var value) && value.FunctionValue is not null)
+
+      if(expr is AresLangParser.AtomExprContext atomCtx && atomCtx.atom() is AresLangParser.StructContext structContext)
       {
-        _environment[id] = AresValueHelper.CreateFunction(value.FunctionValue.FunctionId);
-      }
-      else
-      {
-        _environment[id] = AresValueHelper.CreateNull();
+        var aresStruct = AresValueHelper.CreateStruct();
+        foreach(var structMember in structContext.structure().pair())
+        {
+          var key = structMember.ID()?.GetText() ?? InterpreterHelpers.Unquote(structMember.STRING().GetText());
+          aresStruct.StructValue.Fields[key] = AresValueHelper.CreateNull();
+        }
+        _environment[id] = aresStruct;
       }
     }
   }
@@ -325,17 +335,30 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     return Task.FromResult("");
   }
 
-  public enum ValidationMode
+  public override Task VisitMemberAccess([NotNull] AresLangParser.MemberAccessContext context)
   {
-    Strict,
-    Lenient
+    var ctxExpr = context.expression();
+    if(!TryResolveValue(ctxExpr, out var value))
+    {
+      throw new InvalidOperationException($"Unknown identifier '{ctxExpr.GetText()}'. {ctxExpr.Start.Line}:{ctxExpr.Start.Column}");
+    }
+
+    if(value?.KindCase == AresValue.KindOneofCase.StructValue)
+    {
+      if(value.StructValue.Fields.ContainsKey(context.ID().GetText()))
+      {
+        return Task.CompletedTask;
+      }
+    }
+
+    throw new InvalidOperationException($"Unknown identifier {context.ID().GetText()} on {ctxExpr.GetText()}. {context.Start.Line}:{context.Stop.Column + 1}");
   }
 
   public override async Task VisitFunctionCall(AresLangParser.FunctionCallContext ctx)
   {
     await Visit(ctx.expression());
 
-      var positionalArgs = new List<AresLangParser.ExpressionContext>();
+    var positionalArgs = new List<AresLangParser.ExpressionContext>();
     var keywordArgs = new Dictionary<string, AresLangParser.ExpressionContext>(StringComparer.Ordinal);
     var seenKeywordArg = false;
 
@@ -382,7 +405,13 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     var functionId = TryResolveFunctionId(ctx.expression());
     if(functionId is null)
     {
-      return;
+      var ctxExpr = ctx.expression();
+      if(ctxExpr is AresLangParser.MemberAccessContext memberCtx)
+      {
+        var idExpr = memberCtx.ID();
+        throw new InvalidOperationException($"Unknown function '{idExpr.GetText()}' on '{memberCtx.expression().GetText()}'. {memberCtx.Start.Line}:{memberCtx.Stop.Column + 1}");
+      }
+      throw new InvalidOperationException($"Unknown function '{ctxExpr.GetText()}'. {ctxExpr.Start.Line}:{ctxExpr.Start.Column}");
     }
 
     if(_environment.TryGetValue(functionId, out var aliasValue) && aliasValue.FunctionValue is not null)
@@ -513,31 +542,30 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
 
   private string? TryResolveFunctionId(AresLangParser.ExpressionContext expression)
   {
-    if(TryResolveValue(expression, out var value) && value.FunctionValue is not null)
+    if(TryResolveValue(expression, out var value) && value?.FunctionValue is not null)
     {
       return value.FunctionValue.FunctionId;
     }
 
-    var current = expression;
-    while(true)
+    if(expression is AresLangParser.AtomExprContext atomExpr)
     {
-      if(current is AresLangParser.AtomExprContext atomExpr)
+      switch(atomExpr.atom())
       {
-        switch(atomExpr.atom())
-        {
-          case AresLangParser.IdContext id:
-            return id.ID().GetText();
-          case AresLangParser.ParensContext parens:
-            current = parens.expression();
-            continue;
-        }
+        case AresLangParser.IdContext id:
+          return id.ID().GetText();
+        case AresLangParser.ParensContext parens:
+          return TryResolveFunctionId(parens.expression());
       }
-
-      return null;
     }
+    else if(expression is AresLangParser.MemberAccessContext memberCtx)
+    {
+      return memberCtx.ID()?.GetText();
+    }
+
+    return null;
   }
 
-  private bool TryResolveValue(AresLangParser.ExpressionContext expression, out AresValue value)
+  private bool TryResolveValue(AresLangParser.ExpressionContext expression, out AresValue? value)
   {
     value = AresValueHelper.CreateNull();
 
@@ -552,7 +580,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     if(expression is AresLangParser.MemberAccessContext memberAccess)
     {
       if(TryResolveValue(memberAccess.expression(), out var baseValue)
-        && baseValue.StructValue is not null
+        && baseValue?.StructValue is not null
         && baseValue.StructValue.Fields.TryGetValue(memberAccess.ID().GetText(), out var member))
       {
         value = member;
@@ -562,4 +590,10 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
 
     return false;
   }
+  public enum ValidationMode
+  {
+    Strict,
+    Lenient
+  }
 }
+
