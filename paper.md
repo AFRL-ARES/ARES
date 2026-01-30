@@ -12,7 +12,7 @@ authors:
    orcid: 0000-0002-7066-1678
    affiliation: "1, 2"
  - name: Robert W. Waelder
-   oricd: 0000-0001-6958-2932
+   orcid: 0000-0001-6958-2932
    affiliation: "1, 3"
  - name: Morgen L. Smith
    orcid: 0009-0003-1849-7051
