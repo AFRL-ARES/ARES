@@ -108,29 +108,29 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     if(lvalue is AresLangParser.LValueIdContext idContext)
     {
       var id = idContext.ID().GetText();
-      var functionId = TryResolveFunctionId(expr);
-      if(functionId is not null)
+      var assignedValue = TryBuildAssignmentValue(expr);
+      if(assignedValue is not null)
       {
-        if(_environment.TryGetSystemFunction(functionId, out var _) || _environment.TryGetUserFunction(functionId, out var _))
+        _environment[id] = assignedValue;
+      }
+    }
+    else if(lvalue is AresLangParser.LValueMemberContext memberContext)
+    {
+      if(!TryResolveLValue(memberContext.lvalue(), out var baseValue) || baseValue?.StructValue is null)
+      {
+        if(_mode == ValidationMode.Strict)
         {
-          _environment[id] = AresValueHelper.CreateFunction(functionId);
+          throw new InvalidOperationException(
+            $"Unknown identifier '{memberContext.lvalue().GetText()}'. {context.Start.Line}:{context.Start.Column}"
+          );
         }
-        else if(_environment.TryGetValue(functionId, out var value) && value.FunctionValue is not null)
-        {
-          _environment[id] = AresValueHelper.CreateFunction(value.FunctionValue.FunctionId);
-        }
+
+        return;
       }
 
-      if(expr is AresLangParser.AtomExprContext atomCtx && atomCtx.atom() is AresLangParser.StructContext structContext)
-      {
-        var aresStruct = AresValueHelper.CreateStruct();
-        foreach(var structMember in structContext.structure().pair())
-        {
-          var key = structMember.ID()?.GetText() ?? InterpreterHelpers.Unquote(structMember.STRING().GetText());
-          aresStruct.StructValue.Fields[key] = AresValueHelper.CreateNull();
-        }
-        _environment[id] = aresStruct;
-      }
+      var memberId = memberContext.ID().GetText();
+      var assignedValue = TryBuildAssignmentValue(expr) ?? AresValueHelper.CreateNull();
+      baseValue.StructValue.Fields[memberId] = assignedValue;
     }
   }
 
@@ -565,6 +565,92 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     return null;
   }
 
+  private AresValue? TryBuildAssignmentValue(AresLangParser.ExpressionContext expression)
+  {
+    var functionId = TryResolveFunctionId(expression);
+    if(functionId is not null)
+    {
+      if(_environment.TryGetSystemFunction(functionId, out var _) || _environment.TryGetUserFunction(functionId, out var _))
+      {
+        return AresValueHelper.CreateFunction(functionId);
+      }
+
+      if(_environment.TryGetValue(functionId, out var value) && value.FunctionValue is not null)
+      {
+        return AresValueHelper.CreateFunction(value.FunctionValue.FunctionId);
+      }
+    }
+
+    if(expression is AresLangParser.AtomExprContext atomCtx)
+    {
+      var atomNode = atomCtx.atom();
+      switch(atomNode)
+      {
+        case AresLangParser.StructContext structContext:
+        {
+          var aresStruct = AresValueHelper.CreateStruct();
+          foreach(var structMember in structContext.structure().pair())
+          {
+            var key = structMember.ID()?.GetText() ?? InterpreterHelpers.Unquote(structMember.STRING().GetText());
+            aresStruct.StructValue.Fields[key] = AresValueHelper.CreateNull();
+          }
+
+          return aresStruct;
+        }
+        case AresLangParser.IntContext intContext:
+          if(int.TryParse(intContext.INT().GetText(), out var intValue))
+          {
+            return AresValueHelper.CreateNumber(intValue);
+          }
+          break;
+        case AresLangParser.FloatContext floatContext:
+          if(double.TryParse(floatContext.FLOAT().GetText(), out var doubleValue))
+          {
+            return AresValueHelper.CreateNumber(doubleValue);
+          }
+          break;
+        case AresLangParser.StringContext stringContext:
+          return AresValueHelper.CreateString(InterpreterHelpers.Unquote(stringContext.STRING().GetText()));
+        case AresLangParser.BoolContext boolContext:
+          return AresValueHelper.CreateBool(
+            boolContext.BOOL().GetText().Equals("true", StringComparison.OrdinalIgnoreCase)
+          );
+        case AresLangParser.NoneContext:
+          return AresValueHelper.CreateNull();
+        case AresLangParser.ArrayContext arrayContext:
+        {
+          var expressions = arrayContext.expression();
+          if(expressions.Length == 0)
+          {
+            return AresValueHelper.CreateList();
+          }
+
+          var values = expressions
+            .Select(exp => TryBuildAssignmentValue(exp) ?? AresValueHelper.CreateNull())
+            .ToList();
+
+          var initialKind = values[0].KindCase;
+          var sameKind = values.All(v => v.KindCase == initialKind);
+          if(sameKind && initialKind == AresValue.KindOneofCase.NumberValue)
+          {
+            return AresValueHelper.CreateNumberArray(values.Select(v => v.NumberValue).ToArray());
+          }
+
+          if(sameKind && initialKind == AresValue.KindOneofCase.StringValue)
+          {
+            return AresValueHelper.CreateStringArray(values.Select(v => v.StringValue).ToArray());
+          }
+
+          return AresValueHelper.CreateList(values);
+        }
+        case AresLangParser.ParensContext parensContext:
+          return TryBuildAssignmentValue(parensContext.expression());
+      }
+    }
+
+    return null;
+  }
+
   private bool TryResolveValue(AresLangParser.ExpressionContext expression, out AresValue? value)
   {
     value = AresValueHelper.CreateNull();
@@ -590,10 +676,37 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
 
     return false;
   }
+
+  private bool TryResolveLValue(AresLangParser.LvalueContext lvalue, out AresValue? value)
+  {
+    value = null;
+
+    switch(lvalue)
+    {
+      case AresLangParser.LValueIdContext idContext:
+        return _environment.TryGetUserValue(idContext.ID().GetText(), out value);
+      case AresLangParser.LValueMemberContext memberContext:
+        if(!TryResolveLValue(memberContext.lvalue(), out var baseValue) || baseValue?.StructValue is null)
+        {
+          return false;
+        }
+
+        var memberId = memberContext.ID().GetText();
+        if(!baseValue.StructValue.Fields.TryGetValue(memberId, out var memberValue))
+        {
+          memberValue = AresValueHelper.CreateNull();
+          baseValue.StructValue.Fields[memberId] = memberValue;
+        }
+
+        value = memberValue;
+        return true;
+      default:
+        return false;
+    }
+  }
   public enum ValidationMode
   {
     Strict,
     Lenient
   }
 }
-
