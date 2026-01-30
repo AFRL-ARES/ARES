@@ -25,7 +25,7 @@ authors:
    affiliation: 5
  - name: Daylond Hooper
    affiliation: 5
- - Benji Maruyajma
+ - name: Benji Maruyajma
    orcid: 0000-0002-3832-628X
    affiliation: 1
 
