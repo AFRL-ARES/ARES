@@ -9,38 +9,37 @@ tags:
  
 authors:
  - name: Arthur W. N. Sloan
-  orcid: 0000-0002-7066-1678
-  affiliation: "1, 2"
+   orcid: 0000-0002-7066-1678
+   affiliation: "1, 2"
  - name: Robert W. Waelder
- 	oricd: 0000-0001-6958-2932
-  affiliation: "1, 3"
+   oricd: 0000-0001-6958-2932
+   affiliation: "1, 3"
  - name: Morgen L. Smith
- 	orcid: 0009-0003-1849-7051
-  affiliation: "1, 3, 4"
+   orcid: 0009-0003-1849-7051
+   affiliation: "1, 3, 4"
  - name: Nicholas Kleiner
-	affiliation: 5
+   affiliation: 5
  - name: Arnas Babeckis
-	affiliation: 5
+   affiliation: 5
  - name: Jason Wheeler
- 	affiliation: 5
+   affiliation: 5
  - name: Daylond Hooper
- 	affiliation: 5
+   affiliation: 5
  - Benji Maruyajma
-  orcid: 0000-0002-3832-628X
-  affiliation: 1
-	
+   orcid: 0000-0002-3832-628X
+   affiliation: 1
 
 affiliations:
  - name: Air Force Research Laboratory, Materials & Manufacturing Directorate, United States of America
-  index: 1
+   index: 1
  - name: The National Research Council, United States of America
-  index: 2
+   index: 2
  - name: AV Inc., United States of America
-  index: 3
+   index: 3
  - name: Kansas State University, Tim Taylor Department of Chemical Engineering, United States of America
-  index: 4
+   index: 4
  - name: DCS Corp., United States of America
-  index: 5
+   index: 5
 date: 30 January 2026
 bibliography: paper.bib
 
