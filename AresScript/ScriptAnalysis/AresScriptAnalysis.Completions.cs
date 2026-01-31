@@ -10,11 +10,11 @@ namespace AresScript.ScriptAnalysis;
 
 public static partial class AresScriptAnalysis
 {
-  private static async Task<AresScriptEnvironment> BuildEnvironmentForCompletions(AresScriptEnvironment environment, string script)
+  private static async Task BuildEnvironmentForCompletions(AresScriptEnvironment environment, string script, int line)
   {
     if(string.IsNullOrWhiteSpace(script))
     {
-      return environment;
+      return;
     }
 
     try
@@ -24,15 +24,13 @@ public static partial class AresScriptAnalysis
       var tokenStream = new CommonTokenStream(lexer);
       var parser = new AresLangParser(tokenStream);
       var programCtx = parser.program();
-      var validator = new AresValidationInterpreter(environment, AresValidationInterpreter.ValidationMode.Lenient);
+      var validator = new AresValidationInterpreter(environment, AresValidationInterpreter.ValidationMode.Lenient, line);
       await validator.Visit(programCtx);
     }
     catch
     {
       // Ignore parse/validation errors for autocomplete; fall back to system scope.
     }
-
-    return environment;
   }
 
   public static async Task<IReadOnlyList<CompletionItem>> BuildCompletionsAsync(
@@ -41,7 +39,7 @@ public static partial class AresScriptAnalysis
     int cursorLine,
     int cursorColumn)
   {
-    await BuildEnvironmentForCompletions(environment, script);
+    await BuildEnvironmentForCompletions(environment, script, cursorLine);
     var systemVariables = environment.GetAllSystemVariables();
     var userFunctions = environment.GetAllUserFunctions();
     var userVariables = environment.GetAllUserVariableNames();

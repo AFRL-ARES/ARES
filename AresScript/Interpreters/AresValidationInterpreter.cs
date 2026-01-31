@@ -1,3 +1,4 @@
+using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
 using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
@@ -12,29 +13,59 @@ namespace AresScript.Interpreters;
 /// </summary>
 public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
 {
-  private readonly AresScriptEnvironment _environment = new();
+  private readonly AresScriptEnvironment _environment;
   private int _functionDepth;
+  private readonly int? _line = null;
   private readonly ValidationMode _mode;
   private readonly Stack<string[]> _pendingFunctionParameters = new();
   private readonly AresTypeInferenceInterpreter _typeInference;
+  
+  private sealed class StopTraversalException : Exception { }
 
-  public AresValidationInterpreter(AresScriptEnvironment aresScriptEnvironment, ValidationMode mode = ValidationMode.Strict)
+  /// <summary>
+  /// Multipurpose interpreter to catch any script errors before execution as well as to help build up the environment for autocomplete.
+  /// Could be different interpreters, but that's a lot of code duplication.
+  /// </summary>
+  /// <param name="aresScriptEnvironment">The base environment to build upon</param>
+  /// <param name="mode">When mode is strict, exceptions are thrown when there's a script error and is used for validation.
+  /// Lenient mode is used for building up the environment for autocomplete.</param>
+  /// <param name="line">Optional line number used for autocomplete support. If line is within a function block, we'll stop traversal
+  /// so that the environment can contain the parameter variable names from the function definition parameters.
+  /// Basically you should only use this parameter when working with completions.</param>
+  public AresValidationInterpreter(AresScriptEnvironment aresScriptEnvironment, ValidationMode mode = ValidationMode.Strict, int? line = null)
   {
     _environment = aresScriptEnvironment;
     _mode = mode;
     _typeInference = new AresTypeInferenceInterpreter(_environment);
+    _line = line;
   }
 
   protected override Task DefaultResult => Task.CompletedTask;
 
   public override async Task VisitProgram(AresLangParser.ProgramContext context)
   {
-    foreach(var child in context.children)
+    try
     {
-      if(child is AresLangParser.StatementContext stmt)
+      foreach(var child in context.children)
       {
-        await Visit(stmt);
+        if(child is AresLangParser.StatementContext stmt)
+        {
+          if(ShouldStopBefore(stmt.Start))
+          {
+            throw new StopTraversalException();
+          }
+
+          await Visit(stmt);
+
+          if(ShouldStopWithin(stmt.Start, stmt.Stop))
+          {
+            throw new StopTraversalException();
+          }
+        }
       }
+    }
+    catch(StopTraversalException)
+    {
     }
   }
 
@@ -42,7 +73,17 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
   {
     foreach(var stmt in context.statement())
     {
+      if(ShouldStopBefore(stmt.Start))
+      {
+        throw new StopTraversalException();
+      }
+
       await Visit(stmt);
+
+      if(ShouldStopWithin(stmt.Start, stmt.Stop))
+      {
+        throw new StopTraversalException();
+      }
     }
   }
 
@@ -50,12 +91,28 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
   {
     foreach(var stmt in context.statement())
     {
+      if(ShouldStopBefore(stmt.Start))
+      {
+        throw new StopTraversalException();
+      }
+
       await Visit(stmt);
+
+      if(ShouldStopWithin(stmt.Start, stmt.Stop))
+      {
+        throw new StopTraversalException();
+      }
     }
   }
 
   public override async Task VisitFuncBlock(AresLangParser.FuncBlockContext context)
   {
+    var hasBodySpan = TryGetBodySpan(context, out var bodyStartLine, out var bodyStopLine);
+    if(_line is not null && (!hasBodySpan || _line.Value < bodyStartLine || _line.Value > bodyStopLine))
+    {
+      return;
+    }
+
     _environment.EnterScope();
     _functionDepth++;
     try
@@ -70,21 +127,44 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
 
       foreach(var stmt in context.statement())
       {
+        if(ShouldStopBefore(stmt.Start))
+        {
+          throw new StopTraversalException();
+        }
+
         await Visit(stmt);
+
+        if(ShouldStopWithin(stmt.Start, stmt.Stop))
+        {
+          throw new StopTraversalException();
+        }
       }
     }
     finally
     {
-      _functionDepth--;
-      _environment.ExitScope();
+      if(_line is null || !hasBodySpan || _line.Value < bodyStartLine || _line.Value > bodyStopLine)
+      {
+        _functionDepth--;
+        _environment.ExitScope();
+      }
     }
   }
 
   public override async Task VisitParallelBlock([NotNull] AresLangParser.ParallelBlockContext context)
   {
+    if(ShouldStopBefore(context.Start))
+    {
+      throw new StopTraversalException();
+    }
+
     var expContexts = context.expression();
     var expTasks = expContexts.Select(Visit);
     await Task.WhenAll(expTasks);
+
+    if(ShouldStopWithin(context.Start, context.Stop))
+    {
+      throw new StopTraversalException();
+    }
   }
 
   public override async Task VisitAssignStmt(AresLangParser.AssignStmtContext context)
@@ -308,7 +388,13 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     var userFunc = new AresScriptFunction(functionId, paramIds, block);
     _environment.AssignFunction(functionId, userFunc);
 
+    if(_line is not null && _line.Value == context.Start.Line)
+    {
+      return;
+    }
+
     _pendingFunctionParameters.Push(paramIds);
+    
     try
     {
       await Visit(block);
@@ -753,6 +839,53 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       default:
         return false;
     }
+  }
+
+  private bool ShouldStopBefore(IToken? start)
+  {
+    if(_line is null || start is null)
+    {
+      return false;
+    }
+
+    return _line.Value < start.Line;
+  }
+
+  private bool ShouldStopWithin(IToken? start, IToken? stop)
+  {
+    if(_line is null)
+    {
+      return false;
+    }
+
+    return IsLineWithin(start, stop);
+  }
+
+  private bool IsLineWithin(IToken? start, IToken? stop)
+  {
+    if(_line is null || start is null || stop is null)
+    {
+      return false;
+    }
+
+    return _line.Value >= start.Line && _line.Value <= stop.Line;
+  }
+
+  private static bool TryGetBodySpan(AresLangParser.FuncBlockContext context, out int startLine, out int stopLine)
+  {
+    var statements = context.statement();
+    if(statements is null || statements.Length == 0)
+    {
+      startLine = 0;
+      stopLine = 0;
+      return false;
+    }
+
+    var first = statements[0];
+    var last = statements[^1];
+    startLine = first.Start.Line;
+    stopLine = last.Stop.Line;
+    return true;
   }
   public enum ValidationMode
   {
