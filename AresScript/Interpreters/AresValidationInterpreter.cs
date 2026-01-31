@@ -474,7 +474,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
   private void ValidateSystemFunctionArgs(AresSystemFunction function, IReadOnlyList<AresLangParser.ExpressionContext> positionalArgs, IReadOnlyDictionary<string, AresLangParser.ExpressionContext> keywordArgs, AresLangParser.FunctionCallContext ctx)
   {
     var schema = function.InputSchema;
-    if(schema is null || (schema.Fields.Count == 0 && keywordArgs.Count == 0))
+    if(schema.Fields.Count == 0 && keywordArgs.Count == 0)
     {
       return;
     }
@@ -645,6 +645,16 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
         }
         case AresLangParser.ParensContext parensContext:
           return TryBuildAssignmentValue(parensContext.expression());
+      }
+    }
+    if(expression is AresLangParser.FunctionCallContext functionCallContext)
+    {
+      var funcId = TryResolveFunctionId(functionCallContext.expression());
+      if(funcId is not null && _environment.TryGetSystemFunction(funcId, out var systemFunction))
+      {
+        var schema = systemFunction.OutputSchema;
+        var dummyValue = InterpreterHelpers.CreateDummyValue(schema);
+        return dummyValue;
       }
     }
 

@@ -28,21 +28,20 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
 
   public override SchemaEntry VisitId(AresLangParser.IdContext context)
   {
-    // TODO: fix
-    //var id = context.ID().GetText();
-    //if(_environment.TryGetSystemFunction(id, out var sysFunc)) 
-    //{
-    //  return CreateStructEntry(sysFunc.OutputSchema);
-    //}
-    //if(_environment.TryGetUserFunction(id, out var _))
-    //{
-    //  return AresSchemaBuilder.Entry(AresDataType.Any).Build();
-    //}
+    var id = context.ID().GetText();
+    if(_environment.TryGetSystemFunction(id, out var sysFunc)) 
+    {
+      return sysFunc.OutputSchema;
+    }
+    if(_environment.TryGetUserFunction(id, out var _))
+    {
+      return AresSchemaBuilder.Entry(AresDataType.Any).Build();
+    }
 
-    //if(_environment.TryGetValue(id, out var envVal))
-    //{
-    //  return AresSchemaBuilder.Entry(envVal.GetAresDataType()).Build();
-    //}
+    if(_environment.TryGetValue(id, out var envVal))
+    {
+      return AresSchemaBuilder.Entry(envVal.GetAresDataType()).Build();
+    }
 
     return AresSchemaBuilder.Entry(AresDataType.Any).Build();
   }
