@@ -96,7 +96,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       if(_mode == ValidationMode.Strict)
       {
-        throw new InvalidOperationException($"Incomplete assignment. {context.Start.Line}:{context.Start.Column}");
+        throw new AresInterpreterException("Incomplete assignment.", context.Start.Line, context.Start.Column);
       }
 
       return;
@@ -120,8 +120,10 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       {
         if(_mode == ValidationMode.Strict)
         {
-          throw new InvalidOperationException(
-            $"Unknown identifier '{memberContext.lvalue().GetText()}'. {context.Start.Line}:{context.Start.Column}"
+          throw new AresInterpreterException(
+            $"Unknown identifier '{memberContext.lvalue().GetText()}'.",
+            context.Start.Line,
+            context.Start.Column
           );
         }
 
@@ -141,7 +143,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       if(_mode == ValidationMode.Strict)
       {
-        throw new InvalidOperationException($"Incomplete expression. {context.Start.Line}:{context.Start.Column}");
+        throw new AresInterpreterException("Incomplete expression.", context.Start.Line, context.Start.Column);
       }
 
       return;
@@ -166,7 +168,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       if(_mode == ValidationMode.Strict)
       {
-        throw new InvalidOperationException($"Incomplete assert statement. {context.Start.Line}:{context.Start.Column}");
+        throw new AresInterpreterException("Incomplete assert statement.", context.Start.Line, context.Start.Column);
       }
 
       return;
@@ -192,7 +194,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       if(_mode == ValidationMode.Strict)
       {
-        throw new InvalidOperationException($"Incomplete while statement. {context.Start.Line}:{context.Start.Column}");
+        throw new AresInterpreterException("Incomplete while statement.", context.Start.Line, context.Start.Column);
       }
 
       return;
@@ -217,7 +219,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       if(_mode == ValidationMode.Strict)
       {
-        throw new InvalidOperationException($"Incomplete for statement. {context.Start.Line}:{context.Start.Column}");
+        throw new AresInterpreterException("Incomplete for statement.", context.Start.Line, context.Start.Column);
       }
 
       return;
@@ -250,7 +252,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       if(_mode == ValidationMode.Strict)
       {
-        throw new InvalidOperationException($"Incomplete if statement. {context.Start.Line}:{context.Start.Column}");
+        throw new AresInterpreterException("Incomplete if statement.", context.Start.Line, context.Start.Column);
       }
 
       return;
@@ -260,7 +262,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       if(_mode == ValidationMode.Strict)
       {
-        throw new InvalidOperationException($"Incomplete if statement. {context.Start.Line}:{context.Start.Column}");
+        throw new AresInterpreterException("Incomplete if statement.", context.Start.Line, context.Start.Column);
       }
 
       return;
@@ -286,7 +288,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       if(_mode == ValidationMode.Strict)
       {
-        throw new InvalidOperationException($"Incomplete function declaration. {context.Start.Line}:{context.Start.Column}");
+        throw new AresInterpreterException("Incomplete function declaration.", context.Start.Line, context.Start.Column);
       }
       return;
     }
@@ -298,7 +300,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       if(_mode == ValidationMode.Strict)
       {
-        throw new InvalidOperationException($"Incomplete function declaration. {context.Start.Line}:{context.Start.Column}");
+        throw new AresInterpreterException("Incomplete function declaration.", context.Start.Line, context.Start.Column);
       }
       return;
     }
@@ -329,7 +331,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
 
     if(_mode == ValidationMode.Strict)
     {
-      throw new InvalidOperationException($"Unknown identifier '{id}'. {context.Start.Line}:{context.Start.Column}");
+      throw new AresInterpreterException($"Unknown identifier '{id}'.", context.Start.Line, context.Start.Column);
     }
 
     return Task.FromResult("");
@@ -340,7 +342,11 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     var ctxExpr = context.expression();
     if(!TryResolveValue(ctxExpr, out var value))
     {
-      throw new InvalidOperationException($"Unknown identifier '{ctxExpr.GetText()}'. {ctxExpr.Start.Line}:{ctxExpr.Start.Column}");
+      throw new AresInterpreterException(
+        $"Unknown identifier '{ctxExpr.GetText()}'.",
+        ctxExpr.Start.Line,
+        ctxExpr.Start.Column
+      );
     }
 
     if(value?.KindCase == AresValue.KindOneofCase.StructValue)
@@ -351,7 +357,11 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       }
     }
 
-    throw new InvalidOperationException($"Unknown identifier {context.ID().GetText()} on {ctxExpr.GetText()}. {context.Start.Line}:{context.Stop.Column + 1}");
+    throw new AresInterpreterException(
+      $"Unknown identifier {context.ID().GetText()} on {ctxExpr.GetText()}.",
+      context.Start.Line,
+      context.Stop.Column + 1
+    );
   }
 
   public override async Task VisitFunctionCall(AresLangParser.FunctionCallContext ctx)
@@ -371,8 +381,10 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
           {
             if(seenKeywordArg)
             {
-              throw new InvalidOperationException(
-                $"Positional argument follows keyword argument. {positionalArg.Start.Line}:{positionalArg.Start.Column}"
+              throw new AresInterpreterException(
+                "Positional argument follows keyword argument.",
+                positionalArg.Start.Line,
+                positionalArg.Start.Column
               );
             }
 
@@ -386,8 +398,10 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
             var name = keywordArg.ID().GetText();
             if(keywordArgs.ContainsKey(name))
             {
-              throw new InvalidOperationException(
-                $"Duplicate keyword argument '{name}'. {keywordArg.Start.Line}:{keywordArg.Start.Column}"
+              throw new AresInterpreterException(
+                $"Duplicate keyword argument '{name}'.",
+                keywordArg.Start.Line,
+                keywordArg.Start.Column
               );
             }
 
@@ -396,8 +410,10 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
             break;
           }
         default:
-          throw new InvalidOperationException(
-            $"Unsupported argument type {argCtx.GetType().Name}. {argCtx.Start.Line}:{argCtx.Start.Column}"
+          throw new AresInterpreterException(
+            $"Unsupported argument type {argCtx.GetType().Name}.",
+            argCtx.Start.Line,
+            argCtx.Start.Column
           );
       }
     }
@@ -409,9 +425,17 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       if(ctxExpr is AresLangParser.MemberAccessContext memberCtx)
       {
         var idExpr = memberCtx.ID();
-        throw new InvalidOperationException($"Unknown function '{idExpr.GetText()}' on '{memberCtx.expression().GetText()}'. {memberCtx.Start.Line}:{memberCtx.Stop.Column + 1}");
+        throw new AresInterpreterException(
+          $"Unknown function '{idExpr.GetText()}' on '{memberCtx.expression().GetText()}'.",
+          memberCtx.Start.Line,
+          memberCtx.Stop.Column + 1
+        );
       }
-      throw new InvalidOperationException($"Unknown function '{ctxExpr.GetText()}'. {ctxExpr.Start.Line}:{ctxExpr.Start.Column}");
+      throw new AresInterpreterException(
+        $"Unknown function '{ctxExpr.GetText()}'.",
+        ctxExpr.Start.Line,
+        ctxExpr.Start.Column
+      );
     }
 
     if(_environment.TryGetValue(functionId, out var aliasValue) && aliasValue.FunctionValue is not null)
@@ -423,7 +447,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       if(keywordArgs.Count > 0)
       {
-        throw new InvalidOperationException($"Runtime function '{functionId}' does not support keyword arguments");
+        throw new AresInterpreterException($"Runtime function '{functionId}' does not support keyword arguments");
       }
 
       ValidateSystemFunctionArgs(systemFn, positionalArgs, keywordArgs, ctx);
@@ -434,7 +458,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       if(positionalArgs.Count > userFn.Parameters.Count)
       {
-        throw new InvalidOperationException(
+        throw new AresInterpreterException(
           $"Function '{functionId}' expected {userFn.Parameters.Count} arguments but got {positionalArgs.Count}"
         );
       }
@@ -444,12 +468,12 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
         var index = FindParameterIndex(userFn.Parameters, name);
         if(index < 0)
         {
-          throw new InvalidOperationException($"Function '{functionId}' got an unexpected keyword argument '{name}'");
+          throw new AresInterpreterException($"Function '{functionId}' got an unexpected keyword argument '{name}'");
         }
 
         if(index < positionalArgs.Count)
         {
-          throw new InvalidOperationException($"Function '{functionId}' got multiple values for argument '{name}'");
+          throw new AresInterpreterException($"Function '{functionId}' got multiple values for argument '{name}'");
         }
       }
 
@@ -458,7 +482,11 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
         var name = userFn.Parameters[i];
         if(!keywordArgs.ContainsKey(name))
         {
-          throw new InvalidOperationException($"Function '{functionId}' missing required argument '{name}'. {ctx.Start.Line}:{ctx.Start.Column}");
+          throw new AresInterpreterException(
+            $"Function '{functionId}' missing required argument '{name}'.",
+            ctx.Start.Line,
+            ctx.Start.Column
+          );
         }
       }
 
@@ -467,7 +495,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
 
     if(_functionDepth == 0)
     {
-      throw new InvalidOperationException($"Function '{functionId}' not found. {ctx.Start.Line}:{ctx.Start.Column}");
+      throw new AresInterpreterException($"Function '{functionId}' not found.", ctx.Start.Line, ctx.Start.Column);
     }
   }
 
@@ -483,13 +511,21 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       if(!schema.Fields.TryGetValue(name, out var expected))
       {
-        throw new InvalidOperationException($"Function '{function.Id}' got an unexpected keyword argument '{name}'. {ctx.Start.Line}:{ctx.Start.Column}");
+        throw new AresInterpreterException(
+          $"Function '{function.Id}' got an unexpected keyword argument '{name}'.",
+          ctx.Start.Line,
+          ctx.Start.Column
+        );
       }
 
       var actual = _typeInference.Visit(expr);
       if(!IsCompatible(expected, actual))
       {
-        throw new InvalidOperationException($"Function '{function.Id}' argument '{name}' type mismatch. {ctx.Start.Line}:{ctx.Start.Column}");
+        throw new AresInterpreterException(
+          $"Function '{function.Id}' argument '{name}' type mismatch.",
+          ctx.Start.Line,
+          ctx.Start.Column
+        );
       }
     }
 
@@ -499,7 +535,11 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       var actual = _typeInference.Visit(positionalArgs[0]);
       if(!IsCompatible(expected, actual))
       {
-        throw new InvalidOperationException($"Function '{function.Id}' argument type mismatch. {ctx.Start.Line}:{ctx.Start.Column}");
+        throw new AresInterpreterException(
+          $"Function '{function.Id}' argument type mismatch.",
+          ctx.Start.Line,
+          ctx.Start.Column
+        );
       }
     }
   }

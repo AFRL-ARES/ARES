@@ -1,7 +1,6 @@
 using Antlr4.Runtime;
 using Ares.Datamodel.Scripting;
 using AresScript.Generated;
-using System.Text.RegularExpressions;
 using AresScript.Interpreters;
 
 namespace AresScript.ScriptAnalysis;
@@ -53,22 +52,17 @@ public static partial class AresScriptAnalysis
     return diagnostics.ToArray();
   }
 
-  [GeneratedRegex(@"(\d+):(\d+)\s*$")]
-  private static partial Regex LineColumnRegex();
-
   private static void AppendDiagnosticFromException(ICollection<Diagnostic> diagnostics, Exception ex)
   {
     var message = ex.Message ?? "Validation error";
     var line = 1;
     var column = 1;
 
-    var match = LineColumnRegex().Match(message);
-    if(match.Success
-      && int.TryParse(match.Groups[1].Value, out var parsedLine)
-      && int.TryParse(match.Groups[2].Value, out var parsedColumn))
+    if(ex is AresInterpreterException interpreterException)
     {
-      line = parsedLine;
-      column = parsedColumn;
+      line = interpreterException.Line > 0 ? interpreterException.Line : 1;
+      column = interpreterException.Column > 0 ? interpreterException.Column : 1;
+      message = interpreterException.DetailMessage;
     }
 
     diagnostics.Add(new Diagnostic
