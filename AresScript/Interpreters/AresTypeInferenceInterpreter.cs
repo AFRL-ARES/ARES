@@ -138,12 +138,18 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
 
   public override SchemaEntry VisitMulDiv(AresLangParser.MulDivContext context)
   {
-    return BinaryNumericResult(context.expression(0), context.expression(1));
+    return NumericOrElse(context.expression(0), context.expression(1));
   }
 
-  public override SchemaEntry VisitAddSub(AresLangParser.AddSubContext context)
+  public override SchemaEntry VisitSub(AresLangParser.SubContext context)
   {
-    return BinaryNumericResult(context.expression(0), context.expression(1));
+    return NumericOrElse(context.expression(0), context.expression(1));
+  }
+
+  public override SchemaEntry VisitAdd(AresLangParser.AddContext context)
+  {
+    
+    return NumericOrElse(context.expression(0), context.expression(1), AresDataType.String);
   }
 
   public override SchemaEntry VisitRelational(AresLangParser.RelationalContext context)
@@ -171,7 +177,7 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
     return AresSchemaBuilder.Entry(AresDataType.Boolean).Build();
   }
 
-  private SchemaEntry BinaryNumericResult(AresLangParser.ExpressionContext left, AresLangParser.ExpressionContext right)
+  private SchemaEntry NumericOrElse(AresLangParser.ExpressionContext left, AresLangParser.ExpressionContext right, AresDataType elseType = AresDataType.Any)
   {
     var leftType = Visit(left);
     var rightType = Visit(right);
@@ -180,7 +186,7 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
       return AresSchemaBuilder.Entry(AresDataType.Number).Build();
     }
 
-    return AresSchemaBuilder.Entry(AresDataType.Any).Build();
+    return AresSchemaBuilder.Entry(elseType).Build();
   }
 
   private static SchemaEntry CreateStructEntry(AresDataSchema schema)

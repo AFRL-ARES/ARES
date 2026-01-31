@@ -831,11 +831,27 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     return AresValueHelper.CreateNumber(result);
   }
 
-  public override async Task<AresValue> VisitAddSub([NotNull] AresLangParser.AddSubContext context)
+  public override async Task<AresValue> VisitAdd(AresLangParser.AddContext context)
   {
     var left = await Visit(context.expression(0));
     var right = await Visit(context.expression(1));
 
+    if(left.HasNumberValue && right.HasNumberValue)
+    {
+      return AresValueHelper.CreateNumber(left.NumberValue + right.NumberValue);
+    }
+
+    var leftStr = left.Stringify();
+    var rightStr = right.Stringify();
+    
+    return AresValueHelper.CreateString(leftStr + rightStr);
+  }
+
+  public override async Task<AresValue> VisitSub(AresLangParser.SubContext context)
+  {
+    var left = await Visit(context.expression(0));
+    var right = await Visit(context.expression(1));
+    
     if(!left.HasNumberValue)
     {
       throw new AresInterpreterException("Left hand side is not numeric.", context.Start.Line, context.Start.Column);
@@ -845,19 +861,8 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     {
       throw new AresInterpreterException("Right hand side is not numeric.", context.Start.Line, context.Start.Column);
     }
-
-    var result = context.op.Type switch
-    {
-      AresLangParser.ADD => left.NumberValue + right.NumberValue,
-      AresLangParser.SUB => left.NumberValue - right.NumberValue,
-      _ => throw new AresInterpreterException(
-        $"Wrong operation type {context.op.Type}.",
-        context.op.Line,
-        context.op.Column
-      )
-    };
-
-    return AresValueHelper.CreateNumber(result);
+    
+    return AresValueHelper.CreateNumber(left.NumberValue - right.NumberValue);
   }
 
   public override async Task<AresValue> VisitRelational([NotNull] AresLangParser.RelationalContext context)

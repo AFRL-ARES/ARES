@@ -101,7 +101,8 @@ expression:
 	| expression LPAREN argList? RPAREN	# FunctionCall
 	| SUB expression										# UnaryMinus
 	| expression op = (MUL | DIV | MOD) expression			# MulDiv
-	| expression op = (ADD | SUB) expression				# AddSub
+	| expression ADD expression				# Add
+	| expression SUB expression                     # Sub
 	| expression op = (GT | LT | GE | LE) expression		# Relational
 	| expression op = (EQ | NEQ) expression					# Equality
 	| NOT expression										# LogicalNot
