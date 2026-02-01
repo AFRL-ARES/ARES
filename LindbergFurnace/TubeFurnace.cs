@@ -4,6 +4,7 @@ using LindbergFurnace.Commands.Requests;
 using System.Globalization;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Reactive.Threading.Tasks;
 using TubeFurnace.Messaging;
 using UnitsNet;
 
@@ -61,6 +62,35 @@ public class TubeFurnace : SerialDevice<ITubeFurnaceConnection>, ITubeFurnace
       return currentState.AssumedAddress;
 
     return -1;
+  }
+
+  public async Task SetAndWaitForSetpoint(Temperature targetTemperature, double delta, double timeout, CancellationToken ct = default)
+  {
+    await SetSetpoint(targetTemperature);
+
+    var task = StateStream
+      .Where(state => Math.Abs(targetTemperature.DegreesCelsius - state.CurrentTemperature) <= delta)
+      .FirstAsync()
+      .ToTask(ct);
+
+    if(timeout == -1)
+    {
+      await task;
+    }
+
+    else
+    {
+      try
+      {
+        var timespan = TimeSpan.FromSeconds(timeout);
+        await task.WaitAsync(timespan, ct);
+      }
+      catch (TimeoutException)
+      {
+        throw new Exception($"Setpoint of {targetTemperature.DegreesCelsius} not reached within the given timeout value of {timeout} seconds");
+      }
+    }
+
   }
 
   protected override Task<SerialDeviceValidationResult> Validate()

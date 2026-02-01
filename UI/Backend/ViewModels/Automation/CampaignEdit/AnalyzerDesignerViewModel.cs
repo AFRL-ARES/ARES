@@ -14,14 +14,19 @@ public partial class AnalyzerDesignerViewModel : ReactiveObject
   private readonly AresAnalysisService.AresAnalysisServiceClient _analysisServiceClient;
   private readonly ExperimentTemplate _experimentTemplate;
   readonly IEnumerable<CommandDesignerViewModel> _commandDesignerViewModels;
+  readonly IEnumerable<CommandDesignerViewModel> _startupCommandDesignerViewModels;
   readonly AresAnalyzerManagementService.AresAnalyzerManagementServiceClient _analyzerManagementClient;
   private string? _analyzerId = null;
 
   public AnalyzerDesignerViewModel(AresAnalysisService.AresAnalysisServiceClient analysisServiceClient,
-    AresAnalyzerManagementService.AresAnalyzerManagementServiceClient analyzerManagementClient, ExperimentTemplate experimentTemplate, IEnumerable<CommandDesignerViewModel> commandDesignerViewModels)
+    AresAnalyzerManagementService.AresAnalyzerManagementServiceClient analyzerManagementClient, 
+    ExperimentTemplate experimentTemplate, 
+    IEnumerable<CommandDesignerViewModel> commandDesignerViewModels,
+    IEnumerable<CommandDesignerViewModel> startupCommandDesignerViewModels)
   {
     _analyzerManagementClient = analyzerManagementClient;
     _commandDesignerViewModels = commandDesignerViewModels;
+    _startupCommandDesignerViewModels = startupCommandDesignerViewModels;
     _analysisServiceClient = analysisServiceClient;
     _experimentTemplate = experimentTemplate;
 
@@ -88,7 +93,14 @@ public partial class AnalyzerDesignerViewModel : ReactiveObject
         .Select(okm => okm.CustomName)
         .ToArray();
 
-      outputInputMap.MatchingOutputs = outputs;
+      var startupOutputs = _startupCommandDesignerViewModels.SelectMany(cdv => cdv.OutputKeyMap)
+        .Where(okm => okm.DeviceOutputType == outputInputMap.InputType)
+        .Select(okm => okm.CustomName)
+        .ToArray();
+
+      var combinedOutputs = outputs.Concat(startupOutputs);
+
+      outputInputMap.MatchingOutputs = combinedOutputs.ToArray();
     }
   }
 

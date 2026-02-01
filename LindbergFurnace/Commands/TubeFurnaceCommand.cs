@@ -4,5 +4,6 @@ public enum TubeFurnaceCommand
 {
   GetSetpoint,
   SetSetpoint,
-  GetCurrentTemperature
+  GetCurrentTemperature,
+  SetAndWaitForSetpoint
 }

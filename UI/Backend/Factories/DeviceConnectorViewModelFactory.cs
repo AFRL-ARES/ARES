@@ -1,6 +1,5 @@
 ﻿using Ares.Datamodel.Device;
 using Ares.Services.Device;
-using DynamicData;
 using ReactiveUI;
 using System.Collections.ObjectModel;
 using System.Reactive;
@@ -27,25 +26,21 @@ public abstract class DeviceConnectorViewModelFactory<TDeviceUnitVm> : ReactiveO
 
   public void Start(TimeSpan interval)
   {
-    _deviceUpdater = Observable
-      .Interval(interval)
-      .StartWith(0)
-      .SelectMany(async _ =>
+    _deviceUpdater = Observable.Defer(async () =>
+    {
+      try
       {
-        try
-        {
-          await UpdateAvailableDevices();
-        }
-
-        catch (Exception ex)
-        {
-          //TODO: Log this info
-          Console.WriteLine($"Error updating devices: {ex.Message}");
-        }
-
-        return Unit.Default;
-      })
-      .Subscribe();
+        await UpdateAvailableDevices();
+      }
+      catch(Exception ex)
+      {
+        Console.WriteLine($"Error updating devices: {ex.Message}");
+      }
+      return Observable.Return(Unit.Default);
+    })
+    .Delay(interval)
+    .Repeat()
+    .Subscribe();
   }
 
   private async Task UpdateAvailableDevices()

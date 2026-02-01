@@ -78,14 +78,14 @@ public class CampaignExecutor : ICampaignExecutor
       LoggingType = Datamodel.Device.DeviceLoggingSettings.Types.LoggingType.OnChange
     });
 
-    var startTime = DateTime.UtcNow;
+    var campaignStartTime = DateTime.UtcNow;
     var experimentSummaries = new List<ExperimentExecutionSummary>();
     ExperimentExecutionSummary startupSummary = new();
     ExperimentExecutionSummary closeoutSummary = new();
     
     try
     {
-      var campaignPath = await InitializeCampaign(startTime);
+      var campaignPath = await InitializeCampaign(campaignStartTime);
       
       var analyses = new List<Analysis>();
       
@@ -105,7 +105,7 @@ public class CampaignExecutor : ICampaignExecutor
       startupSummary = startupResult.Summary;
       
 
-      executionSuccess = await ExecuteExperimentLoop(campaignPath, analyses, experimentSummaries, token, executionSuccess);
+      executionSuccess = await ExecuteExperimentLoop(campaignPath, analyses, experimentSummaries, token, executionSuccess, startupResult.Summary);
 
       _logger.LogDebug("The campaign loop is now finished. Moving onto the closeout script.");
 
@@ -126,7 +126,7 @@ public class CampaignExecutor : ICampaignExecutor
       await _stateLoggerManager.DisableOverrideAsync();
     }
     
-    return CreateCampaignSummary(startTime, experimentSummaries, startupSummary, closeoutSummary);
+    return CreateCampaignSummary(campaignStartTime, experimentSummaries, startupSummary, closeoutSummary);
   }
 
   private async Task<string> InitializeCampaign(DateTime startTime)
@@ -190,13 +190,14 @@ public class CampaignExecutor : ICampaignExecutor
     return (true, startupSummary);
   }
 
-  private async Task<bool> ExecuteExperimentLoop(string campaignPath, List<Analysis> analyses, List<ExperimentExecutionSummary> experimentSummaries, ExecutionControlToken token, bool executionSuccess)
+  private async Task<bool> ExecuteExperimentLoop(string campaignPath, List<Analysis> analyses, List<ExperimentExecutionSummary> experimentSummaries, ExecutionControlToken token, bool executionSuccess, ExperimentExecutionSummary startupSummary)
   {
     var experimentCount = 0;
     while(!ShouldStop() && !token.IsCancelled && executionSuccess == true)
     {
       var experimentFolder = $"Experiment_{++experimentCount}";
       var experimentPath = CampaignOutputHelper.CreateExperimentSubFolder(campaignPath, experimentFolder);
+      var startTime = DateTime.UtcNow;
 
       //Populate Internal Variables Related to Experiment
       AresEnvironment.AresEnvironment.SetInternalVariable(InternalVariableType.CurrentExperimentNumber, experimentCount.ToString());
@@ -236,7 +237,7 @@ public class CampaignExecutor : ICampaignExecutor
       // and thus sending a null result to the analyzer might break it depending on the analyzer
       if(!token.IsCancelled)
       {
-        var result = await AnalyzeResult(experimentExecutor, experimentSummary, analyses, token);
+        var result = await AnalyzeResult(experimentExecutor, experimentSummary, startupSummary, analyses, token);
         if (!result.Success) executionSuccess = false;
         if (!result.Continue) break;
       }
@@ -251,14 +252,15 @@ public class CampaignExecutor : ICampaignExecutor
     return executionSuccess;
   }
 
-  private async Task<(bool Success, bool Continue)> AnalyzeResult(ExperimentExecutor experimentExecutor, ExperimentExecutionSummary experimentSummary, List<Analysis> analyses, ExecutionControlToken token)
+  private async Task<(bool Success, bool Continue)> AnalyzeResult(ExperimentExecutor experimentExecutor, ExperimentExecutionSummary experimentSummary, ExperimentExecutionSummary startupSummary, List<Analysis> analyses, ExecutionControlToken token)
   {
     var metadata = new RequestMetadata 
     { 
       CampaignId = Template.UniqueId, 
       CampaignName = Template.Name, 
       ExperimentId = experimentExecutor.Template.UniqueId, 
-      SystemName = "ARES OS" 
+      SystemName = "ARES OS",
+      ExperimentStartTime = experimentSummary.ExecutionInfo.TimeStarted
     };
 
     Status.AnalysisState = AnalysisState.AnalysisInProgress;
@@ -267,6 +269,7 @@ public class CampaignExecutor : ICampaignExecutor
     var analysis = await _analysisHelper.Analyze(
       experimentExecutor.Template,
       experimentSummary,
+      startupSummary,
       metadata,
       token.CancellationToken);
 
@@ -411,7 +414,14 @@ public class CampaignExecutor : ICampaignExecutor
         _executionStatusSubject.OnNext(Status);
         _executionReporter.Report(Status);
         _logger.LogTrace("Analyses count is {count} and replan rate {rate}", analyses.Count(), ReplanRate);
-        var metadata = new RequestMetadata { CampaignId = Template.UniqueId, CampaignName = Template.Name, ExperimentId = template.UniqueId, SystemName = "ARES OS" };
+        var metadata = new RequestMetadata 
+        { 
+          CampaignId = Template.UniqueId, 
+          CampaignName = Template.Name, 
+          ExperimentId = template.UniqueId, 
+          SystemName = "ARES OS",
+          ExperimentStartTime = DateTime.UtcNow.ToUniversalTime().ToTimestamp()
+        };
         var resolveSuccess = await _planningHelper.TryResolveParameters(Template.PlannerAllocations, metadata, experimentTemplate.GetAllPlannedParameters(), analyses, previousExperiments, cancellationToken);
         if(!resolveSuccess)
         {
@@ -475,7 +485,8 @@ public class CampaignExecutor : ICampaignExecutor
     });
 
     _logger.LogDebug("About to execute the template {TemplateName}", experimentExecutor.Template.Name);
-    return await experimentExecutor.Execute(token);
+    var result = await experimentExecutor.Execute(token);
+    return result;
   }
 
   private async Task PostExperimentExecution(ExperimentExecutionSummary summary)

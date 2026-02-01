@@ -14,5 +14,5 @@ public class GoodAnalyzerCampaignValidator : ICampaignValidator
   }
 
   public Task<ValidationResult> Validate(CampaignTemplate template)
-    => GoodAnalyzerValidator.Validate(template.ExperimentTemplate, _analyzerManager);
+    => GoodAnalyzerValidator.Validate(template.ExperimentTemplate, template.StartupTemplate, _analyzerManager);
 }

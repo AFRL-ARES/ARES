@@ -9,7 +9,7 @@ namespace Ares.Core.Validation.Validators;
 
 public static class GoodAnalyzerValidator
 {
-  public static async Task<ValidationResult> Validate(ExperimentTemplate experimentTemplate, IAnalyzerRepo analyzerRepo)
+  public static async Task<ValidationResult> Validate(ExperimentTemplate experimentTemplate, ExperimentTemplate? startupTemplate, IAnalyzerRepo analyzerRepo)
   {
     if(experimentTemplate.AnalyzerId is null)
       return new ValidationResult(true);
@@ -25,6 +25,11 @@ public static class GoodAnalyzerValidator
     }
 
     var outputCommands = experimentTemplate.GetAllOutputCommands();
+
+    if(startupTemplate is not null)
+    {
+      outputCommands = outputCommands.Concat(startupTemplate.GetAllOutputCommands()).ToArray();
+    }
 
     var analysisParameterSchema = await analyzer.GetParameters();
     var requiredAnalysisInputs = analysisParameterSchema.Fields.Where(input => !input.Value.Optional).ToArray();
@@ -56,9 +61,9 @@ public static class GoodAnalyzerValidator
     return validationResult;
   }
 
-  public static async Task<ValidationResult> Validate(IEnumerable<ExperimentTemplate> experimentTemplates, IAnalyzerRepo analyzerManager)
+  public static async Task<ValidationResult> Validate(IEnumerable<ExperimentTemplate> experimentTemplates, ExperimentTemplate startupTemplate, IAnalyzerRepo analyzerManager)
   {
-    var validationTasks = experimentTemplates.Select(template => Validate(template, analyzerManager)).ToArray();
+    var validationTasks = experimentTemplates.Select(template => Validate(template, startupTemplate, analyzerManager)).ToArray();
     var validations = await Task.WhenAll(validationTasks);
     return new ValidationResult(validations);
   }

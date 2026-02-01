@@ -45,7 +45,6 @@ public partial class ExperimentDesignerViewModel : ReactiveObject
   {
     Name = existingTemplate.Name;
     StepDesigners = existingTemplate.StepTemplates.Select(template => _stepDesignerFactory.Create(template)).OrderBy(model => model.Index).ToList();
-    //CloseoutStepDesigners = existingTemplate.CloseoutStepTemplates.Select(template => _stepDesignerFactory.Create(template)).OrderBy(model => model.Index).ToList();
     if(existingTemplate.StepTemplates.Select(step => step.CommandTemplates.Select(cmd => cmd.UserOutputKeyMap)).Any())
     {
       var commandDesigners = StepDesigners.SelectMany(model => model.CommandDesigners).Where(model => model.CommandTemplate.UserOutputKeyMap.Any());
