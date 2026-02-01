@@ -1,4 +1,5 @@
 using Ares.Datamodel;
+using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Scripting;
 using AresScript;
 
@@ -59,7 +60,7 @@ public static partial class AresScriptAnalysis
       {
         Name = kv.Key,
         Description = kv.Value.Description ?? string.Empty,
-        Schema = ValueToSchemaEntry(kv.Value.ToAresValue()),
+        Schema = kv.Value.ToAresValue().ToSchemaEntry(),
         Value = kv.Value.ToAresValue()
       }));
     return response;

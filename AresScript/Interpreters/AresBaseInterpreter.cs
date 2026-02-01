@@ -159,6 +159,22 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
         _lvalueResolutionDepth--;
       }
       var indexVal = await Visit(indexContext.expression());
+      if(container.KindCase == AresValue.KindOneofCase.StructValue)
+      {
+        if(!indexVal.HasStringValue)
+        {
+          throw new AresInterpreterException(
+            "Provided index expression was not a string.",
+            context.Start.Line,
+            context.Start.Column
+          );
+        }
+
+        var newValueForStruct = await Visit(assignment.expression());
+        container.StructValue.Fields[indexVal.StringValue] = newValueForStruct;
+        return AresValueHelper.CreateUnit();
+      }
+
       if(!indexVal.HasNumberValue)
       {
         throw new AresInterpreterException(
@@ -603,16 +619,33 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     if(currentValue.KindCase != AresValue.KindOneofCase.BytesValue
         && currentValue.KindCase != AresValue.KindOneofCase.StringArrayValue
         && currentValue.KindCase != AresValue.KindOneofCase.NumberArrayValue
-        && currentValue.KindCase != AresValue.KindOneofCase.ListValue)
+        && currentValue.KindCase != AresValue.KindOneofCase.ListValue
+        && currentValue.KindCase != AresValue.KindOneofCase.StructValue)
     {
       throw new AresInterpreterException(
-        "Cannot access index of a value that is not of list type.",
+        "Cannot access index of a value that is not of list or struct type.",
         context.Start.Line,
         context.Start.Column
       );
     }
 
     var indexVal = await Visit(context.expression(1));
+    if(currentValue.KindCase == AresValue.KindOneofCase.StructValue)
+    {
+      if(!indexVal.HasStringValue)
+      {
+        throw new AresInterpreterException(
+          "Provided index expression was not a string.",
+          context.Start.Line,
+          context.Start.Column
+        );
+      }
+
+      return currentValue.StructValue.Fields.TryGetValue(indexVal.StringValue, out var fieldValue)
+        ? fieldValue
+        : AresValueHelper.CreateNull();
+    }
+
     if(!indexVal.HasNumberValue)
     {
       throw new AresInterpreterException(

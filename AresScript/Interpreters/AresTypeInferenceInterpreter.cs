@@ -29,7 +29,7 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
   public override SchemaEntry VisitId(AresLangParser.IdContext context)
   {
     var id = context.ID().GetText();
-    if(_environment.TryGetSystemFunction(id, out var sysFunc)) 
+    if(_environment.TryGetSystemFunction(id, out var sysFunc) && sysFunc?.OutputSchema is not null) 
     {
       return sysFunc.OutputSchema;
     }
@@ -40,7 +40,7 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
 
     if(_environment.TryGetValue(id, out var envVal))
     {
-      return AresSchemaBuilder.Entry(envVal.GetAresDataType()).Build();
+      return envVal.ToSchemaEntry();
     }
 
     return AresSchemaBuilder.Entry(AresDataType.Any).Build();
@@ -110,6 +110,19 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
   public override SchemaEntry VisitIndexAccess(AresLangParser.IndexAccessContext context)
   {
     var container = Visit(context.expression(0));
+    if(container.Type == AresDataType.Struct && container.StructSchema is not null)
+    {
+      var indexExpr = context.expression(1);
+      if(indexExpr is AresLangParser.AtomExprContext atomExpr && atomExpr.atom() is AresLangParser.StringContext stringCtx)
+      {
+        var key = Unquote(stringCtx.STRING().GetText());
+        if(container.StructSchema.Fields.TryGetValue(key, out var entry))
+        {
+          return entry;
+        }
+      }
+    }
+
     return container.Type switch
     {
       AresDataType.StringArray => AresSchemaBuilder.Entry(AresDataType.String).Build(),

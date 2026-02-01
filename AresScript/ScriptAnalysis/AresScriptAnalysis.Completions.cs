@@ -4,6 +4,7 @@ using Ares.Datamodel.Scripting;
 using AresScript.Generated;
 using System.Text;
 using System.Text.RegularExpressions;
+using Ares.Datamodel.Extensions;
 using AresScript.Interpreters;
 
 namespace AresScript.ScriptAnalysis;
@@ -19,7 +20,8 @@ public static partial class AresScriptAnalysis
 
     try
     {
-      var stream = new AntlrInputStream(script);
+      var normalizedScript = script.EndsWith('\n') ? script : script + "\n";
+      var stream = new AntlrInputStream(normalizedScript);
       var lexer = new AresIndentationLexer(stream);
       var tokenStream = new CommonTokenStream(lexer);
       var parser = new AresLangParser(tokenStream);
@@ -204,7 +206,7 @@ public static partial class AresScriptAnalysis
         ? CompletionItemKind.Struct
         : CompletionItemKind.Variable,
       ParentIdentifier = parentIdentifier,
-      Schema = ValueToSchemaEntry(schemaValue)
+      Schema = schemaValue.ToSchemaEntry()
     });
   }
 
@@ -242,7 +244,7 @@ public static partial class AresScriptAnalysis
         ? CompletionItemKind.Struct
         : CompletionItemKind.Variable,
       ParentIdentifier = parentIdentifier,
-      Schema = ValueToSchemaEntry(value)
+      Schema = value.ToSchemaEntry()
     });
   }
 

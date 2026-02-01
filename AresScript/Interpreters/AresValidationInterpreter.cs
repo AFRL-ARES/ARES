@@ -214,6 +214,40 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       var assignedValue = TryBuildAssignmentValue(expr) ?? AresValueHelper.CreateNull();
       baseValue.StructValue.Fields[memberId] = assignedValue;
     }
+    else if(lvalue is AresLangParser.LValueIndexContext indexContext)
+    {
+      if(!TryResolveLValue(indexContext.lvalue(), out var baseValue) || baseValue?.StructValue is null)
+      {
+        if(_mode == ValidationMode.Strict)
+        {
+          throw new AresInterpreterException(
+            $"Unknown identifier '{indexContext.lvalue().GetText()}'.",
+            context.Start.Line,
+            context.Start.Column
+          );
+        }
+
+        return;
+      }
+
+      var indexValue = TryBuildAssignmentValue(indexContext.expression());
+      if(indexValue?.HasStringValue != true)
+      {
+        if(_mode == ValidationMode.Strict)
+        {
+          throw new AresInterpreterException(
+            "Provided index expression was not a string.",
+            context.Start.Line,
+            context.Start.Column
+          );
+        }
+
+        return;
+      }
+
+      var assignedValue = TryBuildAssignmentValue(expr) ?? AresValueHelper.CreateNull();
+      baseValue.StructValue.Fields[indexValue.StringValue] = assignedValue;
+    }
   }
 
   public override async Task VisitExprStmt(AresLangParser.ExprStmtContext context)
@@ -608,24 +642,30 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       if(!IsCompatible(expected, actual))
       {
         throw new AresInterpreterException(
-          $"Function '{function.Id}' argument '{name}' type mismatch.",
+          $"Function '{function.Id}' argument '{name}' type mismatch. Expected {expected.Type}, received {actual.Type}.",
           ctx.Start.Line,
           ctx.Start.Column
         );
       }
     }
 
-    if(positionalArgs.Count == 1 && keywordArgs.Count == 0 && schema.Fields.Count == 1)
+    if(keywordArgs.Count == 0 && positionalArgs.Count == schema.Fields.Count && schema.Fields.Count > 0)
     {
-      var expected = schema.Fields.Values.First();
-      var actual = _typeInference.Visit(positionalArgs[0]);
-      if(!IsCompatible(expected, actual))
+      var expectedNames = schema.Fields.Keys.ToArray();
+      var expectedEntries = schema.Fields.Values.ToArray();
+      for(var i = 0; i < positionalArgs.Count; i++)
       {
-        throw new AresInterpreterException(
-          $"Function '{function.Id}' argument type mismatch.",
-          ctx.Start.Line,
-          ctx.Start.Column
-        );
+        var name = expectedNames[i];
+        var expected = expectedEntries[i];
+        var actual = _typeInference.Visit(positionalArgs[i]);
+        if(!IsCompatible(expected, actual))
+        {
+          throw new AresInterpreterException(
+            $"Function '{function.Id}' argument '{name}' type mismatch. Expected {expected.Type}, received {actual.Type}.",
+            ctx.Start.Line,
+            ctx.Start.Column
+          );
+        }
       }
     }
   }
@@ -707,81 +747,91 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       }
     }
 
-    if(expression is AresLangParser.AtomExprContext atomCtx)
+    if(TryResolveValue(expression, out var envValue))
     {
-      var atomNode = atomCtx.atom();
-      switch(atomNode)
-      {
-        case AresLangParser.StructContext structContext:
-        {
-          var aresStruct = AresValueHelper.CreateStruct();
-          foreach(var structMember in structContext.structure().pair())
-          {
-            var key = structMember.ID()?.GetText() ?? InterpreterHelpers.Unquote(structMember.STRING().GetText());
-            aresStruct.StructValue.Fields[key] = AresValueHelper.CreateNull();
-          }
-
-          return aresStruct;
-        }
-        case AresLangParser.IntContext intContext:
-          if(int.TryParse(intContext.INT().GetText(), out var intValue))
-          {
-            return AresValueHelper.CreateNumber(intValue);
-          }
-          break;
-        case AresLangParser.FloatContext floatContext:
-          if(double.TryParse(floatContext.FLOAT().GetText(), out var doubleValue))
-          {
-            return AresValueHelper.CreateNumber(doubleValue);
-          }
-          break;
-        case AresLangParser.StringContext stringContext:
-          return AresValueHelper.CreateString(InterpreterHelpers.Unquote(stringContext.STRING().GetText()));
-        case AresLangParser.BoolContext boolContext:
-          return AresValueHelper.CreateBool(
-            boolContext.BOOL().GetText().Equals("true", StringComparison.OrdinalIgnoreCase)
-          );
-        case AresLangParser.NoneContext:
-          return AresValueHelper.CreateNull();
-        case AresLangParser.ArrayContext arrayContext:
-        {
-          var expressions = arrayContext.expression();
-          if(expressions.Length == 0)
-          {
-            return AresValueHelper.CreateList();
-          }
-
-          var values = expressions
-            .Select(exp => TryBuildAssignmentValue(exp) ?? AresValueHelper.CreateNull())
-            .ToList();
-
-          var initialKind = values[0].KindCase;
-          var sameKind = values.All(v => v.KindCase == initialKind);
-          if(sameKind && initialKind == AresValue.KindOneofCase.NumberValue)
-          {
-            return AresValueHelper.CreateNumberArray(values.Select(v => v.NumberValue).ToArray());
-          }
-
-          if(sameKind && initialKind == AresValue.KindOneofCase.StringValue)
-          {
-            return AresValueHelper.CreateStringArray(values.Select(v => v.StringValue).ToArray());
-          }
-
-          return AresValueHelper.CreateList(values);
-        }
-        case AresLangParser.ParensContext parensContext:
-          return TryBuildAssignmentValue(parensContext.expression());
-      }
+      return envValue;
     }
-    if(expression is AresLangParser.FunctionCallContext functionCallContext)
+
+    switch(expression)
     {
-      var funcId = TryResolveFunctionId(functionCallContext.expression());
-      if(funcId is not null && _environment.TryGetSystemFunction(funcId, out var systemFunction))
-      {
-        var schema = systemFunction.OutputSchema;
-        var dummyValue = InterpreterHelpers.CreateDummyValue(schema);
-        return dummyValue;
-      }
+      case AresLangParser.AtomExprContext atomCtx:
+        {
+          var atomNode = atomCtx.atom();
+          switch(atomNode)
+          {
+            case AresLangParser.StructContext structContext:
+              {
+                var aresStruct = AresValueHelper.CreateStruct();
+                foreach(var structMember in structContext.structure().pair())
+                {
+                  var key = structMember.ID()?.GetText() ?? InterpreterHelpers.Unquote(structMember.STRING().GetText());
+                  aresStruct.StructValue.Fields[key] = AresValueHelper.CreateNull();
+                }
+
+                return aresStruct;
+              }
+            case AresLangParser.IntContext intContext:
+              if(int.TryParse(intContext.INT().GetText(), out var intValue))
+              {
+                return AresValueHelper.CreateNumber(intValue);
+              }
+              break;
+            case AresLangParser.FloatContext floatContext:
+              if(double.TryParse(floatContext.FLOAT().GetText(), out var doubleValue))
+              {
+                return AresValueHelper.CreateNumber(doubleValue);
+              }
+              break;
+            case AresLangParser.StringContext stringContext:
+              return AresValueHelper.CreateString(InterpreterHelpers.Unquote(stringContext.STRING().GetText()));
+            case AresLangParser.BoolContext boolContext:
+              return AresValueHelper.CreateBool(
+              boolContext.BOOL().GetText().Equals("true", StringComparison.OrdinalIgnoreCase)
+              );
+            case AresLangParser.NoneContext:
+              return AresValueHelper.CreateNull();
+            case AresLangParser.ArrayContext arrayContext:
+              {
+                var expressions = arrayContext.expression();
+                if(expressions.Length == 0)
+                {
+                  return AresValueHelper.CreateList();
+                }
+
+                var values = expressions
+                  .Select(exp => TryBuildAssignmentValue(exp) ?? AresValueHelper.CreateNull())
+                  .ToList();
+
+                var initialKind = values[0].KindCase;
+                var sameKind = values.All(v => v.KindCase == initialKind);
+                if(sameKind && initialKind == AresValue.KindOneofCase.NumberValue)
+                {
+                  return AresValueHelper.CreateNumberArray(values.Select(v => v.NumberValue).ToArray());
+                }
+
+                if(sameKind && initialKind == AresValue.KindOneofCase.StringValue)
+                {
+                  return AresValueHelper.CreateStringArray(values.Select(v => v.StringValue).ToArray());
+                }
+
+                return AresValueHelper.CreateList(values);
+              }
+            case AresLangParser.ParensContext parensContext:
+              return TryBuildAssignmentValue(parensContext.expression());
+          }
+          break;
+        }
+      case AresLangParser.FunctionCallContext functionCallContext:
+        {
+          var funcId = TryResolveFunctionId(functionCallContext.expression());
+          if(funcId is not null && _environment.TryGetSystemFunction(funcId, out var systemFunction))
+          {
+            var schema = systemFunction.OutputSchema;
+            var dummyValue = InterpreterHelpers.CreateDummyValue(schema);
+            return dummyValue;
+          }
+          break;
+        }
     }
 
     return null;
@@ -810,6 +860,21 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       }
     }
 
+    if(expression is AresLangParser.IndexAccessContext indexAccess)
+    {
+      if(TryResolveValue(indexAccess.expression(0), out var baseValue)
+        && baseValue?.StructValue is not null)
+      {
+        var indexValue = TryBuildAssignmentValue(indexAccess.expression(1));
+        if(indexValue?.HasStringValue == true
+          && baseValue.StructValue.Fields.TryGetValue(indexValue.StringValue, out var member))
+        {
+          value = member;
+          return true;
+        }
+      }
+    }
+
     return false;
   }
 
@@ -835,6 +900,26 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
         }
 
         value = memberValue;
+        return true;
+      case AresLangParser.LValueIndexContext indexContext:
+        if(!TryResolveLValue(indexContext.lvalue(), out var baseValue2) || baseValue2?.StructValue is null)
+        {
+          return false;
+        }
+
+        var indexValue = TryBuildAssignmentValue(indexContext.expression());
+        if(indexValue?.HasStringValue != true)
+        {
+          return false;
+        }
+
+        if(!baseValue2.StructValue.Fields.TryGetValue(indexValue.StringValue, out var indexedMember))
+        {
+          indexedMember = AresValueHelper.CreateNull();
+          baseValue2.StructValue.Fields[indexValue.StringValue] = indexedMember;
+        }
+
+        value = indexedMember;
         return true;
       default:
         return false;

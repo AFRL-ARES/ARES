@@ -1,3 +1,4 @@
+using System.Text;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel;
 using Ares.Datamodel.Factories;
@@ -8,7 +9,7 @@ public static class StandardLibrary
 {
   public static AresSystemFunction[] Functions { get; } =
   [
-    new AresSystemFunction("print", "print", (args, _) =>
+    new("print", "print", (args, _) =>
       {
         foreach (var arg in args)
         {
@@ -21,6 +22,19 @@ public static class StandardLibrary
     AresSchemaBuilder.Entry(AresDataType.Unit).Build(),
     "",
     "Prints the given value/s of any ARES type to console."),
+    
+    new("string", "string", (args, token) => {
+      var strBuilder = new StringBuilder();
+      foreach(var aresValue in args)
+      {
+        strBuilder.Append(aresValue.Stringify());
+      }
+      return Task.FromResult(AresValueHelper.CreateString(strBuilder.ToString()));
+    },
+    AresSchemaBuilder.Create("args", AresDataType.Any).Build(),
+    AresSchemaBuilder.Entry(AresDataType.String).Build(),
+    "",
+    "Turns the given AresValue into a string."),
     
     new("range", "range", (args, _) => {
       double start = 0;
