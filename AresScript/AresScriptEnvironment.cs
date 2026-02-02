@@ -168,6 +168,24 @@ public class AresScriptEnvironment
     return results;
   }
 
+  public KeyValuePair<string, AresValue>[] GetAllUserVariables()
+  {
+    var seen = new HashSet<string>(StringComparer.Ordinal);
+    var results = new List<KeyValuePair<string, AresValue>>();
+    foreach(var scope in _userScopes)
+    {
+      foreach(var variable in scope.Variables)
+      {
+        if(seen.Add(variable.Key))
+        {
+          results.Add(new KeyValuePair<string, AresValue>(variable.Key, variable.Value));
+        }
+      }
+    }
+
+    return results.ToArray();
+  }
+
   public IReadOnlyList<string> GetAllUserVariableNames()
   {
     var seen = new HashSet<string>(StringComparer.Ordinal);

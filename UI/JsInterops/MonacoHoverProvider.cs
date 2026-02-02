@@ -40,19 +40,30 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
     var completions = await _aresScriptingServiceClient.GetCompletionsAsync(request);
     var item = completions.Items.FirstOrDefault(i => string.Equals(i.Label, identifier, StringComparison.Ordinal));
 
-    var markdown = item is null ? null : BuildHoverMarkdown(item);
-    var inferredSchema = await TryGetInferredSchema(script, line, column, identifier);
-    if(inferredSchema is not null)
+    var hoverMarkdown = BuildHoverMarkdown(item);
+    var markdown = hoverMarkdown?.markdown;
+    var hasSchema = hoverMarkdown?.hasSchema ?? false;
+
+    if(!hasSchema)
     {
-      markdown = AppendInferredSchema(markdown, identifier, inferredSchema);
+      var inferredSchema = await TryGetInferredSchema(script, line, column, identifier);
+      if(inferredSchema is not null)
+      {
+        markdown = AppendInferredSchema(markdown, identifier, inferredSchema);
+      }
     }
 
     return string.IsNullOrWhiteSpace(markdown) ? null : markdown;
   }
 
-  private static string BuildHoverMarkdown(CompletionItem item)
+  private static (string markdown, bool hasSchema)? BuildHoverMarkdown(CompletionItem? item)
   {
+    if(item is null)
+    {
+      return null;
+    }
     var sb = new StringBuilder();
+    var schemaFound = false;
     var label = item.Label ?? string.Empty;
     var name = string.IsNullOrWhiteSpace(item.ParentIdentifier) ? label : $"{item.ParentIdentifier}.{label}";
 
@@ -62,18 +73,24 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
     }
 
     AppendDescription(sb, item.Detail, item.Documentation);
-    AppendDataSchemaSection(sb, "Inputs", item.InputSchema);
+    if(item.InputSchema is not null)
+    {
+      schemaFound = true;
+      AppendDataSchemaSection(sb, "Inputs", item.InputSchema);
+    }
     if(item.OutputSchema?.Type != AresDataType.Unit)
     {
+      schemaFound = true;
       AppendSchemaEntrySection(sb, "Output", item.OutputSchema);
     }
 
     if(item.Schema is not null)
     {
+      schemaFound = true;
       AppendSchemaEntrySection(sb, "Schema", item.Schema);
     }
 
-    return sb.ToString();
+    return (sb.ToString(), schemaFound);
   }
 
   private static void AppendDescription(StringBuilder sb, string? detail, string? documentation)

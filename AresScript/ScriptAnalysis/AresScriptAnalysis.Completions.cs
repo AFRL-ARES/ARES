@@ -44,7 +44,7 @@ public static partial class AresScriptAnalysis
     await BuildEnvironmentForCompletions(environment, script, cursorLine);
     var systemVariables = environment.GetAllSystemVariables();
     var userFunctions = environment.GetAllUserFunctions();
-    var userVariables = environment.GetAllUserVariableNames();
+    var userVariables = environment.GetAllUserVariables();
     var items = new List<CompletionItem>();
 
     if(TryGetParentIdentifier(script, cursorLine, cursorColumn, out var parentIdentifier))
@@ -83,12 +83,13 @@ public static partial class AresScriptAnalysis
         Kind = CompletionItemKind.Function
       }));
 
-      items.AddRange(userVariables.Select(name => new CompletionItem
+      items.AddRange(userVariables.Select(variable => new CompletionItem
       {
-        Label = name,
-        InsertText = name,
+        Label = variable.Key,
+        InsertText = variable.Key,
         Detail = "User variable",
-        Kind = CompletionItemKind.Variable
+        Kind = CompletionItemKind.Variable,
+        Schema = variable.Value.ToSchemaEntry()
       }));
     }
 
