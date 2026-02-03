@@ -37,7 +37,11 @@
                 <span>Script Editor</span>
             </div>
             <div class="script-playground__pane-body">
-                <ScriptEditor @ref="_editor" />
+                <ScriptEditor CompletionProvider="@ViewModel!.CompletionProvider"
+                              DiagnosticsProvider="@ViewModel!.DiagnosticsProvider"
+                              SemanticTokensProvider="@ViewModel!.SemanticTokensProvider"
+                              HoverProvider="@ViewModel!.HoverProvider"
+                              @ref="_editor" />
             </div>
         </div>
 
@@ -72,29 +76,29 @@
 </div>
 
 @code {
-    private ScriptEditor? _editor;
-    private List<OutputLine> _outputLines = new();
-    private IDisposable? _outputSubscription;
+  private ScriptEditor? _editor;
+  private List<OutputLine> _outputLines = new();
+  private IDisposable? _outputSubscription;
 
-    protected override void OnInitialized()
+  protected override async Task OnInitializedAsync()
+  {
+    base.OnInitialized();
+
+    // Subscribe to script output
+    if (ViewModel != null)
     {
-        base.OnInitialized();
-        
-        // Subscribe to script output
-        if (ViewModel != null)
-        {
-            _outputSubscription = ViewModel.ScriptOutput
-                .Subscribe(output =>
-                {
-                    _outputLines.Add(new OutputLine
+      _outputSubscription = ViewModel.ScriptOutput
+          .Subscribe(output =>
+          {
+            _outputLines.Add(new OutputLine
                     {
                         Timestamp = DateTime.Now.ToString("HH:mm:ss.fff"),
                         Message = output
                     });
-                    InvokeAsync(StateHasChanged);
-                });
-        }
+            InvokeAsync(StateHasChanged);
+          });
     }
+  }
 
     private async Task HandleStart()
     {

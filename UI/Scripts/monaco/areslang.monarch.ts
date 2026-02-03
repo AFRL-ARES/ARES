@@ -1,4 +1,6 @@
-export const language = {
+import type {languages} from 'monaco-editor';
+
+export const language: languages.IMonarchLanguage = {
   defaultToken: '',
   tokenPostfix: '.ares',
 
@@ -45,7 +47,7 @@ export const language = {
 
   symbols: /[=><!+\-*\/\%]+/,
 
-  escapes: /\\(?:[abfnrtv\\"'0-9xua-fA-F])/, // Keep broad to allow typical escapes.
+  escapes: /\\[abfnrtv\\"'0-9xua-fA-F]/, // Keep broad to allow typical escapes.
 
   brackets: [
     { open: '{', close: '}', token: 'delimiter.curly' },

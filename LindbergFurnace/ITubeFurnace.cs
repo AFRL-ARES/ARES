@@ -6,8 +6,8 @@ namespace LindbergFurnace
 {
   public interface ITubeFurnace : ISerialDevice<ITubeFurnaceConnection>, IDisposable
   {
-    Task GetSetpoint();
-    Task GetCurrentTemperature();
+    Task<int> GetSetpoint();
+    Task<int> GetCurrentTemperature();
     Task SetSetpoint(Temperature targetTemperature);
     Task<int> GetCurrentAddress();
     Task SetAndWaitForSetpoint(Temperature targetTemperature, double delta, double timeout, CancellationToken ct = default);

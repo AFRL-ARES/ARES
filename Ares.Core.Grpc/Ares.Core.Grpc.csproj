@@ -19,7 +19,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Ares.Core\Ares.Core.csproj" />
-    <ProjectReference Include="..\AresScript\AresScript.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Update="Properties\Resources.Designer.cs">

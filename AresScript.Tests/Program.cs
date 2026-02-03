@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using Antlr4.Runtime;
 using AresScript.Generated;
+using AresScript.Interpreters;
 using NUnit.Framework;
 
 namespace AresScript.Tests;
@@ -15,11 +16,11 @@ public class InterpreterTests
       IRecognizer recognizer,
       int offendingSymbol,
       int line,
-      int charPositionInLine,
+      int column,
       string msg,
       RecognitionException e)
     {
-      throw new InvalidOperationException($"Syntax error at {line}:{charPositionInLine} - {msg}");
+      throw new AresInterpreterException($"Syntax error: {msg}", line, column);
     }
   }
 
@@ -34,7 +35,7 @@ public class InterpreterTests
       string msg,
       RecognitionException e)
     {
-      throw new InvalidOperationException($"Syntax error at {line}:{charPositionInLine} - {msg}");
+      throw new AresInterpreterException($"Syntax error at {line}:{charPositionInLine} - {msg}");
     }
   }
 
@@ -49,7 +50,7 @@ public class InterpreterTests
     parser.RemoveErrorListeners();
     parser.AddErrorListener(new ThrowingParserErrorListener());
     var programCtx = parser.program();
-    var env = new Environment();
+    var env = new AresScriptEnvironment();
     env.AssignSystemFunctions(StandardLibrary.Functions);
     var visitor = new AresBaseInterpreter(env, cancellationToken);
 
@@ -67,7 +68,7 @@ public class InterpreterTests
     parser.RemoveErrorListeners();
     parser.AddErrorListener(new ThrowingParserErrorListener());
     var programCtx = parser.program();
-    var env = new Environment();
+    var env = new AresScriptEnvironment();
     env.AssignSystemFunctions(StandardLibrary.Functions);
     var visitor = new AresValidationInterpreter(env);
 
@@ -94,7 +95,7 @@ public class InterpreterTests
       assert num1 + num2 == 80
       """;
 
-    var ex = Assert.ThrowsAsync<InvalidOperationException>(() => RunScriptAsync(script));
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("Assertion failed"));
     return Task.CompletedTask;
   }
@@ -106,7 +107,7 @@ public class InterpreterTests
       assert 123
       """;
 
-    var ex = Assert.ThrowsAsync<InvalidOperationException>(() => RunScriptAsync(script));
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("Assert condition must be boolean"));
     return Task.CompletedTask;
   }
@@ -137,7 +138,7 @@ public class InterpreterTests
       add(a=1, 2)
       """;
 
-    var ex = Assert.ThrowsAsync<InvalidOperationException>(() => RunScriptAsync(script));
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("Positional argument follows keyword argument"));
     return Task.CompletedTask;
   }
@@ -152,7 +153,7 @@ public class InterpreterTests
       add(c=1)
       """;
 
-    var ex = Assert.ThrowsAsync<InvalidOperationException>(() => RunScriptAsync(script));
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("unexpected keyword argument"));
     return Task.CompletedTask;
   }
@@ -167,7 +168,7 @@ public class InterpreterTests
       add(1)
       """;
 
-    var ex = Assert.ThrowsAsync<InvalidOperationException>(() => RunScriptAsync(script));
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("missing required argument"));
     return Task.CompletedTask;
   }
@@ -182,7 +183,7 @@ public class InterpreterTests
       add(a=1, a=2)
       """;
 
-    var ex = Assert.ThrowsAsync<InvalidOperationException>(() => RunScriptAsync(script));
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("Duplicate keyword argument"));
     return Task.CompletedTask;
   }
@@ -192,7 +193,7 @@ public class InterpreterTests
   {
     var script = "print(value=1)";
 
-    var ex = Assert.ThrowsAsync<InvalidOperationException>(() => RunScriptAsync(script));
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("does not support keyword arguments"));
     return Task.CompletedTask;
   }
@@ -205,7 +206,7 @@ public class InterpreterTests
         print("oops")
       """;
 
-    var ex = Assert.ThrowsAsync<InvalidOperationException>(() => RunScriptAsync(script));
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("Syntax error"));
     return Task.CompletedTask;
   }
@@ -404,7 +405,7 @@ public class InterpreterTests
   {
     var script = "print(value=1)";
 
-    var ex = Assert.ThrowsAsync<InvalidOperationException>(() => ValidateScriptAsync(script));
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("does not support keyword arguments"));
     return Task.CompletedTask;
   }
@@ -419,7 +420,7 @@ public class InterpreterTests
       add(a=1, 2)
       """;
 
-    var ex = Assert.ThrowsAsync<InvalidOperationException>(() => ValidateScriptAsync(script));
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("Positional argument follows keyword argument"));
     return Task.CompletedTask;
   }
@@ -429,8 +430,8 @@ public class InterpreterTests
   {
     var script = "missing()";
 
-    var ex = Assert.ThrowsAsync<InvalidOperationException>(() => ValidateScriptAsync(script));
-    Assert.That(ex?.Message, Does.Contain("Function 'missing' not found"));
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
+    Assert.That(ex?.Message, Does.Contain("Unknown identifier 'missing'"));
     return Task.CompletedTask;
   }
 
@@ -485,7 +486,7 @@ public class InterpreterTests
                  empty_arr = []
                  test = empty_arr[1]
                  """;
-    var ex = Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => RunScriptAsync(script));
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
     return Task.CompletedTask;
   }
 
@@ -524,6 +525,45 @@ public class InterpreterTests
         return x
       assert inner() == 2
       assert x == 1
+      """;
+    await RunScriptAsync(script);
+  }
+
+  [Test]
+  public async Task Inner_Scope_Reassignment_Does_Not_Update_Outer()
+  {
+    var script = """
+      count = 1
+      def inner():
+        count = 2
+      inner()
+      assert count == 1
+      """;
+    await RunScriptAsync(script);
+  }
+
+  [Test]
+  public async Task Inner_Scope_Member_Assignment_Updates_Outer_Struct()
+  {
+    var script = """
+      s = { "x": 1 }
+      def inner():
+        s.x = 2
+      inner()
+      assert s.x == 2
+      """;
+    await RunScriptAsync(script);
+  }
+
+  [Test]
+  public async Task Inner_Scope_Index_Assignment_Updates_Outer_Collection()
+  {
+    var script = """
+      items = [1, 2, 3]
+      def inner():
+        items[1] = 9
+      inner()
+      assert items[1] == 9
       """;
     await RunScriptAsync(script);
   }
@@ -571,7 +611,7 @@ public class InterpreterTests
                  recurse(101)
                  """;
     
-    Assert.ThrowsAsync<InvalidOperationException>(() => RunScriptAsync(script));
+    Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
     return Task.CompletedTask;
   }
 

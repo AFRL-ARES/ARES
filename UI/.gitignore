@@ -1,0 +1,3 @@
+# Ignore transpiled JS and map files in the output directory
+wwwroot/js/**/*.js
+wwwroot/js/**/*.js.map

@@ -5,23 +5,27 @@ using AresScript.Generated;
 using System.Text.RegularExpressions;
 using Google.Protobuf;
 
-namespace AresScript;
+namespace AresScript.Interpreters;
 
+/// <summary>
+/// The main script execution interpreter. It executes the system functions.
+/// </summary>
 public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 {
-  protected readonly Environment Locals;
+  protected readonly AresScriptEnvironment Environment;
   private readonly CancellationToken _cancellationToken;
+  private int _lvalueResolutionDepth;
 
   protected override Task<AresValue> DefaultResult => Task.FromResult(AresValueHelper.CreateUnit());
 
   public AresBaseInterpreter(CancellationToken cancellationToken = default)
-    : this(new Environment(), cancellationToken)
+    : this(new AresScriptEnvironment(), cancellationToken)
   {
   }
 
-  public AresBaseInterpreter(Environment environment, CancellationToken cancellationToken = default)
+  public AresBaseInterpreter(AresScriptEnvironment aresScriptEnvironment, CancellationToken cancellationToken = default)
   {
-    Locals = environment ?? throw new ArgumentNullException(nameof(environment));
+    Environment = aresScriptEnvironment ?? throw new ArgumentNullException(nameof(aresScriptEnvironment));
     _cancellationToken = cancellationToken;
   }
 
@@ -116,7 +120,11 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     var condition = await Visit(assertContext.expression(0));
     if(condition.KindCase != AresValue.KindOneofCase.BoolValue)
     {
-      throw new InvalidOperationException($"Assert condition must be boolean. {context.Start.Line}:{context.Start.Column}");
+      throw new AresInterpreterException(
+        "Assert condition must be boolean.",
+        context.Start.Line,
+        context.Start.Column
+      );
     }
 
     if(condition.BoolValue)
@@ -128,10 +136,10 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     if(assertContext.expression().Length > 1)
     {
       var messageValue = await Visit(assertContext.expression(1));
-      message = $"Assertion failed: {FormatAresValue(messageValue)}";
+      message = $"Assertion failed: {messageValue.Stringify()}";
     }
 
-    throw new InvalidOperationException($"{message}. {context.Start.Line}:{context.Start.Column}");
+    throw new AresInterpreterException($"{message}.", context.Start.Line, context.Start.Column);
   }
 
   public override async Task<AresValue> VisitAssignStmt(AresLangParser.AssignStmtContext context)
@@ -140,11 +148,40 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     var assignment = context.assignment();
     if(assignment.lvalue() is AresLangParser.LValueIndexContext indexContext)
     {
-      var container = await Visit(indexContext.lvalue());
+      _lvalueResolutionDepth++;
+      AresValue container;
+      try
+      {
+        container = await Visit(indexContext.lvalue());
+      }
+      finally
+      {
+        _lvalueResolutionDepth--;
+      }
       var indexVal = await Visit(indexContext.expression());
+      if(container.KindCase == AresValue.KindOneofCase.StructValue)
+      {
+        if(!indexVal.HasStringValue)
+        {
+          throw new AresInterpreterException(
+            "Provided index expression was not a string.",
+            context.Start.Line,
+            context.Start.Column
+          );
+        }
+
+        var newValueForStruct = await Visit(assignment.expression());
+        container.StructValue.Fields[indexVal.StringValue] = newValueForStruct;
+        return AresValueHelper.CreateUnit();
+      }
+
       if(!indexVal.HasNumberValue)
       {
-        throw new InvalidOperationException($"Provided index expression was not a number. {context.Start.Line}:{context.Start.Column}");
+        throw new AresInterpreterException(
+          "Provided index expression was not a number.",
+          context.Start.Line,
+          context.Start.Column
+        );
       }
 
       var index = Convert.ToInt32(indexVal.NumberValue);
@@ -156,13 +193,21 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
         {
           if(!newValue.HasNumberValue)
           {
-            throw new InvalidOperationException($"Assigned value must be numeric for bytes. {context.Start.Line}:{context.Start.Column}");
+            throw new AresInterpreterException(
+              "Assigned value must be numeric for bytes.",
+              context.Start.Line,
+              context.Start.Column
+            );
           }
 
           var byteValue = newValue.NumberValue;
           if(byteValue < byte.MinValue || byteValue > byte.MaxValue)
           {
-            throw new InvalidOperationException($"Assigned byte value is out of range. {context.Start.Line}:{context.Start.Column}");
+            throw new AresInterpreterException(
+              "Assigned byte value is out of range.",
+              context.Start.Line,
+              context.Start.Column
+            );
           }
 
           var bytes = container.BytesValue.ToByteArray();
@@ -174,7 +219,11 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
         {
           if(!newValue.HasStringValue)
           {
-            throw new InvalidOperationException($"Assigned value must be a string. {context.Start.Line}:{context.Start.Column}");
+            throw new AresInterpreterException(
+              "Assigned value must be a string.",
+              context.Start.Line,
+              context.Start.Column
+            );
           }
 
           container.StringArrayValue.Strings[index] = newValue.StringValue;
@@ -184,7 +233,11 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
         {
           if(!newValue.HasNumberValue)
           {
-            throw new InvalidOperationException($"Assigned value must be numeric. {context.Start.Line}:{context.Start.Column}");
+            throw new AresInterpreterException(
+              "Assigned value must be numeric.",
+              context.Start.Line,
+              context.Start.Column
+            );
           }
 
           container.NumberArrayValue.Numbers[index] = newValue.NumberValue;
@@ -198,7 +251,11 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
           return AresValueHelper.CreateUnit();
         }
         default:
-          throw new InvalidOperationException($"Cannot assign to index of type {container.KindCase}. {context.Start.Line}:{context.Start.Column}");
+          throw new AresInterpreterException(
+            $"Cannot assign to index of type {container.KindCase}.",
+            context.Start.Line,
+            context.Start.Column
+          );
       }
     }
 
@@ -255,13 +312,17 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
       AresValue.KindOneofCase.StringArrayValue => iterable.StringArrayValue.Strings.Select(AresValueHelper.CreateString),
       AresValue.KindOneofCase.NumberArrayValue => iterable.NumberArrayValue.Numbers.Select(AresValueHelper.CreateNumber),
       AresValue.KindOneofCase.BytesValue => iterable.BytesValue.Select(b => AresValueHelper.CreateNumber(b)),
-      _ => throw new InvalidOperationException($"Value is not iterable: {iterable.KindCase}. {context.Start.Line}:{context.Start.Column}")
+      _ => throw new AresInterpreterException(
+        $"Value is not iterable: {iterable.KindCase}.",
+        context.Start.Line,
+        context.Start.Column
+      )
     };
 
     foreach(var item in items)
     {
       ThrowIfCancellationRequested();
-      Locals[iterVar] = item;
+      Environment[iterVar] = item;
       try
       {
         await Visit(context.forStatement().loopBlock());
@@ -290,21 +351,40 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
   public override Task<AresValue> VisitLValueId(AresLangParser.LValueIdContext context)
   {
     var baseId = context.ID().GetText();
-    if(Locals.TryGetValueCurrentScope(baseId, out var value))
+    if(Environment.TryGetValueCurrentScope(baseId, out var value))
     {
       return Task.FromResult(value);
     }
 
-    Locals[baseId] = AresValueHelper.CreateNull();
-    return Task.FromResult(Locals[baseId]);
+    if(_lvalueResolutionDepth > 0 && Environment.TryGetUserValue(baseId, out var outerValue))
+    {
+      return Task.FromResult(outerValue);
+    }
+
+    Environment[baseId] = AresValueHelper.CreateNull();
+    return Task.FromResult(Environment[baseId]);
   }
 
   public override async Task<AresValue> VisitLValueMember(AresLangParser.LValueMemberContext context)
   {
-    var value = await Visit(context.lvalue());
+    _lvalueResolutionDepth++;
+    AresValue value;
+    try
+    {
+      value = await Visit(context.lvalue());
+    }
+    finally
+    {
+      _lvalueResolutionDepth--;
+    }
+
     if(value.StructValue is null)
     {
-      throw new InvalidOperationException($"Expected a struct value, currently {value.KindCase}. {context.Start.Line}:{context.Start.Column}");
+      throw new AresInterpreterException(
+        $"Expected a struct value, currently {value.KindCase}.",
+        context.Start.Line,
+        context.Start.Column
+      );
     }
     var id = context.ID().GetText();
     if(value.StructValue.Fields.TryGetValue(id, out var member))
@@ -319,19 +399,37 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
   public override async Task<AresValue> VisitLValueIndex(AresLangParser.LValueIndexContext context)
   {
-    var currentValue = await Visit(context.lvalue());
+    _lvalueResolutionDepth++;
+    AresValue currentValue;
+    try
+    {
+      currentValue = await Visit(context.lvalue());
+    }
+    finally
+    {
+      _lvalueResolutionDepth--;
+    }
+
     if(currentValue.KindCase != AresValue.KindOneofCase.BytesValue
         && currentValue.KindCase != AresValue.KindOneofCase.StringArrayValue
         && currentValue.KindCase != AresValue.KindOneofCase.NumberArrayValue
         && currentValue.KindCase != AresValue.KindOneofCase.ListValue)
     {
-      throw new InvalidOperationException($"Cannot access index of a value that is not of list type. {context.Start.Line}:{context.Start.Column}");
+      throw new AresInterpreterException(
+        "Cannot access index of a value that is not of list type.",
+        context.Start.Line,
+        context.Start.Column
+      );
     }
 
     var indexVal = await Visit(context.expression());
     if(!indexVal.HasNumberValue)
     {
-      throw new InvalidOperationException($"Provided index expression was not a number. {context.Start.Line}:{context.Start.Column}");
+      throw new AresInterpreterException(
+        "Provided index expression was not a number.",
+        context.Start.Line,
+        context.Start.Column
+      );
     }
 
     var index = Convert.ToInt32(indexVal.NumberValue);
@@ -342,7 +440,11 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
       AresValue.KindOneofCase.StringArrayValue => AresValueHelper.CreateString(currentValue.StringArrayValue.Strings[index]),
       AresValue.KindOneofCase.NumberArrayValue => AresValueHelper.CreateNumber(currentValue.NumberArrayValue.Numbers[index]),
       AresValue.KindOneofCase.ListValue => currentValue.ListValue.Values[index],
-      _ => throw new InvalidOperationException($"Unsupported data type {currentValue.KindCase}. {context.Start.Line}:{context.Start.Column}")
+      _ => throw new AresInterpreterException(
+        $"Unsupported data type {currentValue.KindCase}.",
+        context.Start.Line,
+        context.Start.Column
+      )
     };
 
     return val;
@@ -381,7 +483,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     var block = context.functionDeclaration().funcBlock();
 
     var userFunc = new AresScriptFunction(functionId, paramIds, block);
-    Locals.AssignFunction(functionId, userFunc);
+    Environment.AssignFunction(functionId, userFunc);
 
     return Task.FromResult(AresValueHelper.CreateFunction(functionId));
   }
@@ -392,7 +494,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     var isInt = int.TryParse(context.INT().GetText(), out var integer);
     if(!isInt)
     {
-      throw new InvalidOperationException($"Unable to parse to int. {context.Start.Line}:{context.Start.Column}");
+      throw new AresInterpreterException("Unable to parse to int.", context.Start.Line, context.Start.Column);
     }
     return Task.FromResult(AresValueHelper.CreateNumber(integer));
   }
@@ -402,7 +504,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     var isFloat = double.TryParse(context.FLOAT().GetText(), out var doubleBoi);
     if(!isFloat)
     {
-      throw new InvalidOperationException($"Unable to parse to float. {context.Start.Line}:{context.Start.Column}");
+      throw new AresInterpreterException("Unable to parse to float.", context.Start.Line, context.Start.Column);
     }
 
     return Task.FromResult(AresValueHelper.CreateNumber(doubleBoi));
@@ -411,7 +513,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
   public override Task<AresValue> VisitString([NotNull] AresLangParser.StringContext context)
   {
     var raw = context.STRING().GetText();
-    return Task.FromResult(AresValueHelper.CreateString(Unquote(raw)));
+    return Task.FromResult(AresValueHelper.CreateString(InterpreterHelpers.Unquote(raw)));
   }
 
   public override Task<AresValue> VisitBool([NotNull] AresLangParser.BoolContext context)
@@ -429,12 +531,12 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
   public override Task<AresValue> VisitId(AresLangParser.IdContext context)
   {
     var id = context.ID().GetText();
-    if(Locals.TryGetAresFunction(id, out var _) || Locals.TryGetUserFunction(id, out var _))
+    if(Environment.TryGetSystemFunction(id, out var _) || Environment.TryGetUserFunction(id, out var _))
     {
       return Task.FromResult(AresValueHelper.CreateFunction(id));
     }
 
-    return Task.FromResult(Locals[context.ID().GetText()]);
+    return Task.FromResult(Environment[context.ID().GetText()]);
   }
 
   public override async Task<AresValue> VisitParens([NotNull] AresLangParser.ParensContext context)
@@ -475,12 +577,12 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     return AresValueHelper.CreateList(aresVals);
   }
 
-  public override async Task<AresValue> VisitObject([NotNull] AresLangParser.ObjectContext context)
+  public override async Task<AresValue> VisitStruct([NotNull] AresLangParser.StructContext context)
   {
     var aresStruct = new AresStruct();
-    foreach(var pair in context.obj().pair())
+    foreach(var pair in context.structure().pair())
     {
-      var key = pair.ID()?.GetText() ?? Unquote(pair.STRING().GetText());
+      var key = pair.ID()?.GetText() ?? InterpreterHelpers.Unquote(pair.STRING().GetText());
       var value = await Visit(pair.expression());
       aresStruct.AddValue(key, value);
     }
@@ -496,7 +598,11 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     var structVal = await Visit(context.expression());
     if(structVal.KindCase != AresValue.KindOneofCase.StructValue)
     {
-      throw new InvalidOperationException($"Trying to access a member of a value that is not a struct. Value type: {structVal.KindCase}. {context.Start.Line}:{context.Start.Column}");
+      throw new AresInterpreterException(
+        $"Trying to access a member of a value that is not a struct. Value type: {structVal.KindCase}.",
+        context.Start.Line,
+        context.Start.Column
+      );
     }
 
     if(structVal.StructValue.Fields.TryGetValue(context.ID().GetText(), out var aresValue))
@@ -513,15 +619,40 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     if(currentValue.KindCase != AresValue.KindOneofCase.BytesValue
         && currentValue.KindCase != AresValue.KindOneofCase.StringArrayValue
         && currentValue.KindCase != AresValue.KindOneofCase.NumberArrayValue
-        && currentValue.KindCase != AresValue.KindOneofCase.ListValue)
+        && currentValue.KindCase != AresValue.KindOneofCase.ListValue
+        && currentValue.KindCase != AresValue.KindOneofCase.StructValue)
     {
-      throw new InvalidOperationException($"Cannot access index of a value that is not of list type. {context.Start.Line}:{context.Start.Column}");
+      throw new AresInterpreterException(
+        "Cannot access index of a value that is not of list or struct type.",
+        context.Start.Line,
+        context.Start.Column
+      );
     }
 
     var indexVal = await Visit(context.expression(1));
+    if(currentValue.KindCase == AresValue.KindOneofCase.StructValue)
+    {
+      if(!indexVal.HasStringValue)
+      {
+        throw new AresInterpreterException(
+          "Provided index expression was not a string.",
+          context.Start.Line,
+          context.Start.Column
+        );
+      }
+
+      return currentValue.StructValue.Fields.TryGetValue(indexVal.StringValue, out var fieldValue)
+        ? fieldValue
+        : AresValueHelper.CreateNull();
+    }
+
     if(!indexVal.HasNumberValue)
     {
-      throw new InvalidOperationException($"Provided index expression was not a number. {context.Start.Line}:{context.Start.Column}");
+      throw new AresInterpreterException(
+        "Provided index expression was not a number.",
+        context.Start.Line,
+        context.Start.Column
+      );
     }
 
     var index = Convert.ToInt32(indexVal.NumberValue);
@@ -533,14 +664,18 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
         AresValue.KindOneofCase.StringArrayValue => AresValueHelper.CreateString(currentValue.StringArrayValue.Strings[index]),
         AresValue.KindOneofCase.NumberArrayValue => AresValueHelper.CreateNumber(currentValue.NumberArrayValue.Numbers[index]),
         AresValue.KindOneofCase.ListValue => currentValue.ListValue.Values[index],
-        _ => throw new InvalidOperationException($"Unsupported data type {currentValue.KindCase}. {context.Start.Line}:{context.Start.Column}")
+        _ => throw new AresInterpreterException(
+          $"Unsupported data type {currentValue.KindCase}.",
+          context.Start.Line,
+          context.Start.Column
+        )
       };
 
       return val;
     }
     catch(ArgumentOutOfRangeException)
     {
-      throw new ArgumentOutOfRangeException($"Index was out of range. {context.Start.Line}:{context.Start.Column}");
+      throw new AresInterpreterException("Index was out of range.", context.Start.Line, context.Start.Column);
     }
   }
 
@@ -550,7 +685,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     var callee = await Visit(ctx.expression());
 
     if(callee.FunctionValue is null)
-      throw new InvalidOperationException("Attempted to call a non-function");
+      throw new AresInterpreterException("Attempted to call a non-function");
 
     var id = callee.FunctionValue.FunctionId;
 
@@ -568,8 +703,10 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
         {
           if(seenKeywordArg)
           {
-            throw new InvalidOperationException(
-              $"Positional argument follows keyword argument. {positionalArg.Start.Line}:{positionalArg.Start.Column}"
+            throw new AresInterpreterException(
+              "Positional argument follows keyword argument.",
+              positionalArg.Start.Line,
+              positionalArg.Start.Column
             );
           }
 
@@ -582,8 +719,10 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
           var name = keywordArg.ID().GetText();
           if(keywordArgs.ContainsKey(name))
           {
-            throw new InvalidOperationException(
-              $"Duplicate keyword argument '{name}'. {keywordArg.Start.Line}:{keywordArg.Start.Column}"
+            throw new AresInterpreterException(
+              $"Duplicate keyword argument '{name}'.",
+              keywordArg.Start.Line,
+              keywordArg.Start.Column
             );
           }
 
@@ -591,44 +730,46 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
           break;
         }
         default:
-          throw new InvalidOperationException(
-            $"Unsupported argument type {argCtx.GetType().Name}. {argCtx.Start.Line}:{argCtx.Start.Column}"
+          throw new AresInterpreterException(
+            $"Unsupported argument type {argCtx.GetType().Name}.",
+            argCtx.Start.Line,
+            argCtx.Start.Column
           );
       }
     }
 
-    if(Locals.TryGetAresFunction(id, out var aresFn))
+    if(Environment.TryGetSystemFunction(id, out var aresFn))
     {
       if(keywordArgs.Count > 0)
       {
-        throw new InvalidOperationException($"Runtime function '{id}' does not support keyword arguments");
+        throw new AresInterpreterException($"Runtime function '{id}' does not support keyword arguments");
       }
 
       ThrowIfCancellationRequested();
       return await aresFn.Body(positionalArgs, _cancellationToken);
     }
 
-    if(!Locals.TryGetUserFunction(id, out var userFn))
-      throw new InvalidOperationException($"Function '{id}' not found");
+    if(!Environment.TryGetUserFunction(id, out var userFn))
+      throw new AresInterpreterException($"Function '{id}' not found");
     
     ThrowIfCancellationRequested();
-    if(Locals.Depth > 100)
+    if(Environment.Depth > 100)
     {
-      throw new InvalidOperationException("Maximum function call depth reached.");
+      throw new AresInterpreterException("Maximum function call depth reached.");
     }
-    Locals.EnterScope();
+    Environment.EnterScope();
     try
     {
       if(positionalArgs.Count > userFn.Parameters.Count)
       {
-        throw new InvalidOperationException(
-        $"Function '{id}' expected {userFn.Parameters.Count} arguments but got {positionalArgs.Count}"
+        throw new AresInterpreterException(
+          $"Function '{id}' expected {userFn.Parameters.Count} arguments but got {positionalArgs.Count}"
         );
       }
 
       for(var i = 0; i < positionalArgs.Count; i++)
       {
-        Locals[userFn.Parameters[i]] = positionalArgs[i];
+        Environment[userFn.Parameters[i]] = positionalArgs[i];
       }
 
       foreach(var (name, value) in keywordArgs)
@@ -636,23 +777,23 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
         var index = FindParameterIndex(userFn.Parameters, name);
         if(index < 0)
         {
-          throw new InvalidOperationException($"Function '{id}' got an unexpected keyword argument '{name}'");
+          throw new AresInterpreterException($"Function '{id}' got an unexpected keyword argument '{name}'");
         }
 
         if(index < positionalArgs.Count)
         {
-          throw new InvalidOperationException($"Function '{id}' got multiple values for argument '{name}'");
+          throw new AresInterpreterException($"Function '{id}' got multiple values for argument '{name}'");
         }
 
-        Locals[name] = value;
+        Environment[name] = value;
       }
 
       for(var i = positionalArgs.Count; i < userFn.Parameters.Count; i++)
       {
         var name = userFn.Parameters[i];
-        if(!Locals.TryGetValueCurrentScope(name, out var _))
+        if(!Environment.TryGetValueCurrentScope(name, out var _))
         {
-          throw new InvalidOperationException($"Function '{id}' missing required argument '{name}'");
+          throw new AresInterpreterException($"Function '{id}' missing required argument '{name}'");
         }
       }
 
@@ -673,7 +814,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     }
     finally
     {
-      Locals.ExitScope();
+      Environment.ExitScope();
     }
     
   }
@@ -686,7 +827,11 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
       return AresValueHelper.CreateNumber(-value.NumberValue);
     }
 
-    throw new InvalidOperationException($"Cannot perform unary minus on type {value.KindCase}. {context.Start.Line}:{context.Start.Column}");
+    throw new AresInterpreterException(
+      $"Cannot perform unary minus on type {value.KindCase}.",
+      context.Start.Line,
+      context.Start.Column
+    );
   }
 
   public override async Task<AresValue> VisitMulDiv(AresLangParser.MulDivContext context)
@@ -696,12 +841,12 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
     if(!left.HasNumberValue)
     {
-      throw new InvalidOperationException($"Left hand side is not numeric. {context.Start.Line}:{context.Start.Column}");
+      throw new AresInterpreterException("Left hand side is not numeric.", context.Start.Line, context.Start.Column);
     }
 
     if(!right.HasNumberValue)
     {
-      throw new InvalidOperationException($"Right hand side is not numeric. {context.Start.Line}:{context.Start.Column}");
+      throw new AresInterpreterException("Right hand side is not numeric.", context.Start.Line, context.Start.Column);
     }
 
     var result = context.op.Type switch
@@ -709,35 +854,48 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
       AresLangParser.MUL => left.NumberValue * right.NumberValue,
       AresLangParser.DIV => left.NumberValue / right.NumberValue,
       AresLangParser.MOD => left.NumberValue % right.NumberValue,
-      _ => throw new InvalidOperationException($"Wrong operation type {context.op.Type}. {context.op.Line}:{context.op.Column}")
+      _ => throw new AresInterpreterException(
+        $"Wrong operation type {context.op.Type}.",
+        context.op.Line,
+        context.op.Column
+      )
     };
 
     return AresValueHelper.CreateNumber(result);
   }
 
-  public override async Task<AresValue> VisitAddSub([NotNull] AresLangParser.AddSubContext context)
+  public override async Task<AresValue> VisitAdd(AresLangParser.AddContext context)
   {
     var left = await Visit(context.expression(0));
     var right = await Visit(context.expression(1));
 
+    if(left.HasNumberValue && right.HasNumberValue)
+    {
+      return AresValueHelper.CreateNumber(left.NumberValue + right.NumberValue);
+    }
+
+    var leftStr = left.Stringify();
+    var rightStr = right.Stringify();
+    
+    return AresValueHelper.CreateString(leftStr + rightStr);
+  }
+
+  public override async Task<AresValue> VisitSub(AresLangParser.SubContext context)
+  {
+    var left = await Visit(context.expression(0));
+    var right = await Visit(context.expression(1));
+    
     if(!left.HasNumberValue)
     {
-      throw new InvalidOperationException($"Left hand side is not numeric. {context.Start.Line}:{context.Start.Column}");
+      throw new AresInterpreterException("Left hand side is not numeric.", context.Start.Line, context.Start.Column);
     }
 
     if(!right.HasNumberValue)
     {
-      throw new InvalidOperationException($"Right hand side is not numeric. {context.Start.Line}:{context.Start.Column}");
+      throw new AresInterpreterException("Right hand side is not numeric.", context.Start.Line, context.Start.Column);
     }
-
-    var result = context.op.Type switch
-    {
-      AresLangParser.ADD => left.NumberValue + right.NumberValue,
-      AresLangParser.SUB => left.NumberValue - right.NumberValue,
-      _ => throw new InvalidOperationException($"Wrong operation type {context.op.Type}. {context.op.Line}:{context.op.Column}")
-    };
-
-    return AresValueHelper.CreateNumber(result);
+    
+    return AresValueHelper.CreateNumber(left.NumberValue - right.NumberValue);
   }
 
   public override async Task<AresValue> VisitRelational([NotNull] AresLangParser.RelationalContext context)
@@ -747,12 +905,12 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
     if(!left.HasNumberValue)
     {
-      throw new InvalidOperationException($"Left hand side is not numeric. {context.Start.Line}:{context.Start.Column}");
+      throw new AresInterpreterException("Left hand side is not numeric.", context.Start.Line, context.Start.Column);
     }
 
     if(!right.HasNumberValue)
     {
-      throw new InvalidOperationException($"Right hand side is not numeric. {context.Start.Line}:{context.Start.Column}");
+      throw new AresInterpreterException("Right hand side is not numeric.", context.Start.Line, context.Start.Column);
     }
 
     var result = context.op.Type switch
@@ -761,7 +919,11 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
       AresLangParser.LT => left.NumberValue < right.NumberValue,
       AresLangParser.GE => left.NumberValue >= right.NumberValue,
       AresLangParser.LE => left.NumberValue <= right.NumberValue,
-      _ => throw new InvalidOperationException($"Wrong operation type {context.op.Type}. {context.op.Line}:{context.op.Column}")
+      _ => throw new AresInterpreterException(
+        $"Wrong operation type {context.op.Type}.",
+        context.op.Line,
+        context.op.Column
+      )
     };
 
     return AresValueHelper.CreateBool(result);
@@ -776,7 +938,11 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     {
       AresLangParser.EQ => left.Equals(right),
       AresLangParser.NEQ => !left.Equals(right),
-      _ => throw new InvalidOperationException($"Wrong operation type {context.op.Type}. {context.op.Line}:{context.op.Column}")
+      _ => throw new AresInterpreterException(
+        $"Wrong operation type {context.op.Type}.",
+        context.op.Line,
+        context.op.Column
+      )
     };
 
     return AresValueHelper.CreateBool(result);
@@ -790,7 +956,11 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
       return AresValueHelper.CreateBool(!value.BoolValue);
     }
 
-    throw new InvalidOperationException($"Cannot perform negation on type {value.KindCase}. {context.Start.Line}:{context.Start.Column}");
+    throw new AresInterpreterException(
+      $"Cannot perform negation on type {value.KindCase}.",
+      context.Start.Line,
+      context.Start.Column
+    );
   }
 
   public override async Task<AresValue> VisitLogicAnd([NotNull] AresLangParser.LogicAndContext context)
@@ -799,12 +969,20 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     var right = await Visit(context.expression(1));
     if(left.KindCase != AresValue.KindOneofCase.BoolValue)
     {
-      throw new InvalidOperationException($"Cannot perform AND on type {left.KindCase}. {context.Start.Line}:{context.Start.Column}");
+      throw new AresInterpreterException(
+        $"Cannot perform AND on type {left.KindCase}.",
+        context.Start.Line,
+        context.Start.Column
+      );
     }
 
     if(right.KindCase != AresValue.KindOneofCase.BoolValue)
     {
-      throw new InvalidOperationException($"Cannot perform AND on type {right.KindCase}. {context.Start.Line}:{context.Start.Column}");
+      throw new AresInterpreterException(
+        $"Cannot perform AND on type {right.KindCase}.",
+        context.Start.Line,
+        context.Start.Column
+      );
     }
 
     return AresValueHelper.CreateBool(left.BoolValue && right.BoolValue);
@@ -816,42 +994,24 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     var right = await Visit(context.expression(1));
     if(left.KindCase != AresValue.KindOneofCase.BoolValue)
     {
-      throw new InvalidOperationException($"Cannot perform OR on type {left.KindCase}. {context.Start.Line}:{context.Start.Column}");
+      throw new AresInterpreterException(
+        $"Cannot perform OR on type {left.KindCase}.",
+        context.Start.Line,
+        context.Start.Column
+      );
     }
 
     if(right.KindCase != AresValue.KindOneofCase.BoolValue)
     {
-      throw new InvalidOperationException($"Cannot perform OR on type {right.KindCase}. {context.Start.Line}:{context.Start.Column}");
+      throw new AresInterpreterException(
+        $"Cannot perform OR on type {right.KindCase}.",
+        context.Start.Line,
+        context.Start.Column
+      );
     }
 
     return AresValueHelper.CreateBool(left.BoolValue || right.BoolValue);
   }
 
   #endregion
-
-  public static string Unquote(string raw)
-  {
-    var unquoted = raw.Substring(1, raw.Length - 2);
-    var value = Regex.Unescape(unquoted);
-
-    return value;
-  }
-
-  private static string FormatAresValue(AresValue value)
-  {
-    return value.KindCase switch
-    {
-      AresValue.KindOneofCase.NullValue => "None",
-      AresValue.KindOneofCase.BoolValue => value.BoolValue.ToString(),
-      AresValue.KindOneofCase.StringValue => value.StringValue,
-      AresValue.KindOneofCase.NumberValue => value.NumberValue.ToString(),
-      AresValue.KindOneofCase.BytesValue => BitConverter.ToString(value.BytesValue.ToByteArray()),
-      AresValue.KindOneofCase.StringArrayValue => string.Join(", ", value.StringArrayValue.Strings),
-      AresValue.KindOneofCase.NumberArrayValue => string.Join(", ", value.NumberArrayValue.Numbers),
-      AresValue.KindOneofCase.ListValue => $"[{string.Join(", ", value.ListValue.Values.Select(v => v.KindCase))}]",
-      AresValue.KindOneofCase.StructValue => $"{{{string.Join(", ", value.StructValue.Fields.Select(kv => $"{kv.Key}: {kv.Value.KindCase}"))}}}",
-      AresValue.KindOneofCase.UnitValue => "()",
-      _ => "Unknown value"
-    };
-  }
 }

@@ -1,8 +1,8 @@
-﻿using Ares.Datamodel;
+using Ares.Datamodel;
 
 namespace AresScript;
 
-public class ScriptScope(string name = "")
+public class UserScope(string name = "")
 {
   public string Name { get; } = name;
 
