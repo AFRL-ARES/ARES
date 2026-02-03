@@ -1,5 +1,7 @@
-import type { CancellationToken, editor, languages, Position } from 'monaco-editor';
+﻿import type { CancellationToken, editor, IDisposable, languages, Position } from 'monaco-editor';
 import type { DotNet } from '@microsoft/dotnet-js-interop';
+
+let hoverDisposable: IDisposable | null = null;
 
 export function setupHover(hoverService: DotNet.DotNetObject) {
   if (typeof monaco === 'undefined') {
@@ -7,8 +9,14 @@ export function setupHover(hoverService: DotNet.DotNetObject) {
     return;
   }
 
+  hoverDisposable?.dispose();
   const provider = new AresLangHoverProvider(hoverService);
-  monaco.languages.registerHoverProvider('ares', provider);
+  hoverDisposable = monaco.languages.registerHoverProvider('ares', provider);
+}
+
+export function disposeHover() {
+  hoverDisposable?.dispose();
+  hoverDisposable = null;
 }
 
 class AresLangHoverProvider implements languages.HoverProvider {

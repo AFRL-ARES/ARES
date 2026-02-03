@@ -1,4 +1,4 @@
-import type { editor, languages } from 'monaco-editor';
+﻿import type { editor, IDisposable, languages } from 'monaco-editor';
 import type { DotNet } from '@microsoft/dotnet-js-interop';
 
 type SemanticToken = {
@@ -14,13 +14,16 @@ const legend: languages.SemanticTokensLegend = {
   tokenModifiers: []
 };
 
+let semanticTokensDisposable: IDisposable | null = null;
+
 export function setupSemanticTokens(provider: DotNet.DotNetObject) {
   if (typeof monaco === 'undefined') {
     console.error('Monaco Editor is not loaded. Ensure BlazorMonaco is properly initialized.');
     return;
   }
 
-  monaco.languages.registerDocumentSemanticTokensProvider('ares', {
+  semanticTokensDisposable?.dispose();
+  semanticTokensDisposable = monaco.languages.registerDocumentSemanticTokensProvider('ares', {
     getLegend() {
       return legend;
     },
@@ -35,6 +38,11 @@ export function setupSemanticTokens(provider: DotNet.DotNetObject) {
       // no-op
     }
   });
+}
+
+export function disposeSemanticTokens() {
+  semanticTokensDisposable?.dispose();
+  semanticTokensDisposable = null;
 }
 
 function encodeSemanticTokens(tokens: SemanticToken[]): Uint32Array {

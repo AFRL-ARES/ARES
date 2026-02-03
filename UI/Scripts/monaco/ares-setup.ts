@@ -6,8 +6,9 @@ import { conf } from './areslang.language-configuration.js';
  * Registers the ARES language with Monaco Editor.
  * This should be called once before the editor is initialized with the 'ares' language.
  */
-export function registerAresLanguage(): void {
-  if (typeof monaco === 'undefined') {
+export async function registerAresLanguage(): Promise<void> {
+  const monacoReady = await waitForMonaco();
+  if (!monacoReady) {
     console.error('Monaco Editor is not loaded. Ensure BlazorMonaco is properly initialized.');
     return;
   }
@@ -39,4 +40,20 @@ export function registerAresLanguage(): void {
   });
   
   monaco.editor.setTheme('ares-dark');
+}
+
+async function waitForMonaco(maxAttempts = 20, delayMs = 50): Promise<boolean> {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    if (typeof monaco !== 'undefined') {
+      return true;
+    }
+
+    await delay(delayMs);
+  }
+
+  return typeof monaco !== 'undefined';
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => window.setTimeout(resolve, ms));
 }

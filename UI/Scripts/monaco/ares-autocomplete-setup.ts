@@ -1,5 +1,7 @@
-﻿import type { CancellationToken, editor, languages, Position } from 'monaco-editor';
+﻿import type { CancellationToken, editor, IDisposable, languages, Position } from 'monaco-editor';
 import type { DotNet } from '@microsoft/dotnet-js-interop';
+
+let autoCompleteDisposable: IDisposable | null = null;
 
 export function setupAutoComplete(autoCompleteService: DotNet.DotNetObject) {
   if (typeof monaco === 'undefined') {
@@ -7,8 +9,14 @@ export function setupAutoComplete(autoCompleteService: DotNet.DotNetObject) {
     return;
   }
 
-  let autoCompleteProvider = new AresLangAutocompleteProvider(autoCompleteService);
-  monaco.languages.registerCompletionItemProvider("ares", autoCompleteProvider);
+  autoCompleteDisposable?.dispose();
+  const autoCompleteProvider = new AresLangAutocompleteProvider(autoCompleteService);
+  autoCompleteDisposable = monaco.languages.registerCompletionItemProvider('ares', autoCompleteProvider);
+}
+
+export function disposeAutoComplete() {
+  autoCompleteDisposable?.dispose();
+  autoCompleteDisposable = null;
 }
 
 export class AresLangAutocompleteProvider implements languages.CompletionItemProvider {
@@ -22,7 +30,7 @@ export class AresLangAutocompleteProvider implements languages.CompletionItemPro
 
   provideCompletionItems(model: editor.ITextModel, position: Position, context: languages.CompletionContext, token: CancellationToken): languages.ProviderResult<languages.CompletionList> {
     return this.autoCompleteService
-      .invokeMethodAsync("GetCompletionItems", model.getValue(), position.lineNumber, position.column)
+      .invokeMethodAsync('GetCompletionItems', model.getValue(), position.lineNumber, position.column)
       .then((suggestions) => ({ suggestions: suggestions as languages.CompletionItem[] }));
   }
 

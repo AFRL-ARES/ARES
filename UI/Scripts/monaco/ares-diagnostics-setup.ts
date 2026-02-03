@@ -1,4 +1,5 @@
-import type { DotNet } from '@microsoft/dotnet-js-interop';
+﻿import type { DotNet } from '@microsoft/dotnet-js-interop';
+import type { IDisposable, editor } from 'monaco-editor';
 
 type MonacoDiagnostic = {
   startLineNumber: number;
@@ -10,11 +11,18 @@ type MonacoDiagnostic = {
   code?: string | null;
 };
 
+let diagnosticsModel: editor.ITextModel | null = null;
+let diagnosticsContentChangeDisposable: IDisposable | null = null;
+let diagnosticsModelDisposeDisposable: IDisposable | null = null;
+let diagnosticsTimer: number | undefined;
+
 export function setupDiagnostics(diagnosticsService: DotNet.DotNetObject, debounceMs = 250) {
   if (typeof monaco === 'undefined') {
     console.error('Monaco Editor is not loaded. Ensure BlazorMonaco is properly initialized.');
     return;
   }
+
+  disposeDiagnostics();
 
   const model = monaco.editor.getModels().find(m => m.getLanguageId() === 'ares');
   if (!model) {
@@ -22,10 +30,16 @@ export function setupDiagnostics(diagnosticsService: DotNet.DotNetObject, deboun
     return;
   }
 
+  diagnosticsModel = model;
+
   const updateMarkers = () => {
     diagnosticsService
       .invokeMethodAsync('GetDiagnostics', model.getValue())
       .then((diagnostics) => {
+        if (diagnosticsModel !== model || model.isDisposed()) {
+          return;
+        }
+
         const markers = (diagnostics as MonacoDiagnostic[]).map(d => ({
           startLineNumber: d.startLineNumber,
           startColumn: d.startColumn,
@@ -41,15 +55,37 @@ export function setupDiagnostics(diagnosticsService: DotNet.DotNetObject, deboun
       .catch((err) => console.error('Failed to fetch diagnostics', err));
   };
 
-  const debouncedUpdate = debounce(updateMarkers, debounceMs);
-  const disposable = model.onDidChangeContent(() => debouncedUpdate());
+  const debouncedUpdate = () => {
+    if (diagnosticsTimer !== undefined) {
+      clearTimeout(diagnosticsTimer);
+    }
+
+    diagnosticsTimer = window.setTimeout(() => updateMarkers(), debounceMs);
+  };
+
+  diagnosticsContentChangeDisposable = model.onDidChangeContent(() => debouncedUpdate());
+  diagnosticsModelDisposeDisposable = model.onWillDispose(() => disposeDiagnostics());
 
   updateMarkers();
+}
 
-  model.onWillDispose(() => {
-    disposable.dispose();
-    monaco.editor.setModelMarkers(model, 'ares', []);
-  });
+export function disposeDiagnostics() {
+  if (diagnosticsTimer !== undefined) {
+    clearTimeout(diagnosticsTimer);
+    diagnosticsTimer = undefined;
+  }
+
+  diagnosticsContentChangeDisposable?.dispose();
+  diagnosticsContentChangeDisposable = null;
+
+  diagnosticsModelDisposeDisposable?.dispose();
+  diagnosticsModelDisposeDisposable = null;
+
+  if (diagnosticsModel && !diagnosticsModel.isDisposed()) {
+    monaco.editor.setModelMarkers(diagnosticsModel, 'ares', []);
+  }
+
+  diagnosticsModel = null;
 }
 
 function mapSeverity(severity: number): number {
@@ -65,14 +101,4 @@ function mapSeverity(severity: number): number {
     default:
       return monaco.MarkerSeverity.Error;
   }
-}
-
-function debounce(fn: () => void, waitMs: number) {
-  let timeout: number | undefined;
-  return () => {
-    if (timeout !== undefined) {
-      clearTimeout(timeout);
-    }
-    timeout = window.setTimeout(() => fn(), waitMs);
-  };
 }
