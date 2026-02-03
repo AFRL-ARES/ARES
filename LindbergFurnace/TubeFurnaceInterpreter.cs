@@ -38,11 +38,13 @@ public class TubeFurnaceInterpreter : DeviceCommandInterpreter<ITubeFurnace, Tub
         break;
 
       case TubeFurnaceCommand.GetSetpoint:
-        await Device.GetSetpoint();
+        var currentSetpoint = await Device.GetSetpoint();
+        result.Result = AresStructHelper.CreateNumberStruct("Setpoint", currentSetpoint);
         break;
 
       case TubeFurnaceCommand.GetCurrentTemperature:
-        await Device.GetCurrentTemperature();
+        var currentTemperature = await Device.GetCurrentTemperature();
+        result.Result = AresStructHelper.CreateNumberStruct("Temperature", currentTemperature);
         break;
 
       case TubeFurnaceCommand.SetAndWaitForSetpoint:
@@ -71,8 +73,8 @@ public class TubeFurnaceInterpreter : DeviceCommandInterpreter<ITubeFurnace, Tub
 
   protected override CommandMetadata[] CommandsToMetadatas()
   {
-    return new CommandMetadata[]
-    {
+    return
+    [
       new()
       {
         DeviceId = Device.UniqueId,
@@ -91,7 +93,13 @@ public class TubeFurnaceInterpreter : DeviceCommandInterpreter<ITubeFurnace, Tub
       new() {
         DeviceId = Device.UniqueId,
         Name = TubeFurnaceCommand.GetCurrentTemperature.ToString(),
-        Description = "Get's the current temperature of the tube furnace."
+        Description = "Get's the current temperature of the tube furnace.",
+        OutputMetadata = new OutputMetadata() 
+        { 
+          Index = 0,
+          Description = "The current temperature of the Tube Furnace",
+          DataSchema = AresSchemaBuilder.Create("Setpoint", AresDataType.Number).Build()
+        }
       },
 
       new()
@@ -126,6 +134,6 @@ public class TubeFurnaceInterpreter : DeviceCommandInterpreter<ITubeFurnace, Tub
           }
         }
       }
-    };
+    ];
   }
 }
