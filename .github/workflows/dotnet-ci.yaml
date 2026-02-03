@@ -26,12 +26,12 @@ jobs:
       with:
         dotnet-version: '10.x'
 
-    - name: Setup Node.js environment
+    - name: Setup Node.js Environment
       uses: actions/setup-node@v6.2.0
       with:
         node-version: 24
 
-    - name: Install Node.js dev packages
+    - name: Install Node.js Dev Packages
       run: npm ci
       working-directory: UI
 
