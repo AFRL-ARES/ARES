@@ -13,13 +13,13 @@ public interface IMassFlowController : ISerialDevice<IMfcConnection>, IAsyncDisp
   MfcType MfcType { get; }
 
   Task Start();
+  double? GetSetpoint();
   Task<bool> QueryManufacturerInfo();
   Task ChangeHardwareUnitId(char targetId);
   Task CancelValveHold();
   Task ChooseDifferentGas(int gasNumber);
   Task<bool> QueryGasListInfo();
   Task<bool> QueryDataFrameFormat();
-
   Task SetSetpointSource(SetpointSource source);
   Task<SetpointSource> GetSetpointSource();
   Task StartUpdateLoop(TimeSpan interval);

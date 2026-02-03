@@ -102,8 +102,7 @@ public class MassFlowControllerInterpreter : DeviceCommandInterpreter<IMassFlowC
         break;
 
       case MassFlowControllerCommand.GetSetpoint:
-        var data = await Device.StateStream.Take(1);
-        var setpt = data.LiveData?.Setpoint?.Value;
+        var setpt = Device.GetSetpoint();
         if(setpt is not null)
         {
           result.Result = AresStructHelper.CreateNumberStruct(MfcDataTypes.Setpoint.Key, setpt.Value);
