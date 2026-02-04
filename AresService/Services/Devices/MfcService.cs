@@ -7,7 +7,6 @@ using AlicatMFC.Commands.Requests;
 using Ares.Alicat.Mfc.Config;
 using Ares.Alicat.Mfc.Messaging;
 using Ares.Core.Device;
-using Ares.Datamodel.Device;
 using AresService.Data;
 using AresService.DeviceManagers;
 using Google.Protobuf.WellKnownTypes;

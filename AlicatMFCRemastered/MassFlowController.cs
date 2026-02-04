@@ -1,18 +1,21 @@
-﻿using AlicatMFCRemastered.Models;
+﻿using AlicatMFCRemastered.Commands.Responses;
+using AlicatMFCRemastered.Commands.Responses.Streamed;
+using AlicatMFCRemastered.Models;
 using Ares.Datamodel;
+using Ares.Device;
 using Ares.Device.Serial;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Reactive.Disposables;
+using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Text.RegularExpressions;
-using System.Xml.Linq;
 using UnitsNet;
 using UnitsNet.Units;
 
 namespace AlicatMFCRemastered;
 
-public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowController
+public class MassFlowController : AresDevice, IMassFlowController
 {
   private readonly int _expectedDataFormatEntryCount;
   private readonly BehaviorSubject<AresStruct> _stateSubject = new(new AresStruct());
@@ -24,17 +27,19 @@ public class MassFlowController : SerialDevice<IMfcConnection>, IMassFlowControl
   private List<ManufacturerInfoEntry> _manufacturerInfo = new();
   private List<DataFrameFormatEntry> _dataFrameFormatEntries = new();
   private LiveDataResponse? _liveData;
+  private readonly IAresSerialConnection _serialConnection;
 
-  public MassFlowController(string name, char id, IMfcConnection connection, bool hasValve, MfcType mfcType, ILogger<MassFlowController> logger) : base(name, connection)
+  public MassFlowController(string name, string uniqueId, AresStruct config, IAresSerialConnection connection, ILogger<MassFlowController> logger) : base(name, uniqueId)
   {
-    HasValve = hasValve;
-    MfcType = mfcType;
+    HasValve = config.Fields["HasValve"]?.BoolValue ?? false;
+    MfcType = config.Fields["MfcType"]?.StringValue ?? "";
     _logger = logger;
     StateStream = _stateSubject.AsObservable();
-    AssumedId = id;
+    AssumedId = config.Fields["serialId"].StringValue[0];
+    _serialConnection = connection;
     _stateWatchers = new CompositeDisposable
     {
-      Connection.GetTransactionStream<LiveDataResponse>().Select(transaction => transaction.Response).Subscribe(UpdateLiveData)
+      _serialConnection.GetTransactionStream<LiveDataResponse>().Select(transaction => transaction.Response).Subscribe(UpdateLiveData)
     };
 
     _expectedDataFormatEntryCount = mfcType == MfcType.Normal ? 12 : 7;

@@ -1,10 +1,11 @@
-﻿using System;
+﻿using Ares.Datamodel;
+using Ares.Datamodel.Device;
+using System;
+using System.Collections.Generic;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
-using Ares.Datamodel;
-using Ares.Datamodel.Device;
 
 namespace Ares.Device;
 
@@ -16,65 +17,57 @@ public abstract class AresDevice : IAresDevice
   private DeviceOperationalStatus _status;
   private bool _disposed;
 
-  protected AresDevice(string name)
-    : this(name, Guid.NewGuid().ToString()) { }
-
   protected AresDevice(string name, string id)
   {
-    if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Device name is required.", nameof(name));
-    if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("UniqueId is required.", nameof(id));
-
     Name = name;
     UniqueId = id;
 
-    _status = new DeviceOperationalStatus
-    {
-      OperationalState = OperationalState.Inactive,
-      Message = $"{Name} constructed. Activation has not been called yet."
-    };
-
+    // Initialize status logic
+    _status = new DeviceOperationalStatus { OperationalState = OperationalState.Inactive };
     _statusSubject = new BehaviorSubject<DeviceOperationalStatus>(_status);
     _statusSink = Subject.Synchronize(_statusSubject);
+    Status = new DeviceOperationalStatus();
   }
+
+  protected AresDevice(string name) : this(name, Guid.NewGuid().ToString()) 
+  { 
+  
+  }
+
+  #region Metadata & Discovery (New)
+
+  public virtual IReadOnlyList<DeviceCommandDescriptor> CommandDescriptors { get; protected set; } = Array.Empty<DeviceCommandDescriptor>();
+  public virtual AresDataSchema StateSchema { get; protected set; } = new();
+  public virtual AresDataSchema SettingSchema { get; protected set; } = new();
+
+  #endregion
+
+  #region Generic Interaction
+  public abstract Task<CommandResult> ExecuteCommand(string command, AresStruct arguments, CancellationToken token);
+
+  public abstract Task UpdateSettings(AresStruct settings);
+
+  #endregion
+
+  #region Existing Contract
 
   public string Name { get; }
+  public string UniqueId { get; init; }
+  public string Version { get; protected set; } = "0.0.0";
+  public string Type { get; protected set; } = "";
+  public string Description { get; protected set; } = "";
+  public string HardwareIdentity { get; protected set; } = "";
 
-  public DeviceOperationalStatus Status
-  {
-    get => _status;
-    protected set
-    {
-      ArgumentNullException.ThrowIfNull(value);
-
-      bool shouldEmit;
-
-      lock (_statusGate)
-      {
-        if (_disposed) return; // ignore updates after disposal
-        if (ReferenceEquals(value, _status)) return; // suppress redundant reassignments of same instance
-
-        _status = value;
-        shouldEmit = true;
-      }
-
-      if (shouldEmit)
-      {
-        _statusSink.OnNext(value); // emit outside lock, serialized to preserve call order
-      }
-    }
-  }
+  public DeviceOperationalStatus Status { get; protected set; }
 
   public IObservable<DeviceOperationalStatus> StatusObservable => _statusSubject.AsObservable();
   public abstract IObservable<AresStruct> StateStream { get; }
 
-  public string Version { get; protected set; } = "0.0.0";
-  public string Type { get; protected set; } = "";
-  public string Description { get; protected set; } = "";
-  public string UniqueId { get; init; }
-
   public abstract Task<bool> Activate(CancellationToken ct);
   public abstract Task EnterSafeMode(CancellationToken ct);
   public abstract Task<AresStruct> GetState();
+
+  #endregion
 
   public void Dispose()
   {

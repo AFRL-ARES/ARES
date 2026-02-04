@@ -33,8 +33,4 @@
     <PackageReference Include="System.IO.Ports" Version="10.0.1" />
     <PackageReference Include="System.Reactive" Version="6.1.0" />
   </ItemGroup>
-  
-	<ItemGroup>
-	  <ProjectReference Include="..\..\Ares.Device\AresDevicePluginBase\Ares.Device.csproj" />
-	</ItemGroup>
 </Project>

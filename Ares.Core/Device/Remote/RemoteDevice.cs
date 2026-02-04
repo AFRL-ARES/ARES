@@ -11,6 +11,7 @@ using Grpc.Core;
 using Grpc.Net.Client;
 
 namespace Ares.Core.Device.Remote;
+
 public sealed class RemoteDevice : AresDevice, IAsyncDisposable
 {
   private readonly GrpcChannel _channel;
@@ -183,7 +184,7 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     return client.EnterSafeModeAsync(new Empty()).ResponseAsync;
   }
 
-  public async Task<CommandResult> ExecuteCommand(string command, AresStruct arguments, CancellationToken token)
+  public async override Task<CommandResult> ExecuteCommand(string command, AresStruct arguments, CancellationToken token)
   {
     var client = GetClient();
     var executionRequest = new ExecuteCommandRequest { CommandName = command, Arguments = new AresStruct() };
@@ -267,7 +268,7 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     await FetchSettings();
   }
 
-  public async Task UpdateSettings(AresStruct settings)
+  public async override Task UpdateSettings(AresStruct settings)
   {
     foreach(var setting in Settings)
     {

@@ -6,8 +6,11 @@ namespace Ares.Device.Serial;
 
 public class AresHardwareConnection : AresSerialConnection
 {
-  protected AresHardwareConnection(SerialPortConnectionInfo connectionInfo, string portName, SerialConnectionOptions? connectionOptions = null) : base(connectionInfo, portName, connectionOptions)
+  protected AresHardwareConnection(SerialPortConnectionInfo connectionInfo, 
+    string portName, 
+    SerialConnectionOptions? connectionOptions = null) : base(connectionInfo, portName, connectionOptions)
   {
+
   }
 
   private SerialPort? SystemPort { get; set; }
