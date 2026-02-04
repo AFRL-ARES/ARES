@@ -60,6 +60,8 @@ else
   app.UseHsts();
 }
 
+app.UseStatusCodePagesWithReExecute("/404");
+
 app.UseHttpsRedirection();
 
 app.MapStaticAssets();
@@ -68,6 +70,7 @@ app.UseRouting();
 
 app.UseAntiforgery();
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
+
 
 app.Services.GetService<UnitCategoryHelper>();
 

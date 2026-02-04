@@ -3,5 +3,12 @@
     <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
     <FocusOnNavigate RouteData="@routeData" Selector="h1" />
   </Found>
-  <NotFound />
+  <NotFound>
+    <LayoutView Layout="@typeof(MainLayout)">
+      <div class="alert alert-danger">
+        <h3>404 - Page Not Found</h3>
+        <p>Sorry, there's nothing at this address.</p>
+      </div>
+    </LayoutView>
+  </NotFound>
 </Router>
