@@ -1,5 +1,4 @@
 using CommunityToolkit.Mvvm.Messaging;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Radzen;
 using Serilog;
@@ -24,22 +23,9 @@ builder.Configuration
 ConfigureDatabaseServices(builder.Services, builder.Configuration);
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
-builder.Services.AddDefaultIdentity<IdentityUser>(options =>
-{
-  options.SignIn.RequireConfirmedAccount = true;
-  options.Password = new PasswordOptions
-  {
-    RequireDigit = false,
-    RequiredLength = 6,
-    RequiredUniqueChars = 0,
-    RequireLowercase = false,
-    RequireNonAlphanumeric = false,
-    RequireUppercase = false
-  };
-}).AddEntityFrameworkStores<ApplicationDbContext>();
 
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
-builder.Services.AddServerSideBlazor();
+builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddRadzenComponents();
 builder.Services.Configure<RemoteServiceSettings>(builder.Configuration.GetSection(nameof(RemoteServiceSettings)));
 builder.Services.Configure<CertificateSettings>(builder.Configuration.GetSection(nameof(CertificateSettings)));
@@ -51,7 +37,7 @@ builder.Services.BindClients();
 builder.Services.AddSingleton<INotificationReceivingService, NotificationReceivingService>();
 
 builder.Services.AddOptions();
-builder.Services.AddAuthorizationCore();
+builder.Services.AddAntiforgery();
 
 builder.Services.AddHostedService<ServiceStarter>();
 
@@ -69,23 +55,22 @@ if(app.Environment.IsDevelopment())
 }
 else
 {
-  app.UseExceptionHandler("/Error");
+  app.UseExceptionHandler("/Error", createScopeForErrors: true);
   // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
   app.UseHsts();
 }
 
+app.UseStatusCodePagesWithReExecute("/404");
+
 app.UseHttpsRedirection();
 
-app.UseStaticFiles();
+app.MapStaticAssets();
 
 app.UseRouting();
 
-//app.UseAuthentication();
-//app.UseAuthorization();
+app.UseAntiforgery();
+app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 
-app.MapControllers();
-app.MapBlazorHub();
-app.MapFallbackToPage("/_Host");
 
 app.Services.GetService<UnitCategoryHelper>();
 
