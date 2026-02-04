@@ -1,5 +1,4 @@
 using CommunityToolkit.Mvvm.Messaging;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Radzen;
 using Serilog;
@@ -24,22 +23,8 @@ builder.Configuration
 ConfigureDatabaseServices(builder.Services, builder.Configuration);
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
-builder.Services.AddDefaultIdentity<IdentityUser>(options =>
-{
-  options.SignIn.RequireConfirmedAccount = true;
-  options.Password = new PasswordOptions
-  {
-    RequireDigit = false,
-    RequiredLength = 6,
-    RequiredUniqueChars = 0,
-    RequireLowercase = false,
-    RequireNonAlphanumeric = false,
-    RequireUppercase = false
-  };
-}).AddEntityFrameworkStores<ApplicationDbContext>();
 
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
-builder.Services.AddServerSideBlazor();
 builder.Services.AddRadzenComponents();
 builder.Services.Configure<RemoteServiceSettings>(builder.Configuration.GetSection(nameof(RemoteServiceSettings)));
 builder.Services.Configure<CertificateSettings>(builder.Configuration.GetSection(nameof(CertificateSettings)));
@@ -51,7 +36,7 @@ builder.Services.BindClients();
 builder.Services.AddSingleton<INotificationReceivingService, NotificationReceivingService>();
 
 builder.Services.AddOptions();
-builder.Services.AddAuthorizationCore();
+builder.Services.AddAntiforgery();
 
 builder.Services.AddHostedService<ServiceStarter>();
 
@@ -76,16 +61,16 @@ else
 
 app.UseHttpsRedirection();
 
-app.UseStaticFiles();
+//app.UseStaticFiles();
+app.MapStaticAssets();
 
 app.UseRouting();
 
 //app.UseAuthentication();
 //app.UseAuthorization();
 
-app.MapControllers();
-app.MapBlazorHub();
-app.MapFallbackToPage("/_Host");
+app.UseAntiforgery();
+app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 
 app.Services.GetService<UnitCategoryHelper>();
 
