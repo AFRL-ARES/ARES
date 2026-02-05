@@ -37,6 +37,10 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
     {
       return AresSchemaBuilder.Entry(AresDataType.Any).Build();
     }
+    if(_environment.TryGetUserLambda(id, out var _))
+    {
+      return AresSchemaBuilder.Entry(AresDataType.Function).Build();
+    }
 
     if(_environment.TryGetValue(id, out var envVal))
     {
@@ -77,6 +81,11 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
     }
 
     return CreateListEntry(AresSchemaBuilder.Entry(AresDataType.Any).Build());
+  }
+
+  public override SchemaEntry VisitLambdaExpr(AresLangParser.LambdaExprContext context)
+  {
+    return AresSchemaBuilder.Entry(AresDataType.Function).Build();
   }
 
   public override SchemaEntry VisitStruct(AresLangParser.StructContext context)
@@ -148,6 +157,10 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
     if(functionId is not null && _environment.TryGetSystemFunction(functionId, out var systemFunc))
     {
       return systemFunc.OutputSchema;
+    }
+    if(functionId is not null && _environment.TryGetUserLambda(functionId, out var _))
+    {
+      return AresSchemaBuilder.Entry(AresDataType.Any).Build();
     }
 
     return AresSchemaBuilder.Entry(AresDataType.Any).Build();

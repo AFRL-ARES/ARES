@@ -9,4 +9,6 @@ public class UserScope(string name = "")
   public Dictionary<string, AresValue> Variables { get; } = [];
 
   public Dictionary<string, AresScriptFunction> Functions { get; } = [];
+
+  public Dictionary<string, AresScriptLambda> Lambdas { get; } = [];
 }

@@ -40,6 +40,17 @@ public class AresScriptEnvironment
     currentScope.Functions[id] = value;
   }
 
+  public void AssignLambda(string id, AresScriptLambda value)
+  {
+    if(SystemFunctionExists(id))
+    {
+      throw new InvalidOperationException($"Lambda {id} already exists as a system function.");
+    }
+
+    var currentScope = _userScopes.Peek();
+    currentScope.Lambdas[id] = value;
+  }
+
   public bool TryGetValue(string id, [NotNullWhen(true)] out AresValue? value)
   {
     foreach(var scope in _userScopes)
@@ -116,6 +127,21 @@ public class AresScriptEnvironment
     }
 
     func = null;
+    return false;
+  }
+
+  public bool TryGetUserLambda(string id, [NotNullWhen(true)] out AresScriptLambda? lambda)
+  {
+    foreach(var scope in _userScopes)
+    {
+      var lambdaExists = scope.Lambdas.TryGetValue(id, out lambda);
+      if(lambdaExists && lambda is not null)
+      {
+        return true;
+      }
+    }
+
+    lambda = null;
     return false;
   }
 

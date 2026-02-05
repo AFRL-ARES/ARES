@@ -490,6 +490,43 @@ public class InterpreterTests
   }
 
   [Test]
+  public async Task Lambda_Expression_Works()
+  {
+    var script = """
+      inc = x => x + 1
+      assert inc(2) == 3
+      """;
+
+    await RunScriptAsync(script);
+  }
+
+  [Test]
+  public async Task Lambda_Closure_Captures_By_Value()
+  {
+    var script = """
+      seed = 5
+      addSeed = x => x + seed
+      seed = 20
+      assert addSeed(2) == 7
+      """;
+
+    await RunScriptAsync(script);
+  }
+
+  [Test]
+  public Task Validator_Rejects_Too_Many_Lambda_Args()
+  {
+    var script = """
+      inc = x => x + 1
+      inc(1, 2)
+      """;
+
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
+    Assert.That(ex?.Message, Does.Contain("expected 1 arguments but got 2"));
+    return Task.CompletedTask;
+  }
+
+  [Test]
   public Task Validator_Rejects_Too_Many_Extension_Args()
   {
     var script = """

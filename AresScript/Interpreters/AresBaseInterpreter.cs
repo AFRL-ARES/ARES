@@ -543,7 +543,9 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
   public override Task<AresValue> VisitId(AresLangParser.IdContext context)
   {
     var id = context.ID().GetText();
-    if(Environment.TryGetSystemFunction(id, out var _) || Environment.TryGetUserFunction(id, out var _))
+    if(Environment.TryGetSystemFunction(id, out var _)
+      || Environment.TryGetUserFunction(id, out var _)
+      || Environment.TryGetUserLambda(id, out var _))
     {
       return Task.FromResult(AresValueHelper.CreateFunction(id));
     }
@@ -587,6 +589,30 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     }
 
     return AresValueHelper.CreateList(aresVals);
+  }
+
+  public override Task<AresValue> VisitLambdaExpr(AresLangParser.LambdaExprContext context)
+  {
+    var lambdaContext = context.lambdaExpression();
+    var parameters = lambdaContext switch
+    {
+      AresLangParser.LambdaSingleParamContext singleParam => [singleParam.ID().GetText()],
+      AresLangParser.LambdaParamListContext paramList => paramList.ID().Select(id => id.GetText()).ToArray(),
+      _ => []
+    };
+
+    var body = lambdaContext switch
+    {
+      AresLangParser.LambdaSingleParamContext singleParam => singleParam.expression(),
+      AresLangParser.LambdaParamListContext paramList => paramList.expression(),
+      _ => throw new AresInterpreterException("Invalid lambda expression.")
+    };
+
+    var closure = Environment.GetAllUserVariables()
+      .ToDictionary(kv => kv.Key, kv => kv.Value.Clone(), StringComparer.Ordinal);
+    var lambdaId = $"lambda::{Guid.NewGuid():N}";
+    Environment.AssignLambda(lambdaId, new AresScriptLambda(lambdaId, parameters, body, closure));
+    return Task.FromResult(AresValueHelper.CreateFunction(lambdaId));
   }
 
   public override async Task<AresValue> VisitStruct([NotNull] AresLangParser.StructContext context)
@@ -769,7 +795,14 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     }
 
     if(!Environment.TryGetUserFunction(id, out var userFn))
-      throw new AresInterpreterException($"Function '{id}' not found");
+    {
+      if(!Environment.TryGetUserLambda(id, out var userLambda))
+      {
+        throw new AresInterpreterException($"Function '{id}' not found");
+      }
+
+      return await ExecuteLambda(userLambda, id, positionalArgs, keywordArgs);
+    }
     
     await CheckExecutionControlAsync();
     if(Environment.Depth > 100)
@@ -869,6 +902,82 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     await CheckExecutionControlAsync();
     var result = await extensionFunc.Body(positionalArgs, _executionControlToken);
     return (null, true, result);
+  }
+
+  private async Task<AresValue> ExecuteLambda(
+    AresScriptLambda lambda,
+    string id,
+    IReadOnlyList<AresValue> positionalArgs,
+    IReadOnlyDictionary<string, AresValue> keywordArgs)
+  {
+    await CheckExecutionControlAsync();
+    if(Environment.Depth > 100)
+    {
+      throw new AresInterpreterException("Maximum function call depth reached.");
+    }
+
+    Environment.EnterScope();
+    try
+    {
+      foreach(var (name, value) in lambda.Closure)
+      {
+        Environment[name] = value.Clone();
+      }
+
+      if(positionalArgs.Count > lambda.Parameters.Count)
+      {
+        throw new AresInterpreterException(
+          $"Function '{id}' expected {lambda.Parameters.Count} arguments but got {positionalArgs.Count}"
+        );
+      }
+
+      for(var i = 0; i < positionalArgs.Count; i++)
+      {
+        Environment[lambda.Parameters[i]] = positionalArgs[i];
+      }
+
+      foreach(var (name, value) in keywordArgs)
+      {
+        var index = FindParameterIndex(lambda.Parameters, name);
+        if(index < 0)
+        {
+          throw new AresInterpreterException($"Function '{id}' got an unexpected keyword argument '{name}'");
+        }
+
+        if(index < positionalArgs.Count)
+        {
+          throw new AresInterpreterException($"Function '{id}' got multiple values for argument '{name}'");
+        }
+
+        Environment[name] = value;
+      }
+
+      for(var i = positionalArgs.Count; i < lambda.Parameters.Count; i++)
+      {
+        var name = lambda.Parameters[i];
+        if(!Environment.TryGetValueCurrentScope(name, out var _))
+        {
+          throw new AresInterpreterException($"Function '{id}' missing required argument '{name}'");
+        }
+      }
+
+      return await Visit(lambda.Body);
+    }
+    finally
+    {
+      Environment.ExitScope();
+    }
+
+    static int FindParameterIndex(IReadOnlyList<string> parameters, string name)
+    {
+      for(var i = 0; i < parameters.Count; i++)
+      {
+        if(string.Equals(parameters[i], name, StringComparison.Ordinal))
+          return i;
+      }
+
+      return -1;
+    }
   }
 
   public override async Task<AresValue> VisitUnaryMinus([NotNull] AresLangParser.UnaryMinusContext context)

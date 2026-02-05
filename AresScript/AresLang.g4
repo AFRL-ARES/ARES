@@ -127,7 +127,12 @@ atom:
 	| ID										# Id
 	| LPAREN expression RPAREN						# Parens
 	| LBRACK (expression (',' expression)*)? RBRACK	# Array
+  | lambdaExpression              # LambdaExpr
 	| structure										# Struct;
+
+lambdaExpression:
+  ID ARROW expression # LambdaSingleParam
+  | LPAREN (ID (',' ID)*)? RPAREN ARROW expression # LambdaParamList;
 
 // Key-Value pairs for structs. Python can apparently support expressions as keys, but that seems a
 // bit overkill for ARES scripts, so we'll limit it to just identifiers and strings for now
@@ -160,6 +165,7 @@ GT: '>';
 LT: '<';
 GE: '>=';
 LE: '<=';
+ARROW: '=>';
 
 // Keywords
 IF: 'if';

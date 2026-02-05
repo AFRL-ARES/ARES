@@ -439,12 +439,46 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     }
   }
 
+  public override async Task VisitLambdaExpr(AresLangParser.LambdaExprContext context)
+  {
+    var lambdaExpression = context.lambdaExpression();
+    var parameterNames = lambdaExpression switch
+    {
+      AresLangParser.LambdaSingleParamContext singleParam => [singleParam.ID().GetText()],
+      AresLangParser.LambdaParamListContext paramList => paramList.ID().Select(id => id.GetText()).ToArray(),
+      _ => []
+    };
+
+    var body = lambdaExpression switch
+    {
+      AresLangParser.LambdaSingleParamContext singleParam => singleParam.expression(),
+      AresLangParser.LambdaParamListContext paramList => paramList.expression(),
+      _ => throw new AresInterpreterException("Invalid lambda expression.", context.Start.Line, context.Start.Column)
+    };
+
+    _environment.EnterScope();
+    try
+    {
+      foreach(var parameter in parameterNames)
+      {
+        _environment.AssignVariable(parameter, AresValueHelper.CreateNull());
+      }
+
+      await Visit(body);
+    }
+    finally
+    {
+      _environment.ExitScope();
+    }
+  }
+
   public override Task VisitId([NotNull] AresLangParser.IdContext context)
   {
     var id = context.ID().GetText();
     if(_environment.TryGetValue(id, out _)
       || _environment.TryGetSystemFunction(id, out _)
-      || _environment.TryGetUserFunction(id, out _))
+      || _environment.TryGetUserFunction(id, out _)
+      || _environment.TryGetUserLambda(id, out _))
     {
       return Task.CompletedTask;
     }
@@ -501,7 +535,8 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
 
   public override async Task VisitFunctionCall(AresLangParser.FunctionCallContext ctx)
   {
-    await Visit(ctx.expression());
+    var ctxExpr = ctx.expression();
+    await Visit(ctxExpr);
 
     var positionalArgs = new List<AresLangParser.ExpressionContext>();
     var keywordArgs = new Dictionary<string, AresLangParser.ExpressionContext>(StringComparer.Ordinal);
@@ -553,7 +588,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       }
     }
 
-    if(ctx.expression() is AresLangParser.MemberAccessContext memberCtx)
+    if(ctxExpr is AresLangParser.MemberAccessContext memberCtx)
     {
       var memberName = memberCtx.ID().GetText();
       var receiverSchema = _typeInference.Visit(memberCtx.expression());
@@ -564,10 +599,9 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       }
     }
 
-    var functionId = TryResolveFunctionId(ctx.expression());
+    var functionId = TryResolveFunctionId(ctxExpr);
     if(functionId is null)
     {
-      var ctxExpr = ctx.expression();
       if(ctxExpr is AresLangParser.MemberAccessContext unresolvedMemberCtx)
       {
         throw new AresInterpreterException(
@@ -625,6 +659,55 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       for(var i = positionalArgs.Count; i < userFn.Parameters.Count; i++)
       {
         var name = userFn.Parameters[i];
+        if(!keywordArgs.ContainsKey(name))
+        {
+          throw new AresInterpreterException(
+            $"Function '{functionId}' missing required argument '{name}'.",
+            ctx.Start.Line,
+            ctx.Start.Column
+          );
+        }
+      }
+
+      return;
+    }
+
+    if(_environment.TryGetUserLambda(functionId, out var lambda))
+    {
+      if(positionalArgs.Count > lambda.Parameters.Count)
+      {
+        throw new AresInterpreterException(
+          $"Function '{functionId}' expected {lambda.Parameters.Count} arguments but got {positionalArgs.Count}",
+          ctx.argList().Start.Line,
+          ctx.argList().Start.Column
+        );
+      }
+
+      foreach(var (name, _) in keywordArgs)
+      {
+        var index = FindParameterIndex(lambda.Parameters, name);
+        if(index < 0)
+        {
+          throw new AresInterpreterException(
+            $"Function '{functionId}' got an unexpected keyword argument '{name}'",
+            ctx.argList().Start.Line,
+            ctx.argList().Start.Column
+          );
+        }
+
+        if(index < positionalArgs.Count)
+        {
+          throw new AresInterpreterException(
+            $"Function '{functionId}' got multiple values for argument '{name}'",
+            ctx.argList().Start.Line,
+            ctx.argList().Start.Column
+          );
+        }
+      }
+
+      for(var i = positionalArgs.Count; i < lambda.Parameters.Count; i++)
+      {
+        var name = lambda.Parameters[i];
         if(!keywordArgs.ContainsKey(name))
         {
           throw new AresInterpreterException(
@@ -851,7 +934,9 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     var functionId = TryResolveFunctionId(expression);
     if(functionId is not null)
     {
-      if(_environment.TryGetSystemFunction(functionId, out var _) || _environment.TryGetUserFunction(functionId, out var _))
+      if(_environment.TryGetSystemFunction(functionId, out var _)
+        || _environment.TryGetUserFunction(functionId, out var _)
+        || _environment.TryGetUserLambda(functionId, out var _))
       {
         return AresValueHelper.CreateFunction(functionId);
       }
@@ -933,6 +1018,8 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
               }
             case AresLangParser.ParensContext parensContext:
               return TryBuildAssignmentValue(parensContext.expression());
+            case AresLangParser.LambdaExprContext lambdaContext:
+              return CreateLambdaFunctionValue(lambdaContext.lambdaExpression());
           }
           break;
         }
@@ -950,6 +1037,29 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     }
 
     return null;
+  }
+
+  private AresValue CreateLambdaFunctionValue(AresLangParser.LambdaExpressionContext lambdaExpression)
+  {
+    var parameters = lambdaExpression switch
+    {
+      AresLangParser.LambdaSingleParamContext singleParam => [singleParam.ID().GetText()],
+      AresLangParser.LambdaParamListContext paramList => paramList.ID().Select(id => id.GetText()).ToArray(),
+      _ => []
+    };
+
+    var body = lambdaExpression switch
+    {
+      AresLangParser.LambdaSingleParamContext singleParam => singleParam.expression(),
+      AresLangParser.LambdaParamListContext paramList => paramList.expression(),
+      _ => throw new AresInterpreterException("Invalid lambda expression.")
+    };
+
+    var closure = _environment.GetAllUserVariables()
+      .ToDictionary(kv => kv.Key, kv => kv.Value.Clone(), StringComparer.Ordinal);
+    var lambdaId = $"lambda::{Guid.NewGuid():N}";
+    _environment.AssignLambda(lambdaId, new AresScriptLambda(lambdaId, parameters, body, closure));
+    return AresValueHelper.CreateFunction(lambdaId);
   }
 
   private bool TryResolveValue(AresLangParser.ExpressionContext expression, out AresValue? value)
