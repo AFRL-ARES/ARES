@@ -96,8 +96,19 @@ public static class StandardLibrary
       {
         throw new InvalidOperationException("Argument provided is not a number");
       }
-      
-      await Task.Delay(TimeSpan.FromMilliseconds(args[0].NumberValue), token);
+
+      var remaining = TimeSpan.FromMilliseconds(args[0].NumberValue);
+      var interval = TimeSpan.FromMilliseconds(50);
+      while(remaining > TimeSpan.Zero)
+      {
+        token.ThrowIfCancellationRequested();
+        await token.WaitForResumeAsync();
+
+        var delay = remaining < interval ? remaining : interval;
+        await Task.Delay(delay, token.CancellationToken);
+        remaining -= delay;
+      }
+
       return AresValueHelper.CreateUnit();
     },
     AresSchemaBuilder.Create("time", AresDataType.Number)

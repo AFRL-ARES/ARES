@@ -35,7 +35,12 @@ public class ScriptRunner
     _initialEnvironment = initialEnvironment ?? new AresScriptEnvironment();
   }
 
-  public async Task RunScriptAsync(string script, CancellationToken cancellationToken = default)
+  public Task RunScriptAsync(string script, CancellationToken cancellationToken = default)
+  {
+    return RunScriptAsync(script, new ScriptExecutionControlToken(cancellationToken));
+  }
+
+  public async Task RunScriptAsync(string script, ScriptExecutionControlToken executionControlToken)
   {
     var stream = new AntlrInputStream(script);
     var lexer = new AresIndentationLexer(stream);
@@ -49,7 +54,7 @@ public class ScriptRunner
     var env = _initialEnvironment;
     env.EnterSystemScope("SandboxRunner");
     env.AssignSystemFunctions(Print);
-    var visitor = new AresBaseInterpreter(env, cancellationToken);
+    var visitor = new AresBaseInterpreter(env, executionControlToken);
 
     await visitor.Visit(programCtx);
   }
