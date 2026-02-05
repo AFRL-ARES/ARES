@@ -5,8 +5,9 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Ares.Core.Device;
+using Ares.Core.Device.Managers;
 using Ares.Core.Device.Remote;
+using Ares.Core.Device.Repos;
 using Ares.Core.Device.State.Logging;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
@@ -21,7 +22,9 @@ using Microsoft.Extensions.Logging;
 namespace Ares.Core.Grpc.Services;
 
 public class DevicesService(
-  IDeviceCommandInterpreterRepo deviceCommandInterpreterRepo,
+  IAresDeviceRepo aresDeviceRepo,
+  IDeviceDriverRepo deviceDriverRepo,
+  IDeviceManager deviceManager,
   IDbContextFactory<CoreDatabaseContext> contextFactory,
   IRemoteDeviceManager remoteDeviceManager,
   ILogger<DevicesService> logger,
@@ -56,8 +59,8 @@ public class DevicesService(
 
   public override Task<ListAresDevicesResponse> ListAresDevices(Empty _, ServerCallContext context)
   {
-    var aresDeviceMessages = deviceCommandInterpreterRepo
-      .GetAresDevices()
+    var aresDeviceMessages = aresDeviceRepo
+      .GetSnapshot()
       .Select(GetInfo);
 
     var response = new ListAresDevicesResponse
@@ -84,26 +87,36 @@ public class DevicesService(
 
   public override Task<CommandMetadatasResponse> GetCommandMetadatas(CommandMetadatasRequest request, ServerCallContext context)
   {
-    var interpreter = deviceCommandInterpreterRepo
-      .GetCommandInterpreterByDeviceId(request.DeviceId);
-
-    var commands = interpreter.CommandsToIndexedMetadatas();
+    var device = aresDeviceRepo
+      .GetAresDevice(request.DeviceId);
 
     var response = new CommandMetadatasResponse();
-    response.Metadatas.AddRange(commands);
+
+    if(device is null)
+      return Task.FromResult(response);
+
+    var metadata = CommandHelpers.ToCommandMetadata(device.CommandDescriptors, device.UniqueId);
+
+    response.Metadatas.AddRange(metadata);
 
     return Task.FromResult(response);
   }
 
   public override async Task<DeviceExecutionResult> ExecuteCommand(CommandTemplate request, ServerCallContext context)
   {
-    var interpreter = deviceCommandInterpreterRepo
-      .GetCommandInterpreterByDeviceId(request.UniqueId);
+    var device = aresDeviceRepo.GetAresDevice(request.UniqueId);
+    var token = context.CancellationToken;
+
+    if(device is null)
+      return new DeviceExecutionResult() { Error = $"Couldn't find a device with the id {request.UniqueId}, cannot execute command!", Success = false };
 
     try
     {
-      var deviceCommandTask = interpreter.TemplateToDeviceCommand(request);
-      var result = await deviceCommandTask(context.CancellationToken);
+      Func<CancellationToken, Task<CommandResult>> internalAction = async (ct) 
+        => await device.ExecuteCommand(request.Metadata.Name, request.Parameters.ToList(), ct);
+
+      var result = await internalAction(token);
+
       return new DeviceExecutionResult()
       {
         Result = result.Result,
@@ -119,8 +132,7 @@ public class DevicesService(
 
   private IAresDevice GetAresDevice(string id)
   {
-    var aresDevice = deviceCommandInterpreterRepo
-      .GetAresDevice(id);
+    var aresDevice = aresDeviceRepo.GetAresDevice(id);
 
     if(aresDevice is null)
       throw new InvalidOperationException($"Could not find ARES device with id: {id}");
@@ -143,7 +155,7 @@ public class DevicesService(
 
   public override Task<RemoteDeviceConfigResponse> GetAllRemoteDevicesConfigs(Empty request, ServerCallContext context)
   {
-    var remoteDevices = deviceCommandInterpreterRepo.GetAresDevices<RemoteDevice>().ToArray();
+    var remoteDevices = aresDeviceRepo.GetAresDevices<RemoteDevice>().ToArray();
 
     var response = new RemoteDeviceConfigResponse();
     var configs = remoteDevices.Select(rd => new RemoteDeviceConfig { Name = rd.Name, UniqueId = rd.UniqueId, Url = rd.Address.ToString() });
@@ -155,7 +167,7 @@ public class DevicesService(
 
   public override Task<ListAresRemoteDevicesResponse> ListRemoteAresDevices(Empty request, ServerCallContext context)
   {
-    var remoteDevices = deviceCommandInterpreterRepo.GetAresDevices<RemoteDevice>().ToArray();
+    var remoteDevices = aresDeviceRepo.GetAresDevices<RemoteDevice>().ToArray();
 
     var response = new ListAresRemoteDevicesResponse();
     var infos = remoteDevices.Select(GetInfo);
@@ -216,7 +228,7 @@ public class DevicesService(
 
   public override Task<DeviceInfo> GetDeviceInfo(DeviceInfoRequest request, ServerCallContext context)
   {
-    var device = deviceCommandInterpreterRepo.GetAresDevice(request.DeviceId);
+    var device = aresDeviceRepo.GetAresDevice(request.DeviceId);
     if(device is null)
       return Task.FromResult(new DeviceInfo());
 
@@ -227,7 +239,7 @@ public class DevicesService(
 
   public override Task<AresStruct> GetDeviceSettings(DeviceSettingsRequest request, ServerCallContext context)
   {
-    var device = deviceCommandInterpreterRepo.GetAresDevice(request.DeviceId);
+    var device = aresDeviceRepo.GetAresDevice(request.DeviceId);
     if(device is not RemoteDevice remoteDevice)
     {
       return Task.FromResult(new AresStruct());
@@ -241,7 +253,7 @@ public class DevicesService(
 
   public override Task<Empty> SetDeviceSettings(DeviceSettings request, ServerCallContext context)
   {
-    var device = deviceCommandInterpreterRepo.GetAresDevice(request.DeviceId);
+    var device = aresDeviceRepo.GetAresDevice(request.DeviceId);
     if(device is not RemoteDevice remoteDevice)
     {
       return Task.FromResult(new Empty());
@@ -255,7 +267,7 @@ public class DevicesService(
   public override Task<DeviceStateResponse> GetDeviceState(DeviceStateRequest request, ServerCallContext context)
   {
     // We can do the non-remote devices later
-    var device = deviceCommandInterpreterRepo.GetAresDevice<RemoteDevice>(request.DeviceId);
+    var device = aresDeviceRepo.GetAresDevice<RemoteDevice>(request.DeviceId);
     if(device is null)
     {
       return Task.FromResult(new DeviceStateResponse());
@@ -270,7 +282,7 @@ public class DevicesService(
       IServerStreamWriter<DeviceStateResponse> responseStream,
       ServerCallContext context)
   {
-    var device = deviceCommandInterpreterRepo.GetAresDevice<RemoteDevice>(request.DeviceId);
+    var device = aresDeviceRepo.GetAresDevice<RemoteDevice>(request.DeviceId);
     if(device is null || request.PollingSettings.PollingType == PollingType.None)
     {
       return;
@@ -300,7 +312,7 @@ public class DevicesService(
   public override Task<DeviceStateSchemaResponse> GetDeviceStateSchema(DeviceStateSchemaRequest request, ServerCallContext context)
   {
     // We can do the non-remote devices later
-    var device = deviceCommandInterpreterRepo.GetAresDevice<RemoteDevice>(request.DeviceId);
+    var device = aresDeviceRepo.GetAresDevice<RemoteDevice>(request.DeviceId);
     if(device is null)
     {
       return Task.FromResult(new DeviceStateSchemaResponse { Schema = new AresDataSchema() });
@@ -332,6 +344,50 @@ public class DevicesService(
     var settings = _stateLoggerManager.GetCurrentLoggerSettings(request.DeviceId);
 
     return Task.FromResult(settings);
+  }
+
+  public override Task<AvailableDeviceDriversResponse> GetAvailableDeviceDrivers(Empty request, ServerCallContext context)
+  {
+    var availableDeviceDrivers = deviceDriverRepo.GetAll();
+
+    var response = new AvailableDeviceDriversResponse();
+    response.DeviceDrivers.AddRange(availableDeviceDrivers.Select(driver => driver.Manifest.Name));
+    return Task.FromResult(response);
+  }
+
+  public override Task<Empty> GetDeviceConfig(GetDeviceConfigRequest request, ServerCallContext context)
+  {
+    var matchingDriver = deviceDriverRepo.GetByName(request.RequestDriver);
+
+    throw new NotImplementedException("IMPLEMENT THIS IN THE DEVICES SERVICE!");
+  }
+
+  public override Task<AddDeviceResponse> AddDevice(AddDeviceRequest request, ServerCallContext context)
+  {
+    try
+    {
+      var device = deviceManager.Create(request.DeviceName, request.IsSimulated, request.DeviceSettings);
+      return Task.FromResult(new AddDeviceResponse() { Success = true });
+    }
+
+    catch(Exception ex)
+    {
+      return Task.FromResult(new AddDeviceResponse() { Success = false, ErrorMessage = $"Failed to add new device! Message: {ex.Message}"});
+    }
+  }
+
+  public override Task<AddDeviceResponse> AddSerialDevice(AddSerialDeviceRequest request, ServerCallContext context)
+  {
+    throw new NotImplementedException();
+    try
+    {
+      //grief
+    }
+
+    catch(Exception ex)
+    {
+
+    }
   }
 
   private DeviceInfo GetInfo(IAresDevice device)

@@ -1,4 +1,5 @@
 ﻿using Ares.Core.Device;
+using Ares.Core.Device.Repos;
 using Ares.Device;
 using AresService.DeviceManagers;
 using ChemyxPumpPlugin;

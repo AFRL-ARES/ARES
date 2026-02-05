@@ -1,6 +1,8 @@
 ﻿namespace Ares.Core.CoreDevice;
 public enum AresCoreDeviceCommand
 {
-  Sleep,
+  SleepForMilliseconds,
+  SleepForSeconds,
+  SleepForMinutes,
   WaitForUser
 }

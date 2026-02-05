@@ -3,6 +3,7 @@ using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
 using System.Threading.Tasks;
 using Ares.Core.Device;
+using Ares.Core.Device.Repos;
 using Ares.Core.Notifications;
 using AresService.Data;
 using AresService.DeviceManagers;

@@ -12,13 +12,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="ARES.Datamodel" Version="0.16.1" />
+    <PackageReference Include="ARES.Datamodel" Version="0.17.0-beta.1" />
     <PackageReference Include="UnitsNet" Version="5.75.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Ares.Device.Serial\AresSerial\Ares.Device.Serial.csproj" />
     <ProjectReference Include="..\Ares.Device.UiKit\Ares.Device.UiKit.csproj" />
+    <ProjectReference Include="..\Ares.Device\AresDevicePluginBase\Ares.Device.csproj" />
   </ItemGroup>
 
   <ItemGroup>

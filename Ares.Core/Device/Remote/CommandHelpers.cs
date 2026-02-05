@@ -3,7 +3,7 @@ using Ares.Datamodel.Device;
 using Ares.Datamodel.Templates;
 
 namespace Ares.Core.Device.Remote;
-internal static class CommandHelpers
+public static class CommandHelpers
 {
   public static CommandMetadata[] ToCommandMetadata(IEnumerable<DeviceCommandDescriptor> deviceCommandDescriptors, string deviceId)
   {

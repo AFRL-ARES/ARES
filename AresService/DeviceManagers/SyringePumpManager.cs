@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Ares.Core.Device;
+using Ares.Core.Device.Repos;
 using Ares.Core.Device.State.Logging;
 using Ares.Device.Serial;
 using Ares.SyringePump.Ne1000.Messaging;

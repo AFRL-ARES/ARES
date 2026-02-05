@@ -1,4 +1,4 @@
-﻿using Ares.Core.Device;
+﻿using Ares.Core.Device.Repos;
 
 namespace Ares.Core.Execution.Safety;
 

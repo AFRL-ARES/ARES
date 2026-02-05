@@ -3,6 +3,7 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Ares.Core.Device;
+using Ares.Core.Device.Repos;
 using AresService.DeviceManagers;
 using Chiller.Config;
 using Chiller.Services;

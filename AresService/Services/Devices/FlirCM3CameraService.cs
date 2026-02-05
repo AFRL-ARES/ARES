@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Ares.Core.Device;
+using Ares.Core.Device.Repos;
 using AresService.DeviceManagers;
 using FlirCM3;
 using FlirCM3.Config;

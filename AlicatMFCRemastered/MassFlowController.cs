@@ -29,7 +29,7 @@ public class MassFlowController : AresDevice, IMassFlowController
   private LiveDataResponse? _liveData;
   private readonly IAresSerialConnection _serialConnection;
 
-  public MassFlowController(string name, string uniqueId, AresStruct config, IAresSerialConnection connection, ILogger<MassFlowController> logger) : base(name, uniqueId)
+  public MassFlowController(string name, AresStruct config, ILogger<MassFlowController> logger) : base(name)
   {
     HasValve = config.Fields["HasValve"]?.BoolValue ?? false;
     MfcType = config.Fields["MfcType"]?.StringValue ?? "";

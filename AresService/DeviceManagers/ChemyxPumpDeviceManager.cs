@@ -1,4 +1,4 @@
-﻿using Ares.Core.Device;
+﻿using Ares.Core.Device.Repos;
 using Ares.Device.Serial;
 using AresService.ConnectionManagement;
 using AresService.DeviceDbLoaders;

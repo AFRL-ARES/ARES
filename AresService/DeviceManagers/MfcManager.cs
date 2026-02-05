@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using AlicatMFC;
 using AlicatMFC.Simulation;
 using Ares.Alicat.Mfc.Config;
-using Ares.Core.Device;
+using Ares.Core.Device.Repos;
 using Ares.Core.Device.State.Logging;
 using Ares.Datamodel.Device;
 using Ares.Device.Serial;

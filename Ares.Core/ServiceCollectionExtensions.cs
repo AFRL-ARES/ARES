@@ -1,9 +1,12 @@
-﻿using Ares.Core.Analyzing;
+using Ares.Core.Analyzing;
 using Ares.Core.AresEnvironment;
-using Ares.Core.Device;
 using Ares.Core.Device.Helpers;
+using Ares.Core.Device.Loaders;
+using Ares.Core.Device.Managers;
+using Ares.Core.Device.Repos;
 using Ares.Core.Device.Remote;
 using Ares.Core.Device.Remote.State;
+using Ares.Core.Device.Repos;
 using Ares.Core.Device.State.Export;
 using Ares.Core.Device.State.Export.ExportStreamProviders;
 using Ares.Core.Device.State.Export.StateGetters;
@@ -44,6 +47,10 @@ public static class ServiceCollectionExtensions
     services.AddTransient<ICampaignValidator, GoodAnalyzerCampaignValidator>();
     services.AddTransient<ICampaignValidator, RequiredDeviceInterpretersValidator>();
     services.AddSingleton<IDeviceCommandInterpreterRepo, DeviceCommandInterpreterRepo>();
+    services.AddSingleton<IDeviceDriverRepo, DeviceDriverRepo>();
+    services.AddSingleton<IDeviceDriverLoader, DeviceDriverLoader>();
+    services.AddSingleton<IAresDeviceRepo, AresDeviceRepo>();
+    services.AddSingleton<IDeviceManager, DeviceManager>();
     services.AddSingleton<IRemoteAnalyzerManager, RemoteAnalyzerManager>();
     services.AddSingleton<IRemotePlannerManager, RemotePlannerManager>();
     services.AddSingleton<IAnalyzerCache, AnalyzerCache>();

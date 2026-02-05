@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
+using Ares.Datamodel.Templates;
 
 namespace Ares.Device;
 
@@ -21,9 +22,9 @@ public interface IAresDevice : IDisposable
   Task<bool> Activate(CancellationToken ct = default);
   Task EnterSafeMode(CancellationToken ct = default);
   Task<AresStruct> GetState();
-  IReadOnlyList<DeviceCommandDescriptor> CommandDescriptors { get; }
+  List<DeviceCommandDescriptor> CommandDescriptors { get; }
   AresDataSchema StateSchema { get; }
   AresDataSchema SettingSchema { get; }
-  Task<CommandResult> ExecuteCommand(string command, AresStruct arguments, CancellationToken ct);
+  Task<CommandResult> ExecuteCommand(string command, List<Parameter> parameters, CancellationToken ct);
   Task UpdateSettings(AresStruct settings);
 }

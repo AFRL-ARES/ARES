@@ -1,4 +1,4 @@
-﻿using Ares.Core.Device;
+﻿using Ares.Core.Device.Repos;
 using Ares.Core.Execution;
 using Ares.Services;
 using Grpc.Core;

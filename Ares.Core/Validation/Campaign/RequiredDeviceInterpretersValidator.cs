@@ -1,4 +1,4 @@
-﻿using Ares.Core.Device;
+﻿using Ares.Core.Device.Repos;
 using Ares.Datamodel.Device;
 using Ares.Datamodel.Templates;
 using Ares.Device;

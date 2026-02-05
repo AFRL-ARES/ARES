@@ -1,4 +1,6 @@
 namespace Ares.Core.Device.Helpers;
+
+using Ares.Core.Device.Repos;
 using Microsoft.Extensions.Logging;
 
 public class DeviceIdHelper(IDeviceCommandInterpreterRepo deviceCommandInterpreterRepo, ILogger<DeviceIdHelper> logger)

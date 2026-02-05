@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Ares.Core.Device;
+using Ares.Core.Device.Repos;
 using Ares.Device.Serial;
 using AresService.ConnectionManagement;
 using AresService.DeviceDbLoaders;

@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
 using Ares.Core.Device;
+using Ares.Core.Device.Repos;
 using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
 using AresService.DeviceManagers;

@@ -3,6 +3,7 @@ using AlicatMFC;
 using Ares.Alicat.Mfc.Config;
 using Ares.Core;
 using Ares.Core.Device;
+using Ares.Core.Device.Repos;
 using Ares.Core.Device.State.Export;
 using Ares.Core.Device.State.Export.ExportStreamProviders;
 using Ares.Core.Device.State.Export.StateGetters;

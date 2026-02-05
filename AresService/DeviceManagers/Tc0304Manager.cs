@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Ares.Core.Device;
 using Ares.Core.Device.State.Logging;
 using Ares.Device.Serial;
 using AresService.ConnectionManagement;
 using AresService.DeviceDbLoaders;
 using TC0304;
 using Tc0304.Config;
+using Ares.Core.Device.Repos;
 
 namespace AresService.DeviceManagers;
 

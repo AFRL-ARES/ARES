@@ -1,5 +1,6 @@
 ﻿using Ares.Datamodel;
 using Ares.Datamodel.Device;
+using Ares.Datamodel.Templates;
 using System;
 using System.Collections.Generic;
 using System.Reactive.Linq;
@@ -43,7 +44,7 @@ public abstract class AresDevice : IAresDevice
   #endregion
 
   #region Generic Interaction
-  public abstract Task<CommandResult> ExecuteCommand(string command, AresStruct arguments, CancellationToken token);
+  public abstract Task<CommandResult> ExecuteCommand(string command, List<Parameter> parameters, CancellationToken token);
 
   public abstract Task UpdateSettings(AresStruct settings);
 

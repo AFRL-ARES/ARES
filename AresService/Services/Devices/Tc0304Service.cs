@@ -12,6 +12,7 @@ using Tc0304.Config;
 using Tc0304.DataModel;
 using TC0304.Extensions;
 using Tc0304.Services;
+using Ares.Core.Device.Repos;
 
 namespace AresService.Services.Devices;
 
