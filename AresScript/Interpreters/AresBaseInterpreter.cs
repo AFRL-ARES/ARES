@@ -694,12 +694,6 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
   public override async Task<AresValue> VisitFunctionCall(AresLangParser.FunctionCallContext ctx)
   {
     await CheckExecutionControlAsync();
-    var callee = await Visit(ctx.expression());
-
-    if(callee.FunctionValue is null)
-      throw new AresInterpreterException("Attempted to call a non-function");
-
-    var id = callee.FunctionValue.FunctionId;
 
     var positionalArgs = new List<AresValue>();
     var keywordArgs = new Dictionary<string, AresValue>(StringComparer.Ordinal);
@@ -749,6 +743,19 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
           );
       }
     }
+
+    var memberResolution = await TryResolveMemberCallee(ctx.expression(), positionalArgs, keywordArgs);
+    if(memberResolution.ExtensionHandled)
+    {
+      return memberResolution.ExtensionResult!;
+    }
+
+    var callee = memberResolution.Callee ?? await Visit(ctx.expression());
+
+    if(callee.FunctionValue is null)
+      throw new AresInterpreterException("Attempted to call a non-function");
+
+    var id = callee.FunctionValue.FunctionId;
 
     if(Environment.TryGetSystemFunction(id, out var aresFn))
     {
@@ -829,6 +836,39 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
       Environment.ExitScope();
     }
     
+  }
+
+  private async Task<(AresValue? Callee, bool ExtensionHandled, AresValue? ExtensionResult)> TryResolveMemberCallee(
+    AresLangParser.ExpressionContext expression,
+    List<AresValue> positionalArgs,
+    IReadOnlyDictionary<string, AresValue> keywordArgs)
+  {
+    if(expression is not AresLangParser.MemberAccessContext memberAccess)
+    {
+      return (null, false, null);
+    }
+
+    var memberName = memberAccess.ID().GetText();
+    var receiver = await Visit(memberAccess.expression());
+    if(receiver.StructValue is not null && receiver.StructValue.Fields.TryGetValue(memberName, out var memberValue))
+    {
+      return (memberValue, false, null);
+    }
+
+    if(!Environment.TryGetExtensionFunction(receiver, memberName, out var extensionFunc))
+    {
+      return (null, false, null);
+    }
+
+    if(keywordArgs.Count > 0)
+    {
+      throw new AresInterpreterException($"Runtime function '{memberName}' does not support keyword arguments");
+    }
+
+    positionalArgs.Insert(0, receiver);
+    await CheckExecutionControlAsync();
+    var result = await extensionFunc.Body(positionalArgs, _executionControlToken);
+    return (null, true, result);
   }
 
   public override async Task<AresValue> VisitUnaryMinus([NotNull] AresLangParser.UnaryMinusContext context)

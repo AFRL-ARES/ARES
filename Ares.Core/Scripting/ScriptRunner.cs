@@ -54,6 +54,7 @@ public class ScriptRunner
     var env = _initialEnvironment;
     env.EnterSystemScope("SandboxRunner");
     env.AssignSystemFunctions(Print);
+    env.AssignExtensionFunctions(StandardLibrary.ExtensionFunctions);
     var visitor = new AresBaseInterpreter(env, executionControlToken);
 
     await visitor.Visit(programCtx);

@@ -57,6 +57,8 @@ public static partial class AresScriptAnalysis
         {
           AddCompletionForSystemValue(items, environment, key, fieldValue, parentIdentifier);
         }
+
+        AddExtensionCompletions(items, environment, systemParent.ToAresValue(), parentIdentifier);
       }
       else if(environment.TryGetValue(parentIdentifier, out var parentValue)
         && parentValue.KindCase == AresValue.KindOneofCase.StructValue
@@ -66,6 +68,12 @@ public static partial class AresScriptAnalysis
         {
           AddCompletionForAresValue(items, environment, field.Key, field.Value, parentIdentifier);
         }
+
+        AddExtensionCompletions(items, environment, parentValue, parentIdentifier);
+      }
+      else if(environment.TryGetValue(parentIdentifier, out var plainValue))
+      {
+        AddExtensionCompletions(items, environment, plainValue, parentIdentifier);
       }
     }
     else
@@ -167,6 +175,47 @@ public static partial class AresScriptAnalysis
     }
     builder.Append(')');
     return builder.ToString();
+  }
+
+  private static void AddExtensionCompletions(
+    ICollection<CompletionItem> items,
+    AresScriptEnvironment environment,
+    AresValue parentValue,
+    string parentIdentifier)
+  {
+    var extensionFunctions = environment.GetExtensionFunctions(parentValue);
+    foreach(var extensionFunc in extensionFunctions)
+    {
+      var schemaForCall = TrimReceiverFromSchema(extensionFunc.InputSchema);
+      items.Add(new CompletionItem
+      {
+        Label = extensionFunc.Name,
+        InsertText = BuildSnippet(extensionFunc.Name, schemaForCall),
+        Detail = extensionFunc.Description,
+        Documentation = extensionFunc.Description,
+        Kind = CompletionItemKind.Function,
+        ParentIdentifier = parentIdentifier,
+        InputSchema = schemaForCall,
+        OutputSchema = extensionFunc.OutputSchema
+      });
+    }
+  }
+
+  // First argument is always 'self' so we don't need that for validation
+  private static AresDataSchema TrimReceiverFromSchema(AresDataSchema schema)
+  {
+    if(schema.Fields.Count <= 1)
+    {
+      return new AresDataSchema();
+    }
+
+    var trimmed = new AresDataSchema();
+    foreach(var (name, entry) in schema.Fields.Skip(1))
+    {
+      trimmed.Fields[name] = entry;
+    }
+
+    return trimmed;
   }
 
   private static void AddCompletionForSystemValue(

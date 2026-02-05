@@ -135,6 +135,15 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
 
   public override SchemaEntry VisitFunctionCall(AresLangParser.FunctionCallContext context)
   {
+    if(context.expression() is AresLangParser.MemberAccessContext memberAccess)
+    {
+      var receiverSchema = Visit(memberAccess.expression());
+      if(_environment.TryGetExtensionFunction(receiverSchema.Type, memberAccess.ID().GetText(), out var extensionFunc))
+      {
+        return extensionFunc.OutputSchema;
+      }
+    }
+
     var functionId = TryResolveFunctionId(context.expression());
     if(functionId is not null && _environment.TryGetSystemFunction(functionId, out var systemFunc))
     {

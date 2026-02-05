@@ -460,6 +460,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
   public override Task VisitMemberAccess([NotNull] AresLangParser.MemberAccessContext context)
   {
     var ctxExpr = context.expression();
+    var id = context.ID().GetText();
     if(!TryResolveValue(ctxExpr, out var value))
     {
       throw new AresInterpreterException(
@@ -469,12 +470,26 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       );
     }
 
-    if(value?.KindCase == AresValue.KindOneofCase.StructValue)
+    if(value is null)
     {
-      if(value.StructValue.Fields.ContainsKey(context.ID().GetText()))
+      throw new AresInterpreterException(
+        $"Unable to resolve value of {ctxExpr.GetText()}",
+        context.Start.Line,
+        context.Start.Column + 1
+      );
+    }
+
+    if(value.KindCase == AresValue.KindOneofCase.StructValue)
+    {
+      if(value.StructValue.Fields.ContainsKey(id))
       {
         return Task.CompletedTask;
       }
+    }
+
+    if(_environment.TryGetExtensionFunction(value, id, out _))
+    {
+      return Task.CompletedTask;
     }
 
     throw new AresInterpreterException(
@@ -538,17 +553,27 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       }
     }
 
+    if(ctx.expression() is AresLangParser.MemberAccessContext memberCtx)
+    {
+      var memberName = memberCtx.ID().GetText();
+      var receiverSchema = _typeInference.Visit(memberCtx.expression());
+      if(_environment.TryGetExtensionFunction(receiverSchema.Type, memberName, out var extensionFunc))
+      {
+        ValidateExtensionFunctionArgs(extensionFunc, receiverSchema, positionalArgs, keywordArgs, ctx);
+        return;
+      }
+    }
+
     var functionId = TryResolveFunctionId(ctx.expression());
     if(functionId is null)
     {
       var ctxExpr = ctx.expression();
-      if(ctxExpr is AresLangParser.MemberAccessContext memberCtx)
+      if(ctxExpr is AresLangParser.MemberAccessContext unresolvedMemberCtx)
       {
-        var idExpr = memberCtx.ID();
         throw new AresInterpreterException(
-          $"Unknown function '{idExpr.GetText()}' on '{memberCtx.expression().GetText()}'.",
-          memberCtx.Start.Line,
-          memberCtx.Stop.Column + 1
+          $"Unknown function '{unresolvedMemberCtx.ID().GetText()}' on '{unresolvedMemberCtx.expression().GetText()}'.",
+          unresolvedMemberCtx.Start.Line,
+          unresolvedMemberCtx.Stop.Column + 1
         );
       }
       throw new AresInterpreterException(
@@ -621,7 +646,50 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
 
   private void ValidateSystemFunctionArgs(AresSystemFunction function, IReadOnlyList<AresLangParser.ExpressionContext> positionalArgs, IReadOnlyDictionary<string, AresLangParser.ExpressionContext> keywordArgs, AresLangParser.FunctionCallContext ctx)
   {
-    var schema = function.InputSchema;
+    ValidateArgsAgainstSchema(function.Id, function.InputSchema, positionalArgs, keywordArgs, ctx);
+  }
+
+  private void ValidateExtensionFunctionArgs(
+    AresSystemFunction function,
+    SchemaEntry receiverSchema,
+    IReadOnlyList<AresLangParser.ExpressionContext> positionalArgs,
+    IReadOnlyDictionary<string, AresLangParser.ExpressionContext> keywordArgs,
+    AresLangParser.FunctionCallContext ctx)
+  {
+    if(keywordArgs.Count > 0)
+    {
+      throw new AresInterpreterException($"Runtime function '{function.Name}' does not support keyword arguments");
+    }
+
+    if(function.InputSchema.Fields.Count == 0)
+    {
+      return;
+    }
+
+    var receiverExpected = function.InputSchema.Fields.First().Value;
+    if(!IsCompatible(receiverExpected, receiverSchema))
+    {
+      throw new AresInterpreterException(
+        $"Function '{function.Id}' receiver type mismatch. Expected {receiverExpected.Type}, received {receiverSchema.Type}.",
+        ctx.Start.Line,
+        ctx.Start.Column
+      );
+    }
+
+    var trimmedSchema = TrimReceiverFromSchema(function.InputSchema);
+    ValidateArgsAgainstSchema(function.Id, trimmedSchema, positionalArgs, keywordArgs, ctx);
+  }
+
+  private void ValidateArgsAgainstSchema(
+    string functionId,
+    AresDataSchema schema,
+    IReadOnlyList<AresLangParser.ExpressionContext> positionalArgs,
+    IReadOnlyDictionary<string, AresLangParser.ExpressionContext> keywordArgs,
+    AresLangParser.FunctionCallContext ctx)
+  {
+    var schemaFields = schema.Fields.ToArray();
+    var variadicAnyArgs = IsVariadicAnyArgsSchema(schemaFields);
+
     if(schema.Fields.Count == 0 && keywordArgs.Count == 0)
     {
       return;
@@ -632,7 +700,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       if(!schema.Fields.TryGetValue(name, out var expected))
       {
         throw new AresInterpreterException(
-          $"Function '{function.Id}' got an unexpected keyword argument '{name}'.",
+          $"Function '{functionId}' got an unexpected keyword argument '{name}'.",
           ctx.Start.Line,
           ctx.Start.Column
         );
@@ -642,32 +710,79 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       if(!IsCompatible(expected, actual))
       {
         throw new AresInterpreterException(
-          $"Function '{function.Id}' argument '{name}' type mismatch. Expected {expected.Type}, received {actual.Type}.",
+          $"Function '{functionId}' argument '{name}' type mismatch. Expected {expected.Type}, received {actual.Type}.",
           ctx.Start.Line,
           ctx.Start.Column
         );
       }
     }
 
-    if(keywordArgs.Count == 0 && positionalArgs.Count == schema.Fields.Count && schema.Fields.Count > 0)
+    if(keywordArgs.Count == 0)
     {
-      var expectedNames = schema.Fields.Keys.ToArray();
-      var expectedEntries = schema.Fields.Values.ToArray();
-      for(var i = 0; i < positionalArgs.Count; i++)
+      if(!variadicAnyArgs && positionalArgs.Count > schemaFields.Length)
       {
-        var name = expectedNames[i];
-        var expected = expectedEntries[i];
+        throw new AresInterpreterException(
+          $"Function '{functionId}' expected at most {schemaFields.Length} arguments but got {positionalArgs.Count}.",
+          ctx.Start.Line,
+          ctx.Start.Column
+        );
+      }
+
+      if(!variadicAnyArgs)
+      {
+        var requiredCount = schemaFields.Count(field => !field.Value.Optional);
+        if(positionalArgs.Count < requiredCount)
+        {
+          throw new AresInterpreterException(
+            $"Function '{functionId}' expected at least {requiredCount} arguments but got {positionalArgs.Count}.",
+            ctx.Start.Line,
+            ctx.Start.Column
+          );
+        }
+      }
+
+      var positionalTypeChecks = variadicAnyArgs ? 0 : Math.Min(positionalArgs.Count, schemaFields.Length);
+      for(var i = 0; i < positionalTypeChecks; i++)
+      {
+        var (name, expected) = schemaFields[i];
         var actual = _typeInference.Visit(positionalArgs[i]);
         if(!IsCompatible(expected, actual))
         {
           throw new AresInterpreterException(
-            $"Function '{function.Id}' argument '{name}' type mismatch. Expected {expected.Type}, received {actual.Type}.",
+            $"Function '{functionId}' argument '{name}' type mismatch. Expected {expected.Type}, received {actual.Type}.",
             ctx.Start.Line,
             ctx.Start.Column
           );
         }
       }
     }
+  }
+
+  private static bool IsVariadicAnyArgsSchema(IReadOnlyList<KeyValuePair<string, SchemaEntry>> schemaFields)
+  {
+    if(schemaFields.Count != 1)
+    {
+      return false;
+    }
+
+    var (name, entry) = schemaFields[0];
+    return string.Equals(name, "args", StringComparison.Ordinal) && entry.Type == AresDataType.Any;
+  }
+
+  private static AresDataSchema TrimReceiverFromSchema(AresDataSchema schema)
+  {
+    if(schema.Fields.Count <= 1)
+    {
+      return new AresDataSchema();
+    }
+
+    var trimmed = new AresDataSchema();
+    foreach(var (name, entry) in schema.Fields.Skip(1))
+    {
+      trimmed.Fields[name] = entry;
+    }
+
+    return trimmed;
   }
 
   private static bool IsCompatible(SchemaEntry expected, SchemaEntry actual)
@@ -851,11 +966,18 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
 
     if(expression is AresLangParser.MemberAccessContext memberAccess)
     {
-      if(TryResolveValue(memberAccess.expression(), out var baseValue)
+      var hasValue = TryResolveValue(memberAccess.expression(), out var baseValue);
+
+      if(hasValue
         && baseValue?.StructValue is not null
         && baseValue.StructValue.Fields.TryGetValue(memberAccess.ID().GetText(), out var member))
       {
         value = member;
+        return true;
+      }
+      else if(hasValue)
+      {
+        value = baseValue;
         return true;
       }
     }

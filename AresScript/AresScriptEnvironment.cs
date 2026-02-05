@@ -7,6 +7,7 @@ public class AresScriptEnvironment
 {
   private readonly Stack<SystemScope> _systemScopes = [];
   private readonly Stack<UserScope> _userScopes = [];
+  private readonly Dictionary<AresValue.KindOneofCase, Dictionary<string, AresSystemFunction>> _extensionFunctions = [];
 
   public AresScriptEnvironment()
   {
@@ -279,7 +280,7 @@ public class AresScriptEnvironment
     }
   }
 
-  public void AssignSystemVariables(IEnumerable<KeyValuePair<string, AresSystemValue>> variables)
+  public void AssignSystemVariables(params IEnumerable<KeyValuePair<string, AresSystemValue>> variables)
   {
     var scope = _systemScopes.Peek();
     foreach(var (key, value) in variables)
@@ -287,4 +288,93 @@ public class AresScriptEnvironment
       scope.Variables[key] = value;
     }
   }  
+
+  public void AssignExtensionFunctions(params IEnumerable<AresExtensionFunction> functions)
+  {
+    foreach(var function in functions)
+    {
+      if(!_extensionFunctions.TryGetValue(function.ReceiverKind, out var map))
+      {
+        map = new Dictionary<string, AresSystemFunction>(StringComparer.Ordinal);
+        _extensionFunctions[function.ReceiverKind] = map;
+      }
+
+      map[function.MemberName] = function.Function;
+    }
+  }
+
+  public bool TryGetExtensionFunction(AresValue receiver, string memberName, [NotNullWhen(true)] out AresSystemFunction? function)
+  {
+    return TryGetExtensionFunction(receiver.KindCase, memberName, out function);
+  }
+
+  public bool TryGetExtensionFunction(AresValue.KindOneofCase kind, string memberName, [NotNullWhen(true)] out AresSystemFunction? function)
+  {
+    if(_extensionFunctions.TryGetValue(kind, out var map) && map.TryGetValue(memberName, out var result))
+    {
+      function = result;
+      return true;
+    }
+
+    function = null;
+    return false;
+  }
+
+  public bool TryGetExtensionFunction(AresDataType type, string memberName, [NotNullWhen(true)] out AresSystemFunction? function)
+  {
+    if(TryMapDataTypeToKind(type, out var kind))
+    {
+      return TryGetExtensionFunction(kind, memberName, out function);
+    }
+
+    function = null;
+    return false;
+  }
+
+  public IReadOnlyList<AresSystemFunction> GetExtensionFunctions(AresValue receiver)
+  {
+    return _extensionFunctions.TryGetValue(receiver.KindCase, out var map)
+      ? map.Values.ToArray()
+      : [];
+  }
+
+  private static bool TryMapDataTypeToKind(AresDataType type, out AresValue.KindOneofCase kind)
+  {
+    switch(type)
+    {
+      case AresDataType.Boolean:
+        kind = AresValue.KindOneofCase.BoolValue;
+        return true;
+      case AresDataType.Number:
+        kind = AresValue.KindOneofCase.NumberValue;
+        return true;
+      case AresDataType.String:
+        kind = AresValue.KindOneofCase.StringValue;
+        return true;
+      case AresDataType.ByteArray:
+        kind = AresValue.KindOneofCase.BytesValue;
+        return true;
+      case AresDataType.StringArray:
+        kind = AresValue.KindOneofCase.StringArrayValue;
+        return true;
+      case AresDataType.NumberArray:
+        kind = AresValue.KindOneofCase.NumberArrayValue;
+        return true;
+      case AresDataType.List:
+        kind = AresValue.KindOneofCase.ListValue;
+        return true;
+      case AresDataType.Struct:
+        kind = AresValue.KindOneofCase.StructValue;
+        return true;
+      case AresDataType.Null:
+        kind = AresValue.KindOneofCase.NullValue;
+        return true;
+      case AresDataType.Function:
+        kind = AresValue.KindOneofCase.FunctionValue;
+        return true;
+      default:
+        kind = default;
+        return false;
+    }
+  }
 }

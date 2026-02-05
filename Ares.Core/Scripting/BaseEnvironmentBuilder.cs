@@ -17,6 +17,7 @@ public class BaseEnvironmentBuilder(IEnumerable<ISystemFunctionProvider> systemF
 
     // let's stick with global scope for now
     env.AssignSystemFunctions(StandardLibrary.Functions);
+    env.AssignExtensionFunctions(StandardLibrary.ExtensionFunctions);
     env.AssignSystemFunctions(functions);
     env.AssignSystemVariables(BuildSystemValues(env));
 

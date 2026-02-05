@@ -120,4 +120,46 @@ public static class StandardLibrary
     "Sleep for a given number of milliseconds"
     )
   ];
+
+  public static AresExtensionFunction[] ExtensionFunctions { get; } =
+  [
+    new(
+      AresValue.KindOneofCase.ListValue,
+      "append",
+      new AresSystemFunction(
+        "list::append",
+        "append",
+        (args, _) =>
+        {
+          if(args.Count != 2)
+          {
+            throw new ArgumentException("Expected exactly 1 argument to append.", nameof(args));
+          }
+
+          var listValue = args[0];
+          if(listValue.KindCase != AresValue.KindOneofCase.ListValue || listValue.ListValue is null)
+          {
+            throw new InvalidOperationException("append can only be called on list values.");
+          }
+
+          listValue.ListValue.Values.Add(args[1]);
+          return Task.FromResult(AresValueHelper.CreateUnit());
+        },
+        BuildListAppendSchema(),
+        AresSchemaBuilder.Entry(AresDataType.Unit).Build(),
+        "",
+        "Appends a value to the list."
+      ))
+  ];
+
+  private static AresDataSchema BuildListAppendSchema()
+  {
+    var listEntry = AresSchemaBuilder.Entry(AresDataType.List).Build();
+    listEntry.ListElementSchema = AresSchemaBuilder.Entry(AresDataType.Any).Build();
+
+    return AresSchemaBuilder.Empty()
+      .AddEntry("self", listEntry)
+      .AddEntry("value", AresSchemaBuilder.Entry(AresDataType.Any).Build())
+      .Build();
+  }
 }

@@ -57,6 +57,7 @@ public class InterpreterTests
     var programCtx = parser.program();
     var env = new AresScriptEnvironment();
     env.AssignSystemFunctions(StandardLibrary.Functions);
+    env.AssignExtensionFunctions(StandardLibrary.ExtensionFunctions);
     var visitor = new AresBaseInterpreter(env, executionControlToken);
 
     await visitor.Visit(programCtx);
@@ -75,6 +76,7 @@ public class InterpreterTests
     var programCtx = parser.program();
     var env = new AresScriptEnvironment();
     env.AssignSystemFunctions(StandardLibrary.Functions);
+    env.AssignExtensionFunctions(StandardLibrary.ExtensionFunctions);
     var visitor = new AresValidationInterpreter(env);
 
     await visitor.Visit(programCtx);
@@ -473,6 +475,31 @@ public class InterpreterTests
       assert items[1] == "b"
       """;
     await RunScriptAsync(script);
+  }
+
+  [Test]
+  public async Task List_Append_Works()
+  {
+    var script = """
+      items = []
+      items.append(123)
+      assert items[0] == 123
+      """;
+
+    await RunScriptAsync(script);
+  }
+
+  [Test]
+  public Task Validator_Rejects_Too_Many_Extension_Args()
+  {
+    var script = """
+      items = []
+      items.append(1, 2)
+      """;
+
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
+    Assert.That(ex?.Message, Does.Contain("expected at most 1 arguments"));
+    return Task.CompletedTask;
   }
 
   [Test]
