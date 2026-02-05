@@ -478,6 +478,20 @@ public class InterpreterTests
   }
 
   [Test]
+  public async Task Numeric_Separators_Work_For_Int_And_Float()
+  {
+    var script = """
+      big = 1_000_000
+      assert big == 1000000
+
+      piish = 1_234.5_6
+      assert piish == 1234.56
+      """;
+
+    await RunScriptAsync(script);
+  }
+
+  [Test]
   public async Task List_Append_Works()
   {
     var script = """

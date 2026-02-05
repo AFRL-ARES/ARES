@@ -971,13 +971,15 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
                 return aresStruct;
               }
             case AresLangParser.IntContext intContext:
-              if(int.TryParse(intContext.INT().GetText(), out var intValue))
+              var intText = intContext.INT().GetText().Replace("_", string.Empty, StringComparison.Ordinal);
+              if(int.TryParse(intText, out var intValue))
               {
                 return AresValueHelper.CreateNumber(intValue);
               }
               break;
             case AresLangParser.FloatContext floatContext:
-              if(double.TryParse(floatContext.FLOAT().GetText(), out var doubleValue))
+              var floatText = floatContext.FLOAT().GetText().Replace("_", string.Empty, StringComparison.Ordinal);
+              if(double.TryParse(floatText, out var doubleValue))
               {
                 return AresValueHelper.CreateNumber(doubleValue);
               }

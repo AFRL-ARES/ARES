@@ -503,7 +503,8 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
   #region Atoms
   public override Task<AresValue> VisitInt([NotNull] AresLangParser.IntContext context)
   {
-    var isInt = int.TryParse(context.INT().GetText(), out var integer);
+    var intText = context.INT().GetText().Replace("_", string.Empty, StringComparison.Ordinal);
+    var isInt = int.TryParse(intText, out var integer);
     if(!isInt)
     {
       throw new AresInterpreterException("Unable to parse to int.", context.Start.Line, context.Start.Column);
@@ -513,7 +514,8 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
   public override Task<AresValue> VisitFloat([NotNull] AresLangParser.FloatContext context)
   {
-    var isFloat = double.TryParse(context.FLOAT().GetText(), out var doubleBoi);
+    var floatText = context.FLOAT().GetText().Replace("_", string.Empty, StringComparison.Ordinal);
+    var isFloat = double.TryParse(floatText, out var doubleBoi);
     if(!isFloat)
     {
       throw new AresInterpreterException("Unable to parse to float.", context.Start.Line, context.Start.Column);

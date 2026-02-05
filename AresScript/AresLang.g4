@@ -195,12 +195,13 @@ NONE: 'None';
 ID: [a-zA-Z_] [a-zA-Z0-9_]*;
 
 // Integers: one or more digits
-INT: DIGIT+;
+INT: DIGITS;
 
 // Float: floating point numbers (actually doubles behind the scenes, but float sounds cool)
-FLOAT: DIGIT+ '.' DIGIT+;
+FLOAT: DIGITS '.' DIGITS;
 
 fragment DIGIT: [0-9];
+fragment DIGITS: DIGIT (DIGIT | '_' DIGIT)*;
 
 // Whitespace: skip spaces and tabs so the parser ignores them
 WS: [ \t]+ -> skip;

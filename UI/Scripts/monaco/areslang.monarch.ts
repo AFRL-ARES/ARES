@@ -32,6 +32,7 @@ export const language: languages.IMonarchLanguage = {
 
   operators: [
     '=',
+    '=>',
     '==',
     '!=',
     '>',
@@ -62,8 +63,8 @@ export const language: languages.IMonarchLanguage = {
       [/[{}()[\]]/, '@brackets'],
       [/[,:.]/, 'delimiter'],
 
-      [/\d+\.\d+/, 'number.float'],
-      [/\d+/, 'number'],
+      [/\d(?:\d|_\d)*\.\d(?:\d|_\d)*/, 'number.float'],
+      [/\d(?:\d|_\d)*/, 'number'],
 
       [/(def)(\s+)([a-zA-Z_][a-zA-Z0-9_]*)/, ['keyword', '', 'identifier.function']],
 
