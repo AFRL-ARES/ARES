@@ -57,6 +57,10 @@ Implementing a new SDL traditionally has a high barrier to entry, with software 
 
 From a researcher standpoint, the largest hurdle in developing an SDL is the integration of separate elements into a functioning autonomous system [@seifrid:2022]. Thanks to the wealth of data analysis, ML, and other scientific libraries available, many researchers have sufficient competence with Python to create the individual modules of autonomous system but may lack the software engineering expertise to integrate them in a robust and flexible manner. `ARES OS` was developed to address this core issue by providing researchers with a modular framework for coordinating hardware, software, and data management. This framework is combined with an easy-to-use, self-populating UI and companion Python library, `PyAres` [@PyAres], which allows users to rapidly develop, test, and integrate system components.
 
+# State of the Field
+Several other open-source SDL orchestration software packages are available. Notable examples include MadSci[@MADSci], ChemOS2.0[@sim2024], and Minerva-OS[@zaki2025]. Compared to these alternatives, `ARES OS` differentiates itself in two primary areas. The first is the researcher-first user experience, which places an emphasis on low- or no-code operation of core features. All interactions with the core functionality of `ARES OS` can be accomplished within the GUI. This includes installation, analyzer/planner module configuration, hardware control, building and executing experimental campaigns, and data export. Second, `ARES OS` has been designed be a generic solution for self-driving labs, making no assumptions of the types of techniques used, rather than being built for a specific application, such as wet chemistry.
+
+
 # Software Desgin
 `ARES OS` uses a service-oriented architecture with a C# and ASP .NET core, written to follow SOLID principles for understandability, flexibility, and maintainability. The core application handles the backend logic necessary for automation and autonomy, such as experimental routines, database interactions (ARES OS supports SQL Server, SQLite, and Postgres), and provides frameworks for interacting with system modules, such as custom GUIs, laboratory hardware, experimental planners, and data analyzers. 
 
@@ -64,7 +68,7 @@ Communication between the core and system module services is facilitated by Goog
 
 By default, `ARES OS` includes a Blazor UI, designed as an intuitive hub for customizing and using an AE system, allowing for both centralized computer control of experimental hardware and the execution of user-defined campaigns for automated or autonomous experimentation. The `PyAres` library is available via PyPi and provides an easy-to-use interface to create and configure `ARES OS` compatible devices, planners, and analyzers with only a few lines of Python code [@PyAres]. For ease of use we have also created an `ARES OS` launcher application, which streamlines the installation and configuration of `ARES OS` and the necessary databases and certificates [@ARES-Launcher]. The `ARES OS` launcher also supports installation from specific forks of `ARES OS` to enable users to develop modified versions that fit their specific use cases.
 
-# Usage and Examples
+# Research Impact Statement
 `ARES OS` was designed primarily to be used by experimental researchers in the physical sciences for the implementation of AE/SDL systems. Additionally, `ARES OS` is suitable for use by students for use in a classroom setting to study ML and AE principles. As part of its development, `ARES OS` has been used in experimental systems to study a variety of materials science problems such as carbon nanotube synthesis [@waelder:2024; @bulmer:2023] and fused deposition modeling 3D printing [@deneault:2021]. ARES OS will also be used in new curriculum under development by the University of Buffalo’s department of Materials Design and Innovation. 
 
 # Availability
