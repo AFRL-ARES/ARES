@@ -13,34 +13,46 @@ namespace AresScript.Interpreters;
 public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 {
   protected readonly AresScriptEnvironment Environment;
-  private readonly CancellationToken _cancellationToken;
+  private readonly ScriptExecutionControlToken _executionControlToken;
   private int _lvalueResolutionDepth;
 
   protected override Task<AresValue> DefaultResult => Task.FromResult(AresValueHelper.CreateUnit());
 
   public AresBaseInterpreter(CancellationToken cancellationToken = default)
-    : this(new AresScriptEnvironment(), cancellationToken)
+    : this(new AresScriptEnvironment(), new ScriptExecutionControlToken(cancellationToken))
   {
   }
 
   public AresBaseInterpreter(AresScriptEnvironment aresScriptEnvironment, CancellationToken cancellationToken = default)
+    : this(aresScriptEnvironment, new ScriptExecutionControlToken(cancellationToken))
   {
-    Environment = aresScriptEnvironment ?? throw new ArgumentNullException(nameof(aresScriptEnvironment));
-    _cancellationToken = cancellationToken;
   }
 
-  private void ThrowIfCancellationRequested()
+  public AresBaseInterpreter(ScriptExecutionControlToken executionControlToken = default)
+    : this(new AresScriptEnvironment(), executionControlToken)
   {
-    _cancellationToken.ThrowIfCancellationRequested();
+  }
+
+  public AresBaseInterpreter(AresScriptEnvironment aresScriptEnvironment, ScriptExecutionControlToken executionControlToken)
+  {
+    Environment = aresScriptEnvironment ?? throw new ArgumentNullException(nameof(aresScriptEnvironment));
+    _executionControlToken = executionControlToken;
+  }
+
+  private async Task CheckExecutionControlAsync()
+  {
+    _executionControlToken.ThrowIfCancellationRequested();
+    await _executionControlToken.WaitForResumeAsync();
+    _executionControlToken.ThrowIfCancellationRequested();
   }
 
   public override async Task<AresValue> VisitProgram(AresLangParser.ProgramContext context)
   {
-    ThrowIfCancellationRequested();
+    await CheckExecutionControlAsync();
     // We must manually iterate and await to ensure statements run one after another.
     foreach(var child in context.children)
     {
-      ThrowIfCancellationRequested();
+      await CheckExecutionControlAsync();
       if(child is AresLangParser.StatementContext stmt)
       {
         await Visit(stmt);
@@ -51,11 +63,11 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
   public override async Task<AresValue> VisitBlock(AresLangParser.BlockContext context)
   {
-    ThrowIfCancellationRequested();
+    await CheckExecutionControlAsync();
     // Iterate over the statements in the block and await them
     foreach(var stmt in context.statement())
     {
-      ThrowIfCancellationRequested();
+      await CheckExecutionControlAsync();
       await Visit(stmt);
     }
     return AresValueHelper.CreateUnit();
@@ -63,11 +75,11 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
   public override async Task<AresValue> VisitFuncBlock(AresLangParser.FuncBlockContext context)
   {
-    ThrowIfCancellationRequested();
+    await CheckExecutionControlAsync();
     // Iterate over the statements in the block and await them
     foreach(var stmt in context.statement())
     {
-      ThrowIfCancellationRequested();
+      await CheckExecutionControlAsync();
       try
       {
         await Visit(stmt);
@@ -83,10 +95,10 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
   public override async Task<AresValue> VisitLoopBlock(AresLangParser.LoopBlockContext context)
   {
-    ThrowIfCancellationRequested();
+    await CheckExecutionControlAsync();
     foreach(var stmt in context.statement())
     {
-      ThrowIfCancellationRequested();
+      await CheckExecutionControlAsync();
       await Visit(stmt);
     }
     return AresValueHelper.CreateUnit();
@@ -104,7 +116,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
   public override async Task<AresValue> VisitReturnStmt(AresLangParser.ReturnStmtContext context)
   {
-    ThrowIfCancellationRequested();
+    await CheckExecutionControlAsync();
     var expression = context.expression();
     if(expression is null)
       throw new ReturnControlFlowException(AresValueHelper.CreateUnit());
@@ -115,7 +127,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
   public override async Task<AresValue> VisitAssertStmt(AresLangParser.AssertStmtContext context)
   {
-    ThrowIfCancellationRequested();
+    await CheckExecutionControlAsync();
     var assertContext = context.assertStatement();
     var condition = await Visit(assertContext.expression(0));
     if(condition.KindCase != AresValue.KindOneofCase.BoolValue)
@@ -144,7 +156,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
   public override async Task<AresValue> VisitAssignStmt(AresLangParser.AssignStmtContext context)
   {
-    ThrowIfCancellationRequested();
+    await CheckExecutionControlAsync();
     var assignment = context.assignment();
     if(assignment.lvalue() is AresLangParser.LValueIndexContext indexContext)
     {
@@ -268,7 +280,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
   public override async Task<AresValue> VisitExprStmt(AresLangParser.ExprStmtContext context)
   {
-    ThrowIfCancellationRequested();
+    await CheckExecutionControlAsync();
     await Visit(context.expression());
     return AresValueHelper.CreateUnit();
   }
@@ -277,7 +289,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
   {
     while(true)
     {
-      ThrowIfCancellationRequested();
+      await CheckExecutionControlAsync();
       var condition = await Visit(context.whileStatement().expression());
       if(!condition.HasBoolValue || !condition.BoolValue)
       {
@@ -302,7 +314,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
   public override async Task<AresValue> VisitForStmt([NotNull] AresLangParser.ForStmtContext context)
   {
-    ThrowIfCancellationRequested();
+    await CheckExecutionControlAsync();
     var iterable = await Visit(context.forStatement().expression());
     var iterVar = context.forStatement().ID().GetText();
 
@@ -321,7 +333,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
     foreach(var item in items)
     {
-      ThrowIfCancellationRequested();
+      await CheckExecutionControlAsync();
       Environment[iterVar] = item;
       try
       {
@@ -341,7 +353,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
   public override async Task<AresValue> VisitParallelBlock(AresLangParser.ParallelBlockContext context)
   {
-    ThrowIfCancellationRequested();
+    await CheckExecutionControlAsync();
     var expContexts = context.expression();
     var expTasks = expContexts.Select(Visit);
     await Task.WhenAll(expTasks);
@@ -681,7 +693,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
   public override async Task<AresValue> VisitFunctionCall(AresLangParser.FunctionCallContext ctx)
   {
-    ThrowIfCancellationRequested();
+    await CheckExecutionControlAsync();
     var callee = await Visit(ctx.expression());
 
     if(callee.FunctionValue is null)
@@ -696,7 +708,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     var argContexts = ctx.argList()?.argument() ?? Enumerable.Empty<AresLangParser.ArgumentContext>();
     foreach(var argCtx in argContexts)
     {
-      ThrowIfCancellationRequested();
+      await CheckExecutionControlAsync();
       switch(argCtx)
       {
         case AresLangParser.PositionalArgContext positionalArg:
@@ -745,14 +757,14 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
         throw new AresInterpreterException($"Runtime function '{id}' does not support keyword arguments");
       }
 
-      ThrowIfCancellationRequested();
-      return await aresFn.Body(positionalArgs, _cancellationToken);
+      await CheckExecutionControlAsync();
+      return await aresFn.Body(positionalArgs, _executionControlToken);
     }
 
     if(!Environment.TryGetUserFunction(id, out var userFn))
       throw new AresInterpreterException($"Function '{id}' not found");
     
-    ThrowIfCancellationRequested();
+    await CheckExecutionControlAsync();
     if(Environment.Depth > 100)
     {
       throw new AresInterpreterException("Maximum function call depth reached.");

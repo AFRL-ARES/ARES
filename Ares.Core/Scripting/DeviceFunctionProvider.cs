@@ -62,7 +62,7 @@ public class DeviceFunctionProvider(IDeviceCommandInterpreterRepo interpreterRep
               }
 
               var command = interpreter.TemplateToDeviceCommand(template);
-              var result = await command(token);
+              var result = await command(token.CancellationToken);
               if(!result.Success)
               {
                 throw new InvalidOperationException(

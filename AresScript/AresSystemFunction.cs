@@ -2,7 +2,7 @@ using Ares.Datamodel;
 
 namespace AresScript;
 
-public delegate Task<AresValue> AresFunctionDelegate(List<AresValue> args, CancellationToken token);
+public delegate Task<AresValue> AresFunctionDelegate(List<AresValue> args, ScriptExecutionControlToken token);
 
 public record AresSystemFunction(string Id, string Name, AresFunctionDelegate Body, AresDataSchema InputSchema, SchemaEntry OutputSchema, string Namespace = "", string Description = "")
 {

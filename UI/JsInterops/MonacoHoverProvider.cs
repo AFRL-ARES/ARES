@@ -257,7 +257,7 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
     return new AresSystemFunction(id, name, DummyFunction, inputSchema, outputSchema, namespaceName, description);
   }
 
-  private static Task<AresValue> DummyFunction(List<AresValue> _, CancellationToken __)
+  private static Task<AresValue> DummyFunction(List<AresValue> _, ScriptExecutionControlToken __)
   {
     return Task.FromResult(AresValueHelper.CreateNull());
   }

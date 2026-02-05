@@ -39,7 +39,12 @@ public class InterpreterTests
     }
   }
 
-  private static async Task RunScriptAsync(string script, CancellationToken cancellationToken = default)
+  private static Task RunScriptAsync(string script, CancellationToken cancellationToken = default)
+  {
+    return RunScriptAsync(script, new ScriptExecutionControlToken(cancellationToken));
+  }
+
+  private static async Task RunScriptAsync(string script, ScriptExecutionControlToken executionControlToken)
   {
     var stream = new AntlrInputStream(script);
     var lexer = new AresIndentationLexer(stream);
@@ -52,7 +57,7 @@ public class InterpreterTests
     var programCtx = parser.program();
     var env = new AresScriptEnvironment();
     env.AssignSystemFunctions(StandardLibrary.Functions);
-    var visitor = new AresBaseInterpreter(env, cancellationToken);
+    var visitor = new AresBaseInterpreter(env, executionControlToken);
 
     await visitor.Visit(programCtx);
   }
@@ -595,6 +600,21 @@ public class InterpreterTests
     await Task.Delay(TimeSpan.FromMilliseconds(500), testToken);
     await cts.CancelAsync();
     Assert.ThrowsAsync<TaskCanceledException>(() => executionTask);
+  }
+
+  [Test]
+  [CancelAfter(5000)]
+  public async Task Pause_Blocks_Execution_Until_Resume(CancellationToken testToken)
+  {
+    var script = "sleep(200)";
+    using var control = new ScriptExecutionControlTokenSource(testToken);
+    control.Pause();
+    var executionTask = RunScriptAsync(script, control.Token);
+    await Task.Delay(TimeSpan.FromMilliseconds(250), testToken);
+    Assert.That(executionTask.IsCompleted, Is.False);
+
+    control.Resume();
+    await executionTask.WaitAsync(testToken);
   }
 
   [Test]
