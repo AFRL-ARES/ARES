@@ -54,7 +54,9 @@ using UI.Backend.ViewModels.Settings.Logging;
 using UI.Backend.ViewModels.Settings.Planning;
 using UI.JsInterops;
 using UI.Services.CampaignEdit;
+using UI.Services.Dialog;
 using UI.Services.Grpc;
+using UI.Services.Notification;
 using UI.Services.ServerHealth;
 using UI.Services.ServerHealthNotification;
 using ValveController.Services;
@@ -71,6 +73,8 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<AresAuthenticationState>();
     services.AddScoped<DialogService>();
     services.AddSingleton<NotificationService>();
+    services.AddScoped<IUiDialogService, RadzenUiDialogService>();
+    services.AddSingleton<IUiNotificationService, RadzenUiNotificationService>();
     services.AddScoped<TooltipService>();
     services.AddScoped<ContextMenuService>();
     services.AddSingleton<UnitCategoryHelper>();

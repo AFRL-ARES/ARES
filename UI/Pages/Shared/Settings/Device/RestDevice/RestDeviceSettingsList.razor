@@ -1,10 +1,10 @@
-﻿@page "/settings/device/restdevice"
+@page "/settings/device/restdevice"
 @layout DeviceSettingsLayout
 @using UI.Backend.ViewModels.Settings.Device.RestDevice
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<RestDeviceSettingsListViewModel>
 
 @inject DialogService DialogService
-@inject NotificationService NotificationService
+@inject IUiNotificationService NotificationService
 
 @if (ViewModel!.SettingsViewModels is null)
 {
@@ -48,11 +48,11 @@ else
     {
       await ViewModel!.AddNewConfig(viewModel.Save());
       DialogService.Close();
-      NotificationService.Notify(NotificationSeverity.Success, $"Successfully added Rest Device {viewModel.Name}");
+      NotificationService.Success($"Successfully added Rest Device {viewModel.Name}");
     }
     catch (Grpc.Core.RpcException e)
     {
-      NotificationService.Notify(NotificationSeverity.Error, e.InnerException?.Message ?? e.Message);
+      NotificationService.Error(e.InnerException?.Message ?? e.Message);
     }
     finally
     {

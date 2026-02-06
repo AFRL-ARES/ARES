@@ -1,8 +1,8 @@
-﻿@page "/automation/campaigndesigner"
+@page "/automation/campaigndesigner"
 @page "/automation/campaigndesigner/{CampaignId:guid}"
 @using UI.Backend.ViewModels.Automation.CampaignEdit;
 @using UI.Pages.Shared.CampaignEdit
-@inject NotificationService NotificationService
+@inject IUiNotificationService NotificationService
 @inject DialogService DialogService
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<CampaignDesignerViewModel>
 
@@ -149,11 +149,11 @@
     try
     {
       await ViewModel!.Update();
-      NotificationService.Notify(NotificationSeverity.Success, "Campaign has been saved");
+      NotificationService.Success("Campaign has been saved");
     }
     catch (Exception e)
     {
-      NotificationService.Notify(NotificationSeverity.Error, $"Failed to save campaign {e.Message}");
+      NotificationService.Error($"Failed to save campaign {e.Message}");
     }
   }
 

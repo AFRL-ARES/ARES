@@ -1,8 +1,7 @@
-﻿using Ares.Services;
+using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using NuGet.Packaging;
-using Radzen;
 using UI.Backend.Notifications;
 
 namespace UI.Services.Notification;
@@ -10,68 +9,69 @@ namespace UI.Services.Notification;
 public class NotificationReceivingService : INotificationReceivingService
 {
   private readonly AresNotificationRpc.AresNotificationRpcClient _notificationClient;
-  private readonly NotificationService _radzenNotificationService;
-  private INotificationRepository _notificationRepo;
-  public NotificationReceivingService(AresNotificationRpc.AresNotificationRpcClient notificationClient,
-    NotificationService radzenNotificationService,
+  private readonly IUiNotificationService _uiNotificationService;
+  private readonly INotificationRepository _notificationRepo;
+
+  public NotificationReceivingService(
+    AresNotificationRpc.AresNotificationRpcClient notificationClient,
+    IUiNotificationService uiNotificationService,
     INotificationRepository notificationRepo)
   {
     _notificationClient = notificationClient;
-    _radzenNotificationService = radzenNotificationService;
+    _uiNotificationService = uiNotificationService;
     _notificationRepo = notificationRepo;
     _ = GetLatestNotificationHistory();
   }
 
   public void StartNotificationStream()
   {
-    var subscriptionRequest = new SubscriptionRequest() { ClientId = Guid.NewGuid().ToString() };
+    var subscriptionRequest = new SubscriptionRequest { ClientId = Guid.NewGuid().ToString() };
 
     Task.Run(async () =>
     {
-      Thread.CurrentThread.Name = "Notification Stream Thread";
-      using(var stream = _notificationClient.Subscribe(subscriptionRequest))
+      using var stream = _notificationClient.Subscribe(subscriptionRequest);
+      try
       {
-        try
+        await foreach (var notification in stream.ResponseStream.ReadAllAsync())
         {
-          await foreach(var notification in stream.ResponseStream.ReadAllAsync())
+          var userNotification = new UiNotificationMessage
           {
-            var userNotification = new NotificationMessage();
-            userNotification.Summary = notification.Title;
-            userNotification.Detail = notification.Message;
-            userNotification.Severity = ConvertToRadzenSeverity(notification.NotificationSeverity);
-            userNotification.Duration = DetermineDisplayTime(notification.NotificationSeverity, notification.Loiter);
-            userNotification.CloseOnClick = notification.NotificationSeverity == Severity.Danger;
+            Summary = notification.Title,
+            Detail = notification.Message,
+            Severity = ConvertToUiSeverity(notification.NotificationSeverity),
+            DurationMs = DetermineDisplayTime(notification.NotificationSeverity, notification.Loiter),
+            CloseOnClick = notification.NotificationSeverity == Severity.Danger
+          };
 
-            _radzenNotificationService.Notify(userNotification);
-            _notificationRepo.Add(notification);
-          }
-        }
-
-        catch(RpcException ex)
-        {
-          Console.WriteLine($"Error receiving notifications: {ex.Status}");
+          _uiNotificationService.Notify(userNotification);
+          _notificationRepo.Add(notification);
         }
       }
+      catch(RpcException ex)
+      {
+        Console.WriteLine($"Error receiving notifications: {ex.Status}");
+      }
     });
-
   }
 
   public void PushNotification(AresNotification notification)
   {
-    notification.Title = notification.Title ?? string.Empty;
-    notification.Message = notification.Message ?? string.Empty;
+    notification.Title ??= string.Empty;
+    notification.Message ??= string.Empty;
 
-    var radzenNotification = new NotificationMessage();
-    radzenNotification.Summary = notification.Title;
-    radzenNotification.Detail = notification.Message;
-    radzenNotification.Severity = ConvertToRadzenSeverity(notification.NotificationSeverity);
-    radzenNotification.Duration = DetermineDisplayTime(notification.NotificationSeverity, notification.Loiter);
-    radzenNotification.CloseOnClick = true;
+    var uiNotification = new UiNotificationMessage
+    {
+      Summary = notification.Title,
+      Detail = notification.Message,
+      Severity = ConvertToUiSeverity(notification.NotificationSeverity),
+      DurationMs = DetermineDisplayTime(notification.NotificationSeverity, notification.Loiter),
+      CloseOnClick = true
+    };
 
     if(notification.Timestamp is null)
       notification.Timestamp = DateTime.UtcNow.ToTimestamp();
 
-    _radzenNotificationService.Notify(radzenNotification);
+    _uiNotificationService.Notify(uiNotification);
     _notificationRepo.Add(notification);
   }
 
@@ -81,56 +81,33 @@ public class NotificationReceivingService : INotificationReceivingService
     _notificationRepo.AddRange(history.Notifications);
   }
 
-  private bool CloseOnClick(Severity severity, bool loiter) => severity == Severity.Danger || loiter;
-
-  private Int32 DetermineDisplayTime(Severity severity, bool loiter)
+  private static int DetermineDisplayTime(Severity severity, bool loiter)
   {
     if(loiter)
-      return Int32.MaxValue;
+      return int.MaxValue;
 
-    switch(severity)
+    return severity switch
     {
-      case Severity.Unspecified:
-        return 5000;
-      case Severity.Info:
-        return 3000;
-      case Severity.Warning:
-        return 5000;
-      case Severity.Error:
-        return 8000;
-      case Severity.Danger:
-        return 100000;
-      case Severity.Success:
-        return 5000;
-      default:
-        return 5000;
-    }
+      Severity.Info => 3000,
+      Severity.Warning => 5000,
+      Severity.Error => 8000,
+      Severity.Danger => 100000,
+      Severity.Unspecified => 5000,
+      Severity.Success => 5000,
+
+      _ => 5000
+    };
   }
 
-  private NotificationSeverity ConvertToRadzenSeverity(Severity aresSeverity)
+  private static UiNotificationSeverity ConvertToUiSeverity(Severity aresSeverity)
   {
-    switch(aresSeverity)
+    return aresSeverity switch
     {
-      case Severity.Error:
-        return NotificationSeverity.Error;
-
-      case Severity.Success:
-        return NotificationSeverity.Success;
-
-      case Severity.Info:
-        return NotificationSeverity.Info;
-
-      case Severity.Warning:
-        return NotificationSeverity.Warning;
-
-      case Severity.Danger:
-        return NotificationSeverity.Error;
-
-      case Severity.Unspecified:
-        return NotificationSeverity.Info;
-
-      default:
-        return NotificationSeverity.Info;
-    }
+      Severity.Error => UiNotificationSeverity.Error,
+      Severity.Success => UiNotificationSeverity.Success,
+      Severity.Warning => UiNotificationSeverity.Warning,
+      Severity.Danger => UiNotificationSeverity.Error,
+      _ => UiNotificationSeverity.Info
+    };
   }
 }

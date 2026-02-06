@@ -1,10 +1,10 @@
-﻿@page "/settings/device/alicat"
+@page "/settings/device/alicat"
 @layout DeviceSettingsLayout
 @using UI.Backend.ViewModels.Settings.Device.Mfc
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<MfcSettingsListViewModel>
 
 @inject DialogService DialogService
-@inject NotificationService NotificationService
+@inject IUiNotificationService NotificationService
 
 @if (ViewModel!.SettingsViewModels is null)
 {
@@ -16,7 +16,7 @@ else
     @foreach (var mfcSettingsViewModel in ViewModel!.SettingsViewModels)
     {
       <div class="m-2">
-        <MfcSettingsView ViewModel="mfcSettingsViewModel"/>
+        <MfcSettingsView ViewModel="mfcSettingsViewModel" />
       </div>
     }
     <button class="m-2 align-self-end btn btn-outline-light" disabled="@SavingInProgress" @onclick="AddConfigClick">
@@ -26,7 +26,7 @@ else
       }
       else
       {
-        <RadzenIcon Icon="add"/> 
+        <RadzenIcon Icon="add" />
       }
     </button>
   </div>
@@ -48,11 +48,11 @@ else
     {
       await ViewModel!.AddNewConfig(viewModel.Save());
       DialogService.Close();
-      NotificationService.Notify(NotificationSeverity.Success, $"Successfully added MFC {viewModel.Name}");
+      NotificationService.Success($"Successfully added MFC {viewModel.Name}");
     }
     catch (Grpc.Core.RpcException e)
     {
-      NotificationService.Notify(NotificationSeverity.Error, e.InnerException?.Message ?? e.Message);
+      NotificationService.Error(e.InnerException?.Message ?? e.Message);
     }
     finally
     {

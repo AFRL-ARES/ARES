@@ -1,9 +1,11 @@
-﻿@inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Backend.ViewModels.Settings.Device.Servo.ServoSettingsViewModel>
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Backend.ViewModels.Settings.Device.Servo.ServoSettingsViewModel>
 @inject DialogService DialogService
-@inject NotificationService NotificationService
+@inject IUiNotificationService NotificationService
 
 
-<DeviceSettingsContainer DeviceOperationalStatusGetter="ViewModel!.GetDeviceOperationalStatus" EditCallback="EditCallback" RemoveCallback="RemoveCallback" ActivateCallback="ViewModel.Activate" Name="@ViewModel!.ServoConfig.Name">
+<DeviceSettingsContainer DeviceOperationalStatusGetter="ViewModel!.GetDeviceOperationalStatus"
+                         EditCallback="EditCallback" RemoveCallback="RemoveCallback" ActivateCallback="ViewModel.Activate"
+                         Name="@ViewModel!.ServoConfig.Name">
   <div>
     @if (ViewModel!.ServoConfig.Simulated)
     {
@@ -16,16 +18,16 @@
 </DeviceSettingsContainer>
 
 @code {
-    private async Task EditCallback()
+  private async Task EditCallback()
   {
     var viewModel = ViewModel!.EditViewModel;
     var result = await DialogService.OpenAsync("Edit Servo", ds =>
-      @<ServoConfigEditView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)"/>);
+      @<ServoConfigEditView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)" />);
 
     if (result is true && viewModel.Modified)
     {
       await ViewModel!.Save();
-      NotificationService.Notify(NotificationSeverity.Success, "Config has been saved");
+      NotificationService.Success("Config has been saved");
     }
   }
 
@@ -37,5 +39,4 @@
       await ViewModel!.Remove();
     }
   }
-
 }

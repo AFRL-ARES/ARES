@@ -1,7 +1,6 @@
-﻿using Ares.Datamodel;
+using Ares.Datamodel;
 using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
-using Radzen;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using UI.Backend.Helpers;
@@ -57,22 +56,20 @@ public partial class DataViewerViewModel : ReactiveObject
     await GetSelectedSummary();
   }
 
-  public void SelectedTreeItemUpdated(TreeEventArgs args)
+  public void SelectedTreeItemUpdated(object? value)
   {
     SelectedExperimentSummary = null;
     SelectedStepSummary = null;
     SelectedCommandSummary = null;
 
-    if(args.Value is null)
+    if(value is null)
       return;
 
-    if(args.Value is ExperimentExecutionSummary expSummary)
+    if(value is ExperimentExecutionSummary expSummary)
       SelectedExperimentSummary = expSummary;
-
-    else if(args.Value is StepExecutionSummary stepSummary)
+    else if(value is StepExecutionSummary stepSummary)
       SelectedStepSummary = stepSummary;
-
-    else if(args.Value is CommandExecutionSummary commandExecutionSummary)
+    else if(value is CommandExecutionSummary commandExecutionSummary)
       SelectedCommandSummary = commandExecutionSummary;
   }
 

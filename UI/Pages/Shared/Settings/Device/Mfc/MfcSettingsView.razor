@@ -1,24 +1,27 @@
-﻿@using Ares.Alicat.Mfc.Config
+@using Ares.Alicat.Mfc.Config
 @using UI.Backend.ViewModels.Settings.Device.Mfc
 @using Ares.Alicat.Mfc.Messaging
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<MfcSettingsViewModel>
 @inject DialogService DialogService
-@inject NotificationService NotificationService
+@inject IUiNotificationService NotificationService
 
-<DeviceSettingsContainer DeviceOperationalStatusGetter="ViewModel!.GetDeviceOperationalStatus" EditCallback="EditCallback" RemoveCallback="RemoveCallback" ActivateCallback="@ViewModel.Activate" Name="@Name">
+<DeviceSettingsContainer DeviceOperationalStatusGetter="ViewModel!.GetDeviceOperationalStatus"
+                         EditCallback="EditCallback" RemoveCallback="RemoveCallback" ActivateCallback="@ViewModel.Activate" Name="@Name">
   <div class="d-flex flex-column">
     <div>
       <span>Port - </span>
       <span>@ViewModel!.MfcConfig.PortName</span>
     </div>
-    
+
     @if (ViewModel!.DeviceActive)
     {
       <div class="">
         @if (_changing)
         {
           <div class="disabled-overlay d-flex align-items-center justify-content-center">
-            <div><LoadingSpinner SpinnerSize="SpinnerSize.Small"/></div>
+            <div>
+              <LoadingSpinner SpinnerSize="SpinnerSize.Small" />
+            </div>
           </div>
         }
         <div class="mfc-settings-col1">
@@ -29,7 +32,9 @@
             <select disabled="@_changing" class="form-select-sm" @bind="ViewModel!.TargetGas">
               @foreach (var gas in ViewModel!.AvailableGases)
               {
-                <option selected="@ViewModel!.CurrentGas?.Equals(gas, StringComparison.InvariantCultureIgnoreCase)">@gas</option>
+                <option selected="@ViewModel!.CurrentGas?.Equals(gas, StringComparison.InvariantCultureIgnoreCase)">
+                  @gas
+                </option>
               }
             </select>
             <button disabled="@_changing" class="btn btn-sm" @onclick="ChangeGasClicked">Submit</button>
@@ -52,7 +57,7 @@
           {
             <span class="flex-fill">Setpoint Source</span>
             <span class="flex-fill">@ViewModel!.SelectedSetpointSource</span>
-            <select class="form-select-sm"
+            <select class="form-select-sm"                    
                     disabled="@(_changing || ViewModel!.SetpointSourceUpdating)"
                     @bind="SelectedSetpointSourceValue">
               <option value="@SetpointSource.UnknownSource" disabled hidden>Select a source</option>
@@ -63,12 +68,15 @@
             </select>
             @if (ViewModel!.SetpointSourceUpdating)
             {
-              <span class="ms-2 d-flex align-items-center"><LoadingSpinner SpinnerSize="SpinnerSize.Small"/></span>
+              <span class="ms-2 d-flex align-items-center">
+                <LoadingSpinner SpinnerSize="SpinnerSize.Small" />
+              </span>
             }
           }
         </div>
       </div>
-    }else if (_initActive)
+    }
+    else if(_initActive)
     {
       <LoadingSpinner />
     }
@@ -94,12 +102,12 @@
   {
     var viewModel = ViewModel!.EditViewModel;
     var result = await DialogService.OpenAsync("Edit MFC", ds =>
-      @<MfcConfigEditView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)"/>);
+      @<MfcConfigEditView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)" />);
 
     if (result is true && viewModel.Modified)
     {
       await ViewModel!.Save();
-      NotificationService.Notify(NotificationSeverity.Success, "Config has been saved");
+      NotificationService.Success("Config has been saved");
     }
   }
 
@@ -124,13 +132,13 @@
   private async Task ChangeGasClicked()
   {
     _changing = true;
-    try 
+    try
     {
       await ViewModel!.ChangeGas();
     }
     catch(TimeoutException)
     {
-      NotificationService.Notify(NotificationSeverity.Error, "Gas change command timed out.");
+      NotificationService.Error("Gas change command timed out.");
     }
     await ViewModel!.Init();
     _changing = false;

@@ -1,9 +1,11 @@
-﻿@using UI.Backend.ViewModels.Settings.Device.SyringePump
+@using UI.Backend.ViewModels.Settings.Device.SyringePump
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<SyringePumpSettingsViewModel>
 @inject DialogService DialogService
-@inject NotificationService NotificationService
+@inject IUiNotificationService NotificationService
 
-<DeviceSettingsContainer DeviceOperationalStatusGetter="ViewModel!.GetDeviceOperationalStatus" EditCallback="EditCallback" RemoveCallback="RemoveCallback" ActivateCallback="@ViewModel.Activate" Name="@ViewModel!.SyringePumpConfig.Name">
+<DeviceSettingsContainer DeviceOperationalStatusGetter="ViewModel!.GetDeviceOperationalStatus"
+                         EditCallback="EditCallback" RemoveCallback="RemoveCallback" ActivateCallback="@ViewModel.Activate"
+                         Name="@ViewModel!.SyringePumpConfig.Name">
   <div>
     @if (ViewModel!.SyringePumpConfig.Simulated)
     {
@@ -20,12 +22,12 @@
   {
     var viewModel = ViewModel!.EditViewModel;
     var result = await DialogService.OpenAsync("Edit Syringe Pump", ds =>
-      @<SyringePumpConfigEditView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)"/>);
+      @<SyringePumpConfigEditView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)" />);
 
     if (result is true && viewModel.Modified)
     {
       await ViewModel!.Save();
-      NotificationService.Notify(NotificationSeverity.Success, "Config has been saved");
+      NotificationService.Success("Config has been saved");
     }
   }
 
@@ -38,4 +40,3 @@
     }
   }
 }
-

@@ -1,10 +1,10 @@
-﻿@page "/settings/device/laserchiller"
+@page "/settings/device/laserchiller"
 @layout DeviceSettingsLayout
 @using UI.Backend.ViewModels.Settings.Device.LaserChiller
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<LaserChillerSettingsListViewModel>
 
 @inject DialogService DialogService
-@inject NotificationService NotificationService
+@inject IUiNotificationService NotificationService
 
 @if (ViewModel!.SettingsViewModels is null)
 {
@@ -46,11 +46,11 @@ else
       try
       {
         await ViewModel!.AddNewConfig(viewModel.Save());
-        NotificationService.Notify(NotificationSeverity.Success, $"Successfully added Laser Chiller {viewModel.Name}");
+        NotificationService.Success($"Successfully added Laser Chiller {viewModel.Name}");
       }
       catch (Grpc.Core.RpcException e)
       {
-        NotificationService.Notify(NotificationSeverity.Error, e.InnerException?.Message ?? e.Message);
+        NotificationService.Error(e.InnerException?.Message ?? e.Message);
       }
       finally
       {

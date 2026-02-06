@@ -1,7 +1,7 @@
-﻿@using UI.Backend.ViewModels.Devices.VerdiLaser
+@using UI.Backend.ViewModels.Devices.VerdiLaser
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<VerdiLaserUnitControlViewModel>
 @inject TooltipService tooltipService
-@inject NotificationService notificationService
+@inject IUiNotificationService notificationService
 
 <RadzenText Text="@ViewModel!.DeviceName" TextAlign="TextAlign.Center" TextStyle="TextStyle.DisplayH6"/>
 
@@ -28,24 +28,14 @@
 @code {
 	private void NotifyLaserActivated()
 	{
-		var notification = new NotificationMessage();
-		notification.Duration = 5000;
-		notification.CloseOnClick = true;
-
 		if(!ViewModel!.LaserOn)
 		{
-			notification.Severity = NotificationSeverity.Error;
-			notification.Detail = "The Verdi V6 Laser has been activated! Ensure proper safety measures are taken!";
-			notification.Summary = "LASER ACTIVATED!";
+			notificationService.Error("The Verdi V6 Laser has been activated! Ensure proper safety measures are taken!", "LASER ACTIVATED!");
 		}
 
 		else
 		{
-			notification.Severity = NotificationSeverity.Success;
-			notification.Detail = "The Verdi V6 Laser has been deactivated.";
-			notification.Summary = "Laser Deactivated";
+			notificationService.Success("The Verdi V6 Laser has been deactivated.", "Laser Deactivated");
 		}
-
-		notificationService.Notify(notification);
 	}
 }

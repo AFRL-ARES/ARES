@@ -1,10 +1,10 @@
-﻿@page "/settings/device/verdilaser"
+@page "/settings/device/verdilaser"
 @layout DeviceSettingsLayout
 @using UI.Backend.ViewModels.Settings.Device.VerdiLaser
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<VerdiLaserSettingsListViewModel>
 
 @inject DialogService DialogService
-@inject NotificationService NotificationService
+@inject IUiNotificationService NotificationService
 
 @if (ViewModel!.SettingsViewModels is null)
 {
@@ -16,7 +16,7 @@ else
     @foreach (var vm in ViewModel!.SettingsViewModels)
     {
       <div class="m-2">
-        <VerdiLaserSettingsView ViewModel="vm"/>
+        <VerdiLaserSettingsView ViewModel="vm" />
       </div>
     }
     <button class="m-2 align-self-end btn btn-outline-light" disabled="@SavingInProgress" @onclick="AddConfigClick">
@@ -26,7 +26,7 @@ else
       }
       else
       {
-        <RadzenIcon Icon="add"/> 
+        <RadzenIcon Icon="add" />
       }
     </button>
   </div>
@@ -46,11 +46,11 @@ else
       try
       {
         await ViewModel!.AddNewConfig(viewModel.Save());
-        NotificationService.Notify(NotificationSeverity.Success, $"Successfully added Verdi Laser {viewModel.Name}");
+        NotificationService.Success($"Successfully added Verdi Laser {viewModel.Name}");
       }
       catch (Grpc.Core.RpcException e)
       {
-        NotificationService.Notify(NotificationSeverity.Error, e.InnerException?.Message ?? e.Message);
+        NotificationService.Error(e.InnerException?.Message ?? e.Message);
       }
       finally
       {

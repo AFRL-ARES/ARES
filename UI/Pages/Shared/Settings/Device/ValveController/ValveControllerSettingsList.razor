@@ -1,10 +1,10 @@
-﻿@page "/settings/device/ValveController"
+@page "/settings/device/ValveController"
 @layout DeviceSettingsLayout
 @using UI.Backend.ViewModels.Settings.Device.ValveController
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<ValveControllerSettingsListViewModel>
 
 @inject DialogService DialogService
-@inject NotificationService NotificationService
+@inject IUiNotificationService NotificationService
 
 @if (ViewModel!.SettingsViewModels is null)
 {
@@ -16,7 +16,7 @@ else
     @foreach (var vm in ViewModel!.SettingsViewModels)
     {
       <div class="m-2">
-        <ValveControllerSettingsView ViewModel="vm"/>
+        <ValveControllerSettingsView ViewModel="vm" />
       </div>
     }
     <button class="m-2 align-self-end btn btn-outline-light" disabled="@SavingInProgress" @onclick="AddConfigClick">
@@ -26,7 +26,7 @@ else
       }
       else
       {
-        <RadzenIcon Icon="add"/> 
+        <RadzenIcon Icon="add" />
       }
     </button>
   </div>
@@ -49,11 +49,11 @@ else
     {
       await ViewModel!.AddNewConfig(viewModel.Save());
       DialogService.Close();
-      NotificationService.Notify(NotificationSeverity.Success, $"Successfully added Valve Controller {viewModel.Name}");
+      NotificationService.Success($"Successfully added Valve Controller {viewModel.Name}");
     }
     catch(Grpc.Core.RpcException e)
     {
-      NotificationService.Notify(NotificationSeverity.Error, e.InnerException?.Message ?? e.Message);
+      NotificationService.Error(e.InnerException?.Message ?? e.Message);
     }
     finally
     {

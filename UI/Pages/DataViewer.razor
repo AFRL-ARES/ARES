@@ -39,7 +39,7 @@
               <h4> @ViewModel!.FullSelectedSummary.CampaignName - @ViewModel!.FullSelectedSummary.CampaignId </h4>
             </div>
             <div class="d-flex">
-              <RadzenTree Style="width: 100%;" Change="@(item => ViewModel!.SelectedTreeItemUpdated(item))">
+              <RadzenTree Style="width: 100%;" Change="@(item => ViewModel!.SelectedTreeItemUpdated(item?.Value))">
                 <RadzenTreeItem Text="Campaign Execution Info">
                   <ChildContent>
                     <RadzenTreeItem Text=@($"Local Timezone: {ViewModel!.FullSelectedSummary.ExecutionInfo.Timezone}") />

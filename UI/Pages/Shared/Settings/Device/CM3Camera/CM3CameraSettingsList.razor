@@ -1,18 +1,17 @@
-﻿@page "/settings/device/cm3camera"
+@page "/settings/device/cm3camera"
 @layout DeviceSettingsLayout
 @using UI.Backend.ViewModels.Settings.Device.CM3Camera
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<CM3CameraSettingsListViewModel>
 
-
 @inject DialogService DialogService
-@inject NotificationService NotificationService
+@inject IUiNotificationService NotificationService
 
 @if (ViewModel!.SettingsViewModels is null)
 {
-  <LoadingSpinner	/>
+  <LoadingSpinner />
 }
 
-else 
+else
 {
   <div class="d-flex flex-column">
     @foreach(var vm in ViewModel!.SettingsViewModels)
@@ -52,11 +51,11 @@ else
     {
       await ViewModel!.AddNewConfig(viewModel.Save());
       DialogService.Close();
-      NotificationService.Notify(NotificationSeverity.Success, $"Successfully added Camera {viewModel.Name}");
+      NotificationService.Success($"Successfully added Camera {viewModel.Name}");
     }
     catch(Grpc.Core.RpcException e)
     {
-      NotificationService.Notify(NotificationSeverity.Error, e.InnerException?.Message ?? e.Message);
+      NotificationService.Error(e.InnerException?.Message ?? e.Message);
     }
     finally
     {

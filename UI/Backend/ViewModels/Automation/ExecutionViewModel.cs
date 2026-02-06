@@ -1,6 +1,5 @@
-﻿using DynamicData;
+using DynamicData;
 using Google.Protobuf.WellKnownTypes;
-using Radzen;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System.Collections.ObjectModel;
@@ -69,9 +68,9 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     .Select(parameter => parameter.PlanningMetadata)
     .Select(metadata => CampaignTemplate.PlannerAllocations
     .FirstOrDefault(allocation => allocation.Parameter.Equals(metadata))?.Planner).ToHashSet();
-    
+
     var analyzerId = CampaignTemplate.ExperimentTemplate.AnalyzerId;
-    
+
     if(analyzerId is not null)
     {
       var request = new AnalyzerInfoRequest();
@@ -123,32 +122,27 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   public Task PauseCampaign()
     => _automationClient.PauseExecutionAsync(new Empty()).ResponseAsync;
 
-  public Task ResumeCampaign() 
+  public Task ResumeCampaign()
     => _automationClient.ResumeExecutionAsync(new Empty()).ResponseAsync;
 
-  public async Task ExecutionNotesUploaded(UploadChangeEventArgs args)
+  public async Task ExecutionNotesUploaded(Stream fileStream)
   {
-    var maxFileSize = 100;
-    var file = args.Files.First();
-
-    using(var stream = file.OpenReadStream(maxFileSize))
-    using(var reader = new StreamReader(stream))
+    using var reader = new StreamReader(fileStream);
+    try
     {
-      try
+      ExecutionNotes = await reader.ReadToEndAsync();
+    }
+    catch(Exception ex)
+    {
+      var notification = new AresNotification
       {
-        ExecutionNotes = await reader.ReadToEndAsync();
-      }
+        NotificationSeverity = Severity.Error,
+        Title = "Failed to Upload Experiment Notes",
+        Message = $"ARES failed to read the uploaded experiment notes file. {ex.Message}",
+        Timestamp = DateTime.UtcNow.ToTimestamp()
+      };
 
-      catch(Exception ex)
-      {
-        var notification = new AresNotification();
-        notification.NotificationSeverity = Severity.Error;
-        notification.Title = "Failed to Upload Experiment Notes";
-        notification.Message = $"ARES failed to read the uploaded experiment notes file. {ex.Message}";
-        notification.Timestamp = DateTime.UtcNow.ToTimestamp();
-
-        _notificationService.PushNotification(notification);
-      }
+      _notificationService.PushNotification(notification);
     }
   }
 

@@ -1,5 +1,5 @@
-﻿using Ares.Services;
-using Radzen;
+using Ares.Services;
+using UI.Services.Notification;
 using UI.Services.ServerHealth;
 
 namespace UI.Services.ServerHealthNotification;
@@ -9,10 +9,10 @@ namespace UI.Services.ServerHealthNotification;
 /// </summary>
 internal class ServerHealthNotificationService : ILocalService
 {
-  private readonly NotificationService _notificationService;
+  private readonly IUiNotificationService _notificationService;
   private readonly ServerHealthService _serverHealthService;
 
-  public ServerHealthNotificationService(ServerHealthService serverHealthService, NotificationService notificationService)
+  public ServerHealthNotificationService(ServerHealthService serverHealthService, IUiNotificationService notificationService)
   {
     _serverHealthService = serverHealthService;
     _notificationService = notificationService;
@@ -26,18 +26,25 @@ internal class ServerHealthNotificationService : ILocalService
 
   private void ProcessServerState(ServerStatusResponse status)
   {
-    switch (status.ServerStatus)
+    switch(status.ServerStatus)
     {
       case ServerStatus.Idle:
-        break;
       case ServerStatus.Busy:
         break;
       case ServerStatus.Error:
-        _notificationService.Messages.Add(new NotificationMessage { Severity = NotificationSeverity.Error, Detail = status.StatusMessage });
+        _notificationService.Notify(new UiNotificationMessage
+        {
+          Severity = UiNotificationSeverity.Error,
+          Detail = status.StatusMessage
+        });
         break;
       case ServerStatus.Stopping:
       case ServerStatus.Stopped:
-        _notificationService.Messages.Add(new NotificationMessage { Severity = NotificationSeverity.Warning, Detail = status.StatusMessage });
+        _notificationService.Notify(new UiNotificationMessage
+        {
+          Severity = UiNotificationSeverity.Warning,
+          Detail = status.StatusMessage
+        });
         break;
       default:
         throw new ArgumentOutOfRangeException($"{status.ServerStatus} is out of range.");

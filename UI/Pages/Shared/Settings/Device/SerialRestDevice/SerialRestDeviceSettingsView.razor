@@ -1,6 +1,6 @@
-﻿@inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Backend.ViewModels.Settings.Device.SerialRestDevice.SerialRestDeviceSettingsViewModel>
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Backend.ViewModels.Settings.Device.SerialRestDevice.SerialRestDeviceSettingsViewModel>
 @inject DialogService DialogService
-@inject NotificationService NotificationService
+@inject IUiNotificationService NotificationService
 
 
 <DeviceSettingsContainer DeviceOperationalStatusGetter="ViewModel!.GetDeviceOperationalStatus" EditCallback="EditCallback" RemoveCallback="RemoveCallback" ActivateCallback="ViewModel.Activate" Name="@ViewModel!.Config.Name">
@@ -25,7 +25,7 @@
     if (result is true && viewModel.Modified)
     {
       await ViewModel!.Save();
-      NotificationService.Notify(NotificationSeverity.Success, "Config has been saved");
+      NotificationService.Success("Config has been saved");
     }
   }
 

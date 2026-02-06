@@ -1,8 +1,8 @@
-﻿@using Ares.Datamodel.Templates
+@using Ares.Datamodel.Templates
 @using UI.Backend.ViewModels.Automation.CampaignEdit
 @using UI.Pages.Resources
 
-@inject NotificationService notificationService;
+@inject IUiNotificationService notificationService;
 
 @if (CommandDesignerViewModel is not null)
 {
@@ -81,16 +81,8 @@
 
   public void NotifyOfParameterError(Parameter errorParam)
   {
-    //TODO: Update to utilize new notification service
-    var notification = new NotificationMessage();
     var message = $"A command utilizing the parameter {errorParam.Metadata.Name} needs attention, as this parameter has been deleted";
-
-    notification.Duration = 5000;
-    notification.Severity = NotificationSeverity.Error;
-    notification.Summary = "Experiment Parameter Deleted";
-    notification.Detail = message;
-
-    notificationService.Notify(notification);
+    notificationService.Error(message, "Experiment Parameter Deleted");
   }
 
   public object ConvertToDisplayData(Parameter argument)

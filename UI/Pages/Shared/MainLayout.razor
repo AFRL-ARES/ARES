@@ -1,9 +1,10 @@
 ﻿@using Ares.Services
 @using Google.Protobuf.WellKnownTypes
+@using UI.Services.Dialog
 @using UI.Services.Notification
 @inherits LayoutComponentBase
 
-@inject DialogService dialogService
+@inject IUiDialogService dialogService
 @inject AresSafetyService.AresSafetyServiceClient safetyServiceClient
 @inject INotificationReceivingService notificationService
 
@@ -105,10 +106,10 @@
 
   async Task ShowEmergencyStopDialog()
   {
-    var confirmDialogOptions = new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" };
-    var result = await dialogService.Confirm("Are you sure you want to trigger an emergency stop?", "Emergency Stop Confirmation", confirmDialogOptions);
+    var confirmDialogOptions = new UiConfirmOptions { OkButtonText = "Yes", CancelButtonText = "No" };
+    var result = await dialogService.ConfirmAsync("Are you sure you want to trigger an emergency stop?", "Emergency Stop Confirmation", confirmDialogOptions);
 
-    if(result.GetValueOrDefault())
+    if(result)
     {
       var emergencyStopResponse = await safetyServiceClient.RequestEmergencyStopAsync(new EmergencyStopRequest());
       AresNotification notification;
