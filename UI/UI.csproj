@@ -46,7 +46,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Backend\ViewModels\Misc\" />
     <Folder Include="Services\CampaignEdit\" />
     <Folder Include="wwwroot\js\" />
   </ItemGroup>

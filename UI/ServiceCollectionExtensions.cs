@@ -158,7 +158,6 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<ProfileViewModel>();
     services.AddScoped<ProjectViewModel>();
     services.AddScoped<QuasiManualViewModel>();
-    services.AddScoped<SettingsViewModel>();
     services.AddTransient<CampaignDesignerViewModel>();
     services.AddScoped<CampaignListViewModel>();
     services.AddScoped<ExecutionHistoryViewModel>();
