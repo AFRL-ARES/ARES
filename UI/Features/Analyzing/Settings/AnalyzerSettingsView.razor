@@ -1,6 +1,7 @@
-﻿@using Ares.Services
+@using Ares.Services
 @using Google.Protobuf.WellKnownTypes
-@inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Backend.ViewModels.Settings.Analysis.AnalyzerSettingsViewModel>
+@using UI.Features.Analyzing.Settings.Layout
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Features.Analyzing.Settings.AnalyzerSettingsViewModel>
 @inject DialogService DialogService
 
 <AnalyzerSettingsContainer EditCallback="EditCallback" 

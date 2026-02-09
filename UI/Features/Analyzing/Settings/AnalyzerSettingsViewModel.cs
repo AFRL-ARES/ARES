@@ -1,11 +1,11 @@
-﻿using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Connection;
 using Ares.Services;
 using Grpc.Core;
 using ReactiveUI;
 using UI.Services.Notification;
 
-namespace UI.Backend.ViewModels.Settings.Analysis;
+namespace UI.Features.Analyzing.Settings;
 
 public class AnalyzerSettingsViewModel : ReactiveObject
 {

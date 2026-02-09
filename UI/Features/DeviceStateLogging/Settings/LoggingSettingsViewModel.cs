@@ -4,7 +4,7 @@ using Ares.Services.Device;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 
-namespace UI.Backend.ViewModels.Settings.Logging;
+namespace UI.Features.DeviceStateLogging.Settings;
 
 public partial class LoggingSettingsViewModel : ReactiveObject
 {

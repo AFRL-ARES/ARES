@@ -1,9 +1,9 @@
-﻿using Ares.Datamodel.Planning;
+using Ares.Datamodel.Planning;
 using Ares.Services;
 using ReactiveUI;
 
 
-namespace UI.Backend.ViewModels.Settings.Planning
+namespace UI.Features.Planning.Settings
 {
   public class PlannerConfigEditViewModel : ReactiveObject
   {

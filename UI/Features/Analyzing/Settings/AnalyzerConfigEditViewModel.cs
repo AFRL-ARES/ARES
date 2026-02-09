@@ -1,8 +1,8 @@
-﻿using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Analyzing;
 using Ares.Services;
 using ReactiveUI;
 
-namespace UI.Backend.ViewModels.Settings.Analysis;
+namespace UI.Features.Analyzing.Settings;
 
 public class AnalyzerConfigEditViewModel : ReactiveObject
 {

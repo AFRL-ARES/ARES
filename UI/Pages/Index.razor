@@ -1,6 +1,7 @@
 @page "/"
 @using UI.Backend.Repos
 @using UI.Backend.ViewModels
+@using UI.Features.DeviceStateLogging
 
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<IndexViewModel>
 @inject IJSRuntime JS
@@ -9,7 +10,7 @@
 <PageTitle>Dashboard</PageTitle>
 <div class="d-flex flex-column gap-2">
   <div class="d-flex gap-2">
-    <ManualExecutionWidget />
+    <ManualDeviceLoggerWidget />
   </div>
 
   <div class="grid-stack" id="my-dashboard">

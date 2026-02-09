@@ -1,7 +1,7 @@
-﻿@using Ares.Services
+@using Ares.Services
 @using Google.Protobuf.WellKnownTypes
-@using UI.Pages.Shared.Settings.Planning.Layout
-@inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Backend.ViewModels.Settings.Planning.PlannerSettingsViewModel>
+@using UI.Features.Planning.Settings.Layout
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Features.Planning.Settings.PlannerSettingsViewModel>
 @inject DialogService DialogService
   
 <PlannerSettingsContainer PlannerStatusGetter="ViewModel!.GetPlannerStatus"

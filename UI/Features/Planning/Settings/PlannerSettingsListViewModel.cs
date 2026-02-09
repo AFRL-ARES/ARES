@@ -1,4 +1,4 @@
-﻿using Ares.Datamodel.Planning;
+using Ares.Datamodel.Planning;
 using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
@@ -6,7 +6,7 @@ using ReactiveUI.SourceGenerators;
 using UI.Services.Notification;
 
 
-namespace UI.Backend.ViewModels.Settings.Planning;
+namespace UI.Features.Planning.Settings;
 
 public partial class PlannerSettingsListViewModel : ReactiveObject
 {

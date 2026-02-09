@@ -1,10 +1,10 @@
-﻿using Ares.Datamodel;
+using Ares.Datamodel;
 using Ares.Datamodel.Planning;
 using Ares.Services;
 using Grpc.Core;
 using ReactiveUI;
 
-namespace UI.Backend.ViewModels.Settings.Planning;
+namespace UI.Features.Planning.Settings;
 
 public class PlannerSettingsEditorViewModel : ReactiveObject
 {

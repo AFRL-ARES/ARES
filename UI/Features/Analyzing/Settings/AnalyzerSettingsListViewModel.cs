@@ -1,11 +1,11 @@
-﻿using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Analyzing;
 using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using UI.Services.Notification;
 
-namespace UI.Backend.ViewModels.Settings.Analysis;
+namespace UI.Features.Analyzing.Settings;
 
 public partial class AnalyzerSettingsListViewModel : ReactiveObject
 {

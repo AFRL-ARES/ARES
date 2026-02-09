@@ -7,7 +7,7 @@ using ReactiveUI.SourceGenerators;
 using UI.Features.DeviceStateLogging;
 using UI.Services.Notification;
 
-namespace UI.Backend.ViewModels.Settings.Logging;
+namespace UI.Features.DeviceStateLogging.Settings;
 
 public partial class LoggingSettingsListViewModel : ReactiveObject
 {

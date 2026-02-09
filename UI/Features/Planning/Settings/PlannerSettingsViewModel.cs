@@ -1,4 +1,4 @@
-﻿using Ares.Datamodel.Connection;
+using Ares.Datamodel.Connection;
 using Ares.Datamodel.Planning;
 using Ares.Services;
 using Grpc.Core;
@@ -6,7 +6,7 @@ using ReactiveUI;
 using UI.Services.Notification;
 
 
-namespace UI.Backend.ViewModels.Settings.Planning;
+namespace UI.Features.Planning.Settings;
 
 public class PlannerSettingsViewModel : ReactiveObject
 {
