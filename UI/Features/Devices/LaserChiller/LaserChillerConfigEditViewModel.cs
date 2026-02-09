@@ -1,12 +1,12 @@
-﻿using Chiller.Config;
+﻿using Ares.Services.Device;
+using Chiller.Config;
 using Chiller.Services;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System.ComponentModel.DataAnnotations;
-using Ares.Services.Device;
 
-namespace UI.Backend.ViewModels.Settings.Device.LaserChiller;
+namespace UI.Features.Devices.LaserChiller;
 
 public partial class LaserChillerConfigEditViewModel : ReactiveObject
 {

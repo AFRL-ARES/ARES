@@ -5,7 +5,6 @@ using ChemyxPumpPlugin.Services;
 using CommunityToolkit.Mvvm.Messaging;
 using Grpc.Core;
 using ReactiveUI;
-using UI.Backend.ViewModels.Settings.Device.ChemyxPump;
 using UI.Features.Devices.Shared;
 
 namespace UI.Features.Devices.ChemyxPump;

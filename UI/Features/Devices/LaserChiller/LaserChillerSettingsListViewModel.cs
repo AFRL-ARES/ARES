@@ -6,9 +6,8 @@ using CommunityToolkit.Mvvm.Messaging;
 using LaserChiller;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using UI.Features.Devices.LaserChiller;
 
-namespace UI.Backend.ViewModels.Settings.Device.LaserChiller;
+namespace UI.Features.Devices.LaserChiller;
 
 public partial class LaserChillerSettingsListViewModel : ReactiveObject
 {

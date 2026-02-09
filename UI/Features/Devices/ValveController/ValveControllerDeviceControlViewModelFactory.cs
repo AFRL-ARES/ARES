@@ -1,9 +1,9 @@
 using Ares.Services.Device;
 using DynamicData;
 using Google.Protobuf.WellKnownTypes;
-using UI.Backend.Factories;
 using UI.Infrastructure.Repos;
 using UI.Backend.ViewModels;
+using UI.Features.Devices.Shared;
 using ValveController.Services;
 
 namespace UI.Features.Devices.ValveController;

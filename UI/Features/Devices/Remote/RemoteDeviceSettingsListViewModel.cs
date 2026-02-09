@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using Ares.Datamodel.Device;
 using Ares.Services;
 using Ares.Services.Device;
@@ -6,10 +5,10 @@ using CommunityToolkit.Mvvm.Messaging;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using UI.Features.Devices.Remote;
+using System.Collections.ObjectModel;
 using UI.Infrastructure.Notification;
 
-namespace UI.Backend.ViewModels.Settings.Device.Remote;
+namespace UI.Features.Devices.Remote;
 
 public partial class RemoteDeviceSettingsListViewModel : ReactiveObject
 {

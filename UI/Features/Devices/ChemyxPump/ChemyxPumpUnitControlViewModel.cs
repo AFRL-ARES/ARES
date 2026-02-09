@@ -1,6 +1,5 @@
 using ChemyxPumpPlugin.Services;
 using UI.Backend.ViewModels;
-using UI.Backend.ViewModels.Devices.ChemyxPump;
 
 namespace UI.Features.Devices.ChemyxPump;
 

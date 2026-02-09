@@ -1,9 +1,9 @@
 using Ares.Datamodel;
 using ReactiveUI.SourceGenerators;
-using UI.Features.Devices.Remote;
+using UI.Backend.ViewModels;
 using UI.Features.Devices.Shared;
 
-namespace UI.Backend.ViewModels.Devices.Remote;
+namespace UI.Features.Devices.Remote;
 
 public partial class RemoteDeviceUnitViewModel : DeviceUnitControlViewModel, IAsyncDisposable
 {

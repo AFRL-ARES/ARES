@@ -1,6 +1,7 @@
 ﻿using Ares.Datamodel.Templates;
 using Ares.Services;
-using UI.Backend.ViewModels.Automation.CampaignEdit;
+using AnalyzerDesignerViewModel=UI.Features.CampaignEdit.ViewModels.AnalyzerDesignerViewModel;
+using CommandDesignerViewModel=UI.Features.CampaignEdit.ViewModels.CommandDesignerViewModel;
 
 namespace UI.Features.CampaignEdit.Factories;
 

@@ -4,7 +4,7 @@ using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 
-namespace UI.Backend.ViewModels.Automation;
+namespace UI.Features.ExecutionHistory;
 
 public partial class ExecutionHistoryViewModel : ReactiveObject
 {

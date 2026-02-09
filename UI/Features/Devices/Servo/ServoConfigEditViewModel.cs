@@ -6,7 +6,7 @@ using Microsoft.Build.Framework;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 
-namespace UI.Backend.ViewModels.Settings.Device.Servo;
+namespace UI.Features.Devices.Servo;
 
 public partial class ServoConfigEditViewModel : ReactiveObject
 {

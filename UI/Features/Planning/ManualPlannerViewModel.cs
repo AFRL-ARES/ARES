@@ -6,9 +6,8 @@ using Google.Protobuf.WellKnownTypes;
 using Microsoft.AspNetCore.Components.Forms;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using UI.Features.Planning;
 
-namespace UI.Backend.ViewModels.Automation.Planning;
+namespace UI.Features.Planning;
 
 public partial class ManualPlannerViewModel : ReactiveObject
 {

@@ -7,7 +7,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 
-namespace UI.Backend.ViewModels.Settings.Device.Mfc;
+namespace UI.Features.Devices.Mfc;
 
 public partial class MfcSettingsListViewModel : ReactiveObject
 {

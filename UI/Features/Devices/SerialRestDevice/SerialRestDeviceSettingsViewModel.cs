@@ -1,17 +1,9 @@
-﻿/*namespace UI.Backend.ViewModels.Settings.Device.SerialRestDevice;
-
-public class SerialRestDeviceSettingsViewModel
-{
-
-}*/
-
-using Ares.Datamodel.Device;
+﻿using Ares.Datamodel.Device;
 using Ares.Services.Device;
 using Grpc.Core;
 using ReactiveUI;
 using RestSerialDevice.Config;
 using RestSerialDevice.Services;
-using UI.Backend.ViewModels.Settings.Device.SerialRestDevice;
 
 namespace UI.Features.Devices.SerialRestDevice;
 

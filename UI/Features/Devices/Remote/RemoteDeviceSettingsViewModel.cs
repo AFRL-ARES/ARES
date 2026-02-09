@@ -1,5 +1,3 @@
-using System.Reactive;
-using System.Reactive.Linq;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
 using Ares.Services;
@@ -8,11 +6,12 @@ using CommunityToolkit.Mvvm.Messaging;
 using Grpc.Core;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using UI.Features.Devices.Remote;
+using System.Reactive;
+using System.Reactive.Linq;
 using UI.Features.Devices.Shared;
 using UI.Infrastructure.Notification;
 
-namespace UI.Backend.ViewModels.Settings.Device.Remote;
+namespace UI.Features.Devices.Remote;
 
 public partial class RemoteDeviceSettingsViewModel : ReactiveObject
 {

@@ -3,7 +3,6 @@ using Ares.Services.Device;
 using CommunityToolkit.Mvvm.Messaging;
 using Grpc.Core;
 using ReactiveUI;
-using UI.Backend.ViewModels.Settings.Device.ValveController;
 using UI.Features.Devices.Shared;
 using ValveController.Config;
 using ValveController.Services;

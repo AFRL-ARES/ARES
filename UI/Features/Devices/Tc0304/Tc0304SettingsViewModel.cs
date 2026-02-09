@@ -5,7 +5,6 @@ using Grpc.Core;
 using ReactiveUI;
 using Tc0304.Config;
 using Tc0304.Services;
-using UI.Backend.ViewModels.Settings.Device.Tc0304;
 using UI.Features.Devices.Shared;
 
 namespace UI.Features.Devices.Tc0304;

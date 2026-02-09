@@ -1,10 +1,8 @@
 @page "/automation/execution"
 @using System.Collections.ObjectModel
-@using System.Threading.Tasks
 @using Ares.Datamodel
 @using Ares.Services
 @using Google.Protobuf.WellKnownTypes
-@using Radzen.Blazor
 @using UI.Infrastructure.Extensions
 @using UI.Infrastructure.Interfaces
 @using UI.Features.Execution.Planning
@@ -13,7 +11,7 @@
 @inject IUiNotificationService NotificationService
 @inject Radzen.DialogService DialogService
 @implements IDisposable
-@inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<UI.Backend.ViewModels.Automation.ExecutionViewModel>
+@inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<ExecutionViewModel>
 
 <PageTitle>Execution</PageTitle>
 

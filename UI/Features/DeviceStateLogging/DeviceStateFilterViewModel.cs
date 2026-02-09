@@ -5,9 +5,8 @@ using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using UI.Features.DeviceStateLogging;
 
-namespace UI.Backend.ViewModels.DeviceStateLogging;
+namespace UI.Features.DeviceStateLogging;
 
 public partial class DeviceStateFilterViewModel : ReactiveObject
 {

@@ -1,6 +1,6 @@
 ﻿using Ares.Datamodel.Templates;
 using Ares.Services.Device;
-using UI.Backend.ViewModels.Automation.CampaignEdit;
+using MetadataPickerViewModel=UI.Features.CampaignEdit.ViewModels.MetadataPickerViewModel;
 
 namespace UI.Features.CampaignEdit.Factories;
 

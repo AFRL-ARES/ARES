@@ -5,9 +5,8 @@ using ChemyxPumpPlugin.Services;
 using CommunityToolkit.Mvvm.Messaging;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using UI.Features.Devices.ChemyxPump;
 
-namespace UI.Backend.ViewModels.Settings.Device.ChemyxPump;
+namespace UI.Features.Devices.ChemyxPump;
 
 public partial class ChemyxPumpSettingsListViewModel : ReactiveObject
 {

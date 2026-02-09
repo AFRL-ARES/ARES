@@ -6,9 +6,8 @@ using HerkulexDRS.Config;
 using HerkulexDRS.Services;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using UI.Features.Devices.Servo;
 
-namespace UI.Backend.ViewModels.Settings.Device.Servo;
+namespace UI.Features.Devices.Servo;
 
 public partial class ServoSettingsListViewModel : ReactiveObject
 {

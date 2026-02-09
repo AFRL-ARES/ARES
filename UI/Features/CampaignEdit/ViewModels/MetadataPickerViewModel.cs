@@ -5,7 +5,7 @@ using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 
-namespace UI.Backend.ViewModels.Automation.CampaignEdit;
+namespace UI.Features.CampaignEdit.ViewModels;
 
 public partial class MetadataPickerViewModel : ReactiveObject
 {

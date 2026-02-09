@@ -5,9 +5,8 @@ using ReactiveUI.SourceGenerators;
 using RestDevice;
 using RestDevice.Config;
 using RestDevice.Services;
-using UI.Features.Devices.RestDevice;
 
-namespace UI.Backend.ViewModels.Settings.Device.RestDevice;
+namespace UI.Features.Devices.RestDevice;
 
 public partial class RestDeviceSettingsListViewModel : ReactiveObject
 {

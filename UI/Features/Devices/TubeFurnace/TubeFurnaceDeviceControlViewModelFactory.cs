@@ -2,10 +2,9 @@ using Ares.Services.Device;
 using DynamicData;
 using Google.Protobuf.WellKnownTypes;
 using TubeFurnace.Messaging;
-using UI.Backend.Factories;
 using UI.Infrastructure.Repos;
 using UI.Backend.ViewModels;
-using UI.Backend.ViewModels.TubeFurnace;
+using UI.Features.Devices.Shared;
 
 namespace UI.Features.Devices.TubeFurnace
 {

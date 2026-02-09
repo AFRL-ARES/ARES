@@ -5,7 +5,7 @@ using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using UI.Infrastructure.Notification;
 
-namespace UI.Backend.ViewModels.Automation.CampaignEdit;
+namespace UI.Features.CampaignEdit.ViewModels;
 
 public partial class PlannerAllocationEditorViewModel : ReactiveObject
 {

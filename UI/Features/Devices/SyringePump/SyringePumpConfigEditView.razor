@@ -1,5 +1,4 @@
 ﻿@inherits ReactiveUI.Blazor.ReactiveComponentBase<SyringePumpConfigEditViewModel>
-@using UI.Backend.ViewModels.Settings.Device.SyringePump;
 <EditForm Model="@ViewModel" OnValidSubmit="OnValidSubmit">
   <div class="pump-property-grid">
     <input type="text" placeholder="@(ViewModel!.Port is null ? "Port" : ViewModel!.Port)" list="port-list" @bind="ViewModel!.Port" class="form-select pump-port" />

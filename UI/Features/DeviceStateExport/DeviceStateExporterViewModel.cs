@@ -1,8 +1,8 @@
 ﻿using Ares.Services;
 using Microsoft.OpenApi;
 using ReactiveUI;
-using UI.Backend.ViewModels.DeviceStateLogging;
 using UI.Features.DeviceStateLogging;
+using DeviceStateFilterViewModel=UI.Features.DeviceStateLogging.DeviceStateFilterViewModel;
 
 namespace UI.Features.DeviceStateExport;
 

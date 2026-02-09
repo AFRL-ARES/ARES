@@ -5,10 +5,10 @@ using System.Collections.ObjectModel;
 using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using UI.Infrastructure.Repos;
 using UI.Backend.ViewModels;
+using UI.Infrastructure.Repos;
 
-namespace UI.Backend.Factories;
+namespace UI.Features.Devices.Shared;
 
 public abstract class DeviceConnectorViewModelFactory<TDeviceUnitVm> : ReactiveObject, IAsyncDisposable where TDeviceUnitVm : DeviceUnitControlViewModel
 {

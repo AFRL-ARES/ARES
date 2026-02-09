@@ -4,7 +4,6 @@ using Ares.Datamodel.Templates;
 using Ares.Services;
 using Ares.Datamodel.Planning;
 using UI.Infrastructure.Notification;
-using UI.Backend.ViewModels.Automation.CampaignEdit;
 
 namespace UI.Features.CampaignEdit.ViewModels;
 

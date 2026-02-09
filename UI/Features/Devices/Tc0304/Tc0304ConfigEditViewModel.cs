@@ -1,12 +1,12 @@
-﻿using System.ComponentModel.DataAnnotations;
-using Ares.Services.Device;
+﻿using Ares.Services.Device;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
+using System.ComponentModel.DataAnnotations;
 using Tc0304.Config;
 using Tc0304.Services;
 
-namespace UI.Backend.ViewModels.Settings.Device.Tc0304;
+namespace UI.Features.Devices.Tc0304;
 
 public partial class Tc0304ConfigEditViewModel : ReactiveObject
 {

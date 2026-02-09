@@ -1,14 +1,13 @@
 ﻿using Ares.Datamodel.Device;
 using Ares.Services.Device;
+using CommunityToolkit.Mvvm.Messaging;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using TC0304;
 using Tc0304.Config;
 using Tc0304.Services;
-using CommunityToolkit.Mvvm.Messaging;
-using UI.Features.Devices.Tc0304;
 
-namespace UI.Backend.ViewModels.Settings.Device.Tc0304;
+namespace UI.Features.Devices.Tc0304;
 
 public partial class Tc0304SettingsListViewModel : ReactiveObject
 {

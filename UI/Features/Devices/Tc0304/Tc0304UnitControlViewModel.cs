@@ -1,9 +1,9 @@
 using ReactiveUI.SourceGenerators;
 using Tc0304.Services;
-using UI.Features.Devices.Tc0304;
+using UI.Backend.ViewModels;
 using UnitsNet;
 
-namespace UI.Backend.ViewModels.Tc0304;
+namespace UI.Features.Devices.Tc0304;
 
 public partial class Tc0304UnitControlViewModel : DeviceUnitControlViewModel, IAsyncDisposable
 {

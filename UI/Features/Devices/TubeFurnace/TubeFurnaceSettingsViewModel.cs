@@ -8,7 +8,7 @@ using TubeFurnace.Config;
 using TubeFurnace.Messaging;
 using UI.Features.Devices.Shared;
 
-namespace UI.Backend.ViewModels.Settings.Device.TubeFurnace
+namespace UI.Features.Devices.TubeFurnace
 {
   public partial class TubeFurnaceSettingsViewModel : ReactiveObject
   {

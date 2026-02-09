@@ -1,13 +1,13 @@
 ﻿using Ares.Datamodel.Device;
 using Ares.Services.Device;
-using ReactiveUI.SourceGenerators;
-using ReactiveUI;
+using CommunityToolkit.Mvvm.Messaging;
 using LindbergFurnace;
+using ReactiveUI;
+using ReactiveUI.SourceGenerators;
 using TubeFurnace.Config;
 using TubeFurnace.Messaging;
-using CommunityToolkit.Mvvm.Messaging;
 
-namespace UI.Backend.ViewModels.Settings.Device.TubeFurnace
+namespace UI.Features.Devices.TubeFurnace
 {
   public partial class TubeFurnaceSettingsListViewModel : ReactiveObject
   {

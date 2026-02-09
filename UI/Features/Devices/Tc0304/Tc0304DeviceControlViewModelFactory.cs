@@ -2,10 +2,9 @@ using Ares.Services.Device;
 using DynamicData;
 using Google.Protobuf.WellKnownTypes;
 using Tc0304.Services;
-using UI.Backend.Factories;
 using UI.Infrastructure.Repos;
 using UI.Backend.ViewModels;
-using UI.Backend.ViewModels.Tc0304;
+using UI.Features.Devices.Shared;
 
 namespace UI.Features.Devices.Tc0304;
 

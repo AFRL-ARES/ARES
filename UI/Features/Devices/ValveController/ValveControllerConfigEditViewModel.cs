@@ -1,12 +1,12 @@
-﻿using Google.Protobuf.WellKnownTypes;
+﻿using Ares.Services.Device;
+using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System.ComponentModel.DataAnnotations;
-using Ares.Services.Device;
 using ValveController.Config;
 using ValveController.Services;
 
-namespace UI.Backend.ViewModels.Settings.Device.ValveController;
+namespace UI.Features.Devices.ValveController;
 
 public partial class ValveControllerConfigEditViewModel : ReactiveObject
 {

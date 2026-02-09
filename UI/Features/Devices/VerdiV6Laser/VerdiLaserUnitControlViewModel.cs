@@ -1,9 +1,9 @@
 using DynamicData.Binding;
 using ReactiveUI.SourceGenerators;
-using UI.Features.Devices.VerdiV6Laser;
+using UI.Backend.ViewModels;
 using VerdiV6.Services;
 
-namespace UI.Backend.ViewModels.Devices.VerdiLaser;
+namespace UI.Features.Devices.VerdiV6Laser;
 
 public partial class VerdiLaserUnitControlViewModel : DeviceUnitControlViewModel
 {

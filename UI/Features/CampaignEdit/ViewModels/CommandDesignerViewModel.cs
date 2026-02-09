@@ -4,9 +4,8 @@ using Ares.Services.Device;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using UI.Features.CampaignEdit.Factories;
-using UI.Features.CampaignEdit.ViewModels;
 
-namespace UI.Backend.ViewModels.Automation.CampaignEdit;
+namespace UI.Features.CampaignEdit.ViewModels;
 
 public partial class CommandDesignerViewModel : ReactiveObject
 {

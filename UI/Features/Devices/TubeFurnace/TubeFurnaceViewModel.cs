@@ -1,11 +1,11 @@
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using TubeFurnace.Messaging;
-using UI.Features.Devices.TubeFurnace;
+using UI.Backend.ViewModels;
 using UnitsNet;
 using UnitsNet.Units;
 
-namespace UI.Backend.ViewModels.TubeFurnace;
+namespace UI.Features.Devices.TubeFurnace;
 
 public partial class TubeFurnaceViewModel : DeviceUnitControlViewModel, IAsyncDisposable
 {

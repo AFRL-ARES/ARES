@@ -1,12 +1,12 @@
-using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using Ares.Services;
 using Grpc.Core;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using UI.Infrastructure.Monaco.Interops;
 
-namespace UI.Backend.ViewModels;
+namespace UI.Features.ScriptPlayground;
 
 public partial class ScriptPlaygroundViewModel : ReactiveObject
 {

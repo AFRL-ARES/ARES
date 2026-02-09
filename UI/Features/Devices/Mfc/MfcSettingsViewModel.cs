@@ -9,7 +9,7 @@ using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using UI.Features.Devices.Shared;
 
-namespace UI.Backend.ViewModels.Settings.Device.Mfc;
+namespace UI.Features.Devices.Mfc;
 
 public partial class MfcSettingsViewModel : ReactiveObject
 {

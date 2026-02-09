@@ -1,8 +1,8 @@
 using ReactiveUI.SourceGenerators;
 using TicStepperController.Messaging;
-using UI.Features.Devices.StepperController;
+using UI.Backend.ViewModels;
 
-namespace UI.Backend.ViewModels.StepperController;
+namespace UI.Features.Devices.StepperController;
 
 public partial class StepperControllerViewModel : DeviceUnitControlViewModel, IAsyncDisposable
 {

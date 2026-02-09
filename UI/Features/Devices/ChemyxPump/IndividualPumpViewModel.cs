@@ -4,7 +4,7 @@ using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 
-namespace UI.Backend.ViewModels.Devices.ChemyxPump;
+namespace UI.Features.Devices.ChemyxPump;
 
 public partial class IndividualPumpViewModel : ReactiveObject, IAsyncDisposable
 {

@@ -8,7 +8,7 @@ using TicStepperController.Config;
 using TicStepperController.Messaging;
 using UI.Features.Devices.Shared;
 
-namespace UI.Backend.ViewModels.Settings.Device.StepperController;
+namespace UI.Features.Devices.StepperController;
 
 public partial class StepperControllerSettingsViewModel : ReactiveObject
 {

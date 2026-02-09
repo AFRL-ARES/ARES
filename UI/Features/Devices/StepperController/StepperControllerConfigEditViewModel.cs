@@ -1,12 +1,12 @@
-﻿using Google.Protobuf.WellKnownTypes;
+﻿using Ares.Services.Device;
+using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System.ComponentModel.DataAnnotations;
-using Ares.Services.Device;
 using TicStepperController.Config;
 using TicStepperController.Messaging;
 
-namespace UI.Backend.ViewModels.Settings.Device.StepperController;
+namespace UI.Features.Devices.StepperController;
 
 public partial class StepperControllerConfigEditViewModel : ReactiveObject
 {

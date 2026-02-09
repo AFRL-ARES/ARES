@@ -1,12 +1,12 @@
-﻿using Google.Protobuf.WellKnownTypes;
+﻿using Ares.Services.Device;
+using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System.ComponentModel.DataAnnotations;
-using Ares.Services.Device;
 using TubeFurnace.Config;
 using TubeFurnace.Messaging;
 
-namespace UI.Backend.ViewModels.Settings.Device.TubeFurnace
+namespace UI.Features.Devices.TubeFurnace
 {
   public partial class TubeFurnaceConfigEditViewModel : ReactiveObject
   {

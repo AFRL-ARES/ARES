@@ -1,5 +1,4 @@
 ﻿using Ares.Services;
-using UI.Backend.ViewModels.DeviceStateLogging;
 
 namespace UI.Features.DeviceStateLogging;
 

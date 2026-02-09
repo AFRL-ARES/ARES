@@ -1,7 +1,7 @@
 ﻿using Ares.Datamodel.Templates;
 using Ares.Services;
 using Radzen;
-using UI.Backend.ViewModels.Automation.CampaignEdit;
+using ExperimentDesignerViewModel=UI.Features.CampaignEdit.ViewModels.ExperimentDesignerViewModel;
 
 namespace UI.Features.CampaignEdit.Factories;
 

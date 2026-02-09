@@ -1,7 +1,7 @@
 ﻿using Ares.Datamodel.Templates;
 using Ares.Services;
 using Radzen;
-using UI.Backend.ViewModels.Automation.CampaignEdit;
+using CloseoutDesignerViewModel=UI.Features.CampaignEdit.ViewModels.CloseoutDesignerViewModel;
 
 namespace UI.Features.CampaignEdit.Factories;
 

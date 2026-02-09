@@ -7,7 +7,7 @@ using NuGet.Packaging;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 
-namespace UI.Backend.ViewModels.Automation.CampaignEdit;
+namespace UI.Features.CampaignEdit.ViewModels;
 
 public partial class AnalyzerDesignerViewModel : ReactiveObject
 {

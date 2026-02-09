@@ -1,14 +1,13 @@
-﻿using System.ComponentModel.DataAnnotations;
-using Ares.Alicat.Mfc.Config;
+﻿using Ares.Alicat.Mfc.Config;
 using Ares.Alicat.Mfc.Messaging;
 using Ares.Services.Device;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using UI.Features.Devices.Mfc;
+using System.ComponentModel.DataAnnotations;
 using Enum = System.Enum;
 
-namespace UI.Backend.ViewModels.Settings.Device.Mfc;
+namespace UI.Features.Devices.Mfc;
 
 public partial class MfcConfigEditViewModel : ReactiveObject
 {

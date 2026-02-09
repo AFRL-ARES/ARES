@@ -6,9 +6,8 @@ using FlirCM3.Config;
 using FlirCM3.Services;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using UI.Features.Devices.CM3Camera;
 
-namespace UI.Backend.ViewModels.Settings.Device.CM3Camera
+namespace UI.Features.Devices.CM3Camera
 {
   public partial class CM3CameraSettingsListViewModel : ReactiveObject
   {

@@ -6,7 +6,7 @@ using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System.ComponentModel.DataAnnotations;
 
-namespace UI.Backend.ViewModels.Settings.Device.ChemyxPump;
+namespace UI.Features.Devices.ChemyxPump;
 
 public partial class ChemyxPumpConfigEditViewModel : ReactiveObject
 {

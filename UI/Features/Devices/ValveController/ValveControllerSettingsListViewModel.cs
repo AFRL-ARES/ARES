@@ -3,12 +3,11 @@ using Ares.Services.Device;
 using CommunityToolkit.Mvvm.Messaging;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using UI.Features.Devices.ValveController;
 using ValveController;
 using ValveController.Config;
 using ValveController.Services;
 
-namespace UI.Backend.ViewModels.Settings.Device.ValveController;
+namespace UI.Features.Devices.ValveController;
 
 public partial class ValveControllerSettingsListViewModel : ReactiveObject
 {

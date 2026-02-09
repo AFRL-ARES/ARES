@@ -5,7 +5,7 @@ using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using UI.Infrastructure.Helpers;
 
-namespace UI.Backend.ViewModels;
+namespace UI.Features.DataViewer;
 
 public partial class DataViewerViewModel : ReactiveObject
 {

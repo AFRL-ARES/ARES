@@ -2,11 +2,9 @@ using Ares.Services.Device;
 using Ares.SyringePump.Ne1000.Messaging;
 using DynamicData;
 using Google.Protobuf.WellKnownTypes;
-using System.Reactive.Linq;
-using UI.Backend.Factories;
 using UI.Infrastructure.Repos;
 using UI.Backend.ViewModels;
-using UI.Backend.ViewModels.SyringePump;
+using UI.Features.Devices.Shared;
 
 namespace UI.Features.Devices.SyringePump;
 

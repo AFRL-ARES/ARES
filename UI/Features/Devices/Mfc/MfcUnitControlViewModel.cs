@@ -1,11 +1,11 @@
 ﻿using Ares.Alicat.Mfc.Messaging;
 using DynamicData;
 using ReactiveUI.SourceGenerators;
-using UI.Features.Devices.Mfc;
+using UI.Backend.ViewModels;
 using UnitsNet;
 using UnitsNet.Units;
 
-namespace UI.Backend.ViewModels.Devices.Mfc;
+namespace UI.Features.Devices.Mfc;
 
 public partial class MfcUnitControlViewModel : DeviceUnitControlViewModel, IAsyncDisposable
 {

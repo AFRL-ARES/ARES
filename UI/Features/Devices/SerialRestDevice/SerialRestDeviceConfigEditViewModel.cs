@@ -34,13 +34,13 @@ public class SerialRestDeviceConfigEditViewModel : ReactiveObject
 
 using Ares.Services.Device;
 using Google.Protobuf.WellKnownTypes;
-using RestSerialDevice.Config;
-using RestSerialDevice.Services;
 using Microsoft.Build.Framework;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
+using RestSerialDevice.Config;
+using RestSerialDevice.Services;
 
-namespace UI.Backend.ViewModels.Settings.Device.SerialRestDevice;
+namespace UI.Features.Devices.SerialRestDevice;
 
 public partial class SerialRestDeviceConfigEditViewModel : ReactiveObject
 {

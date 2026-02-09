@@ -3,7 +3,6 @@ using Ares.Services.Device;
 using CommunityToolkit.Mvvm.Messaging;
 using Grpc.Core;
 using ReactiveUI;
-using UI.Backend.ViewModels.Settings.Device.VerdiLaser;
 using UI.Features.Devices.Shared;
 using VerdiV6.Config;
 using VerdiV6.Services;

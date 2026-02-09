@@ -4,7 +4,6 @@ using Ares.SyringePump.Ne1000.Messaging;
 using CommunityToolkit.Mvvm.Messaging;
 using Grpc.Core;
 using ReactiveUI;
-using UI.Backend.ViewModels.Settings.Device.SyringePump;
 using UI.Features.Devices.Shared;
 
 namespace UI.Features.Devices.SyringePump;

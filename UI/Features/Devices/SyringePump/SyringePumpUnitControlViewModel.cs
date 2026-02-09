@@ -1,9 +1,9 @@
 using Ares.SyringePump.Ne1000.Messaging;
 using DynamicData.Binding;
 using ReactiveUI.SourceGenerators;
-using UI.Features.Devices.SyringePump;
+using UI.Backend.ViewModels;
 
-namespace UI.Backend.ViewModels.SyringePump;
+namespace UI.Features.Devices.SyringePump;
 
 public partial class SyringePumpUnitControlViewModel : DeviceUnitControlViewModel, IAsyncDisposable
 {

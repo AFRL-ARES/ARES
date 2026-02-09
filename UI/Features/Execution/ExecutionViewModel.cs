@@ -1,19 +1,18 @@
+using Ares.Datamodel;
+using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Planning;
+using Ares.Datamodel.Templates;
+using Ares.Services;
 using DynamicData;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System.Collections.ObjectModel;
-using Ares.Datamodel;
-using Ares.Datamodel.Analyzing;
-using Ares.Datamodel.Templates;
-using Ares.Services;
+using System.ComponentModel;
 using UI.Infrastructure.Extensions;
 using UI.Infrastructure.Notification;
-using Ares.Datamodel.Planning;
-using System.ComponentModel;
-using System.Reactive.Linq;
 
-namespace UI.Backend.ViewModels.Automation;
+namespace UI.Features.Execution;
 
 public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 {

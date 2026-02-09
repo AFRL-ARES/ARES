@@ -2,7 +2,6 @@ using Ares.Services;
 using UI.Infrastructure.Hosting;
 using UI.Infrastructure.Interfaces;
 using UI.Infrastructure.Notification;
-using UI.Features.ServerHealth;
 
 namespace UI.Features.ServerHealth;
 

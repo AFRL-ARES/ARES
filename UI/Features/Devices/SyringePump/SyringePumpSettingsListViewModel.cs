@@ -5,9 +5,8 @@ using CommunityToolkit.Mvvm.Messaging;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using SyringePumpNE1000;
-using UI.Features.Devices.SyringePump;
 
-namespace UI.Backend.ViewModels.Settings.Device.SyringePump;
+namespace UI.Features.Devices.SyringePump;
 
 public partial class SyringePumpSettingsListViewModel : ReactiveObject
 {

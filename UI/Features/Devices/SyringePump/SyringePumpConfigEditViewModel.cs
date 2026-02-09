@@ -1,11 +1,11 @@
-﻿using System.ComponentModel.DataAnnotations;
-using Ares.Services.Device;
+﻿using Ares.Services.Device;
 using Ares.SyringePump.Ne1000.Messaging;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
+using System.ComponentModel.DataAnnotations;
 
-namespace UI.Backend.ViewModels.Settings.Device.SyringePump;
+namespace UI.Features.Devices.SyringePump;
 
 public partial class SyringePumpConfigEditViewModel : ReactiveObject
 {

@@ -1,7 +1,8 @@
 ﻿using Chiller.Services;
 using ReactiveUI.SourceGenerators;
+using UI.Backend.ViewModels;
 
-namespace UI.Backend.ViewModels.Devices.LaserChiller;
+namespace UI.Features.Devices.LaserChiller;
 
 public partial class LaserChillerUnitControlViewModel : DeviceUnitControlViewModel
 {

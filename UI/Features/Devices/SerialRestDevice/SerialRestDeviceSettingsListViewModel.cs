@@ -68,9 +68,8 @@ using ReactiveUI.SourceGenerators;
 using RestSerialDevice;
 using RestSerialDevice.Config;
 using RestSerialDevice.Services;
-using UI.Features.Devices.SerialRestDevice;
 
-namespace UI.Backend.ViewModels.Settings.Device.SerialRestDevice;
+namespace UI.Features.Devices.SerialRestDevice;
 
 public partial class SerialRestDeviceSettingsListViewModel : ReactiveObject
 {

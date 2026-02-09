@@ -3,12 +3,11 @@ using Ares.Services.Device;
 using CommunityToolkit.Mvvm.Messaging;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using UI.Features.Devices.VerdiV6Laser;
 using VerdiV6.Config;
 using VerdiV6.Services;
 using VerdiV6Laser;
 
-namespace UI.Backend.ViewModels.Settings.Device.VerdiLaser
+namespace UI.Features.Devices.VerdiV6Laser
 {
   public partial class VerdiLaserSettingsListViewModel : ReactiveObject
   {

@@ -1,12 +1,12 @@
-﻿using Google.Protobuf.WellKnownTypes;
+﻿using Ares.Services.Device;
+using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System.ComponentModel.DataAnnotations;
-using Ares.Services.Device;
 using VerdiV6.Config;
 using VerdiV6.Services;
 
-namespace UI.Backend.ViewModels.Settings.Device.VerdiLaser
+namespace UI.Features.Devices.VerdiV6Laser
 {
   public partial class VerdiLaserConfigEditViewModel : ReactiveObject
   {
