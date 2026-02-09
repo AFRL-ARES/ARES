@@ -1,7 +1,6 @@
 ﻿using Ares.Datamodel.Templates;
 using Ares.Services;
 using Radzen;
-using UI.Backend.ViewModels.Factories;
 
 namespace UI.Backend.ViewModels.Automation.CampaignEdit.Factories;
 

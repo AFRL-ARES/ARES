@@ -3,7 +3,6 @@ using Ares.Services;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using UI.Backend.ViewModels.Automation.CampaignEdit.Factories;
-using UI.Backend.ViewModels.Factories;
 using UI.Services.CampaignEdit;
 
 namespace UI.Backend.ViewModels.Automation.CampaignEdit;

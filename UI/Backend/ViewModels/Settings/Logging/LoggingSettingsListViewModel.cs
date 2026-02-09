@@ -4,7 +4,7 @@ using Ares.Services;
 using Ares.Services.Device;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using UI.Backend.ViewModels.DeviceStateLogging;
+using UI.Features.DeviceStateLogging;
 using UI.Services.Notification;
 
 namespace UI.Backend.ViewModels.Settings.Logging;

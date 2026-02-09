@@ -1,3 +1,5 @@
+using UI.Infrastructure.Interfaces;
+
 namespace UI.Services.Notification;
 
 public static class UiNotificationServiceExtensions

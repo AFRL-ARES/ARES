@@ -4,7 +4,7 @@ using AresScript;
 using AresScript.Generated;
 using Antlr4.Runtime.Misc;
 
-namespace UI.JsInterops;
+namespace UI.Infrastructure.Monaco.Interops;
 
 public sealed class MonacoSemanticTokensProvider
 {

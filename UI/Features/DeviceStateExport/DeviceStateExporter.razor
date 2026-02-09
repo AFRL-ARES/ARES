@@ -1,0 +1,66 @@
+﻿@using Ares.Services
+@using UI.Backend.Extensions;
+@using UI.Backend.ViewModels.DeviceStateLogging;
+@using UI.Features.DeviceStateLogging
+
+@inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<DeviceStateExporterViewModel>
+@inject IJSRuntime JS
+<div class="d-flex flex-column">
+  <DeviceStateFilterView ViewModel="@ViewModel!.FilterViewModel" />
+  <RadzenLabel Text="Export Provider" />
+  <RadzenDropDown Data="@ViewModel!.AvailableExportTypes" TValue="ExportTypeWrapper" TextProperty="Name" @bind-Value="@ViewModel!.SelectedExportType" Placeholder="Select an export type" />
+
+@*  <select class="form-select">
+    @foreach (var provider in ViewModel!.ExportProviders)
+    {
+      <option selected="@(provider.Name == ViewModel!.SelectedExportProvider?.Name)" value="@provider.Name">@provider.Name</option>
+    }
+    @if (!ViewModel!.ExportProviders.Any())
+    {
+      <option disabled>No Export Providers Available</option>
+    }
+  </select>*@
+</div>
+<button class="btn btn-outline-primary my-2" disabled="@(ViewModel!.SelectedExportType.ExportType == ExportType.Unspecified || _exportInProgress)" @onclick="Export">
+  @if (_exportInProgress)
+  {
+    <LoadingSpinner SpinnerSize="SpinnerSize.Small" />
+  }
+  else
+  {
+    <span>Export</span>
+  }
+</button>
+@if (!string.IsNullOrEmpty(_error))
+{
+  <span class="text-danger">@_error</span>
+}
+
+@code {
+  private bool _exportInProgress;
+
+  private string _error = string.Empty;
+
+  private async Task Export()
+  {
+    _error = string.Empty;
+    _exportInProgress = true;
+    var fileStream = await ViewModel!.GetExportStream();
+    if (fileStream is null)
+    {
+      _error = "Unable to get a state stream. Maybe provider wasn't selected.";
+      _exportInProgress = false;
+      StateHasChanged();
+      return;
+    }
+    var selectedExportType = ViewModel!.SelectedExportType.ExportType;
+    var fileName = $"{DateTime.Now}";
+    fileName = Path.ChangeExtension(fileName, selectedExportType.ToFileExtension());
+    using var stream = new MemoryStream(fileStream);
+    using var streamRef = new DotNetStreamReference(stream: stream);
+
+    await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
+    _exportInProgress = false;
+    StateHasChanged();
+  }
+}

@@ -1,6 +1,6 @@
 ﻿using Ares.Datamodel.Templates;
 using ReactiveUI;
-using UI.Backend.ViewModels.Factories;
+using UI.Backend.ViewModels.Automation.CampaignEdit.Factories;
 
 namespace UI.Backend.ViewModels.Automation.CampaignEdit;
 

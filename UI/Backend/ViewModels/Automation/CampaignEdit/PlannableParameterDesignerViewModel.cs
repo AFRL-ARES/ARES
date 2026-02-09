@@ -3,7 +3,7 @@ using Ares.Datamodel.Templates;
 using DynamicData;
 using ReactiveUI;
 using UI.Backend.Extensions;
-using UI.Backend.ViewModels.Factories;
+using UI.Backend.ViewModels.Automation.CampaignEdit.Factories;
 
 namespace UI.Backend.ViewModels.Automation.CampaignEdit;
 

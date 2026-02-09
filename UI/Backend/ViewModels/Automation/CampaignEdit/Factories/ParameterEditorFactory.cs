@@ -1,8 +1,7 @@
 ﻿using Ares.Datamodel.Templates;
 using UI.Backend.Helpers;
-using UI.Backend.ViewModels.Automation.CampaignEdit;
 
-namespace UI.Backend.ViewModels.Factories;
+namespace UI.Backend.ViewModels.Automation.CampaignEdit.Factories;
 
 public class ParameterEditorFactory
 {

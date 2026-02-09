@@ -1,6 +1,15 @@
-﻿using UI.Backend.Devices;
-using UI.Backend.Factories;
-using UI.Backend.Repos;
+﻿using UI.Backend.Repos;
+using UI.Features.Devices.ChemyxPump;
+using UI.Features.Devices.CM3Camera;
+using UI.Features.Devices.Mfc;
+using UI.Features.Devices.Remote;
+using UI.Features.Devices.Servo;
+using UI.Features.Devices.Shared;
+using UI.Features.Devices.StepperController;
+using UI.Features.Devices.SyringePump;
+using UI.Features.Devices.Tc0304;
+using UI.Features.Devices.TubeFurnace;
+using UI.Features.Devices.ValveController;
 using UI.Services.Notification;
 
 namespace UI;

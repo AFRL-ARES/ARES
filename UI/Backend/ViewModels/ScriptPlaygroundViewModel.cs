@@ -4,7 +4,7 @@ using Ares.Services;
 using Grpc.Core;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using UI.JsInterops;
+using UI.Infrastructure.Monaco.Interops;
 
 namespace UI.Backend.ViewModels;
 

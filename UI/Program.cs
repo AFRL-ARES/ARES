@@ -4,7 +4,7 @@ using Radzen;
 using Serilog;
 using UI;
 using UI.Backend.Helpers;
-using UI.Data;
+using UI.Domain;
 using UI.Services.Grpc;
 using UI.Services.Notification;
 using UI.Settings;

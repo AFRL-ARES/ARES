@@ -1,4 +1,5 @@
 using Radzen;
+using UI.Infrastructure.Interfaces;
 
 namespace UI.Services.Notification;
 

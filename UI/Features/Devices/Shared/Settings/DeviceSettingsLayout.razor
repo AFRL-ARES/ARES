@@ -1,0 +1,34 @@
+﻿@using UI.Components.Layouts
+@inherits LayoutComponentBase
+@layout SettingsLayout
+
+<div class="d-flex" style="min-width: 15%"> 
+  <div class="overflow-auto">
+    <nav class="nav nav-pills d-flex flex-column flex-sm-column">
+      <NavLink Match="NavLinkMatch.All" class="nav-link flex-sm-fill mt-2" href="settings/device/remote">Remote</NavLink>
+      <NavLink Match="NavLinkMatch.All" class="nav-link flex-sm-fill" href="settings/device/restdevice">Rest Device</NavLink>
+      <NavLink Match="NavLinkMatch.All" class="nav-link flex-sm-fill" href="settings/device/serialrest">Serial Rest Device</NavLink>
+      <hr />
+      <NavLink Match="NavLinkMatch.All" class="nav-link flex-sm-fill" href="settings/device/alicat">Alicat MFCs</NavLink>
+      <NavLink Match="NavLinkMatch.All" class="nav-link flex-sm-fill" href="settings/device/syringe-pump">Syringe Pumps</NavLink>
+      <NavLink Match="NavLinkMatch.All" class="nav-link flex-sm-fill" href="settings/device/tc0304">TC0304 Datalogger</NavLink>
+      <NavLink Match="NavLinkMatch.All" class="nav-link flex-sm-fill" href="settings/device/servo">Herkulex Servo</NavLink>
+      <NavLink Match="NavLinkMatch.All" class="nav-link flex-sm-fill" href="settings/device/stepper_controller">Spool</NavLink>
+      <NavLink Match="NavLinkMatch.All" class="nav-link flex-sm-fill" href="settings/device/tube_furnace">Tube Furnace</NavLink>
+      <NavLink Match="NavLinkMatch.All" class="nav-link flex-sm-fill" href="settings/device/ValveController">Valve Controller</NavLink>
+      <NavLink Match="NavLinkMatch.All" class="nav-link flex-sm-fill" href="settings/device/cm3camera">Flir CM3 Camera</NavLink>
+      <NavLink Match="NavLinkMatch.All" class="nav-link flex-sm-fill" href="settings/device/verdilaser">Verdi V6 Laser</NavLink>
+      <NavLink Match="NavLinkMatch.All" class="nav-link flex-sm-fill" href="settings/device/laserchiller">Laser Chiller</NavLink>
+      <NavLink Match="NavLinkMatch.All" class="nav-link flex-sm-fill" href="settings/device/chemyx">Chemyx Syringe Pump</NavLink>
+    </nav>
+  </div>
+  <div class="vr">
+  </div>
+</div>
+<div class="m-1 overflow-auto flex-fill">
+  @Body
+</div>
+
+@code {
+
+}

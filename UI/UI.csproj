@@ -39,12 +39,9 @@
 
   <ItemGroup>
     <Folder Include="Backend\Devices\Remote\" />
-    <Folder Include="Components\" />
-    <Folder Include="Domain\" />
-    <Folder Include="Features\DeviceStateLogging\" />
+    <Folder Include="Backend\ViewModels\DeviceStateLogging\" />
     <Folder Include="Pages\Settings\" />
-    <Folder Include="Pages\Shared\Devices\Mfc\" />
-    <Folder Include="Pages\Shared\Settings\Device\Mfc\" />
+    <Folder Include="Pages\Shared\DeviceStateLogging\" />
     <Folder Include="wwwroot\js\" />
   </ItemGroup>
 
@@ -71,10 +68,6 @@
     <None Update="FC2ClientCert.pfx">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <UpToDateCheckInput Remove="Pages\Shared\Settings\Device\StepperController\StepperControllerSettingsView.razor" />
   </ItemGroup>
 
   <ItemGroup>

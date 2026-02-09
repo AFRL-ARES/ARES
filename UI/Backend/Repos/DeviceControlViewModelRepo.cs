@@ -1,7 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 using DynamicData;
-using UI.Backend.Devices;
 using UI.Backend.ViewModels;
+using UI.Features.Devices.Shared;
 
 namespace UI.Backend.Repos
 {

@@ -1,0 +1,19 @@
+﻿using Ares.Datamodel;
+using Ares.Datamodel.Device;
+
+namespace UI.Features.Devices.Shared;
+
+public interface IAresDeviceAdapter
+{
+  string Id { get; }
+  string Name { get; }
+  string Description { get; }
+  string Type { get; }
+  string Version { get; }
+  Task<bool> Activate();
+  Task UpdateConnectionStatus();
+  AresStruct? State { get; }
+  IObservable<AresStruct?> StateStream { get; }
+  DeviceOperationalStatus OperationalStatus { get; }
+  IObservable<ConnectionStatus> ConnectionStatusStream { get; }
+}

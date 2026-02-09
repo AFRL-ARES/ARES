@@ -1,8 +1,4 @@
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Antlr4.Runtime;
 using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
@@ -11,11 +7,10 @@ using Ares.Services;
 using AresScript;
 using AresScript.Generated;
 using AresScript.Interpreters;
-using AresScript.ScriptAnalysis;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.JSInterop;
 
-namespace UI.JsInterops;
+namespace UI.Infrastructure.Monaco.Interops;
 
 public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServiceClient aresScriptingServiceClient)
 {

@@ -1,4 +1,5 @@
 using Ares.Services;
+using UI.Infrastructure.Interfaces;
 using UI.Services.Notification;
 using UI.Services.ServerHealth;
 

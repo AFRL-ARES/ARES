@@ -1,9 +1,8 @@
 ﻿using Ares.Datamodel.Templates;
 using Ares.Services;
 using Radzen;
-using UI.Backend.ViewModels.Automation.CampaignEdit;
 
-namespace UI.Backend.ViewModels.Factories;
+namespace UI.Backend.ViewModels.Automation.CampaignEdit.Factories;
 
 public class ExperimentDesignerFactory
 {

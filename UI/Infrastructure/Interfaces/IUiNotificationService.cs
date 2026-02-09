@@ -1,4 +1,6 @@
-namespace UI.Services.Notification;
+using UI.Services.Notification;
+
+namespace UI.Infrastructure.Interfaces;
 
 public interface IUiNotificationService
 {

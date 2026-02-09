@@ -1,11 +1,10 @@
 ﻿using Ares.Datamodel.Templates;
 using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
-using UI.Backend.ViewModels.Automation.CampaignEdit;
 using UI.Services.Notification;
 
 
-namespace UI.Backend.ViewModels.Factories;
+namespace UI.Backend.ViewModels.Automation.CampaignEdit.Factories;
 
 public class PlanningDesignerFactory
 {

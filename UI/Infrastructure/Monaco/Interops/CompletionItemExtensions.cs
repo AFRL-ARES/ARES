@@ -3,7 +3,7 @@ using MonacoCompletionItem = BlazorMonaco.Languages.CompletionItem;
 using AresCompletionItem = Ares.Datamodel.Scripting.CompletionItem;
 using AresCompletionItemKind = Ares.Datamodel.Scripting.CompletionItemKind;
 
-namespace UI.JsInterops;
+namespace UI.Infrastructure.Monaco.Interops;
 
 public static class CompletionItemExtensions
 {
