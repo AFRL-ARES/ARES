@@ -1,7 +1,6 @@
 ﻿using Ares.Datamodel.Templates;
 using UI.Backend.Helpers;
 using UI.Features.CampaignEdit.ViewModels;
-using UI.Services.CampaignEdit;
 
 namespace UI.Features.CampaignEdit.Factories;
 

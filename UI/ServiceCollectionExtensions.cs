@@ -29,7 +29,6 @@ using UI.Backend.ViewModels;
 using UI.Backend.ViewModels.Automation;
 using UI.Backend.ViewModels.Automation.CampaignEdit;
 using UI.Backend.ViewModels.Automation.Planning;
-using UI.Backend.ViewModels.Misc;
 using UI.Backend.ViewModels.Settings.Analysis;
 using UI.Backend.ViewModels.Settings.Device.ChemyxPump;
 using UI.Backend.ViewModels.Settings.Device.CM3Camera;
@@ -48,6 +47,7 @@ using UI.Backend.ViewModels.Settings.Device.VerdiLaser;
 using UI.Backend.ViewModels.Settings.Logging;
 using UI.Backend.ViewModels.Settings.Planning;
 using UI.Features.Auth;
+using UI.Features.CampaignEdit;
 using UI.Features.CampaignEdit.Factories;
 using UI.Features.CampaignEdit.ViewModels;
 using UI.Features.Devices.ChemyxPump;
@@ -65,7 +65,6 @@ using UI.Features.DeviceStateExport;
 using UI.Features.DeviceStateLogging;
 using UI.Infrastructure.Interfaces;
 using UI.Infrastructure.Monaco.Interops;
-using UI.Services.CampaignEdit;
 using UI.Services.Dialog;
 using UI.Services.Grpc;
 using UI.Services.Notification;
@@ -162,7 +161,6 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<SettingsViewModel>();
     services.AddTransient<CampaignDesignerViewModel>();
     services.AddScoped<CampaignListViewModel>();
-    services.AddScoped<CustomStepBuilderViewModel>();
     services.AddScoped<ExecutionHistoryViewModel>();
     services.AddScoped<ExecutionViewModel>();
     services.AddScoped<ScriptPlaygroundViewModel>();
@@ -191,7 +189,7 @@ internal static class ServiceCollectionExtensions
     services.AddTransient<DeviceStatesViewModel>();
     services.AddTransient<DeviceStateExporterViewModel>();
     services.AddScoped<ManualPlannerViewModel>();
-    services.AddScoped<ManualExecutionWidgetViewModel>();
+    services.AddScoped<ManualDeviceLoggerWidgetViewModel>();
     services.AddScoped<LoggingSettingsListViewModel>();
   }
   private static void BindViewModelFactories(this IServiceCollection services)

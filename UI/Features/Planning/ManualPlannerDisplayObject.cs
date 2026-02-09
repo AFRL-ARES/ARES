@@ -1,6 +1,6 @@
 ﻿using Ares.Datamodel.Planning;
 
-namespace UI.Backend.ViewModels.Automation.Planning;
+namespace UI.Features.Planning;
 
 public class ManualPlannerDisplayObject
 {

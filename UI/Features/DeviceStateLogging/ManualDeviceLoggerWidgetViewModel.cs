@@ -6,15 +6,15 @@ using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using DeviceStateRequest = Ares.Services.DeviceStateRequest;
 
-namespace UI.Backend.ViewModels.Misc;
+namespace UI.Features.DeviceStateLogging;
 
-public class ManualExecutionWidgetViewModel : ReactiveObject
+public class ManualDeviceLoggerWidgetViewModel : ReactiveObject
 {
   private readonly DeviceStateExportService.DeviceStateExportServiceClient _stateExportClient;
   readonly AresDevices.AresDevicesClient _devicesClient;
   private IEnumerable<string> _activeDevices = Array.Empty<string>();
 
-  public ManualExecutionWidgetViewModel(DeviceStateExportService.DeviceStateExportServiceClient stateExportClient, AresDevices.AresDevicesClient devicesClient)
+  public ManualDeviceLoggerWidgetViewModel(DeviceStateExportService.DeviceStateExportServiceClient stateExportClient, AresDevices.AresDevicesClient devicesClient)
   {
     _stateExportClient = stateExportClient;
     _devicesClient = devicesClient;

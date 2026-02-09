@@ -2,9 +2,9 @@
 using Ares.Services;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
+using UI.Features.CampaignEdit;
 using UI.Features.CampaignEdit.Factories;
 using UI.Features.CampaignEdit.ViewModels;
-using UI.Services.CampaignEdit;
 
 namespace UI.Backend.ViewModels.Automation.CampaignEdit;
 
