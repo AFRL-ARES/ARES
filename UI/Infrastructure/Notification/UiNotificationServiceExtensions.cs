@@ -1,6 +1,6 @@
 using UI.Infrastructure.Interfaces;
 
-namespace UI.Services.Notification;
+namespace UI.Infrastructure.Notification;
 
 public static class UiNotificationServiceExtensions
 {

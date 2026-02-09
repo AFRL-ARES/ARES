@@ -1,8 +1,8 @@
-﻿using Ares.Datamodel.Templates;
+using Ares.Datamodel.Templates;
 using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using UI.Features.CampaignEdit.ViewModels;
-using UI.Services.Notification;
+using UI.Infrastructure.Notification;
 
 
 namespace UI.Features.CampaignEdit.Factories;

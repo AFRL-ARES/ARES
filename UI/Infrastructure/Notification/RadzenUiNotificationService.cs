@@ -1,7 +1,7 @@
 using Radzen;
 using UI.Infrastructure.Interfaces;
 
-namespace UI.Services.Notification;
+namespace UI.Infrastructure.Notification;
 
 internal sealed class RadzenUiNotificationService : IUiNotificationService
 {

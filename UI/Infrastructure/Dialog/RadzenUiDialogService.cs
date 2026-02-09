@@ -1,6 +1,6 @@
 using Radzen;
 
-namespace UI.Services.Dialog;
+namespace UI.Infrastructure.Dialog;
 
 internal sealed class RadzenUiDialogService : IUiDialogService
 {

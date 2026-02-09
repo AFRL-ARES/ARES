@@ -1,4 +1,4 @@
-﻿using System.Reactive;
+using System.Reactive;
 using System.Reactive.Linq;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
@@ -10,7 +10,7 @@ using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using UI.Features.Devices.Remote;
 using UI.Features.Devices.Shared;
-using UI.Services.Notification;
+using UI.Infrastructure.Notification;
 
 namespace UI.Backend.ViewModels.Settings.Device.Remote;
 

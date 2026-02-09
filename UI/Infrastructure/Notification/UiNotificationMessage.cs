@@ -1,4 +1,4 @@
-namespace UI.Services.Notification;
+namespace UI.Infrastructure.Notification;
 
 public sealed record UiNotificationMessage
 {

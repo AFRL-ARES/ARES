@@ -8,7 +8,7 @@ using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Templates;
 using Ares.Services;
 using UI.Infrastructure.Extensions;
-using UI.Services.Notification;
+using UI.Infrastructure.Notification;
 using Ares.Datamodel.Planning;
 using System.ComponentModel;
 using System.Reactive.Linq;

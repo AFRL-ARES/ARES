@@ -1,9 +1,9 @@
-﻿using Ares.Datamodel.Planning;
+using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
 using Ares.Services;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using UI.Services.Notification;
+using UI.Infrastructure.Notification;
 
 namespace UI.Backend.ViewModels.Automation.CampaignEdit;
 

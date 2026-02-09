@@ -5,7 +5,7 @@ using NuGet.Packaging;
 using UI.Infrastructure.Notifications;
 using UI.Infrastructure.Interfaces;
 
-namespace UI.Services.Notification;
+namespace UI.Infrastructure.Notification;
 
 public class NotificationReceivingService : INotificationReceivingService
 {

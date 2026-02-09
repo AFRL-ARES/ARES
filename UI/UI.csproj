@@ -7,12 +7,25 @@
 	<UserSecretsId>aspnet-UI-87962D8C-B573-4F3B-852F-E1DA10F52308</UserSecretsId>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <WarningsAsErrors>RZ10012</WarningsAsErrors>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <WarningsAsErrors>RZ10012</WarningsAsErrors>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Remove="Pages\Settings\**" />
+    <Compile Remove="Services\**" />
     <Content Remove="Pages\Settings\**" />
+    <Content Remove="Services\**" />
     <EmbeddedResource Remove="Pages\Settings\**" />
+    <EmbeddedResource Remove="Services\**" />
     <None Remove="Pages\Settings\**" />
+    <None Remove="Services\**" />
     <TypeScriptCompile Remove="Pages\Settings\**" />
+    <TypeScriptCompile Remove="Services\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -46,7 +59,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Services\CampaignEdit\" />
     <Folder Include="wwwroot\js\" />
   </ItemGroup>
 

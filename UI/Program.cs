@@ -5,8 +5,8 @@ using Serilog;
 using UI;
 using UI.Infrastructure.Helpers;
 using UI.Domain;
-using UI.Services.Grpc;
-using UI.Services.Notification;
+using UI.Infrastructure.Grpc;
+using UI.Infrastructure.Notification;
 using UI.Settings;
 
 var builder = WebApplication.CreateBuilder(args);

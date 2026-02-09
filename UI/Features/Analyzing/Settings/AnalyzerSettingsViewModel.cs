@@ -3,7 +3,7 @@ using Ares.Datamodel.Connection;
 using Ares.Services;
 using Grpc.Core;
 using ReactiveUI;
-using UI.Services.Notification;
+using UI.Infrastructure.Notification;
 
 namespace UI.Features.Analyzing.Settings;
 

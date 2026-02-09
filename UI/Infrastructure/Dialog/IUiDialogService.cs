@@ -1,4 +1,4 @@
-namespace UI.Services.Dialog;
+namespace UI.Infrastructure.Dialog;
 
 public interface IUiDialogService
 {

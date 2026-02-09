@@ -1,9 +1,10 @@
 using Ares.Services;
+using UI.Infrastructure.Hosting;
 using UI.Infrastructure.Interfaces;
-using UI.Services.Notification;
-using UI.Services.ServerHealth;
+using UI.Infrastructure.Notification;
+using UI.Features.ServerHealth;
 
-namespace UI.Services.ServerHealthNotification;
+namespace UI.Features.ServerHealth;
 
 /// <summary>
 /// Uses the server health service to grab new state messages and publish them to the notification repo/service

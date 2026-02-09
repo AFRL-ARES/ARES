@@ -1,4 +1,4 @@
-using UI.Services.Notification;
+using UI.Infrastructure.Notification;
 
 namespace UI.Infrastructure.Interfaces;
 

@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using Ares.Datamodel.Device;
 using Ares.Services;
 using Ares.Services.Device;
@@ -7,7 +7,7 @@ using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using UI.Features.Devices.Remote;
-using UI.Services.Notification;
+using UI.Infrastructure.Notification;
 
 namespace UI.Backend.ViewModels.Settings.Device.Remote;
 

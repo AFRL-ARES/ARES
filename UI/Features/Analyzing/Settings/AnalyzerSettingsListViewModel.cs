@@ -3,7 +3,7 @@ using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using UI.Services.Notification;
+using UI.Infrastructure.Notification;
 
 namespace UI.Features.Analyzing.Settings;
 

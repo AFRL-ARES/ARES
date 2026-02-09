@@ -65,11 +65,10 @@ using UI.Features.DeviceStateExport;
 using UI.Features.DeviceStateLogging;
 using UI.Infrastructure.Interfaces;
 using UI.Infrastructure.Monaco.Interops;
-using UI.Services.Dialog;
-using UI.Services.Grpc;
-using UI.Services.Notification;
-using UI.Services.ServerHealth;
-using UI.Services.ServerHealthNotification;
+using UI.Infrastructure.Dialog;
+using UI.Infrastructure.Grpc;
+using UI.Infrastructure.Notification;
+using UI.Features.ServerHealth;
 using ValveController.Services;
 using VerdiV6.Services;
 

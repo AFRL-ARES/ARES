@@ -1,6 +1,6 @@
-﻿using Ares.Services;
+using Ares.Services;
 
-namespace UI.Services.Notification;
+namespace UI.Infrastructure.Notification;
 
 public interface INotificationReceivingService
 {
