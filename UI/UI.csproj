@@ -39,7 +39,13 @@
 
   <ItemGroup>
     <Folder Include="Backend\Devices\Remote\" />
+    <Folder Include="Components\" />
+    <Folder Include="Domain\" />
+    <Folder Include="Features\DeviceStateLogging\" />
     <Folder Include="Pages\Settings\" />
+    <Folder Include="Pages\Shared\Devices\Mfc\" />
+    <Folder Include="Pages\Shared\Settings\Device\Mfc\" />
+    <Folder Include="wwwroot\js\" />
   </ItemGroup>
 
   <ItemGroup>
@@ -69,6 +75,18 @@
 
   <ItemGroup>
     <UpToDateCheckInput Remove="Pages\Shared\Settings\Device\StepperController\StepperControllerSettingsView.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <TypeScriptCompile Remove="Scripts\monaco\ares-autocomplete-setup.ts" />
+    <TypeScriptCompile Remove="Scripts\monaco\ares-diagnostics-setup.ts" />
+    <TypeScriptCompile Remove="Scripts\monaco\ares-hover-setup.ts" />
+    <TypeScriptCompile Remove="Scripts\monaco\ares-semantic-setup.ts" />
+    <TypeScriptCompile Remove="Scripts\monaco\ares-setup.ts" />
+    <TypeScriptCompile Remove="Scripts\monaco\areslang.language-configuration.ts" />
+    <TypeScriptCompile Remove="Scripts\monaco\areslang.monarch.ts" />
+    <TypeScriptCompile Remove="Scripts\globals.d.ts" />
+    <TypeScriptCompile Remove="Infrastructure\Scripts\globals.d.ts" />
   </ItemGroup>
 
 </Project>
