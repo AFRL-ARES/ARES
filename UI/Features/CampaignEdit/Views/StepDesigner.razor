@@ -13,7 +13,7 @@
         <RadzenIcon Icon="@(ViewModel!.Parallel ? "view_week" : "view_stream")"/>
         <span class="flex-grow-1 px-2">@ViewModel!.Name</span>
         <div hidden="@(!ContainsExperimentOutput)">
-          <UI.Pages.Resources.ExperimentOutputIcon />
+          <ExperimentOutputIcon />
         </div>
         <span class="badge">@ViewModel!.CommandDesigners.Count</span>
         <button @onclick="StepEditClick" class="btn btn-outline-light border-0">
