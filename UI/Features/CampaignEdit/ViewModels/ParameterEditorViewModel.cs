@@ -1,0 +1,248 @@
+﻿using Ares.Datamodel;
+using Ares.Datamodel.Extensions;
+using Ares.Datamodel.Factories;
+using Ares.Datamodel.Templates;
+using Humanizer;
+using ReactiveUI;
+using ReactiveUI.SourceGenerators;
+using UI.Backend.Helpers;
+
+namespace UI.Backend.ViewModels.Automation.CampaignEdit;
+
+public partial class ParameterEditorViewModel : ReactiveObject
+{
+  private readonly UnitCategoryHelper _unitHelper;
+  private string? _category;
+  private double _maximum;
+  private double _minimum;
+  private string? _name;
+  private ParameterMetadata _parameterMetadata = null!;
+  private string? _unit;
+  private AresValue? _initialValue;
+  private bool _hasInitialValue;
+  private AresDataType _dataType;
+
+  public ParameterEditorViewModel(UnitCategoryHelper unitHelper, IEnumerable<string> availableOutputs)
+  {
+    _unitHelper = unitHelper;
+
+    ParameterMetadata = new ParameterMetadata
+    {
+      UniqueId = Guid.NewGuid().ToString(),
+      Name = "Param",
+      Schema = AresSchemaBuilder.Entry(AresDataType.UnspecifiedType).Build(),
+      Constraints =
+      {
+        new Limits()
+      }
+    };
+
+    AvailableOutputs = availableOutputs.ToArray();
+    CategoryOptions = [];
+    UnitOptions = [];
+  }
+
+  public ParameterEditorViewModel(ParameterMetadata existingMetadata, IEnumerable<string> availableOutputs, UnitCategoryHelper unitHelper)
+  {
+    CategoryOptions = [];
+    UnitOptions = [];
+    _unitHelper = unitHelper;
+    ParameterMetadata = existingMetadata;
+    AvailableOutputs = availableOutputs.ToArray();
+    HasInitialValue = existingMetadata.InitialValue != null;
+    InitialValue = existingMetadata.InitialValue;
+  }
+
+  public ParameterMetadata ParameterMetadata
+  {
+    get => _parameterMetadata;
+
+    set
+    {
+      _parameterMetadata = value;
+      Init(value);
+    }
+  }
+
+  public AresDataType DataType 
+  {
+    get => _dataType; 
+    
+    set
+    {
+      _dataType = value;
+
+      if(HasInitialValue)
+        InitialValue = AresValueHelper.CreateDefault(value);
+    }
+  }
+
+  public string? Category
+  {
+    get => _category;
+
+    set
+    {
+      var changed = _category != value;
+      this.RaiseAndSetIfChanged(ref _category, value);
+      if(value is null || !changed)
+        return;
+
+      UnitOptions = UnitCategoryHelper.GetTypes(value.Dehumanize()).Select(s => s.Humanize()).ToList();
+
+      if(value == "None" || UnitOptions.Count == 0)
+        UnitOptions.Add("None");
+
+      Unit = UnitOptions.First();
+    }
+  }
+
+  [Reactive]
+  public partial List<string> CategoryOptions { get; private set; }
+
+  [Reactive]
+  public partial List<string> UnitOptions { get; private set; }
+
+  public string? Unit
+  {
+    get => _unit;
+
+    set
+    {
+      this.RaiseAndSetIfChanged(ref _unit, value);
+      if(value == null)
+        return;
+
+      Category = _unitHelper.GetCategoryForUnit(_unit.Dehumanize()).Humanize();
+    }
+  }
+
+  public string? Name
+  {
+    get => _name;
+
+    set => this.RaiseAndSetIfChanged(ref _name, value);
+  }
+
+  public double Minimum
+  {
+    get => _minimum;
+
+    set => this.RaiseAndSetIfChanged(ref _minimum, value);
+  }
+
+  public double Maximum
+  {
+    get => _maximum;
+
+    set => this.RaiseAndSetIfChanged(ref _maximum, value);
+  }
+
+  private void Init(ParameterMetadata meta)
+  {
+    LockInParams(meta);
+    Name = meta.Name;
+    DataType = meta.Schema.Type;
+    foreach(var metaConstraint in meta.Constraints)
+    {
+      Minimum = metaConstraint.Minimum;
+      Maximum = metaConstraint.Maximum;
+    }
+
+    SelectedAchievedOutput = string.IsNullOrEmpty(meta.OutputName) ? null : meta.OutputName;
+    HasAchievedValue = SelectedAchievedOutput is not null;
+  }
+
+  public ParameterMetadata Save()
+  {
+    if(ParameterMetadata.Constraints.Count == 0)
+      ParameterMetadata.Constraints.Add(new Limits());
+
+    ParameterMetadata.Schema = AresSchemaBuilder.Entry(DataType).Build();
+    ParameterMetadata.Name = Name;
+    ParameterMetadata.InitialValue ??= InitialValue;
+
+    if(DataType == AresDataType.Number)
+    {
+      ParameterMetadata.Constraints[0].Maximum = (float)Maximum;
+      ParameterMetadata.Constraints[0].Minimum = (float)Minimum;
+      ParameterMetadata.Unit = Unit.Dehumanize();
+    }
+
+    // TODO Should technically set to null but protobuf complains. Maybe investigate further?
+    ParameterMetadata.OutputName = HasAchievedValue ? SelectedAchievedOutput : "";
+
+    return ParameterMetadata;
+  }
+
+  private bool IsValid(AresValue value)
+  {
+    switch(ParameterMetadata.Schema.Type)
+    {
+      case AresDataType.Number:
+        if(!value.HasNumberValue)
+          return false;
+
+        if(ParameterMetadata.Constraints.Count == 0)
+          return true;
+
+        return ParameterMetadata.Constraints.Any(limits => value.NumberValue >= limits.Minimum && value.NumberValue <= limits.Maximum);
+
+      case AresDataType.String:
+        return value.HasStringValue;
+
+      default:
+        return true;
+    }
+  }
+
+  public bool HasAchievedValue { get; set; }
+
+  public bool HasInitialValue 
+  {
+    get => _hasInitialValue; 
+    
+    set
+    {
+      _hasInitialValue = value;
+      if(value)
+        InitialValue = AresValueHelper.CreateDefault(DataType);
+
+      else
+        InitialValue = null;
+    }
+  }
+
+  public string? SelectedAchievedOutput { get; set; }
+
+  public string[]? AvailableOutputs { get; set; }
+
+  private void LockInParams(ParameterMetadata meta)
+  {
+    var categories = _unitHelper.UnitCategories.Select(s => s.Humanize()).ToList();
+    categories.Add("None");
+    CategoryOptions = categories;
+    var unit = meta.Unit;
+    var cat = _unitHelper.GetCategoryForUnit(unit);
+    UnitOptions = UnitCategoryHelper.GetTypes(cat).Select(s => s.Humanize()).ToList();
+    Category = cat.Humanize();
+    Unit = unit.Humanize();
+  }
+
+  public AresValue? InitialValue
+  {
+    get => _initialValue;
+
+    set
+    {
+      this.RaiseAndSetIfChanged(ref _initialValue, value);
+      if(value is null)
+        return;
+
+      IsInitialValueValid = IsValid(value);
+    }
+  }
+
+  public bool IsInitialValueValid { get; set; }
+
+}

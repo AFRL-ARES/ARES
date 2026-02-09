@@ -8,6 +8,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Pages\Settings\**" />
+    <Content Remove="Pages\Settings\**" />
+    <EmbeddedResource Remove="Pages\Settings\**" />
+    <None Remove="Pages\Settings\**" />
+    <TypeScriptCompile Remove="Pages\Settings\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="ARES.Datamodel" Version="0.17.0" />
     <PackageReference Include="BlazorMonaco" Version="3.4.0" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
@@ -38,10 +46,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Backend\Devices\Remote\" />
+    <Folder Include="Backend\ViewModels\Automation\CampaignEdit\" />
     <Folder Include="Backend\ViewModels\DeviceStateLogging\" />
-    <Folder Include="Pages\Settings\" />
-    <Folder Include="Pages\Shared\DeviceStateLogging\" />
     <Folder Include="wwwroot\js\" />
   </ItemGroup>
 

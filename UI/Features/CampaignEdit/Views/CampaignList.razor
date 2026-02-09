@@ -1,0 +1,108 @@
+﻿@page "/automation"
+@page "/automation/campaignlist"
+@using Ares.Services
+@using Newtonsoft.Json
+@using UI.Backend.ViewModels.Automation.CampaignEdit
+@using UI.Features.CampaignEdit.ViewModels
+@inject DialogService DialogService
+@inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<CampaignListViewModel>
+@inject IJSRuntime JS
+
+
+<div class="d-flex flex-column align-content-stretch">
+  <div class="d-flex justify-content-evenly">
+    <h2>Campaigns</h2>
+    <div class="d-flex flex-fill justify-content-end">
+      <a type="button" class="m-1 d-flex align-items-center btn btn-outline-light" href="automation/campaigndesigner">
+        <RadzenIcon Icon="add"/>
+      </a>
+      <button class="m-1 btn btn-outline-light" @onclick="Refresh">
+        <RadzenIcon Icon="refresh" />
+      </button>
+    </div>
+  </div>
+  <table class="table table-hover">
+    <thead>
+      <tr>
+        <th>Campaign Name</th>
+        <th>Campaign ID</th>
+      </tr>
+    </thead>
+    <tbody>
+      @foreach (var template in ViewModel!.Templates)
+      {
+        <tr>
+          <td style="padding: 10px; vertical-align: middle">
+            @template.CampaignName
+          </td>
+          <td style="padding: 10px;vertical-align: middle">@template.UniqueId</td>
+          <td style="width: 12%;vertical-align: middle">
+            <div class="d-flex justify-content-end">
+              <a type="button" class="mx-1 btn btn-outline-light" href="automation/campaigndesigner/@template.UniqueId">
+                <RadzenIcon Icon="edit"/>
+              </a>
+              <button class="mx-1 btn btn-outline-light" @onclick="() => DeleteClick(template)">
+                <RadzenIcon Icon="delete"/>
+              </button>
+              <button class="mx-1 btn btn-outline-light" @onclick="() => ExportTemplate(template)">
+                <RadzenIcon Icon="download"/>
+              </button>
+            </div>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
+
+@code {
+  protected override async Task OnInitializedAsync()
+  {
+    await ViewModel!.RefreshCampaigns();
+  }
+
+  private async void DeleteClick(CampaignTemplateSummary template)
+  {
+    var result = await DialogService.OpenAsync($"Delete campaign {template.CampaignName}?", ds =>
+            @<div class="d-flex flex-column">
+                <div class="d-flex">
+                    <button class="btn btn-danger btn-outline-light" @onclick="() => ds.Close(true)">Delete</button>
+                    <button class="btn btn-secondary btn-outline-light" @onclick="() => ds.Close(false)">Cancel</button>
+                </div>
+            </div>
+  );
+    if (result is null || !result)
+      return;
+
+    await ViewModel!.DeleteCampaign(Guid.Parse(template.UniqueId));
+    StateHasChanged();
+  }
+
+  private async void Refresh()
+  {
+    await ViewModel!.RefreshCampaigns();
+    StateHasChanged();
+  }
+
+  private async void ExportTemplate(CampaignTemplateSummary templateSummary)
+  {
+    //Generate a copy of the template, create a new unique ID and change the name to avoid collisions if the user adds it to their templates folder
+    var template = await ViewModel!.GetFullCampaignTemplate(templateSummary.UniqueId);
+
+    if(template is not null)
+    {
+      var templateCopy = template.Clone();
+      templateCopy.UniqueId = Guid.NewGuid().ToString();
+      templateCopy.Name = $"{template.Name}-Copy";
+      var fileName = templateCopy.UniqueId;
+      var jsonData = JsonConvert.SerializeObject(templateCopy, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.All });
+      await JS.InvokeVoidAsync("downloadJsonFile", fileName, jsonData);
+    }
+
+    else
+    {
+      //Notify of failure..?
+    }
+  }
+
+}
