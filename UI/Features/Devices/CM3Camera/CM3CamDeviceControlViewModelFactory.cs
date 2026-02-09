@@ -1,9 +1,9 @@
-﻿using Ares.Services.Device;
+using Ares.Services.Device;
 using DynamicData;
 using FlirCM3.Services;
 using Google.Protobuf.WellKnownTypes;
 using UI.Backend.Factories;
-using UI.Backend.Repos;
+using UI.Infrastructure.Repos;
 using UI.Backend.ViewModels;
 using UI.Backend.ViewModels.Devices.CM3Camera;
 

@@ -3,7 +3,7 @@ using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using UI.Backend.Helpers;
+using UI.Infrastructure.Helpers;
 
 namespace UI.Backend.ViewModels;
 

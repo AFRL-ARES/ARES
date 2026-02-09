@@ -1,9 +1,9 @@
-﻿using Ares.Services.Device;
+using Ares.Services.Device;
 using DynamicData;
 using Google.Protobuf.WellKnownTypes;
 using HerkulexDRS.Services;
 using UI.Backend.Factories;
-using UI.Backend.Repos;
+using UI.Infrastructure.Repos;
 using UI.Backend.ViewModels;
 
 namespace UI.Features.Devices.Servo;

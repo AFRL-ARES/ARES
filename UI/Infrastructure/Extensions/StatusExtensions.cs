@@ -1,6 +1,6 @@
-﻿using Ares.Datamodel;
+using Ares.Datamodel;
 
-namespace UI.Backend.Extensions;
+namespace UI.Infrastructure.Extensions;
 
 public static class StatusExtensions
 {

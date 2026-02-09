@@ -1,7 +1,7 @@
-﻿using Ares.Datamodel;
+using Ares.Datamodel;
 using Ares.Datamodel.Templates;
 using ReactiveUI;
-using UI.Backend.Helpers;
+using UI.Infrastructure.Helpers;
 
 namespace UI.Features.CampaignEdit.ViewModels;
 

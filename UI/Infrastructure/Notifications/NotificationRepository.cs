@@ -1,6 +1,6 @@
-﻿using Ares.Services;
+using Ares.Services;
 
-namespace UI.Backend.Notifications;
+namespace UI.Infrastructure.Notifications;
 
 public class NotificationRepository : List<AresNotification>, INotificationRepository
 {

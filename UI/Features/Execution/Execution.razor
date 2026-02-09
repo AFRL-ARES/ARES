@@ -5,9 +5,9 @@
 @using Ares.Services
 @using Google.Protobuf.WellKnownTypes
 @using Radzen.Blazor
-@using UI.Backend.Extensions
+@using UI.Infrastructure.Extensions
 @using UI.Infrastructure.Interfaces
-@using UI.Pages.Shared.Execution.Planning
+@using UI.Features.Execution.Planning
 @inject ContextMenuService ContextMenuService
 @inject AresAutomation.AresAutomationClient AutomationClient
 @inject IUiNotificationService NotificationService
@@ -421,7 +421,7 @@
 
   System.Type? GetTypeFromString(string? type)
   {
-    return type is null ? null : System.Type.GetType($"UI.Pages.Shared.Execution.Planning.{type}");
+    return type is null ? null : System.Type.GetType($"UI.Features.Execution.Planning.{type}");
   }
 
   private async Task ExecutionNotesUploaded(UploadChangeEventArgs args)

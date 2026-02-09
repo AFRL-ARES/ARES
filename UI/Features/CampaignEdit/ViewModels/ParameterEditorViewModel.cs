@@ -1,11 +1,11 @@
-﻿using Ares.Datamodel;
+using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
 using Ares.Datamodel.Templates;
 using Humanizer;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using UI.Backend.Helpers;
+using UI.Infrastructure.Helpers;
 
 namespace UI.Backend.ViewModels.Automation.CampaignEdit;
 

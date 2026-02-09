@@ -1,11 +1,11 @@
-﻿using Ares.Datamodel.Device;
+using Ares.Datamodel.Device;
 using Ares.Services.Device;
 using ReactiveUI;
 using System.Collections.ObjectModel;
 using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using UI.Backend.Repos;
+using UI.Infrastructure.Repos;
 using UI.Backend.ViewModels;
 
 namespace UI.Backend.Factories;

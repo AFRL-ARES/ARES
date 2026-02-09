@@ -1,7 +1,7 @@
-﻿using DynamicData;
+using DynamicData;
 using UI.Backend.ViewModels;
 
-namespace UI.Backend.Repos
+namespace UI.Infrastructure.Repos
 {
   public interface IDeviceControlViewModelRepo : ISourceList<DeviceUnitControlViewModel>
   {

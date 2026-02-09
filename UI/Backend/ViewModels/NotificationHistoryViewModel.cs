@@ -1,6 +1,6 @@
-﻿using Ares.Services;
+using Ares.Services;
 using ReactiveUI;
-using UI.Backend.Notifications;
+using UI.Infrastructure.Notifications;
 
 namespace UI.Backend.ViewModels;
 

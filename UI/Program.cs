@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Radzen;
 using Serilog;
 using UI;
-using UI.Backend.Helpers;
+using UI.Infrastructure.Helpers;
 using UI.Domain;
 using UI.Services.Grpc;
 using UI.Services.Notification;

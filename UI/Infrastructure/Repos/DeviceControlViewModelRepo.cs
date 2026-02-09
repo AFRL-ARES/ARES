@@ -1,9 +1,9 @@
-﻿using CommunityToolkit.Mvvm.Messaging;
+using CommunityToolkit.Mvvm.Messaging;
 using DynamicData;
 using UI.Backend.ViewModels;
 using UI.Features.Devices.Shared;
 
-namespace UI.Backend.Repos
+namespace UI.Infrastructure.Repos
 {
   public class DeviceControlViewModelRepo : IDeviceControlViewModelRepo
   {

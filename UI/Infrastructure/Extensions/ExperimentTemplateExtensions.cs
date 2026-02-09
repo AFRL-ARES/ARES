@@ -1,6 +1,6 @@
-﻿using Ares.Datamodel.Templates;
+using Ares.Datamodel.Templates;
 
-namespace UI.Backend.Extensions;
+namespace UI.Infrastructure.Extensions;
 
 internal static class ExperimentTemplateExtensions
 {

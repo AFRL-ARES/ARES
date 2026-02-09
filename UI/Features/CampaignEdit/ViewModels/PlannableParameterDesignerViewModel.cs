@@ -1,8 +1,8 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using Ares.Datamodel.Templates;
 using DynamicData;
 using ReactiveUI;
-using UI.Backend.Extensions;
+using UI.Infrastructure.Extensions;
 using UI.Backend.ViewModels.Automation.CampaignEdit;
 using UI.Features.CampaignEdit.Factories;
 

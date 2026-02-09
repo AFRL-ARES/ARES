@@ -1,6 +1,6 @@
-﻿using Google.Protobuf.WellKnownTypes;
+using Google.Protobuf.WellKnownTypes;
 
-namespace UI.Backend.Helpers;
+namespace UI.Infrastructure.Helpers;
 
 public static class DisplayFormatHelper
 {

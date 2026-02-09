@@ -1,7 +1,7 @@
-﻿
+
 using Ares.Services;
 
-namespace UI.Backend.Extensions;
+namespace UI.Infrastructure.Extensions;
 
 public static class ExportTypeExtensions
 {

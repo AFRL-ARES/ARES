@@ -7,7 +7,7 @@ using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Templates;
 using Ares.Services;
-using UI.Backend.Extensions;
+using UI.Infrastructure.Extensions;
 using UI.Services.Notification;
 using Ares.Datamodel.Planning;
 using System.ComponentModel;

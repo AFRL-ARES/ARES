@@ -1,10 +1,10 @@
-﻿using Ares.Alicat.Mfc.Messaging;
+using Ares.Alicat.Mfc.Messaging;
 using Ares.Services.Device;
 using DynamicData;
 using Google.Protobuf.WellKnownTypes;
 using System.Reactive.Linq;
 using UI.Backend.Factories;
-using UI.Backend.Repos;
+using UI.Infrastructure.Repos;
 using UI.Backend.ViewModels;
 using UI.Backend.ViewModels.Devices.Mfc;
 

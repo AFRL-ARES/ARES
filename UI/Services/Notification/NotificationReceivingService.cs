@@ -2,7 +2,7 @@ using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using NuGet.Packaging;
-using UI.Backend.Notifications;
+using UI.Infrastructure.Notifications;
 using UI.Infrastructure.Interfaces;
 
 namespace UI.Services.Notification;
