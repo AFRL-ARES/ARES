@@ -1,10 +1,11 @@
 using Ares.Services;
 using Microsoft.JSInterop;
+using UI.Domain.Scripting;
 using MonacoCompletionItem = BlazorMonaco.Languages.CompletionItem;
 
 namespace UI.Infrastructure.Monaco.Interops;
 
-public class MonacoCompletionProvider(AresScriptingService.AresScriptingServiceClient aresScriptingServiceClient)
+public class MonacoCompletionProvider(AresScriptingService.AresScriptingServiceClient aresScriptingServiceClient) : IMonacoCompletionProvider
 {
   private readonly AresScriptingService.AresScriptingServiceClient _aresScriptingServiceClient = aresScriptingServiceClient;
 

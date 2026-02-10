@@ -74,6 +74,7 @@ using TubeFurnaceSettingsListViewModel = UI.Features.Devices.TubeFurnace.TubeFur
 using ValveControllerSettingsListViewModel = UI.Features.Devices.ValveController.ValveControllerSettingsListViewModel;
 using VerdiLaserSettingsListViewModel = UI.Features.Devices.VerdiV6Laser.VerdiLaserSettingsListViewModel;
 using UI.Domain.Dialog;
+using UI.Domain.Scripting;
 using UI.Components.Formatting;
 
 namespace UI;
@@ -105,6 +106,10 @@ internal static class ServiceCollectionExtensions
     services.AddSingleton<MonacoDiagnosticsProvider>();
     services.AddSingleton<MonacoSemanticTokensProvider>();
     services.AddSingleton<MonacoHoverProvider>();
+    services.AddSingleton<IMonacoCompletionProvider>(provider => provider.GetRequiredService<MonacoCompletionProvider>());
+    services.AddSingleton<IMonacoDiagnosticsProvider>(provider => provider.GetRequiredService<MonacoDiagnosticsProvider>());
+    services.AddSingleton<IMonacoSemanticTokensProvider>(provider => provider.GetRequiredService<MonacoSemanticTokensProvider>());
+    services.AddSingleton<IMonacoHoverProvider>(provider => provider.GetRequiredService<MonacoHoverProvider>());
   }
 
   public static void BindClients(this IServiceCollection services)

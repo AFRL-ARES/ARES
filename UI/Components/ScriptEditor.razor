@@ -1,4 +1,4 @@
-﻿@using UI.Infrastructure.Monaco.Interops
+@using UI.Domain.Scripting
 @inject IJSRuntime JSRuntime
 @implements IAsyncDisposable
 
@@ -13,22 +13,22 @@
   private IJSObjectReference? _semanticModule;
   private IJSObjectReference? _hoverModule;
 
-  private DotNetObjectReference<MonacoCompletionProvider>? _completionReference;
-  private DotNetObjectReference<MonacoDiagnosticsProvider>? _diagnosticsReference;
-  private DotNetObjectReference<MonacoSemanticTokensProvider>? _semanticReference;
-  private DotNetObjectReference<MonacoHoverProvider>? _hoverReference;
+  private DotNetObjectReference<IMonacoCompletionProvider>? _completionReference;
+  private DotNetObjectReference<IMonacoDiagnosticsProvider>? _diagnosticsReference;
+  private DotNetObjectReference<IMonacoSemanticTokensProvider>? _semanticReference;
+  private DotNetObjectReference<IMonacoHoverProvider>? _hoverReference;
 
   [Parameter]
-  public MonacoCompletionProvider? CompletionProvider { get; set; }
+  public IMonacoCompletionProvider? CompletionProvider { get; set; }
 
   [Parameter]
-  public MonacoDiagnosticsProvider? DiagnosticsProvider { get; set; }
+  public IMonacoDiagnosticsProvider? DiagnosticsProvider { get; set; }
 
   [Parameter]
-  public MonacoSemanticTokensProvider? SemanticTokensProvider { get; set; }
+  public IMonacoSemanticTokensProvider? SemanticTokensProvider { get; set; }
 
   [Parameter]
-  public MonacoHoverProvider? HoverProvider { get; set; }
+  public IMonacoHoverProvider? HoverProvider { get; set; }
 
   public Task<string> GetScript() => _editor.GetValue();
 

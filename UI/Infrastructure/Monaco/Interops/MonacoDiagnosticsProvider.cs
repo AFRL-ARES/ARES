@@ -1,9 +1,10 @@
 using Ares.Services;
 using Microsoft.JSInterop;
+using UI.Domain.Scripting;
 
 namespace UI.Infrastructure.Monaco.Interops;
 
-public sealed class MonacoDiagnosticsProvider(AresScriptingService.AresScriptingServiceClient aresScriptingServiceClient)
+public sealed class MonacoDiagnosticsProvider(AresScriptingService.AresScriptingServiceClient aresScriptingServiceClient) : IMonacoDiagnosticsProvider
 {
   private readonly AresScriptingService.AresScriptingServiceClient _aresScriptingServiceClient = aresScriptingServiceClient;
 
@@ -26,12 +27,4 @@ public sealed class MonacoDiagnosticsProvider(AresScriptingService.AresScripting
     )).ToArray();
   }
 
-  public record MonacoDiagnostic(
-    int StartLineNumber,
-    int StartColumn,
-    int EndLineNumber,
-    int EndColumn,
-    string Message,
-    int Severity,
-    string? Code);
 }

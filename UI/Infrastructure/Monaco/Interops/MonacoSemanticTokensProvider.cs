@@ -3,10 +3,11 @@ using Microsoft.JSInterop;
 using AresScript;
 using AresScript.Generated;
 using Antlr4.Runtime.Misc;
+using UI.Domain.Scripting;
 
 namespace UI.Infrastructure.Monaco.Interops;
 
-public sealed class MonacoSemanticTokensProvider
+public sealed class MonacoSemanticTokensProvider : IMonacoSemanticTokensProvider
 {
   [JSInvokable]
   public SemanticToken[] GetSemanticTokens(string script)
@@ -33,8 +34,6 @@ public sealed class MonacoSemanticTokensProvider
       return [];
     }
   }
-
-  public record SemanticToken(int Line, int StartColumn, int Length, string Type);
 
   private sealed class SemanticTokenCollector : AresLangBaseVisitor<object?>
   {

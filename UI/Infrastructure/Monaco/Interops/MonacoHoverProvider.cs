@@ -9,10 +9,11 @@ using AresScript.Generated;
 using AresScript.Interpreters;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.JSInterop;
+using UI.Domain.Scripting;
 
 namespace UI.Infrastructure.Monaco.Interops;
 
-public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServiceClient aresScriptingServiceClient)
+public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServiceClient aresScriptingServiceClient) : IMonacoHoverProvider
 {
   private readonly AresScriptingService.AresScriptingServiceClient _aresScriptingServiceClient = aresScriptingServiceClient;
   private AutocompleteCatalog? _cachedCatalog;
