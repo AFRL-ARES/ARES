@@ -3,7 +3,6 @@ using Ares.Services.Device;
 using DynamicData;
 using Google.Protobuf.WellKnownTypes;
 using UI.Infrastructure.Repos;
-using UI.Backend.ViewModels;
 using UI.Features.Devices.Shared;
 
 namespace UI.Features.Devices.Mfc;
@@ -32,3 +31,4 @@ public class MFCDeviceControlViewModelFactory : DeviceConnectorViewModelFactory<
     return mfcs;
   }
 }
+

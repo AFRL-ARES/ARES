@@ -1,6 +1,6 @@
 using FlirCM3.Services;
 using ReactiveUI.SourceGenerators;
-using UI.Backend.ViewModels;
+using UI.Features.Devices.Shared;
 
 namespace UI.Features.Devices.CM3Camera;
 
@@ -38,3 +38,4 @@ public partial class CM3CameraUnitControlViewModel : DeviceUnitControlViewModel
   [Reactive]
   public partial byte[]? DisplayData { get; set; }
 }
+

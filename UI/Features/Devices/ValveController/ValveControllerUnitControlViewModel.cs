@@ -1,4 +1,4 @@
-using UI.Backend.ViewModels;
+using UI.Features.Devices.Shared;
 using ValveController.Services;
 
 namespace UI.Features.Devices.ValveController;

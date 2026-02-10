@@ -1,6 +1,6 @@
 using ReactiveUI.SourceGenerators;
 using TicStepperController.Messaging;
-using UI.Backend.ViewModels;
+using UI.Features.Devices.Shared;
 
 namespace UI.Features.Devices.StepperController;
 
@@ -132,3 +132,4 @@ public partial class StepperControllerViewModel : DeviceUnitControlViewModel, IA
     GC.SuppressFinalize(this);
   }
 }
+

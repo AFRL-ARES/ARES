@@ -10,7 +10,7 @@ using UI.Features.Devices.SyringePump;
 using UI.Features.Devices.Tc0304;
 using UI.Features.Devices.TubeFurnace;
 using UI.Features.Devices.ValveController;
-using UI.Infrastructure.Notification;
+using UI.Domain.Notifications;
 
 namespace UI;
 

@@ -1,6 +1,6 @@
 using ReactiveUI.SourceGenerators;
 using Tc0304.Services;
-using UI.Backend.ViewModels;
+using UI.Features.Devices.Shared;
 using UnitsNet;
 
 namespace UI.Features.Devices.Tc0304;
@@ -88,3 +88,4 @@ public partial class Tc0304UnitControlViewModel : DeviceUnitControlViewModel, IA
     GC.SuppressFinalize(this);
   }
 }
+

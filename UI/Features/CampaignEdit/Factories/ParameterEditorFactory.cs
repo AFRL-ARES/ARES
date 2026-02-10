@@ -1,6 +1,6 @@
 using Ares.Datamodel.Templates;
-using UI.Infrastructure.Helpers;
-using ParameterEditorViewModel=UI.Features.CampaignEdit.ViewModels.ParameterEditorViewModel;
+using UI.Components.Formatting;
+using ParameterEditorViewModel = UI.Features.CampaignEdit.ViewModels.ParameterEditorViewModel;
 
 namespace UI.Features.CampaignEdit.Factories;
 

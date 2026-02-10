@@ -5,7 +5,6 @@ using System.Collections.ObjectModel;
 using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using UI.Backend.ViewModels;
 using UI.Infrastructure.Repos;
 
 namespace UI.Features.Devices.Shared;

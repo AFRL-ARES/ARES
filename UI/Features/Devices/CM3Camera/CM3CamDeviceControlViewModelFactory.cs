@@ -3,7 +3,6 @@ using DynamicData;
 using FlirCM3.Services;
 using Google.Protobuf.WellKnownTypes;
 using UI.Infrastructure.Repos;
-using UI.Backend.ViewModels;
 using UI.Features.Devices.Shared;
 
 namespace UI.Features.Devices.CM3Camera;
@@ -31,3 +30,4 @@ public class CM3CamDeviceControlViewModelFactory : DeviceConnectorViewModelFacto
     return descriptions;
   }
 }
+

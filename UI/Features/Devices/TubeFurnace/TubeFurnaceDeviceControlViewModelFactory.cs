@@ -3,7 +3,6 @@ using DynamicData;
 using Google.Protobuf.WellKnownTypes;
 using TubeFurnace.Messaging;
 using UI.Infrastructure.Repos;
-using UI.Backend.ViewModels;
 using UI.Features.Devices.Shared;
 
 namespace UI.Features.Devices.TubeFurnace

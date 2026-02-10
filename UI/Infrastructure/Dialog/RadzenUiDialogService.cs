@@ -1,4 +1,5 @@
 using Radzen;
+using UI.Domain.Dialog;
 
 namespace UI.Infrastructure.Dialog;
 

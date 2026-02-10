@@ -4,7 +4,7 @@ using Ares.Services;
 using Ares.Services.Device;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using UI.Infrastructure.Notification;
+using UI.Domain.Notifications;
 
 namespace UI.Features.DeviceStateLogging.Settings;
 

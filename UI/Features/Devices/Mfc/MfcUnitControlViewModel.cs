@@ -1,7 +1,7 @@
-﻿using Ares.Alicat.Mfc.Messaging;
+using Ares.Alicat.Mfc.Messaging;
 using DynamicData;
 using ReactiveUI.SourceGenerators;
-using UI.Backend.ViewModels;
+using UI.Features.Devices.Shared;
 using UnitsNet;
 using UnitsNet.Units;
 
@@ -206,3 +206,4 @@ public partial class MfcUnitControlViewModel : DeviceUnitControlViewModel, IAsyn
     _mfcClient.TareAbsolutePressureWithBarometer(_deviceRequest);
   }
 }
+

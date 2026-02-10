@@ -3,7 +3,6 @@ using DynamicData;
 using Google.Protobuf.WellKnownTypes;
 using Tc0304.Services;
 using UI.Infrastructure.Repos;
-using UI.Backend.ViewModels;
 using UI.Features.Devices.Shared;
 
 namespace UI.Features.Devices.Tc0304;
@@ -31,3 +30,4 @@ public class Tc0304DeviceControlViewModelFactory : DeviceConnectorViewModelFacto
     return infos;
   }
 }
+

@@ -1,6 +1,6 @@
-﻿using Chiller.Services;
+using Chiller.Services;
 using ReactiveUI.SourceGenerators;
-using UI.Backend.ViewModels;
+using UI.Features.Devices.Shared;
 
 namespace UI.Features.Devices.LaserChiller;
 
@@ -43,3 +43,4 @@ public partial class LaserChillerUnitControlViewModel : DeviceUnitControlViewMod
   public partial double CurrentManifoldTemperature { get; set; }
   public double DesiredTemperature { get; set; }
 }
+

@@ -3,8 +3,8 @@
 @using Ares.Datamodel
 @using Ares.Services
 @using Google.Protobuf.WellKnownTypes
-@using UI.Infrastructure.Extensions
-@using UI.Infrastructure.Interfaces
+@using UI.Domain.Execution
+@using UI.Domain.Notifications
 @using UI.Features.Execution.Planning
 @inject ContextMenuService ContextMenuService
 @inject AresAutomation.AresAutomationClient AutomationClient
@@ -433,6 +433,7 @@
     await ViewModel!.ExecutionNotesUploaded(stream);
   }
 }
+
 
 
 

@@ -1,7 +1,7 @@
 using Ares.SyringePump.Ne1000.Messaging;
 using DynamicData.Binding;
 using ReactiveUI.SourceGenerators;
-using UI.Backend.ViewModels;
+using UI.Features.Devices.Shared;
 
 namespace UI.Features.Devices.SyringePump;
 
@@ -153,3 +153,4 @@ public partial class SyringePumpUnitControlViewModel : DeviceUnitControlViewMode
   [Reactive]
   public partial VolumeUnit VolumeUnit { get; set; }
 }
+

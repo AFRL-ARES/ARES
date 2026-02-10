@@ -1,5 +1,5 @@
-﻿using RestDevice.Services;
-using UI.Backend.ViewModels;
+using RestDevice.Services;
+using UI.Features.Devices.Shared;
 
 namespace UI.Features.Devices.RestDevice;
 
@@ -58,3 +58,4 @@ public class RestDeviceUnitControlViewModel : DeviceUnitControlViewModel
 
   public Dictionary<string, string> MethodParameters { get; set; } = [];
 }
+

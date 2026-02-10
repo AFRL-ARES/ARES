@@ -2,8 +2,8 @@ using System.Collections.ObjectModel;
 using Ares.Datamodel.Templates;
 using DynamicData;
 using ReactiveUI;
-using UI.Infrastructure.Extensions;
 using UI.Features.CampaignEdit.Factories;
+using UI.Domain.Experiments;
 
 namespace UI.Features.CampaignEdit.ViewModels;
 

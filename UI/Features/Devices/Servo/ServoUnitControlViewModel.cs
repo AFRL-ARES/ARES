@@ -1,5 +1,5 @@
 using HerkulexDRS.Services;
-using UI.Backend.ViewModels;
+using UI.Features.Devices.Shared;
 
 namespace UI.Features.Devices.Servo;
 
@@ -29,3 +29,4 @@ public class ServoUnitControlViewModel : DeviceUnitControlViewModel
     _client.ResetServo(new DeviceRequest { DeviceId = DeviceId });
   }
 }
+

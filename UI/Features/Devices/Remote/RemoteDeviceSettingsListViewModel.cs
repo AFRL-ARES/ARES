@@ -6,7 +6,7 @@ using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System.Collections.ObjectModel;
-using UI.Infrastructure.Notification;
+using UI.Domain.Notifications;
 
 namespace UI.Features.Devices.Remote;
 
@@ -91,3 +91,4 @@ public partial class RemoteDeviceSettingsListViewModel : ReactiveObject
 
   public ObservableCollection<RemoteDeviceSettingsViewModel> SettingsViewModels { get; }
 }
+

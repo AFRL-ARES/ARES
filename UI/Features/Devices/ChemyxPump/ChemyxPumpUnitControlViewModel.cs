@@ -1,5 +1,5 @@
 using ChemyxPumpPlugin.Services;
-using UI.Backend.ViewModels;
+using UI.Features.Devices.Shared;
 
 namespace UI.Features.Devices.ChemyxPump;
 
@@ -20,3 +20,4 @@ public class ChemyxPumpUnitControlViewModel : DeviceUnitControlViewModel
 
   public IndividualPumpViewModel[] PumpViewModels { get; }
 }
+

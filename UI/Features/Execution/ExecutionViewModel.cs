@@ -9,8 +9,8 @@ using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using UI.Infrastructure.Extensions;
-using UI.Infrastructure.Notification;
+using UI.Domain.Notifications;
+using UI.Domain.Experiments;
 
 namespace UI.Features.Execution;
 
@@ -255,3 +255,4 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   public List<AresCampaignTag> SelectedTags { get; set; } = [];
   public string? NewTagName { get; set; }
 }
+

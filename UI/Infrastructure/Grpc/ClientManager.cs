@@ -2,8 +2,8 @@ using Grpc.Core;
 using Grpc.Net.Client;
 using Microsoft.Extensions.Options;
 using System.Security.Cryptography.X509Certificates;
-using UI.Authentication;
-using UI.Settings;
+using UI.Domain.Settings;
+using UI.Features.Auth;
 
 namespace UI.Infrastructure.Grpc;
 

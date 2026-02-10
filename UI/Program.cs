@@ -3,11 +3,12 @@ using Microsoft.EntityFrameworkCore;
 using Radzen;
 using Serilog;
 using UI;
-using UI.Infrastructure.Helpers;
-using UI.Domain;
 using UI.Infrastructure.Grpc;
-using UI.Infrastructure.Notification;
-using UI.Settings;
+using UI.Domain.Notifications;
+using UI.Infrastructure.Notifications;
+using UI.Domain.Settings;
+using UI.Infrastructure.Persistence;
+using UI.Components.Formatting;
 
 var builder = WebApplication.CreateBuilder(args);
 

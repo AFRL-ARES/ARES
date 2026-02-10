@@ -2,7 +2,7 @@ using Ares.Datamodel.Templates;
 using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using UI.Features.CampaignEdit.ViewModels;
-using UI.Infrastructure.Notification;
+using UI.Domain.Notifications;
 
 
 namespace UI.Features.CampaignEdit.Factories;
@@ -24,3 +24,4 @@ public class PlanningDesignerFactory
     return new PlanningViewModel(template, planners.Planners, _client, _notificationService);
   }
 }
+

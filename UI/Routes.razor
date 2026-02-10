@@ -1,4 +1,5 @@
-﻿<Router NotFoundPage="@typeof(NotFound)" AppAssembly="@typeof(App).Assembly">
+﻿@using UI.Pages
+<Router NotFoundPage="@typeof(NotFound)" AppAssembly="@typeof(App).Assembly">
   <Found Context="routeData">
     <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
     <FocusOnNavigate RouteData="@routeData" Selector="h1" />

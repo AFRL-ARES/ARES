@@ -3,7 +3,7 @@ using Ares.Datamodel.Templates;
 using Ares.Services;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using UI.Infrastructure.Notification;
+using UI.Domain.Notifications;
 
 namespace UI.Features.CampaignEdit.ViewModels;
 
@@ -105,3 +105,4 @@ public partial class PlannerAllocationEditorViewModel : ReactiveObject
   [Reactive]
   public partial Planner? SelectedPlannerOption { get; set; }
 }
+

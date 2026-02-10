@@ -3,7 +3,6 @@ using Ares.SyringePump.Ne1000.Messaging;
 using DynamicData;
 using Google.Protobuf.WellKnownTypes;
 using UI.Infrastructure.Repos;
-using UI.Backend.ViewModels;
 using UI.Features.Devices.Shared;
 
 namespace UI.Features.Devices.SyringePump;
@@ -31,3 +30,4 @@ public class SyringePumpDeviceControlViewModelFactory : DeviceConnectorViewModel
     return pumps;
   }
 }
+

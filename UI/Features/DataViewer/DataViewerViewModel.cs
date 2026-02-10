@@ -3,7 +3,7 @@ using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using UI.Infrastructure.Helpers;
+using UI.Components.Formatting;
 
 namespace UI.Features.DataViewer;
 

@@ -5,7 +5,7 @@ using Ares.Datamodel.Templates;
 using Humanizer;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using UI.Infrastructure.Helpers;
+using UI.Components.Formatting;
 
 namespace UI.Features.CampaignEdit.ViewModels;
 

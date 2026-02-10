@@ -1,6 +1,6 @@
 @page "/settings/device/restdevice"
 @layout DeviceSettingsLayout
-@using UI.Infrastructure.Interfaces
+@using UI.Domain.Notifications
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<RestDeviceSettingsListViewModel>
 
 @inject DialogService DialogService
@@ -63,3 +63,4 @@ else
 
   private bool SavingInProgress { get; set; }
 }
+

@@ -1,5 +1,5 @@
-﻿using RestSerialDevice.Services;
-using UI.Backend.ViewModels;
+using RestSerialDevice.Services;
+using UI.Features.Devices.Shared;
 
 namespace UI.Features.Devices.SerialRestDevice;
 
@@ -68,5 +68,6 @@ public class SerialRestDeviceUnitControlViewModel : DeviceUnitControlViewModel, 
     public Dictionary<string, List<string>> DeviceMethods { get; set; } = [];
     public Dictionary<string, string> MethodParameters { get; set; } = [];
 }
+
 
 

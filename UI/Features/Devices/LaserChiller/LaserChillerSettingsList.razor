@@ -1,6 +1,6 @@
 @page "/settings/device/laserchiller"
 @layout DeviceSettingsLayout
-@using UI.Infrastructure.Interfaces
+@using UI.Domain.Notifications
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<LaserChillerSettingsListViewModel>
 
 @inject DialogService DialogService
@@ -62,3 +62,4 @@ else
 
   private bool SavingInProgress { get; set; }
 }
+

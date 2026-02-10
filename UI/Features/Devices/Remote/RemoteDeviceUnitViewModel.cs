@@ -1,6 +1,5 @@
 using Ares.Datamodel;
 using ReactiveUI.SourceGenerators;
-using UI.Backend.ViewModels;
 using UI.Features.Devices.Shared;
 
 namespace UI.Features.Devices.Remote;
@@ -41,3 +40,4 @@ public partial class RemoteDeviceUnitViewModel : DeviceUnitControlViewModel, IAs
     return ValueTask.CompletedTask;
   }
 }
+
