@@ -3,7 +3,7 @@ using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using UI.Domain.Notifications;
+using UI.Application.Notifications;
 
 
 namespace UI.Features.Planning.Settings;
@@ -55,4 +55,5 @@ public partial class PlannerSettingsListViewModel : ReactiveObject
   [Reactive]
   public partial IEnumerable<PlannerSettingsViewModel>? SettingsViewModels { get; private set; }
 }
+
 

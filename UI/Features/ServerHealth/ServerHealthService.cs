@@ -4,7 +4,7 @@ using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Grpc.Health.V1;
-using UI.Infrastructure.Hosting;
+using UI.Application.Hosting;
 
 namespace UI.Features.ServerHealth;
 

@@ -1,5 +1,5 @@
 using Radzen;
-using UI.Domain.Dialog;
+using UI.Application.Dialog;
 
 namespace UI.Infrastructure.Dialog;
 
@@ -28,3 +28,4 @@ internal sealed class RadzenUiDialogService : IUiDialogService
     return result.GetValueOrDefault();
   }
 }
+

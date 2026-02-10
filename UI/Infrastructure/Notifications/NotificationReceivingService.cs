@@ -2,7 +2,7 @@ using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using NuGet.Packaging;
-using UI.Domain.Notifications;
+using UI.Application.Notifications;
 
 namespace UI.Infrastructure.Notifications;
 
@@ -111,3 +111,4 @@ public class NotificationReceivingService : INotificationReceivingService
     };
   }
 }
+

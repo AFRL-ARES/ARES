@@ -1,7 +1,7 @@
 using Ares.Alicat.Mfc.Messaging;
 using DynamicData;
 using ReactiveUI.SourceGenerators;
-using UI.Features.Devices.Shared;
+using UI.Application.Devices;
 using UnitsNet;
 using UnitsNet.Units;
 

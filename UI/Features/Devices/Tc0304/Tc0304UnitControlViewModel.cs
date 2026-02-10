@@ -1,6 +1,6 @@
 using ReactiveUI.SourceGenerators;
 using Tc0304.Services;
-using UI.Features.Devices.Shared;
+using UI.Application.Devices;
 using UnitsNet;
 
 namespace UI.Features.Devices.Tc0304;

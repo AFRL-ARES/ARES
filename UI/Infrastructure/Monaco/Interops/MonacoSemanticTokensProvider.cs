@@ -3,7 +3,7 @@ using Microsoft.JSInterop;
 using AresScript;
 using AresScript.Generated;
 using Antlr4.Runtime.Misc;
-using UI.Domain.Scripting;
+using UI.Application.Scripting;
 
 namespace UI.Infrastructure.Monaco.Interops;
 
@@ -94,3 +94,4 @@ public sealed class MonacoSemanticTokensProvider : IMonacoSemanticTokensProvider
     }
   }
 }
+

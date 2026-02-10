@@ -2,8 +2,9 @@ using Ares.Services.Device;
 using DynamicData;
 using Google.Protobuf.WellKnownTypes;
 using Tc0304.Services;
-using UI.Infrastructure.Repos;
-using UI.Features.Devices.Shared;
+using UI.Application.Devices.Repos;
+using UI.Infrastructure.Devices;
+using UI.Application.Devices;
 
 namespace UI.Features.Devices.Tc0304;
 

@@ -3,7 +3,7 @@ using Ares.Datamodel.Connection;
 using Ares.Services;
 using Grpc.Core;
 using ReactiveUI;
-using UI.Domain.Notifications;
+using UI.Application.Notifications;
 
 namespace UI.Features.Analyzing.Settings;
 
@@ -133,4 +133,5 @@ public class AnalyzerSettingsViewModel : ReactiveObject
     }
   }
 }
+
 

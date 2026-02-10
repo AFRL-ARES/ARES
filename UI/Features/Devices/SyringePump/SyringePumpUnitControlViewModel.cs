@@ -1,7 +1,7 @@
 using Ares.SyringePump.Ne1000.Messaging;
 using DynamicData.Binding;
 using ReactiveUI.SourceGenerators;
-using UI.Features.Devices.Shared;
+using UI.Application.Devices;
 
 namespace UI.Features.Devices.SyringePump;
 

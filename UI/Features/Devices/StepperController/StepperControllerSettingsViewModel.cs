@@ -6,6 +6,7 @@ using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using TicStepperController.Config;
 using TicStepperController.Messaging;
+using UI.Application.Devices;
 using UI.Features.Devices.Shared;
 
 namespace UI.Features.Devices.StepperController;

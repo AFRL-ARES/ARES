@@ -3,7 +3,7 @@ using Ares.Datamodel.Planning;
 using Ares.Services;
 using Grpc.Core;
 using ReactiveUI;
-using UI.Domain.Notifications;
+using UI.Application.Notifications;
 
 
 namespace UI.Features.Planning.Settings;
@@ -74,4 +74,5 @@ public class PlannerSettingsViewModel : ReactiveObject
 
   public void PushNotification(AresNotification notification) => _notificationService.PushNotification(notification);
 }
+
 

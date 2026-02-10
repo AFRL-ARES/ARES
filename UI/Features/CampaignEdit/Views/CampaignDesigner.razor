@@ -1,6 +1,6 @@
 @page "/automation/campaigndesigner"
 @page "/automation/campaigndesigner/{CampaignId:guid}"
-@using UI.Domain.Notifications
+@using UI.Application.Notifications
 @inject IUiNotificationService NotificationService
 @inject DialogService DialogService
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<UI.Features.CampaignEdit.ViewModels.CampaignDesignerViewModel>
@@ -181,3 +181,4 @@
     }
 
 }
+

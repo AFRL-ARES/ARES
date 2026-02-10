@@ -1,5 +1,5 @@
 using ChemyxPumpPlugin.Services;
-using UI.Features.Devices.Shared;
+using UI.Application.Devices;
 
 namespace UI.Features.Devices.ChemyxPump;
 

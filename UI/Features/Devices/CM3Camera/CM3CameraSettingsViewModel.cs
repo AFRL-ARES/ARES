@@ -5,6 +5,7 @@ using FlirCM3.Config;
 using FlirCM3.Services;
 using Grpc.Core;
 using ReactiveUI;
+using UI.Application.Devices;
 using UI.Features.Devices.Shared;
 
 namespace UI.Features.Devices.CM3Camera;

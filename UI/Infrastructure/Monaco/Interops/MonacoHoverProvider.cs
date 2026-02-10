@@ -9,7 +9,7 @@ using AresScript.Generated;
 using AresScript.Interpreters;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.JSInterop;
-using UI.Domain.Scripting;
+using UI.Application.Scripting;
 
 namespace UI.Infrastructure.Monaco.Interops;
 
@@ -274,3 +274,4 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
     return sb.ToString();
   }
 }
+

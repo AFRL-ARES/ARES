@@ -3,7 +3,7 @@ using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using UI.Domain.Notifications;
+using UI.Application.Notifications;
 
 namespace UI.Features.Analyzing.Settings;
 
@@ -62,4 +62,5 @@ public partial class AnalyzerSettingsListViewModel : ReactiveObject
   [Reactive]
   public partial IEnumerable<AnalyzerSettingsViewModel>? SettingsViewModels { get; private set; }
 }
+
 

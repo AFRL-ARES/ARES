@@ -5,6 +5,7 @@ using Grpc.Core;
 using HerkulexDRS.Config;
 using HerkulexDRS.Services;
 using ReactiveUI;
+using UI.Application.Devices;
 using UI.Features.Devices.Shared;
 
 namespace UI.Features.Devices.Servo;

@@ -21,8 +21,6 @@ using RestSerialDevice.Services;
 using Tc0304.Services;
 using TicStepperController.Messaging;
 using TubeFurnace.Messaging;
-using UI.Infrastructure.Repos;
-using UI.Features.Devices.Shared;
 using UI.Features.Analyzing.Settings;
 using UI.Features.DeviceStateLogging.Settings;
 using UI.Features.Notifications;
@@ -44,7 +42,7 @@ using UI.Features.Devices.TubeFurnace;
 using UI.Features.Devices.ValveController;
 using UI.Features.DeviceStateExport;
 using UI.Features.DeviceStateLogging;
-using UI.Domain.Notifications;
+using UI.Application.Notifications;
 using UI.Infrastructure.Monaco.Interops;
 using UI.Infrastructure.Dialog;
 using UI.Infrastructure.Grpc;
@@ -60,7 +58,7 @@ using DeviceStatesViewModel = UI.Features.DeviceStateExport.DeviceStatesViewMode
 using ExecutionHistoryViewModel = UI.Features.ExecutionHistory.ExecutionHistoryViewModel;
 using ExecutionViewModel = UI.Features.Execution.ExecutionViewModel;
 using LaserChillerSettingsListViewModel = UI.Features.Devices.LaserChiller.LaserChillerSettingsListViewModel;
-using ManualPlannerViewModel = UI.Features.Planning.ManualPlannerViewModel;
+using ManualPlannerViewModel = UI.Features.Execution.Planning.ManualPlannerViewModel;
 using MfcSettingsListViewModel = UI.Features.Devices.Mfc.MfcSettingsListViewModel;
 using RemoteDeviceSettingsListViewModel = UI.Features.Devices.Remote.RemoteDeviceSettingsListViewModel;
 using RestDeviceSettingsListViewModel = UI.Features.Devices.RestDevice.RestDeviceSettingsListViewModel;
@@ -73,9 +71,14 @@ using Tc0304SettingsListViewModel = UI.Features.Devices.Tc0304.Tc0304SettingsLis
 using TubeFurnaceSettingsListViewModel = UI.Features.Devices.TubeFurnace.TubeFurnaceSettingsListViewModel;
 using ValveControllerSettingsListViewModel = UI.Features.Devices.ValveController.ValveControllerSettingsListViewModel;
 using VerdiLaserSettingsListViewModel = UI.Features.Devices.VerdiV6Laser.VerdiLaserSettingsListViewModel;
-using UI.Domain.Dialog;
-using UI.Domain.Scripting;
+using UI.Application.Dialog;
+using UI.Application.Scripting;
 using UI.Components.Formatting;
+using UI.Infrastructure.DeviceStateLogging;
+using UI.Application.DeviceStateLogging;
+using UI.Infrastructure.Auth;
+using UI.Infrastructure.Devices;
+using UI.Application.Devices.Repos;
 
 namespace UI;
 
@@ -100,7 +103,7 @@ internal static class ServiceCollectionExtensions
     services.AddSingleton<IDeviceControlViewModelRepo, DeviceControlViewModelRepo>();
     services.AddSingleton<INotificationRepository, NotificationRepository>();
 
-    services.AddSingleton<DeviceAdapterRepository>();
+    services.AddSingleton<IDeviceAdapterRepository, DeviceAdapterRepository>();
     services.AddSingleton<DeviceAdapterManager>();
     services.AddSingleton<MonacoCompletionProvider>();
     services.AddSingleton<MonacoDiagnosticsProvider>();
@@ -222,3 +225,4 @@ internal static class ServiceCollectionExtensions
     services.AddSingleton<ChemyxPumpControlViewModelFactory>();
   }
 }
+

@@ -1,5 +1,5 @@
 using Radzen;
-using UI.Domain.Notifications;
+using UI.Application.Notifications;
 
 namespace UI.Infrastructure.Notifications;
 
@@ -37,3 +37,4 @@ internal sealed class RadzenUiNotificationService : IUiNotificationService
     };
   }
 }
+

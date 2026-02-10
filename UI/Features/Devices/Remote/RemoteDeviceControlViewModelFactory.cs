@@ -1,8 +1,9 @@
 using Ares.Services.Device;
 using DynamicData;
 using Google.Protobuf.WellKnownTypes;
-using UI.Infrastructure.Repos;
-using UI.Features.Devices.Shared;
+using UI.Infrastructure.Devices;
+using UI.Application.Devices.Repos;
+using UI.Application.Devices;
 
 namespace UI.Features.Devices.Remote;
 

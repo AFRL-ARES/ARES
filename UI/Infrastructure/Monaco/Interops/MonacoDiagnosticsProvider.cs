@@ -1,6 +1,6 @@
 using Ares.Services;
 using Microsoft.JSInterop;
-using UI.Domain.Scripting;
+using UI.Application.Scripting;
 
 namespace UI.Infrastructure.Monaco.Interops;
 
@@ -28,3 +28,4 @@ public sealed class MonacoDiagnosticsProvider(AresScriptingService.AresScripting
   }
 
 }
+

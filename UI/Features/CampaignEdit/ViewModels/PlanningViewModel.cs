@@ -3,7 +3,7 @@ using System.Collections.ObjectModel;
 using Ares.Datamodel.Templates;
 using Ares.Services;
 using Ares.Datamodel.Planning;
-using UI.Domain.Notifications;
+using UI.Application.Notifications;
 
 namespace UI.Features.CampaignEdit.ViewModels;
 
@@ -45,4 +45,5 @@ public class PlanningViewModel : ReactiveObject
     .ToArray();
   }
 }
+
 

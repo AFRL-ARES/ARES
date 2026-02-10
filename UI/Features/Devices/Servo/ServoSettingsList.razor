@@ -1,6 +1,6 @@
 @page "/settings/device/servo"
 @layout DeviceSettingsLayout
-@using UI.Domain.Notifications
+@using UI.Application.Notifications
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<ServoSettingsListViewModel>
 
 @inject DialogService DialogService
@@ -63,3 +63,4 @@ else
 
   private bool SavingInProgress { get; set; }
 }
+

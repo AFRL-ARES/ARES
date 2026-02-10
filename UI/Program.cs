@@ -4,11 +4,11 @@ using Radzen;
 using Serilog;
 using UI;
 using UI.Infrastructure.Grpc;
-using UI.Domain.Notifications;
+using UI.Application.Notifications;
 using UI.Infrastructure.Notifications;
-using UI.Domain.Settings;
 using UI.Infrastructure.Persistence;
 using UI.Components.Formatting;
+using UI.Application.Settings;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -111,3 +111,4 @@ static void ConfigureDatabaseServices(IServiceCollection services, Configuration
     throw new InvalidOperationException($"Unsupported database provider: {provider}. Available provider values: {string.Join(',', sqlConnectionStrings.AsEnumerable().Select(scs => scs.Key.Split(':').LastOrDefault()).Where(s => s != "ConnectionStrings"))}");
   }
 }
+

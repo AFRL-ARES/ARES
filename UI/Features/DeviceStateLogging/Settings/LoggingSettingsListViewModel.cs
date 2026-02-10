@@ -4,7 +4,8 @@ using Ares.Services;
 using Ares.Services.Device;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using UI.Domain.Notifications;
+using UI.Application.Notifications;
+using UI.Application.DeviceStateLogging;
 
 namespace UI.Features.DeviceStateLogging.Settings;
 
@@ -62,3 +63,4 @@ public partial class LoggingSettingsListViewModel : ReactiveObject
     }
   }
 }
+

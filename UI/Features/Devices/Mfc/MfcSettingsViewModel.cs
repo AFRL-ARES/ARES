@@ -7,6 +7,7 @@ using DynamicData;
 using Grpc.Core;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
+using UI.Application.Devices;
 using UI.Features.Devices.Shared;
 
 namespace UI.Features.Devices.Mfc;

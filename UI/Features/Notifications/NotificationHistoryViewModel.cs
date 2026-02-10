@@ -1,6 +1,6 @@
 using Ares.Services;
 using ReactiveUI;
-using UI.Domain.Notifications;
+using UI.Application.Notifications;
 
 namespace UI.Features.Notifications;
 
@@ -64,4 +64,5 @@ public class NotificationHistoryViewModel : ReactiveObject
   public bool DisplaySuccessNotifications { get; set; } = true;
   public int NotificationSortMethod { get; set; } = 0;
 }
+
 

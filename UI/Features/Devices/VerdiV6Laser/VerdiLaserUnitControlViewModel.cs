@@ -1,6 +1,6 @@
 using DynamicData.Binding;
 using ReactiveUI.SourceGenerators;
-using UI.Features.Devices.Shared;
+using UI.Application.Devices;
 using VerdiV6.Services;
 
 namespace UI.Features.Devices.VerdiV6Laser;

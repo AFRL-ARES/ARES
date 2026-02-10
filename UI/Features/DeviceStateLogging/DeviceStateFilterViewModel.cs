@@ -5,6 +5,7 @@ using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
+using UI.Application.DeviceStateLogging;
 
 namespace UI.Features.DeviceStateLogging;
 

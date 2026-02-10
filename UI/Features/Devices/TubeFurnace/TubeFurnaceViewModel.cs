@@ -1,7 +1,7 @@
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using TubeFurnace.Messaging;
-using UI.Features.Devices.Shared;
+using UI.Application.Devices;
 using UnitsNet;
 using UnitsNet.Units;
 

@@ -1,6 +1,6 @@
 using FlirCM3.Services;
 using ReactiveUI.SourceGenerators;
-using UI.Features.Devices.Shared;
+using UI.Application.Devices;
 
 namespace UI.Features.Devices.CM3Camera;
 

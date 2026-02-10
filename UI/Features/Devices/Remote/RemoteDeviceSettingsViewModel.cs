@@ -9,7 +9,8 @@ using ReactiveUI.SourceGenerators;
 using System.Reactive;
 using System.Reactive.Linq;
 using UI.Features.Devices.Shared;
-using UI.Domain.Notifications;
+using UI.Application.Notifications;
+using UI.Application.Devices;
 
 namespace UI.Features.Devices.Remote;
 
@@ -217,4 +218,5 @@ public partial class RemoteDeviceSettingsViewModel : ReactiveObject
 
   private void PushNotification(AresNotification notification) => _notificationService.PushNotification(notification);
 }
+
 

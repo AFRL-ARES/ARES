@@ -1,5 +1,5 @@
 @page "/scripting"
-@using UI.Domain.Scripting
+@using UI.Application.Scripting
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<ScriptPlaygroundViewModel>
 @inject IMonacoCompletionProvider CompletionProvider
 @inject IMonacoDiagnosticsProvider DiagnosticsProvider
@@ -133,3 +133,4 @@
         public string Message { get; set; } = string.Empty;
     }
 }
+

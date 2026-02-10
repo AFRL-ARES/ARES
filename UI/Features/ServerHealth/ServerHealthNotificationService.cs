@@ -1,6 +1,6 @@
 using Ares.Services;
-using UI.Infrastructure.Hosting;
-using UI.Domain.Notifications;
+using UI.Application.Notifications;
+using UI.Application.Hosting;
 
 namespace UI.Features.ServerHealth;
 
@@ -51,4 +51,5 @@ internal class ServerHealthNotificationService : ILocalService
     }
   }
 }
+
 

@@ -1,6 +1,6 @@
 using Ares.Services;
 using Microsoft.JSInterop;
-using UI.Domain.Scripting;
+using UI.Application.Scripting;
 using MonacoCompletionItem = BlazorMonaco.Languages.CompletionItem;
 
 namespace UI.Infrastructure.Monaco.Interops;
@@ -23,4 +23,5 @@ public class MonacoCompletionProvider(AresScriptingService.AresScriptingServiceC
     return completions.Items.Select(item => item.ToMonacoCompletionItem()).ToArray();
   }
 }
+
 
