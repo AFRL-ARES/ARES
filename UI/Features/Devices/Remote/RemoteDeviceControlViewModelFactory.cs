@@ -9,12 +9,12 @@ namespace UI.Features.Devices.Remote;
 
 public class RemoteDeviceControlViewModelFactory : DeviceConnectorViewModelFactory<RemoteDeviceUnitViewModel>
 {
-  private readonly DeviceAdapterRepository _deviceAdapterRepo;
+  private readonly IDeviceAdapterRepository _deviceAdapterRepo;
   private readonly IDeviceControlViewModelRepo _deviceControlViewModelRepo;
   private readonly AresDevices.AresDevicesClient _devicesClient;
 
   public RemoteDeviceControlViewModelFactory(AresDevices.AresDevicesClient devicesClient,
-    DeviceAdapterRepository deviceAdapterRepo,
+    IDeviceAdapterRepository deviceAdapterRepo,
     IDeviceControlViewModelRepo deviceControlViewModelRepo) : base(devicesClient, deviceControlViewModelRepo)
   {
     _deviceAdapterRepo = deviceAdapterRepo;

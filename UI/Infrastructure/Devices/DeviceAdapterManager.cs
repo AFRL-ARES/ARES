@@ -1,11 +1,12 @@
 ﻿using Ares.Services.Device;
 using Google.Protobuf.WellKnownTypes;
+using UI.Application.Devices.Repos;
 
 namespace UI.Infrastructure.Devices;
 
 public class DeviceAdapterManager(
     AresDevices.AresDevicesClient _devicesClient,
-    DeviceAdapterRepository _deviceAdapterRepository,
+    IDeviceAdapterRepository _deviceAdapterRepository,
     ILoggerFactory _loggerFactory,
     ILogger<DeviceAdapterManager> _logger) : IAsyncDisposable
 {
