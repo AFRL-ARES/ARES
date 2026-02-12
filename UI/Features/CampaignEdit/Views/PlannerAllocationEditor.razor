@@ -1,0 +1,56 @@
+﻿@using Ares.Datamodel.Planning;
+@inject DialogService DialogService
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Features.CampaignEdit.ViewModels.PlannerAllocationEditorViewModel>
+
+<div class="card border-primary rounded-1 p-2 m-1">
+  <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Start" Gap="0.5rem">
+    <RadzenColumn>
+      <RadzenRow Style="padding-bottom: 0.5rem">
+        @ViewModel!.ParameterMetadata.Name
+      </RadzenRow>
+      <RadzenRow AlignItems="AlignItems.Center">
+          <RadzenLabel Text="Select Service:" Component="PlannerServiceDropDown" Style="min-width: 115px"/>
+          <RadzenDropDown TValue="PlannerServiceInfo" Data="@ViewModel!.PlannerServices" @bind-Value="@ViewModel!.SelectedService" Name="PlannerServiceDropDown" Style="min-width: 15rem">
+            <Template>
+              @context.Name (@context.Version)
+            </Template>
+           </RadzenDropDown>
+      </RadzenRow>
+
+      <RadzenRow AlignItems="AlignItems.Center">
+        @if(ViewModel!.PlannerOptions.Count() > 1)
+        {
+          <RadzenLabel Text="Select Planner:" Component="PlannerOptionDropDown" Style="min-width: 115px" />
+          <RadzenDropDown TValue="Planner" Data="@ViewModel!.PlannerOptions" @bind-Value="@ViewModel!.SelectedPlannerOption" Name="PlannerOptionDropDown" Style="min-width: 15rem">
+            <Template>
+              @context.PlannerName
+            </Template>
+
+            <ValueTemplate>
+              @context.PlannerName
+            </ValueTemplate>
+          </RadzenDropDown>
+          <RadzenButton Click="@ShowPlannerOptionTip" Icon="help" Variant="Variant.Text" ButtonStyle="ButtonStyle.Base" Shade="Shade.Lighter" Size="ButtonSize.ExtraSmall" />
+        }
+      </RadzenRow>
+
+      <RadzenRow style="padding-top: 0.5rem">
+        Planner Description:
+        @(ViewModel!.SelectedPlannerOption?.Description ?? ViewModel!.SelectedService?.Description ?? string.Empty)
+      </RadzenRow>
+    </RadzenColumn>
+  </RadzenStack>
+</div>
+
+@code {
+  private async Task ShowPlannerOptionTip()
+  {
+    await DialogService.OpenAsync("Planner Selection", ds =>
+  @<div>
+   In ARES, some planner services report the capability of using multiple types of planners. 
+   In this scenario, a seperate dropdown allows you to choose what planning method to use from the services advertised options.
+  </div>
+  , new DialogOptions() { CloseDialogOnOverlayClick = true });
+  }
+
+}

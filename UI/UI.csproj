@@ -7,6 +7,27 @@
 	<UserSecretsId>aspnet-UI-87962D8C-B573-4F3B-852F-E1DA10F52308</UserSecretsId>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <WarningsAsErrors>RZ10012</WarningsAsErrors>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <WarningsAsErrors>RZ10012</WarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Pages\Settings\**" />
+    <Compile Remove="Services\**" />
+    <Content Remove="Pages\Settings\**" />
+    <Content Remove="Services\**" />
+    <EmbeddedResource Remove="Pages\Settings\**" />
+    <EmbeddedResource Remove="Services\**" />
+    <None Remove="Pages\Settings\**" />
+    <None Remove="Services\**" />
+    <TypeScriptCompile Remove="Pages\Settings\**" />
+    <TypeScriptCompile Remove="Services\**" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="ARES.Datamodel" Version="0.17.0" />
     <PackageReference Include="BlazorMonaco" Version="3.4.0" />
@@ -38,8 +59,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Backend\Devices\Remote\" />
-    <Folder Include="Pages\Settings\" />
+    <Folder Include="wwwroot\js\" />
   </ItemGroup>
 
   <ItemGroup>
@@ -68,7 +88,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <UpToDateCheckInput Remove="Pages\Shared\Settings\Device\StepperController\StepperControllerSettingsView.razor" />
+    <TypeScriptCompile Remove="Scripts\monaco\ares-autocomplete-setup.ts" />
+    <TypeScriptCompile Remove="Scripts\monaco\ares-diagnostics-setup.ts" />
+    <TypeScriptCompile Remove="Scripts\monaco\ares-hover-setup.ts" />
+    <TypeScriptCompile Remove="Scripts\monaco\ares-semantic-setup.ts" />
+    <TypeScriptCompile Remove="Scripts\monaco\ares-setup.ts" />
+    <TypeScriptCompile Remove="Scripts\monaco\areslang.language-configuration.ts" />
+    <TypeScriptCompile Remove="Scripts\monaco\areslang.monarch.ts" />
+    <TypeScriptCompile Remove="Scripts\globals.d.ts" />
+    <TypeScriptCompile Remove="Infrastructure\Scripts\globals.d.ts" />
   </ItemGroup>
 
 </Project>

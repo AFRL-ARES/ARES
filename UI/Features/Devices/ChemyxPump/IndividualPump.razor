@@ -1,0 +1,141 @@
+﻿@using ChemyxPumpPlugin.Services
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<IndividualPumpViewModel>
+@implements IAsyncDisposable
+
+@if(ViewModel == null)
+{
+  <div class="text-center p-2">
+    <RadzenProgressBar Circular="true" Value="100" ShowValue="false" Mode="ProgressBarMode.Indeterminate" Style="width: 30px; height: 30px;" />
+  </div>
+}
+else
+{
+  <RadzenCard Variant="Variant.Outlined" Style="max-width: 300px; padding: 0;" class="rz-shadow-2">
+    @* Header Section *@
+    <div class="rz-p-2 rz-background-color-base-600 d-flex justify-content-between align-items-center" style="border-bottom: 1px solid var(--rz-grid-cell-border);">
+      <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H6" class="rz-m-0 rz-font-weight-bold">
+        💉 Pump #@ViewModel.PumpNumber
+      </RadzenText>
+      <RadzenBadge BadgeStyle="@GetStatusBadgeStyle()" Text="@ViewModel.Status.ToString()" IsPill="true" />
+    </div>
+
+    <div class="rz-p-3">
+      @* Progress Section *@
+      <div class="d-flex justify-content-between rz-color-info-darker rz-mb-1" style="font-size: 0.75rem;">
+        <span>@ViewModel.Dispensed.ToString("0.##") / @ViewModel.Volume.ToString("0.##")</span>
+        <span>@ViewModel.Elapsed.ToString(@"hh\:mm\:ss")</span>
+      </div>
+
+      <div class="progress rz-mb-4" style="height: 16px;">
+        <div class="progress-bar progress-bar-striped @(ViewModel.Status != ChemyxPumpPlugin.PumpStatus.Stopped ? "progress-bar-animated" : "") @GetProgressColor()"
+             role="progressbar"
+             style="width: @(CalculateProgress())%;"
+             aria-valuenow="@ViewModel.Dispensed"
+             aria-valuemin="0"
+             aria-valuemax="@ViewModel.Volume">
+          @CalculateProgress().ToString("F0")%
+        </div>
+      </div>
+
+      @* Control Buttons *@
+      <div class="d-flex rz-gap-1 rz-mb-4">
+        <RadzenButton Icon="play_arrow" Click="@ViewModel.StartPump" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.Small" class="rz-w-100" Tooltip="Start" />
+        <RadzenButton Icon="pause" Click="@ViewModel.PausePump" ButtonStyle="ButtonStyle.Warning" Size="ButtonSize.Small" class="rz-w-100" Tooltip="Pause" />
+        <RadzenButton Icon="stop" Click="@ViewModel.StopPump" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" class="rz-w-100" Tooltip="Stop" />
+        <RadzenButton Icon="refresh" Click="@(() => ViewModel.ForceUpdate())" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" class="rz-w-100" Tooltip="Refresh" />
+      </div>
+
+      @* Input Grid *@
+      <div class="row g-2">
+        <div class="col-12">
+          <RadzenText TextStyle="TextStyle.Caption" class="rz-mb-1 rz-display-block">Rate & Unit</RadzenText>
+          <div class="d-flex rz-gap-1">
+            <RadzenNumeric TValue="double" Value="@ViewModel.Rate" Change="@(args => UpdateRate(args))" Step="0.01" Style="width: 40%;" />
+            <RadzenDropDown TValue="string" Data="@IndividualPumpViewModel.AvailableUnits" Value="@ViewModel.PumpUnit.ToString()" Change="@(args => UpdateUnit(args))" Style="width: 60%;" />
+          </div>
+        </div>
+
+        <div class="col-6">
+          <RadzenText TextStyle="TextStyle.Caption" class="rz-mb-1 rz-display-block">Syringe Diameter (mm)</RadzenText>
+          <RadzenNumeric TValue="double" Value="@ViewModel.Diameter" Change="@(args => UpdateDiameter(args))" Step="0.01" Size="NumericSize.Small" class="w-100" />
+        </div>
+
+        <div class="col-6">
+          <RadzenText TextStyle="TextStyle.Caption" class="rz-mb-1 rz-display-block">Target Volume</RadzenText>
+          <RadzenNumeric TValue="double" Value="@ViewModel.Volume" Change="@(args => UpdateVolume(args))" Step="0.1" Size="NumericSize.Small" class="w-100" />
+        </div>
+
+        <div class="col-6">
+          <RadzenText TextStyle="TextStyle.Caption" class="rz-mb-1 rz-display-block">Delay</RadzenText>
+          <RadzenTextBox Value="@ViewModel.Delay.ToString()" Change="@(args => UpdateDelay(args))" Size="TextBoxSize.Small" class="w-100" />
+        </div>
+
+        <div class="col-6">
+          <RadzenText TextStyle="TextStyle.Caption" class="rz-mb-1 rz-display-block">Time</RadzenText>
+          <RadzenTextBox Value="@ViewModel.Time.ToString()" Change="@(args => UpdateTime(args))" Size="TextBoxSize.Small" class="w-100" />
+        </div>
+      </div>
+    </div>
+  </RadzenCard>
+}
+
+@code {
+  double CalculateProgress()
+  {
+    if(ViewModel!.Volume <= 0) return 0;
+    var percent = (ViewModel.Dispensed / ViewModel.Volume) * 100;
+    return Math.Clamp(Math.Round(percent, 1), 0, 100);
+  }
+
+  // Dynamic color based on completion
+  private string GetProgressColor()
+  {
+    var p = CalculateProgress();
+    if(ViewModel!.Status == ChemyxPumpPlugin.PumpStatus.Paused) return "bg-warning";
+    if(p >= 100) return "bg-success";
+    if(p > 0) return "bg-primary";
+    return "bg-secondary";
+  }
+
+  private BadgeStyle GetStatusBadgeStyle()
+  {
+    return ViewModel!.Status switch
+    {
+      ChemyxPumpPlugin.PumpStatus.Running => BadgeStyle.Success,
+      ChemyxPumpPlugin.PumpStatus.Paused => BadgeStyle.Warning,
+      ChemyxPumpPlugin.PumpStatus.Stopped => BadgeStyle.Secondary,
+      _ => BadgeStyle.Light
+    };
+  }
+
+  private async Task UpdateRate(double value) => await ViewModel!.SetRate(value);
+  private async Task UpdateVolume(double value) => await ViewModel!.SetVolume(value);
+
+  private async Task UpdateUnit(object value)
+  {
+    if(Enum.TryParse<Units>(value?.ToString(), out var result))
+      await ViewModel!.SetUnit(result);
+  }
+
+  private async Task UpdateDelay(string value)
+  {
+    if(TimeSpan.TryParse(value, out var result))
+      await ViewModel!.SetDelay(result);
+  }
+
+  private async Task UpdateTime(string value)
+  {
+    if(TimeSpan.TryParse(value, out var result))
+      await ViewModel!.SetTime(result);
+  }
+
+  private async Task UpdateDiameter(double value) => await ViewModel!.SetDiameter(value);
+
+  public ValueTask DisposeAsync() => ViewModel!.DisposeAsync();
+
+  protected override void OnInitialized()
+  {
+    ViewModel!.Start();
+    base.OnInitialized();
+  }
+}

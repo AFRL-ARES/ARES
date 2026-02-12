@@ -1,4 +1,4 @@
-﻿using Ares.Alicat.Mfc.Messaging;
+using Ares.Alicat.Mfc.Messaging;
 using Ares.Messages;
 using Ares.Messages.DeviceStates.Chiller;
 using Ares.Messages.DeviceStates.Mfc;
@@ -21,46 +21,64 @@ using RestSerialDevice.Services;
 using Tc0304.Services;
 using TicStepperController.Messaging;
 using TubeFurnace.Messaging;
-using UI.Authentication;
-using UI.Backend.Devices;
-using UI.Backend.Factories;
-using UI.Backend.Helpers;
-using UI.Backend.Notifications;
-using UI.Backend.Repos;
-using UI.Backend.ViewModels;
-using UI.Backend.ViewModels.Automation;
-using UI.Backend.ViewModels.Automation.CampaignEdit;
-using UI.Backend.ViewModels.Automation.CampaignEdit.Factories;
-using UI.Backend.ViewModels.Automation.Planning;
-using UI.Backend.ViewModels.DeviceStateLogging;
-using UI.Backend.ViewModels.Factories;
-using UI.Backend.ViewModels.Misc;
-using UI.Backend.ViewModels.Settings.Analysis;
-using UI.Backend.ViewModels.Settings.Device.ChemyxPump;
-using UI.Backend.ViewModels.Settings.Device.CM3Camera;
-using UI.Backend.ViewModels.Settings.Device.LaserChiller;
-using UI.Backend.ViewModels.Settings.Device.Mfc;
-using UI.Backend.ViewModels.Settings.Device.Remote;
-using UI.Backend.ViewModels.Settings.Device.RestDevice;
-using UI.Backend.ViewModels.Settings.Device.SerialRestDevice;
-using UI.Backend.ViewModels.Settings.Device.Servo;
-using UI.Backend.ViewModels.Settings.Device.StepperController;
-using UI.Backend.ViewModels.Settings.Device.SyringePump;
-using UI.Backend.ViewModels.Settings.Device.Tc0304;
-using UI.Backend.ViewModels.Settings.Device.TubeFurnace;
-using UI.Backend.ViewModels.Settings.Device.ValveController;
-using UI.Backend.ViewModels.Settings.Device.VerdiLaser;
-using UI.Backend.ViewModels.Settings.Logging;
-using UI.Backend.ViewModels.Settings.Planning;
-using UI.JsInterops;
-using UI.Services.CampaignEdit;
-using UI.Services.Dialog;
-using UI.Services.Grpc;
-using UI.Services.Notification;
-using UI.Services.ServerHealth;
-using UI.Services.ServerHealthNotification;
+using UI.Features.Analyzing.Settings;
+using UI.Features.DeviceStateLogging.Settings;
+using UI.Features.Notifications;
+using UI.Features.Planning;
+using UI.Features.Planning.Settings;
+using UI.Features.Auth;
+using UI.Features.CampaignEdit;
+using UI.Features.CampaignEdit.Factories;
+using UI.Features.CampaignEdit.ViewModels;
+using UI.Features.Devices.ChemyxPump;
+using UI.Features.Devices.CM3Camera;
+using UI.Features.Devices.Mfc;
+using UI.Features.Devices.Remote;
+using UI.Features.Devices.Servo;
+using UI.Features.Devices.StepperController;
+using UI.Features.Devices.SyringePump;
+using UI.Features.Devices.Tc0304;
+using UI.Features.Devices.TubeFurnace;
+using UI.Features.Devices.ValveController;
+using UI.Features.DeviceStateExport;
+using UI.Features.DeviceStateLogging;
+using UI.Application.Notifications;
+using UI.Infrastructure.Monaco.Interops;
+using UI.Infrastructure.Dialog;
+using UI.Infrastructure.Grpc;
+using UI.Infrastructure.Notifications;
+using UI.Features.ServerHealth;
 using ValveController.Services;
 using VerdiV6.Services;
+using CampaignDesignerViewModel = UI.Features.CampaignEdit.ViewModels.CampaignDesignerViewModel;
+using ChemyxPumpSettingsListViewModel = UI.Features.Devices.ChemyxPump.ChemyxPumpSettingsListViewModel;
+using CM3CameraSettingsListViewModel = UI.Features.Devices.CM3Camera.CM3CameraSettingsListViewModel;
+using DataViewerViewModel = UI.Features.DataViewer.DataViewerViewModel;
+using DeviceStatesViewModel = UI.Features.DeviceStateExport.DeviceStatesViewModel;
+using ExecutionHistoryViewModel = UI.Features.ExecutionHistory.ExecutionHistoryViewModel;
+using ExecutionViewModel = UI.Features.Execution.ExecutionViewModel;
+using LaserChillerSettingsListViewModel = UI.Features.Devices.LaserChiller.LaserChillerSettingsListViewModel;
+using ManualPlannerViewModel = UI.Features.Execution.Planning.ManualPlannerViewModel;
+using MfcSettingsListViewModel = UI.Features.Devices.Mfc.MfcSettingsListViewModel;
+using RemoteDeviceSettingsListViewModel = UI.Features.Devices.Remote.RemoteDeviceSettingsListViewModel;
+using RestDeviceSettingsListViewModel = UI.Features.Devices.RestDevice.RestDeviceSettingsListViewModel;
+using ScriptPlaygroundViewModel = UI.Features.ScriptPlayground.ScriptPlaygroundViewModel;
+using SerialRestDeviceSettingsListViewModel = UI.Features.Devices.SerialRestDevice.SerialRestDeviceSettingsListViewModel;
+using ServoSettingsListViewModel = UI.Features.Devices.Servo.ServoSettingsListViewModel;
+using StepperControllerSettingsListViewModel = UI.Features.Devices.StepperController.StepperControllerSettingsListViewModel;
+using SyringePumpSettingsListViewModel = UI.Features.Devices.SyringePump.SyringePumpSettingsListViewModel;
+using Tc0304SettingsListViewModel = UI.Features.Devices.Tc0304.Tc0304SettingsListViewModel;
+using TubeFurnaceSettingsListViewModel = UI.Features.Devices.TubeFurnace.TubeFurnaceSettingsListViewModel;
+using ValveControllerSettingsListViewModel = UI.Features.Devices.ValveController.ValveControllerSettingsListViewModel;
+using VerdiLaserSettingsListViewModel = UI.Features.Devices.VerdiV6Laser.VerdiLaserSettingsListViewModel;
+using UI.Application.Dialog;
+using UI.Application.Scripting;
+using UI.Components.Formatting;
+using UI.Infrastructure.DeviceStateLogging;
+using UI.Application.DeviceStateLogging;
+using UI.Infrastructure.Auth;
+using UI.Infrastructure.Devices;
+using UI.Application.Devices.Repos;
 
 namespace UI;
 
@@ -85,12 +103,16 @@ internal static class ServiceCollectionExtensions
     services.AddSingleton<IDeviceControlViewModelRepo, DeviceControlViewModelRepo>();
     services.AddSingleton<INotificationRepository, NotificationRepository>();
 
-    services.AddSingleton<DeviceAdapterRepository>();
+    services.AddSingleton<IDeviceAdapterRepository, DeviceAdapterRepository>();
     services.AddSingleton<DeviceAdapterManager>();
     services.AddSingleton<MonacoCompletionProvider>();
     services.AddSingleton<MonacoDiagnosticsProvider>();
     services.AddSingleton<MonacoSemanticTokensProvider>();
     services.AddSingleton<MonacoHoverProvider>();
+    services.AddSingleton<IMonacoCompletionProvider>(provider => provider.GetRequiredService<MonacoCompletionProvider>());
+    services.AddSingleton<IMonacoDiagnosticsProvider>(provider => provider.GetRequiredService<MonacoDiagnosticsProvider>());
+    services.AddSingleton<IMonacoSemanticTokensProvider>(provider => provider.GetRequiredService<MonacoSemanticTokensProvider>());
+    services.AddSingleton<IMonacoHoverProvider>(provider => provider.GetRequiredService<MonacoHoverProvider>());
   }
 
   public static void BindClients(this IServiceCollection services)
@@ -142,15 +164,10 @@ internal static class ServiceCollectionExtensions
   private static void BindViewModels(this IServiceCollection services)
   {
     services.AddScoped<DataViewerViewModel>();
-    services.AddScoped<IndexViewModel>();
     services.AddScoped<NotificationHistoryViewModel>();
     services.AddScoped<ProfileViewModel>();
-    services.AddScoped<ProjectViewModel>();
-    services.AddScoped<QuasiManualViewModel>();
-    services.AddScoped<SettingsViewModel>();
     services.AddTransient<CampaignDesignerViewModel>();
     services.AddScoped<CampaignListViewModel>();
-    services.AddScoped<CustomStepBuilderViewModel>();
     services.AddScoped<ExecutionHistoryViewModel>();
     services.AddScoped<ExecutionViewModel>();
     services.AddScoped<ScriptPlaygroundViewModel>();
@@ -179,7 +196,7 @@ internal static class ServiceCollectionExtensions
     services.AddTransient<DeviceStatesViewModel>();
     services.AddTransient<DeviceStateExporterViewModel>();
     services.AddScoped<ManualPlannerViewModel>();
-    services.AddScoped<ManualExecutionWidgetViewModel>();
+    services.AddScoped<ManualDeviceLoggerWidgetViewModel>();
     services.AddScoped<LoggingSettingsListViewModel>();
   }
   private static void BindViewModelFactories(this IServiceCollection services)
@@ -208,3 +225,4 @@ internal static class ServiceCollectionExtensions
     services.AddSingleton<ChemyxPumpControlViewModelFactory>();
   }
 }
+

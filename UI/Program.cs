@@ -3,11 +3,12 @@ using Microsoft.EntityFrameworkCore;
 using Radzen;
 using Serilog;
 using UI;
-using UI.Backend.Helpers;
-using UI.Data;
-using UI.Services.Grpc;
-using UI.Services.Notification;
-using UI.Settings;
+using UI.Infrastructure.Grpc;
+using UI.Application.Notifications;
+using UI.Infrastructure.Notifications;
+using UI.Infrastructure.Persistence;
+using UI.Components.Formatting;
+using UI.Application.Settings;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -110,3 +111,4 @@ static void ConfigureDatabaseServices(IServiceCollection services, Configuration
     throw new InvalidOperationException($"Unsupported database provider: {provider}. Available provider values: {string.Join(',', sqlConnectionStrings.AsEnumerable().Select(scs => scs.Key.Split(':').LastOrDefault()).Where(s => s != "ConnectionStrings"))}");
   }
 }
+

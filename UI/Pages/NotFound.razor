@@ -1,0 +1,15 @@
+@page "/404"
+@inject NavigationManager Nav
+@layout MainLayout
+
+<PageTitle>Not Found</PageTitle>
+
+<div class="alert alert-danger">
+  <h3>404 - Page Not Found</h3>
+  <p>Sorry, there's nothing at this address.</p>
+  <button class="btn btn-primary" @onclick="GoHome">Go Home</button>
+</div>
+
+@code {
+  private void GoHome() => Nav.NavigateTo("/");
+}

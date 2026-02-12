@@ -1,0 +1,83 @@
+@using System.Diagnostics;
+@using Ares.Services
+@using ReactiveUI.Blazor;
+@using UI.Features.Shared
+
+@inherits ReactiveInjectableComponentBase<ManualDeviceLoggerWidgetViewModel>
+
+<DashboardWidget>
+  <div class="d-inline-flex">
+    @if (ViewModel!.IsCollecting)
+    {
+      <button @onclick="StopCollecting" class="btn btn-danger">Stop Collecting</button>
+    }
+    else 
+    {
+      <button @onclick="StartCollecting" class="btn btn-primary">Start Collecting</button>
+    }
+    <div class="d-flex flex-column mx-2">
+      <div class="stopwatch">
+        @(_stopwatch.Elapsed.Minutes.ToString("00")):@(_stopwatch.Elapsed.Seconds.ToString("00")):@(_stopwatch.Elapsed.Milliseconds.ToString("000"))
+      </div>
+      @if (ViewModel!.HasData)
+      {
+        <div class="date-grid">
+          <span class="date-label me-2">Start</span>
+          <span class="collection-date">@ViewModel!.CollectionStarted</span>
+          <span class="date-label me-2">End</span>
+          <span class="collection-date">@ViewModel!.CollectionFinished</span>
+        </div>
+      }
+      <button @onclick="Export" class="btn btn-secondary" disabled="@(!ViewModel!.HasData)">Download</button>
+    </div>
+  </div>
+</DashboardWidget>
+@inject IJSRuntime JS
+@code {
+  private string _error = string.Empty;
+
+  private Stopwatch _stopwatch = new Stopwatch();
+
+  private async Task StartCollecting()
+  {
+    await ViewModel!.StartDataCollection();
+    await StartStopwatch();
+  }
+
+  private void StopCollecting()
+  {
+    ViewModel!.StopDataCollection();
+    _stopwatch.Stop();
+  }
+
+  private async Task StartStopwatch()
+  {
+    _stopwatch.Restart();
+    while (ViewModel!.IsCollecting)
+    {
+      StateHasChanged();
+      await Task.Delay(100);
+    }
+  }
+
+  private async Task Export()
+  {
+    _error = string.Empty;
+    var fileData = await ViewModel!.GetExportData();
+    if (fileData is null)
+    {
+      _error = "Unable to get a state stream. Maybe provider wasn't selected.";
+      StateHasChanged();
+      return;
+    }
+
+    var fileName = $"{DateTime.Now}";
+    fileName = Path.ChangeExtension(fileName, ExportType.Combined.ToFileExtension());
+
+    using var stream = new MemoryStream(fileData);
+    using var streamRef = new DotNetStreamReference(stream: stream);
+
+    await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
+    StateHasChanged();
+  }
+}

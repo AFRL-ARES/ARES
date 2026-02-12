@@ -1,0 +1,141 @@
+@using UI.Application.Scripting
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
+<StandaloneCodeEditor CssClass="h-100" @ref="_editor" Id="ares-editor" ConstructionOptions="EditorConstructionOptions" />
+
+@code {
+  private StandaloneCodeEditor _editor;
+
+  private IJSObjectReference? _setupModule;
+  private IJSObjectReference? _completionModule;
+  private IJSObjectReference? _diagnosticsModule;
+  private IJSObjectReference? _semanticModule;
+  private IJSObjectReference? _hoverModule;
+
+  private DotNetObjectReference<IMonacoCompletionProvider>? _completionReference;
+  private DotNetObjectReference<IMonacoDiagnosticsProvider>? _diagnosticsReference;
+  private DotNetObjectReference<IMonacoSemanticTokensProvider>? _semanticReference;
+  private DotNetObjectReference<IMonacoHoverProvider>? _hoverReference;
+
+  [Parameter]
+  public IMonacoCompletionProvider? CompletionProvider { get; set; }
+
+  [Parameter]
+  public IMonacoDiagnosticsProvider? DiagnosticsProvider { get; set; }
+
+  [Parameter]
+  public IMonacoSemanticTokensProvider? SemanticTokensProvider { get; set; }
+
+  [Parameter]
+  public IMonacoHoverProvider? HoverProvider { get; set; }
+
+  public Task<string> GetScript() => _editor.GetValue();
+
+  protected override async Task OnAfterRenderAsync(bool firstRender)
+  {
+    if(firstRender)
+    {
+      _setupModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/monaco/ares-setup.js");
+      await _setupModule.InvokeVoidAsync("registerAresLanguage");
+
+      if(CompletionProvider is not null)
+      {
+        _completionModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/monaco/ares-autocomplete-setup.js");
+        _completionReference = DotNetObjectReference.Create(CompletionProvider);
+        await _completionModule.InvokeVoidAsync("setupAutoComplete", _completionReference);
+      }
+
+      if(DiagnosticsProvider is not null)
+      {
+        _diagnosticsModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/monaco/ares-diagnostics-setup.js");
+        _diagnosticsReference = DotNetObjectReference.Create(DiagnosticsProvider);
+        await _diagnosticsModule.InvokeVoidAsync("setupDiagnostics", _diagnosticsReference);
+      }
+
+      if(SemanticTokensProvider is not null)
+      {
+        _semanticModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/monaco/ares-semantic-setup.js");
+        _semanticReference = DotNetObjectReference.Create(SemanticTokensProvider);
+        await _semanticModule.InvokeVoidAsync("setupSemanticTokens", _semanticReference);
+      }
+
+      if(HoverProvider is not null)
+      {
+        _hoverModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/monaco/ares-hover-setup.js");
+        _hoverReference = DotNetObjectReference.Create(HoverProvider);
+        await _hoverModule.InvokeVoidAsync("setupHover", _hoverReference);
+      }
+    }
+  }
+
+  public async ValueTask DisposeAsync()
+  {
+    try
+    {
+      if(_completionModule is not null)
+      {
+        await _completionModule.InvokeVoidAsync("disposeAutoComplete");
+      }
+
+      if(_diagnosticsModule is not null)
+      {
+        await _diagnosticsModule.InvokeVoidAsync("disposeDiagnostics");
+      }
+
+      if(_semanticModule is not null)
+      {
+        await _semanticModule.InvokeVoidAsync("disposeSemanticTokens");
+      }
+
+      if(_hoverModule is not null)
+      {
+        await _hoverModule.InvokeVoidAsync("disposeHover");
+      }
+    }
+    catch(JSDisconnectedException)
+    {
+      // JS runtime can be disconnected during teardown.
+    }
+
+    _completionReference?.Dispose();
+    _diagnosticsReference?.Dispose();
+    _semanticReference?.Dispose();
+    _hoverReference?.Dispose();
+
+    await DisposeModuleAsync(_hoverModule);
+    await DisposeModuleAsync(_semanticModule);
+    await DisposeModuleAsync(_diagnosticsModule);
+    await DisposeModuleAsync(_completionModule);
+    await DisposeModuleAsync(_setupModule);
+  }
+
+  private static async ValueTask DisposeModuleAsync(IJSObjectReference? module)
+  {
+    if(module is null)
+    {
+      return;
+    }
+
+    try
+    {
+      await module.DisposeAsync();
+    }
+    catch(JSDisconnectedException)
+    {
+      // Ignore disconnected runtime during disposal.
+    }
+  }
+
+  private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
+  {
+    return new StandaloneEditorConstructionOptions
+    {
+      Language = "ares",
+      AutomaticLayout = true,
+      SemanticHighlightingEnabled = true,
+      Value = "# Welcome to ARES\ndef main():\n    return True\n"
+    };
+  }
+}
+

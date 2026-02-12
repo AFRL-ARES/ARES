@@ -1,0 +1,113 @@
+﻿@using Ares.Datamodel
+@using ParameterEditorViewModel=UI.Features.CampaignEdit.ViewModels.ParameterEditorViewModel
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Features.CampaignEdit.ViewModels.ParameterEditorViewModel>
+
+
+<div class="card border-primary p-2 m-1" style="width: 90%">
+  <div class="row">
+    <div class="col-11">
+      <RadzenFormField Text="Parameter Name" Variant="Variant.Outlined" Style="width: 100%">
+        <RadzenTextBox @bind-Value="ViewModel!.Name" />
+      </RadzenFormField>
+    </div>
+
+    <button @onclick="DeleteParameterClick" type="button" class="btn-close m-1" style="padding-top: 20px" />
+  </div>
+
+  <div class="row">
+    <RadzenFormField Text="Data Type" Variant="Variant.Outlined" Style="width: 100%">
+      <RadzenDropDown Data="@FilteredTypes" @bind-Value="ViewModel!.DataType" />
+    </RadzenFormField>
+  </div>
+
+  @if(ViewModel!.DataType == AresDataType.Number)
+  {
+    <div class="row">
+      <div class="col">
+        <RadzenFormField Text="Category" Variant="Variant.Outlined" Style="width: 100%">
+          <RadzenDropDown Data="ViewModel!.CategoryOptions" @bind-Value="ViewModel!.Category" 
+          AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
+        </RadzenFormField>
+      </div>
+
+      <div class="col">
+        <RadzenFormField Text="Unit" Variant="Variant.Outlined" Style="width: 100%">
+          <RadzenDropDown Data="ViewModel!.UnitOptions" @bind-Value="ViewModel!.Unit" 
+          AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" />
+        </RadzenFormField>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col">
+        <RadzenFormField Text="Minimum Value" Variant="Variant.Outlined" Style="width: 100%">
+          <RadzenNumeric @bind-Value="ViewModel!.Minimum" />
+        </RadzenFormField>
+      </div>
+
+      <div class="col">
+        <RadzenFormField Text="Maximum Value" Variant="Variant.Outlined" Style="width: 100%">
+          <RadzenNumeric @bind-Value="ViewModel!.Maximum" />
+        </RadzenFormField>
+      </div>
+    </div>
+  }
+
+  @if(ViewModel!.HasInitialValue)
+  {
+    <AresValueDesigner ValueEditCallback="ValueEditCallback" Schema="new SchemaEntry { Type = ViewModel!.DataType }" Value="@ViewModel!.InitialValue" Unit="" Name="Initial Value"/>
+  }
+
+
+  <hr style="border-top: 1px solid #ccc; margin: 10px 0;" />
+
+  <RadzenRow AlignItems="AlignItems.Center">
+    <RadzenSwitch Name="AchievedValueSwitch" @bind-Value="ViewModel!.HasInitialValue" class="my-2" />
+    <RadzenLabel Text="Has Initial Value" Component="InitalValueSwitch" />
+  </RadzenRow>
+
+  <RadzenRow AlignItems="AlignItems.Center">
+    <RadzenSwitch Name="AchievedValueSwitch" @bind-Value="ViewModel!.HasAchievedValue" class="my-2"/>
+    <RadzenLabel Text="Has Achieved Output" Component="AchievedValueSwitch" />
+  </RadzenRow>
+
+  @if (ViewModel!.AvailableOutputs is not null && ViewModel!.HasAchievedValue)
+  {
+    <div class="row">
+      <RadzenFormField Text="Output Value" Variant="Variant.Outlined" Style="width: 100%">
+        <RadzenDropDown Data="@ViewModel!.AvailableOutputs" @bind-Value="ViewModel!.SelectedAchievedOutput" />
+      </RadzenFormField>
+    </div>
+  }
+</div>
+
+@code {
+
+  private IEnumerable<AresDataType>? FilteredTypes;
+
+  [Parameter]
+  public Action<ParameterEditorViewModel> DeleteParameterCallback { get; set; } = delegate { };
+
+  private void DeleteParameterClick()
+  {
+    DeleteParameterCallback(ViewModel!);
+  }
+
+  private Task ValueEditCallback(AresValue value)
+  {
+    //Not sure what scenario this would be to be honest
+    if(value is null)
+      return Task.CompletedTask;
+
+    if(ViewModel!.InitialValue is null)
+      ViewModel!.InitialValue = new AresValue();
+
+    ViewModel!.InitialValue = value;
+    return Task.CompletedTask;
+  }
+
+  protected override void OnInitialized()
+  {
+    FilteredTypes = Enum.GetValues(typeof(AresDataType)).Cast<AresDataType>().Where(s => s != AresDataType.Null && s != AresDataType.UnspecifiedType);
+  }
+}

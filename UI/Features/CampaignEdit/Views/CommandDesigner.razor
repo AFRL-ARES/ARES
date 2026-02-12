@@ -1,0 +1,42 @@
+﻿@using Ares.Datamodel.Templates
+@using UI.Features.CampaignEdit.ViewModels
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Features.CampaignEdit.ViewModels.CommandDesignerViewModel>
+
+<MetadataPicker ViewModel="@ViewModel!.MetadataPickerViewModel" CommandMetadataChanged="CommandMetadataChanged"  />
+
+@foreach (var argumentDesigner in ViewModel!.ArgumentDesigners)
+{
+  <CommandParameterDesigner DisablePlanning=@DisablePlanningAndOutputCheck ViewModel="@argumentDesigner" />
+}
+
+@if(!DisablePlanningAndOutputCheck)
+{
+  <div class="mb-2">
+	  <RadzenCheckBox @bind-Value="ViewModel!.OutputProvider" id="output-check"/>
+	  <label for="output-check">Provides Output</label>
+  </div>  
+}
+
+
+<div hidden="@(!ViewModel!.OutputProvider)">
+  <RadzenDataGrid TItem="UserOutputSelection" Data="@ViewModel.OutputKeyMap" Editable="true" EditMode="DataGridEditMode.Single" ColumnWidth="200px">
+      <Columns>
+          <RadzenDataGridColumn Property="@(nameof(UserOutputSelection.DeviceOutputName))" Title="Device Output Name" />
+          <RadzenDataGridColumn Property="@(nameof(UserOutputSelection.CustomName))" Title="Experiment Output Name">
+              <Template Context="item">
+                  <RadzenTextBox Style="width:100%" @bind-Value="item.CustomName" />
+              </Template>
+          </RadzenDataGridColumn>
+      </Columns>
+  </RadzenDataGrid>
+</div>
+
+@code {
+  [Parameter]
+  public bool DisablePlanningAndOutputCheck { get; set; }
+
+  private void CommandMetadataChanged(CommandMetadata? metadata)
+  {
+      ViewModel!.CommandMetadata = metadata;
+  }
+}

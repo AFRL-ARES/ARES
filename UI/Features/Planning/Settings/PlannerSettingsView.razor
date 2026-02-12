@@ -1,0 +1,66 @@
+@using Ares.Services
+@using Google.Protobuf.WellKnownTypes
+@using UI.Features.Planning.Settings.Layout
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Features.Planning.Settings.PlannerSettingsViewModel>
+@inject DialogService DialogService
+  
+<PlannerSettingsContainer PlannerStatusGetter="ViewModel!.GetPlannerStatus"
+SettingsCallback="SettingCallback"
+EditCallback="EditCallback" 
+RemoveCallback="RemoveCallback" 
+Name="@ViewModel!.PlannerAdapter.Name">
+  <div style="display: flex; flex-direction: column">
+    <span>Address: @ViewModel!.PlannerAdapter.Address</span>
+    <span>Type: @ViewModel!.PlannerAdapter.Type</span>
+    <span>Version: @ViewModel!.PlannerAdapter.Version</span>
+    <span>@ViewModel!.PlannerAdapter.Description</span>
+  </div>
+</PlannerSettingsContainer>
+
+@code {
+  private async Task EditCallback()
+  {
+    var viewModel = ViewModel!.EditViewModel;
+    var result = await DialogService.OpenAsync("Edit Planner", ds =>
+      @<PlannerConfigEditView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)"/>);
+
+    if (result is true && viewModel.Modified)
+    {
+      await ViewModel!.Save();
+      var notification = new AresNotification();
+      notification.Message = $"ARES successfully added the planner {viewModel.Name} utilizing the address {viewModel.Address}.";
+      notification.Title = $"Successfully Added Planner {viewModel.Name}!";
+      notification.NotificationSeverity = Severity.Success;
+      notification.Timestamp = DateTime.UtcNow.ToTimestamp();
+      ViewModel!.PushNotification(notification);
+    }
+  }
+
+  private async Task SettingCallback()
+  {
+    var viewModel = ViewModel!.SettingsEditorViewModel;
+    var result = await DialogService.OpenAsync("Planner Settings", ds =>
+      @<PlannerSettingsEditorView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)"/>);
+  
+    if(result is true && viewModel!.Modified)
+    {
+      await ViewModel!.Save();
+      StateHasChanged();
+      var notification = new AresNotification();
+      notification.Message = $"ARES successfully saved the request changes to {ViewModel!.PlannerAdapter.Name}'s settings.";
+      notification.Title = "Successfully Updated Planner Settings";
+      notification.NotificationSeverity = Severity.Success;
+      notification.Timestamp = DateTime.UtcNow.ToTimestamp();
+      ViewModel!.PushNotification(notification);
+    }
+  }
+
+  private async Task RemoveCallback()
+  {
+    var result = await DialogService.Confirm($"Delete {ViewModel!.PlannerAdapter.Name}?");
+    if (result is true)
+    {
+      await ViewModel!.Remove();
+    }
+  }
+}
