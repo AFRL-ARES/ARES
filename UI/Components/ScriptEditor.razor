@@ -5,6 +5,7 @@
 <StandaloneCodeEditor CssClass="h-100" @ref="_editor" Id="ares-editor" ConstructionOptions="EditorConstructionOptions" />
 
 @code {
+  private const string DefaultScript = "# Welcome to ARES\ndef main():\n    return True\n";
   private StandaloneCodeEditor _editor;
 
   private IJSObjectReference? _setupModule;
@@ -30,7 +31,20 @@
   [Parameter]
   public IMonacoHoverProvider? HoverProvider { get; set; }
 
+  [Parameter]
+  public string? InitialScript { get; set; }
+
   public Task<string> GetScript() => _editor.GetValue();
+
+  public async Task SetScript(string script)
+  {
+    if(_editor is null)
+    {
+      return;
+    }
+
+    await _editor.SetValue(script ?? string.Empty);
+  }
 
   protected override async Task OnAfterRenderAsync(bool firstRender)
   {
@@ -129,13 +143,14 @@
 
   private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
   {
+    var initialScript = string.IsNullOrWhiteSpace(InitialScript) ? DefaultScript : InitialScript;
+
     return new StandaloneEditorConstructionOptions
     {
       Language = "ares",
       AutomaticLayout = true,
       SemanticHighlightingEnabled = true,
-      Value = "# Welcome to ARES\ndef main():\n    return True\n"
+      Value = initialScript
     };
   }
 }
-
