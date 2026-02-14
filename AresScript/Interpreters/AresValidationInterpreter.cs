@@ -121,7 +121,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       {
         foreach(var parameter in _pendingFunctionParameters.Peek())
         {
-          _environment.AssignVariable(parameter, AresValueHelper.CreateNull());
+          _environment.AssignVariable(parameter, CreateUnknownValue());
         }
       }
 
@@ -461,7 +461,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       foreach(var parameter in parameterNames)
       {
-        _environment.AssignVariable(parameter, AresValueHelper.CreateNull());
+        _environment.AssignVariable(parameter, CreateUnknownValue());
       }
 
       await Visit(body);
@@ -495,6 +495,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
   {
     var ctxExpr = context.expression();
     var id = context.ID().GetText();
+    var receiverSchema = _typeInference.Visit(ctxExpr);
     if(!TryResolveValue(ctxExpr, out var value))
     {
       throw new AresInterpreterException(
@@ -511,6 +512,11 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
         context.Start.Line,
         context.Start.Column + 1
       );
+    }
+
+    if(receiverSchema.Type is AresDataType.Any or AresDataType.UnspecifiedType)
+    {
+      return Task.CompletedTask;
     }
 
     if(value.KindCase == AresValue.KindOneofCase.StructValue)
@@ -531,6 +537,12 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       context.Start.Line,
       context.Stop.Column + 1
     );
+  }
+
+  private static AresValue CreateUnknownValue()
+  {
+    // A value with no active oneof kind maps to UnspecifiedType in schema inference.
+    return new AresValue();
   }
 
   public override async Task VisitFunctionCall(AresLangParser.FunctionCallContext ctx)
@@ -1028,11 +1040,28 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       case AresLangParser.FunctionCallContext functionCallContext:
         {
           var funcId = TryResolveFunctionId(functionCallContext.expression());
-          if(funcId is not null && _environment.TryGetSystemFunction(funcId, out var systemFunction))
+          if(funcId is null)
+          {
+            break;
+          }
+
+          if(_environment.TryGetValue(funcId, out var aliasValue) && aliasValue.FunctionValue is not null)
+          {
+            funcId = aliasValue.FunctionValue.FunctionId;
+          }
+
+          if(_environment.TryGetSystemFunction(funcId, out var systemFunction))
           {
             var schema = systemFunction.OutputSchema;
             var dummyValue = InterpreterHelpers.CreateDummyValue(schema);
             return dummyValue;
+          }
+
+          if(_environment.TryGetUserFunction(funcId, out var _) || _environment.TryGetUserLambda(funcId, out var _))
+          {
+            // We cannot know user-function return shape statically in this pass, but assignment target
+            // should still be introduced into scope for subsequent validation.
+            return CreateUnknownValue();
           }
           break;
         }

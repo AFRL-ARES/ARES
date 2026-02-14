@@ -219,6 +219,31 @@ public class InterpreterTests
   }
 
   [Test]
+  public async Task Validation_AllowsMemberAccess_OnUnknownFunctionParameter()
+  {
+    var script = """
+      def meme(bepis):
+        bepis.GetTemperature()
+      """;
+
+    await ValidateScriptAsync(script);
+  }
+
+  [Test]
+  public async Task Validation_AssignsVariable_FromUserFunctionCall()
+  {
+    var script = """
+      def main():
+        return 1
+
+      bepis = main()
+      assert bepis == 1
+      """;
+
+    await ValidateScriptAsync(script);
+  }
+
+  [Test]
   public async Task Range_OneArg_GeneratesCorrectSequence()
   {
     var script = """
