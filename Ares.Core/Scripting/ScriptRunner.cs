@@ -13,11 +13,13 @@ namespace Ares.Core.Scripting;
 public class ScriptRunner
 {
   private readonly ISubject<string> _outputSubject = new Subject<string>();
+  private readonly ISubject<AresFunctionInvocation> _invocationSubject = Subject.Synchronize(new Subject<AresFunctionInvocation>());
   private readonly AresScriptEnvironment _initialEnvironment;
 
   public ScriptRunner(AresScriptEnvironment? initialEnvironment = null)
   {
     ScriptOutput = _outputSubject.AsObservable();
+    ScriptInvocations = _invocationSubject.AsObservable();
     Print = new AresSystemFunction("print", "print", (args, _) =>
     {
       var stringy = args.Select(v => v.Stringify());
@@ -55,7 +57,7 @@ public class ScriptRunner
     env.EnterSystemScope("SandboxRunner");
     env.AssignSystemFunctions(Print);
     env.AssignExtensionFunctions(StandardLibrary.ExtensionFunctions);
-    var visitor = new AresBaseInterpreter(env, executionControlToken);
+    var visitor = new AresBaseInterpreter(env, executionControlToken, invocation => _invocationSubject.OnNext(invocation));
 
     await visitor.Visit(programCtx);
   }
@@ -63,4 +65,5 @@ public class ScriptRunner
   private AresSystemFunction Print { get; }
 
   public IObservable<string> ScriptOutput { get; }
+  public IObservable<AresFunctionInvocation> ScriptInvocations { get; }
 }

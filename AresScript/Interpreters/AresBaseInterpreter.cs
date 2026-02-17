@@ -14,29 +14,39 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 {
   protected readonly AresScriptEnvironment Environment;
   private readonly ScriptExecutionControlToken _executionControlToken;
+  private readonly Action<AresFunctionInvocation>? _functionInvocationObserver;
   private int _lvalueResolutionDepth;
 
   protected override Task<AresValue> DefaultResult => Task.FromResult(AresValueHelper.CreateUnit());
 
   public AresBaseInterpreter(CancellationToken cancellationToken = default)
-    : this(new AresScriptEnvironment(), new ScriptExecutionControlToken(cancellationToken))
+    : this(new AresScriptEnvironment(), new ScriptExecutionControlToken(cancellationToken), null)
   {
   }
 
   public AresBaseInterpreter(AresScriptEnvironment aresScriptEnvironment, CancellationToken cancellationToken = default)
-    : this(aresScriptEnvironment, new ScriptExecutionControlToken(cancellationToken))
+    : this(aresScriptEnvironment, new ScriptExecutionControlToken(cancellationToken), null)
   {
   }
 
   public AresBaseInterpreter(ScriptExecutionControlToken executionControlToken = default)
-    : this(new AresScriptEnvironment(), executionControlToken)
+    : this(new AresScriptEnvironment(), executionControlToken, null)
   {
   }
 
   public AresBaseInterpreter(AresScriptEnvironment aresScriptEnvironment, ScriptExecutionControlToken executionControlToken)
+    : this(aresScriptEnvironment, executionControlToken, null)
+  {
+  }
+
+  public AresBaseInterpreter(
+    AresScriptEnvironment aresScriptEnvironment,
+    ScriptExecutionControlToken executionControlToken,
+    Action<AresFunctionInvocation>? functionInvocationObserver)
   {
     Environment = aresScriptEnvironment ?? throw new ArgumentNullException(nameof(aresScriptEnvironment));
     _executionControlToken = executionControlToken;
+    _functionInvocationObserver = functionInvocationObserver;
   }
 
   private async Task CheckExecutionControlAsync()
@@ -772,7 +782,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
       }
     }
 
-    var memberResolution = await TryResolveMemberCallee(ctx.expression(), positionalArgs, keywordArgs);
+    var memberResolution = await TryResolveMemberCallee(ctx, ctx.expression(), positionalArgs, keywordArgs);
     if(memberResolution.ExtensionHandled)
     {
       return memberResolution.ExtensionResult!;
@@ -792,6 +802,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
         throw new AresInterpreterException($"Runtime function '{id}' does not support keyword arguments");
       }
 
+      RecordFunctionInvocation(aresFn.Id, aresFn.Name, ctx, AresFunctionInvocationKind.System);
       await CheckExecutionControlAsync();
       return await aresFn.Body(positionalArgs, _executionControlToken);
     }
@@ -803,6 +814,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
         throw new AresInterpreterException($"Function '{id}' not found");
       }
 
+      RecordFunctionInvocation(id, id, ctx, AresFunctionInvocationKind.Lambda);
       return await ExecuteLambda(userLambda, id, positionalArgs, keywordArgs);
     }
     
@@ -851,6 +863,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
         }
       }
 
+      RecordFunctionInvocation(userFn.Name, userFn.Name, ctx, AresFunctionInvocationKind.User);
       var result = await Visit(userFn.Body);
 
       return result;
@@ -874,6 +887,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
   }
 
   private async Task<(AresValue? Callee, bool ExtensionHandled, AresValue? ExtensionResult)> TryResolveMemberCallee(
+    AresLangParser.FunctionCallContext functionCallContext,
     AresLangParser.ExpressionContext expression,
     List<AresValue> positionalArgs,
     IReadOnlyDictionary<string, AresValue> keywordArgs)
@@ -901,9 +915,25 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     }
 
     positionalArgs.Insert(0, receiver);
+    RecordFunctionInvocation(extensionFunc.Id, extensionFunc.Name, functionCallContext, AresFunctionInvocationKind.Extension);
     await CheckExecutionControlAsync();
     var result = await extensionFunc.Body(positionalArgs, _executionControlToken);
     return (null, true, result);
+  }
+
+  private void RecordFunctionInvocation(
+    string functionId,
+    string functionName,
+    AresLangParser.FunctionCallContext context,
+    AresFunctionInvocationKind kind)
+  {
+    _functionInvocationObserver?.Invoke(new AresFunctionInvocation(
+      functionId,
+      functionName,
+      context.GetText(),
+      context.Start.Line,
+      context.Start.Column + 1,
+      kind));
   }
 
   private async Task<AresValue> ExecuteLambda(
