@@ -5,6 +5,7 @@ using Ares.Datamodel;
 using Ares.Datamodel.Device;
 using Ares.Datamodel.Device.Remote;
 using Ares.Datamodel.Extensions;
+using Ares.Datamodel.Templates;
 using Ares.Device;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
@@ -184,13 +185,13 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     return client.EnterSafeModeAsync(new Empty()).ResponseAsync;
   }
 
-  public async override Task<CommandResult> ExecuteCommand(string command, AresStruct arguments, CancellationToken token)
+  public async override Task<CommandResult> ExecuteCommand(string command, List<Parameter> arguments, CancellationToken token)
   {
     var client = GetClient();
     var executionRequest = new ExecuteCommandRequest { CommandName = command, Arguments = new AresStruct() };
-    foreach(var argument in arguments.Fields)
+    foreach(var argument in arguments)
     {
-      executionRequest.Arguments.Fields[argument.Key] = argument.Value;
+      executionRequest.Arguments.Fields[argument.Metadata.Name] = argument.Value;
     }
 
     var executionResult = await client.ExecuteCommandAsync(executionRequest, cancellationToken: token);

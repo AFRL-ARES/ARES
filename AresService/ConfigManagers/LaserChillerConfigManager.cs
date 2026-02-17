@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AresService.ConfigManagers;
 
-public class LaserChillerConfigManager : DeviceConfigManagerBase<ChillerConfig, ILaserChiller>
+public class LaserChillerConfigManager : DeviceConfigManager<ChillerConfig, ILaserChiller>
 {
   public LaserChillerConfigManager(IDbContextFactory<CoreDatabaseContext> dbContextFactory) : base(dbContextFactory)
   {

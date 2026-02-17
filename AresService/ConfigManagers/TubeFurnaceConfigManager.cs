@@ -6,7 +6,7 @@ using TubeFurnace.Config;
 
 namespace AresService.ConfigManagers
 {
-  public class TubeFurnaceConfigManager : DeviceConfigManagerBase<TubeFurnaceConfig, ITubeFurnace>
+  public class TubeFurnaceConfigManager : DeviceConfigManager<TubeFurnaceConfig, ITubeFurnace>
   {
     public TubeFurnaceConfigManager(IDbContextFactory<CoreDatabaseContext> dbContextFactory)
       : base(dbContextFactory)

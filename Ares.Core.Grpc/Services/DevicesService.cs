@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Ares.Core.Device;
 using Ares.Core.Device.Managers;
 using Ares.Core.Device.Remote;
 using Ares.Core.Device.Repos;
@@ -25,6 +26,7 @@ public class DevicesService(
   IAresDeviceRepo aresDeviceRepo,
   IDeviceDriverRepo deviceDriverRepo,
   IDeviceManager deviceManager,
+  IDeviceConfigManager deviceConfigManager,
   IDbContextFactory<CoreDatabaseContext> contextFactory,
   IRemoteDeviceManager remoteDeviceManager,
   ILogger<DevicesService> logger,
@@ -145,7 +147,7 @@ public class DevicesService(
     await using var dbContext = contextFactory.CreateDbContext();
     var configQuery = dbContext.DeviceConfigs.AsQueryable();
     if(!string.IsNullOrEmpty(request.DeviceType))
-      configQuery = configQuery.Where(config => config.DeviceType == request.DeviceType);
+      configQuery = configQuery.Where(config => config.DriverName == request.DeviceType);
 
     var configs = await configQuery.ToArrayAsync();
     var response = new DeviceConfigResponse();
@@ -355,38 +357,26 @@ public class DevicesService(
     return Task.FromResult(response);
   }
 
-  public override Task<Empty> GetDeviceConfig(GetDeviceConfigRequest request, ServerCallContext context)
+  public override Task<DeviceConfigResponse> GetDeviceConfig(GetDeviceConfigRequest request, ServerCallContext context)
   {
-    var matchingDriver = deviceDriverRepo.GetByName(request.RequestDriver);
+    //TODO: Maybe utilize the SHA's of the DLL's instead of names?
+    var matchingDriver = deviceDriverRepo.GetByName(request.DriverName);
 
     throw new NotImplementedException("IMPLEMENT THIS IN THE DEVICES SERVICE!");
   }
 
-  public override Task<AddDeviceResponse> AddDevice(AddDeviceRequest request, ServerCallContext context)
+  public override async Task<AddDeviceResponse> AddAresDevice(AddDeviceRequest request, ServerCallContext context)
   {
     try
     {
-      var device = deviceManager.Create(request.DeviceName, request.IsSimulated, request.DeviceSettings);
-      return Task.FromResult(new AddDeviceResponse() { Success = true });
+      var device = await deviceManager.Create(request.DeviceConfig);
+      await deviceConfigManager.Add(device.UniqueId, device.Name, request.DeviceConfig);
+      return new AddDeviceResponse() { Success = true };
     }
 
     catch(Exception ex)
     {
-      return Task.FromResult(new AddDeviceResponse() { Success = false, ErrorMessage = $"Failed to add new device! Message: {ex.Message}"});
-    }
-  }
-
-  public override Task<AddDeviceResponse> AddSerialDevice(AddSerialDeviceRequest request, ServerCallContext context)
-  {
-    throw new NotImplementedException();
-    try
-    {
-      //grief
-    }
-
-    catch(Exception ex)
-    {
-
+      return new AddDeviceResponse() { Success = false, ErrorMessage = $"Failed to add new device! Message: {ex.Message}"};
     }
   }
 

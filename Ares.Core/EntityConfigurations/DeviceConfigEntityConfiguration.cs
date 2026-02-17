@@ -11,12 +11,5 @@ internal class DeviceConfigEntityConfiguration : AresEntityTypeBaseConfiguration
   {
     base.Configure(builder);
     builder.ToTable("DeviceConfigs");
-
-    builder.Navigation(config => config.ConfigData).AutoInclude();
-
-    builder.HasOne(config => config.ConfigData)
-      .WithOne()
-      .HasForeignKey<Any>("DeviceConfigId")
-      .OnDelete(DeleteBehavior.ClientCascade);
   }
 }

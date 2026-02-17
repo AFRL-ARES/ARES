@@ -1,11 +1,11 @@
-﻿using Ares.Datamodel;
+﻿using Ares.Datamodel.Device;
 using Ares.Device;
 
 namespace Ares.Core.Device.Managers;
 
 public interface IDeviceManager
 {
-  Task<IAresDevice> Create(string name, bool isSimulated, AresStruct settings);
+  Task<IAresDevice> Create(DeviceConfig config);
   Task<IAresDevice> Load(string deviceId, DeviceConfig config);
   Task<IAresDevice[]> Load(IEnumerable<DeviceConfig> configs);
   Task<IAresDevice> Update(string deviceId, DeviceConfig config);

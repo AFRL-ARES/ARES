@@ -1,5 +1,3 @@
-using Ares.Device;
-
 namespace Ares.Core.Device.Repos;
 
 public interface IDeviceDriverRepo

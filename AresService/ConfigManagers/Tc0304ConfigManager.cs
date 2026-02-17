@@ -6,7 +6,7 @@ using Tc0304.Config;
 
 namespace AresService.ConfigManagers;
 
-public class Tc0304ConfigManager : DeviceConfigManagerBase<Tc0304Config, IDataloggerThermometer>
+public class Tc0304ConfigManager : DeviceConfigManager<Tc0304Config, IDataloggerThermometer>
 {
   public Tc0304ConfigManager(IDbContextFactory<CoreDatabaseContext> dbContextFactory) : base(dbContextFactory)
   {

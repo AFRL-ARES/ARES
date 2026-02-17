@@ -22,7 +22,7 @@ public interface IAresDevice : IDisposable
   Task<bool> Activate(CancellationToken ct = default);
   Task EnterSafeMode(CancellationToken ct = default);
   Task<AresStruct> GetState();
-  List<DeviceCommandDescriptor> CommandDescriptors { get; }
+  IEnumerable<DeviceCommandDescriptor> CommandDescriptors { get; }
   AresDataSchema StateSchema { get; }
   AresDataSchema SettingSchema { get; }
   Task<CommandResult> ExecuteCommand(string command, List<Parameter> parameters, CancellationToken ct);

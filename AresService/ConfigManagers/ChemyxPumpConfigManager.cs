@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AresService.ConfigManagers;
 
-public class ChemyxPumpConfigManager : DeviceConfigManagerBase<ChemyxPumpConfig, IChemyxPump>
+public class ChemyxPumpConfigManager : DeviceConfigManager<ChemyxPumpConfig, IChemyxPump>
 {
   public ChemyxPumpConfigManager(IDbContextFactory<CoreDatabaseContext> dbContextFactory) : base(dbContextFactory)
   {

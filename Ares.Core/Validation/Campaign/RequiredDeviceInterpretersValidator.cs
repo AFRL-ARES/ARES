@@ -7,10 +7,10 @@ namespace Ares.Core.Validation.Campaign;
 
 internal class RequiredDeviceInterpretersValidator : ICampaignValidator
 {
-  private readonly IDeviceCommandInterpreterRepo _deviceCommandInterpreterRepo;
-  public RequiredDeviceInterpretersValidator(IDeviceCommandInterpreterRepo deviceCommandInterpreterRepo)
+  private readonly IAresDeviceRepo _deviceRepo;
+  public RequiredDeviceInterpretersValidator(IAresDeviceRepo deviceRepo)
   {
-    _deviceCommandInterpreterRepo = deviceCommandInterpreterRepo;
+    _deviceRepo = deviceRepo;
   }
 
   public Task<ValidationResult> Validate(CampaignTemplate template)
@@ -19,14 +19,14 @@ internal class RequiredDeviceInterpretersValidator : ICampaignValidator
         stepTemp.CommandTemplates.Select(cmdTemp => cmdTemp.Metadata.DeviceId)).Distinct().ToArray();
 
     var existingRequiredDevices = requiredDeviceIds
-      .Select(_deviceCommandInterpreterRepo.GetAresDevice)
+      .Select(_deviceRepo.GetAresDevice)
       .ToArray();
 
     var missingDeviceIds = requiredDeviceIds
-      .Except(existingRequiredDevices.Select(device => device.UniqueId)).ToArray();
+      .Except(existingRequiredDevices.Select(device => device?.UniqueId)).ToArray();
 
     var offlineDevices = existingRequiredDevices
-      .Where(device => device.Status.OperationalState != OperationalState.Active).ToArray();
+      .Where(device => device?.Status.OperationalState != OperationalState.Active).ToArray();
 
     var success = !missingDeviceIds.Any() && !offlineDevices.Any();
     var errorMessages = new List<string>();

@@ -35,9 +35,9 @@ public abstract class AresDevice : IAresDevice
   
   }
 
-  #region Metadata & Discovery (New)
+  #region Metadata & Discovery
 
-  public virtual IReadOnlyList<DeviceCommandDescriptor> CommandDescriptors { get; protected set; } = Array.Empty<DeviceCommandDescriptor>();
+  public virtual IEnumerable<DeviceCommandDescriptor> CommandDescriptors { get; protected set; } = Array.Empty<DeviceCommandDescriptor>();
   public virtual AresDataSchema StateSchema { get; protected set; } = new();
   public virtual AresDataSchema SettingSchema { get; protected set; } = new();
 
@@ -63,7 +63,6 @@ public abstract class AresDevice : IAresDevice
 
   public IObservable<DeviceOperationalStatus> StatusObservable => _statusSubject.AsObservable();
   public abstract IObservable<AresStruct> StateStream { get; }
-
   public abstract Task<bool> Activate(CancellationToken ct);
   public abstract Task EnterSafeMode(CancellationToken ct);
   public abstract Task<AresStruct> GetState();

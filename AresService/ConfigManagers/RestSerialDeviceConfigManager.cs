@@ -6,7 +6,7 @@ using RestSerialDevice.Config;
 
 namespace AresService.ConfigManagers;
 
-public class RestSerialDeviceConfigManager : DeviceConfigManagerBase<RestSerialConfig, ISerialRestDevice>
+public class RestSerialDeviceConfigManager : DeviceConfigManager<RestSerialConfig, ISerialRestDevice>
 {
   public RestSerialDeviceConfigManager(IDbContextFactory<CoreDatabaseContext> dbContextFactory) : base(dbContextFactory)
   {

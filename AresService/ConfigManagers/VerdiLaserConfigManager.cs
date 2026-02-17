@@ -6,7 +6,7 @@ using VerdiV6Laser;
 
 namespace AresService.ConfigManagers
 {
-  public class VerdiLaserConfigManager : DeviceConfigManagerBase<VerdiConfig, IVerdiV6Laser>
+  public class VerdiLaserConfigManager : DeviceConfigManager<VerdiConfig, IVerdiV6Laser>
   {
     public VerdiLaserConfigManager(IDbContextFactory<CoreDatabaseContext> dbContextFactory) : base(dbContextFactory)
     {

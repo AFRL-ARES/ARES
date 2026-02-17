@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AresService.ConfigManagers;
 
-public class MfcConfigManager : DeviceConfigManagerBase<MfcConfig, IMassFlowController>
+public class MfcConfigManager : DeviceConfigManager<MfcConfig, IMassFlowController>
 {
   public MfcConfigManager(IDbContextFactory<CoreDatabaseContext> dbContextFactory) : base(dbContextFactory)
   {

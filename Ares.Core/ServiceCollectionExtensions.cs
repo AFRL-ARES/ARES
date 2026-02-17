@@ -46,7 +46,6 @@ public static class ServiceCollectionExtensions
     services.AddTransient<ICampaignValidator, AllPlannersAssignedCampaignValidator>();
     services.AddTransient<ICampaignValidator, GoodAnalyzerCampaignValidator>();
     services.AddTransient<ICampaignValidator, RequiredDeviceInterpretersValidator>();
-    services.AddSingleton<IDeviceCommandInterpreterRepo, DeviceCommandInterpreterRepo>();
     services.AddSingleton<IDeviceDriverRepo, DeviceDriverRepo>();
     services.AddSingleton<IDeviceDriverLoader, DeviceDriverLoader>();
     services.AddSingleton<IAresDeviceRepo, AresDeviceRepo>();
@@ -62,7 +61,6 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<PlannerServiceRepo>();
     services.AddSingleton<AnalysisHelper>();
     services.AddSingleton<IDesiredAnalysisResultFactory, DesiredAnalysisResultFactory>();
-    services.AddSingleton<DeviceIdHelper>();
     services.AddSingleton<INotifier, Notifier>();
 
     services.BindComposers();

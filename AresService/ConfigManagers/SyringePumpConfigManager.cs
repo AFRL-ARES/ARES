@@ -6,7 +6,7 @@ using SyringePumpNE1000;
 
 namespace AresService.ConfigManagers;
 
-public class SyringePumpConfigManager : DeviceConfigManagerBase<SyringePumpConfig, ISyringePump>
+public class SyringePumpConfigManager : DeviceConfigManager<SyringePumpConfig, ISyringePump>
 {
   public SyringePumpConfigManager(IDbContextFactory<CoreDatabaseContext> dbContextFactory) : base(dbContextFactory)
   {

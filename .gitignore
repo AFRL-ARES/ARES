@@ -371,3 +371,17 @@ FodyWeavers.xsd
 
 .DS_store
 Data/
+UI/wwwroot/js/monaco/ares-autocomplete-setup.js
+UI/wwwroot/js/monaco/ares-autocomplete-setup.js.map
+UI/wwwroot/js/monaco/ares-diagnostics-setup.js
+UI/wwwroot/js/monaco/ares-diagnostics-setup.js.map
+UI/wwwroot/js/monaco/ares-hover-setup.js
+UI/wwwroot/js/monaco/ares-hover-setup.js.map
+UI/wwwroot/js/monaco/areslang.language-configuration.js
+UI/wwwroot/js/monaco/areslang.language-configuration.js.map
+UI/wwwroot/js/monaco/areslang.monarch.js
+UI/wwwroot/js/monaco/areslang.monarch.js.map
+UI/wwwroot/js/monaco/ares-semantic-setup.js
+UI/wwwroot/js/monaco/ares-semantic-setup.js.map
+UI/wwwroot/js/monaco/ares-setup.js
+UI/wwwroot/js/monaco/ares-setup.js.map

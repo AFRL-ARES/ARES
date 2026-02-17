@@ -1,5 +1,5 @@
 using Ares.Core.Device.Repos;
-using Ares.Datamodel;
+using Ares.Datamodel.Device;
 using Ares.Device;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -39,8 +39,6 @@ public class DeviceManager : IDeviceManager
       throw new InvalidOperationException($"Driver '{config.DriverName}' not found.");
     }
 
-    var aresSettings = MapToAresStruct(config.Settings);
-
     // Create a logger for the specific device type
     var loggerType = typeof(ILogger<>).MakeGenericType(driver.DriverType);
     var logger = _loggerFactory.CreateLogger(driver.DriverType);
@@ -48,8 +46,8 @@ public class DeviceManager : IDeviceManager
     // Instantiate with: string (name), AresStruct (config), and ILogger
     // Using explicit arguments to match the requested constructor pattern
     var device = (IAresDevice)ActivatorUtilities.CreateInstance(_serviceProvider, driver.DriverType, 
-      config.Name, 
-      aresSettings,
+      config.DeviceName, 
+      config.DriverSettings,
       logger);
     
     _deviceRepo.Add(device);
@@ -92,44 +90,5 @@ public class DeviceManager : IDeviceManager
   {
     await Remove(deviceId);
     return await Load(deviceId, config);
-  }
-
-  private AresStruct MapToAresStruct(Dictionary<string, object> settings)
-  {
-    var aresStruct = new AresStruct();
-    if(settings == null) return aresStruct;
-
-    foreach(var kvp in settings)
-    {
-      var aresValue = new AresValue();
-      if(kvp.Value == null)
-      {
-        aresValue.NullValue = 0; // Assuming 0 for NullValue enum
-      }
-      else if(kvp.Value is string s)
-      {
-        aresValue.StringValue = s;
-      }
-      else if(kvp.Value is bool b)
-      {
-        aresValue.BoolValue = b;
-      }
-      else if(kvp.Value is double d)
-      {
-        aresValue.NumberValue = d;
-      }
-      else if(kvp.Value is int i)
-      {
-        aresValue.NumberValue = i;
-      }
-      else if(kvp.Value is float f)
-      {
-        aresValue.NumberValue = f;
-      }
-      // Add other types if needed
-
-      aresStruct.Fields[kvp.Key] = aresValue;
-    }
-    return aresStruct;
   }
 }

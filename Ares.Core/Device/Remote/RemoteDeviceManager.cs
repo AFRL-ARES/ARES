@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Ares.Core.Device.Remote;
 internal class RemoteDeviceManager(
-  IDeviceCommandInterpreterRepo _deviceCommandInterpreters,
+  IAresDeviceRepo _deviceRepo,
   IDeviceCache _deviceCache,
   INotificationHandler _notificationHandler,
   IDbContextFactory<CoreDatabaseContext> _dbContextFactory,
@@ -21,8 +21,8 @@ internal class RemoteDeviceManager(
   {
     var config = new RemoteDeviceConfig { UniqueId = Guid.NewGuid().ToString(), Name = name, Url = url };
     var device = ConfigToDevice(config);
+    _deviceRepo.Add(device);
 
-    _deviceCommandInterpreters.Add(new RemoteDeviceCommandInterpreter(device));
     var monitor = new RemoteDeviceMonitor(device, _deviceCache, _loggerFactory.CreateLogger<RemoteDeviceMonitor>());
     _deviceMonitors.Add(monitor);
 
@@ -63,8 +63,7 @@ internal class RemoteDeviceManager(
     var nonNullDevices = devices.OfType<RemoteDevice>().ToArray();
     foreach(var device in nonNullDevices)
     {
-      _deviceCommandInterpreters.Add(new RemoteDeviceCommandInterpreter(device));
-
+      _deviceRepo.Add(device);
       var monitor = new RemoteDeviceMonitor(device, _deviceCache, _loggerFactory.CreateLogger<RemoteDeviceMonitor>());
       _deviceMonitors.Add(monitor);
 
@@ -81,10 +80,10 @@ internal class RemoteDeviceManager(
       return false;
     }
 
+    _deviceRepo.Remove(deviceId);
     ctx.Remove(device);
     await ctx.SaveChangesAsync();
 
-    _deviceCommandInterpreters.Remove(deviceId);
     var monitor = _deviceMonitors.First(m => m.DeviceId == deviceId);
     monitor.Dispose();
     _deviceMonitors.Remove(monitor);
@@ -107,7 +106,6 @@ internal class RemoteDeviceManager(
     deviceCfg.Url = config.Url;
     await ctx.SaveChangesAsync();
 
-    _deviceCommandInterpreters.Remove(deviceCfg.UniqueId);
     var monitor = _deviceMonitors.First(m => m.DeviceId == deviceCfg.UniqueId);
     monitor.Dispose();
     _deviceMonitors.Remove(monitor);
@@ -119,29 +117,23 @@ internal class RemoteDeviceManager(
       return;
     }
 
+    _deviceRepo.Remove(config.UniqueId);
+    _deviceRepo.Add(device);
     await _stateLoggerManager.SetupLogger(device);
 
     monitor = new RemoteDeviceMonitor(device, _deviceCache, _loggerFactory.CreateLogger<RemoteDeviceMonitor>());
     _deviceMonitors.Add(monitor);
-    _deviceCommandInterpreters.Add(new RemoteDeviceCommandInterpreter(device));
-
-
   }
 
-  public Task UpdateDeviceSettings(DeviceSettings deviceSettings)
+  public async Task UpdateDeviceSettings(DeviceSettings deviceSettings)
   {
-    var aresDevice = _deviceCommandInterpreters.GetAresDevice(deviceSettings.DeviceId);
-    if(aresDevice is not RemoteDevice device)
-    {
-      return Task.CompletedTask;
-    }
+    var remoteDevice = _deviceRepo.OfType<RemoteDevice>().FirstOrDefault(d => d.UniqueId == deviceSettings.DeviceId);
+    if(remoteDevice is null)
+      return;
+    
 
-    device.UpdateSettings(deviceSettings.Settings);
-
-    if(device is not RemoteDevice remoteDevice)
-      return Task.CompletedTask;
-
-    return _deviceCache.CacheDeviceSettings(remoteDevice);
+    await remoteDevice.UpdateSettings(deviceSettings.Settings);
+    await _deviceCache.CacheDeviceSettings(remoteDevice);
   }
 
   private async Task<RemoteDevice?> LoadExistingDevice(RemoteDeviceConfig config)

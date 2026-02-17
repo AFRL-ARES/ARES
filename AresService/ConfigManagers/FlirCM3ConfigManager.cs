@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AresService.ConfigManagers;
 
-public class FlirCM3ConfigManager : DeviceConfigManagerBase<FlirCM3Config, IFlirCM3Camera>
+public class FlirCM3ConfigManager : DeviceConfigManager<FlirCM3Config, IFlirCM3Camera>
 {
   public FlirCM3ConfigManager(IDbContextFactory<CoreDatabaseContext> dbContextFactory) : base(dbContextFactory)
   {

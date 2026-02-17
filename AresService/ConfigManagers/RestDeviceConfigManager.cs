@@ -6,7 +6,7 @@ using RestDevice.Config;
 
 namespace AresService.ConfigManagers;
 
-public class RestDeviceConfigManager : DeviceConfigManagerBase<RestDeviceConfig, IRestDevice>
+public class RestDeviceConfigManager : DeviceConfigManager<RestDeviceConfig, IRestDevice>
 {
   public RestDeviceConfigManager(IDbContextFactory<CoreDatabaseContext> dbContextFactory) : base(dbContextFactory)
   {

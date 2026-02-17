@@ -1,10 +1,10 @@
-﻿using Google.Protobuf;
+﻿using Ares.Datamodel.Device;
 
 namespace Ares.Core.Device;
 
-public interface IDeviceConfigManager<in TConfig> where TConfig : IMessage, new()
+public interface IDeviceConfigManager
 {
-  Task Add(string configId, string name, TConfig config);
+  Task Add(string deviceId, string deviceName, DeviceConfig config); 
   Task Remove(string configId);
-  Task Update(string configId, TConfig config);
+  Task Update(string configId, DeviceConfig config);
 }

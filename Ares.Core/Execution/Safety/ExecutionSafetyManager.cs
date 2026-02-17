@@ -4,16 +4,16 @@ namespace Ares.Core.Execution.Safety;
 
 public class ExecutionSafetyManager : IExecutionSafetyManager
 {
-  private readonly IDeviceCommandInterpreterRepo _deviceCommandInterpreterRepo;
+  private readonly IAresDeviceRepo _deviceRepo;
   
-  public ExecutionSafetyManager(IDeviceCommandInterpreterRepo deviceCommandInterpreterRepo)
+  public ExecutionSafetyManager(IAresDeviceRepo deviceRepo)
   {
-    _deviceCommandInterpreterRepo = deviceCommandInterpreterRepo;
+    _deviceRepo = deviceRepo;
   }
 
   public async Task EnterSafeMode()
   {
-    foreach(var device in _deviceCommandInterpreterRepo.GetAresDevices())
+    foreach(var device in _deviceRepo)
     {
       await device.EnterSafeMode();
     }
