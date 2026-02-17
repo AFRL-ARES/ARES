@@ -44,15 +44,17 @@ public class InterpreterTests
   private static Task RunScriptAsync(
     string script,
     CancellationToken cancellationToken = default,
-    Action<AresFunctionInvocation>? invocationObserver = null)
+    Action<AresFunctionInvocation>? invocationObserver = null,
+    Action<AresFunctionExecutionEvent>? executionEventObserver = null)
   {
-    return RunScriptAsync(script, new ScriptExecutionControlToken(cancellationToken), invocationObserver);
+    return RunScriptAsync(script, new ScriptExecutionControlToken(cancellationToken), invocationObserver, executionEventObserver);
   }
 
   private static async Task RunScriptAsync(
     string script,
     ScriptExecutionControlToken executionControlToken,
-    Action<AresFunctionInvocation>? invocationObserver = null)
+    Action<AresFunctionInvocation>? invocationObserver = null,
+    Action<AresFunctionExecutionEvent>? executionEventObserver = null)
   {
     var stream = new AntlrInputStream(script);
     var lexer = new AresIndentationLexer(stream);
@@ -66,7 +68,7 @@ public class InterpreterTests
     var env = new AresScriptEnvironment();
     env.AssignSystemFunctions(StandardLibrary.Functions);
     env.AssignExtensionFunctions(StandardLibrary.ExtensionFunctions);
-    var visitor = new AresBaseInterpreter(env, executionControlToken, invocationObserver);
+    var visitor = new AresBaseInterpreter(env, executionControlToken, invocationObserver, executionEventObserver);
 
     await visitor.Visit(programCtx);
   }
@@ -108,7 +110,14 @@ public class InterpreterTests
     return invocations.ToArray();
   }
 
-  private static async Task<ScriptSummaryStep[]> BuildScriptSummaryAsync(
+  private static async Task<AresFunctionExecutionEvent[]> RunAndCollectRuntimeExecutionEventsAsync(string script)
+  {
+    var events = new List<AresFunctionExecutionEvent>();
+    await RunScriptAsync(script, executionEventObserver: events.Add);
+    return events.ToArray();
+  }
+
+  private static async Task<ScriptFunctionInvocation[]> BuildScriptSummaryAsync(
     string script,
     bool includeUserFunctions = false,
     bool includeLambdas = false)
@@ -563,6 +572,44 @@ public class InterpreterTests
     Assert.That(invocations[0].Kind, Is.EqualTo(AresFunctionInvocationKind.Lambda));
     Assert.That(invocations[0].FunctionId, Does.StartWith("lambda::"));
     Assert.That(invocations[0].Expression, Is.EqualTo("inc(2)"));
+  }
+
+  [Test]
+  public async Task Runtime_Function_Execution_Events_Include_Started_And_Completed()
+  {
+    var script = """
+      values = range(3)
+      """;
+
+    var events = await RunAndCollectRuntimeExecutionEventsAsync(script);
+    Assert.That(events.Select(e => e.Kind), Is.EqualTo(new[]
+    {
+      AresFunctionExecutionEventKind.Started,
+      AresFunctionExecutionEventKind.Completed
+    }));
+    Assert.That(events[0].Invocation.FunctionId, Is.EqualTo("range"));
+    Assert.That(events[1].CallId, Is.EqualTo(events[0].CallId));
+    Assert.That(events[1].Result, Is.Not.Null);
+  }
+
+  [Test]
+  public Task Runtime_Function_Execution_Events_Include_Failed()
+  {
+    var script = """
+      nums = [1]
+      nums.append("oops")
+      """;
+
+    var events = new List<AresFunctionExecutionEvent>();
+    Assert.ThrowsAsync<InvalidOperationException>(() => RunScriptAsync(script, executionEventObserver: events.Add));
+    Assert.That(events.Select(e => e.Kind), Is.EqualTo(new[]
+    {
+      AresFunctionExecutionEventKind.Started,
+      AresFunctionExecutionEventKind.Failed
+    }));
+    Assert.That(events[1].CallId, Is.EqualTo(events[0].CallId));
+    Assert.That(events[1].Error, Is.Not.Empty);
+    return Task.CompletedTask;
   }
 
   [Test]

@@ -5,9 +5,9 @@ namespace AresScript.ScriptAnalysis;
 
 public static class AresFunctionInvocationMapper
 {
-  public static ScriptSummaryStep ToScriptSummaryStep(AresFunctionInvocation invocation, int order = 0)
+  public static ScriptFunctionInvocation ToScriptFunctionInvocation(AresFunctionInvocation invocation, int order = 0)
   {
-    return new ScriptSummaryStep
+    return new ScriptFunctionInvocation
     {
       Order = order,
       FunctionId = invocation.FunctionId,

@@ -5,7 +5,7 @@ namespace AresScript.ScriptAnalysis;
 
 public static partial class AresScriptAnalysis
 {
-  public static async Task<(ScriptSummaryStep[] Steps, Diagnostic[] Diagnostics)> BuildScriptSummaryAsync(
+  public static async Task<(ScriptFunctionInvocation[] Steps, Diagnostic[] Diagnostics)> BuildScriptSummaryAsync(
     string? script,
     AresScriptEnvironment environment,
     bool includeUserFunctions = false,
@@ -13,7 +13,7 @@ public static partial class AresScriptAnalysis
     AresValidationInterpreter.ValidationMode mode = AresValidationInterpreter.ValidationMode.Strict)
   {
     var (invocations, diagnostics) = await ValidateAndCollectInvocationsAsync(script, environment, mode);
-    var steps = AresScriptSummaryMapper.MapInvocationsToSummarySteps(
+    var steps = AresScriptSummaryMapper.MapInternalInvocationsToProto(
       invocations,
       includeUserFunctions,
       includeLambdas);

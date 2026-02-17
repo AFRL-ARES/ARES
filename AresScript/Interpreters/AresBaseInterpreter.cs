@@ -2,7 +2,6 @@ using Antlr4.Runtime.Misc;
 using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
 using AresScript.Generated;
-using System.Text.RegularExpressions;
 using Google.Protobuf;
 
 namespace AresScript.Interpreters;
@@ -15,6 +14,9 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
   protected readonly AresScriptEnvironment Environment;
   private readonly ScriptExecutionControlToken _executionControlToken;
   private readonly Action<AresFunctionInvocation>? _functionInvocationObserver;
+  private readonly Action<AresFunctionExecutionEvent>? _functionExecutionEventObserver;
+  private readonly AsyncLocal<Stack<string>> _callStack = new();
+  private long _nextCallId;
   private int _lvalueResolutionDepth;
 
   protected override Task<AresValue> DefaultResult => Task.FromResult(AresValueHelper.CreateUnit());
@@ -43,10 +45,20 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     AresScriptEnvironment aresScriptEnvironment,
     ScriptExecutionControlToken executionControlToken,
     Action<AresFunctionInvocation>? functionInvocationObserver)
+    : this(aresScriptEnvironment, executionControlToken, functionInvocationObserver, null)
+  {
+  }
+
+  public AresBaseInterpreter(
+    AresScriptEnvironment aresScriptEnvironment,
+    ScriptExecutionControlToken executionControlToken,
+    Action<AresFunctionInvocation>? functionInvocationObserver,
+    Action<AresFunctionExecutionEvent>? functionExecutionEventObserver)
   {
     Environment = aresScriptEnvironment ?? throw new ArgumentNullException(nameof(aresScriptEnvironment));
     _executionControlToken = executionControlToken;
     _functionInvocationObserver = functionInvocationObserver;
+    _functionExecutionEventObserver = functionExecutionEventObserver;
   }
 
   private async Task CheckExecutionControlAsync()
@@ -99,7 +111,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
         return e.Value;
       }
     }
-    
+
     return AresValueHelper.CreateUnit();
   }
 
@@ -130,7 +142,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     var expression = context.expression();
     if(expression is null)
       throw new ReturnControlFlowException(AresValueHelper.CreateUnit());
-    
+
     var val = await Visit(context.expression());
     throw new ReturnControlFlowException(val);
   }
@@ -212,66 +224,66 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
       switch(container.KindCase)
       {
         case AresValue.KindOneofCase.BytesValue:
-        {
-          if(!newValue.HasNumberValue)
           {
-            throw new AresInterpreterException(
-              "Assigned value must be numeric for bytes.",
-              context.Start.Line,
-              context.Start.Column
-            );
-          }
+            if(!newValue.HasNumberValue)
+            {
+              throw new AresInterpreterException(
+                "Assigned value must be numeric for bytes.",
+                context.Start.Line,
+                context.Start.Column
+              );
+            }
 
-          var byteValue = newValue.NumberValue;
-          if(byteValue < byte.MinValue || byteValue > byte.MaxValue)
-          {
-            throw new AresInterpreterException(
-              "Assigned byte value is out of range.",
-              context.Start.Line,
-              context.Start.Column
-            );
-          }
+            var byteValue = newValue.NumberValue;
+            if(byteValue < byte.MinValue || byteValue > byte.MaxValue)
+            {
+              throw new AresInterpreterException(
+                "Assigned byte value is out of range.",
+                context.Start.Line,
+                context.Start.Column
+              );
+            }
 
-          var bytes = container.BytesValue.ToByteArray();
-          bytes[index] = (byte)byteValue;
-          container.BytesValue = ByteString.CopyFrom(bytes);
-          return AresValueHelper.CreateUnit();
-        }
+            var bytes = container.BytesValue.ToByteArray();
+            bytes[index] = (byte)byteValue;
+            container.BytesValue = ByteString.CopyFrom(bytes);
+            return AresValueHelper.CreateUnit();
+          }
         case AresValue.KindOneofCase.StringArrayValue:
-        {
-          if(!newValue.HasStringValue)
           {
-            throw new AresInterpreterException(
-              "Assigned value must be a string.",
-              context.Start.Line,
-              context.Start.Column
-            );
-          }
+            if(!newValue.HasStringValue)
+            {
+              throw new AresInterpreterException(
+                "Assigned value must be a string.",
+                context.Start.Line,
+                context.Start.Column
+              );
+            }
 
-          container.StringArrayValue.Strings[index] = newValue.StringValue;
-          return AresValueHelper.CreateUnit();
-        }
+            container.StringArrayValue.Strings[index] = newValue.StringValue;
+            return AresValueHelper.CreateUnit();
+          }
         case AresValue.KindOneofCase.NumberArrayValue:
-        {
-          if(!newValue.HasNumberValue)
           {
-            throw new AresInterpreterException(
-              "Assigned value must be numeric.",
-              context.Start.Line,
-              context.Start.Column
-            );
-          }
+            if(!newValue.HasNumberValue)
+            {
+              throw new AresInterpreterException(
+                "Assigned value must be numeric.",
+                context.Start.Line,
+                context.Start.Column
+              );
+            }
 
-          container.NumberArrayValue.Numbers[index] = newValue.NumberValue;
-          return AresValueHelper.CreateUnit();
-        }
+            container.NumberArrayValue.Numbers[index] = newValue.NumberValue;
+            return AresValueHelper.CreateUnit();
+          }
         case AresValue.KindOneofCase.ListValue:
-        {
-          var listValue = container.ListValue.Values[index];
-          listValue.ClearKind();
-          listValue.MergeFrom(newValue);
-          return AresValueHelper.CreateUnit();
-        }
+          {
+            var listValue = container.ListValue.Values[index];
+            listValue.ClearKind();
+            listValue.MergeFrom(newValue);
+            return AresValueHelper.CreateUnit();
+          }
         default:
           throw new AresInterpreterException(
             $"Cannot assign to index of type {container.KindCase}.",
@@ -744,35 +756,35 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
       switch(argCtx)
       {
         case AresLangParser.PositionalArgContext positionalArg:
-        {
-          if(seenKeywordArg)
           {
-            throw new AresInterpreterException(
-              "Positional argument follows keyword argument.",
-              positionalArg.Start.Line,
-              positionalArg.Start.Column
-            );
-          }
+            if(seenKeywordArg)
+            {
+              throw new AresInterpreterException(
+                "Positional argument follows keyword argument.",
+                positionalArg.Start.Line,
+                positionalArg.Start.Column
+              );
+            }
 
-          positionalArgs.Add(await Visit(positionalArg.expression()));
-          break;
-        }
+            positionalArgs.Add(await Visit(positionalArg.expression()));
+            break;
+          }
         case AresLangParser.KeywordArgContext keywordArg:
-        {
-          seenKeywordArg = true;
-          var name = keywordArg.ID().GetText();
-          if(keywordArgs.ContainsKey(name))
           {
-            throw new AresInterpreterException(
-              $"Duplicate keyword argument '{name}'.",
-              keywordArg.Start.Line,
-              keywordArg.Start.Column
-            );
-          }
+            seenKeywordArg = true;
+            var name = keywordArg.ID().GetText();
+            if(keywordArgs.ContainsKey(name))
+            {
+              throw new AresInterpreterException(
+                $"Duplicate keyword argument '{name}'.",
+                keywordArg.Start.Line,
+                keywordArg.Start.Column
+              );
+            }
 
-          keywordArgs[name] = await Visit(keywordArg.expression());
-          break;
-        }
+            keywordArgs[name] = await Visit(keywordArg.expression());
+            break;
+          }
         default:
           throw new AresInterpreterException(
             $"Unsupported argument type {argCtx.GetType().Name}.",
@@ -802,9 +814,11 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
         throw new AresInterpreterException($"Runtime function '{id}' does not support keyword arguments");
       }
 
-      RecordFunctionInvocation(aresFn.Id, aresFn.Name, ctx, AresFunctionInvocationKind.System);
       await CheckExecutionControlAsync();
-      return await aresFn.Body(positionalArgs, _executionControlToken);
+      return await ExecuteFunctionInvocationAsync(ctx, aresFn.Id, aresFn.Name, AresFunctionInvocationKind.System, async () =>
+      {
+        return await aresFn.Body(positionalArgs, _executionControlToken);
+      });
     }
 
     if(!Environment.TryGetUserFunction(id, out var userFn))
@@ -814,10 +828,12 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
         throw new AresInterpreterException($"Function '{id}' not found");
       }
 
-      RecordFunctionInvocation(id, id, ctx, AresFunctionInvocationKind.Lambda);
-      return await ExecuteLambda(userLambda, id, positionalArgs, keywordArgs);
+      return await ExecuteFunctionInvocationAsync(ctx, id, id, AresFunctionInvocationKind.Lambda, async () =>
+      {
+        return await ExecuteLambda(userLambda, id, positionalArgs, keywordArgs);
+      });
     }
-    
+
     await CheckExecutionControlAsync();
     if(Environment.Depth > 100)
     {
@@ -863,8 +879,10 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
         }
       }
 
-      RecordFunctionInvocation(userFn.Name, userFn.Name, ctx, AresFunctionInvocationKind.User);
-      var result = await Visit(userFn.Body);
+      var result = await ExecuteFunctionInvocationAsync(ctx, userFn.Name, userFn.Name, AresFunctionInvocationKind.User, async () =>
+      {
+        return await Visit(userFn.Body);
+      });
 
       return result;
 
@@ -883,7 +901,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     {
       Environment.ExitScope();
     }
-    
+
   }
 
   private async Task<(AresValue? Callee, bool ExtensionHandled, AresValue? ExtensionResult)> TryResolveMemberCallee(
@@ -915,25 +933,70 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     }
 
     positionalArgs.Insert(0, receiver);
-    RecordFunctionInvocation(extensionFunc.Id, extensionFunc.Name, functionCallContext, AresFunctionInvocationKind.Extension);
     await CheckExecutionControlAsync();
-    var result = await extensionFunc.Body(positionalArgs, _executionControlToken);
+    var result = await ExecuteFunctionInvocationAsync(functionCallContext, extensionFunc.Id, extensionFunc.Name, AresFunctionInvocationKind.Extension, async () =>
+    {
+      return await extensionFunc.Body(positionalArgs, _executionControlToken);
+    });
     return (null, true, result);
   }
 
-  private void RecordFunctionInvocation(
+  private async Task<AresValue> ExecuteFunctionInvocationAsync(
+    AresLangParser.FunctionCallContext context,
     string functionId,
     string functionName,
-    AresLangParser.FunctionCallContext context,
-    AresFunctionInvocationKind kind)
+    AresFunctionInvocationKind kind,
+    Func<Task<AresValue>> body)
   {
-    _functionInvocationObserver?.Invoke(new AresFunctionInvocation(
+    var invocation = new AresFunctionInvocation(
       functionId,
       functionName,
       context.GetText(),
       context.Start.Line,
       context.Start.Column + 1,
-      kind));
+      kind);
+
+    var callId = $"call::{Interlocked.Increment(ref _nextCallId):N0}";
+    var callStack = _callStack.Value ??= [];
+    var parentCallId = callStack.Count > 0 ? callStack.Peek() : string.Empty;
+    callStack.Push(callId);
+
+    _functionInvocationObserver?.Invoke(invocation);
+    _functionExecutionEventObserver?.Invoke(new AresFunctionExecutionEvent(
+      AresFunctionExecutionEventKind.Started,
+      callId,
+      parentCallId,
+      invocation));
+
+    try
+    {
+      var result = await body();
+      _functionExecutionEventObserver?.Invoke(new AresFunctionExecutionEvent(
+        AresFunctionExecutionEventKind.Completed,
+        callId,
+        parentCallId,
+        invocation,
+        result));
+      return result;
+    }
+    catch(Exception ex)
+    {
+      _functionExecutionEventObserver?.Invoke(new AresFunctionExecutionEvent(
+        AresFunctionExecutionEventKind.Failed,
+        callId,
+        parentCallId,
+        invocation,
+        null,
+        ex.ToString()));
+      throw;
+    }
+    finally
+    {
+      if(callStack.Count > 0)
+      {
+        callStack.Pop();
+      }
+    }
   }
 
   private async Task<AresValue> ExecuteLambda(
@@ -1069,7 +1132,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
     var leftStr = left.Stringify();
     var rightStr = right.Stringify();
-    
+
     return AresValueHelper.CreateString(leftStr + rightStr);
   }
 
@@ -1077,7 +1140,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
   {
     var left = await Visit(context.expression(0));
     var right = await Visit(context.expression(1));
-    
+
     if(!left.HasNumberValue)
     {
       throw new AresInterpreterException("Left hand side is not numeric.", context.Start.Line, context.Start.Column);
@@ -1087,7 +1150,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     {
       throw new AresInterpreterException("Right hand side is not numeric.", context.Start.Line, context.Start.Column);
     }
-    
+
     return AresValueHelper.CreateNumber(left.NumberValue - right.NumberValue);
   }
 
