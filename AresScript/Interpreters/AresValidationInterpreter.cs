@@ -19,6 +19,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
   private readonly ValidationMode _mode;
   private readonly Stack<string[]> _pendingFunctionParameters = new();
   private readonly AresTypeInferenceInterpreter _typeInference;
+  private readonly List<AresFunctionInvocation> _functionInvocations = [];
   
   private sealed class StopTraversalException : Exception { }
 
@@ -39,6 +40,8 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     _typeInference = new AresTypeInferenceInterpreter(_environment);
     _line = line;
   }
+
+  public IReadOnlyList<AresFunctionInvocation> FunctionInvocations => _functionInvocations;
 
   protected override Task DefaultResult => Task.CompletedTask;
 
@@ -607,6 +610,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       if(_environment.TryGetExtensionFunction(receiverSchema.Type, memberName, out var extensionFunc))
       {
         ValidateExtensionFunctionArgs(extensionFunc, receiverSchema, positionalArgs, keywordArgs, ctx);
+        RecordFunctionInvocation(extensionFunc.Id, extensionFunc.Name, ctx, AresFunctionInvocationKind.Extension);
         return;
       }
     }
@@ -642,6 +646,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       }
 
       ValidateSystemFunctionArgs(systemFn, positionalArgs, keywordArgs, ctx);
+      RecordFunctionInvocation(systemFn.Id, systemFn.Name, ctx, AresFunctionInvocationKind.System);
       return;
     }
 
@@ -681,6 +686,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
         }
       }
 
+      RecordFunctionInvocation(userFn.Name, userFn.Name, ctx, AresFunctionInvocationKind.User);
       return;
     }
 
@@ -730,6 +736,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
         }
       }
 
+      RecordFunctionInvocation(functionId, functionId, ctx, AresFunctionInvocationKind.Lambda);
       return;
     }
 
@@ -737,6 +744,21 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       throw new AresInterpreterException($"Function '{functionId}' not found.", ctx.Start.Line, ctx.Start.Column);
     }
+  }
+
+  private void RecordFunctionInvocation(
+    string functionId,
+    string functionName,
+    AresLangParser.FunctionCallContext context,
+    AresFunctionInvocationKind kind)
+  {
+    _functionInvocations.Add(new AresFunctionInvocation(
+      functionId,
+      functionName,
+      context.GetText(),
+      context.Start.Line,
+      context.Start.Column + 1,
+      kind));
   }
 
   private void ValidateSystemFunctionArgs(AresSystemFunction function, IReadOnlyList<AresLangParser.ExpressionContext> positionalArgs, IReadOnlyDictionary<string, AresLangParser.ExpressionContext> keywordArgs, AresLangParser.FunctionCallContext ctx)

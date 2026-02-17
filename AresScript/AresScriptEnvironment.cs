@@ -151,7 +151,7 @@ public class AresScriptEnvironment
     {
       if(scope.Functions.TryGetValue(id, out func))
       {
-        return true; 
+        return true;
       }
     }
 
@@ -258,7 +258,7 @@ public class AresScriptEnvironment
     {
       if(TryGetValue(val, out var value))
         return value;
-       
+
       throw new KeyNotFoundException($"Key {val} not found in the environment.");
     }
     set
@@ -313,16 +313,17 @@ public class AresScriptEnvironment
     {
       scope.Variables[key] = value;
     }
-  }  
+  }
 
   public void AssignExtensionFunctions(params IEnumerable<AresExtensionFunction> functions)
   {
     foreach(var function in functions)
     {
-      if(!_extensionFunctions.TryGetValue(function.ReceiverKind, out var map))
+      var kind = function.ReceiverKind;
+      if(!_extensionFunctions.TryGetValue(kind, out var map))
       {
         map = new Dictionary<string, AresSystemFunction>(StringComparer.Ordinal);
-        _extensionFunctions[function.ReceiverKind] = map;
+        _extensionFunctions[kind] = map;
       }
 
       map[function.MemberName] = function.Function;
