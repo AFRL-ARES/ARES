@@ -6,8 +6,10 @@ using AresScript;
 using AresScript.Generated;
 using AresScript.Interpreters;
 using AresScript.ScriptAnalysis;
+using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Threading;
 
 namespace Ares.Core.Scripting;
 
@@ -17,20 +19,37 @@ public class ScriptRunner
   private readonly ISubject<AresFunctionInvocation> _invocationSubject = Subject.Synchronize(new Subject<AresFunctionInvocation>());
   private readonly ISubject<ScriptExecutionEvent> _eventSubject = Subject.Synchronize(new Subject<ScriptExecutionEvent>());
   private readonly AresScriptEnvironment _initialEnvironment;
+  private readonly bool _captureExecutionEventsWithoutSubscribers;
+  private int _scriptEventSubscriberCount;
   private long _eventSequence;
 
-  public ScriptRunner(AresScriptEnvironment? initialEnvironment = null)
+  public ScriptRunner(
+    AresScriptEnvironment? initialEnvironment = null,
+    bool captureExecutionEventsWithoutSubscribers = false)
   {
+    _captureExecutionEventsWithoutSubscribers = captureExecutionEventsWithoutSubscribers;
     ScriptOutput = _outputSubject.AsObservable();
     ScriptInvocations = _invocationSubject.AsObservable();
-    ScriptEvents = _eventSubject.AsObservable();
+    ScriptEvents = Observable.Create<ScriptExecutionEvent>(observer =>
+    {
+      Interlocked.Increment(ref _scriptEventSubscriberCount);
+      var subscription = _eventSubject.Subscribe(observer);
+      return Disposable.Create(() =>
+      {
+        subscription.Dispose();
+        Interlocked.Decrement(ref _scriptEventSubscriberCount);
+      });
+    });
     Print = new AresSystemFunction("print", "print", (args, _) =>
     {
       var stringy = args.Select(v => v.Stringify());
       foreach(var s in stringy)
       {
         _outputSubject.OnNext(s);
-        PublishEvent(sequence => new ScriptConsoleOutputEvent(sequence, s));
+        if(ShouldEmitScriptEvents())
+        {
+          PublishEvent(sequence => new ScriptConsoleOutputEvent(sequence, s));
+        }
       }
 
       return Task.FromResult(AresValueHelper.CreateUnit());
@@ -62,46 +81,57 @@ public class ScriptRunner
     env.EnterSystemScope("SandboxRunner");
     env.AssignSystemFunctions(Print);
     env.AssignExtensionFunctions(StandardLibrary.ExtensionFunctions);
+    var emitScriptEvents = ShouldEmitScriptEvents();
     var visitor = new AresBaseInterpreter(
       env,
       executionControlToken,
       invocation => _invocationSubject.OnNext(invocation),
-      executionEvent =>
-      {
-        switch(executionEvent.Kind)
+      emitScriptEvents
+        ? executionEvent =>
         {
-          case AresFunctionExecutionEventKind.Started:
-            PublishEvent(sequence => new ScriptFunctionStartedEvent(
-              sequence,
-              executionEvent.CallId,
-              executionEvent.ParentCallId,
-              AresFunctionInvocationMapper.ToScriptFunctionInvocation(executionEvent.Invocation, 0)));
-            break;
-          case AresFunctionExecutionEventKind.Completed:
-            PublishEvent(sequence => new ScriptFunctionCompletedEvent(
-              sequence,
-              executionEvent.CallId,
-              executionEvent.Result ?? AresValueHelper.CreateUnit(),
-              executionEvent.Result?.Stringify() ?? string.Empty));
-            break;
-          case AresFunctionExecutionEventKind.Failed:
-            PublishEvent(sequence => new ScriptFunctionFailedEvent(
-              sequence,
-              executionEvent.CallId,
-              executionEvent.Error ?? string.Empty));
-            break;
+          switch(executionEvent.Kind)
+          {
+            case AresFunctionExecutionEventKind.Started:
+              PublishEvent(sequence => new ScriptFunctionStartedEvent(
+                sequence,
+                executionEvent.CallId,
+                executionEvent.ParentCallId,
+                AresFunctionInvocationMapper.ToScriptFunctionInvocation(executionEvent.Invocation, 0)));
+              break;
+            case AresFunctionExecutionEventKind.Completed:
+              PublishEvent(sequence => new ScriptFunctionCompletedEvent(
+                sequence,
+                executionEvent.CallId,
+                executionEvent.Result ?? AresValueHelper.CreateUnit()));
+              break;
+            case AresFunctionExecutionEventKind.Failed:
+              PublishEvent(sequence => new ScriptFunctionFailedEvent(
+                sequence,
+                executionEvent.CallId,
+                executionEvent.Error ?? string.Empty));
+              break;
+          }
         }
-      });
+        : null);
 
-    PublishEvent(sequence => new ScriptExecutionStartedEvent(sequence));
+    if(emitScriptEvents)
+    {
+      PublishEvent(sequence => new ScriptExecutionStartedEvent(sequence));
+    }
     try
     {
       await visitor.Visit(programCtx);
-      PublishEvent(sequence => new ScriptExecutionCompletedEvent(sequence));
+      if(emitScriptEvents)
+      {
+        PublishEvent(sequence => new ScriptExecutionCompletedEvent(sequence));
+      }
     }
     catch(Exception e)
     {
-      PublishEvent(sequence => new ScriptExecutionFailedEvent(sequence, e.ToString()));
+      if(emitScriptEvents)
+      {
+        PublishEvent(sequence => new ScriptExecutionFailedEvent(sequence, e.ToString()));
+      }
       throw;
     }
   }
@@ -116,5 +146,10 @@ public class ScriptRunner
   {
     var sequence = Interlocked.Increment(ref _eventSequence);
     _eventSubject.OnNext(eventFactory(sequence));
+  }
+
+  private bool ShouldEmitScriptEvents()
+  {
+    return _captureExecutionEventsWithoutSubscribers || Volatile.Read(ref _scriptEventSubscriberCount) > 0;
   }
 }

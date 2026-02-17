@@ -163,8 +163,7 @@ public partial class AresScriptingService : Ares.Services.AresScriptingService.A
         FunctionCompleted = new FunctionCompleted
         {
           CallId = completed.CallId,
-          Result = completed.Result,
-          ResultText = completed.ResultText
+          Result = completed.Result
         }
       },
       ScriptFunctionFailedEvent failed => new GrpcScriptExecutionEvent

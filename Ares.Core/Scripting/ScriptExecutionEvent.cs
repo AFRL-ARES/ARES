@@ -22,8 +22,7 @@ public sealed record ScriptFunctionStartedEvent(
 public sealed record ScriptFunctionCompletedEvent(
   long Sequence,
   string CallId,
-  AresValue Result,
-  string ResultText) : ScriptExecutionEvent(Sequence);
+  AresValue Result) : ScriptExecutionEvent(Sequence);
 
 public sealed record ScriptFunctionFailedEvent(
   long Sequence,
