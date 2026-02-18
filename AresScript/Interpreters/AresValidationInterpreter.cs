@@ -17,6 +17,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
   private int _functionDepth;
   private readonly int? _line = null;
   private readonly ValidationMode _mode;
+  private readonly bool _traverseFunctionDeclarationBodies;
   private readonly Stack<string[]> _pendingFunctionParameters = new();
   private readonly AresTypeInferenceInterpreter _typeInference;
   private readonly List<AresFunctionInvocation> _functionInvocations = [];
@@ -33,12 +34,19 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
   /// <param name="line">Optional line number used for autocomplete support. If line is within a function block, we'll stop traversal
   /// so that the environment can contain the parameter variable names from the function definition parameters.
   /// Basically you should only use this parameter when working with completions.</param>
-  public AresValidationInterpreter(AresScriptEnvironment aresScriptEnvironment, ValidationMode mode = ValidationMode.Strict, int? line = null)
+  /// <param name="traverseFunctionDeclarationBodies">Whether to visit function bodies at declaration time.
+  /// For summary-ordering this can be disabled so calls inside function bodies are not recorded until runtime emits them.</param>
+  public AresValidationInterpreter(
+    AresScriptEnvironment aresScriptEnvironment,
+    ValidationMode mode = ValidationMode.Strict,
+    int? line = null,
+    bool traverseFunctionDeclarationBodies = true)
   {
     _environment = aresScriptEnvironment;
     _mode = mode;
     _typeInference = new AresTypeInferenceInterpreter(_environment);
     _line = line;
+    _traverseFunctionDeclarationBodies = traverseFunctionDeclarationBodies;
   }
 
   public IReadOnlyList<AresFunctionInvocation> FunctionInvocations => _functionInvocations;
@@ -426,6 +434,11 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     _environment.AssignFunction(functionId, userFunc);
 
     if(_line is not null && _line.Value == context.Start.Line)
+    {
+      return;
+    }
+
+    if(!_traverseFunctionDeclarationBodies)
     {
       return;
     }

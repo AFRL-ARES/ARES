@@ -10,7 +10,8 @@ public static partial class AresScriptAnalysis
   public static async Task<(AresFunctionInvocation[] Invocations, Diagnostic[] Diagnostics)> ValidateAndCollectInvocationsAsync(
     string? script,
     AresScriptEnvironment environment,
-    AresValidationInterpreter.ValidationMode mode = AresValidationInterpreter.ValidationMode.Strict)
+    AresValidationInterpreter.ValidationMode mode = AresValidationInterpreter.ValidationMode.Strict,
+    bool traverseFunctionDeclarationBodies = true)
   {
     var diagnostics = new List<Diagnostic>();
     var invocations = Array.Empty<AresFunctionInvocation>();
@@ -39,7 +40,11 @@ public static partial class AresScriptAnalysis
 
     if(programCtx is not null)
     {
-      var validator = new AresValidationInterpreter(environment, mode);
+      var validator = new AresValidationInterpreter(
+        environment,
+        mode,
+        line: null,
+        traverseFunctionDeclarationBodies: traverseFunctionDeclarationBodies);
       try
       {
         await validator.Visit(programCtx);

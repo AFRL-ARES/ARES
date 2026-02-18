@@ -12,7 +12,11 @@ public static partial class AresScriptAnalysis
     bool includeLambdas = false,
     AresValidationInterpreter.ValidationMode mode = AresValidationInterpreter.ValidationMode.Strict)
   {
-    var (invocations, diagnostics) = await ValidateAndCollectInvocationsAsync(script, environment, mode);
+    var (invocations, diagnostics) = await ValidateAndCollectInvocationsAsync(
+      script,
+      environment,
+      mode,
+      traverseFunctionDeclarationBodies: false);
     var steps = AresScriptSummaryMapper.MapInternalInvocationsToProto(
       invocations,
       includeUserFunctions,

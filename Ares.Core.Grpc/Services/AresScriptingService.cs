@@ -35,7 +35,6 @@ public partial class AresScriptingService : Ares.Services.AresScriptingService.A
       runner.ScriptEvents.Subscribe(executionEvent =>
         {
           var grpcEvent = ToGrpcScriptExecutionEvent(executionEvent);
-          Console.WriteLine(grpcEvent);
           if(!channel.Writer.TryWrite(grpcEvent))
           {
             _logger.LogWarning("Dropped script event because channel is full. {Sequence}", grpcEvent.Sequence);
@@ -119,6 +118,22 @@ public partial class AresScriptingService : Ares.Services.AresScriptingService.A
       AresValidationInterpreter.ValidationMode.Strict);
 
     var response = new ValidateScriptResponse();
+    response.Diagnostics.AddRange(diagnostics);
+    return response;
+  }
+
+  public override async Task<ScriptSummaryResponse> GetScriptSummary(ScriptSummaryRequest request, ServerCallContext context)
+  {
+    var environment = _environmentBuilder.Build();
+    var (steps, diagnostics) = await AresScriptAnalysis.BuildScriptSummaryAsync(
+      request.Script,
+      environment,
+      request.IncludeUserFunctions,
+      request.IncludeLambdas,
+      AresValidationInterpreter.ValidationMode.Strict);
+
+    var response = new ScriptSummaryResponse();
+    response.Steps.AddRange(steps);
     response.Diagnostics.AddRange(diagnostics);
     return response;
   }

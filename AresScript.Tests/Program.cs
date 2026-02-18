@@ -648,6 +648,27 @@ public class InterpreterTests
   }
 
   [Test]
+  public async Task Summary_Does_Not_Prepend_Function_Body_Invocations_From_Declarations()
+  {
+    var script = """
+      def main():
+        return True
+
+      def meme():
+        sleep(400)
+        return "meme"
+
+      sleep(1000)
+      main()
+      sleep(1000)
+      print(meme())
+      """;
+
+    var steps = await BuildScriptSummaryAsync(script, includeUserFunctions: true);
+    Assert.That(steps.Select(s => s.FunctionId), Is.EqualTo(["sleep", "main", "sleep", "meme", "print"]));
+  }
+
+  [Test]
   public Task Cancellation_Stops_Interpreter()
   {
     var script = "assert True";
