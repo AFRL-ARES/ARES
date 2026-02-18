@@ -1,4 +1,5 @@
 ﻿using Ares.Datamodel;
+using Ares.Datamodel.Templates;
 using Ares.Device;
 using Ares.Device.Serial;
 using GenericSerialDevice.Commands;
@@ -13,23 +14,23 @@ using System.Text.Json;
 
 namespace RestSerialDevice;
 
-public class SerialRestDevice : SerialDevice<ISerialRestDeviceConnection>, ISerialRestDevice
+public class SerialRestDevice : AresDevice, ISerialRestDevice
 {
-  
   private readonly ISubject<ReadDataResponse?> _internalStateSubject = new BehaviorSubject<ReadDataResponse?>(default);
   private readonly BehaviorSubject<AresStruct> _stateSubject = new(new AresStruct());
   private CancellationTokenSource _internalStateUpdateTokenSource = new();
   private Task? _stateUpdater;
   private readonly HttpClient _deviceClient = new HttpClient();
-  private readonly Uri _address;
+  private readonly Uri? _address;
   
 
-  public SerialRestDevice(string deviceName, ISerialRestDeviceConnection connection) : base(deviceName, connection)
+  public SerialRestDevice(string deviceName) : base(deviceName)
   {
     InternalStateStream = _internalStateSubject.AsObservable();
+    Connection = new SerialRestDeviceConnection("FIX ME");
+    ReportedName = string.Empty;
+    FirmwareVersion = string.Empty;
   }
-  
-
   
   public async Task<DeviceMethodResponse> ProcessCommand(string methodName, List<string> parameterNames, List<string> parameterValues)
   {
@@ -201,44 +202,27 @@ public class SerialRestDevice : SerialDevice<ISerialRestDeviceConnection>, ISeri
       TaskCreationOptions.LongRunning);
   }
 
-  protected override async Task<SerialDeviceValidationResult> Validate()
-  {
-    try
-    {
-      var response = await Connection.Send(new GetDeviceCapabilitiesRequest(), TimeSpan.FromSeconds(10));
-
-      if (response is null)
-        return new SerialDeviceValidationResult(false, "Device response returned null!");
-
-      //if (response.DeviceName == string.Empty)
-        //return new SerialDeviceValidationResult(false, "Device response was malformed, unable to parse response!");
-
-
-      //DeviceId = response.DeviceId;
-      ExternalDeviceName = response.DeviceName;
-      //Hardware = response.Hardware;
-      //IsExternalDeviceConnected = response.Connected;
-      return new SerialDeviceValidationResult(true);
-    }
-    catch (TimeoutException e)
-    {
-      Console.WriteLine(e);
-    }
-    catch (Exception e)
-    {
-      Console.WriteLine(e);
-    }
-    
-    return new SerialDeviceValidationResult(false);
-    
-  }
-
   public ValueTask DisposeAsync()
   {
     return ValueTask.CompletedTask;
   }
 
   public override Task EnterSafeMode(CancellationToken ct)
+  {
+    throw new NotImplementedException();
+  }
+
+  public override Task<bool> Activate(CancellationToken ct)
+  {
+    throw new NotImplementedException();
+  }
+
+  public override Task<CommandResult> ExecuteCommand(string command, List<Parameter> parameters, CancellationToken token)
+  {
+    throw new NotImplementedException();
+  }
+
+  public override Task UpdateSettings(AresStruct settings)
   {
     throw new NotImplementedException();
   }
@@ -261,4 +245,6 @@ public class SerialRestDevice : SerialDevice<ISerialRestDeviceConnection>, ISeri
   public List<RestDeviceVariable> Variables { get; set; } = [];
 
   public bool IsExternalDeviceConnected { get; set; }
+
+  private IAresSerialConnection Connection { get; set; }
 }

@@ -1,5 +1,4 @@
-﻿using Ares.Device.Rest;
-using Ares.Datamodel.Extensions;
+﻿using Ares.Datamodel.Extensions;
 using RestDevice.Commands.Responses.JsonResponses;
 using RestDevice.Structure;
 using System.Diagnostics;
@@ -9,10 +8,11 @@ using System.Text.Json;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
 using Ares.Device;
+using Ares.Datamodel.Templates;
 
 namespace RestDevice;
 
-public class RestDevice : AresRestDevice, IRestDevice
+public class RestDevice : AresDevice, IRestDevice
 {
   private readonly HttpClient _deviceClient = new HttpClient();
   private readonly Uri _address;
@@ -243,6 +243,16 @@ public class RestDevice : AresRestDevice, IRestDevice
   }
 
   public override Task EnterSafeMode(CancellationToken ct)
+  {
+    throw new NotImplementedException();
+  }
+
+  public override Task<CommandResult> ExecuteCommand(string command, List<Parameter> parameters, CancellationToken token)
+  {
+    throw new NotImplementedException();
+  }
+
+  public override Task UpdateSettings(AresStruct settings)
   {
     throw new NotImplementedException();
   }

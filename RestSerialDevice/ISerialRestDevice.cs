@@ -1,10 +1,10 @@
-﻿using Ares.Device.Serial;
+﻿using Ares.Device;
 using GenericSerialDevice.Commands.Responses;
 using RestSerialDevice.Services;
 
 namespace RestSerialDevice;
 
-public interface ISerialRestDevice : ISerialDevice<ISerialRestDeviceConnection>, IAsyncDisposable
+public interface ISerialRestDevice : IAresDevice, IAsyncDisposable
 {
   IObservable<ReadDataResponse?> InternalStateStream { get; }
   Task<ReadDataResponse> GetAndUpdateState();

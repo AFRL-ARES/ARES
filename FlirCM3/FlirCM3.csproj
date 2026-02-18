@@ -20,10 +20,6 @@
 		<None Remove="Proto\Services.proto" />
 	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Ares.Device.USB\Ares.Device.USB.csproj" />
-  </ItemGroup>
-
 	<ItemGroup>
 		<Protobuf Include="Proto\DataModel.proto" GrpcServices="None" ProtoRoot="Proto" />
 		<Protobuf Include="Proto\Services.proto" ProtoRoot="Proto" />

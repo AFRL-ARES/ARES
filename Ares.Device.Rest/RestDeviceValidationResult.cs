@@ -1,3 +1,3 @@
 ﻿namespace Ares.Device.Rest;
 
-public record USBDeviceValidationResult(bool Success, string Message = "");
+public record RestDeviceValidationResult(bool Success, string Message = "");
