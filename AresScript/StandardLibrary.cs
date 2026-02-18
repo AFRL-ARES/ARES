@@ -1,3 +1,4 @@
+using System.Text;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel;
 using Ares.Datamodel.Factories;
@@ -8,7 +9,7 @@ public static class StandardLibrary
 {
   public static AresSystemFunction[] Functions { get; } =
   [
-    new AresSystemFunction("print", (args, _) =>
+    new("print", "print", (args, _) =>
       {
         foreach (var arg in args)
         {
@@ -18,10 +19,24 @@ public static class StandardLibrary
         return Task.FromResult(AresValueHelper.CreateUnit());
       },
     AresSchemaBuilder.Create("args", AresDataType.Any).Build(),
-    AresSchemaBuilder.Create(AresDataType.Unit).Build(),
+    AresSchemaBuilder.Entry(AresDataType.Unit).Build(),
+    "",
     "Prints the given value/s of any ARES type to console."),
     
-    new("range", (args, _) => {
+    new("string", "string", (args, token) => {
+      var strBuilder = new StringBuilder();
+      foreach(var aresValue in args)
+      {
+        strBuilder.Append(aresValue.Stringify());
+      }
+      return Task.FromResult(AresValueHelper.CreateString(strBuilder.ToString()));
+    },
+    AresSchemaBuilder.Create("args", AresDataType.Any).Build(),
+    AresSchemaBuilder.Entry(AresDataType.String).Build(),
+    "",
+    "Turns the given AresValue into a string."),
+    
+    new("range", "range", (args, _) => {
       double start = 0;
       double stop = 0;
       double step = 1;
@@ -67,10 +82,11 @@ public static class StandardLibrary
       .AddEntry("stop", AresSchemaBuilder.NumberEntry().WithDescription("The non-inclusive stopping number.").Build())
       .AddEntry("step", AresSchemaBuilder.NumberEntry().AsOptional().WithDescription("The step size.").Build())
       .Build(),
-    AresSchemaBuilder.Create("num_array", AresDataType.NumberArray).Build(),
+    AresSchemaBuilder.Entry(AresDataType.NumberArray).Build(),
+    "",
     "Generates a list of numbers in a range."),
     
-    new("sleep", async (args, token) => {
+    new("sleep", "sleep", async (args, token) => {
       if(args.Count != 1)
       {
         throw new ArgumentException("Expected exactly 1 argument for duration.", nameof(args));
@@ -80,16 +96,70 @@ public static class StandardLibrary
       {
         throw new InvalidOperationException("Argument provided is not a number");
       }
-      
-      await Task.Delay(TimeSpan.FromMilliseconds(args[0].NumberValue), token);
+
+      var remaining = TimeSpan.FromMilliseconds(args[0].NumberValue);
+      var interval = TimeSpan.FromMilliseconds(50);
+      while(remaining > TimeSpan.Zero)
+      {
+        token.ThrowIfCancellationRequested();
+        await token.WaitForResumeAsync();
+
+        var delay = remaining < interval ? remaining : interval;
+        await Task.Delay(delay, token.CancellationToken);
+        remaining -= delay;
+      }
+
       return AresValueHelper.CreateUnit();
     },
     AresSchemaBuilder.Create("time", AresDataType.Number)
       .WithDescription("Number of milliseconds to sleep")
       .WithUnit("ms")
       .Build(),
-    AresSchemaBuilder.Create("", AresDataType.Unit).Build(),
+    AresSchemaBuilder.Entry(AresDataType.Unit).Build(),
+    "",
     "Sleep for a given number of milliseconds"
     )
   ];
+
+  public static AresExtensionFunction[] ExtensionFunctions { get; } =
+  [
+    new(
+      AresValue.KindOneofCase.ListValue,
+      "append",
+      new AresSystemFunction(
+        "list::append",
+        "append",
+        (args, _) =>
+        {
+          if(args.Count != 2)
+          {
+            throw new ArgumentException("Expected exactly 1 argument to append.", nameof(args));
+          }
+
+          var listValue = args[0];
+          if(listValue.KindCase != AresValue.KindOneofCase.ListValue || listValue.ListValue is null)
+          {
+            throw new InvalidOperationException("append can only be called on list values.");
+          }
+
+          listValue.ListValue.Values.Add(args[1]);
+          return Task.FromResult(AresValueHelper.CreateUnit());
+        },
+        BuildListAppendSchema(),
+        AresSchemaBuilder.Entry(AresDataType.Unit).Build(),
+        "",
+        "Appends a value to the list."
+      ))
+  ];
+
+  private static AresDataSchema BuildListAppendSchema()
+  {
+    var listEntry = AresSchemaBuilder.Entry(AresDataType.List).Build();
+    listEntry.ListElementSchema = AresSchemaBuilder.Entry(AresDataType.Any).Build();
+
+    return AresSchemaBuilder.Empty()
+      .AddEntry("self", listEntry)
+      .AddEntry("value", AresSchemaBuilder.Entry(AresDataType.Any).Build())
+      .Build();
+  }
 }

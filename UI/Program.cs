@@ -1,14 +1,14 @@
 using CommunityToolkit.Mvvm.Messaging;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Radzen;
 using Serilog;
 using UI;
-using UI.Backend.Helpers;
-using UI.Data;
-using UI.Services.Grpc;
-using UI.Services.Notification;
-using UI.Settings;
+using UI.Infrastructure.Grpc;
+using UI.Application.Notifications;
+using UI.Infrastructure.Notifications;
+using UI.Infrastructure.Persistence;
+using UI.Components.Formatting;
+using UI.Application.Settings;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,22 +24,9 @@ builder.Configuration
 ConfigureDatabaseServices(builder.Services, builder.Configuration);
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
-builder.Services.AddDefaultIdentity<IdentityUser>(options =>
-{
-  options.SignIn.RequireConfirmedAccount = true;
-  options.Password = new PasswordOptions
-  {
-    RequireDigit = false,
-    RequiredLength = 6,
-    RequiredUniqueChars = 0,
-    RequireLowercase = false,
-    RequireNonAlphanumeric = false,
-    RequireUppercase = false
-  };
-}).AddEntityFrameworkStores<ApplicationDbContext>();
 
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
-builder.Services.AddServerSideBlazor();
+builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddRadzenComponents();
 builder.Services.Configure<RemoteServiceSettings>(builder.Configuration.GetSection(nameof(RemoteServiceSettings)));
 builder.Services.Configure<CertificateSettings>(builder.Configuration.GetSection(nameof(CertificateSettings)));
@@ -51,7 +38,7 @@ builder.Services.BindClients();
 builder.Services.AddSingleton<INotificationReceivingService, NotificationReceivingService>();
 
 builder.Services.AddOptions();
-builder.Services.AddAuthorizationCore();
+builder.Services.AddAntiforgery();
 
 builder.Services.AddHostedService<ServiceStarter>();
 
@@ -70,23 +57,22 @@ if(app.Environment.IsDevelopment())
 }
 else
 {
-  app.UseExceptionHandler("/Error");
+  app.UseExceptionHandler("/Error", createScopeForErrors: true);
   // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
   app.UseHsts();
 }
 
+app.UseStatusCodePagesWithReExecute("/404");
+
 app.UseHttpsRedirection();
 
-app.UseStaticFiles();
+app.MapStaticAssets();
 
 app.UseRouting();
 
-//app.UseAuthentication();
-//app.UseAuthorization();
+app.UseAntiforgery();
+app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 
-app.MapControllers();
-app.MapBlazorHub();
-app.MapFallbackToPage("/_Host");
 
 app.Services.GetService<UnitCategoryHelper>();
 
@@ -126,3 +112,4 @@ static void ConfigureDatabaseServices(IServiceCollection services, Configuration
     throw new InvalidOperationException($"Unsupported database provider: {provider}. Available provider values: {string.Join(',', sqlConnectionStrings.AsEnumerable().Select(scs => scs.Key.Split(':').LastOrDefault()).Where(s => s != "ConnectionStrings"))}");
   }
 }
+

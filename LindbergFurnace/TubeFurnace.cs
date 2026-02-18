@@ -30,7 +30,7 @@ public class TubeFurnace : SerialDevice<ITubeFurnaceConnection>, ITubeFurnace
     _statePublisher.OnNext(initialState);
   }
 
-  public async Task GetSetpoint()
+  public async Task<int> GetSetpoint()
   {
     var currentState = await InternalStateStream.Take(1);
 
@@ -43,9 +43,11 @@ public class TubeFurnace : SerialDevice<ITubeFurnaceConnection>, ITubeFurnace
 
     currentState.Setpoint = setpoint.DegreesCelsius;
     _statePublisher.OnNext(currentState);
+
+    return setpointInt;
   }
 
-  public async Task GetCurrentTemperature()
+  public async Task<int> GetCurrentTemperature()
   {
     var request = new ReadMultipleRegistersRequest(1, Register.PV, 1);
     var response = await Connection.Send(request);
@@ -57,6 +59,8 @@ public class TubeFurnace : SerialDevice<ITubeFurnaceConnection>, ITubeFurnace
     var currentState = await InternalStateStream.Take(1);
     currentState.CurrentTemperature = temperature.DegreesCelsius;
     _statePublisher.OnNext(currentState);
+
+    return temperatureInt;
   }
 
   public async Task<int> GetCurrentAddress()

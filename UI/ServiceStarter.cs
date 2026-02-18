@@ -1,7 +1,16 @@
-﻿using UI.Backend.Devices;
-using UI.Backend.Factories;
-using UI.Backend.Repos;
-using UI.Services.Notification;
+using UI.Features.Devices.ChemyxPump;
+using UI.Features.Devices.CM3Camera;
+using UI.Features.Devices.Mfc;
+using UI.Features.Devices.Remote;
+using UI.Features.Devices.Servo;
+using UI.Features.Devices.StepperController;
+using UI.Features.Devices.SyringePump;
+using UI.Features.Devices.Tc0304;
+using UI.Features.Devices.TubeFurnace;
+using UI.Features.Devices.ValveController;
+using UI.Application.Notifications;
+using UI.Infrastructure.Devices;
+using UI.Application.Devices.Repos;
 
 namespace UI;
 
@@ -85,3 +94,4 @@ public class ServiceStarter : IHostedService
     await _chemyxPumpViewModelFactory.DisposeAsync();
   }
 }
+

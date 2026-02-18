@@ -1,0 +1,83 @@
+﻿@using Ares.Datamodel
+@using Ares.Datamodel.Templates
+@using UI.Features.CampaignEdit.ViewModels
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<CommandParameterDesignerViewModel>
+
+<div class="d-flex flex-column">
+  <div class="input-group mb-3">
+    @if (ViewModel!.IsPlanned || ViewModel!.IsEnvironmentBased)
+    {
+      if(ViewModel!.IsPlanned)
+      {
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" Gap="0.5rem">
+          <RadzenLabel Text="@ViewModel.Name" Component="PlannableSelector" />
+          <RadzenDropDown TValue="string" Data="@ViewModel.PlannedParameters" @bind-Value="@ViewModel.SelectedPlannedParameterMetadataId" TextProperty="@nameof(ParameterMetadata.Name)" ValueProperty="@nameof(ParameterMetadata.UniqueId)" Placeholder="Select Planned Parameter" />
+        </RadzenStack>
+      }
+
+      else
+      {
+        <select @bind="ViewModel.SelectedVariableType" class="form-select align-self-stretch">
+          @if (ViewModel!.SelectedVariableType is null)
+          {
+            <option value="" selected disabled>Select a Command</option>
+          }
+          @foreach (var variable in ViewModel!.VariableTypes)
+          {
+            <option value="@variable">
+              @variable.ToString()
+            </option>
+          }
+        </select>
+      }
+    }
+
+    else
+    {
+      <AresValueDesigner ValueEditCallback="ValueEditCallback" Schema="ViewModel!.Schema" Value="@ViewModel!.Value" Unit="@ViewModel!.Unit" Name="@ViewModel!.Name" />
+    }
+  </div>
+
+  @if (ViewModel!.IsEnvironmentBased && ViewModel!.SelectedVariableType == VariableType.PreviousExperimentPath)
+  {
+    <div class="mb-2">
+      <label class="form-label" for="pastExperimentNumeric">
+        Experiment Offset:
+      </label>
+      <RadzenNumeric ShowUpDown="false" @bind-Value="ViewModel!.PastExperimentNumber" id="pastExperimentNumeric" />
+    </div>
+  }
+
+  @if(!DisablePlanning)
+  {
+    <div class="mb-2">
+      <RadzenCheckBox @bind-Value="ViewModel!.IsPlanned" id="flexCheckDefault" Disabled="ViewModel!.IsEnvironmentBased" />
+      <label class="form-check-label" for="flexCheckDefault">
+        Planned
+      </label>
+    </div>
+  }
+
+  <div class="mb-2">
+    <RadzenCheckBox @bind-Value="ViewModel!.IsEnvironmentBased" id="flexCheckDefault" Disabled="ViewModel!.IsPlanned" />
+    <label class="form-check-label" for="flexCheckDefault">
+      Environment Variable
+    </label>
+  </div>
+
+</div>
+
+@code {
+  [Parameter]
+  public bool DisablePlanning { get; set; }
+
+  private Task ValueEditCallback(AresValue value)
+  {
+    //Not sure what scenario this would be to be honest
+    if(ViewModel!.Value is null)
+      return Task.CompletedTask;
+
+    ViewModel!.Value = value;
+    return Task.CompletedTask;
+  }
+}

@@ -7,8 +7,29 @@
 	<UserSecretsId>aspnet-UI-87962D8C-B573-4F3B-852F-E1DA10F52308</UserSecretsId>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <WarningsAsErrors>RZ10012</WarningsAsErrors>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <WarningsAsErrors>RZ10012</WarningsAsErrors>
+  </PropertyGroup>
+
   <ItemGroup>
     <None Remove="Pages\Shared\Components\RightSidebar.razor.css" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Pages\Settings\**" />
+    <Compile Remove="Services\**" />
+    <Content Remove="Pages\Settings\**" />
+    <Content Remove="Services\**" />
+    <EmbeddedResource Remove="Pages\Settings\**" />
+    <EmbeddedResource Remove="Services\**" />
+    <None Remove="Pages\Settings\**" />
+    <None Remove="Services\**" />
+    <TypeScriptCompile Remove="Pages\Settings\**" />
+    <TypeScriptCompile Remove="Services\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -20,11 +41,13 @@
     <PackageReference Include="Grpc.Net.Client" Version="2.76.0" />
     <PackageReference Include="Humanizer" Version="3.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="10.0.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="10.0.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.1" />
+    <PackageReference Include="Microsoft.TypeScript.MSBuild" Version="5.9.3">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="10.0.1" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
     <PackageReference Include="Radzen.Blazor" Version="8.5.1" />
@@ -41,8 +64,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Backend\Devices\Remote\" />
-    <Folder Include="Pages\Settings\" />
+    <Folder Include="wwwroot\js\" />
   </ItemGroup>
 
   <ItemGroup>
@@ -61,6 +83,7 @@
     <ProjectReference Include="..\TicStepperController\TicStepperController.csproj" />
     <ProjectReference Include="..\ValveController\ValveController.csproj" />
     <ProjectReference Include="..\VerdiV6Laser\VerdiV6Laser.csproj" />
+    <ProjectReference Include="..\AresScript\AresScript.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -70,11 +93,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <UpToDateCheckInput Remove="Pages\Shared\Settings\Device\StepperController\StepperControllerSettingsView.razor" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <_ContentIncludedByDefault Remove="Pages\Shared\Settings\Device\StepperController\StepperControllerSettingsView.razor" />
+    <TypeScriptCompile Remove="Scripts\monaco\ares-autocomplete-setup.ts" />
+    <TypeScriptCompile Remove="Scripts\monaco\ares-diagnostics-setup.ts" />
+    <TypeScriptCompile Remove="Scripts\monaco\ares-hover-setup.ts" />
+    <TypeScriptCompile Remove="Scripts\monaco\ares-semantic-setup.ts" />
+    <TypeScriptCompile Remove="Scripts\monaco\ares-setup.ts" />
+    <TypeScriptCompile Remove="Scripts\monaco\areslang.language-configuration.ts" />
+    <TypeScriptCompile Remove="Scripts\monaco\areslang.monarch.ts" />
+    <TypeScriptCompile Remove="Scripts\globals.d.ts" />
+    <TypeScriptCompile Remove="Infrastructure\Scripts\globals.d.ts" />
   </ItemGroup>
 
 </Project>

@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using Antlr4.Runtime;
 using AresScript.Generated;
+using AresScript.Interpreters;
 using NUnit.Framework;
 
 namespace AresScript.Tests;
@@ -15,11 +16,11 @@ public class InterpreterTests
       IRecognizer recognizer,
       int offendingSymbol,
       int line,
-      int charPositionInLine,
+      int column,
       string msg,
       RecognitionException e)
     {
-      throw new InvalidOperationException($"Syntax error at {line}:{charPositionInLine} - {msg}");
+      throw new AresInterpreterException($"Syntax error: {msg}", line, column);
     }
   }
 
@@ -34,11 +35,16 @@ public class InterpreterTests
       string msg,
       RecognitionException e)
     {
-      throw new InvalidOperationException($"Syntax error at {line}:{charPositionInLine} - {msg}");
+      throw new AresInterpreterException($"Syntax error at {line}:{charPositionInLine} - {msg}");
     }
   }
 
-  private static async Task RunScriptAsync(string script, CancellationToken cancellationToken = default)
+  private static Task RunScriptAsync(string script, CancellationToken cancellationToken = default)
+  {
+    return RunScriptAsync(script, new ScriptExecutionControlToken(cancellationToken));
+  }
+
+  private static async Task RunScriptAsync(string script, ScriptExecutionControlToken executionControlToken)
   {
     var stream = new AntlrInputStream(script);
     var lexer = new AresIndentationLexer(stream);
@@ -49,9 +55,10 @@ public class InterpreterTests
     parser.RemoveErrorListeners();
     parser.AddErrorListener(new ThrowingParserErrorListener());
     var programCtx = parser.program();
-    var env = new Environment();
+    var env = new AresScriptEnvironment();
     env.AssignSystemFunctions(StandardLibrary.Functions);
-    var visitor = new AresBaseInterpreter(env, cancellationToken);
+    env.AssignExtensionFunctions(StandardLibrary.ExtensionFunctions);
+    var visitor = new AresBaseInterpreter(env, executionControlToken);
 
     await visitor.Visit(programCtx);
   }
@@ -67,8 +74,9 @@ public class InterpreterTests
     parser.RemoveErrorListeners();
     parser.AddErrorListener(new ThrowingParserErrorListener());
     var programCtx = parser.program();
-    var env = new Environment();
+    var env = new AresScriptEnvironment();
     env.AssignSystemFunctions(StandardLibrary.Functions);
+    env.AssignExtensionFunctions(StandardLibrary.ExtensionFunctions);
     var visitor = new AresValidationInterpreter(env);
 
     await visitor.Visit(programCtx);
@@ -94,7 +102,7 @@ public class InterpreterTests
       assert num1 + num2 == 80
       """;
 
-    var ex = Assert.ThrowsAsync<InvalidOperationException>(() => RunScriptAsync(script));
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("Assertion failed"));
     return Task.CompletedTask;
   }
@@ -106,7 +114,7 @@ public class InterpreterTests
       assert 123
       """;
 
-    var ex = Assert.ThrowsAsync<InvalidOperationException>(() => RunScriptAsync(script));
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("Assert condition must be boolean"));
     return Task.CompletedTask;
   }
@@ -137,7 +145,7 @@ public class InterpreterTests
       add(a=1, 2)
       """;
 
-    var ex = Assert.ThrowsAsync<InvalidOperationException>(() => RunScriptAsync(script));
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("Positional argument follows keyword argument"));
     return Task.CompletedTask;
   }
@@ -152,7 +160,7 @@ public class InterpreterTests
       add(c=1)
       """;
 
-    var ex = Assert.ThrowsAsync<InvalidOperationException>(() => RunScriptAsync(script));
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("unexpected keyword argument"));
     return Task.CompletedTask;
   }
@@ -167,7 +175,7 @@ public class InterpreterTests
       add(1)
       """;
 
-    var ex = Assert.ThrowsAsync<InvalidOperationException>(() => RunScriptAsync(script));
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("missing required argument"));
     return Task.CompletedTask;
   }
@@ -182,7 +190,7 @@ public class InterpreterTests
       add(a=1, a=2)
       """;
 
-    var ex = Assert.ThrowsAsync<InvalidOperationException>(() => RunScriptAsync(script));
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("Duplicate keyword argument"));
     return Task.CompletedTask;
   }
@@ -192,7 +200,7 @@ public class InterpreterTests
   {
     var script = "print(value=1)";
 
-    var ex = Assert.ThrowsAsync<InvalidOperationException>(() => RunScriptAsync(script));
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("does not support keyword arguments"));
     return Task.CompletedTask;
   }
@@ -205,9 +213,34 @@ public class InterpreterTests
         print("oops")
       """;
 
-    var ex = Assert.ThrowsAsync<InvalidOperationException>(() => RunScriptAsync(script));
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("Syntax error"));
     return Task.CompletedTask;
+  }
+
+  [Test]
+  public async Task Validation_AllowsMemberAccess_OnUnknownFunctionParameter()
+  {
+    var script = """
+      def meme(bepis):
+        bepis.GetTemperature()
+      """;
+
+    await ValidateScriptAsync(script);
+  }
+
+  [Test]
+  public async Task Validation_AssignsVariable_FromUserFunctionCall()
+  {
+    var script = """
+      def main():
+        return 1
+
+      bepis = main()
+      assert bepis == 1
+      """;
+
+    await ValidateScriptAsync(script);
   }
 
   [Test]
@@ -404,7 +437,7 @@ public class InterpreterTests
   {
     var script = "print(value=1)";
 
-    var ex = Assert.ThrowsAsync<InvalidOperationException>(() => ValidateScriptAsync(script));
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("does not support keyword arguments"));
     return Task.CompletedTask;
   }
@@ -419,7 +452,7 @@ public class InterpreterTests
       add(a=1, 2)
       """;
 
-    var ex = Assert.ThrowsAsync<InvalidOperationException>(() => ValidateScriptAsync(script));
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("Positional argument follows keyword argument"));
     return Task.CompletedTask;
   }
@@ -429,8 +462,8 @@ public class InterpreterTests
   {
     var script = "missing()";
 
-    var ex = Assert.ThrowsAsync<InvalidOperationException>(() => ValidateScriptAsync(script));
-    Assert.That(ex?.Message, Does.Contain("Function 'missing' not found"));
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
+    Assert.That(ex?.Message, Does.Contain("Unknown identifier 'missing'"));
     return Task.CompletedTask;
   }
 
@@ -470,6 +503,82 @@ public class InterpreterTests
   }
 
   [Test]
+  public async Task Numeric_Separators_Work_For_Int_And_Float()
+  {
+    var script = """
+      big = 1_000_000
+      assert big == 1000000
+
+      piish = 1_234.5_6
+      assert piish == 1234.56
+      """;
+
+    await RunScriptAsync(script);
+  }
+
+  [Test]
+  public async Task List_Append_Works()
+  {
+    var script = """
+      items = []
+      items.append(123)
+      assert items[0] == 123
+      """;
+
+    await RunScriptAsync(script);
+  }
+
+  [Test]
+  public async Task Lambda_Expression_Works()
+  {
+    var script = """
+      inc = x => x + 1
+      assert inc(2) == 3
+      """;
+
+    await RunScriptAsync(script);
+  }
+
+  [Test]
+  public async Task Lambda_Closure_Captures_By_Value()
+  {
+    var script = """
+      seed = 5
+      addSeed = x => x + seed
+      seed = 20
+      assert addSeed(2) == 7
+      """;
+
+    await RunScriptAsync(script);
+  }
+
+  [Test]
+  public Task Validator_Rejects_Too_Many_Lambda_Args()
+  {
+    var script = """
+      inc = x => x + 1
+      inc(1, 2)
+      """;
+
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
+    Assert.That(ex?.Message, Does.Contain("expected 1 arguments but got 2"));
+    return Task.CompletedTask;
+  }
+
+  [Test]
+  public Task Validator_Rejects_Too_Many_Extension_Args()
+  {
+    var script = """
+      items = []
+      items.append(1, 2)
+      """;
+
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
+    Assert.That(ex?.Message, Does.Contain("expected at most 1 arguments"));
+    return Task.CompletedTask;
+  }
+
+  [Test]
   public async Task Empty_Array_Literal_Does_Not_Throw()
   {
     var script = """
@@ -485,7 +594,7 @@ public class InterpreterTests
                  empty_arr = []
                  test = empty_arr[1]
                  """;
-    var ex = Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => RunScriptAsync(script));
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
     return Task.CompletedTask;
   }
 
@@ -529,6 +638,45 @@ public class InterpreterTests
   }
 
   [Test]
+  public async Task Inner_Scope_Reassignment_Does_Not_Update_Outer()
+  {
+    var script = """
+      count = 1
+      def inner():
+        count = 2
+      inner()
+      assert count == 1
+      """;
+    await RunScriptAsync(script);
+  }
+
+  [Test]
+  public async Task Inner_Scope_Member_Assignment_Updates_Outer_Struct()
+  {
+    var script = """
+      s = { "x": 1 }
+      def inner():
+        s.x = 2
+      inner()
+      assert s.x == 2
+      """;
+    await RunScriptAsync(script);
+  }
+
+  [Test]
+  public async Task Inner_Scope_Index_Assignment_Updates_Outer_Collection()
+  {
+    var script = """
+      items = [1, 2, 3]
+      def inner():
+        items[1] = 9
+      inner()
+      assert items[1] == 9
+      """;
+    await RunScriptAsync(script);
+  }
+
+  [Test]
   public async Task Block_At_Eof_Parses_Without_Trailing_Newline()
   {
     var script = "while False:\n  assert True";
@@ -558,6 +706,21 @@ public class InterpreterTests
   }
 
   [Test]
+  [CancelAfter(5000)]
+  public async Task Pause_Blocks_Execution_Until_Resume(CancellationToken testToken)
+  {
+    var script = "sleep(200)";
+    using var control = new ScriptExecutionControlTokenSource(testToken);
+    control.Pause();
+    var executionTask = RunScriptAsync(script, control.Token);
+    await Task.Delay(TimeSpan.FromMilliseconds(250), testToken);
+    Assert.That(executionTask.IsCompleted, Is.False);
+
+    control.Resume();
+    await executionTask.WaitAsync(testToken);
+  }
+
+  [Test]
   public Task Too_Much_Recursion()
   {
     var script = """
@@ -571,7 +734,7 @@ public class InterpreterTests
                  recurse(101)
                  """;
     
-    Assert.ThrowsAsync<InvalidOperationException>(() => RunScriptAsync(script));
+    Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
     return Task.CompletedTask;
   }
 

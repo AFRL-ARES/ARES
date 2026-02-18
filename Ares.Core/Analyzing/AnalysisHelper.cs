@@ -1,6 +1,7 @@
 ﻿using Ares.Core.Notifications;
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Templates;
 using Google.Protobuf.Collections;
 using Grpc.Core;
@@ -19,15 +20,16 @@ public class AnalysisHelper
       _logger = logger;
     }
 
-  public async Task<Analysis> Analyze(ExperimentTemplate template, ExperimentExecutionSummary experimentSummary, RequestMetadata metadata, CancellationToken cancellationToken)
+  public async Task<Analysis> Analyze(ExperimentTemplate template, ExperimentExecutionSummary experimentSummary, ExperimentExecutionSummary startupSummary, RequestMetadata metadata, CancellationToken cancellationToken)
   {
     try
     {
       var analyzer = GetAnalyzer(template.AnalyzerId);
       _logger.LogInformation("Analysis requested using analyzer {AnalyzerName}", analyzer.Name);
-      var analyzerInputs = ExperimentOutputToAnalyzerInputs(
-        experimentSummary.ExperimentOverview.Result,
-        template.AnalyzerMaps);
+
+      var combinedResult = AresStructHelper.AppendStruct(experimentSummary.ExperimentOverview.Result, startupSummary.ExperimentOverview.Result);
+      var analyzerInputs = ExperimentOutputToAnalyzerInputs(combinedResult, template.AnalyzerMaps);
+
       // TODO: Maybe add support for settings overrides if needed
       var analysis = await analyzer.Analyze(analyzerInputs, metadata, cancellationToken);
       experimentSummary.ExperimentOverview.AnalysisOverview = new AnalysisOverview
@@ -75,14 +77,24 @@ public class AnalysisHelper
 
   private AresStruct ExperimentOutputToAnalyzerInputs(AresStruct experimentResult, MapField<string, string> analyzerMappings)
   {
-    var mappedStruct = new AresStruct();
-    // Analyzer mapping is [KeyThatAnalyzerExpects, UserDefinedExperimentOutputKey]
-    foreach(var map in analyzerMappings)
+    try
     {
-      var expResultValue = experimentResult.Fields[map.Value];
-      mappedStruct.Fields[map.Key] = expResultValue;
+      var mappedStruct = new AresStruct();
+      // Analyzer mapping is [KeyThatAnalyzerExpects, UserDefinedExperimentOutputKey]
+      foreach(var map in analyzerMappings)
+      {
+        var expResultValue = experimentResult.Fields[map.Value];
+        mappedStruct.Fields[map.Key] = expResultValue;
+      }
+
+      return mappedStruct;
     }
 
-    return mappedStruct;
+    catch(Exception)
+    {
+      //TODO: Gracefully handle
+      throw;
+    }
+
   }
 }

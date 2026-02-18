@@ -1,0 +1,23 @@
+﻿@using UI.Features.CampaignEdit.ViewModels
+@using ParameterEditorViewModel=UI.Features.CampaignEdit.ViewModels.ParameterEditorViewModel
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<PlannableParameterDesignerViewModel>
+
+<div>
+    @foreach (var parameterEditorVm in ViewModel!.ParameterEditors)
+    {
+      <PlannableParameterEditor ViewModel="@parameterEditorVm" DeleteParameterCallback="DeleteParameterCallback" />
+    }
+    <div>
+        <button class="btn btn-secondary m-3" @onclick="NewParameterClick">Create New Parameter</button>
+    </div>
+</div>
+
+@code {
+  private void NewParameterClick() => ViewModel!.Create();
+
+  private void DeleteParameterCallback(ParameterEditorViewModel paramEditor)
+  {
+    ViewModel!.Remove(paramEditor);
+    StateHasChanged();
+  }
+}

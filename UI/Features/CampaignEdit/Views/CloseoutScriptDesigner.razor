@@ -1,0 +1,71 @@
+﻿@inject DialogService DialogService
+@using Ares.Datamodel.Templates
+@using UI.Features.CampaignEdit.ViewModels
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Features.CampaignEdit.ViewModels.CloseoutDesignerViewModel>
+
+
+<div class="d-flex flex-column h-100">
+  <div class="d-flex flex-column flex-grow-1 overflow-auto">
+    <div class="d-flex flex-column">
+      @foreach(var stepDesigner in ViewModel!.CloseoutStepDesigners)
+      {
+        <div class="d-flex">
+          <div class="d-flex flex-column py-2">
+            <button @onclick="() => ViewModel!.MoveCloseoutStepUp(stepDesigner)" class="btn btn btn-outline-light border-0 p-1">
+              <RadzenIcon Icon="arrow_drop_up" />
+            </button>
+            <button @onclick="() => ViewModel!.MoveCloseoutStepDown(stepDesigner)" class="btn btn btn-outline-light border-0 p-1">
+              <RadzenIcon Icon="arrow_drop_down" />
+            </button>
+          </div>
+          <div class="flex-grow-1">
+            <StepDesigner RemoveStepCallback="@RemoveStepCallback" IsCloseout="true" ViewModel="@stepDesigner" />
+          </div>
+        </div>
+      }
+    </div>
+    <button class="btn btn-outline-light my-2" @onclick="AddStepClick">
+      <RadzenIcon Icon="add" />
+      <span class="btn-text">Add Step</span>
+    </button>
+  </div>
+</div>
+
+
+@code {
+  [Parameter]
+  public ExperimentTemplate? CloseoutTemplate { get; set; }
+
+  private void RemoveStepCallback(StepDesignerViewModel vm)
+  {
+    ViewModel!.RemoveCloseoutStep(vm);
+    StateHasChanged();
+  }
+
+  private async void AddStepClick()
+  {
+    var stepDesigner = ViewModel!.AddCloseoutStep();
+    string name = stepDesigner.Name;
+    bool isParallel = stepDesigner.Parallel;
+    var result = await DialogService.OpenAsync("Step Create", ds =>
+      @<div class="d-flex flex-column">
+        <StepPropertyEditor @bind-Name="name" @bind-IsParallel="isParallel" />
+        <div class="d-flex">
+          <button class="btn btn-primary btn-outline-light" @onclick="() => ds.Close(true)">Create</button>
+          <button class="btn btn-danger btn-outline-light" @onclick="() => ds.Close(false)">Cancel</button>
+        </div>
+      </div>
+        );
+    if(result ?? false)
+    {
+      stepDesigner.Name = name;
+      stepDesigner.Parallel = isParallel;
+    }
+    else
+    {
+      ViewModel!.RemoveCloseoutStep(stepDesigner);
+      StateHasChanged();
+    }
+  }
+
+}

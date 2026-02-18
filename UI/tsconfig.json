@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "module": "ES6",
+    "moduleResolution": "bundler",
+    "target": "ES6",
+    "sourceMap": true,
+    "outDir": "wwwroot/js/monaco",
+    "rootDir": "Infrastructure/Monaco/Scripts",
+    "strict": true,
+    "esModuleInterop": true
+  },
+  "include": [
+    "Infrastructure/Monaco/Scripts/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "wwwroot"
+  ]
+}

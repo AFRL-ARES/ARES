@@ -1,19 +1,105 @@
-﻿@using static Microsoft.AspNetCore.Components.Web.RenderMode
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <base href="/" />
+  <link href="@Assets["lib/gridstack/dist/gridstack.min.css"]" rel="stylesheet" />
+  <link rel="stylesheet" href="@Assets["css/bootstrap/darkly.min.css"]" />
+  <link href="@Assets["css/site.css"]" rel="stylesheet" />
+  <link href="@Assets["UI.styles.css"]" rel="stylesheet" />
+  <link rel="stylesheet" href="@Assets["css/moar-css.css"]" />
+  <link rel="icon" type="image/png" href="@Assets["images/ARESLogo.png"]">
+  <HeadOutlet />
+</head>
+<body>
+  <RadzenTheme Theme="dark" />
+  <Routes @rendermode="InteractiveServer" />
 
-<RadzenTheme Theme="dark" />
-<CascadingAuthenticationState>
-    <Router @rendermode="InteractiveServer" AppAssembly="@typeof(App).Assembly">
-        <Found Context="routeData">
-            <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
-            <FocusOnNavigate RouteData="@routeData" Selector="h1" />
-        </Found>
-        <NotFound>
-            <PageTitle>Not found</PageTitle>
-            <LayoutView Layout="@typeof(ErrorLayout)">
-                <div class="h-100 row align-items-center">
-                    <h1>Sorry, there's nothing at this address.</h1>
-                </div>
-            </LayoutView>
-        </NotFound>
-    </Router>
-</CascadingAuthenticationState>
+  <div id="blazor-error-ui">
+    An error has occurred. This application may no longer respond until reloaded.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
+  </div>
+
+  <script src="@Assets["lib/gridstack/dist/gridstack-all.js"]"></script>
+  <script src="@Assets["_content/BlazorMonaco/jsInterop.js"]"></script>
+  <script src="@Assets["_content/BlazorMonaco/lib/monaco-editor/min/vs/loader.js"]"></script>
+  <script src="@Assets["_content/BlazorMonaco/lib/monaco-editor/min/vs/editor/editor.main.js"]"></script>
+  <script src="@Assets["_content/Radzen.Blazor/Radzen.Blazor.js"]"></script>
+  <script src="_framework/blazor.web.js"></script>
+
+  <script>
+    window.downloadFileFromStream = async (fileName, contentStreamReference) => {
+        const arrayBuffer = await contentStreamReference.arrayBuffer();
+        const blob = new Blob([arrayBuffer]);
+        const url = URL.createObjectURL(blob);
+        const anchorElement = document.createElement('a');
+        anchorElement.href = url;
+        anchorElement.download = fileName ?? '';
+        anchorElement.click();
+        anchorElement.remove();
+        URL.revokeObjectURL(url);
+    }
+  </script>
+
+  <script>
+    window.downloadJsonFile = async (fileName, jsonData) => {
+        try {
+            // Convert JSON data to a string
+            //const jsonString = JSON.stringify(jsonData, null, 2); // Use null, 2 for pretty printing (optional)
+
+            // Create a Blob with the correct MIME type
+            const blob = new Blob([jsonData], { type: 'application/json' });
+
+            // Create a URL for the Blob
+            const url = URL.createObjectURL(blob);
+
+            // Create a temporary anchor element
+            const anchorElement = document.createElement('a');
+            anchorElement.href = url;
+            anchorElement.download = fileName ?? 'data.json'; // Default filename if not provided
+
+            // Simulate a click to trigger the download
+            anchorElement.click();
+
+            // Clean up
+            anchorElement.remove();
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Error downloading JSON:", error);
+            // Handle the error appropriately, e.g., display an error message to the user
+        }
+    };
+  </script>
+
+  <script>
+    window.downloadByteArray = async (fileName, byteArray) => {
+        try {
+            // Create a Blob from the byte array with the correct MIME type for an image
+            // You'll need to determine the correct MIME type based on your image format
+            // Examples: 'image/png', 'image/jpeg', 'image/gif', etc.
+            const blob = new Blob([new Uint8Array(byteArray)], { type: 'image/tif' });
+
+            // Create a URL for the Blob
+            const url = URL.createObjectURL(blob);
+
+            // Create a temporary anchor element
+            const anchorElement = document.createElement('a');
+            anchorElement.href = url;
+            anchorElement.download = fileName ?? 'image.tif'; // Default filename if not provided
+
+            // Simulate a click to trigger the download
+            anchorElement.click();
+
+            // Clean up
+            anchorElement.remove();
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Error downloading byte array:", error);
+            // Handle the error appropriately, e.g., display an error message to the user
+        }
+    };
+  </script>
+</body>
+</html>

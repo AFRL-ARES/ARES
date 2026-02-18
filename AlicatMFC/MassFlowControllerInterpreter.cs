@@ -145,7 +145,7 @@ public class MassFlowControllerInterpreter : DeviceCommandInterpreter<IMassFlowC
             Index = 0,
             Name = MassFlowControllerCommandParameter.Setpoint.ToString(),
             Unit = StandardVolumeFlowUnit.StandardLiterPerMinute.ToString(),
-            Schema = AresSchemaBuilder.Entry(AresDataType.Number).AsOptional().Build()
+            Schema = AresSchemaBuilder.Entry(AresDataType.Number).Build()
           }
         }
       },

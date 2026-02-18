@@ -101,7 +101,8 @@ expression:
 	| expression LPAREN argList? RPAREN	# FunctionCall
 	| SUB expression										# UnaryMinus
 	| expression op = (MUL | DIV | MOD) expression			# MulDiv
-	| expression op = (ADD | SUB) expression				# AddSub
+	| expression ADD expression				# Add
+	| expression SUB expression                     # Sub
 	| expression op = (GT | LT | GE | LE) expression		# Relational
 	| expression op = (EQ | NEQ) expression					# Equality
 	| NOT expression										# LogicalNot
@@ -116,7 +117,7 @@ argument:
 	ID '=' expression # KeywordArg
 	| expression      # PositionalArg;
 
-// Basic atoms: literals, identifiers, parenthesized expressions, arrays, objects
+// Basic atoms: literals, identifiers, parenthesized expressions, arrays, structs
 atom:
 	INT											# Int
 	| FLOAT										# Float
@@ -126,14 +127,19 @@ atom:
 	| ID										# Id
 	| LPAREN expression RPAREN						# Parens
 	| LBRACK (expression (',' expression)*)? RBRACK	# Array
-	| obj										# Object;
+  | lambdaExpression              # LambdaExpr
+	| structure										# Struct;
 
-// Key-Value pairs for objects. Python can apparently support expressions as keys, but that seems a
+lambdaExpression:
+  ID ARROW expression # LambdaSingleParam
+  | LPAREN (ID (',' ID)*)? RPAREN ARROW expression # LambdaParamList;
+
+// Key-Value pairs for structs. Python can apparently support expressions as keys, but that seems a
 // bit overkill for ARES scripts, so we'll limit it to just identifiers and strings for now
 pair: (ID | STRING) ':' expression;
 
 // JSON-like struct definition TODO: Decide if we should actually support structs in AresScript
-obj: LBRACE (pair ((',' pair))*)? RBRACE;
+structure: LBRACE (pair ((',' pair))*)? RBRACE;
 
 // --- Lexer Rules (Tokens) ---
 
@@ -159,6 +165,7 @@ GT: '>';
 LT: '<';
 GE: '>=';
 LE: '<=';
+ARROW: '=>';
 
 // Keywords
 IF: 'if';
@@ -188,12 +195,13 @@ NONE: 'None';
 ID: [a-zA-Z_] [a-zA-Z0-9_]*;
 
 // Integers: one or more digits
-INT: DIGIT+;
+INT: DIGITS;
 
 // Float: floating point numbers (actually doubles behind the scenes, but float sounds cool)
-FLOAT: DIGIT+ '.' DIGIT+;
+FLOAT: DIGITS '.' DIGITS;
 
 fragment DIGIT: [0-9];
+fragment DIGITS: DIGIT (DIGIT | '_' DIGIT)*;
 
 // Whitespace: skip spaces and tabs so the parser ignores them
 WS: [ \t]+ -> skip;

@@ -1,0 +1,69 @@
+@page "/settings/analysis"
+@using Ares.Services
+@using Google.Protobuf.WellKnownTypes
+@using UI.Features.Analyzing.Settings.Layout
+@inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<AnalyzerSettingsListViewModel>
+@layout AnalyzerSettingsLayout
+
+@inject DialogService DialogService
+
+@if (ViewModel!.SettingsViewModels is null)
+{
+  <LoadingSpinner />
+}
+else
+{
+  <div class="d-flex flex-column">
+    @foreach (var vm in ViewModel!.SettingsViewModels)
+    {
+      <div class="m-2">
+        <AnalyzerSettingsView ViewModel="vm"/>
+      </div>
+    }
+    <button class="m-2 align-self-end btn btn-outline-light" disabled="@SavingInProgress" @onclick="AddAnalyzerClick">
+      @if (SavingInProgress)
+      {
+        <LoadingSpinner SpinnerSize="SpinnerSize.Small" />
+      }
+      else
+      {
+        <RadzenIcon Icon="add"/> 
+      }
+    </button>
+  </div>
+}
+
+@code {
+  private async Task AddAnalyzerClick()
+  {
+    var viewModel = ViewModel!.GetNewConfigEditViewModel();
+    var result = await DialogService.OpenAsync("New Analyzer", ds =>
+      @<AnalyzerConfigEditView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)" />);
+
+    var notification = new AresNotification();
+    if (result is true)
+    {
+      SavingInProgress = true;
+      StateHasChanged();
+      try
+      {
+        await ViewModel!.AddNewAnalyzer(viewModel.Save());
+      }
+      catch (Grpc.Core.RpcException e)
+      {
+        notification.Title = $"Failed to add Analyzer {viewModel.Name}";
+        notification.Message = $"ARES was unable to add {viewModel.Name} as an available analyzer. {e.Message}";
+        notification.NotificationSeverity = Severity.Error;
+        notification.Timestamp = DateTime.UtcNow.ToTimestamp();
+        ViewModel!.PushNotification(notification);
+      }
+      finally
+      {
+        SavingInProgress = false;
+        StateHasChanged();
+      }
+    }
+  }
+
+  private bool SavingInProgress { get; set; }
+}
