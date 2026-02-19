@@ -1,4 +1,3 @@
-using System.Text;
 using Antlr4.Runtime;
 using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
@@ -6,9 +5,8 @@ using Ares.Datamodel.Scripting;
 using Ares.Services;
 using AresScript;
 using AresScript.Generated;
-using AresScript.Interpreters;
-using Google.Protobuf.WellKnownTypes;
 using Microsoft.JSInterop;
+using System.Text;
 using UI.Application.Scripting;
 
 namespace UI.Infrastructure.Monaco.Interops;
@@ -16,7 +14,6 @@ namespace UI.Infrastructure.Monaco.Interops;
 public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServiceClient aresScriptingServiceClient) : IMonacoHoverProvider
 {
   private readonly AresScriptingService.AresScriptingServiceClient _aresScriptingServiceClient = aresScriptingServiceClient;
-  private AutocompleteCatalog? _cachedCatalog;
 
   [JSInvokable]
   public async Task<string?> GetHoverText(string script, int line, int column, string identifier)
@@ -39,15 +36,6 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
     var hoverMarkdown = BuildHoverMarkdown(item);
     var markdown = hoverMarkdown?.markdown;
     var hasSchema = hoverMarkdown?.hasSchema ?? false;
-
-    if(!hasSchema)
-    {
-      var inferredSchema = await TryGetInferredSchema(script, line, column, identifier);
-      if(inferredSchema is not null)
-      {
-        markdown = AppendInferredSchema(markdown, identifier, inferredSchema);
-      }
-    }
 
     return string.IsNullOrWhiteSpace(markdown) ? null : markdown;
   }
@@ -169,52 +157,6 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
     return entry.Optional ? $"{typeName} (optional)" : typeName;
   }
 
-  private async Task<SchemaEntry?> TryGetInferredSchema(string script, int line, int column, string identifier)
-  {
-    if(string.IsNullOrWhiteSpace(script))
-    {
-      return null;
-    }
-
-    var catalog = await GetAutocompleteCatalog();
-    if(catalog is null)
-    {
-      return null;
-    }
-
-    var env = BuildEnvironmentForInference(catalog);
-    var program = TryParseProgram(script);
-    if(program is null)
-    {
-      return null;
-    }
-
-    var globalSchemas = new Dictionary<string, SchemaEntry>(StringComparer.Ordinal);
-    foreach(var global in catalog.Globals)
-    {
-      if(global.Schema is not null && !string.IsNullOrWhiteSpace(global.Name))
-      {
-        globalSchemas[global.Name] = global.Schema;
-      }
-    }
-
-    var collector = new VariableSchemaCollector(env, globalSchemas, line, column, identifier);
-    collector.Visit(program);
-    return collector.FoundSchema;
-  }
-
-  private async Task<AutocompleteCatalog?> GetAutocompleteCatalog()
-  {
-    if(_cachedCatalog is not null)
-    {
-      return _cachedCatalog;
-    }
-
-    var response = await _aresScriptingServiceClient.GetAutocompleteCatalogAsync(new Empty());
-    _cachedCatalog = response.Catalog;
-    return _cachedCatalog;
-  }
-
   private static AresLangParser.ProgramContext? TryParseProgram(string script)
   {
     try
@@ -229,18 +171,6 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
     {
       return null;
     }
-  }
-
-  private static AresScriptEnvironment BuildEnvironmentForInference(AutocompleteCatalog catalog)
-  {
-    var env = new AresScriptEnvironment();
-    var functions = catalog.GlobalFunctions
-      .Select(func => CreateSystemFunction(func, string.Empty))
-      .Concat(catalog.Namespaces.SelectMany(ns => ns.Functions.Select(func => CreateSystemFunction(func, ns.Identifier))))
-      .ToArray();
-
-    env.AssignSystemFunctions(functions);
-    return env;
   }
 
   private static AresSystemFunction CreateSystemFunction(FunctionSymbol function, string namespaceName)

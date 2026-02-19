@@ -2,7 +2,6 @@ using Ares.Core.Scripting;
 using Ares.Services;
 using AresScript.Interpreters;
 using AresScript.ScriptAnalysis;
-using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.Extensions.Logging;
 using System;
@@ -83,17 +82,6 @@ public partial class AresScriptingService : Ares.Services.AresScriptingService.A
     }
 
     await readTask;
-  }
-
-  public override Task<AutocompleteCatalogResponse> GetAutocompleteCatalog(Empty request, ServerCallContext context)
-  {
-    var environment = _environmentBuilder.Build();
-    var catalog = AresScriptAnalysis.BuildAutocompleteCatalog(environment);
-    var response = new AutocompleteCatalogResponse
-    {
-      Catalog = catalog
-    };
-    return Task.FromResult(response);
   }
 
   public override async Task<CompletionResponse> GetCompletions(CompletionRequest request, ServerCallContext context)
