@@ -75,7 +75,7 @@ loopBlock:
 
 // Function declarations. TODO: Decide if AresScript should even support custom functions
 functionDeclaration:
-	DEF ID LPAREN parameterList? RPAREN (COLON typeHint)? COLON funcBlock;
+	DEF ID LPAREN parameterList? RPAREN (RETURN_TYPE_ARROW typeHint)? COLON funcBlock;
 
 parameterList:
 	parameter (',' parameter)* ','?;
@@ -175,6 +175,7 @@ LT: '<';
 GE: '>=';
 LE: '<=';
 ARROW: '=>';
+RETURN_TYPE_ARROW: '->';
 
 // Keywords
 IF: 'if';

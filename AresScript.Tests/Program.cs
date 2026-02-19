@@ -1,4 +1,6 @@
 using Antlr4.Runtime;
+using Ares.Datamodel;
+using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Scripting;
 using AresScript.Generated;
 using AresScript.Interpreters;
@@ -144,6 +146,29 @@ public class InterpreterTests
     return completions.ToArray();
   }
 
+  private static SchemaEntry InferExpressionSchema(
+    string expression,
+    Action<AresScriptEnvironment>? configureEnvironment = null)
+  {
+    var stream = new AntlrInputStream(expression);
+    var lexer = new AresIndentationLexer(stream);
+    lexer.RemoveErrorListeners();
+    lexer.AddErrorListener(new ThrowingLexerErrorListener());
+    var tokenStream = new CommonTokenStream(lexer);
+    var parser = new AresLangParser(tokenStream);
+    parser.RemoveErrorListeners();
+    parser.AddErrorListener(new ThrowingParserErrorListener());
+    var expressionContext = parser.expression();
+
+    var env = new AresScriptEnvironment();
+    env.AssignSystemFunctions(StandardLibrary.Functions);
+    env.AssignExtensionFunctions(StandardLibrary.ExtensionFunctions);
+    configureEnvironment?.Invoke(env);
+
+    var visitor = new AresTypeInferenceInterpreter(env);
+    return visitor.Visit(expressionContext);
+  }
+
   [Test]
   public async Task Assert_Passes_OnTrueCondition()
   {
@@ -201,7 +226,7 @@ public class InterpreterTests
   public async Task Function_TypeHints_Are_Parsed_For_Parameters_And_Returns()
   {
     var script = """
-      def identity(value: Number): Number:
+      def identity(value: Number) -> Number:
         return value
 
       assert identity(42) == 42
@@ -214,7 +239,7 @@ public class InterpreterTests
   public async Task Validation_Allows_Function_TypeHints()
   {
     var script = """
-      def format_value(value: Number): String:
+      def format_value(value: Number) -> String:
         return "ok"
       """;
 
@@ -225,7 +250,7 @@ public class InterpreterTests
   public Task Runtime_Rejects_Mismatched_Function_Argument_TypeHint()
   {
     var script = """
-      def echo_num(value: Number): Number:
+      def echo_num(value: Number) -> Number:
         return value
 
       echo_num("oops")
@@ -240,7 +265,7 @@ public class InterpreterTests
   public Task Validation_Rejects_Mismatched_Function_Argument_TypeHint()
   {
     var script = """
-      def echo_num(value: Number): Number:
+      def echo_num(value: Number) -> Number:
         return value
 
       echo_num("oops")
@@ -255,7 +280,7 @@ public class InterpreterTests
   public Task Runtime_Rejects_Mismatched_Function_Return_TypeHint()
   {
     var script = """
-      def bad_return(): Number:
+      def bad_return() -> Number:
         return "oops"
 
       bad_return()
@@ -270,7 +295,7 @@ public class InterpreterTests
   public Task Validation_Rejects_Mismatched_Function_Return_TypeHint()
   {
     var script = """
-      def bad_return(): Number:
+      def bad_return() -> Number:
         return "oops"
       """;
 
@@ -287,6 +312,29 @@ public class InterpreterTests
     var labels = completions.Select(item => item.Label).ToHashSet(StringComparer.Ordinal);
     Assert.That(labels, Does.Contain("Number"));
     Assert.That(labels, Does.Contain("String"));
+    Assert.That(completions.Any(item => item.Kind == CompletionItemKind.Type), Is.True);
+  }
+
+  [Test]
+  public async Task Completions_Include_DataTypes_In_Function_Return_TypeHint_Context()
+  {
+    var script = "def typed(value: Number) -> ";
+    var completions = await BuildCompletionsAsync(script, 1, script.Length + 1);
+    var labels = completions.Select(item => item.Label).ToHashSet(StringComparer.Ordinal);
+    Assert.That(labels, Does.Contain("Number"));
+    Assert.That(labels, Does.Contain("String"));
+    Assert.That(completions.Any(item => item.Kind == CompletionItemKind.Type), Is.True);
+  }
+
+  [Test]
+  public async Task Completions_DoNot_Include_DataTypes_In_Function_Body_Context()
+  {
+    var script = """
+      def typed(value: Number) -> Number:
+        val = 
+      """;
+    var completions = await BuildCompletionsAsync(script, 2, 9);
+    Assert.That(completions.Any(item => item.Kind == CompletionItemKind.Type), Is.False);
   }
 
   [Test]
@@ -395,6 +443,28 @@ public class InterpreterTests
       """;
 
     await ValidateScriptAsync(script);
+  }
+
+  [Test]
+  public void TypeInference_Resolves_Parenthesized_System_Function_Call_Output_Schema()
+  {
+    var schema = InferExpressionSchema("(range)(3)");
+    Assert.That(schema.Type, Is.EqualTo(AresDataType.NumberArray));
+  }
+
+  [Test]
+  public void TypeInference_Resolves_Extension_Call_From_Struct_String_Index()
+  {
+    var schema = InferExpressionSchema(
+      "payload[\"nums\"].append(3)",
+      env =>
+      {
+        var payload = AresValueHelper.CreateStruct();
+        payload.StructValue.Fields["nums"] = AresValueHelper.CreateNumberArray([1, 2]);
+        env.AssignVariable("payload", payload);
+      });
+
+    Assert.That(schema.Type, Is.EqualTo(AresDataType.Unit));
   }
 
   [Test]
@@ -981,6 +1051,7 @@ public class InterpreterTests
                  test = empty_arr[1]
                  """;
     var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
+    Assert.That(ex?.Message, Does.Contain("Index was out of range."));
     return Task.CompletedTask;
   }
 
@@ -1002,8 +1073,10 @@ public class InterpreterTests
   public async Task Top_Level_Loop_Works()
   {
     var script = """
+                 total = 0
                  for i in range(10):
-                   print(i + i)
+                   total = total + i
+                 assert total == 45
                  """;
 
     await RunScriptAsync(script);
@@ -1120,7 +1193,8 @@ public class InterpreterTests
                  recurse(101)
                  """;
 
-    Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
+    Assert.That(ex?.Message, Does.Contain("Maximum function call depth reached."));
     return Task.CompletedTask;
   }
 

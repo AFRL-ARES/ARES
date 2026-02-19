@@ -354,14 +354,14 @@ public static partial class AresScriptAnalysis
       return parameterHintColonIndex > openParenIndex;
     }
 
-    var returnHintColonIndex = prefix.IndexOf(':', closeParenIndex + 1);
-    if(returnHintColonIndex < 0)
+    var returnHintArrowIndex = prefix.IndexOf("->", closeParenIndex + 1, StringComparison.Ordinal);
+    if(returnHintArrowIndex < 0)
     {
       return false;
     }
 
-    var suffixAfterReturnHintColon = prefix[(returnHintColonIndex + 1)..];
-    return !suffixAfterReturnHintColon.Contains(':');
+    var suffixAfterReturnHintArrow = prefix[(returnHintArrowIndex + 2)..];
+    return !suffixAfterReturnHintArrow.Contains(':');
   }
 
   [GeneratedRegex(@"([A-Za-z_][A-Za-z0-9_]*)\s*$")]
