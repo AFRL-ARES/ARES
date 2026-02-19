@@ -1196,17 +1196,35 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
             return dummyValue;
           }
 
-          if(_environment.TryGetUserFunction(funcId, out var _) || _environment.TryGetUserLambda(funcId, out var _))
+          if(_environment.TryGetUserFunction(funcId, out var userFunction))
           {
-            // We cannot know user-function return shape statically in this pass, but assignment target
-            // should still be introduced into scope for subsequent validation.
+            var declaredReturnType = userFunction.ReturnType;
+            if(declaredReturnType is AresDataType.Any or AresDataType.UnspecifiedType)
+            {
+              return CreateUnknownValue();
+            }
+
+            var returnSchema = AresSchemaBuilder.Entry(declaredReturnType).Build();
+            return InterpreterHelpers.CreateDummyValue(returnSchema);
+          }
+
+          if(_environment.TryGetUserLambda(funcId, out var _))
+          {
+            // Lambda return type is not declared, so preserve unknown shape for validation.
             return CreateUnknownValue();
           }
           break;
         }
     }
+    // Fallback for computed expressions (math, comparisons, logical ops, etc.)
+    // so assigned variables are still introduced with a reasonable placeholder shape.
+    var inferredSchema = _typeInference.Visit(expression);
+    if(inferredSchema.Type is AresDataType.Any or AresDataType.UnspecifiedType)
+    {
+      return CreateUnknownValue();
+    }
 
-    return null;
+    return InterpreterHelpers.CreateDummyValue(inferredSchema);
   }
 
   private AresValue CreateLambdaFunctionValue(AresLangParser.LambdaExpressionContext lambdaExpression)
