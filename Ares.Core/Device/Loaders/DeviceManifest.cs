@@ -10,4 +10,5 @@ public class DeviceManifest
   public string? DriverClass { get; set; }
   public string? ViewModelClass { get; set; }
   public Dictionary<string, object> Settings { get; set; } = new();
+  public string? DriverVersion { get; set; }
 }

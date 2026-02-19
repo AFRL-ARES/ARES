@@ -10,4 +10,7 @@ public class DeviceDriver
   public Type DriverType { get; init; } = null!;
   public Type? ViewModelType { get; init; }
   public string ModulePath { get; init; } = string.Empty;
+  public int DriverSize { get; init; } = 0;
+  public string CheckSum { get; init; } = string.Empty;
+  public string UniqueId { get; } = Guid.NewGuid().ToString();
 }

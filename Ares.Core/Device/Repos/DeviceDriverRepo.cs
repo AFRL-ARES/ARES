@@ -19,6 +19,11 @@ public class DeviceDriverRepo : IDeviceDriverRepo
     return _drivers.TryGetValue(name, out var driver) ? driver : null;
   }
 
+  public DeviceDriver? GetById(string id)
+  {
+    return _drivers.Values.FirstOrDefault(driver => driver.UniqueId == id);
+  }
+
   public IEnumerable<DeviceDriver> GetAll()
   {
     return _drivers.Values;
