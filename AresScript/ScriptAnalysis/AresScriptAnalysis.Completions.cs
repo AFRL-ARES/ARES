@@ -101,6 +101,11 @@ public static partial class AresScriptAnalysis
       }));
     }
 
+    if(IsTypeHintContext(script, cursorLine, cursorColumn))
+    {
+      AddTypeHintCompletions(items);
+    }
+
     return items;
   }
 
@@ -296,6 +301,67 @@ public static partial class AresScriptAnalysis
       ParentIdentifier = parentIdentifier,
       Schema = value.ToSchemaEntry()
     });
+  }
+
+  private static void AddTypeHintCompletions(ICollection<CompletionItem> items)
+  {
+    foreach(var typeName in AresScriptTypeHints.AvailableTypeNames)
+    {
+      items.Add(new CompletionItem
+      {
+        Label = typeName,
+        InsertText = typeName,
+        Detail = "Ares data type",
+        Documentation = $"Ares data type '{typeName}'.",
+        Kind = CompletionItemKind.Type,
+        SortText = $"00_{typeName}"
+      });
+    }
+  }
+
+  private static bool IsTypeHintContext(string script, int cursorLine, int cursorColumn)
+  {
+    if(cursorLine <= 0 || cursorColumn <= 0 || string.IsNullOrEmpty(script))
+    {
+      return false;
+    }
+
+    var lines = script.Split(["\r\n", "\n"], StringSplitOptions.None);
+    if(cursorLine > lines.Length)
+    {
+      return false;
+    }
+
+    var line = lines[cursorLine - 1];
+    var safeColumn = Math.Min(cursorColumn - 1, line.Length);
+    var prefix = line[..safeColumn];
+    if(!prefix.Contains("def", StringComparison.Ordinal))
+    {
+      return false;
+    }
+
+    var defIndex = prefix.IndexOf("def", StringComparison.Ordinal);
+    var openParenIndex = prefix.IndexOf('(', defIndex);
+    if(defIndex < 0 || openParenIndex < 0)
+    {
+      return false;
+    }
+
+    var closeParenIndex = prefix.LastIndexOf(')');
+    if(closeParenIndex < openParenIndex)
+    {
+      var parameterHintColonIndex = prefix.LastIndexOf(':');
+      return parameterHintColonIndex > openParenIndex;
+    }
+
+    var returnHintColonIndex = prefix.IndexOf(':', closeParenIndex + 1);
+    if(returnHintColonIndex < 0)
+    {
+      return false;
+    }
+
+    var suffixAfterReturnHintColon = prefix[(returnHintColonIndex + 1)..];
+    return !suffixAfterReturnHintColon.Contains(':');
   }
 
   [GeneratedRegex(@"([A-Za-z_][A-Za-z0-9_]*)\s*$")]

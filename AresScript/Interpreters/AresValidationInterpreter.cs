@@ -2,6 +2,7 @@ using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
 using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
+using Ares.Datamodel.Factories;
 using AresScript.Generated;
 using Google.Protobuf.WellKnownTypes;
 
@@ -18,7 +19,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
   private readonly int? _line = null;
   private readonly ValidationMode _mode;
   private readonly bool _traverseFunctionDeclarationBodies;
-  private readonly Stack<string[]> _pendingFunctionParameters = new();
+  private readonly Stack<(IReadOnlyList<AresScriptParameter> Parameters, AresDataType ReturnType)> _pendingFunctions = new();
   private readonly AresTypeInferenceInterpreter _typeInference;
   private readonly List<AresFunctionInvocation> _functionInvocations = [];
   
@@ -128,11 +129,11 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     _functionDepth++;
     try
     {
-      if(_pendingFunctionParameters.Count > 0)
+      if(_pendingFunctions.Count > 0)
       {
-        foreach(var parameter in _pendingFunctionParameters.Peek())
+        foreach(var parameter in _pendingFunctions.Peek().Parameters)
         {
-          _environment.AssignVariable(parameter, CreateUnknownValue());
+          _environment.AssignVariable(parameter.Name, CreateUnknownValue());
         }
       }
 
@@ -279,9 +280,30 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
 
   public override async Task VisitReturnStmt(AresLangParser.ReturnStmtContext context)
   {
-    if(context.expression() is not null)
+    var expression = context.expression();
+    if(expression is not null)
     {
-      await Visit(context.expression());
+      await Visit(expression);
+    }
+
+    if(_pendingFunctions.Count == 0)
+    {
+      return;
+    }
+
+    var expectedType = _pendingFunctions.Peek().ReturnType;
+
+    var actual = expression is null
+      ? AresSchemaBuilder.Entry(AresDataType.Unit).Build()
+      : _typeInference.Visit(expression);
+    var expected = AresSchemaBuilder.Entry(expectedType).Build();
+    if(!IsCompatible(expected, actual))
+    {
+      throw new AresInterpreterException(
+        $"Function return type mismatch. Expected {expectedType}, received {actual.Type}.",
+        context.Start.Line,
+        context.Start.Column
+      );
     }
   }
 
@@ -408,8 +430,8 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
   public override async Task VisitFunctionDecl([NotNull] AresLangParser.FunctionDeclContext context)
   {
     var decl = context.functionDeclaration();
-    var ids = decl.ID();
-    if(ids.Length == 0)
+    var functionNameToken = decl.ID();
+    if(functionNameToken is null)
     {
       if(_mode == ValidationMode.Strict)
       {
@@ -418,8 +440,16 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       return;
     }
 
-    var functionId = ids[0].GetText();
-    var paramIds = ids.Skip(1).Select(p => p.GetText()).ToArray();
+    var functionId = functionNameToken.GetText();
+    var parameters = (decl.parameterList()?.parameter() ?? [])
+      .Select(parameter =>
+      {
+        var parameterName = parameter.ID().GetText();
+        var parameterType = ResolveTypeHint(parameter.typeHint(), $"parameter '{parameterName}' in function '{functionId}'", parameter.Start);
+        return new AresScriptParameter(parameterName, parameterType);
+      })
+      .ToArray();
+    var declaredReturnType = ResolveTypeHint(decl.typeHint(), $"return type hint in function '{functionId}'", context.Start);
     var block = decl.funcBlock();
     if(block is null)
     {
@@ -430,7 +460,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       return;
     }
 
-    var userFunc = new AresScriptFunction(functionId, paramIds, block);
+    var userFunc = new AresScriptFunction(functionId, parameters, block, declaredReturnType);
     _environment.AssignFunction(functionId, userFunc);
 
     if(_line is not null && _line.Value == context.Start.Line)
@@ -443,7 +473,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       return;
     }
 
-    _pendingFunctionParameters.Push(paramIds);
+    _pendingFunctions.Push((parameters, declaredReturnType));
     
     try
     {
@@ -451,7 +481,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     }
     finally
     {
-      _pendingFunctionParameters.Pop();
+      _pendingFunctions.Pop();
     }
   }
 
@@ -665,16 +695,16 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
 
     if(_environment.TryGetUserFunction(functionId, out var userFn))
     {
-      if(positionalArgs.Count > userFn.Parameters.Count)
+      if(positionalArgs.Count > userFn.ParameterNames.Count)
       {
         throw new AresInterpreterException(
-          $"Function '{functionId}' expected {userFn.Parameters.Count} arguments but got {positionalArgs.Count}"
+          $"Function '{functionId}' expected {userFn.ParameterNames.Count} arguments but got {positionalArgs.Count}"
         );
       }
 
       foreach(var (name, _) in keywordArgs)
       {
-        var index = FindParameterIndex(userFn.Parameters, name);
+        var index = FindParameterIndex(userFn.ParameterNames, name);
         if(index < 0)
         {
           throw new AresInterpreterException($"Function '{functionId}' got an unexpected keyword argument '{name}'");
@@ -686,9 +716,9 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
         }
       }
 
-      for(var i = positionalArgs.Count; i < userFn.Parameters.Count; i++)
+      for(var i = positionalArgs.Count; i < userFn.ParameterNames.Count; i++)
       {
-        var name = userFn.Parameters[i];
+        var name = userFn.ParameterNames[i];
         if(!keywordArgs.ContainsKey(name))
         {
           throw new AresInterpreterException(
@@ -699,6 +729,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
         }
       }
 
+      ValidateUserFunctionTypeHints(functionId, userFn, positionalArgs, keywordArgs, ctx);
       RecordFunctionInvocation(userFn.Name, userFn.Name, ctx, AresFunctionInvocationKind.User);
       return;
     }
@@ -938,6 +969,79 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     }
 
     return false;
+  }
+
+  private void ValidateUserFunctionTypeHints(
+    string functionId,
+    AresScriptFunction userFunction,
+    IReadOnlyList<AresLangParser.ExpressionContext> positionalArgs,
+    IReadOnlyDictionary<string, AresLangParser.ExpressionContext> keywordArgs,
+    AresLangParser.FunctionCallContext context)
+  {
+    for(var i = 0; i < userFunction.Parameters.Count; i++)
+    {
+      var parameter = userFunction.Parameters[i];
+      var parameterName = parameter.Name;
+      var expectedType = parameter.Type;
+
+      AresLangParser.ExpressionContext? argument = null;
+      if(i < positionalArgs.Count)
+      {
+        argument = positionalArgs[i];
+      }
+      else if(keywordArgs.TryGetValue(parameterName, out var keywordArgument))
+      {
+        argument = keywordArgument;
+      }
+
+      if(argument is null)
+      {
+        continue;
+      }
+
+      var expected = AresSchemaBuilder.Entry(expectedType).Build();
+      var actual = _typeInference.Visit(argument);
+      if(IsCompatible(expected, actual))
+      {
+        continue;
+      }
+
+      throw new AresInterpreterException(
+        $"Function '{functionId}' argument '{parameterName}' type mismatch. Expected {expectedType}, received {actual.Type}.",
+        context.Start.Line,
+        context.Start.Column
+      );
+    }
+  }
+
+  private AresDataType ResolveTypeHint(AresLangParser.TypeHintContext? typeHint, string targetName, IToken token)
+  {
+    if(typeHint is null)
+    {
+      return AresDataType.Any;
+    }
+
+    var rawTypeHint = typeHint.GetText();
+    if(string.IsNullOrWhiteSpace(rawTypeHint))
+    {
+      return AresDataType.Any;
+    }
+
+    if(AresScriptTypeHints.TryParseTypeHint(rawTypeHint, out var resolvedType))
+    {
+      return resolvedType;
+    }
+
+    if(_mode == ValidationMode.Strict)
+    {
+      throw new AresInterpreterException(
+        $"Unknown type hint '{rawTypeHint}' for {targetName}.",
+        token.Line,
+        token.Column
+      );
+    }
+
+    return AresDataType.Any;
   }
 
   private static int FindParameterIndex(IReadOnlyList<string> parameters, string name)

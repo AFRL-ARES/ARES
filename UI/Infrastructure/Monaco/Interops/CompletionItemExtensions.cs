@@ -44,6 +44,7 @@ public static class CompletionItemExtensions
       AresCompletionItemKind.Variable => CompletionItemKind.Variable,
       AresCompletionItemKind.Struct => CompletionItemKind.Struct,
       AresCompletionItemKind.Keyword => CompletionItemKind.Keyword,
+      AresCompletionItemKind.Type => CompletionItemKind.TypeParameter,
       _ => CompletionItemKind.Text
     };
   }

@@ -135,6 +135,15 @@ public class InterpreterTests
     return steps;
   }
 
+  private static async Task<CompletionItem[]> BuildCompletionsAsync(string script, int line, int column)
+  {
+    var env = new AresScriptEnvironment();
+    env.AssignSystemFunctions(StandardLibrary.Functions);
+    env.AssignExtensionFunctions(StandardLibrary.ExtensionFunctions);
+    var completions = await AresScriptAnalysis.BuildCompletionsAsync(env, script, line, column);
+    return completions.ToArray();
+  }
+
   [Test]
   public async Task Assert_Passes_OnTrueCondition()
   {
@@ -186,6 +195,98 @@ public class InterpreterTests
       """;
 
     await RunScriptAsync(script);
+  }
+
+  [Test]
+  public async Task Function_TypeHints_Are_Parsed_For_Parameters_And_Returns()
+  {
+    var script = """
+      def identity(value: Number): Number:
+        return value
+
+      assert identity(42) == 42
+      """;
+
+    await RunScriptAsync(script);
+  }
+
+  [Test]
+  public async Task Validation_Allows_Function_TypeHints()
+  {
+    var script = """
+      def format_value(value: Number): String:
+        return "ok"
+      """;
+
+    await ValidateScriptAsync(script);
+  }
+
+  [Test]
+  public Task Runtime_Rejects_Mismatched_Function_Argument_TypeHint()
+  {
+    var script = """
+      def echo_num(value: Number): Number:
+        return value
+
+      echo_num("oops")
+      """;
+
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
+    Assert.That(ex?.Message, Does.Contain("argument 'value' type mismatch"));
+    return Task.CompletedTask;
+  }
+
+  [Test]
+  public Task Validation_Rejects_Mismatched_Function_Argument_TypeHint()
+  {
+    var script = """
+      def echo_num(value: Number): Number:
+        return value
+
+      echo_num("oops")
+      """;
+
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
+    Assert.That(ex?.Message, Does.Contain("argument 'value' type mismatch"));
+    return Task.CompletedTask;
+  }
+
+  [Test]
+  public Task Runtime_Rejects_Mismatched_Function_Return_TypeHint()
+  {
+    var script = """
+      def bad_return(): Number:
+        return "oops"
+
+      bad_return()
+      """;
+
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
+    Assert.That(ex?.Message, Does.Contain("return type mismatch"));
+    return Task.CompletedTask;
+  }
+
+  [Test]
+  public Task Validation_Rejects_Mismatched_Function_Return_TypeHint()
+  {
+    var script = """
+      def bad_return(): Number:
+        return "oops"
+      """;
+
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
+    Assert.That(ex?.Message, Does.Contain("return type mismatch"));
+    return Task.CompletedTask;
+  }
+
+  [Test]
+  public async Task Completions_Include_DataTypes_In_Function_TypeHint_Context()
+  {
+    var script = "def typed(value: ";
+    var completions = await BuildCompletionsAsync(script, 1, script.Length + 1);
+    var labels = completions.Select(item => item.Label).ToHashSet(StringComparer.Ordinal);
+    Assert.That(labels, Does.Contain("Number"));
+    Assert.That(labels, Does.Contain("String"));
   }
 
   [Test]

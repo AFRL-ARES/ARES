@@ -75,7 +75,16 @@ loopBlock:
 
 // Function declarations. TODO: Decide if AresScript should even support custom functions
 functionDeclaration:
-	DEF ID LPAREN (ID (',' ID)*)? RPAREN COLON funcBlock;
+	DEF ID LPAREN parameterList? RPAREN (COLON typeHint)? COLON funcBlock;
+
+parameterList:
+	parameter (',' parameter)* ','?;
+
+parameter:
+	ID (COLON typeHint)?;
+
+typeHint:
+	ID ('.' ID)*;
 
 // Function body increments/decrements func depth for return validation
 funcBlock:

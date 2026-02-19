@@ -26,7 +26,7 @@ export class AresLangAutocompleteProvider implements languages.CompletionItemPro
     this.autoCompleteService = autoCompleteService;
   }
 
-  triggerCharacters?: string[] | undefined = ['.'];
+  triggerCharacters?: string[] | undefined = ['.', ':'];
 
   provideCompletionItems(model: editor.ITextModel, position: Position, context: languages.CompletionContext, token: CancellationToken): languages.ProviderResult<languages.CompletionList> {
     return this.autoCompleteService
