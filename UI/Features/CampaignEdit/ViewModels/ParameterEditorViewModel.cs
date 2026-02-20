@@ -24,6 +24,8 @@ public partial class ParameterEditorViewModel : ReactiveObject
 
   public ParameterEditorViewModel(UnitCategoryHelper unitHelper, IEnumerable<string> availableOutputs)
   {
+    CategoryOptions = [];
+    UnitOptions = [];
     _unitHelper = unitHelper;
 
     ParameterMetadata = new ParameterMetadata
@@ -38,8 +40,6 @@ public partial class ParameterEditorViewModel : ReactiveObject
     };
 
     AvailableOutputs = availableOutputs.ToArray();
-    CategoryOptions = [];
-    UnitOptions = [];
   }
 
   public ParameterEditorViewModel(ParameterMetadata existingMetadata, IEnumerable<string> availableOutputs, UnitCategoryHelper unitHelper)
