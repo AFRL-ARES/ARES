@@ -25,6 +25,8 @@ public class AresScriptBlockBuilder
   }
 
   internal IReadOnlyList<ScriptNode> Statements => _statements;
+  internal List<ScriptNode> MutableStatements => _statements;
+  internal int IndentSize => _indentSize;
 
   public string Build()
   {

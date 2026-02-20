@@ -54,6 +54,50 @@ public class AresScriptBuilderTests
     Assert.That(ex?.Message, Does.Contain("loop bodies"));
   }
 
+  [Test]
+  public void FromScript_CanEditExistingFunction_AndBuildValidScript()
+  {
+    var existingScript = """
+      def main(value):
+        total = value + 1
+        return total
+
+      answer = main(1)
+      """;
+
+    var builder = AresScriptBuilder.FromScript(existingScript);
+    var edited = builder.EditFunction("main", body =>
+    {
+      body.AddAssignment("total", "total + 10");
+    });
+
+    var script = builder.Build();
+
+    Assert.That(edited, Is.True);
+    Assert.That(script, Does.Contain("total = total + 10"));
+    Assert.That(() => Parse(script), Throws.Nothing);
+  }
+
+  [Test]
+  public void FromScript_CanRemoveFunction()
+  {
+    var existingScript = """
+      def helper():
+        return 1
+
+      value = 10
+      """;
+
+    var builder = AresScriptBuilder.FromScript(existingScript);
+    var removed = builder.RemoveFunction("helper");
+    var script = builder.Build();
+
+    Assert.That(removed, Is.True);
+    Assert.That(script, Does.Not.Contain("def helper():"));
+    Assert.That(script, Does.Contain("value = 10"));
+    Assert.That(() => Parse(script), Throws.Nothing);
+  }
+
   private static void Parse(string script)
   {
     var input = new AntlrInputStream(script);
