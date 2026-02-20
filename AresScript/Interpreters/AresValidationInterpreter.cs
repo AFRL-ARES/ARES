@@ -4,7 +4,6 @@ using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
 using AresScript.Generated;
-using Google.Protobuf.WellKnownTypes;
 
 namespace AresScript.Interpreters;
 
@@ -22,7 +21,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
   private readonly Stack<(IReadOnlyList<AresScriptParameter> Parameters, AresDataType ReturnType)> _pendingFunctions = new();
   private readonly AresTypeInferenceInterpreter _typeInference;
   private readonly List<AresFunctionInvocation> _functionInvocations = [];
-  
+
   private sealed class StopTraversalException : Exception { }
 
   /// <summary>
@@ -474,7 +473,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     }
 
     _pendingFunctions.Push((parameters, declaredReturnType));
-    
+
     try
     {
       await Visit(block);
@@ -1192,7 +1191,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
           if(_environment.TryGetSystemFunction(funcId, out var systemFunction))
           {
             var schema = systemFunction.OutputSchema;
-            var dummyValue = InterpreterHelpers.CreateDummyValue(schema);
+            var dummyValue = DummyValueFactory.CreateDummyValue(schema);
             return dummyValue;
           }
 
@@ -1205,7 +1204,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
             }
 
             var returnSchema = AresSchemaBuilder.Entry(declaredReturnType).Build();
-            return InterpreterHelpers.CreateDummyValue(returnSchema);
+            return DummyValueFactory.CreateDummyValue(returnSchema);
           }
 
           if(_environment.TryGetUserLambda(funcId, out var _))
@@ -1224,7 +1223,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       return CreateUnknownValue();
     }
 
-    return InterpreterHelpers.CreateDummyValue(inferredSchema);
+    return DummyValueFactory.CreateDummyValue(inferredSchema);
   }
 
   private AresValue CreateLambdaFunctionValue(AresLangParser.LambdaExpressionContext lambdaExpression)

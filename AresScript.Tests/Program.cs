@@ -312,7 +312,7 @@ public class InterpreterTests
     var labels = completions.Select(item => item.Label).ToHashSet(StringComparer.Ordinal);
     Assert.That(labels, Does.Contain("Number"));
     Assert.That(labels, Does.Contain("String"));
-    Assert.That(completions.Any(item => item.Kind == CompletionItemKind.Type), Is.True);
+    Assert.That(completions.Any(item => item.Kind == SymbolKind.Type), Is.True);
   }
 
   [Test]
@@ -323,7 +323,7 @@ public class InterpreterTests
     var labels = completions.Select(item => item.Label).ToHashSet(StringComparer.Ordinal);
     Assert.That(labels, Does.Contain("Number"));
     Assert.That(labels, Does.Contain("String"));
-    Assert.That(completions.Any(item => item.Kind == CompletionItemKind.Type), Is.True);
+    Assert.That(completions.Any(item => item.Kind == SymbolKind.Type), Is.True);
   }
 
   [Test]
@@ -334,7 +334,7 @@ public class InterpreterTests
         val = 
       """;
     var completions = await BuildCompletionsAsync(script, 2, 9);
-    Assert.That(completions.Any(item => item.Kind == CompletionItemKind.Type), Is.False);
+    Assert.That(completions.Any(item => item.Kind == SymbolKind.Type), Is.False);
   }
 
   [Test]

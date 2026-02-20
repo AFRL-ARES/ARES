@@ -1,10 +1,6 @@
-using Antlr4.Runtime;
 using Ares.Datamodel;
-using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Scripting;
 using Ares.Services;
-using AresScript;
-using AresScript.Generated;
 using Microsoft.JSInterop;
 using System.Text;
 using UI.Application.Scripting;
@@ -18,63 +14,53 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
   [JSInvokable]
   public async Task<string?> GetHoverText(string script, int line, int column, string identifier)
   {
-    if(string.IsNullOrWhiteSpace(identifier))
+    var response = await _aresScriptingServiceClient.GetSymbolMetadataAsync(new SymbolMetadataRequest
+    {
+      Script = script,
+      CursorLine = line,
+      CursorColumn = column,
+      Identifier = identifier ?? string.Empty
+    });
+
+    if(response.Metadata is null || !response.Metadata.Found)
     {
       return null;
     }
 
-    var request = new CompletionRequest
-    {
-      CursorColumn = column,
-      CursorLine = line,
-      Script = script
-    };
-
-    var completions = await _aresScriptingServiceClient.GetCompletionsAsync(request);
-    var item = completions.Items.FirstOrDefault(i => string.Equals(i.Label, identifier, StringComparison.Ordinal));
-
-    var hoverMarkdown = BuildHoverMarkdown(item);
-    var markdown = hoverMarkdown?.markdown;
-    var hasSchema = hoverMarkdown?.hasSchema ?? false;
-
-    return string.IsNullOrWhiteSpace(markdown) ? null : markdown;
+    return BuildHoverMarkdown(response.Metadata);
   }
 
-  private static (string markdown, bool hasSchema)? BuildHoverMarkdown(CompletionItem? item)
+  private static string? BuildHoverMarkdown(ScriptSymbolMetadata response)
   {
-    if(item is null)
-    {
-      return null;
-    }
     var sb = new StringBuilder();
-    var schemaFound = false;
-    var label = item.Label ?? string.Empty;
-    var name = string.IsNullOrWhiteSpace(item.ParentIdentifier) ? label : $"{item.ParentIdentifier}.{label}";
+    var displayName = string.IsNullOrWhiteSpace(response.ParentIdentifier)
+      ? response.Identifier
+      : $"{response.ParentIdentifier}.{response.Identifier}";
 
-    if(!string.IsNullOrWhiteSpace(name))
+    if(!string.IsNullOrWhiteSpace(displayName))
     {
-      sb.Append("**").Append(name).Append("**");
+      sb.Append("**").Append(displayName).Append("**");
     }
 
-    AppendDescription(sb, item.Detail, item.Documentation);
-    if(item.InputSchema is not null)
+    AppendDescription(sb, response.Detail, response.Documentation);
+
+    if(response.InputSchema is not null && response.InputSchema.Fields.Count > 0)
     {
-      schemaFound = true;
-      AppendDataSchemaSection(sb, "Inputs", item.InputSchema);
-    }
-    if(item.OutputSchema?.Type != AresDataType.Unit)
-    {
-      schemaFound = true;
-      AppendSchemaEntrySection(sb, "Output", item.OutputSchema);
+      AppendDataSchemaSection(sb, "Inputs", response.InputSchema);
     }
 
-    if(item.Schema is not null)
+    if(response.OutputSchema is not null
+      && response.OutputSchema.Type is not AresDataType.Unit and not AresDataType.UnspecifiedType)
     {
-      schemaFound = true;
-      AppendSchemaEntrySection(sb, "Schema", item.Schema);
+      AppendSchemaEntrySection(sb, "Output", response.OutputSchema);
     }
 
-    return (sb.ToString(), schemaFound);
+    if(response.Schema is not null && response.Schema.Type != AresDataType.UnspecifiedType)
+    {
+      AppendSchemaEntrySection(sb, "Schema", response.Schema);
+    }
+
+    return sb.Length == 0 ? null : sb.ToString();
   }
 
   private static void AppendDescription(StringBuilder sb, string? detail, string? documentation)
@@ -130,6 +116,7 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
     {
       return;
     }
+
     sb.AppendLine().AppendLine();
     sb.Append("**").Append(title).AppendLine("**");
     sb.AppendLine("```text");
@@ -148,6 +135,7 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
     {
       sb.AppendLine(FormatSchemaEntry(entry));
     }
+
     sb.AppendLine("```");
   }
 
@@ -156,52 +144,4 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
     var typeName = entry.Type.ToString();
     return entry.Optional ? $"{typeName} (optional)" : typeName;
   }
-
-  private static AresLangParser.ProgramContext? TryParseProgram(string script)
-  {
-    try
-    {
-      var stream = new AntlrInputStream(script);
-      var lexer = new AresIndentationLexer(stream);
-      var tokenStream = new CommonTokenStream(lexer);
-      var parser = new AresLangParser(tokenStream);
-      return parser.program();
-    }
-    catch
-    {
-      return null;
-    }
-  }
-
-  private static AresSystemFunction CreateSystemFunction(FunctionSymbol function, string namespaceName)
-  {
-    var id = string.IsNullOrWhiteSpace(function.Id) ? function.Name : function.Id;
-    var name = string.IsNullOrWhiteSpace(function.Name) ? id : function.Name;
-    var inputSchema = function.InputSchema ?? new AresDataSchema();
-    var outputSchema = function.OutputSchema ?? new SchemaEntry();
-    var description = function.Description ?? string.Empty;
-    return new AresSystemFunction(id, name, DummyFunction, inputSchema, outputSchema, namespaceName, description);
-  }
-
-  private static Task<AresValue> DummyFunction(List<AresValue> _, ScriptExecutionControlToken __)
-  {
-    return Task.FromResult(AresValueHelper.CreateNull());
-  }
-
-  private static string AppendInferredSchema(string? markdown, string identifier, SchemaEntry schema)
-  {
-    var sb = new StringBuilder();
-    if(!string.IsNullOrWhiteSpace(markdown))
-    {
-      sb.Append(markdown);
-    }
-    else
-    {
-      sb.Append("**").Append(identifier).Append("**");
-    }
-
-    AppendSchemaEntrySection(sb, "Inferred Type", schema);
-    return sb.ToString();
-  }
 }
-

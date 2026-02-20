@@ -1,11 +1,11 @@
 using Antlr4.Runtime;
 using Ares.Datamodel;
+using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Scripting;
 using AresScript.Generated;
+using AresScript.Interpreters;
 using System.Text;
 using System.Text.RegularExpressions;
-using Ares.Datamodel.Extensions;
-using AresScript.Interpreters;
 
 namespace AresScript.ScriptAnalysis;
 
@@ -88,7 +88,7 @@ public static partial class AresScriptAnalysis
         Label = func.Name,
         InsertText = func.Name,
         Detail = "User function",
-        Kind = CompletionItemKind.Function
+        Kind = SymbolKind.Function
       }));
 
       items.AddRange(userVariables.Select(variable => new CompletionItem
@@ -96,7 +96,7 @@ public static partial class AresScriptAnalysis
         Label = variable.Key,
         InsertText = variable.Key,
         Detail = "User variable",
-        Kind = CompletionItemKind.Variable,
+        Kind = SymbolKind.Variable,
         Schema = variable.Value.ToSchemaEntry()
       }));
     }
@@ -198,7 +198,7 @@ public static partial class AresScriptAnalysis
         InsertText = BuildSnippet(extensionFunc.Name, schemaForCall),
         Detail = extensionFunc.Description,
         Documentation = extensionFunc.Description,
-        Kind = CompletionItemKind.Function,
+        Kind = SymbolKind.Function,
         ParentIdentifier = parentIdentifier,
         InputSchema = schemaForCall,
         OutputSchema = extensionFunc.OutputSchema
@@ -242,7 +242,7 @@ public static partial class AresScriptAnalysis
         InsertText = BuildSnippet(label, systemFunction.InputSchema),
         Detail = description,
         Documentation = description,
-        Kind = CompletionItemKind.Function,
+        Kind = SymbolKind.Function,
         ParentIdentifier = parentIdentifier,
         InputSchema = systemFunction.InputSchema,
         OutputSchema = systemFunction.OutputSchema
@@ -258,8 +258,8 @@ public static partial class AresScriptAnalysis
       Detail = value.Description ?? string.Empty,
       Documentation = value.Description ?? string.Empty,
       Kind = value.Kind == AresSystemValue.AresSystemValueKind.Struct
-        ? CompletionItemKind.Struct
-        : CompletionItemKind.Variable,
+        ? SymbolKind.Struct
+        : SymbolKind.Variable,
       ParentIdentifier = parentIdentifier,
       Schema = schemaValue.ToSchemaEntry()
     });
@@ -281,7 +281,7 @@ public static partial class AresScriptAnalysis
         InsertText = BuildSnippet(label, systemFunction.InputSchema),
         Detail = systemFunction.Description,
         Documentation = systemFunction.Description,
-        Kind = CompletionItemKind.Function,
+        Kind = SymbolKind.Function,
         ParentIdentifier = parentIdentifier,
         InputSchema = systemFunction.InputSchema,
         OutputSchema = systemFunction.OutputSchema
@@ -296,8 +296,8 @@ public static partial class AresScriptAnalysis
       Detail = string.Empty,
       Documentation = string.Empty,
       Kind = value.KindCase == AresValue.KindOneofCase.StructValue
-        ? CompletionItemKind.Struct
-        : CompletionItemKind.Variable,
+        ? SymbolKind.Struct
+        : SymbolKind.Variable,
       ParentIdentifier = parentIdentifier,
       Schema = value.ToSchemaEntry()
     });
@@ -313,7 +313,7 @@ public static partial class AresScriptAnalysis
         InsertText = typeName,
         Detail = "Ares data type",
         Documentation = $"Ares data type '{typeName}'.",
-        Kind = CompletionItemKind.Type,
+        Kind = SymbolKind.Type,
         SortText = $"00_{typeName}"
       });
     }

@@ -126,6 +126,19 @@ public partial class AresScriptingService : Ares.Services.AresScriptingService.A
     return response;
   }
 
+  public override async Task<SymbolMetadataResponse> GetSymbolMetadata(SymbolMetadataRequest request, ServerCallContext context)
+  {
+    var environment = _environmentBuilder.Build();
+    var metadata = await AresScriptAnalysis.BuildSymbolMetadataAsync(
+      environment,
+      request.Script,
+      request.CursorLine,
+      request.CursorColumn,
+      request.Identifier);
+
+    return new SymbolMetadataResponse { Metadata = metadata };
+  }
+
   private static GrpcScriptExecutionEvent ToGrpcScriptExecutionEvent(CoreScriptExecutionEvent executionEvent)
   {
     return executionEvent switch
