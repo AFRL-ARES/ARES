@@ -1,6 +1,7 @@
 @page "/automation/executionhistory"
 @using Ares.Services
 @using UI.Components.Formatting
+@using UI.Application.Execution
 @inject ContextMenuService ContextMenuService
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<ExecutionHistoryViewModel>
 
@@ -20,21 +21,24 @@ else
   @if(ViewModel!.CampaignSummaries.Any())
   {
     <RadzenDataGrid AllowFiltering="true" AllowColumnResize="false"
-                    FilterMode="FilterMode.Simple" PageSize="18" AllowPaging="true" AllowSorting="true" Data="@ViewModel!.CampaignSummaries" ColumnWidth="300px"
+                    FilterMode="FilterMode.Simple" PageSize="18" AllowPaging="true" AllowSorting="true" Data="@ViewModel!.CampaignDisplaySummaries" ColumnWidth="300px"
                     FilterCaseSensitivity="@filterCaseSensitivity" LogicalFilterOperator="@logicalFilterOperator">
       <Columns>
-        <RadzenDataGridColumn Property="@nameof(CampaignExecutionSummaryMetadata.SummaryId)" Filterable="false" Title="ID" Width="225px">
+          <RadzenDataGridColumn Property="@nameof(CampaignSummaryDisplay.SummaryId)" Filterable="false" Title="ID" Width="225px">
           <Template Context="id">
             <a href="/dataviewer?id=@id.SummaryId">@id.SummaryId</a>
           </Template>
         </RadzenDataGridColumn>
-        <RadzenDataGridColumn Property="@nameof(CampaignExecutionSummaryMetadata.CampaignName)" Filterable="false" Title="Campaign Name" Width="200px" />
-        <RadzenDataGridColumn Filterable="false" Title="Completion Time" Width="200px">
-          <Template>
-              @context.CompletionTime.ToReadableTimestamp()
-          </Template>
-        </RadzenDataGridColumn>
-        <RadzenDataGridColumn Property="@nameof(CampaignExecutionSummaryMetadata.NumExperiments)" Filterable="false" Title="Number of Experiments" />
+          <RadzenDataGridColumn Property="@nameof(CampaignSummaryDisplay.CampaignName)" Filterable="false" Title="Campaign Name" Width="200px" />
+          <RadzenDataGridColumn Property="@nameof(CampaignSummaryDisplay.CompletionTimeDateTime)"
+                                Filterable="false"
+                                Title="Completion Time"
+                                Width="200px">
+            <Template Context="data">
+              @data.OriginalTimestamp?.ToReadableTimestamp()
+            </Template>
+          </RadzenDataGridColumn>
+          <RadzenDataGridColumn Property="@nameof(CampaignSummaryDisplay.NumExperiments)" Filterable="false" Title="Number of Experiments" />
       </Columns>
     </RadzenDataGrid>
   }
