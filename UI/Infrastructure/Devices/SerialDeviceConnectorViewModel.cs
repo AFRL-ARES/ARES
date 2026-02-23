@@ -43,12 +43,12 @@ public abstract class SerialDeviceConnectorViewModel<TDeviceUnitVm> : ReactiveOb
     var descriptions = await GetDeviceDescriptions();
     foreach(var description in descriptions)
     {
-      var deviceStatusRequest = new DeviceStatusRequest { DeviceId = description.Id };
+      var deviceStatusRequest = new DeviceStatusRequest { DeviceId = description.DeviceId };
       var deviceOperationalStatusResponse = await _devicesClient.GetDeviceStatusAsync(deviceStatusRequest);
 
       if(deviceOperationalStatusResponse.OperationalState == OperationalState.Active)
       {
-        if(ConnectedSerialDeviceUnitControlVms.Any(vm => vm.DeviceId == description.Id))
+        if(ConnectedSerialDeviceUnitControlVms.Any(vm => vm.DeviceId == description.DeviceId))
           continue;
 
         var unitVm = CreateUnitVm(description);
@@ -58,15 +58,15 @@ public abstract class SerialDeviceConnectorViewModel<TDeviceUnitVm> : ReactiveOb
 
       if(deviceOperationalStatusResponse.OperationalState == OperationalState.Inactive)
       {
-        if(ConnectedSerialDeviceUnitControlVms.Any(vm => vm.DeviceId == description.Id))
-          _connectedSerialDeviceUnitControlVmsSource.Remove(description.Id);
+        if(ConnectedSerialDeviceUnitControlVms.Any(vm => vm.DeviceId == description.DeviceId))
+          _connectedSerialDeviceUnitControlVmsSource.Remove(description.DeviceId);
 
         continue;
       }
 
       if(deviceOperationalStatusResponse.OperationalState == OperationalState.Error)
-        if(ConnectedSerialDeviceUnitControlVms.Any(vm => vm.DeviceId == description.Id))
-          _connectedSerialDeviceUnitControlVmsSource.Remove(description.Id);
+        if(ConnectedSerialDeviceUnitControlVms.Any(vm => vm.DeviceId == description.DeviceId))
+          _connectedSerialDeviceUnitControlVmsSource.Remove(description.DeviceId);
     }
   }
 

@@ -22,4 +22,9 @@ public class DeviceDriverRepo : IDeviceDriverRepo
   {
     return _drivers.Values;
   }
+
+  public DeviceDriver? GetById(string id)
+  {
+    return _drivers.Values.FirstOrDefault(d => d.UniqueId == id);
+  }
 }

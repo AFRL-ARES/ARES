@@ -1,4 +1,5 @@
 ﻿using Ares.Datamodel;
+using Ares.Datamodel.Templates;
 using Ares.Device;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -21,6 +22,16 @@ public class TestDevice : AresDevice
 
   public override Task<AresStruct> GetState()
     => Task.FromResult(new AresStruct());
+
+  public override Task<CommandResult> ExecuteCommand(string command, List<Parameter> parameters, CancellationToken token)
+  {
+    throw new NotImplementedException();
+  }
+
+  public override Task UpdateSettings(AresStruct settings)
+  {
+    throw new NotImplementedException();
+  }
 
   public override IObservable<AresStruct> StateStream => _stateSubject.AsObservable();
 }

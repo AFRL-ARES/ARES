@@ -33,7 +33,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="ARES.Datamodel" Version="0.17.0-beta.11" />
+    <PackageReference Include="ARES.Datamodel" Version="0.17.0-beta.12" />
     <PackageReference Include="Ares.Toolkit.UI" Version="0.0.1-beta.1" />
     <PackageReference Include="BlazorMonaco" Version="3.4.0" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />

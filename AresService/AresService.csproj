@@ -58,4 +58,8 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Services\Devices\" />
+  </ItemGroup>
+
 </Project>

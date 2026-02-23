@@ -1,7 +1,6 @@
 using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Scripting;
-using AresScript;
 
 namespace AresScript.ScriptAnalysis;
 

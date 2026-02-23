@@ -37,29 +37,29 @@ public abstract class UsbDeviceConnectorViewModel<TDeviceUnitVm> : ReactiveObjec
     foreach(var deviceDesc in devices)
     {
 
-      var deviceStatusRequest = new DeviceStatusRequest { DeviceId = deviceDesc.Id };
+      var deviceStatusRequest = new DeviceStatusRequest { DeviceId = deviceDesc.DeviceId };
       var deviceOperationalStatusResponse = _devicesClient.GetDeviceStatus(deviceStatusRequest);
 
       if(deviceOperationalStatusResponse.OperationalState == OperationalState.Active)
       {
-        if(ConnectedUsbDeviceUnitControlVms.Any(vm => vm.DeviceId == deviceDesc.Id))
+        if(ConnectedUsbDeviceUnitControlVms.Any(vm => vm.DeviceId == deviceDesc.DeviceId))
           continue;
 
-        var unitVm = CreateUnitVm(deviceDesc.Id, deviceDesc.Name);
+        var unitVm = CreateUnitVm(deviceDesc.DeviceId, deviceDesc.DeviceName);
         _connectedUsbDeviceUnitControlVmsSource.AddOrUpdate(unitVm);
         continue;
       }
 
       if(deviceOperationalStatusResponse.OperationalState == OperationalState.Inactive)
       {
-        if(ConnectedUsbDeviceUnitControlVms.FirstOrDefault(vm => vm.DeviceId == deviceDesc.Id) is TDeviceUnitVm vm)
+        if(ConnectedUsbDeviceUnitControlVms.FirstOrDefault(vm => vm.DeviceId == deviceDesc.DeviceId) is TDeviceUnitVm vm)
           _connectedUsbDeviceUnitControlVmsSource.Remove(vm);
 
         continue;
       }
 
       if(deviceOperationalStatusResponse.OperationalState == OperationalState.Error)
-        if(ConnectedUsbDeviceUnitControlVms.FirstOrDefault(vm => vm.DeviceId == deviceDesc.Id) is TDeviceUnitVm vm)
+        if(ConnectedUsbDeviceUnitControlVms.FirstOrDefault(vm => vm.DeviceId == deviceDesc.DeviceId) is TDeviceUnitVm vm)
           _connectedUsbDeviceUnitControlVmsSource.Remove(vm);
     }
   }

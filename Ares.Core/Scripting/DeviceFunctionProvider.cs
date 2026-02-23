@@ -1,6 +1,8 @@
 using System.Text;
 using Ares.Core.Device;
+using Ares.Core.Device.Repos;
 using Ares.Datamodel;
+using Ares.Datamodel.Device;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
 using Ares.Datamodel.Templates;
@@ -8,33 +10,31 @@ using AresScript;
 
 namespace Ares.Core.Scripting;
 
-public class DeviceFunctionProvider(IDeviceCommandInterpreterRepo interpreterRepo) : ISystemFunctionProvider
+public class DeviceFunctionProvider(IAresDeviceRepo deviceRepo) : ISystemFunctionProvider
 {
-  private readonly IDeviceCommandInterpreterRepo _interpreterRepo = interpreterRepo;
-
+  private readonly IAresDeviceRepo _deviceRepo = deviceRepo;
 
   public AresSystemFunction[] GetFunctions()
   {
-    var interpreters = _interpreterRepo.GetSnapshot();
+    var devices = _deviceRepo.GetSnapshot();
     var functions = new List<AresSystemFunction>();
 
-    foreach(var interpreter in interpreters)
+    foreach(var device in devices)
     {
-      var device = interpreter.Device;
       var devicePrefix = SanitizeIdentifier(string.IsNullOrWhiteSpace(device.Name) ? device.UniqueId : device.Name);
-      var commandMetadatas = interpreter.CommandsToIndexedMetadatas().ToArray();
+      var commandDescriptors = device.CommandDescriptors.ToArray();
 
-      foreach(var metadata in commandMetadatas)
+      foreach(var descriptor in commandDescriptors)
       {
-        var commandName = SanitizeIdentifier(metadata.Name);
+        var commandName = SanitizeIdentifier(descriptor.Name);
         var functionId = $"devices::{devicePrefix}::{commandName}";
-        var parameterMetadatas = metadata.ParameterMetadatas.OrderBy(p => p.Index).ToArray();
+        var parameterMetadatas = descriptor.InputSchema.Fields.ToArray();
 
         var inputSchema = BuildInputSchema(parameterMetadatas);
 
-        var outputSchema = metadata.OutputMetadata?.DataSchema is null
+        var outputSchema = descriptor.OutputSchema is null
           ? AresSchemaBuilder.Entry(AresDataType.Unit).Build()
-          : AresSchemaBuilder.Entry(AresDataType.Struct).WithStructSchema(metadata.OutputMetadata.DataSchema).Build();
+          : AresSchemaBuilder.Entry(AresDataType.Struct).WithStructSchema(descriptor.OutputSchema).Build();
 
         functions.Add(
           new AresSystemFunction(
@@ -48,7 +48,7 @@ public class DeviceFunctionProvider(IDeviceCommandInterpreterRepo interpreterRep
                   $"Function '{functionId}' expected at most {parameterMetadatas.Length} arguments but got {args.Count}.");
               }
 
-              var template = new CommandTemplate { Metadata = metadata };
+              var template = new CommandTemplate { Metadata = descriptor };
               for(var i = 0; i < args.Count; i++)
               {
                 var parameterMetadata = parameterMetadatas[i];
@@ -61,13 +61,13 @@ public class DeviceFunctionProvider(IDeviceCommandInterpreterRepo interpreterRep
                   });
               }
 
-              var command = interpreter.TemplateToDeviceCommand(template);
+              var command = device.TemplateToDeviceCommand(template);
               var result = await command(token.CancellationToken);
               if(!result.Success)
               {
                 throw new InvalidOperationException(
                   string.IsNullOrWhiteSpace(result.Error)
-                    ? $"Device command '{metadata.Name}' failed."
+                    ? $"Device command '{descriptor.Name}' failed."
                     : result.Error);
               }
 
@@ -78,7 +78,7 @@ public class DeviceFunctionProvider(IDeviceCommandInterpreterRepo interpreterRep
             inputSchema,
             outputSchema,
             devicePrefix,
-            metadata.Description ?? string.Empty
+            descriptor.Description ?? string.Empty
             ));
       }
     }
@@ -86,13 +86,13 @@ public class DeviceFunctionProvider(IDeviceCommandInterpreterRepo interpreterRep
     return functions.ToArray();
   }
 
-  private static AresDataSchema BuildInputSchema(IEnumerable<ParameterMetadata> parameterMetadatas)
+  private static AresDataSchema BuildInputSchema(IEnumerable<KeyValuePair<string, AresDataSchema>> commandSchemas)
   {
     var schema = new AresDataSchema();
-    foreach(var parameterMetadata in parameterMetadatas)
+    foreach(var schema in commandSchemas)
     {
-      var entry = parameterMetadata.Schema ?? new SchemaEntry { Type = AresDataType.Any, Optional = true };
-      schema.Fields[parameterMetadata.Name] = entry;
+      var entry = new SchemaEntry { Type = , Optional = true };
+      schema.Fields[schema.Name] = entry;
     }
 
     return schema;
