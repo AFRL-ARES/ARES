@@ -10,17 +10,14 @@ using UI.Application.Devices.Repos;
 
 namespace UI.Infrastructure.Devices;
 
-public class DeviceConnectorViewModelFactory : ReactiveObject, IAsyncDisposable
+public abstract class DeviceConnectorViewModelFactory(
+    AresDevices.AresDevicesClient devicesClient,
+    IDeviceControlViewModelRepo deviceControlViewModelRepo)
+    : ReactiveObject, IAsyncDisposable
 {
-  private readonly AresDevices.AresDevicesClient _devicesClient;
-  private readonly IDeviceControlViewModelRepo _deviceControlViewModelRepo;
+  protected readonly AresDevices.AresDevicesClient _devicesClient = devicesClient;
+  protected readonly IDeviceControlViewModelRepo _deviceControlViewModelRepo = deviceControlViewModelRepo;
   private IDisposable _deviceUpdater = Disposable.Empty;
-
-  public DeviceConnectorViewModelFactory(AresDevices.AresDevicesClient devicesClient, IDeviceControlViewModelRepo deviceControlViewModelRepo)
-  {
-    _devicesClient = devicesClient;
-    _deviceControlViewModelRepo = deviceControlViewModelRepo;
-  }
 
   public void Start(TimeSpan interval)
   {
@@ -60,16 +57,9 @@ public class DeviceConnectorViewModelFactory : ReactiveObject, IAsyncDisposable
     }
   }
 
-  private async Task<IEnumerable<AresDeviceDescription>> GetAvailableDevices()
-  {
-    var response = await _devicesClient.GetAllAvailableDevicesAsync(new Empty());
-    return response.Devices;
-  }
+  protected abstract Task<IEnumerable<AresDeviceDescription>> GetAvailableDevices();
 
-  protected void CreateAndAddViewModel(string deviceId, string deviceName)
-  {
-
-  }
+  protected abstract void CreateAndAddViewModel(string deviceId, string deviceName);
 
   public async ValueTask DisposeAsync()
   {
@@ -80,4 +70,12 @@ public class DeviceConnectorViewModelFactory : ReactiveObject, IAsyncDisposable
       await vm.DisposeAsync();
     }
   }
+}
+
+public abstract class DeviceConnectorViewModelFactory<T>(
+    AresDevices.AresDevicesClient devicesClient,
+    IDeviceControlViewModelRepo deviceControlViewModelRepo)
+    : DeviceConnectorViewModelFactory(devicesClient, deviceControlViewModelRepo)
+    where T : DeviceUnitControlViewModel
+{
 }

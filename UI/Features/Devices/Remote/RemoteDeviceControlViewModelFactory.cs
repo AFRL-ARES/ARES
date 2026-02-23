@@ -3,7 +3,7 @@ using DynamicData;
 using Google.Protobuf.WellKnownTypes;
 using UI.Infrastructure.Devices;
 using UI.Application.Devices.Repos;
-using UI.Application.Devices;
+using Ares.Datamodel.Device;
 
 namespace UI.Features.Devices.Remote;
 
@@ -34,7 +34,7 @@ public class RemoteDeviceControlViewModelFactory : DeviceConnectorViewModelFacto
   protected override async Task<IEnumerable<AresDeviceDescription>> GetAvailableDevices()
   {
     var devInfos = await _devicesClient.GetAllRemoteDevicesConfigsAsync(new Empty());
-    var remotedDevices = devInfos.Configs.Select(dev => new AresDeviceDescription(dev.UniqueId, dev.Name)).ToArray();
+    var remotedDevices = devInfos.Configs.Select(dev => new AresDeviceDescription() { DeviceId = dev.UniqueId, DeviceName = dev.Name }).ToArray();
     return remotedDevices;
   }
 }

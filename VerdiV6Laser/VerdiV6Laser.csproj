@@ -25,6 +25,21 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="VerdiV6Laser\VerdiLaserConfigEditView.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Include="VerdiV6Laser\VerdiLaserControlWidgetView.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Include="VerdiV6Laser\VerdiLaserSettingsList.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Include="VerdiV6Laser\VerdiLaserSettingsView.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Ares.Device.Serial\AresSerial\Ares.Device.Serial.csproj" />
   </ItemGroup>
 

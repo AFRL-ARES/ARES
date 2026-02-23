@@ -1,0 +1,34 @@
+@using UI.Features.Devices.Shared.Settings
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<PluginDeviceSettingsViewModel>
+@inject DialogService DialogService
+
+<DeviceSettingsContainer 
+  Name="@ViewModel!.Name"
+  EditCallback="EditCallback"
+  RemoveCallback="RemoveCallback"
+  SettingsCallback="SettingsCallback">
+  <div style="display: flex; flex-direction: column">
+    <span>Driver: @ViewModel.DriverName</span>
+    <span>ID: @ViewModel.Id</span>
+  </div>
+</DeviceSettingsContainer>
+
+@code {
+  private Task EditCallback()
+  {
+    // TODO
+    return Task.CompletedTask;
+  }
+
+  private Task RemoveCallback()
+  {
+    // TODO
+    return Task.CompletedTask;
+  }
+
+  private Task SettingsCallback()
+  {
+    // TODO
+    return Task.CompletedTask;
+  }
+}

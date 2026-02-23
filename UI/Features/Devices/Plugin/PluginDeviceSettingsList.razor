@@ -1,0 +1,33 @@
+@page "/settings/device/plugin/{DriverName}"
+@layout DeviceSettingsLayout
+@using Ares.Services
+@using Google.Protobuf.WellKnownTypes
+@inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<PluginDeviceSettingsListViewModel>
+
+@inject DialogService DialogService
+
+@if (ViewModel!.IsLoading)
+{
+  <LoadingSpinner />
+}
+else
+{
+  <div class="d-flex flex-column">
+    @foreach (var vm in ViewModel!.SettingsViewModels)
+    {
+      <div class="m-2">
+        <PluginDeviceSettingsView ViewModel="vm"/>
+      </div>
+    }
+  </div>
+}
+
+@code {
+  [Parameter]
+  public string DriverName { get; set; } = string.Empty;
+
+  protected override async Task OnParametersSetAsync()
+  {
+      await ViewModel!.Initialize(DriverName);
+  }
+}

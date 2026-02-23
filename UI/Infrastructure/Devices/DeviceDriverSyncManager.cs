@@ -1,17 +1,21 @@
 ﻿using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using System.Security.Cryptography;
+using Grpc.Core;
+using UI.Application.Devices.Repos;
 
 namespace UI.Infrastructure.Devices;
 
 public class DeviceDriverSyncManager
 {
   private readonly AresDeviceDriverService.AresDeviceDriverServiceClient _client;
+  private readonly IDeviceDriverRepository _driverRepository;
   private readonly string _localPluginPath;
 
-  public DeviceDriverSyncManager(AresDeviceDriverService.AresDeviceDriverServiceClient client, string localPath)
+  public DeviceDriverSyncManager(AresDeviceDriverService.AresDeviceDriverServiceClient client, IDeviceDriverRepository driverRepository, string localPath)
   {
     _client = client;
+    _driverRepository = driverRepository;
     _localPluginPath = localPath;
     Directory.CreateDirectory(_localPluginPath);
   }
@@ -31,6 +35,24 @@ public class DeviceDriverSyncManager
       Console.WriteLine($"Deleting Obsolete Driver: {staleDriver}");
       File.Delete(staleDriver);
     }
+
+    var missingDriverIds = coreDrivers.Keys.Where(id => !localHashesToDrivers.ContainsKey(coreDrivers[id].Checksum));
+
+    foreach(var id in missingDriverIds)
+    {
+      var driver = coreDrivers[id];
+      var filePath = Path.Combine(_localPluginPath, $"{driver.DisplayName}.dll");
+      Console.WriteLine($"Downloading Missing Driver: {driver.DisplayName}");
+      // Stream the driver to disk
+      using var call = _client.DownloadDriver(new DriverRequest { DriverId = id });
+      using var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
+      await foreach(var chunk in call.ResponseStream.ReadAllAsync())
+      {
+        await fileStream.WriteAsync(chunk.Content.ToByteArray());
+      }
+    }
+
+    _driverRepository.Update(coreDrivers.Values.Select(d => d.DisplayName));
   }
 
   private string ComputeHash(string filePath)

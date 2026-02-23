@@ -20,6 +20,21 @@
 		<None Remove="Proto\Services.proto" />
 	</ItemGroup>
 
+  <ItemGroup>
+    <Content Include="CM3Camera\CM3CameraConfigEditView.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Include="CM3Camera\CM3CameraControlWidgetView.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Include="CM3Camera\CM3CameraSettingsList.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Include="CM3Camera\CM3CameraSettingsView.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+  </ItemGroup>
+
 	<ItemGroup>
 		<Protobuf Include="Proto\DataModel.proto" GrpcServices="None" ProtoRoot="Proto" />
 		<Protobuf Include="Proto\Services.proto" ProtoRoot="Proto" />

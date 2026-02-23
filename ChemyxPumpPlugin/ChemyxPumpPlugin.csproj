@@ -16,6 +16,27 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Content Include="ChemyxPump\ChemyxPumpConfigEditView.razor">
+	    <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+	  </Content>
+	  <Content Include="ChemyxPump\ChemyxPumpSettingsList.razor">
+	    <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+	  </Content>
+	  <Content Include="ChemyxPump\ChemyxPumpSettingsView.razor">
+	    <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+	  </Content>
+	  <Content Include="ChemyxPump\ChemyxPumpUnitControl.razor">
+	    <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+	  </Content>
+	  <Content Include="ChemyxPump\IndividualPump.razor">
+	    <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+	  </Content>
+	  <Content Include="ChemyxPump\Syringe.razor">
+	    <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+	  </Content>
+	</ItemGroup>
+
+	<ItemGroup>
     <Folder Include="Proto\" />
   </ItemGroup>
 

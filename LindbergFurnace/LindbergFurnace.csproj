@@ -30,4 +30,19 @@
     </Protobuf>
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="TubeFurnace\TubeFurnaceConfigEditView.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Include="TubeFurnace\TubeFurnaceControl.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Include="TubeFurnace\TubeFurnaceSettingsListView.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+    <Content Include="TubeFurnace\TubeFurnaceSettingsView.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+  </ItemGroup>
+
 </Project>
