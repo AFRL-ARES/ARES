@@ -139,6 +139,7 @@ public static partial class AresScriptAnalysis
       return false;
     }
 
+    // ex.: don't get "my_furnace" in "my_furnace.get_temp(| "
     var lastOpenParen = prefix.LastIndexOf('(');
     var lastCloseParen = prefix.LastIndexOf(')');
     if(lastOpenParen > dotIndex && lastOpenParen > lastCloseParen)

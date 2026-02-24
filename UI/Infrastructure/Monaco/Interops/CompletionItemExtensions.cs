@@ -18,9 +18,9 @@ public static class CompletionItemExtensions
     {
       LabelAsString = label,
       InsertText = insertText,
-      Detail = completionItem.Detail ?? string.Empty,
-      DocumentationAsString = completionItem.Documentation ?? string.Empty,
-      Kind = MapKind(completionItem.Kind),
+      Detail = completionItem.Metadata.Detail ?? string.Empty,
+      DocumentationAsString = completionItem.Metadata.Documentation ?? string.Empty,
+      Kind = MapKind(completionItem.Metadata.Kind),
       FilterText = label,
       SortText = label,
     };

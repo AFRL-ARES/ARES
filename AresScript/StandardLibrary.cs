@@ -1,6 +1,7 @@
 using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
+using AresScript.Symbols;
 using System.Text;
 
 namespace AresScript;
@@ -148,7 +149,8 @@ public static class StandardLibrary
         BuildListAppendSchema(),
         AresSchemaBuilder.Entry(AresDataType.Unit).Build(),
         "",
-        "Appends a value to the list."
+        "Appends a value to the list.",
+        true
       )),
     new(
       AresValue.KindOneofCase.NumberArrayValue,
@@ -180,7 +182,8 @@ public static class StandardLibrary
         BuildNumberArrayAppendSchema(),
         AresSchemaBuilder.Entry(AresDataType.Unit).Build(),
         "",
-        "Appends a number to the number array."
+        "Appends a number to the number array.",
+        true
       )),
     new(
       AresValue.KindOneofCase.StringArrayValue,
@@ -212,7 +215,8 @@ public static class StandardLibrary
         BuildStringArrayAppendSchema(),
         AresSchemaBuilder.Entry(AresDataType.Unit).Build(),
         "",
-        "Appends a string to the string array."
+        "Appends a string to the string array.",
+        true
       ))
   ];
 

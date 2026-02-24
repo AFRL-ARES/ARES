@@ -1,4 +1,6 @@
-﻿using Ares.Datamodel;
+using Ares.Datamodel;
+using Ares.Datamodel.Scripting;
+using AresScript.Symbols;
 using System.Diagnostics.CodeAnalysis;
 
 namespace AresScript;
@@ -26,7 +28,11 @@ public class AresScriptEnvironment
     }
 
     var currentScope = _userScopes.Peek();
-    currentScope.Variables[id] = value;
+    currentScope.Variables[id] = new AresScriptValueSymbol(
+      id,
+      value,
+      IsReadOnly: false,
+      Kind: value.KindCase == AresValue.KindOneofCase.StructValue ? SymbolKind.Struct : SymbolKind.Variable);
   }
 
   public void AssignFunction(string id, AresScriptFunction value)
@@ -55,15 +61,16 @@ public class AresScriptEnvironment
   {
     foreach(var scope in _userScopes)
     {
-      var valueExists = scope.Variables.TryGetValue(id, out value);
+      var valueExists = scope.Variables.TryGetValue(id, out var variableSymbol);
+      value = variableSymbol?.Value;
       if(valueExists && value is not null)
         return true;
     }
 
     foreach(var scope in _systemScopes)
     {
-      var valueExists = scope.Variables.TryGetValue(id, out var sysVal);
-      value = sysVal?.ToAresValue();
+      var valueExists = scope.Variables.TryGetValue(id, out var systemVariableSymbol);
+      value = systemVariableSymbol?.Value;
       if(valueExists && value is not null)
         return true;
     }
@@ -76,7 +83,8 @@ public class AresScriptEnvironment
   {
     foreach(var scope in _userScopes)
     {
-      var valueExists = scope.Variables.TryGetValue(id, out value);
+      var valueExists = scope.Variables.TryGetValue(id, out var variableSymbol);
+      value = variableSymbol?.Value;
       if(valueExists && value is not null)
         return true;
     }
@@ -88,14 +96,17 @@ public class AresScriptEnvironment
   public bool TryGetValueCurrentScope(string id, [NotNullWhen(true)] out AresValue? value)
   {
     var scope = _userScopes.Peek();
-    return scope.Variables.TryGetValue(id, out value);
+    var exists = scope.Variables.TryGetValue(id, out var variableSymbol);
+    value = variableSymbol?.Value;
+    return exists && value is not null;
   }
 
   public bool TryGetSystemValue(string id, [NotNullWhen(true)] out AresSystemValue? value)
   {
     foreach(var scope in _systemScopes)
     {
-      var valueExists = scope.Variables.TryGetValue(id, out value);
+      var valueExists = scope.Variables.TryGetValue(id, out var variableSymbol);
+      value = variableSymbol?.SystemValue;
       if(valueExists && value is not null)
         return true;
     }
@@ -183,11 +194,11 @@ public class AresScriptEnvironment
     var results = new List<KeyValuePair<string, AresSystemValue>>();
     foreach(var scope in _systemScopes)
     {
-      foreach(var kv in scope.Variables)
+      foreach(var (key, symbol) in scope.Variables)
       {
-        if(seen.Add(kv.Key))
+        if(seen.Add(key))
         {
-          results.Add(kv);
+          results.Add(new KeyValuePair<string, AresSystemValue>(key, symbol.SystemValue));
         }
       }
     }
@@ -201,11 +212,11 @@ public class AresScriptEnvironment
     var results = new List<KeyValuePair<string, AresValue>>();
     foreach(var scope in _userScopes)
     {
-      foreach(var variable in scope.Variables)
+      foreach(var (key, symbol) in scope.Variables)
       {
-        if(seen.Add(variable.Key))
+        if(seen.Add(key))
         {
-          results.Add(new KeyValuePair<string, AresValue>(variable.Key, variable.Value));
+          results.Add(new KeyValuePair<string, AresValue>(key, symbol.Value));
         }
       }
     }
@@ -243,6 +254,66 @@ public class AresScriptEnvironment
         {
           results.Add(func);
         }
+      }
+    }
+
+    return results;
+  }
+
+  public IReadOnlyList<IScriptSymbol> GetAllUserSymbols()
+  {
+    var seen = new HashSet<string>(StringComparer.Ordinal);
+    var results = new List<IScriptSymbol>();
+    foreach(var scope in _userScopes)
+    {
+      foreach(var symbol in scope.GetSymbols())
+      {
+        if(seen.Add(symbol.Name))
+        {
+          results.Add(symbol);
+        }
+      }
+    }
+
+    return results;
+  }
+
+  public IReadOnlyList<IScriptSymbol> GetAllSystemSymbols()
+  {
+    var seen = new HashSet<string>(StringComparer.Ordinal);
+    var results = new List<IScriptSymbol>();
+    foreach(var scope in _systemScopes)
+    {
+      foreach(var symbol in scope.GetSymbols())
+      {
+        if(seen.Add(symbol.Name))
+        {
+          results.Add(symbol);
+        }
+      }
+    }
+
+    return results;
+  }
+
+  public IReadOnlyList<IScriptSymbol> GetAllSymbols()
+  {
+    var seen = new HashSet<string>(StringComparer.Ordinal);
+    var results = new List<IScriptSymbol>();
+
+    foreach(var symbol in GetAllUserSymbols())
+    {
+      if(seen.Add(symbol.Name))
+      {
+        results.Add(symbol);
+      }
+    }
+
+    foreach(var symbol in GetAllSystemSymbols())
+    {
+      if(seen.Add(symbol.Name))
+      {
+        results.Add(symbol);
       }
     }
 
@@ -311,7 +382,11 @@ public class AresScriptEnvironment
     var scope = _systemScopes.Peek();
     foreach(var (key, value) in variables)
     {
-      scope.Variables[key] = value;
+      scope.Variables[key] = new AresSystemValueSymbol(
+        key,
+        value,
+        IsReadOnly: true,
+        Kind: value.Kind == AresSystemValue.AresSystemValueKind.Struct ? SymbolKind.Struct : SymbolKind.Variable);
     }
   }
 

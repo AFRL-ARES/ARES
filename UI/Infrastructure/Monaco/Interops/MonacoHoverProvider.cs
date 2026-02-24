@@ -1,4 +1,5 @@
 using Ares.Datamodel;
+using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Scripting;
 using Ares.Services;
 using Microsoft.JSInterop;
@@ -22,7 +23,7 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
       Identifier = identifier ?? string.Empty
     });
 
-    if(response.Metadata is null || !response.Metadata.Found)
+    if(response.Metadata is null || !response.Found)
     {
       return null;
     }
@@ -44,45 +45,73 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
 
     AppendDescription(sb, response.Detail, response.Documentation);
 
-    if(response.InputSchema is not null && response.InputSchema.Fields.Count > 0)
+    switch(response.ShapeCase)
     {
-      AppendDataSchemaSection(sb, "Inputs", response.InputSchema);
-    }
-
-    if(response.OutputSchema is not null
-      && response.OutputSchema.Type is not AresDataType.Unit and not AresDataType.UnspecifiedType)
-    {
-      AppendSchemaEntrySection(sb, "Output", response.OutputSchema);
-    }
-
-    if(response.Schema is not null && response.Schema.Type != AresDataType.UnspecifiedType)
-    {
-      AppendSchemaEntrySection(sb, "Schema", response.Schema);
+      case ScriptSymbolMetadata.ShapeOneofCase.FunctionShape:
+        AppendFunctionShape(sb, response.FunctionShape);
+        break;
+      case ScriptSymbolMetadata.ShapeOneofCase.ValueShape:
+        AppendValueShape(sb, response.ValueShape);
+        break;
+      default:
+        break;
     }
 
     return sb.Length == 0 ? null : sb.ToString();
+  }
+
+  private static void AppendFunctionShape(StringBuilder sb, ScriptSymbolMetadata.Types.FunctionShape functionShape)
+  {
+    if(functionShape.InputSchema is not null && functionShape.InputSchema.Fields.Count > 0)
+    {
+      AppendDataSchemaSection(sb, "Inputs", functionShape.InputSchema);
+    }
+
+    if(functionShape.OutputSchema is not null && functionShape.OutputSchema.Type is not AresDataType.Unit and not AresDataType.UnspecifiedType)
+    {
+      AppendSchemaEntrySection(sb, "Outputs", functionShape.OutputSchema);
+    }
+  }
+
+  private static void AppendValueShape(StringBuilder sb, ScriptSymbolMetadata.Types.ValueShape valueShape)
+  {
+    if(valueShape.Schema is not null && valueShape.Schema.Type is not AresDataType.UnspecifiedType)
+    {
+      AppendSchemaEntrySection(sb, "Schema", valueShape.Schema);
+    }
+
+    if(valueShape.Value is not null)
+    {
+      sb.AppendLine();
+      sb.Append("Value: ");
+      sb.Append("```text");
+      sb.Append(valueShape.Value.Stringify());
+      sb.Append("```");
+    }
   }
 
   private static void AppendDescription(StringBuilder sb, string? detail, string? documentation)
   {
     var trimmedDetail = detail?.Trim();
     var trimmedDoc = documentation?.Trim();
+    var detailNull = string.IsNullOrWhiteSpace(trimmedDetail);
+    var docNull = string.IsNullOrWhiteSpace(trimmedDoc);
 
-    if(string.IsNullOrWhiteSpace(trimmedDetail) && string.IsNullOrWhiteSpace(trimmedDoc))
+    if(detailNull && docNull)
     {
       return;
     }
 
     sb.AppendLine().AppendLine();
 
-    if(!string.IsNullOrWhiteSpace(trimmedDetail))
+    if(!detailNull)
     {
       sb.AppendLine(trimmedDetail);
     }
 
-    if(!string.IsNullOrWhiteSpace(trimmedDoc) && !string.Equals(trimmedDoc, trimmedDetail, StringComparison.Ordinal))
+    if(!docNull && !string.Equals(trimmedDoc, trimmedDetail, StringComparison.Ordinal))
     {
-      if(!string.IsNullOrWhiteSpace(trimmedDetail))
+      if(!detailNull)
       {
         sb.AppendLine();
       }

@@ -5,6 +5,7 @@ using Ares.Datamodel.Factories;
 using Ares.Datamodel.Scripting;
 using AresScript.Generated;
 using AresScript.Interpreters;
+using AresScript.Symbols;
 
 namespace AresScript.ScriptAnalysis;
 

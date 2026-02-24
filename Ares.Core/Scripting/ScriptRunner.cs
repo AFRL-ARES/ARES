@@ -6,10 +6,10 @@ using AresScript;
 using AresScript.Generated;
 using AresScript.Interpreters;
 using AresScript.ScriptAnalysis;
+using AresScript.Symbols;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using System.Threading;
 
 namespace Ares.Core.Scripting;
 
@@ -112,7 +112,7 @@ public class ScriptRunner
               break;
           }
         }
-        : null);
+    : null);
 
     if(emitScriptEvents)
     {

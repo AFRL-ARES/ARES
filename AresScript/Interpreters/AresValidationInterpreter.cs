@@ -4,6 +4,7 @@ using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
 using AresScript.Generated;
+using AresScript.Symbols;
 
 namespace AresScript.Interpreters;
 

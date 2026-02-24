@@ -1,4 +1,4 @@
-using AresScript;
+using AresScript.Symbols;
 
 namespace Ares.Core.Scripting;
 

@@ -1,4 +1,5 @@
 using Ares.Datamodel;
+using AresScript.Symbols;
 
 namespace AresScript;
 

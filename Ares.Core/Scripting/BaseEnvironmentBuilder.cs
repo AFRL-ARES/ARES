@@ -1,4 +1,5 @@
 using AresScript;
+using AresScript.Symbols;
 
 namespace Ares.Core.Scripting;
 
@@ -59,6 +60,8 @@ public class BaseEnvironmentBuilder(IEnumerable<ISystemFunctionProvider> systemF
     return rootVariables.Select(kv => new KeyValuePair<string, AresSystemValue>(kv.Key, kv.Value));
   }
 
+  // TODO: reevaluate this pathing, if we create symbols directly, we may not need to do this
+  // namespace splitting.
   private static void AddFunctionToPath(
     IDictionary<string, AresSystemValue> root,
     string[] pathSegments,
