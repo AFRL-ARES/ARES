@@ -1,11 +1,4 @@
 using Ares.Messages;
-using Ares.Messages.DeviceStates.Chiller;
-using Ares.Messages.DeviceStates.Mfc;
-using Ares.Messages.DeviceStates.RestSerialDevice;
-using Ares.Messages.DeviceStates.SyringePump;
-using Ares.Messages.DeviceStates.Tc0304;
-using Ares.Messages.DeviceStates.TicStepperController;
-using Ares.Messages.DeviceStates.TubeFurnace;
 using Ares.Services;
 using Ares.Services.Device;
 using Grpc.Health.V1;
@@ -38,8 +31,6 @@ using ScriptPlaygroundViewModel = UI.Features.ScriptPlayground.ScriptPlaygroundV
 using UI.Application.Dialog;
 using UI.Application.Scripting;
 using UI.Components.Formatting;
-using UI.Infrastructure.DeviceStateLogging;
-using UI.Application.DeviceStateLogging;
 using UI.Infrastructure.Auth;
 using UI.Infrastructure.Devices;
 using UI.Application.Devices.Repos;
@@ -63,7 +54,6 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<CampaignEditContext>();
     services.BindViewModels();
     services.BindViewModelFactories();
-    services.AddScoped<ICombinedDeviceGetter, CombinedDeviceGetter>();
     services.AddSingleton<IDeviceControlViewModelRepo, DeviceControlViewModelRepo>();
     services.AddSingleton<INotificationRepository, NotificationRepository>();
 
@@ -109,16 +99,6 @@ internal static class ServiceCollectionExtensions
 
     //Device Clients
     services.AddSingleton(_ => clientManager.GetClient<AresDevices.AresDevicesClient>());
-
-    //Device State Logging Clients
-    services.AddScoped(_ => clientManager.GetClient<MfcStateLogging.MfcStateLoggingClient>());
-    services.AddScoped(_ => clientManager.GetClient<Tc0304StateLogging.Tc0304StateLoggingClient>());
-    services.AddScoped(_ => clientManager.GetClient<SyringePumpStateLogging.SyringePumpStateLoggingClient>());
-    services.AddScoped(_ => clientManager.GetClient<TicStepperControllerStateLogging.TicStepperControllerStateLoggingClient>());
-    services.AddScoped(_ => clientManager.GetClient<TubeFurnaceStateLogging.TubeFurnaceStateLoggingClient>());
-    services.AddScoped(_ => clientManager.GetClient<ChillerStateLogging.ChillerStateLoggingClient>());
-    services.AddScoped(_ => clientManager.GetClient<DeviceStateExportService.DeviceStateExportServiceClient>());
-    services.AddScoped(_ => clientManager.GetClient<RestSerialDeviceStateLogging.RestSerialDeviceStateLoggingClient>());
   }
 
   private static void BindViewModels(this IServiceCollection services)
