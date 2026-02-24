@@ -51,8 +51,8 @@ public static class GoodAnalyzerValidator
         continue;
 
       var matchingMap = matchingCommand.UserOutputKeyMap.FirstOrDefault(userMap => userMap.Value == map.Value);
-      var outputAresValueSchema = matchingCommand.Metadata.OutputMetadata.DataSchema.Fields.FirstOrDefault(field => field.Key == matchingMap.Key);
-      inputSchema.AddEntry(map.Key, outputAresValueSchema.Value.Type);
+      var outputAresValueSchema = matchingCommand.Metadata.OutputMetadata.DataSchema;
+      inputSchema.AddEntry(map.Key, outputAresValueSchema.Type);
     }
 
     var result = await analyzer.ValidateInputs(inputSchema);

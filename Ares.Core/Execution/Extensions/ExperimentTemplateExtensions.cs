@@ -83,19 +83,13 @@ public static class ExperimentTemplateExtensions
         commandTemplate.UniqueId = cmdTemplateId;
 
         foreach(var metadataParameterMetadata in commandTemplate.Metadata.ParameterMetadatas)
-        {
           metadataParameterMetadata.UniqueId = Guid.NewGuid().ToString();
-          foreach(var constraint in metadataParameterMetadata.Constraints)
-            constraint.UniqueId = Guid.NewGuid().ToString();
-        }
+        
 
         foreach(var argument in commandTemplate.Parameters)
         {
           argument.UniqueId = Guid.NewGuid().ToString();
           argument.Metadata.UniqueId = Guid.NewGuid().ToString();
-
-          foreach(var constraint in argument.Metadata.Constraints)
-            constraint.UniqueId = Guid.NewGuid().ToString();
         }
       }
     }

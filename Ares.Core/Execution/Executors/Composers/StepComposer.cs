@@ -1,6 +1,7 @@
 ﻿using Ares.Core.Device.Repos;
 using Ares.Core.Notifications;
 using Ares.Datamodel;
+using Ares.Datamodel.Device;
 using Ares.Datamodel.Templates;
 
 namespace Ares.Core.Execution.Executors.Composers;
@@ -34,8 +35,11 @@ public class StepComposer : ICommandComposer<StepTemplate, StepExecutor>
 
             if(device is not null && commandTemplate.Metadata is not null)
             {
+              var commandArgs = new List<DeviceCommandArgument>();
+              commandArgs.AddRange(commandTemplate.Parameters.Select(p => new DeviceCommandArgument() { ArgName = p.Metadata.Name, ArgValue = p.Value }));
+
               Func<CancellationToken, Task<CommandResult>> internalAction = async (ct)
-                => await device.ExecuteCommand(commandTemplate.Metadata.Name, commandTemplate.Parameters.ToList(), ct);
+                => await device.ExecuteCommand(commandTemplate.Metadata.Name, commandArgs, ct);
 
               return new CommandExecutor(internalAction, commandTemplate, _notifier);
             }

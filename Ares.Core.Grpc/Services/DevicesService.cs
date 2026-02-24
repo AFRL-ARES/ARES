@@ -114,8 +114,11 @@ public class DevicesService(
 
     try
     {
+      var arguments = new List<DeviceCommandArgument>();
+      arguments.AddRange(request.Parameters.Select(p => new DeviceCommandArgument() { ArgName = p.Metadata.Name, ArgValue = p.Value }));
+
       Func<CancellationToken, Task<CommandResult>> internalAction = async (ct) 
-        => await device.ExecuteCommand(request.Metadata.Name, request.Parameters.ToList(), ct);
+        => await device.ExecuteCommand(request.Metadata.Name, arguments, ct);
 
       var result = await internalAction(token);
 

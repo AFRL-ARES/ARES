@@ -119,20 +119,14 @@
 
   // --- Format Helpers ---
 
-  private string GetReturnTypeDisplay(AresStructSchema outputSchema)
+  private string GetReturnTypeDisplay(AresValueSchema outputSchema)
   {
-    if(outputSchema == null || outputSchema.Fields == null || !outputSchema.Fields.Any())
+    if(outputSchema == null)
       return "Void";
 
-    if(outputSchema.Fields.Count == 1)
-    {
-      // If it returns a single primitive, display that type
-      var firstEntry = outputSchema.Fields.First().Value;
-      return firstEntry.Type.ToString();
-    }
-
-    return "Struct"; // Returns a complex object
+    return outputSchema.Type.ToString();
   }
+    
 
   private string FormatDataType(AresValueSchema entry)
   {

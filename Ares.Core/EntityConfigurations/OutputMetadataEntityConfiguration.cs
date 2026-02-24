@@ -9,6 +9,6 @@ public class OutputMetadataEntityConfiguration : AresEntityTypeBaseConfiguration
   public override void Configure(EntityTypeBuilder<OutputMetadata> builder)
   {
     base.Configure(builder);
-    builder.Property(output => output.DataSchema).HasDataSchemaSimplified();
+    builder.Property(output => output.DataSchema).HasAresValueSchema();
   }
 }

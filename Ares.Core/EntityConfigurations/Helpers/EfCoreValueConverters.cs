@@ -47,7 +47,7 @@ public static class EfCoreValueConverters
       .HasColumnType(SerializerSettingsHelper.DetermineColumnType());
   }
 
-  public static PropertyBuilder<AresValueSchema> HasAresAresValueSchema(this PropertyBuilder<AresValueSchema> AresValueSchema)
+  public static PropertyBuilder<AresValueSchema> HasAresValueSchema(this PropertyBuilder<AresValueSchema> AresValueSchema)
   {
     var settings = SerializerSettingsHelper.CreateCustomSerializationSettings();
     return AresValueSchema.HasConversion(

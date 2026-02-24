@@ -17,7 +17,7 @@ internal class ParameterMetadataEntityConfiguration : AresEntityTypeBaseConfigur
     builder.Property(parameterMetadata => parameterMetadata.InitialValue).HasAresValue();
 
     builder.Property(parameterMetadata => parameterMetadata.Schema)
-      .HasAresAresValueSchema();
+      .HasAresValueSchema();
 
     builder.Navigation(parameterMetadata => parameterMetadata.Constraints)
       .AutoInclude();

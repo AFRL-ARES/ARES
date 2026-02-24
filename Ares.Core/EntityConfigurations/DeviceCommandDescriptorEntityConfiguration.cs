@@ -10,6 +10,6 @@ public class DeviceCommandDescriptorEntityConfiguration : AresEntityTypeBaseConf
     {
         base.Configure(builder);
         builder.Property(p => p.InputSchema).HasDataSchema();
-        builder.Property(p => p.OutputSchema).HasDataSchema();
+        builder.Property(p => p.OutputSchema).HasAresValueSchema();
     }
 }

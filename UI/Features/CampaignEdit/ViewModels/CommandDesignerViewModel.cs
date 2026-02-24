@@ -149,9 +149,10 @@ public partial class CommandDesignerViewModel : ReactiveObject
     var outputs = existingMetadata?.OutputMetadata?.DataSchema;
     if(outputs is not null)
     {
-      var newOutputs = outputs.Fields.Where(kvp => OutputKeyMap.All(uos => uos.DeviceOutputName != kvp.Key)).Select(newKvp => new UserOutputSelection(newKvp.Key, newKvp.Value.Type, newKvp.Key));
-      var removedOutputs = OutputKeyMap.Where(output => !outputs.Fields.ContainsKey(output.DeviceOutputName));
-      OutputKeyMap = [.. OutputKeyMap.Concat(newOutputs).Except(removedOutputs)];
+      //TODO: FIX MEEEEE!!!
+      //var newOutputs = outputs.Fields.Where(kvp => OutputKeyMap.All(uos => uos.DeviceOutputName != kvp.Key)).Select(newKvp => new UserOutputSelection(newKvp.Key, newKvp.Value.Type, newKvp.Key));
+      //var removedOutputs = OutputKeyMap.Where(output => !outputs.Fields.ContainsKey(output.DeviceOutputName));
+      //OutputKeyMap = [.. OutputKeyMap.Concat(newOutputs).Except(removedOutputs)];
     }
     else
     {

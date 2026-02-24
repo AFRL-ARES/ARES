@@ -127,7 +127,7 @@ internal class TestCampaignProvider
   public static OutputMetadata GetOutputMetadata(string typeName, int idx = 0)
     => new()
     {
-      DataSchema = AresSchemaBuilder.Create("testCampaignProvider", AresDataType.Number).Build(),
+      DataSchema = new AresValueSchema() { Type = AresDataType.Number,  Description = "Test Campaign Provider"},
       Index = idx,
       UniqueId = Guid.NewGuid().ToString()
     };

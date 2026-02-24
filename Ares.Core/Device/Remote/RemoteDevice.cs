@@ -185,13 +185,13 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     return client.EnterSafeModeAsync(new Empty()).ResponseAsync;
   }
 
-  public async override Task<CommandResult> ExecuteCommand(string command, List<Parameter> arguments, CancellationToken token)
+  public async override Task<CommandResult> ExecuteCommand(string command, List<DeviceCommandArgument> arguments, CancellationToken token)
   {
     var client = GetClient();
     var executionRequest = new ExecuteCommandRequest { CommandName = command, Arguments = new AresStruct() };
     foreach(var argument in arguments)
     {
-      executionRequest.Arguments.Fields[argument.Metadata.Name] = argument.Value;
+      executionRequest.Arguments.Fields[argument.ArgName] = argument.ArgValue;
     }
 
     var executionResult = await client.ExecuteCommandAsync(executionRequest, cancellationToken: token);
