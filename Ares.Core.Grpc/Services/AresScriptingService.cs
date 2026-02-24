@@ -135,8 +135,14 @@ public partial class AresScriptingService : Ares.Services.AresScriptingService.A
       request.CursorLine,
       request.CursorColumn,
       request.Identifier);
+    var found = metadata.Kind != Ares.Datamodel.Scripting.SymbolKind.Unspecified
+      && !string.IsNullOrWhiteSpace(metadata.Identifier);
 
-    return new SymbolMetadataResponse { Metadata = metadata };
+    return new SymbolMetadataResponse
+    {
+      Found = found,
+      Metadata = found ? metadata : null
+    };
   }
 
   private static GrpcScriptExecutionEvent ToGrpcScriptExecutionEvent(CoreScriptExecutionEvent executionEvent)

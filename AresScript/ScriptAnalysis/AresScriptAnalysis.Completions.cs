@@ -1,9 +1,11 @@
 using Antlr4.Runtime;
 using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
+using Ares.Datamodel.Factories;
 using Ares.Datamodel.Scripting;
 using AresScript.Generated;
 using AresScript.Interpreters;
+using AresScript.Symbols;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -87,17 +89,29 @@ public static partial class AresScriptAnalysis
       {
         Label = func.Name,
         InsertText = func.Name,
-        Detail = "User function",
-        Kind = SymbolKind.Function
+        Metadata = BuildFunctionMetadata(
+          identifier: func.Name,
+          parentIdentifier: string.Empty,
+          detail: "User function",
+          documentation: "User-defined function.",
+          inputSchema: BuildUserFunctionInputSchemaForCompletions(func),
+          outputSchema: AresSchemaBuilder.Entry(func.ReturnType).Build(),
+          isUserDefined: true)
       }));
 
       items.AddRange(userVariables.Select(variable => new CompletionItem
       {
         Label = variable.Key,
         InsertText = variable.Key,
-        Detail = "User variable",
-        Kind = SymbolKind.Variable,
-        Schema = variable.Value.ToSchemaEntry()
+        Metadata = BuildValueMetadata(
+          identifier: variable.Key,
+          parentIdentifier: string.Empty,
+          detail: "User variable",
+          documentation: "User-defined variable.",
+          kind: variable.Value.KindCase == AresValue.KindOneofCase.StructValue ? SymbolKind.Struct : SymbolKind.Variable,
+          schema: variable.Value.ToSchemaEntry(),
+          value: variable.Value,
+          isUserDefined: true)
       }));
     }
 
@@ -197,12 +211,15 @@ public static partial class AresScriptAnalysis
       {
         Label = extensionFunc.Name,
         InsertText = BuildSnippet(extensionFunc.Name, schemaForCall),
-        Detail = extensionFunc.Description,
-        Documentation = extensionFunc.Description,
-        Kind = SymbolKind.Function,
-        ParentIdentifier = parentIdentifier,
-        InputSchema = schemaForCall,
-        OutputSchema = extensionFunc.OutputSchema
+        InsertTextFormat = InsertTextFormat.Snippet,
+        Metadata = BuildFunctionMetadata(
+          identifier: extensionFunc.Name,
+          parentIdentifier: parentIdentifier,
+          detail: extensionFunc.Description,
+          documentation: extensionFunc.Description,
+          inputSchema: schemaForCall,
+          outputSchema: extensionFunc.OutputSchema,
+          isExtension: true)
       });
     }
   }
@@ -241,12 +258,14 @@ public static partial class AresScriptAnalysis
       {
         Label = label,
         InsertText = BuildSnippet(label, systemFunction.InputSchema),
-        Detail = description,
-        Documentation = description,
-        Kind = SymbolKind.Function,
-        ParentIdentifier = parentIdentifier,
-        InputSchema = systemFunction.InputSchema,
-        OutputSchema = systemFunction.OutputSchema
+        InsertTextFormat = InsertTextFormat.Snippet,
+        Metadata = BuildFunctionMetadata(
+          identifier: label,
+          parentIdentifier: parentIdentifier,
+          detail: description,
+          documentation: description,
+          inputSchema: systemFunction.InputSchema,
+          outputSchema: systemFunction.OutputSchema)
       });
       return;
     }
@@ -256,13 +275,17 @@ public static partial class AresScriptAnalysis
     {
       Label = label,
       InsertText = label,
-      Detail = value.Description ?? string.Empty,
-      Documentation = value.Description ?? string.Empty,
-      Kind = value.Kind == AresSystemValue.AresSystemValueKind.Struct
-        ? SymbolKind.Struct
-        : SymbolKind.Variable,
-      ParentIdentifier = parentIdentifier,
-      Schema = schemaValue.ToSchemaEntry()
+      Metadata = BuildValueMetadata(
+        identifier: label,
+        parentIdentifier: parentIdentifier,
+        detail: value.Description ?? string.Empty,
+        documentation: value.Description ?? string.Empty,
+        kind: value.Kind == AresSystemValue.AresSystemValueKind.Struct
+          ? SymbolKind.Struct
+          : SymbolKind.Variable,
+        schema: schemaValue.ToSchemaEntry(),
+        value: schemaValue,
+        isReadOnly: true)
     });
   }
 
@@ -280,12 +303,14 @@ public static partial class AresScriptAnalysis
       {
         Label = label,
         InsertText = BuildSnippet(label, systemFunction.InputSchema),
-        Detail = systemFunction.Description,
-        Documentation = systemFunction.Description,
-        Kind = SymbolKind.Function,
-        ParentIdentifier = parentIdentifier,
-        InputSchema = systemFunction.InputSchema,
-        OutputSchema = systemFunction.OutputSchema
+        InsertTextFormat = InsertTextFormat.Snippet,
+        Metadata = BuildFunctionMetadata(
+          identifier: label,
+          parentIdentifier: parentIdentifier,
+          detail: systemFunction.Description,
+          documentation: systemFunction.Description,
+          inputSchema: systemFunction.InputSchema,
+          outputSchema: systemFunction.OutputSchema)
       });
       return;
     }
@@ -294,13 +319,16 @@ public static partial class AresScriptAnalysis
     {
       Label = label,
       InsertText = label,
-      Detail = string.Empty,
-      Documentation = string.Empty,
-      Kind = value.KindCase == AresValue.KindOneofCase.StructValue
-        ? SymbolKind.Struct
-        : SymbolKind.Variable,
-      ParentIdentifier = parentIdentifier,
-      Schema = value.ToSchemaEntry()
+      Metadata = BuildValueMetadata(
+        identifier: label,
+        parentIdentifier: parentIdentifier,
+        detail: string.Empty,
+        documentation: string.Empty,
+        kind: value.KindCase == AresValue.KindOneofCase.StructValue
+          ? SymbolKind.Struct
+          : SymbolKind.Variable,
+        schema: value.ToSchemaEntry(),
+        value: value)
     });
   }
 
@@ -312,12 +340,120 @@ public static partial class AresScriptAnalysis
       {
         Label = typeName,
         InsertText = typeName,
-        Detail = "Ares data type",
-        Documentation = $"Ares data type '{typeName}'.",
-        Kind = SymbolKind.Type,
-        SortText = $"00_{typeName}"
+        SortText = $"00_{typeName}",
+        Metadata = new ScriptSymbolMetadata
+        {
+          Identifier = typeName,
+          Kind = SymbolKind.Type,
+          Detail = "Ares data type",
+          Documentation = $"Ares data type '{typeName}'."
+        }
       });
     }
+  }
+
+  private static ScriptSymbolMetadata BuildFunctionMetadata(
+    string identifier,
+    string parentIdentifier,
+    string? detail,
+    string? documentation,
+    AresDataSchema inputSchema,
+    SchemaEntry outputSchema,
+    bool isExtension = false,
+    bool isUserDefined = false,
+    bool isLambda = false)
+  {
+    var metadata = new ScriptSymbolMetadata
+    {
+      Identifier = identifier,
+      Kind = SymbolKind.Function,
+      Detail = detail ?? string.Empty,
+      Documentation = documentation ?? string.Empty,
+      FunctionShape = new ScriptSymbolMetadata.Types.FunctionShape
+      {
+        InputSchema = inputSchema,
+        OutputSchema = outputSchema
+      }
+    };
+
+    if(!string.IsNullOrWhiteSpace(parentIdentifier))
+    {
+      metadata.ParentIdentifier = parentIdentifier;
+    }
+
+    if(isExtension)
+    {
+      metadata.Tags.Add(SymbolTag.Extension);
+    }
+
+    if(isUserDefined)
+    {
+      metadata.Tags.Add(SymbolTag.UserDefined);
+    }
+
+    if(isLambda)
+    {
+      metadata.Tags.Add(SymbolTag.Lambda);
+    }
+
+    return metadata;
+  }
+
+  private static ScriptSymbolMetadata BuildValueMetadata(
+    string identifier,
+    string parentIdentifier,
+    string? detail,
+    string? documentation,
+    SymbolKind kind,
+    SchemaEntry schema,
+    AresValue? value = null,
+    bool isReadOnly = false,
+    bool isUserDefined = false)
+  {
+    var metadata = new ScriptSymbolMetadata
+    {
+      Identifier = identifier,
+      Kind = kind,
+      Detail = detail ?? string.Empty,
+      Documentation = documentation ?? string.Empty,
+      ValueShape = new ScriptSymbolMetadata.Types.ValueShape
+      {
+        Schema = schema
+      }
+    };
+
+    if(!string.IsNullOrWhiteSpace(parentIdentifier))
+    {
+      metadata.ParentIdentifier = parentIdentifier;
+    }
+
+    if(value is not null)
+    {
+      metadata.ValueShape.Value = value;
+    }
+
+    if(isReadOnly)
+    {
+      metadata.Tags.Add(SymbolTag.ReadOnly);
+    }
+
+    if(isUserDefined)
+    {
+      metadata.Tags.Add(SymbolTag.UserDefined);
+    }
+
+    return metadata;
+  }
+
+  private static AresDataSchema BuildUserFunctionInputSchemaForCompletions(AresScriptFunction function)
+  {
+    var schema = new AresDataSchema();
+    foreach(var parameter in function.Parameters)
+    {
+      schema.Fields[parameter.Name] = AresSchemaBuilder.Entry(parameter.Type).Build();
+    }
+
+    return schema;
   }
 
   private static bool IsTypeHintContext(string script, int cursorLine, int cursorColumn)

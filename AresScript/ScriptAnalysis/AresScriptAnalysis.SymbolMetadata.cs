@@ -25,7 +25,6 @@ public static partial class AresScriptAnalysis
     {
       return new ScriptSymbolMetadata
       {
-        Found = false,
         Identifier = string.Empty,
         ParentIdentifier = string.Empty,
         Kind = SymbolKind.Unspecified,
@@ -48,32 +47,25 @@ public static partial class AresScriptAnalysis
 
     if(environment.TryGetSystemFunction(identifier, out var systemFunction))
     {
-      return new ScriptSymbolMetadata
-      {
-        Found = true,
-        Identifier = identifier,
-        ParentIdentifier = string.Empty,
-        Kind = SymbolKind.Function,
-        Detail = systemFunction.Description ?? string.Empty,
-        Documentation = systemFunction.Description ?? string.Empty,
-        InputSchema = systemFunction.InputSchema,
-        OutputSchema = systemFunction.OutputSchema
-      };
+      return BuildFunctionMetadataForSymbolMetadata(
+        identifier,
+        string.Empty,
+        systemFunction.Description ?? string.Empty,
+        systemFunction.Description ?? string.Empty,
+        systemFunction.InputSchema,
+        systemFunction.OutputSchema);
     }
 
     if(environment.TryGetUserFunction(identifier, out var userFunction))
     {
-      return new ScriptSymbolMetadata
-      {
-        Found = true,
-        Identifier = identifier,
-        ParentIdentifier = string.Empty,
-        Kind = SymbolKind.Function,
-        Detail = "User function",
-        Documentation = "User-defined function.",
-        InputSchema = BuildUserFunctionInputSchema(userFunction),
-        OutputSchema = AresSchemaBuilder.Entry(userFunction.ReturnType).Build()
-      };
+      return BuildFunctionMetadataForSymbolMetadata(
+        identifier,
+        string.Empty,
+        "User function",
+        "User-defined function.",
+        BuildUserFunctionInputSchema(userFunction),
+        AresSchemaBuilder.Entry(userFunction.ReturnType).Build(),
+        isUserDefined: true);
     }
 
     if(environment.TryGetUserLambda(identifier, out var lambda))
@@ -84,17 +76,15 @@ public static partial class AresScriptAnalysis
         lambdaSchema.Fields[parameter] = AresSchemaBuilder.Entry(AresDataType.Any).Build();
       }
 
-      return new ScriptSymbolMetadata
-      {
-        Found = true,
-        Identifier = identifier,
-        ParentIdentifier = string.Empty,
-        Kind = SymbolKind.Function,
-        Detail = "Lambda function",
-        Documentation = "User-defined lambda.",
-        InputSchema = lambdaSchema,
-        OutputSchema = AresSchemaBuilder.Entry(AresDataType.Any).Build()
-      };
+      return BuildFunctionMetadataForSymbolMetadata(
+        identifier,
+        string.Empty,
+        "Lambda function",
+        "User-defined lambda.",
+        lambdaSchema,
+        AresSchemaBuilder.Entry(AresDataType.Any).Build(),
+        isUserDefined: true,
+        isLambda: true);
     }
 
     if(environment.TryGetValue(identifier, out var value))
@@ -105,21 +95,17 @@ public static partial class AresScriptAnalysis
     var inferredSchema = TryInferSchema(script, cursorLine, cursorColumn, identifier, environment);
     if(inferredSchema is not null)
     {
-      return new ScriptSymbolMetadata
-      {
-        Found = true,
-        Identifier = identifier,
-        ParentIdentifier = parentIdentifier ?? string.Empty,
-        Kind = inferredSchema.Type == AresDataType.Struct ? SymbolKind.Struct : SymbolKind.Variable,
-        Detail = string.Empty,
-        Documentation = string.Empty,
-        Schema = inferredSchema
-      };
+      return BuildValueMetadataForSymbolMetadata(
+        identifier,
+        parentIdentifier ?? string.Empty,
+        string.Empty,
+        string.Empty,
+        inferredSchema.Type == AresDataType.Struct ? SymbolKind.Struct : SymbolKind.Variable,
+        inferredSchema);
     }
 
     return new ScriptSymbolMetadata
     {
-      Found = false,
       Identifier = identifier,
       ParentIdentifier = parentIdentifier ?? string.Empty,
       Kind = SymbolKind.Unspecified,
@@ -251,17 +237,14 @@ public static partial class AresScriptAnalysis
 
     if(environment.TryGetExtensionFunction(parentValue, memberIdentifier, out var extensionFunction))
     {
-      return new ScriptSymbolMetadata
-      {
-        Found = true,
-        Identifier = memberIdentifier,
-        ParentIdentifier = parentIdentifier,
-        Kind = SymbolKind.Function,
-        Detail = extensionFunction.Description ?? string.Empty,
-        Documentation = extensionFunction.Description ?? string.Empty,
-        InputSchema = TrimReceiverFromSchema(extensionFunction.InputSchema),
-        OutputSchema = extensionFunction.OutputSchema
-      };
+      return BuildFunctionMetadataForSymbolMetadata(
+        memberIdentifier,
+        parentIdentifier,
+        extensionFunction.Description ?? string.Empty,
+        extensionFunction.Description ?? string.Empty,
+        TrimReceiverFromSchema(extensionFunction.InputSchema),
+        extensionFunction.OutputSchema,
+        isExtension: true);
     }
 
     return null;
@@ -270,16 +253,87 @@ public static partial class AresScriptAnalysis
   private static ScriptSymbolMetadata BuildValueSymbolMetadata(string identifier, string parentIdentifier, AresValue value)
   {
     var schema = value.ToSchemaEntry();
-    return new ScriptSymbolMetadata
+    return BuildValueMetadataForSymbolMetadata(
+      identifier,
+      parentIdentifier,
+      string.Empty,
+      string.Empty,
+      schema.Type == AresDataType.Struct ? SymbolKind.Struct : SymbolKind.Variable,
+      schema,
+      value);
+  }
+
+  private static ScriptSymbolMetadata BuildFunctionMetadataForSymbolMetadata(
+    string identifier,
+    string parentIdentifier,
+    string detail,
+    string documentation,
+    AresDataSchema inputSchema,
+    SchemaEntry outputSchema,
+    bool isExtension = false,
+    bool isUserDefined = false,
+    bool isLambda = false)
+  {
+    var metadata = new ScriptSymbolMetadata
     {
-      Found = true,
       Identifier = identifier,
       ParentIdentifier = parentIdentifier,
-      Kind = schema.Type == AresDataType.Struct ? SymbolKind.Struct : SymbolKind.Variable,
-      Detail = string.Empty,
-      Documentation = string.Empty,
-      Schema = schema
+      Kind = SymbolKind.Function,
+      Detail = detail,
+      Documentation = documentation,
+      FunctionShape = new ScriptSymbolMetadata.Types.FunctionShape
+      {
+        InputSchema = inputSchema,
+        OutputSchema = outputSchema
+      }
     };
+
+    if(isExtension)
+    {
+      metadata.Tags.Add(SymbolTag.Extension);
+    }
+
+    if(isUserDefined)
+    {
+      metadata.Tags.Add(SymbolTag.UserDefined);
+    }
+
+    if(isLambda)
+    {
+      metadata.Tags.Add(SymbolTag.Lambda);
+    }
+
+    return metadata;
+  }
+
+  private static ScriptSymbolMetadata BuildValueMetadataForSymbolMetadata(
+    string identifier,
+    string parentIdentifier,
+    string detail,
+    string documentation,
+    SymbolKind kind,
+    SchemaEntry schema,
+    AresValue? value = null)
+  {
+    var metadata = new ScriptSymbolMetadata
+    {
+      Identifier = identifier,
+      ParentIdentifier = parentIdentifier,
+      Kind = kind,
+      Detail = detail,
+      Documentation = documentation,
+      ValueShape = new ScriptSymbolMetadata.Types.ValueShape
+      {
+        Schema = schema
+      }
+    };
+
+    if(value is not null)
+    {
+      metadata.ValueShape.Value = value;
+    }
+
+    return metadata;
   }
 
   private static AresDataSchema BuildUserFunctionInputSchema(AresScriptFunction userFunction)
