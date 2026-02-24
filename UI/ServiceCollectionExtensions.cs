@@ -93,7 +93,7 @@ internal static class ServiceCollectionExtensions
     var clientManager = tempProvider.GetRequiredService<IClientManager>();
 
     //Ares Clients
-    services.AddScoped(_ => clientManager.GetClient<Ares.Messages.Authentication.AuthenticationClient>());
+    services.AddScoped(_ => clientManager.GetClient<Authentication.AuthenticationClient>());
     services.AddScoped(_ => clientManager.GetClient<AresServerInfo.AresServerInfoClient>());
     services.AddScoped(_ => clientManager.GetClient<UserManagement.UserManagementClient>());
     services.AddScoped(_ => clientManager.GetClient<AresAutomation.AresAutomationClient>());

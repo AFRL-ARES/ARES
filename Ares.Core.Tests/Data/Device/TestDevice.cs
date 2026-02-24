@@ -15,6 +15,10 @@ public class TestDevice : AresDevice
   {
   }
 
+  public TestDevice(string name, string id) : base(name, id)
+  {
+  }
+
   public override Task<bool> Activate(CancellationToken ct)
     => Task.FromResult(true);
 
@@ -26,7 +30,7 @@ public class TestDevice : AresDevice
 
   public override Task<CommandResult> ExecuteCommand(string command, List<DeviceCommandArgument> parameters, CancellationToken token)
   {
-    throw new NotImplementedException();
+    return Task.FromResult(new CommandResult { Success = true });
   }
 
   public override Task UpdateSettings(AresStruct settings)

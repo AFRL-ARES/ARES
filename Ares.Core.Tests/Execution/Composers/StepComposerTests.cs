@@ -1,4 +1,5 @@
 ﻿using Ares.Core.Device.Repos;
+using Ares.Core.Tests.Data.Device;
 using Ares.Core.Execution.Executors;
 using Ares.Core.Execution.Executors.Composers;
 using Ares.Core.Notifications;
@@ -17,6 +18,8 @@ internal class StepComposerTests
   [SetUp]
   public void SetUp()
   {
+    _deviceRepo = new AresDeviceRepo();
+    _deviceRepo.Add(new TestDevice("Test Device", "TestDeviceId"));
     var commandTemplate1 = new CommandTemplate
     {
       Index = 0,

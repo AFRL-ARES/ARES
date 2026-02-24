@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Ares.Core.Device.Remote;
+
 internal class RemoteDeviceManager(
   IAresDeviceRepo _deviceRepo,
   IDeviceCache _deviceCache,

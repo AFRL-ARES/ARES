@@ -1,6 +1,6 @@
 ﻿using Ares.Core.Analyzing;
 using Ares.Core.AresEnvironment;
-using Ares.Core.Device;
+using Ares.Core.Device.Repos;
 using Ares.Core.Device.State.Logging;
 using Ares.Core.Execution;
 using Ares.Core.Execution.ControlTokens;
@@ -63,13 +63,9 @@ internal class CampaignExecutorTests
       .Returns(_campaignExecutorLogger);
     _loggerFactory = loggerFactoryMock.Object;
 
-    var device = new TestDevice();
-    var cmdInterpreter = new TestDeviceInterpreter(device);
-    var repo = new DeviceCommandInterpreterRepo()
-    {
-      cmdInterpreter
-    };
-    var stepComposer = new StepComposer(repo, _notifier);
+    var deviceRepo = new AresDeviceRepo();
+    deviceRepo.Add(new TestDevice());
+    var stepComposer = new StepComposer(deviceRepo, _notifier);
     var experimentComposer = new ExperimentComposer(stepComposer, _analyzerRepo);
 
     var stateLoggerRepository = new DeviceStateLoggerRepository();

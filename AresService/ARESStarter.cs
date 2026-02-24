@@ -4,13 +4,12 @@ using System.IO;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Ares.Core.Analyzing;
+using Ares.Core.Device.Managers;
 using Ares.Core.Device.Remote;
-using Ares.Core.Device.Repos;
 using Ares.Core.Grpc;
 using Ares.Core.Planning;
 using Ares.Services;
 using AresService.Data;
-using AresService.DeviceDbLoaders;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
@@ -20,32 +19,29 @@ public class AresStarter
 {
   private readonly IRemoteAnalyzerManager _analyzerManager;
   private readonly IDbContextFactory<AresDbContext> _dbContextFactory;
-  private readonly IDeviceCommandInterpreterRepo _deviceCommandInterpreterRepo;
-  private readonly IEnumerable<IDeviceDbLoader> _deviceLoaders;
   private readonly IRemotePlannerManager _plannerManager;
   private readonly IConfiguration _configuration;
   private readonly IRemoteDeviceManager _remoteDeviceManager;
+  private readonly IDeviceManager _deviceManager;
   private readonly string _dataPath;
   private readonly string _resultsPath;
   private readonly string _templatesPath;
   private readonly string _devicesPath;
 
   public AresStarter(
-    IDeviceCommandInterpreterRepo deviceCommandInterpreterRepo,
     IDbContextFactory<AresDbContext> dbContextFactory,
     IRemotePlannerManager plannerManager,
     IRemoteAnalyzerManager analyzerManager,
-    IEnumerable<IDeviceDbLoader> deviceLoaders,
     IConfiguration configuration,
-    IRemoteDeviceManager remoteDeviceManager)
+    IRemoteDeviceManager remoteDeviceManager,
+    IDeviceManager deviceManager)
   {
-    _deviceCommandInterpreterRepo = deviceCommandInterpreterRepo;
     _dbContextFactory = dbContextFactory;
     _plannerManager = plannerManager;
     _analyzerManager = analyzerManager;
-    _deviceLoaders = deviceLoaders;
     _configuration = configuration;
     _remoteDeviceManager = remoteDeviceManager;
+    _deviceManager = deviceManager;
     _dataPath = _configuration.Get<AppSettings>()?.AresDataPath ?? "";
     _resultsPath = Path.Combine(_dataPath, AppSettings.ResultsFolder);
     _templatesPath = Path.Combine(_dataPath, AppSettings.TemplatesFolder);
@@ -61,12 +57,10 @@ public class AresStarter
     //await _analyzerManager.CreateDemoAnalyzer("http://localhost:5026");
 #endif
 
-    foreach(var deviceLoader in _deviceLoaders)
-      await deviceLoader.Load();
-
     await _plannerManager.LoadPlanners();
     await _analyzerManager.LoadAnalyzers();
     await _remoteDeviceManager.LoadDevices();
+    await _deviceManager.LoadDevices();
 
     Observable.Interval(TimeSpan.FromSeconds(20))
       .Take(1)

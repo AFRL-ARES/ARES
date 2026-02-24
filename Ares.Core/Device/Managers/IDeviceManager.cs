@@ -10,4 +10,5 @@ public interface IDeviceManager
   Task<IAresDevice[]> Load(IEnumerable<DeviceConfig> configs);
   Task<IAresDevice> Update(string deviceId, DeviceConfig config);
   Task Remove(string deviceId);
+  Task LoadDevices();
 }

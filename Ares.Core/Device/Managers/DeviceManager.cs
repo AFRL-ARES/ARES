@@ -1,6 +1,7 @@
 using Ares.Core.Device.Repos;
 using Ares.Datamodel.Device;
 using Ares.Device;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -12,17 +13,22 @@ public class DeviceManager : IDeviceManager
   private readonly IAresDeviceRepo _deviceRepo;
   private readonly IServiceProvider _serviceProvider;
   private readonly ILoggerFactory _loggerFactory;
+  private readonly IDbContextFactory<CoreDatabaseContext> _dbContextFactory;
+  private readonly ILogger<DeviceManager> _logger;
 
   public DeviceManager(
     IDeviceDriverRepo driverRepository,
     IAresDeviceRepo deviceRepository,
     IServiceProvider serviceProvider,
-    ILoggerFactory loggerFactory)
+    ILoggerFactory loggerFactory,
+    IDbContextFactory<CoreDatabaseContext> dbContextFactory)
   {
     _driverRepo = driverRepository;
     _deviceRepo = deviceRepository;
     _serviceProvider = serviceProvider;
     _loggerFactory = loggerFactory;
+    _dbContextFactory = dbContextFactory;
+    _logger = loggerFactory.CreateLogger<DeviceManager>();
   }
 
   public async Task<IAresDevice> Create(DeviceConfig config)
@@ -64,12 +70,13 @@ public class DeviceManager : IDeviceManager
     {
       try
       {
-        var device = await Create(config);
+        var deviceId = string.IsNullOrEmpty(config.UniqueId) ? Guid.NewGuid().ToString() : config.UniqueId;
+        var device = await Load(deviceId, config);
         devices.Add(device);
       }
-      catch(Exception)
+      catch(Exception ex)
       {
-        // Log error loading specific device
+        _logger.LogError(ex, "Error loading device {DeviceName} with driver {DriverName}", config.DeviceName, config.DriverName);
       }
     }
     return devices.ToArray();
@@ -90,5 +97,12 @@ public class DeviceManager : IDeviceManager
   {
     await Remove(deviceId);
     return await Load(deviceId, config);
+  }
+
+  public async Task LoadDevices()
+  {
+    using var context = await _dbContextFactory.CreateDbContextAsync();
+    var configs = await context.DeviceConfigs.ToListAsync();
+    await Load(configs);
   }
 }
