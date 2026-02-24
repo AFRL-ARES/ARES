@@ -2,6 +2,7 @@
 using ChemyxPumpPlugin.Commands;
 using ChemyxPumpPlugin.Commands.Requests;
 using ChemyxPumpPlugin.Commands.Responses;
+using System.Reflection.Metadata.Ecma335;
 
 namespace ChemyxPumpPlugin;
 
@@ -147,7 +148,9 @@ public class ChemyxPump : SerialDevice<IChemyxPumpConnection>, IChemyxPump
 
   public ValueTask DisposeAsync()
   {
-    throw new NotImplementedException();
+    _internalPollers.Dispose();
+    _internalPollToken.Dispose();
+    return new ValueTask();
   }
 
   public void StartPolling()

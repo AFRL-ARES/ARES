@@ -22,17 +22,20 @@ public class MfcManager : IDeviceManager<MfcConfig, IMassFlowController>
   private readonly ISerialConnectionManager<IMfcConnection> _mfcConnectionManager;
   readonly ILoggerFactory _loggerFactory;
   private readonly StateLoggerManager _stateLoggerManager;
+  private readonly ILogger<MfcManager> _logger;
 
   public MfcManager(
     IDeviceCommandInterpreterRepo deviceCommandInterpreterRepo,
     ISerialConnectionManager<IMfcConnection> mfcConnectionManager,
     StateLoggerManager stateLoggerManager,
-    ILoggerFactory loggerFactory)
+    ILoggerFactory loggerFactory,
+    ILogger<MfcManager> logger)
   {
     _loggerFactory = loggerFactory;
     _stateLoggerManager = stateLoggerManager;
     _deviceCommandInterpreterRepo = deviceCommandInterpreterRepo;
     _mfcConnectionManager = mfcConnectionManager;
+    _logger = logger;
   }
 
   public Task<IMassFlowController> Create(MfcConfig config)
@@ -64,8 +67,15 @@ public class MfcManager : IDeviceManager<MfcConfig, IMassFlowController>
     var devices = new List<IMassFlowController>();
     foreach (var config in configs)
     {
-      var device = await Load(config.Id, config.DeviceConfig);
-      devices.Add(device);
+      try
+      {
+        var device = await Load(config.Id, config.DeviceConfig);
+        devices.Add(device);
+      }
+      catch (Exception ex)
+      {
+        _logger.LogError(ex, $"Caught an error while trying to add an Alicat MFC. Device ID: {config.Id} MFC NAME: {config.DeviceConfig.Name} PORT: {config.DeviceConfig.PortName}");
+      }
     }
 
     foreach(var device in devices)

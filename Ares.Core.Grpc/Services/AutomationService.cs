@@ -1,12 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reactive.Linq;
-using System.Reactive.Threading.Tasks;
-using System.Text.Json;
-using System.Threading.Tasks;
-using Ares.Core.Analyzing;
+﻿using Ares.Core.Analyzing;
 using Ares.Core.EntityConfigurations.Helpers;
 using Ares.Core.Execution;
 using Ares.Core.Execution.StartConditions;
@@ -18,6 +10,14 @@ using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reactive.Linq;
+using System.Reactive.Threading.Tasks;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace Ares.Core.Grpc.Services;
 
@@ -510,6 +510,23 @@ public class AutomationService : AresAutomation.AresAutomationBase
       throw new InvalidOperationException("Couldn't locate a matching campaign summary!");
 
     return summary;
+  }
+
+  public override async Task<GetCopyOfCampaignResponse> GetCopyOfCampaign(CampaignRequest request, ServerCallContext context)
+  {
+    var template = await GetCampaignTemplate(request, context);
+    var response = new GetCopyOfCampaignResponse();
+
+    if(template is not null)
+    {
+      var templateCopy = template.Clone();
+      templateCopy.UniqueId = Guid.NewGuid().ToString();
+      templateCopy.Name = $"{template.Name}-Copy";
+      response.Template = templateCopy;
+      response.SerializedJsonData = JsonSerializer.Serialize(templateCopy, _serializerSettings);
+    }
+
+    return response;
   }
 
   private void HandleNotification(string title, string message, NotificationSeverityEnum severity)
