@@ -51,7 +51,7 @@ public static partial class AresScriptAnalysis
 
     if(TryGetParentIdentifier(script, cursorLine, cursorColumn, out var parentIdentifier))
     {
-      if(environment.TryGetSystemValue(parentIdentifier, out var systemParent)
+      if(TryResolveSystemParentValue(environment, parentIdentifier, out var systemParent)
         && systemParent.Kind == AresSystemValue.AresSystemValueKind.Struct
         && systemParent.StructFields is not null)
       {
@@ -62,7 +62,7 @@ public static partial class AresScriptAnalysis
 
         AddExtensionCompletions(items, environment, systemParent.ToAresValue(), parentIdentifier);
       }
-      else if(environment.TryGetValue(parentIdentifier, out var parentValue)
+      else if(TryResolveValue(environment, parentIdentifier, out var parentValue)
         && parentValue.KindCase == AresValue.KindOneofCase.StructValue
         && parentValue.StructValue is not null)
       {
@@ -73,7 +73,7 @@ public static partial class AresScriptAnalysis
 
         AddExtensionCompletions(items, environment, parentValue, parentIdentifier);
       }
-      else if(environment.TryGetValue(parentIdentifier, out var plainValue))
+      else if(TryResolveValue(environment, parentIdentifier, out var plainValue))
       {
         AddExtensionCompletions(items, environment, plainValue, parentIdentifier);
       }
@@ -162,7 +162,7 @@ public static partial class AresScriptAnalysis
     }
 
     var left = prefix[..dotIndex];
-    var identifier = ExtractTrailingIdentifier(left);
+    var identifier = ExtractTrailingIdentifierPath(left);
     if(string.IsNullOrEmpty(identifier))
     {
       return false;
@@ -172,10 +172,77 @@ public static partial class AresScriptAnalysis
     return true;
   }
 
-  private static string ExtractTrailingIdentifier(string text)
+  private static string ExtractTrailingIdentifierPath(string text)
   {
-    var match = IdentifierRegex().Match(text);
+    var match = IdentifierPathRegex().Match(text);
     return match.Success ? match.Groups[1].Value : string.Empty;
+  }
+
+  private static bool TryResolveSystemParentValue(
+    AresScriptEnvironment environment,
+    string identifierPath,
+    out AresSystemValue value)
+  {
+    var path = SplitIdentifierPath(identifierPath);
+    value = null!;
+    if(path.Length == 0)
+    {
+      return false;
+    }
+
+    if(!environment.TryGetSystemValue(path[0], out var current))
+    {
+      return false;
+    }
+
+    for(var i = 1; i < path.Length; i++)
+    {
+      if(current.Kind != AresSystemValue.AresSystemValueKind.Struct
+        || current.StructFields is null
+        || !current.StructFields.TryGetValue(path[i], out current))
+      {
+        return false;
+      }
+    }
+
+    value = current;
+    return true;
+  }
+
+  private static bool TryResolveValue(
+    AresScriptEnvironment environment,
+    string identifierPath,
+    out AresValue value)
+  {
+    var path = SplitIdentifierPath(identifierPath);
+    value = null!;
+    if(path.Length == 0)
+    {
+      return false;
+    }
+
+    if(!environment.TryGetValue(path[0], out var current))
+    {
+      return false;
+    }
+
+    for(var i = 1; i < path.Length; i++)
+    {
+      if(current.KindCase != AresValue.KindOneofCase.StructValue
+        || current.StructValue is null
+        || !current.StructValue.Fields.TryGetValue(path[i], out current))
+      {
+        return false;
+      }
+    }
+
+    value = current;
+    return true;
+  }
+
+  private static string[] SplitIdentifierPath(string identifierPath)
+  {
+    return identifierPath.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
   }
 
   private static string BuildSnippet(string funcName, AresDataSchema schema)
@@ -501,6 +568,6 @@ public static partial class AresScriptAnalysis
     return !suffixAfterReturnHintArrow.Contains(':');
   }
 
-  [GeneratedRegex(@"([A-Za-z_][A-Za-z0-9_]*)\s*$")]
-  private static partial Regex IdentifierRegex();
+  [GeneratedRegex(@"([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)\s*$")]
+  private static partial Regex IdentifierPathRegex();
 }
