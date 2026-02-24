@@ -2,23 +2,21 @@ using System.Reactive;
 using System.Reactive.Linq;
 using Ares.Services;
 using Ares.Services.Device;
+using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using UI.Application.Notifications;
-using UI.Application.DeviceStateLogging;
 
 namespace UI.Features.DeviceStateLogging.Settings;
 
 public partial class LoggingSettingsListViewModel : ReactiveObject
 {
-  private readonly ICombinedDeviceGetter _deviceGetter;
   private readonly AresDevices.AresDevicesClient _devicesClient;
   private readonly INotificationReceivingService _notificationService;
   private ObservableAsPropertyHelper<bool> _updated;
 
-  public LoggingSettingsListViewModel(ICombinedDeviceGetter deviceGetter, AresDevices.AresDevicesClient devicesClient, INotificationReceivingService notificationService)
+  public LoggingSettingsListViewModel(AresDevices.AresDevicesClient devicesClient, INotificationReceivingService notificationService)
   {
-    _deviceGetter = deviceGetter;
     _devicesClient = devicesClient;
     _notificationService = notificationService;
     RefreshLoggers = ReactiveCommand.CreateFromTask(_ => FetchLoggers());
@@ -32,8 +30,8 @@ public partial class LoggingSettingsListViewModel : ReactiveObject
 
   public async Task FetchLoggers()
   {
-    var devices = await _deviceGetter.GetAvailableDevices();
-    LoggingSettingsViewModels = devices.Select(d => new LoggingSettingsViewModel(d.DeviceId, d.DeviceName, _devicesClient)).ToArray();
+    var response = await _devicesClient.GetAllAvailableDevicesAsync(new Empty());
+    LoggingSettingsViewModels = response.Devices.Select(d => new LoggingSettingsViewModel(d.DeviceId, d.DeviceName, _devicesClient)).ToArray();
   }
 
   [Reactive]
