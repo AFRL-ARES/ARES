@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using Ares.Core.EntityConfigurations.Extensions;
 using Ares.Datamodel;
 using Google.Protobuf.Collections;
 using Google.Protobuf.WellKnownTypes;

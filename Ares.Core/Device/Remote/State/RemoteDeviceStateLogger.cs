@@ -2,7 +2,7 @@
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using Ares.Core.Device.State.Logging;
-using Ares.Core.EntityConfigurations;
+using Ares.Core.EntityConfigurations.Extensions;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
 using Microsoft.EntityFrameworkCore;
