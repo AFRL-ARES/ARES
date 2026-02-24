@@ -41,7 +41,7 @@ public static class GoodAnalyzerValidator
         return new ValidationResult(false, $"Experiment does not have any output commands set, but has analyzer {analyzer.Name} assigned");
     }
 
-    var inputSchema = new AresDataSchema();
+    var inputSchema = new AresStructSchema();
 
     foreach(var map in experimentTemplate.AnalyzerMaps)
     {
@@ -51,8 +51,8 @@ public static class GoodAnalyzerValidator
         continue;
 
       var matchingMap = matchingCommand.UserOutputKeyMap.FirstOrDefault(userMap => userMap.Value == map.Value);
-      var outputSchemaEntry = matchingCommand.Metadata.OutputMetadata.DataSchema.Fields.FirstOrDefault(field => field.Key == matchingMap.Key);
-      inputSchema.AddEntry(map.Key, outputSchemaEntry.Value.Type);
+      var outputAresValueSchema = matchingCommand.Metadata.OutputMetadata.DataSchema.Fields.FirstOrDefault(field => field.Key == matchingMap.Key);
+      inputSchema.AddEntry(map.Key, outputAresValueSchema.Value.Type);
     }
 
     var result = await analyzer.ValidateInputs(inputSchema);

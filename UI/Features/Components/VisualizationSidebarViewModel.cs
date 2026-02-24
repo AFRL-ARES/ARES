@@ -40,7 +40,7 @@ public partial class VisualizationSidebarViewModel : ReactiveObject
   public partial DeviceInfo? SelectedDevice { get; set; }
 
   [Reactive]
-  public partial AresDataSchema? SelectedDeviceStateSchema { get; set; }
+  public partial AresStructSchema? SelectedDeviceStateSchema { get; set; }
 
   [Reactive]
   public partial string[]? AvailableDeviceStateItems { get; set; }

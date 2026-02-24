@@ -87,7 +87,7 @@ public partial class RemoteDeviceSettingsViewModel : ReactiveObject
   [Reactive]
   public partial string StateMessage { get; private set; }
   [Reactive]
-  public partial AresDataSchema SettingsSchema { get; private set; }
+  public partial AresStructSchema SettingsSchema { get; private set; }
   [Reactive]
   public partial AresStruct Settings { get; private set; }
   [Reactive]
@@ -182,7 +182,7 @@ public partial class RemoteDeviceSettingsViewModel : ReactiveObject
     Address = infoResponse.Url;
     Version = infoResponse.Version;
     Description = infoResponse.Description;
-    SettingsSchema = infoResponse.SettingsSchema ?? new AresDataSchema();
+    SettingsSchema = infoResponse.SettingsSchema ?? new AresStructSchema();
   }
 
   public async Task<DeviceOperationalStatus> GetOperationalStatus()

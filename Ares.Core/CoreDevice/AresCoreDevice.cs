@@ -1,6 +1,5 @@
 ﻿using Ares.Datamodel;
 using Ares.Datamodel.Device;
-using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
 using Ares.Datamodel.Templates;
 using Ares.Device;
@@ -45,14 +44,14 @@ public class AresCoreDevice : AresDevice
     return Task.Delay(timeSpan, ct);
   }
 
-  public override async Task<CommandResult> ExecuteCommand(string command, List<Parameter> arguments, CancellationToken token)
+  public override async Task<CommandResult> ExecuteCommand(string command, List<DeviceCommandArgument> arguments, CancellationToken token)
   {
     var result = new CommandResult();
 
     if(!Enum.TryParse(command, out AresCoreDeviceCommand commandEnum))
       return new CommandResult { Error = "Unrecognized Command Received in Core Device!", Success = false };
 
-    var durationParam = arguments.FirstOrDefault(param => param.Metadata.Name == AresCoreDeviceCommandParameter.Duration.ToString())?.Value;
+    var durationParam = arguments.FirstOrDefault(param => param.ArgName == AresCoreDeviceCommandParameter.Duration.ToString())?.ArgValue;
     
     switch(commandEnum)
     {

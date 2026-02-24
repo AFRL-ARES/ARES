@@ -40,10 +40,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Ares.Device.Serial\AresSerial\Ares.Device.Serial.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Protobuf Include="Proto\Tc0304Config.proto" GrpcServices="None" />
     <Protobuf Include="Proto\DataModel.proto" GrpcServices="None" />
     <Protobuf Include="Proto\Services.proto" ProtoRoot="Proto" />

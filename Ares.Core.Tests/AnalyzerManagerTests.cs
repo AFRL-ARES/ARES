@@ -39,7 +39,7 @@ internal class AnalyzerManagerTests
       throw new NotImplementedException();
     }
 
-    public override Task<AresDataSchema> GetParameters(CancellationToken cancellationToken)
+    public override Task<AresStructSchema> GetParameters(CancellationToken cancellationToken)
     {
       throw new NotImplementedException();
     }

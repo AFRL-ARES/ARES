@@ -20,7 +20,7 @@ public class ScriptRunner
     ScriptOutput = _outputSubject.AsObservable();
     Print = new AresSystemFunction("print", "print", (args, _) =>
     {
-      var stringy = args.Select(v => v.Stringify());
+      var stringy = args.Select(v => v.Value.Stringify());
       foreach(var s in stringy)
       {
         _outputSubject.OnNext(s);

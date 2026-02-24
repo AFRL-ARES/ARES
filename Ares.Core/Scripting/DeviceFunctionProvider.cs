@@ -1,11 +1,9 @@
 using System.Text;
-using Ares.Core.Device;
 using Ares.Core.Device.Repos;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
-using Ares.Datamodel.Templates;
 using AresScript;
 
 namespace Ares.Core.Scripting;
@@ -28,13 +26,13 @@ public class DeviceFunctionProvider(IAresDeviceRepo deviceRepo) : ISystemFunctio
       {
         var commandName = SanitizeIdentifier(descriptor.Name);
         var functionId = $"devices::{devicePrefix}::{commandName}";
-        var parameterMetadatas = descriptor.InputSchema.Fields.ToArray();
+        var parameterMetadatas = descriptor.InputSchema;
 
-        var inputSchema = BuildInputSchema(parameterMetadatas);
+        var inputSchema = descriptor.InputSchema;
 
         var outputSchema = descriptor.OutputSchema is null
           ? AresSchemaBuilder.Entry(AresDataType.Unit).Build()
-          : AresSchemaBuilder.Entry(AresDataType.Struct).WithStructSchema(descriptor.OutputSchema).Build();
+          : descriptor.OutputSchema;
 
         functions.Add(
           new AresSystemFunction(
@@ -42,27 +40,16 @@ public class DeviceFunctionProvider(IAresDeviceRepo deviceRepo) : ISystemFunctio
             commandName,
             async (args, token) =>
             {
-              if(args.Count > parameterMetadatas.Length)
+              if(args.Count > inputSchema.Fields.Count)
               {
                 throw new InvalidOperationException(
-                  $"Function '{functionId}' expected at most {parameterMetadatas.Length} arguments but got {args.Count}.");
+                  $"Function '{functionId}' expected at most {inputSchema.Fields.Count} arguments but got {args.Count}.");
               }
 
-              var template = new CommandTemplate { Metadata = descriptor };
-              for(var i = 0; i < args.Count; i++)
-              {
-                var parameterMetadata = parameterMetadatas[i];
-                template.Parameters.Add(
-                  new Parameter
-                  {
-                    Metadata = parameterMetadata,
-                    Value = args[i],
-                    Index = parameterMetadata.Index
-                  });
-              }
+              var deviceArgs = args.Select(kvp => new DeviceCommandArgument() { ArgName = kvp.Key, ArgValue = kvp.Value });
 
-              var command = device.TemplateToDeviceCommand(template);
-              var result = await command(token.CancellationToken);
+              var result = await device.ExecuteCommand(commandName, deviceArgs.ToList(), token.CancellationToken);
+
               if(!result.Success)
               {
                 throw new InvalidOperationException(
@@ -84,18 +71,6 @@ public class DeviceFunctionProvider(IAresDeviceRepo deviceRepo) : ISystemFunctio
     }
 
     return functions.ToArray();
-  }
-
-  private static AresDataSchema BuildInputSchema(IEnumerable<KeyValuePair<string, AresDataSchema>> commandSchemas)
-  {
-    var schema = new AresDataSchema();
-    foreach(var schema in commandSchemas)
-    {
-      var entry = new SchemaEntry { Type = , Optional = true };
-      schema.Fields[schema.Name] = entry;
-    }
-
-    return schema;
   }
 
   private static string SanitizeIdentifier(string value)

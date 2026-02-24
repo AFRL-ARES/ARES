@@ -42,7 +42,7 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
 
   public ConcurrentDictionary<string, AresValue> Settings { get; } = new();
 
-  public AresDataSchema SettingSchema { get; private set; } = new();
+  public AresStructSchema SettingSchema { get; private set; } = new();
 
   // sets the polling options with the option to restart/start the stream
   public void SetPollingSettings(DevicePollingSettings pollingSettings, bool restartStream = false)
@@ -57,7 +57,7 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
 
   public override IObservable<AresStruct> StateStream => _stateSubject.AsObservable();
   public AresStruct? CurrentState => _stateSubject.Value;
-  public AresDataSchema StateSchema { get; private set; } = new();
+  public AresStructSchema StateSchema { get; private set; } = new();
 
   public override async Task<bool> Activate(CancellationToken ct)
   {

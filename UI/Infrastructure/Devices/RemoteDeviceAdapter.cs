@@ -52,7 +52,7 @@ public sealed class RemoteDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
   public AresStruct? State => _stateSubject.Value;
   public DeviceOperationalStatus OperationalStatus { get; private set; }
   public IObservable<ConnectionStatus> ConnectionStatusStream => _connectionStatusSubject.AsObservable();
-  public AresDataSchema? StateSchema { get; private set; }
+  public AresStructSchema? StateSchema { get; private set; }
 
   public async Task<bool> Activate()
   {

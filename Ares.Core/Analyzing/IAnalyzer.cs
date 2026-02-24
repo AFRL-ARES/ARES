@@ -75,13 +75,13 @@ public interface IAnalyzer
   /// </summary>
   /// <param name="inputSchema">The inputs we plan to send to the analyzer</param>
   /// <returns>Result of the validation along with a message if there is an error</returns>
-  Task<ParameterValidationResult> ValidateInputs(AresDataSchema inputSchema, CancellationToken cancellationToken = default);
+  Task<ParameterValidationResult> ValidateInputs(AresStructSchema inputSchema, CancellationToken cancellationToken = default);
 
   /// <summary>
   /// Returns supported parameters that ARES should provide. Some are optional, some required.
   /// </summary>
   /// <returns></returns>
-  Task<AresDataSchema> GetParameters(CancellationToken cancellationToken = default);
+  Task<AresStructSchema> GetParameters(CancellationToken cancellationToken = default);
 
   /// <summary>
   /// This will return some custom settings that the analyzer supports in addition to the parameters.

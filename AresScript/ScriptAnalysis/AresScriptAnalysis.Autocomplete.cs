@@ -59,7 +59,7 @@ public static partial class AresScriptAnalysis
       {
         Name = kv.Key,
         Description = kv.Value.Description ?? string.Empty,
-        Schema = kv.Value.ToAresValue().ToSchemaEntry(),
+        Schema = kv.Value.ToAresValue().ToAresValueSchema(),
         Value = kv.Value.ToAresValue()
       }));
     return response;

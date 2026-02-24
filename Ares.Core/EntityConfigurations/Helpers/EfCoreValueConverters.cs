@@ -20,21 +20,21 @@ public static class EfCoreValueConverters
       .HasColumnType(SerializerSettingsHelper.DetermineColumnType());
   }
 
-  public static PropertyBuilder<AresDataSchema> HasDataSchema(this PropertyBuilder<AresDataSchema> schema)
+  public static PropertyBuilder<AresStructSchema> HasDataSchema(this PropertyBuilder<AresStructSchema> schema)
   {
     var settings = SerializerSettingsHelper.CreateCustomSerializationSettings();
     return schema.HasConversion(
       s => JsonSerializer.Serialize(s, settings),
-      s => JsonSerializer.Deserialize<AresDataSchema>(s, settings) ?? new AresDataSchema())
+      s => JsonSerializer.Deserialize<AresStructSchema>(s, settings) ?? new AresStructSchema())
       .HasColumnType(SerializerSettingsHelper.DetermineColumnType());
   }
 
-  public static PropertyBuilder<AresDataSchema> HasDataSchemaSimplified(this PropertyBuilder<AresDataSchema> schema)
+  public static PropertyBuilder<AresStructSchema> HasDataSchemaSimplified(this PropertyBuilder<AresStructSchema> schema)
   {
     var settings = SerializerSettingsHelper.CreateCustomSerializationSettings();
     return schema.HasConversion(
       s => JsonSerializer.Serialize(s, settings),
-      s => JsonSerializer.Deserialize<AresDataSchema>(s, settings) ?? new AresDataSchema())
+      s => JsonSerializer.Deserialize<AresStructSchema>(s, settings) ?? new AresStructSchema())
       .HasColumnType(SerializerSettingsHelper.DetermineColumnType());
   }
 
@@ -47,12 +47,12 @@ public static class EfCoreValueConverters
       .HasColumnType(SerializerSettingsHelper.DetermineColumnType());
   }
 
-  public static PropertyBuilder<SchemaEntry> HasAresSchemaEntry(this PropertyBuilder<SchemaEntry> schemaEntry)
+  public static PropertyBuilder<AresValueSchema> HasAresAresValueSchema(this PropertyBuilder<AresValueSchema> AresValueSchema)
   {
     var settings = SerializerSettingsHelper.CreateCustomSerializationSettings();
-    return schemaEntry.HasConversion(
+    return AresValueSchema.HasConversion(
       s => JsonSerializer.Serialize(s, settings),
-      s => JsonSerializer.Deserialize<SchemaEntry>(s, settings) ?? new SchemaEntry())
+      s => JsonSerializer.Deserialize<AresValueSchema>(s, settings) ?? new AresValueSchema())
       .HasColumnType(SerializerSettingsHelper.DetermineColumnType());
   }
 

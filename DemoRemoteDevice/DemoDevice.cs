@@ -28,7 +28,7 @@ public class DemoDevice : IDisposable
 
   public AresStruct Settings => _settings;
 
-  public AresDataSchema StateSchema = new AresDataSchema();
+  public AresStructSchema StateSchema = new AresStructSchema();
 
   public void Dispose()
   {

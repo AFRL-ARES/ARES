@@ -77,13 +77,13 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
     if(item.OutputSchema?.Type != AresDataType.Unit)
     {
       schemaFound = true;
-      AppendSchemaEntrySection(sb, "Output", item.OutputSchema);
+      AppendAresValueSchemaSection(sb, "Output", item.OutputSchema);
     }
 
     if(item.Schema is not null)
     {
       schemaFound = true;
-      AppendSchemaEntrySection(sb, "Schema", item.Schema);
+      AppendAresValueSchemaSection(sb, "Schema", item.Schema);
     }
 
     return (sb.ToString(), schemaFound);
@@ -117,7 +117,7 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
     }
   }
 
-  private static void AppendDataSchemaSection(StringBuilder sb, string title, AresDataSchema? schema)
+  private static void AppendDataSchemaSection(StringBuilder sb, string title, AresStructSchema? schema)
   {
     if(schema is null || schema.Fields.Count == 0)
     {
@@ -130,13 +130,13 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
 
     foreach(var field in schema.Fields)
     {
-      sb.Append(field.Key).Append(": ").AppendLine(FormatSchemaEntry(field.Value));
+      sb.Append(field.Key).Append(": ").AppendLine(FormatAresValueSchema(field.Value));
     }
 
     sb.AppendLine("```");
   }
 
-  private static void AppendSchemaEntrySection(StringBuilder sb, string title, SchemaEntry? entry)
+  private static void AppendAresValueSchemaSection(StringBuilder sb, string title, AresValueSchema? entry)
   {
     if(entry is null)
     {
@@ -149,27 +149,27 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
     {
       foreach(var field in entry.StructSchema.Fields)
       {
-        sb.Append(field.Key).Append(": ").AppendLine(FormatSchemaEntry(field.Value));
+        sb.Append(field.Key).Append(": ").AppendLine(FormatAresValueSchema(field.Value));
       }
     }
     else if(entry.Type == AresDataType.List && entry.ListElementSchema is not null)
     {
-      sb.Append("List<").Append(FormatSchemaEntry(entry.ListElementSchema)).AppendLine(">");
+      sb.Append("List<").Append(FormatAresValueSchema(entry.ListElementSchema)).AppendLine(">");
     }
     else
     {
-      sb.AppendLine(FormatSchemaEntry(entry));
+      sb.AppendLine(FormatAresValueSchema(entry));
     }
     sb.AppendLine("```");
   }
 
-  private static string FormatSchemaEntry(SchemaEntry entry)
+  private static string FormatAresValueSchema(AresValueSchema entry)
   {
     var typeName = entry.Type.ToString();
     return entry.Optional ? $"{typeName} (optional)" : typeName;
   }
 
-  private async Task<SchemaEntry?> TryGetInferredSchema(string script, int line, int column, string identifier)
+  private async Task<AresValueSchema?> TryGetInferredSchema(string script, int line, int column, string identifier)
   {
     if(string.IsNullOrWhiteSpace(script))
     {
@@ -189,7 +189,7 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
       return null;
     }
 
-    var globalSchemas = new Dictionary<string, SchemaEntry>(StringComparer.Ordinal);
+    var globalSchemas = new Dictionary<string, AresValueSchema>(StringComparer.Ordinal);
     foreach(var global in catalog.Globals)
     {
       if(global.Schema is not null && !string.IsNullOrWhiteSpace(global.Name))
@@ -247,8 +247,8 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
   {
     var id = string.IsNullOrWhiteSpace(function.Id) ? function.Name : function.Id;
     var name = string.IsNullOrWhiteSpace(function.Name) ? id : function.Name;
-    var inputSchema = function.InputSchema ?? new AresDataSchema();
-    var outputSchema = function.OutputSchema ?? new SchemaEntry();
+    var inputSchema = function.InputSchema ?? new AresStructSchema();
+    var outputSchema = function.OutputSchema ?? new AresValueSchema();
     var description = function.Description ?? string.Empty;
     return new AresSystemFunction(id, name, DummyFunction, inputSchema, outputSchema, namespaceName, description);
   }
@@ -258,7 +258,7 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
     return Task.FromResult(AresValueHelper.CreateNull());
   }
 
-  private static string AppendInferredSchema(string? markdown, string identifier, SchemaEntry schema)
+  private static string AppendInferredSchema(string? markdown, string identifier, AresValueSchema schema)
   {
     var sb = new StringBuilder();
     if(!string.IsNullOrWhiteSpace(markdown))
@@ -270,7 +270,7 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
       sb.Append("**").Append(identifier).Append("**");
     }
 
-    AppendSchemaEntrySection(sb, "Inferred Type", schema);
+    AppendAresValueSchemaSection(sb, "Inferred Type", schema);
     return sb.ToString();
   }
 }

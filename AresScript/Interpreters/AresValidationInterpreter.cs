@@ -746,7 +746,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
 
   private void ValidateExtensionFunctionArgs(
     AresSystemFunction function,
-    SchemaEntry receiverSchema,
+    AresValueSchema receiverSchema,
     IReadOnlyList<AresLangParser.ExpressionContext> positionalArgs,
     IReadOnlyDictionary<string, AresLangParser.ExpressionContext> keywordArgs,
     AresLangParser.FunctionCallContext ctx)
@@ -771,28 +771,38 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       );
     }
 
-    var trimmedSchema = TrimReceiverFromSchema(function.InputSchema);
+    var trimmedSchema = TrimReceiverFromSchema(function.InputSchema.Fields);
     ValidateArgsAgainstSchema(function.Id, trimmedSchema, positionalArgs, keywordArgs, ctx);
   }
 
   private void ValidateArgsAgainstSchema(
     string functionId,
-    AresDataSchema schema,
+    AresStructSchema schema,
     IReadOnlyList<AresLangParser.ExpressionContext> positionalArgs,
     IReadOnlyDictionary<string, AresLangParser.ExpressionContext> keywordArgs,
     AresLangParser.FunctionCallContext ctx)
   {
-    var schemaFields = schema.Fields.ToArray();
+    ValidateArgsAgainstSchema(functionId, schema.Fields, positionalArgs, keywordArgs, ctx);
+  }
+
+  private void ValidateArgsAgainstSchema(
+    string functionId,
+    IDictionary<string, AresValueSchema> schema,
+    IReadOnlyList<AresLangParser.ExpressionContext> positionalArgs,
+    IReadOnlyDictionary<string, AresLangParser.ExpressionContext> keywordArgs,
+    AresLangParser.FunctionCallContext ctx)
+  {
+    var schemaFields = schema.ToArray();
     var variadicAnyArgs = IsVariadicAnyArgsSchema(schemaFields);
 
-    if(schema.Fields.Count == 0 && keywordArgs.Count == 0)
+    if(schema.Count == 0 && keywordArgs.Count == 0)
     {
       return;
     }
 
     foreach(var (name, expr) in keywordArgs)
     {
-      if(!schema.Fields.TryGetValue(name, out var expected))
+      if(!schema.TryGetValue(name, out var expected))
       {
         throw new AresInterpreterException(
           $"Function '{functionId}' got an unexpected keyword argument '{name}'.",
@@ -853,7 +863,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     }
   }
 
-  private static bool IsVariadicAnyArgsSchema(IReadOnlyList<KeyValuePair<string, SchemaEntry>> schemaFields)
+  private static bool IsVariadicAnyArgsSchema(IReadOnlyList<KeyValuePair<string, AresValueSchema>> schemaFields)
   {
     if(schemaFields.Count != 1)
     {
@@ -864,23 +874,23 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     return string.Equals(name, "args", StringComparison.Ordinal) && entry.Type == AresDataType.Any;
   }
 
-  private static AresDataSchema TrimReceiverFromSchema(AresDataSchema schema)
+  private static Dictionary<string, AresValueSchema> TrimReceiverFromSchema(IDictionary<string, AresValueSchema> schema)
   {
-    if(schema.Fields.Count <= 1)
+    if(schema.Count <= 1)
     {
-      return new AresDataSchema();
+      return new Dictionary<string, AresValueSchema>();
     }
 
-    var trimmed = new AresDataSchema();
-    foreach(var (name, entry) in schema.Fields.Skip(1))
+    var trimmed = new Dictionary<string, AresValueSchema>();
+    foreach(var (name, entry) in schema.Skip(1))
     {
-      trimmed.Fields[name] = entry;
+      trimmed[name] = entry;
     }
 
     return trimmed;
   }
 
-  private static bool IsCompatible(SchemaEntry expected, SchemaEntry actual)
+  private static bool IsCompatible(AresValueSchema expected, AresValueSchema actual)
   {
     if(expected.Type == AresDataType.Any || expected.Type == AresDataType.UnspecifiedType)
     {

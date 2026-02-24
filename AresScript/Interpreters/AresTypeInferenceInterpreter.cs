@@ -9,7 +9,7 @@ namespace AresScript.Interpreters;
 /// Interpreter specifically to gather the types of symbols so they can be displayed via hover
 /// or otherwise validated when used as inputs/outputs
 /// </summary>
-public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEntry>
+public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<AresValueSchema>
 {
   private readonly AresScriptEnvironment _environment;
 
@@ -18,15 +18,15 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
     _environment = environment;
   }
 
-  protected override SchemaEntry DefaultResult => AresSchemaBuilder.Entry(AresDataType.Any).Build();
+  protected override AresValueSchema DefaultResult => AresSchemaBuilder.Entry(AresDataType.Any).Build();
 
-  public override SchemaEntry VisitInt(AresLangParser.IntContext context) => AresSchemaBuilder.Entry(AresDataType.Number).Build();
-  public override SchemaEntry VisitFloat(AresLangParser.FloatContext context) => AresSchemaBuilder.Entry(AresDataType.Number).Build();
-  public override SchemaEntry VisitString(AresLangParser.StringContext context) => AresSchemaBuilder.Entry(AresDataType.String).Build();
-  public override SchemaEntry VisitBool(AresLangParser.BoolContext context) => AresSchemaBuilder.Entry(AresDataType.Boolean).Build();
-  public override SchemaEntry VisitNone(AresLangParser.NoneContext context) => AresSchemaBuilder.Entry(AresDataType.Null).Build();
+  public override AresValueSchema VisitInt(AresLangParser.IntContext context) => AresSchemaBuilder.Entry(AresDataType.Number).Build();
+  public override AresValueSchema VisitFloat(AresLangParser.FloatContext context) => AresSchemaBuilder.Entry(AresDataType.Number).Build();
+  public override AresValueSchema VisitString(AresLangParser.StringContext context) => AresSchemaBuilder.Entry(AresDataType.String).Build();
+  public override AresValueSchema VisitBool(AresLangParser.BoolContext context) => AresSchemaBuilder.Entry(AresDataType.Boolean).Build();
+  public override AresValueSchema VisitNone(AresLangParser.NoneContext context) => AresSchemaBuilder.Entry(AresDataType.Null).Build();
 
-  public override SchemaEntry VisitId(AresLangParser.IdContext context)
+  public override AresValueSchema VisitId(AresLangParser.IdContext context)
   {
     var id = context.ID().GetText();
     if(_environment.TryGetSystemFunction(id, out var sysFunc) && sysFunc?.OutputSchema is not null) 
@@ -44,18 +44,18 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
 
     if(_environment.TryGetValue(id, out var envVal))
     {
-      return envVal.ToSchemaEntry();
+      return envVal.ToAresValueSchema();
     }
 
     return AresSchemaBuilder.Entry(AresDataType.Any).Build();
   }
 
-  public override SchemaEntry VisitParens(AresLangParser.ParensContext context)
+  public override AresValueSchema VisitParens(AresLangParser.ParensContext context)
   {
     return Visit(context.expression());
   }
 
-  public override SchemaEntry VisitArray(AresLangParser.ArrayContext context)
+  public override AresValueSchema VisitArray(AresLangParser.ArrayContext context)
   {
     var expressions = context.expression();
     if(expressions.Length == 0)
@@ -83,14 +83,14 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
     return CreateListEntry(AresSchemaBuilder.Entry(AresDataType.Any).Build());
   }
 
-  public override SchemaEntry VisitLambdaExpr(AresLangParser.LambdaExprContext context)
+  public override AresValueSchema VisitLambdaExpr(AresLangParser.LambdaExprContext context)
   {
     return AresSchemaBuilder.Entry(AresDataType.Function).Build();
   }
 
-  public override SchemaEntry VisitStruct(AresLangParser.StructContext context)
+  public override AresValueSchema VisitStruct(AresLangParser.StructContext context)
   {
-    var schema = new AresDataSchema();
+    var schema = new AresStructSchema();
     foreach(var pair in context.structure().pair())
     {
       var key = pair.ID()?.GetText() ?? Unquote(pair.STRING().GetText());
@@ -101,7 +101,7 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
     return CreateStructEntry(schema);
   }
 
-  public override SchemaEntry VisitMemberAccess(AresLangParser.MemberAccessContext context)
+  public override AresValueSchema VisitMemberAccess(AresLangParser.MemberAccessContext context)
   {
     var left = Visit(context.expression());
     if(left.Type == AresDataType.Struct && left.StructSchema is not null)
@@ -116,7 +116,7 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
     return AresSchemaBuilder.Entry(AresDataType.Any).Build();
   }
 
-  public override SchemaEntry VisitIndexAccess(AresLangParser.IndexAccessContext context)
+  public override AresValueSchema VisitIndexAccess(AresLangParser.IndexAccessContext context)
   {
     var container = Visit(context.expression(0));
     if(container.Type == AresDataType.Struct && container.StructSchema is not null)
@@ -142,7 +142,7 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
     };
   }
 
-  public override SchemaEntry VisitFunctionCall(AresLangParser.FunctionCallContext context)
+  public override AresValueSchema VisitFunctionCall(AresLangParser.FunctionCallContext context)
   {
     if(context.expression() is AresLangParser.MemberAccessContext memberAccess)
     {
@@ -166,53 +166,53 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
     return AresSchemaBuilder.Entry(AresDataType.Any).Build();
   }
 
-  public override SchemaEntry VisitUnaryMinus(AresLangParser.UnaryMinusContext context)
+  public override AresValueSchema VisitUnaryMinus(AresLangParser.UnaryMinusContext context)
   {
     return AresSchemaBuilder.Entry(AresDataType.Number).Build();
   }
 
-  public override SchemaEntry VisitMulDiv(AresLangParser.MulDivContext context)
+  public override AresValueSchema VisitMulDiv(AresLangParser.MulDivContext context)
   {
     return NumericOrElse(context.expression(0), context.expression(1));
   }
 
-  public override SchemaEntry VisitSub(AresLangParser.SubContext context)
+  public override AresValueSchema VisitSub(AresLangParser.SubContext context)
   {
     return NumericOrElse(context.expression(0), context.expression(1));
   }
 
-  public override SchemaEntry VisitAdd(AresLangParser.AddContext context)
+  public override AresValueSchema VisitAdd(AresLangParser.AddContext context)
   {
     
     return NumericOrElse(context.expression(0), context.expression(1), AresDataType.String);
   }
 
-  public override SchemaEntry VisitRelational(AresLangParser.RelationalContext context)
+  public override AresValueSchema VisitRelational(AresLangParser.RelationalContext context)
   {
     return AresSchemaBuilder.Entry(AresDataType.Boolean).Build();
   }
 
-  public override SchemaEntry VisitEquality(AresLangParser.EqualityContext context)
+  public override AresValueSchema VisitEquality(AresLangParser.EqualityContext context)
   {
     return AresSchemaBuilder.Entry(AresDataType.Boolean).Build();
   }
 
-  public override SchemaEntry VisitLogicalNot(AresLangParser.LogicalNotContext context)
+  public override AresValueSchema VisitLogicalNot(AresLangParser.LogicalNotContext context)
   {
     return AresSchemaBuilder.Entry(AresDataType.Boolean).Build();
   }
 
-  public override SchemaEntry VisitLogicAnd(AresLangParser.LogicAndContext context)
+  public override AresValueSchema VisitLogicAnd(AresLangParser.LogicAndContext context)
   {
     return AresSchemaBuilder.Entry(AresDataType.Boolean).Build();
   }
 
-  public override SchemaEntry VisitLogicOr(AresLangParser.LogicOrContext context)
+  public override AresValueSchema VisitLogicOr(AresLangParser.LogicOrContext context)
   {
     return AresSchemaBuilder.Entry(AresDataType.Boolean).Build();
   }
 
-  private SchemaEntry NumericOrElse(AresLangParser.ExpressionContext left, AresLangParser.ExpressionContext right, AresDataType elseType = AresDataType.Any)
+  private AresValueSchema NumericOrElse(AresLangParser.ExpressionContext left, AresLangParser.ExpressionContext right, AresDataType elseType = AresDataType.Any)
   {
     var leftType = Visit(left);
     var rightType = Visit(right);
@@ -224,14 +224,14 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
     return AresSchemaBuilder.Entry(elseType).Build();
   }
 
-  private static SchemaEntry CreateStructEntry(AresDataSchema schema)
+  private static AresValueSchema CreateStructEntry(AresStructSchema schema)
   {
     var entry = AresSchemaBuilder.Entry(AresDataType.Struct).Build();
     entry.StructSchema = schema;
     return entry;
   }
 
-  private static SchemaEntry CreateListEntry(SchemaEntry elementSchema)
+  private static AresValueSchema CreateListEntry(AresValueSchema elementSchema)
   {
     var entry = AresSchemaBuilder.Entry(AresDataType.List).Build();
     entry.ListElementSchema = elementSchema;

@@ -161,7 +161,7 @@ public class ManualPlanner : IPlannerService
 
   public Task<PlannerServiceCapabilities> GetCapabilities(CancellationToken cancellationToken = default)
   {
-    var response = new PlannerServiceCapabilities() { ServiceName = "Manual Planner", SettingsSchema = new AresDataSchema(), TimeoutSeconds = long.MaxValue };
+    var response = new PlannerServiceCapabilities() { ServiceName = "Manual Planner", SettingsSchema = new AresStructSchema(), TimeoutSeconds = long.MaxValue };
     response.AcceptedTypes.Add(AresDataType.Number);
     response.AcceptedTypes.Add(AresDataType.String);
     response.AvailablePlanners.AddRange(AvailablePlanners);

@@ -13,7 +13,7 @@ public static class StandardLibrary
       {
         foreach (var arg in args)
         {
-          Console.WriteLine(arg.Stringify());
+          Console.WriteLine(arg.Value.Stringify());
         }
 
         return Task.FromResult(AresValueHelper.CreateUnit());
@@ -23,11 +23,11 @@ public static class StandardLibrary
     "",
     "Prints the given value/s of any ARES type to console."),
     
-    new("string", "string", (args, token) => {
+    new("string", "string", (args, _) => {
       var strBuilder = new StringBuilder();
       foreach(var aresValue in args)
       {
-        strBuilder.Append(aresValue.Stringify());
+        strBuilder.Append(aresValue.Value.Stringify());
       }
       return Task.FromResult(AresValueHelper.CreateString(strBuilder.ToString()));
     },
@@ -43,24 +43,24 @@ public static class StandardLibrary
 
       if (args.Count == 1)
       {
-        if (!args[0].HasNumberValue)
+        if (!args.First().Value.HasNumberValue)
           throw new InvalidOperationException("Range argument must be a number.");
-        stop = args[0].NumberValue;
+        stop = args.First().Value.NumberValue;
       }
       else if (args.Count == 2)
       {
-        if (!args[0].HasNumberValue || !args[1].HasNumberValue)
+        if (!args.First().Value.HasNumberValue || !args.Skip(1).First().Value.HasNumberValue)
           throw new InvalidOperationException("Range arguments must be numbers.");
-        start = args[0].NumberValue;
-        stop = args[1].NumberValue;
+        start = args.First().Value.NumberValue;
+        stop = args.Skip(1).First().Value.NumberValue;
       }
       else if (args.Count == 3)
       {
-        if (!args[0].HasNumberValue || !args[1].HasNumberValue || !args[2].HasNumberValue)
+        if (!args.First().Value.HasNumberValue || !args.Skip(1).First().Value.HasNumberValue || !args.Skip(2).First().Value.HasNumberValue)
           throw new InvalidOperationException("Range arguments must be numbers.");
-        start = args[0].NumberValue;
-        stop = args[1].NumberValue;
-        step = args[2].NumberValue;
+        start = args.First().Value.NumberValue;
+        stop = args.Skip(1).First().Value.NumberValue;
+        step = args.Skip(2).First().Value.NumberValue;
       }
       else
       {
@@ -92,12 +92,12 @@ public static class StandardLibrary
         throw new ArgumentException("Expected exactly 1 argument for duration.", nameof(args));
       }
 
-      if(!args[0].HasNumberValue)
+      if(!args.First().Value.HasNumberValue)
       {
         throw new InvalidOperationException("Argument provided is not a number");
       }
 
-      var remaining = TimeSpan.FromMilliseconds(args[0].NumberValue);
+      var remaining = TimeSpan.FromMilliseconds(args.First().Value.NumberValue);
       var interval = TimeSpan.FromMilliseconds(50);
       while(remaining > TimeSpan.Zero)
       {
@@ -136,13 +136,13 @@ public static class StandardLibrary
             throw new ArgumentException("Expected exactly 1 argument to append.", nameof(args));
           }
 
-          var listValue = args[0];
+          var listValue = args["self"];
           if(listValue.KindCase != AresValue.KindOneofCase.ListValue || listValue.ListValue is null)
           {
             throw new InvalidOperationException("append can only be called on list values.");
           }
 
-          listValue.ListValue.Values.Add(args[1]);
+          listValue.ListValue.Values.Add(args["0"]);
           return Task.FromResult(AresValueHelper.CreateUnit());
         },
         BuildListAppendSchema(),
@@ -152,7 +152,7 @@ public static class StandardLibrary
       ))
   ];
 
-  private static AresDataSchema BuildListAppendSchema()
+  private static AresStructSchema BuildListAppendSchema()
   {
     var listEntry = AresSchemaBuilder.Entry(AresDataType.List).Build();
     listEntry.ListElementSchema = AresSchemaBuilder.Entry(AresDataType.Any).Build();

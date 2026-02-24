@@ -53,12 +53,12 @@ public class PlannerSettingsEditorViewModel : ReactiveObject
   {
     var request = new PlannerInfoRequest { PlannerId= _plannerInfo.UniqueId };
     var infoResponse = await _client.GetInfoAsync(request);
-    SettingsSchema = infoResponse.Info.Capabilities?.SettingsSchema ?? new AresDataSchema();
+    SettingsSchema = infoResponse.Info.Capabilities?.SettingsSchema ?? new AresStructSchema();
   }
 
   public AresStruct Settings { get; set; } = new AresStruct();
 
-  public AresDataSchema SettingsSchema { get; private set; } = new AresDataSchema();
+  public AresStructSchema SettingsSchema { get; private set; } = new AresStructSchema();
 
   public bool Modified = true;
   public AresStruct Save()

@@ -117,7 +117,7 @@
 
 @code {
   [Parameter] public AresValue? Value { get; set; }
-  [Parameter] public SchemaEntry? Schema { get; set; }
+  [Parameter] public AresValueSchema? Schema { get; set; }
   [Parameter] public string? Unit { get; set; }
   [Parameter] public string? Name { get; set; }
   [Parameter] public Func<AresValue, Task>? ValueEditCallback { get; set; }

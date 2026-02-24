@@ -317,7 +317,7 @@ public class DevicesService(
     var device = aresDeviceRepo.GetAresDevice<RemoteDevice>(request.DeviceId);
     if(device is null)
     {
-      return Task.FromResult(new DeviceStateSchemaResponse { Schema = new AresDataSchema() });
+      return Task.FromResult(new DeviceStateSchemaResponse { Schema = new AresStructSchema() });
     }
 
     var schema = device.StateSchema;

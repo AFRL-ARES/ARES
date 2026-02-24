@@ -90,7 +90,7 @@ public class DemoDeviceService : AresRemoteDeviceService.AresRemoteDeviceService
     _logger.LogInformation("Settings schema requested");
 
     var response = new SettingsSchemaResponse();
-    var schema = new AresDataSchema();
+    var schema = new AresStructSchema();
     schema.Fields.Add(DemoDataTypes.RandomTags.Key, DemoDataTypes.RandomTags.Value);
     schema.Fields.Add(DemoDataTypes.PreselectedTags.Key, DemoDataTypes.PreselectedTags.Value);
 

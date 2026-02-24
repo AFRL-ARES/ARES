@@ -97,7 +97,7 @@ public static partial class AresScriptAnalysis
         InsertText = variable.Key,
         Detail = "User variable",
         Kind = CompletionItemKind.Variable,
-        Schema = variable.Value.ToSchemaEntry()
+        Schema = variable.Value.ToAresValueSchema()
       }));
     }
 
@@ -158,7 +158,7 @@ public static partial class AresScriptAnalysis
     return match.Success ? match.Groups[1].Value : string.Empty;
   }
 
-  private static string BuildSnippet(string funcName, AresDataSchema schema)
+  private static string BuildSnippet(string funcName, AresStructSchema schema)
   {
     var builder = new StringBuilder();
     builder.Append(funcName);
@@ -202,14 +202,14 @@ public static partial class AresScriptAnalysis
   }
 
   // First argument is always 'self' so we don't need that for validation
-  private static AresDataSchema TrimReceiverFromSchema(AresDataSchema schema)
+  private static AresStructSchema TrimReceiverFromSchema(AresStructSchema schema)
   {
     if(schema.Fields.Count <= 1)
     {
-      return new AresDataSchema();
+      return new AresStructSchema();
     }
 
-    var trimmed = new AresDataSchema();
+    var trimmed = new AresStructSchema();
     foreach(var (name, entry) in schema.Fields.Skip(1))
     {
       trimmed.Fields[name] = entry;
@@ -256,7 +256,7 @@ public static partial class AresScriptAnalysis
         ? CompletionItemKind.Struct
         : CompletionItemKind.Variable,
       ParentIdentifier = parentIdentifier,
-      Schema = schemaValue.ToSchemaEntry()
+      Schema = schemaValue.ToAresValueSchema()
     });
   }
 
@@ -294,7 +294,7 @@ public static partial class AresScriptAnalysis
         ? CompletionItemKind.Struct
         : CompletionItemKind.Variable,
       ParentIdentifier = parentIdentifier,
-      Schema = value.ToSchemaEntry()
+      Schema = value.ToAresValueSchema()
     });
   }
 

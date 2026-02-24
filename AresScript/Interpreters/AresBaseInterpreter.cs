@@ -723,14 +723,15 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
   {
     await CheckExecutionControlAsync();
 
-    var positionalArgs = new List<AresValue>();
+    var positionalArgs = new Dictionary<string, AresValue>();
     var keywordArgs = new Dictionary<string, AresValue>(StringComparer.Ordinal);
     var seenKeywordArg = false;
 
     var argContexts = ctx.argList()?.argument() ?? Enumerable.Empty<AresLangParser.ArgumentContext>();
-    foreach(var argCtx in argContexts)
+    for(var i = 0; i < argContexts.Count(); i++)
     {
       await CheckExecutionControlAsync();
+      var argCtx = argContexts.ElementAt(i);
       switch(argCtx)
       {
         case AresLangParser.PositionalArgContext positionalArg:
@@ -744,7 +745,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
             );
           }
 
-          positionalArgs.Add(await Visit(positionalArg.expression()));
+          positionalArgs[i.ToString()] = await Visit(positionalArg.expression());
           break;
         }
         case AresLangParser.KeywordArgContext keywordArg:
@@ -803,7 +804,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
         throw new AresInterpreterException($"Function '{id}' not found");
       }
 
-      return await ExecuteLambda(userLambda, id, positionalArgs, keywordArgs);
+      return await ExecuteLambda(userLambda, id, positionalArgs.Values.ToList(), keywordArgs);
     }
     
     await CheckExecutionControlAsync();
@@ -823,7 +824,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
       for(var i = 0; i < positionalArgs.Count; i++)
       {
-        Environment[userFn.Parameters[i]] = positionalArgs[i];
+        Environment[userFn.Parameters[i]] = positionalArgs[i.ToString()];
       }
 
       foreach(var (name, value) in keywordArgs)
@@ -875,7 +876,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
   private async Task<(AresValue? Callee, bool ExtensionHandled, AresValue? ExtensionResult)> TryResolveMemberCallee(
     AresLangParser.ExpressionContext expression,
-    List<AresValue> positionalArgs,
+    Dictionary<string, AresValue> positionalArgs,
     IReadOnlyDictionary<string, AresValue> keywordArgs)
   {
     if(expression is not AresLangParser.MemberAccessContext memberAccess)
@@ -900,7 +901,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
       throw new AresInterpreterException($"Runtime function '{memberName}' does not support keyword arguments");
     }
 
-    positionalArgs.Insert(0, receiver);
+    positionalArgs["self"] = receiver;
     await CheckExecutionControlAsync();
     var result = await extensionFunc.Body(positionalArgs, _executionControlToken);
     return (null, true, result);

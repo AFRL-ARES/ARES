@@ -13,7 +13,7 @@ public class RemoteAnalyzer : AnalyzerBase
 {
   private readonly GrpcChannel _channel;
   private AnalyzerCapabilities _capabilities = new();
-  private AresDataSchema _parameters = new();
+  private AresStructSchema _parameters = new();
 
   public RemoteAnalyzer(string name, Uri address, string id) : base(name, "", "_._._", id)
   {
@@ -79,7 +79,7 @@ public class RemoteAnalyzer : AnalyzerBase
     }
   }
 
-  public override async Task<AresDataSchema> GetParameters(CancellationToken cancellationToken)
+  public override async Task<AresStructSchema> GetParameters(CancellationToken cancellationToken)
   {
     var client = GetClient();
     try

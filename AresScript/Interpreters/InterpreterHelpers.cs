@@ -17,7 +17,7 @@ internal static class InterpreterHelpers
     return value;
   }
 
-  public static AresValue CreateDummyValue(SchemaEntry? schema)
+  public static AresValue CreateDummyValue(AresValueSchema? schema)
   {
     if(schema is null)
     {
