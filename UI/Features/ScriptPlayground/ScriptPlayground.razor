@@ -25,6 +25,9 @@
             else
             {
                 <span class="script-playground__status stopped">Stopped</span>
+                <button class="btn btn-outline-secondary" @onclick="HandleSummary">
+                    <i class="bi bi-list-ul"></i> Summarize
+                </button>
                 <button class="btn btn-success" @onclick="HandleStart">
                     <i class="bi bi-play-fill"></i> Start
                 </button>
@@ -53,27 +56,83 @@
         <div class="script-playground__pane script-playground__output">
             <div class="script-playground__pane-header">
                 <i class="bi bi-terminal"></i>
-                <span>Output</span>
+                <span>Execution</span>
             </div>
             <div class="script-playground__pane-body">
-                <div class="script-playground__output-body">
-                    @if (_outputLines.Count == 0)
-                    {
-                        <div class="script-playground__empty-output">
-                            No output yet. Run a script to see results here.
-                        </div>
-                    }
-                    else
-                    {
-                        @foreach (var line in _outputLines)
+                <div class="script-playground__tabs">
+                    <button
+                        class="script-playground__tab-button @(_activeTab == "output" ? "active" : "")"
+                        @onclick='() => _activeTab = "output"'>
+                        Output
+                    </button>
+                    <button
+                        class="script-playground__tab-button @(_activeTab == "summary" ? "active" : "")"
+                        @onclick='() => _activeTab = "summary"'>
+                        Summary
+                    </button>
+                </div>
+
+                @if (_activeTab == "output")
+                {
+                    <div class="script-playground__output-body">
+                        @if (_outputLines.Count == 0)
                         {
-                            <div class="script-playground__output-line">
-                                <span class="script-playground__output-timestamp">@line.Timestamp</span>
-                                <span class="script-playground__output-message">@line.Message</span>
+                            <div class="script-playground__empty-output">
+                                No output yet. Run a script to see results here.
                             </div>
                         }
-                    }
-                </div>
+                        else
+                        {
+                            @foreach (var line in _outputLines)
+                            {
+                                <div class="script-playground__output-line">
+                                    <span class="script-playground__output-timestamp">@line.Timestamp</span>
+                                    <span class="script-playground__output-message">@line.Message</span>
+                                </div>
+                            }
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="script-playground__summary-body">
+                        @if (_summaryRows.Count == 0)
+                        {
+                            <div class="script-playground__empty-output">
+                                No summary yet. Run a script to build and track invocation status.
+                            </div>
+                        }
+                        else
+                        {
+                            @foreach (var displayRow in BuildSummaryDisplayRows())
+                            {
+                                var row = displayRow.Row;
+                                <div class="script-playground__summary-row">
+                                    <div class="script-playground__summary-header" style="padding-left: @(displayRow.Depth * 1.1)rem;">
+                                        <span class="script-playground__summary-order">#@row.Order</span>
+                                        <span class="script-playground__summary-name">@row.FunctionName</span>
+                                        <span class="script-playground__summary-status @GetStatusClass(row.Status)">
+                                            @row.Status
+                                        </span>
+                                    </div>
+                                    <div class="script-playground__summary-expression">@row.Expression</div>
+                                    @if (row.Result is not null)
+                                    {
+                                        <div class="script-playground__summary-result">
+                                            <span>Result:</span>
+                                            <AresValueDisplay Value="@row.Result" />
+                                            <span>@row.Result</span>
+                                        </div>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(row.Error))
+                                    {
+                                        <div class="script-playground__summary-error">Error: @row.Error</div>
+                                    }
+                                </div>
+                            }
+                        }
+                    </div>
+                }
             </div>
         </div>
     </div>
@@ -82,9 +141,13 @@
 @code {
   private ScriptEditor? _editor;
   private List<OutputLine> _outputLines = new();
+  private List<SummaryRow> _summaryRows = new();
+  private readonly Dictionary<string, SummaryRow> _rowsByCallId = new();
+  private string _activeTab = "output";
   private IDisposable? _outputSubscription;
+  private IDisposable? _summarySubscription;
 
-  protected override async Task OnInitializedAsync()
+  protected override Task OnInitializedAsync()
   {
     base.OnInitialized();
 
@@ -101,36 +164,246 @@
                     });
             InvokeAsync(StateHasChanged);
           });
+
+      _summarySubscription = ViewModel.ScriptSummaryEvents
+          .Subscribe(evt =>
+          {
+            switch (evt)
+            {
+              case SummaryInitializedEvent initialized:
+                InitializeSummary(initialized.Steps);
+                break;
+              case SummaryCallStartedEvent started:
+                MarkStarted(started);
+                break;
+              case SummaryCallCompletedEvent completed:
+                MarkCompleted(completed);
+                break;
+              case SummaryCallFailedEvent failed:
+                MarkFailed(failed);
+                break;
+            }
+            InvokeAsync(StateHasChanged);
+          });
+    }
+
+    return Task.CompletedTask;
+  }
+
+  private async Task HandleStart()
+  {
+    if (_editor == null || ViewModel == null) return;
+
+    // Clear previous output
+    _outputLines.Clear();
+    _summaryRows.Clear();
+    _rowsByCallId.Clear();
+
+    // Get script from editor and start execution
+    var script = await _editor.GetScript();
+    await ViewModel.StartScript(script);
+  }
+
+  private async Task HandleStop()
+  {
+    if (ViewModel == null) return;
+    await ViewModel.StopScript();
+  }
+
+  private async Task HandleSummary()
+  {
+    if (_editor == null || ViewModel == null) return;
+
+    _summaryRows.Clear();
+    _rowsByCallId.Clear();
+    _activeTab = "summary";
+
+    var script = await _editor.GetScript();
+    await ViewModel.BuildSummaryAsync(script);
+  }
+
+  public void Dispose()
+  {
+    _outputSubscription?.Dispose();
+    _summarySubscription?.Dispose();
+  }
+
+  private void InitializeSummary(IReadOnlyList<Ares.Datamodel.Scripting.ScriptFunctionInvocation> steps)
+  {
+    _summaryRows = steps
+        .OrderBy(s => s.Order)
+        .Select(s => new SummaryRow
+            {
+                Order = s.Order,
+                FunctionId = s.FunctionId,
+                FunctionName = s.FunctionName,
+                Expression = s.Expression,
+                Line = s.Line,
+                Column = s.Column,
+                Status = "Pending"
+            })
+        .ToList();
+  }
+
+  private void MarkStarted(SummaryCallStartedEvent started)
+  {
+    var row = FindMatchingPendingRow(started.Invocation);
+    if (row is null)
+    {
+      row = new SummaryRow
+            {
+                Order = _summaryRows.Count > 0 ? _summaryRows.Max(r => r.Order) + 1 : 1,
+                FunctionId = started.Invocation.FunctionId,
+                FunctionName = started.Invocation.FunctionName,
+                Expression = started.Invocation.Expression,
+                Line = started.Invocation.Line,
+                Column = started.Invocation.Column,
+                CallId = started.CallId,
+                ParentCallId = started.ParentCallId
+            };
+      _summaryRows.Add(row);
+    }
+
+    row.CallId = started.CallId;
+    row.ParentCallId = started.ParentCallId;
+    row.StartSequence = started.Sequence;
+    row.Status = "Running";
+    row.Error = string.Empty;
+    row.Result = null;
+    _rowsByCallId[started.CallId] = row;
+  }
+
+  private void MarkCompleted(SummaryCallCompletedEvent completed)
+  {
+    if (_rowsByCallId.TryGetValue(completed.CallId, out var row))
+    {
+      row.Status = "Completed";
+      row.Result = completed.Result;
+      row.Error = string.Empty;
     }
   }
 
-    private async Task HandleStart()
+  private void MarkFailed(SummaryCallFailedEvent failed)
+  {
+    if (_rowsByCallId.TryGetValue(failed.CallId, out var row))
     {
-        if (_editor == null || ViewModel == null) return;
-        
-        // Clear previous output
-        _outputLines.Clear();
-        
-        // Get script from editor and start execution
-        var script = await _editor.GetScript();
-        await ViewModel.StartScript(script);
+      row.Status = "Failed";
+      row.Error = failed.Error;
+      row.Result = null;
+    }
+  }
+
+  private SummaryRow? FindMatchingPendingRow(Ares.Datamodel.Scripting.ScriptFunctionInvocation invocation)
+  {
+    var key = BuildTemplateKey(invocation.FunctionId, invocation.Expression, invocation.Line, invocation.Column);
+    return _summaryRows
+      .Where(row =>
+        string.IsNullOrWhiteSpace(row.CallId) &&
+        BuildTemplateKey(row.FunctionId, row.Expression, row.Line, row.Column) == key)
+      .OrderBy(row => row.Order)
+      .FirstOrDefault();
+  }
+
+  private static int BuildTemplateKey(string functionId, string expression, int line, int column)
+  {
+    return HashCode.Combine(functionId, expression, line, column);
+  }
+
+  private static string GetStatusClass(string status)
+  {
+    return status.ToLowerInvariant() switch
+    {
+      "running" => "running",
+      "completed" => "completed",
+      "failed" => "failed",
+      _ => "pending"
+    };
+  }
+
+  private IReadOnlyList<SummaryDisplayRow> BuildSummaryDisplayRows()
+  {
+    var rowsByCallId = _summaryRows
+      .Where(row => !string.IsNullOrWhiteSpace(row.CallId))
+      .ToDictionary(row => row.CallId, row => row);
+
+    var childrenByParent = new Dictionary<string, List<SummaryRow>>();
+    foreach (var row in rowsByCallId.Values)
+    {
+      if (string.IsNullOrWhiteSpace(row.ParentCallId) || !rowsByCallId.ContainsKey(row.ParentCallId))
+      {
+        continue;
+      }
+
+      if (!childrenByParent.TryGetValue(row.ParentCallId, out var children))
+      {
+        children = new List<SummaryRow>();
+        childrenByParent[row.ParentCallId] = children;
+      }
+
+      children.Add(row);
     }
 
-    private async Task HandleStop()
+    var roots = _summaryRows
+      .Where(row => string.IsNullOrWhiteSpace(row.ParentCallId) || !rowsByCallId.ContainsKey(row.ParentCallId))
+      .OrderBy(row => row.Order)
+      .ThenBy(row => row.StartSequence)
+      .ToList();
+
+    var flattened = new List<SummaryDisplayRow>();
+    foreach (var root in roots)
     {
-        if (ViewModel == null) return;
-        await ViewModel.StopScript();
+      AppendSummaryRow(root, 0, childrenByParent, flattened);
     }
 
-    public void Dispose()
+    return flattened;
+  }
+
+  private static void AppendSummaryRow(
+    SummaryRow row,
+    int depth,
+    IReadOnlyDictionary<string, List<SummaryRow>> childrenByParent,
+    ICollection<SummaryDisplayRow> flattened)
+  {
+    flattened.Add(new SummaryDisplayRow(row, depth));
+
+    if (string.IsNullOrWhiteSpace(row.CallId))
     {
-        _outputSubscription?.Dispose();
+      return;
     }
 
-    private class OutputLine
+    if (!childrenByParent.TryGetValue(row.CallId, out var children))
     {
-        public string Timestamp { get; set; } = string.Empty;
-        public string Message { get; set; } = string.Empty;
+      return;
     }
+
+    foreach (var child in children.OrderBy(c => c.StartSequence).ThenBy(c => c.Order))
+    {
+      AppendSummaryRow(child, depth + 1, childrenByParent, flattened);
+    }
+  }
+
+  private class OutputLine
+  {
+    public string Timestamp { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
+  }
+
+  private class SummaryRow
+  {
+    public int Order { get; set; }
+    public string FunctionId { get; set; } = string.Empty;
+    public string FunctionName { get; set; } = string.Empty;
+    public string Expression { get; set; } = string.Empty;
+    public int Line { get; set; }
+    public int Column { get; set; }
+    public string Status { get; set; } = "Pending";
+    public string CallId { get; set; } = string.Empty;
+    public string ParentCallId { get; set; } = string.Empty;
+    public long StartSequence { get; set; } = long.MaxValue;
+    public Ares.Datamodel.AresValue? Result { get; set; }
+    public string Error { get; set; } = string.Empty;
+  }
+
+  private sealed record SummaryDisplayRow(SummaryRow Row, int Depth);
 }
 

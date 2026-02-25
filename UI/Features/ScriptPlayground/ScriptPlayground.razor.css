@@ -90,6 +90,25 @@
   font-size: 0.85rem;
 }
 
+.script-playground__tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.script-playground__tab-button {
+  border: 1px solid;
+  border-radius: 0.4rem;
+  background: transparent;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.script-playground__tab-button.active {
+  border-width: 2px;
+}
+
 .script-playground__empty-output {
   font-style: italic;
   padding-top: 0.5rem;
@@ -109,6 +128,70 @@
 
 .script-playground__output-message {
   word-break: break-word;
+}
+
+.script-playground__summary-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  font-size: 0.85rem;
+}
+
+.script-playground__summary-row {
+  border: 1px solid;
+  border-radius: 0.35rem;
+  padding: 0.5rem 0.6rem;
+}
+
+.script-playground__summary-header {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.script-playground__summary-order {
+  font-family: "JetBrains Mono", "Cascadia Code", "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.script-playground__summary-name {
+  font-weight: 600;
+}
+
+.script-playground__summary-status {
+  margin-left: auto;
+  border: 1px solid;
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.script-playground__summary-status.pending {
+}
+
+.script-playground__summary-status.running {
+}
+
+.script-playground__summary-status.completed {
+}
+
+.script-playground__summary-status.failed {
+}
+
+.script-playground__summary-expression {
+  margin-top: 0.35rem;
+  font-family: "JetBrains Mono", "Cascadia Code", "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  word-break: break-word;
+}
+
+.script-playground__summary-result {
+  margin-top: 0.35rem;
+}
+
+.script-playground__summary-error {
+  margin-top: 0.35rem;
+  font-weight: 600;
 }
 
 @media (max-width: 1100px) {
