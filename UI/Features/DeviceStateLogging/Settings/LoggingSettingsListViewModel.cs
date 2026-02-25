@@ -31,7 +31,8 @@ public partial class LoggingSettingsListViewModel : ReactiveObject
   public async Task FetchLoggers()
   {
     var response = await _devicesClient.GetAllAvailableDevicesAsync(new Empty());
-    LoggingSettingsViewModels = response.Devices.Select(d => new LoggingSettingsViewModel(d.DeviceId, d.DeviceName, _devicesClient)).ToArray();
+    var filteredDevices = response.Devices.Where(d => d.DeviceId != "ARES-CORE-DEVICE");
+    LoggingSettingsViewModels = filteredDevices.Select(d => new LoggingSettingsViewModel(d.DeviceId, d.DeviceName, _devicesClient)).ToArray();
   }
 
   [Reactive]

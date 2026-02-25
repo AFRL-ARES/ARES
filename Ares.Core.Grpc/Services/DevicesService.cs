@@ -15,6 +15,7 @@ using Ares.Datamodel.Device;
 using Ares.Datamodel.Templates;
 using Ares.Device;
 using Ares.Services.Device;
+using DynamicData;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
@@ -23,7 +24,7 @@ using Microsoft.Extensions.Logging;
 namespace Ares.Core.Grpc.Services;
 
 public class DevicesService(
-  IAresDeviceRepo aresDeviceRepo,
+  IAresDeviceRepo deviceRepo,
   IDeviceDriverRepo deviceDriverRepo,
   IDeviceManager deviceManager,
   IDeviceConfigManager deviceConfigManager,
@@ -61,7 +62,7 @@ public class DevicesService(
 
   public override Task<ListAresDevicesResponse> ListAresDevices(Empty _, ServerCallContext context)
   {
-    var aresDeviceMessages = aresDeviceRepo
+    var aresDeviceMessages = deviceRepo
       .GetSnapshot()
       .Select(GetInfo);
 
@@ -89,7 +90,7 @@ public class DevicesService(
 
   public override Task<CommandMetadatasResponse> GetCommandMetadatas(CommandMetadatasRequest request, ServerCallContext context)
   {
-    var device = aresDeviceRepo
+    var device = deviceRepo
       .GetAresDevice(request.DeviceId);
 
     var response = new CommandMetadatasResponse();
@@ -106,7 +107,7 @@ public class DevicesService(
 
   public override async Task<DeviceExecutionResult> ExecuteCommand(CommandTemplate request, ServerCallContext context)
   {
-    var device = aresDeviceRepo.GetAresDevice(request.UniqueId);
+    var device = deviceRepo.GetAresDevice(request.UniqueId);
     var token = context.CancellationToken;
 
     if(device is null)
@@ -137,7 +138,7 @@ public class DevicesService(
 
   private IAresDevice GetAresDevice(string id)
   {
-    var aresDevice = aresDeviceRepo.GetAresDevice(id);
+    var aresDevice = deviceRepo.GetAresDevice(id);
 
     if(aresDevice is null)
       throw new InvalidOperationException($"Could not find ARES device with id: {id}");
@@ -160,7 +161,7 @@ public class DevicesService(
 
   public override Task<RemoteDeviceConfigResponse> GetAllRemoteDevicesConfigs(Empty request, ServerCallContext context)
   {
-    var remoteDevices = aresDeviceRepo.GetAresDevices<RemoteDevice>().ToArray();
+    var remoteDevices = deviceRepo.GetAresDevices<RemoteDevice>().ToArray();
 
     var response = new RemoteDeviceConfigResponse();
     var configs = remoteDevices.Select(rd => new RemoteDeviceConfig { Name = rd.Name, UniqueId = rd.UniqueId, Url = rd.Address.ToString() });
@@ -172,7 +173,7 @@ public class DevicesService(
 
   public override Task<ListAresRemoteDevicesResponse> ListRemoteAresDevices(Empty request, ServerCallContext context)
   {
-    var remoteDevices = aresDeviceRepo.GetAresDevices<RemoteDevice>().ToArray();
+    var remoteDevices = deviceRepo.GetAresDevices<RemoteDevice>().ToArray();
 
     var response = new ListAresRemoteDevicesResponse();
     var infos = remoteDevices.Select(GetInfo);
@@ -233,7 +234,7 @@ public class DevicesService(
 
   public override Task<DeviceInfo> GetDeviceInfo(DeviceInfoRequest request, ServerCallContext context)
   {
-    var device = aresDeviceRepo.GetAresDevice(request.DeviceId);
+    var device = deviceRepo.GetAresDevice(request.DeviceId);
     if(device is null)
       return Task.FromResult(new DeviceInfo());
 
@@ -244,7 +245,7 @@ public class DevicesService(
 
   public override Task<AresStruct> GetDeviceSettings(DeviceSettingsRequest request, ServerCallContext context)
   {
-    var device = aresDeviceRepo.GetAresDevice(request.DeviceId);
+    var device = deviceRepo.GetAresDevice(request.DeviceId);
     if(device is not RemoteDevice remoteDevice)
     {
       return Task.FromResult(new AresStruct());
@@ -258,7 +259,7 @@ public class DevicesService(
 
   public override Task<Empty> SetDeviceSettings(DeviceSettings request, ServerCallContext context)
   {
-    var device = aresDeviceRepo.GetAresDevice(request.DeviceId);
+    var device = deviceRepo.GetAresDevice(request.DeviceId);
     if(device is not RemoteDevice remoteDevice)
     {
       return Task.FromResult(new Empty());
@@ -272,7 +273,7 @@ public class DevicesService(
   public override Task<DeviceStateResponse> GetDeviceState(DeviceStateRequest request, ServerCallContext context)
   {
     // We can do the non-remote devices later
-    var device = aresDeviceRepo.GetAresDevice<RemoteDevice>(request.DeviceId);
+    var device = deviceRepo.GetAresDevice<RemoteDevice>(request.DeviceId);
     if(device is null)
     {
       return Task.FromResult(new DeviceStateResponse());
@@ -287,7 +288,7 @@ public class DevicesService(
       IServerStreamWriter<DeviceStateResponse> responseStream,
       ServerCallContext context)
   {
-    var device = aresDeviceRepo.GetAresDevice<RemoteDevice>(request.DeviceId);
+    var device = deviceRepo.GetAresDevice<RemoteDevice>(request.DeviceId);
     if(device is null || request.PollingSettings.PollingType == PollingType.None)
     {
       return;
@@ -317,7 +318,7 @@ public class DevicesService(
   public override Task<DeviceStateSchemaResponse> GetDeviceStateSchema(DeviceStateSchemaRequest request, ServerCallContext context)
   {
     // We can do the non-remote devices later
-    var device = aresDeviceRepo.GetAresDevice<RemoteDevice>(request.DeviceId);
+    var device = deviceRepo.GetAresDevice<RemoteDevice>(request.DeviceId);
     if(device is null)
     {
       return Task.FromResult(new DeviceStateSchemaResponse { Schema = new AresStructSchema() });
@@ -366,6 +367,15 @@ public class DevicesService(
     var matchingDriver = deviceDriverRepo.GetByName(request.DriverName);
 
     throw new NotImplementedException("IMPLEMENT THIS IN THE DEVICES SERVICE!");
+  }
+
+  public override Task<AvailableDevicesResponse> GetAllAvailableDevices(Empty request, ServerCallContext context)
+  {
+    var response = new AvailableDevicesResponse();
+    var devices = deviceRepo.GetSnapshot();
+
+    response.Devices.AddRange(devices.Select(d => new AresDeviceDescription { DeviceName = d.Name, DeviceId = d.UniqueId }));
+    return Task.FromResult(response);
   }
 
   public override async Task<AddDeviceResponse> AddAresDevice(AddDeviceRequest request, ServerCallContext context)
