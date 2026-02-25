@@ -281,7 +281,7 @@
     if(commandResult.Result is null)
       return "Command Succeeded!";
 
-    return CreateAresValueDisplayString(commandResult.Result.Fields.FirstOrDefault().Value);
+    return CreateAresValueDisplayString(commandResult.Result);
   }
 
   private string CreateAresValueDisplayString(AresValue value)

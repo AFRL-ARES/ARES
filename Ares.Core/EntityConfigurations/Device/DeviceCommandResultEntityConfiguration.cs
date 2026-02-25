@@ -11,6 +11,6 @@ internal class DeviceCommandResultEntityConfiguration : AresEntityTypeBaseConfig
   {
     base.Configure(builder);
     builder.ToTable("DeviceCommandResults");
-    builder.Property(r => r.Result).HasAresStruct();
+    builder.Property(r => r.Result).HasAresValue();
   }
 }

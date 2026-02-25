@@ -60,7 +60,7 @@ public class DeviceFunctionProvider(IAresDeviceRepo deviceRepo) : ISystemFunctio
 
               return result.Result is null
                 ? AresValueHelper.CreateUnit()
-                : AresValueHelper.CreateStruct(result.Result);
+                : result.Result;
             },
             inputSchema,
             outputSchema,
