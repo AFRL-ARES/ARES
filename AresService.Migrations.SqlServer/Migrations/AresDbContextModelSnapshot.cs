@@ -17,7 +17,7 @@ namespace AresService.Migrations.SqlServer.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.0")
+                .HasAnnotation("ProductVersion", "10.0.1")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -442,15 +442,39 @@ namespace AresService.Migrations.SqlServer.Migrations
                     b.Property<string>("DeviceName")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("DeviceType")
+                    b.Property<string>("DriverId")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DriverName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DriverSettings")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("EthernetUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsSimulated")
+                        .HasColumnType("bit");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
 
+                    b.Property<Guid?>("SerialUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("UsbUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("UniqueId");
+
+                    b.HasIndex("EthernetUniqueId");
+
+                    b.HasIndex("SerialUniqueId");
+
+                    b.HasIndex("UsbUniqueId");
 
                     b.ToTable("DeviceConfigs", (string)null);
                 });
@@ -584,6 +608,36 @@ namespace AresService.Migrations.SqlServer.Migrations
                     b.ToTable("DeviceStates");
                 });
 
+            modelBuilder.Entity("Ares.Datamodel.Device.EthernetConnection", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("IpAddress")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<int>("Port")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("UseTls")
+                        .HasColumnType("bit");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("EthernetConnection");
+                });
+
             modelBuilder.Entity("Ares.Datamodel.Device.RemoteDeviceConfig", b =>
                 {
                     b.Property<Guid>("UniqueId")
@@ -609,6 +663,75 @@ namespace AresService.Migrations.SqlServer.Migrations
                     b.HasKey("UniqueId");
 
                     b.ToTable("RemoteDevices", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Device.SerialConnection", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("BaudRate")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<int>("DataBits")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Handshake")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<int>("Parity")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PortName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("StopBits")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("SerialConnection");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Device.UsbConnection", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("ProductId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SerialNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("VendorId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("UsbConnection");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.ExecutionInfo", b =>
@@ -751,19 +874,16 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
 
-                    b.Property<long>("Index")
-                        .HasColumnType("bigint");
-
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
 
-                    b.Property<float>("Maximum")
-                        .HasColumnType("real");
+                    b.Property<double>("Maximum")
+                        .HasColumnType("float");
 
-                    b.Property<float>("Minimum")
-                        .HasColumnType("real");
+                    b.Property<double>("Minimum")
+                        .HasColumnType("float");
 
                     b.Property<Guid>("ParameterMetadataUniqueId")
                         .HasColumnType("uniqueidentifier");
@@ -1303,9 +1423,6 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
 
-                    b.Property<Guid?>("ExtraInfoUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<long>("Index")
                         .HasColumnType("bigint");
 
@@ -1350,8 +1467,6 @@ namespace AresService.Migrations.SqlServer.Migrations
 
                     b.HasIndex("CommandMetadataUniqueId");
 
-                    b.HasIndex("ExtraInfoUniqueId");
-
                     b.HasIndex("ParameterId")
                         .IsUnique()
                         .HasFilter("[ParameterId] IS NOT NULL");
@@ -1392,347 +1507,6 @@ namespace AresService.Migrations.SqlServer.Migrations
                     b.HasIndex("ExperimentTemplateUniqueId");
 
                     b.ToTable("StepTemplates", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messages.DeviceStates.Chiller.ChillerState", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("DeviceId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<double?>("ManifoldTemperature")
-                        .HasColumnType("float");
-
-                    b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("ChillerStates", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messages.DeviceStates.Mfc.MfcState", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<double?>("AbsolutePressure")
-                        .HasColumnType("float");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("DeviceId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Gas")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<double?>("MassFlow")
-                        .HasColumnType("float");
-
-                    b.Property<double?>("Setpoint")
-                        .HasColumnType("float");
-
-                    b.Property<string>("StatusCodes")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<double?>("Temperature")
-                        .HasColumnType("float");
-
-                    b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("datetime2");
-
-                    b.Property<double?>("VolumetricFlow")
-                        .HasColumnType("float");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("MfcStates", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messages.DeviceStates.RestDevice.RestDeviceStateEntity", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("DeviceId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("RestDeviceStateEntities", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messages.DeviceStates.RestSerialDevice.RestSerialDeviceStateEntity", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("DeviceId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("RestSerialDeviceStateEntities", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messages.DeviceStates.SyringePump.SyringePumpState", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("Address")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("DeviceId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<double?>("DispensedVolume")
-                        .HasColumnType("float");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("RateUnit")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("VolumeUnit")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<double?>("WithdrawnVolume")
-                        .HasColumnType("float");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("SyringePumpStates", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messages.DeviceStates.Tc0304.Tc0304State", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("DeviceId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<double?>("Probe1Temperature")
-                        .HasColumnType("float");
-
-                    b.Property<double?>("Probe2Temperature")
-                        .HasColumnType("float");
-
-                    b.Property<double?>("Probe3Temperature")
-                        .HasColumnType("float");
-
-                    b.Property<double?>("Probe4Temperature")
-                        .HasColumnType("float");
-
-                    b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("Tc0304States", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messages.DeviceStates.TicStepperController.TicStepperControllerState", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<int>("CurrentPosition")
-                        .HasColumnType("int");
-
-                    b.Property<long>("CustomStepSize")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("DeviceId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<long>("MaxAcceleration")
-                        .HasColumnType("bigint");
-
-                    b.Property<long>("MaxDeceleration")
-                        .HasColumnType("bigint");
-
-                    b.Property<long>("MaxSpeed")
-                        .HasColumnType("bigint");
-
-                    b.Property<long>("StartingSpeed")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("StatusMessages")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("StepMode")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("TargetPosition")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("TicStepperControllerStates", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messages.DeviceStates.TubeFurnace.TubeFurnaceStateEntity", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<double>("CurrentTemp")
-                        .HasColumnType("float");
-
-                    b.Property<string>("DeviceId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<double>("SetPointTemp")
-                        .HasColumnType("float");
-
-                    b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("TubeFurnaceStateEntities", (string)null);
-                });
-
-            modelBuilder.Entity("Google.Protobuf.WellKnownTypes.Any", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<Guid?>("DeviceConfigId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("TypeUrl")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<byte[]>("Value")
-                        .HasColumnType("varbinary(max)");
-
-                    b.HasKey("UniqueId");
-
-                    b.HasIndex("DeviceConfigId")
-                        .IsUnique()
-                        .HasFilter("[DeviceConfigId] IS NOT NULL");
-
-                    b.ToTable("Any");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.AnalysisOverview", b =>
@@ -1798,6 +1572,27 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .HasForeignKey("DeviceInfoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Device.DeviceConfig", b =>
+                {
+                    b.HasOne("Ares.Datamodel.Device.EthernetConnection", "Ethernet")
+                        .WithMany()
+                        .HasForeignKey("EthernetUniqueId");
+
+                    b.HasOne("Ares.Datamodel.Device.SerialConnection", "Serial")
+                        .WithMany()
+                        .HasForeignKey("SerialUniqueId");
+
+                    b.HasOne("Ares.Datamodel.Device.UsbConnection", "Usb")
+                        .WithMany()
+                        .HasForeignKey("UsbUniqueId");
+
+                    b.Navigation("Ethernet");
+
+                    b.Navigation("Serial");
+
+                    b.Navigation("Usb");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.ExecutionInfo", b =>
@@ -1975,16 +1770,10 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .HasForeignKey("CommandMetadataUniqueId")
                         .OnDelete(DeleteBehavior.ClientCascade);
 
-                    b.HasOne("Google.Protobuf.WellKnownTypes.Any", "ExtraInfo")
-                        .WithMany()
-                        .HasForeignKey("ExtraInfoUniqueId");
-
                     b.HasOne("Ares.Datamodel.Templates.Parameter", null)
                         .WithOne("Metadata")
                         .HasForeignKey("Ares.Datamodel.Templates.ParameterMetadata", "ParameterId")
                         .OnDelete(DeleteBehavior.Cascade);
-
-                    b.Navigation("ExtraInfo");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Templates.StepTemplate", b =>
@@ -1993,14 +1782,6 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .WithMany("StepTemplates")
                         .HasForeignKey("ExperimentTemplateUniqueId")
                         .OnDelete(DeleteBehavior.Cascade);
-                });
-
-            modelBuilder.Entity("Google.Protobuf.WellKnownTypes.Any", b =>
-                {
-                    b.HasOne("Ares.Datamodel.Device.DeviceConfig", null)
-                        .WithOne("ConfigData")
-                        .HasForeignKey("Google.Protobuf.WellKnownTypes.Any", "DeviceConfigId")
-                        .OnDelete(DeleteBehavior.ClientCascade);
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Analyzing.AnalyzerInfo", b =>
@@ -2020,11 +1801,6 @@ namespace AresService.Migrations.SqlServer.Migrations
                     b.Navigation("ExecutionInfo");
 
                     b.Navigation("Result");
-                });
-
-            modelBuilder.Entity("Ares.Datamodel.Device.DeviceConfig", b =>
-                {
-                    b.Navigation("ConfigData");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Device.DeviceInfo", b =>
