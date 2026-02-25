@@ -23,6 +23,7 @@ using Ares.Core.Scripting;
 using Ares.Core.Validation.Campaign;
 using Ares.Datamodel.Templates;
 using Microsoft.Extensions.DependencyInjection;
+using Ares.Core.Device;
 
 namespace Ares.Core;
 
@@ -63,6 +64,7 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<AnalysisHelper>();
     services.AddSingleton<IDesiredAnalysisResultFactory, DesiredAnalysisResultFactory>();
     services.AddSingleton<INotifier, Notifier>();
+    services.AddSingleton<IDeviceConfigManager, DeviceConfigManager>();
 
     services.AddSingleton<ISystemFunctionProvider, DeviceFunctionProvider>();
     services.AddSingleton<BaseEnvironmentBuilder>();

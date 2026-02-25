@@ -93,6 +93,7 @@ internal static class ServiceCollectionExtensions
     services.AddScoped(_ => clientManager.GetClient<AresAnalyzerManagementService.AresAnalyzerManagementServiceClient>());
     services.AddScoped(_ => clientManager.GetClient<AresAnalysisService.AresAnalysisServiceClient>());
     services.AddScoped(_ => clientManager.GetClient<AresSafetyService.AresSafetyServiceClient>());
+    services.AddScoped(_ => clientManager.GetClient<DeviceStateExportService.DeviceStateExportServiceClient>());
     services.AddSingleton(_ => clientManager.GetClient<AresNotificationRpc.AresNotificationRpcClient>());
     services.AddSingleton(_ => clientManager.GetClient<AresScriptingService.AresScriptingServiceClient>());
     services.AddSingleton(_ => clientManager.GetClient<AresDeviceDriverService.AresDeviceDriverServiceClient>());
