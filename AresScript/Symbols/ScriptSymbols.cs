@@ -7,7 +7,7 @@ public interface IScriptSymbol
 {
   string Name { get; }
   string? ParentName { get; }
-  SymbolKind Kind { get; }
+  SymbolKind SymbolKind { get; }
   string? Detail { get; }
   string? Documentation { get; }
   bool IsUserDefined { get; }

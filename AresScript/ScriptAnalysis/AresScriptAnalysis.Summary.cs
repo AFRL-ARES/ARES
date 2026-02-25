@@ -1,4 +1,5 @@
 using Ares.Datamodel.Scripting;
+using AresScript.Environment;
 using AresScript.Interpreters;
 
 namespace AresScript.ScriptAnalysis;

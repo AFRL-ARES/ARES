@@ -5,20 +5,19 @@ namespace AresScript.Symbols;
 
 public delegate Task<AresValue> AresFunctionDelegate(List<AresValue> args, ScriptExecutionControlToken token);
 
-public record AresSystemFunction(
+public record AresSystemFunctionSymbol(
   string Id,
   string Name,
   AresFunctionDelegate Body,
   AresDataSchema InputSchema,
   SchemaEntry OutputSchema,
   string Namespace = "",
-  string Description = "",
   bool IsExtension = false,
-  string Documentation = "",
   string? ParentName = null) : IFunctionSymbol
 {
-  public SymbolKind Kind => SymbolKind.Function;
-  public string? Detail => Description;
+  public SymbolKind SymbolKind => SymbolKind.Function;
+  public string? Detail { get; set; }
+  public string? Documentation { get; set; }
   public bool IsUserDefined => false;
   public bool IsLambda => false;
 }

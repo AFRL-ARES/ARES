@@ -1,16 +1,15 @@
-using System.Text;
 using Ares.Core.Device;
 using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
 using Ares.Datamodel.Scripting;
 using Ares.Datamodel.Templates;
-using AresScript;
 using AresScript.Symbols;
+using System.Text;
 
 namespace Ares.Core.Scripting;
 
-public class DeviceFunctionProvider(IDeviceCommandInterpreterRepo interpreterRepo) : ISymbolProvider
+public class DeviceSymbolProvider(IDeviceCommandInterpreterRepo interpreterRepo) : ISymbolProvider
 {
   private readonly IDeviceCommandInterpreterRepo _interpreterRepo = interpreterRepo;
 
@@ -25,7 +24,7 @@ public class DeviceFunctionProvider(IDeviceCommandInterpreterRepo interpreterRep
       var device = interpreter.Device;
       var devicePrefix = SanitizeIdentifier(string.IsNullOrWhiteSpace(device.Name) ? device.UniqueId : device.Name);
       var commandMetadatas = interpreter.CommandsToIndexedMetadatas().ToArray();
-      var deviceFunctionFields = new Dictionary<string, AresSystemValue>(StringComparer.Ordinal);
+      var deviceFunctionFields = new Dictionary<string, AresSystemFunctionSymbol>(StringComparer.Ordinal);
 
       foreach(var metadata in commandMetadatas)
       {
@@ -39,7 +38,7 @@ public class DeviceFunctionProvider(IDeviceCommandInterpreterRepo interpreterRep
           ? AresSchemaBuilder.Entry(AresDataType.Unit).Build()
           : AresSchemaBuilder.Entry(AresDataType.Struct).WithStructSchema(metadata.OutputMetadata.DataSchema).Build();
 
-        var functionSymbol = new AresSystemFunction(
+        var functionSymbol = new AresSystemFunctionSymbol(
           functionId,
           commandName,
           async (args, token) =>
@@ -80,21 +79,42 @@ public class DeviceFunctionProvider(IDeviceCommandInterpreterRepo interpreterRep
           inputSchema,
           outputSchema,
           Namespace: string.Empty,
-          Description: metadata.Description ?? string.Empty,
-          ParentName: $"devices.{devicePrefix}");
+          ParentName: $"devices.{devicePrefix}")
+        {
+          Documentation = metadata.Description
+        };
 
         symbols.Add(functionSymbol);
-        deviceFunctionFields[commandName] = AresSystemValue.Function(functionSymbol);
+        deviceFunctionFields[commandName] = functionSymbol;
       }
 
-      symbols.Add(new AresSystemValueSymbol(
-        Name: devicePrefix,
-        SystemValue: AresSystemValue.Struct(deviceFunctionFields, device.Name, AresSystemValue.AresSystemStructKind.Device),
-        Kind: SymbolKind.Device,
-        ParentName: "devices"));
+      symbols.Add(AresSystemValue.Struct(
+          CreateDeviceStruct(deviceFunctionFields.Values).StructValue,
+          device.Name,
+          SymbolKind.Device)
+        with
+      {
+        Name = devicePrefix,
+        ParentName = "devices",
+        Detail = device.Type,
+        Documentation = device.Description,
+        IsReadOnly = true
+      });
     }
 
     return symbols.ToArray();
+  }
+
+  private static AresValue CreateDeviceStruct(ICollection<AresSystemFunctionSymbol> symbols)
+  {
+    var structVal = AresValueHelper.CreateStruct();
+
+    foreach(var symbol in symbols)
+    {
+      structVal.StructValue.Fields[symbol.Name] = AresValueHelper.CreateFunction(symbol.Id);
+    }
+
+    return structVal;
   }
 
   private static AresDataSchema BuildInputSchema(IEnumerable<ParameterMetadata> parameterMetadatas)

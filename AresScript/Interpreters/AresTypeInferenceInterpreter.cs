@@ -1,6 +1,7 @@
 using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
+using AresScript.Environment;
 using AresScript.Generated;
 
 namespace AresScript.Interpreters;

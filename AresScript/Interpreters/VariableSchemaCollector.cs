@@ -2,6 +2,7 @@ using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
 using Ares.Datamodel;
 using Ares.Datamodel.Factories;
+using AresScript.Environment;
 using AresScript.Generated;
 
 namespace AresScript.Interpreters;

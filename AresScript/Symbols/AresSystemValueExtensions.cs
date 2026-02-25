@@ -1,7 +1,7 @@
 using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
 
-namespace AresScript;
+namespace AresScript.Symbols;
 
 public static class AresSystemValueExtensions
 {
@@ -12,7 +12,7 @@ public static class AresSystemValueExtensions
       return AresValueHelper.CreateNull();
     }
 
-    return value.Kind switch
+    return value.ValueKind switch
     {
       AresSystemValue.AresSystemValueKind.Raw => value.RawValue ?? AresValueHelper.CreateNull(),
       AresSystemValue.AresSystemValueKind.Struct => BuildStructValue(value),

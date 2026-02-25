@@ -7,7 +7,7 @@ public record AresScriptValueSymbol(
   string Name,
   AresValue Value,
   bool IsReadOnly = false,
-  SymbolKind Kind = SymbolKind.Variable,
+  SymbolKind SymbolKind = SymbolKind.Variable,
   string? Detail = null,
   string? Documentation = null,
   bool IsUserDefined = true,

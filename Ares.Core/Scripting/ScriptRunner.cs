@@ -3,6 +3,7 @@ using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
 using AresScript;
+using AresScript.Environment;
 using AresScript.Generated;
 using AresScript.Interpreters;
 using AresScript.ScriptAnalysis;
@@ -40,7 +41,7 @@ public class ScriptRunner
         Interlocked.Decrement(ref _scriptEventSubscriberCount);
       });
     });
-    Print = new AresSystemFunction("print", "print", (args, _) =>
+    Print = new AresSystemFunctionSymbol("print", "print", (args, _) =>
     {
       var stringy = args.Select(v => v.Stringify());
       foreach(var s in stringy)
@@ -56,8 +57,10 @@ public class ScriptRunner
     },
     AresSchemaBuilder.Create("args", AresDataType.Any).Build(),
     AresSchemaBuilder.Entry(AresDataType.Unit).Build(),
-    "",
-    "Prints the given value/s of any ARES type to output.");
+    "")
+    {
+      Documentation = "Prints the given value/s of any ARES type to output."
+    };
     _initialEnvironment = initialEnvironment ?? new AresScriptEnvironment();
   }
 
@@ -136,7 +139,7 @@ public class ScriptRunner
     }
   }
 
-  private AresSystemFunction Print { get; }
+  private AresSystemFunctionSymbol Print { get; }
 
   public IObservable<string> ScriptOutput { get; }
   public IObservable<AresFunctionInvocation> ScriptInvocations { get; }

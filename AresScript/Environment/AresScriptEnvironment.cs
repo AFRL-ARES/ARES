@@ -1,15 +1,14 @@
 using Ares.Datamodel;
-using Ares.Datamodel.Scripting;
 using AresScript.Symbols;
 using System.Diagnostics.CodeAnalysis;
 
-namespace AresScript;
+namespace AresScript.Environment;
 
 public class AresScriptEnvironment
 {
   private readonly Stack<SystemScope> _systemScopes = [];
   private readonly Stack<UserScope> _userScopes = [];
-  private readonly Dictionary<AresValue.KindOneofCase, Dictionary<string, AresSystemFunction>> _extensionFunctions = [];
+  private readonly Dictionary<AresValue.KindOneofCase, Dictionary<string, AresSystemFunctionSymbol>> _extensionFunctions = [];
 
   public AresScriptEnvironment()
   {
@@ -28,11 +27,12 @@ public class AresScriptEnvironment
     }
 
     var currentScope = _userScopes.Peek();
-    currentScope.Variables[id] = new AresScriptValueSymbol(
-      id,
-      value,
-      IsReadOnly: false,
-      Kind: value.KindCase == AresValue.KindOneofCase.StructValue ? SymbolKind.Struct : SymbolKind.Variable);
+    currentScope.Variables[id] = AresSystemValue.From(value) with
+    {
+      Name = id,
+      IsReadOnly = false,
+      IsUserDefined = true
+    };
   }
 
   public void AssignFunction(string id, AresScriptFunction value)
@@ -101,17 +101,28 @@ public class AresScriptEnvironment
     return exists && value is not null;
   }
 
-  public bool TryGetSystemValue(string id, [NotNullWhen(true)] out AresSystemValue? value)
+  public bool TryGetSystemValue(string id, [NotNullWhen(true)] out AresValue? value)
   {
-    foreach(var scope in _systemScopes)
+    if(TryGetSystemValueSymbol(id, out var symbol) && symbol?.Value is not null)
     {
-      var valueExists = scope.Variables.TryGetValue(id, out var variableSymbol);
-      value = variableSymbol?.SystemValue;
-      if(valueExists && value is not null)
-        return true;
+      value = symbol.Value;
+      return true;
     }
 
     value = null;
+    return false;
+  }
+
+  public bool TryGetSystemValueSymbol(string id, [NotNullWhen(true)] out AresSystemValue? symbol)
+  {
+    foreach(var scope in _systemScopes)
+    {
+      var symbolExists = scope.Variables.TryGetValue(id, out symbol);
+      if(symbolExists && symbol is not null)
+        return true;
+    }
+
+    symbol = null;
     return false;
   }
 
@@ -156,7 +167,7 @@ public class AresScriptEnvironment
     return false;
   }
 
-  public bool TryGetSystemFunction(string id, [NotNullWhen(true)] out AresSystemFunction? func)
+  public bool TryGetSystemFunction(string id, [NotNullWhen(true)] out AresSystemFunctionSymbol? func)
   {
     foreach(var scope in _systemScopes)
     {
@@ -183,7 +194,7 @@ public class AresScriptEnvironment
     return false;
   }
 
-  public AresSystemFunction[] GetAllSystemFunctions()
+  public AresSystemFunctionSymbol[] GetAllSystemFunctions()
   {
     return _systemScopes.SelectMany(scope => scope.Functions.Values).ToArray();
   }
@@ -198,7 +209,7 @@ public class AresScriptEnvironment
       {
         if(seen.Add(key))
         {
-          results.Add(new KeyValuePair<string, AresSystemValue>(key, symbol.SystemValue));
+          results.Add(new KeyValuePair<string, AresSystemValue>(key, symbol));
         }
       }
     }
@@ -368,7 +379,7 @@ public class AresScriptEnvironment
     _systemScopes.Pop();
   }
 
-  public void AssignSystemFunctions(params IEnumerable<AresSystemFunction> functions)
+  public void AssignSystemFunctions(params IEnumerable<AresSystemFunctionSymbol> functions)
   {
     var scope = _systemScopes.Peek();
     foreach(var f in functions)
@@ -380,13 +391,9 @@ public class AresScriptEnvironment
   public void AssignSystemVariables(params IEnumerable<KeyValuePair<string, AresSystemValue>> variables)
   {
     var scope = _systemScopes.Peek();
-    foreach(var (key, value) in variables)
+    foreach(var (key, variable) in variables)
     {
-      scope.Variables[key] = new AresSystemValueSymbol(
-        key,
-        value,
-        IsReadOnly: true,
-        Kind: value.Kind == AresSystemValue.AresSystemValueKind.Struct ? SymbolKind.Struct : SymbolKind.Variable);
+      scope.Variables[key] = variable;
     }
   }
 
@@ -397,7 +404,7 @@ public class AresScriptEnvironment
       var kind = function.ReceiverKind;
       if(!_extensionFunctions.TryGetValue(kind, out var map))
       {
-        map = new Dictionary<string, AresSystemFunction>(StringComparer.Ordinal);
+        map = new Dictionary<string, AresSystemFunctionSymbol>(StringComparer.Ordinal);
         _extensionFunctions[kind] = map;
       }
 
@@ -405,12 +412,12 @@ public class AresScriptEnvironment
     }
   }
 
-  public bool TryGetExtensionFunction(AresValue receiver, string memberName, [NotNullWhen(true)] out AresSystemFunction? function)
+  public bool TryGetExtensionFunction(AresValue receiver, string memberName, [NotNullWhen(true)] out AresSystemFunctionSymbol? function)
   {
     return TryGetExtensionFunction(receiver.KindCase, memberName, out function);
   }
 
-  public bool TryGetExtensionFunction(AresValue.KindOneofCase kind, string memberName, [NotNullWhen(true)] out AresSystemFunction? function)
+  public bool TryGetExtensionFunction(AresValue.KindOneofCase kind, string memberName, [NotNullWhen(true)] out AresSystemFunctionSymbol? function)
   {
     if(_extensionFunctions.TryGetValue(kind, out var map) && map.TryGetValue(memberName, out var result))
     {
@@ -422,7 +429,7 @@ public class AresScriptEnvironment
     return false;
   }
 
-  public bool TryGetExtensionFunction(AresDataType type, string memberName, [NotNullWhen(true)] out AresSystemFunction? function)
+  public bool TryGetExtensionFunction(AresDataType type, string memberName, [NotNullWhen(true)] out AresSystemFunctionSymbol? function)
   {
     if(TryMapDataTypeToKind(type, out var kind))
     {
@@ -433,7 +440,7 @@ public class AresScriptEnvironment
     return false;
   }
 
-  public IReadOnlyList<AresSystemFunction> GetExtensionFunctions(AresValue receiver)
+  public IReadOnlyList<AresSystemFunctionSymbol> GetExtensionFunctions(AresValue receiver)
   {
     return _extensionFunctions.TryGetValue(receiver.KindCase, out var map)
       ? map.Values.ToArray()

@@ -8,7 +8,7 @@ namespace AresScript;
 
 public static class StandardLibrary
 {
-  public static AresSystemFunction[] Functions { get; } =
+  public static AresSystemFunctionSymbol[] Functions { get; } =
   [
     new("print", "print", (args, _) =>
       {
@@ -21,8 +21,11 @@ public static class StandardLibrary
       },
     AresSchemaBuilder.Create("args", AresDataType.Any).Build(),
     AresSchemaBuilder.Entry(AresDataType.Unit).Build(),
-    "",
-    "Prints the given value/s of any ARES type to console."),
+    Namespace: "")
+    {
+      Detail = "Prints the given value/s of any ARES type to console.",
+      Documentation = "Prints the given value/s of any ARES type to console."
+    },
 
     new("string", "string", (args, token) => {
       var strBuilder = new StringBuilder();
@@ -34,8 +37,11 @@ public static class StandardLibrary
     },
     AresSchemaBuilder.Create("args", AresDataType.Any).Build(),
     AresSchemaBuilder.Entry(AresDataType.String).Build(),
-    "",
-    "Turns the given AresValue into a string."),
+    Namespace: "")
+    {
+      Detail = "Turns the given AresValue into a string.",
+      Documentation = "Turns the given AresValue into a string."
+    },
 
     new("range", "range", (args, _) => {
       double start = 0;
@@ -84,8 +90,11 @@ public static class StandardLibrary
       .AddEntry("step", AresSchemaBuilder.NumberEntry().AsOptional().WithDescription("The step size.").Build())
       .Build(),
     AresSchemaBuilder.Entry(AresDataType.NumberArray).Build(),
-    "",
-    "Generates a list of numbers in a range."),
+    Namespace: "")
+    {
+      Detail = "Generates a list of numbers in a range.",
+      Documentation = "Generates a list of numbers in a range."
+    },
 
     new("sleep", "sleep", async (args, token) => {
       if(args.Count != 1)
@@ -117,9 +126,11 @@ public static class StandardLibrary
       .WithUnit("ms")
       .Build(),
     AresSchemaBuilder.Entry(AresDataType.Unit).Build(),
-    "",
-    "Sleep for a given number of milliseconds"
-    )
+    Namespace: "")
+    {
+      Detail = "Sleep for a given number of milliseconds",
+      Documentation = "Sleep for a given number of milliseconds"
+    }
   ];
 
   public static AresExtensionFunction[] ExtensionFunctions { get; } =
@@ -127,7 +138,7 @@ public static class StandardLibrary
     new(
       AresValue.KindOneofCase.ListValue,
       "append",
-      new AresSystemFunction(
+      new AresSystemFunctionSymbol(
         "list::append",
         "append",
         (args, _) =>
@@ -148,14 +159,17 @@ public static class StandardLibrary
         },
         BuildListAppendSchema(),
         AresSchemaBuilder.Entry(AresDataType.Unit).Build(),
-        "",
-        "Appends a value to the list.",
-        true
-      )),
+        Namespace: "",
+        IsExtension: true
+      )
+      {
+        Detail = "Appends a value to the list.",
+        Documentation = "Appends a value to the list."
+      }),
     new(
       AresValue.KindOneofCase.NumberArrayValue,
       "append",
-      new AresSystemFunction(
+      new AresSystemFunctionSymbol(
         "number_array::append",
         "append",
         (args, _) =>
@@ -181,14 +195,17 @@ public static class StandardLibrary
         },
         BuildNumberArrayAppendSchema(),
         AresSchemaBuilder.Entry(AresDataType.Unit).Build(),
-        "",
-        "Appends a number to the number array.",
-        true
-      )),
+        Namespace: "",
+        IsExtension: true
+      )
+      {
+        Detail = "Appends a number to the number array.",
+        Documentation = "Appends a number to the number array."
+      }),
     new(
       AresValue.KindOneofCase.StringArrayValue,
       "append",
-      new AresSystemFunction(
+      new AresSystemFunctionSymbol(
         "string_array::append",
         "append",
         (args, _) =>
@@ -214,10 +231,13 @@ public static class StandardLibrary
         },
         BuildStringArrayAppendSchema(),
         AresSchemaBuilder.Entry(AresDataType.Unit).Build(),
-        "",
-        "Appends a string to the string array.",
-        true
-      ))
+        Namespace: "",
+        IsExtension: true
+      )
+      {
+        Detail = "Appends a string to the string array.",
+        Documentation = "Appends a string to the string array."
+      })
   ];
 
   private static AresDataSchema BuildListAppendSchema()

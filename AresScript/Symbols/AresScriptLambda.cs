@@ -13,7 +13,7 @@ public record AresScriptLambda(
   string? Documentation = null,
   string? ParentName = null) : IFunctionSymbol
 {
-  public SymbolKind Kind => SymbolKind.Function;
+  public SymbolKind SymbolKind => SymbolKind.Function;
   public string? Detail => Description;
   public bool IsUserDefined => true;
   public bool IsExtension => false;

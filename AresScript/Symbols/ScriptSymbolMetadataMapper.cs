@@ -23,7 +23,7 @@ public static class ScriptSymbolMetadataMapper
     var metadata = new ScriptSymbolMetadata
     {
       Identifier = symbol.Name ?? string.Empty,
-      Kind = symbol.Kind
+      Kind = symbol.SymbolKind
     };
 
     if(!string.IsNullOrWhiteSpace(parentIdentifier))
@@ -45,7 +45,7 @@ public static class ScriptSymbolMetadataMapper
 
     switch(symbol)
     {
-      case AresSystemFunction systemFunction:
+      case AresSystemFunctionSymbol systemFunction:
         metadata.FunctionShape = new ScriptSymbolMetadata.Types.FunctionShape
         {
           InputSchema = systemFunction.InputSchema,
@@ -81,7 +81,7 @@ public static class ScriptSymbolMetadataMapper
         break;
       }
 
-      case AresSystemValueSymbol systemValueSymbol:
+      case AresSystemValue systemValueSymbol:
       {
         var resolvedValue = value ?? systemValueSymbol.Value;
         var resolvedSchema = valueSchema ?? resolvedValue.ToSchemaEntry();
@@ -97,7 +97,7 @@ public static class ScriptSymbolMetadataMapper
       {
         var resolvedValue = value ?? valueSymbol.Value;
         var resolvedSchema = valueSchema ?? resolvedValue.ToSchemaEntry();
-        if(resolvedSchema is null && symbol.Kind is SymbolKind.Variable or SymbolKind.Struct)
+        if(resolvedSchema is null && symbol.SymbolKind is SymbolKind.Variable or SymbolKind.Struct)
         {
           resolvedSchema = new SchemaEntry { Type = AresDataType.UnspecifiedType };
         }

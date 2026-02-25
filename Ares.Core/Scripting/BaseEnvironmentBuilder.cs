@@ -1,4 +1,5 @@
 using AresScript;
+using AresScript.Environment;
 using AresScript.Symbols;
 
 namespace Ares.Core.Scripting;
@@ -12,7 +13,7 @@ public class BaseEnvironmentBuilder(IEnumerable<ISymbolProvider> symbolProviders
     var env = new AresScriptEnvironment();
     var providedSymbols = _symbolProviders.SelectMany(provider => provider.GetSymbols()).ToArray();
     var allSystemFunctions = StandardLibrary.Functions
-      .Concat(providedSymbols.OfType<AresSystemFunction>())
+      .Concat(providedSymbols.OfType<AresSystemFunctionSymbol>())
       .ToArray();
 
     env.AssignSystemFunctions(allSystemFunctions);
@@ -23,7 +24,7 @@ public class BaseEnvironmentBuilder(IEnumerable<ISymbolProvider> symbolProviders
   }
 
   private static IEnumerable<KeyValuePair<string, AresSystemValue>> BuildSystemValues(
-    IEnumerable<AresSystemFunction> systemFunctions,
+    IEnumerable<AresSystemFunctionSymbol> systemFunctions,
     IEnumerable<IValueSymbol> providedValueSymbols)
   {
     var rootVariables = new Dictionary<string, AresSystemValue>(StringComparer.Ordinal);
@@ -92,7 +93,7 @@ public class BaseEnvironmentBuilder(IEnumerable<ISymbolProvider> symbolProviders
     IDictionary<string, AresSystemValue> root,
     string[] pathSegments,
     string fieldName,
-    AresSystemFunction func)
+    AresSystemFunctionSymbol func)
   {
     if(pathSegments.Length == 0)
     {
@@ -114,9 +115,9 @@ public class BaseEnvironmentBuilder(IEnumerable<ISymbolProvider> symbolProviders
       return;
     }
 
-    if(value.Kind != AresSystemValue.AresSystemValueKind.Struct || value.StructFields is null)
+    if(value.ValueKind != AresSystemValue.AresSystemValueKind.Struct || value.StructFields is null)
     {
-      throw new InvalidOperationException($"Value {segment} already exists and is not a struct, but rather a {value.Kind}");
+      throw new InvalidOperationException($"Value {segment} already exists and is not a struct, but rather a {value.ValueKind}");
     }
 
     AddFunctionToPath(value.StructFields, remainingPath, fieldName, func);
@@ -145,9 +146,9 @@ public class BaseEnvironmentBuilder(IEnumerable<ISymbolProvider> symbolProviders
       return;
     }
 
-    if(value.Kind != AresSystemValue.AresSystemValueKind.Struct || value.StructFields is null)
+    if(value.ValueKind != AresSystemValue.AresSystemValueKind.Struct || value.StructFields is null)
     {
-      throw new InvalidOperationException($"Value {segment} already exists and is not a struct, but rather a {value.Kind}");
+      throw new InvalidOperationException($"Value {segment} already exists and is not a struct, but rather a {value.ValueKind}");
     }
 
     AddValueToPath(value.StructFields, remainingPath, fieldName, valueToSet);
@@ -155,11 +156,11 @@ public class BaseEnvironmentBuilder(IEnumerable<ISymbolProvider> symbolProviders
 
   private static AresSystemValue ToSystemValue(IValueSymbol valueSymbol)
   {
-    if(valueSymbol is AresSystemValueSymbol systemValueSymbol)
+    if(valueSymbol is AresSystemValue systemValueSymbol)
     {
-      return systemValueSymbol.SystemValue;
+      return systemValueSymbol;
     }
 
-    return AresSystemValue.From(valueSymbol.Value, valueSymbol.Detail);
+    return AresSystemValue.From(valueSymbol.Value);
   }
 }

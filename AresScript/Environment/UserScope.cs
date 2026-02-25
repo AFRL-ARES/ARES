@@ -1,12 +1,12 @@
 using AresScript.Symbols;
 
-namespace AresScript;
+namespace AresScript.Environment;
 
 public class UserScope(string name = "")
 {
   public string Name { get; } = name;
 
-  public Dictionary<string, AresScriptValueSymbol> Variables { get; } = [];
+  public Dictionary<string, AresSystemValue> Variables { get; } = [];
 
   public Dictionary<string, AresScriptFunction> Functions { get; } = [];
 

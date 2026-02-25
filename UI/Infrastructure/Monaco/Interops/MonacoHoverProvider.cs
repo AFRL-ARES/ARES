@@ -1,5 +1,4 @@
 using Ares.Datamodel;
-using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Scripting;
 using Ares.Services;
 using Microsoft.JSInterop;
@@ -80,14 +79,17 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
       AppendSchemaEntrySection(sb, "Schema", valueShape.Schema);
     }
 
-    if(valueShape.Value is not null)
-    {
-      sb.AppendLine();
-      sb.Append("Value: ");
-      sb.Append("```text");
-      sb.Append(valueShape.Value.Stringify());
-      sb.Append("```");
-    }
+    // TODO: revisit the value. It seems that we have a value regardless of whether or not there's
+    // a real value if that makes sense. Need to figure out if there's a way to distinguish a constant
+    // provided by the system instead of any ol' value symbol. -AB
+    //if(valueShape.Value is not null)
+    //{
+    //  sb.AppendLine();
+    //  sb.Append("Value: ");
+    //  sb.Append("```text");
+    //  sb.Append(valueShape.Value.Stringify());
+    //  sb.Append("```");
+    //}
   }
 
   private static void AppendDescription(StringBuilder sb, string? detail, string? documentation)

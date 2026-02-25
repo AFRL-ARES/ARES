@@ -1,6 +1,7 @@
 using Antlr4.Runtime.Misc;
 using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
+using AresScript.Environment;
 using AresScript.Generated;
 using AresScript.Symbols;
 using Google.Protobuf;

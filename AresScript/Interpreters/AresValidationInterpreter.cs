@@ -3,6 +3,7 @@ using Antlr4.Runtime.Misc;
 using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
+using AresScript.Environment;
 using AresScript.Generated;
 using AresScript.Symbols;
 
@@ -805,13 +806,13 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       kind));
   }
 
-  private void ValidateSystemFunctionArgs(AresSystemFunction function, IReadOnlyList<AresLangParser.ExpressionContext> positionalArgs, IReadOnlyDictionary<string, AresLangParser.ExpressionContext> keywordArgs, AresLangParser.FunctionCallContext ctx)
+  private void ValidateSystemFunctionArgs(AresSystemFunctionSymbol function, IReadOnlyList<AresLangParser.ExpressionContext> positionalArgs, IReadOnlyDictionary<string, AresLangParser.ExpressionContext> keywordArgs, AresLangParser.FunctionCallContext ctx)
   {
     ValidateArgsAgainstSchema(function.Id, function.InputSchema, positionalArgs, keywordArgs, ctx);
   }
 
   private void ValidateExtensionFunctionArgs(
-    AresSystemFunction function,
+    AresSystemFunctionSymbol function,
     SchemaEntry receiverSchema,
     IReadOnlyList<AresLangParser.ExpressionContext> positionalArgs,
     IReadOnlyDictionary<string, AresLangParser.ExpressionContext> keywordArgs,

@@ -3,6 +3,7 @@ using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
 using Ares.Datamodel.Scripting;
+using AresScript.Environment;
 using AresScript.Generated;
 using AresScript.Interpreters;
 using AresScript.Symbols;
@@ -50,8 +51,8 @@ public static partial class AresScriptAnalysis
       return BuildFunctionMetadataForSymbolMetadata(
         identifier,
         string.Empty,
-        systemFunction.Description ?? string.Empty,
-        systemFunction.Description ?? string.Empty,
+        systemFunction.Detail ?? string.Empty,
+        systemFunction.Documentation ?? string.Empty,
         systemFunction.InputSchema,
         systemFunction.OutputSchema);
     }
@@ -213,7 +214,7 @@ public static partial class AresScriptAnalysis
 
     foreach(var (name, systemValue) in environment.GetAllSystemVariables())
     {
-      schemas[name] = systemValue.ToAresValue().ToSchemaEntry();
+      schemas[name] = systemValue.Value.ToSchemaEntry();
     }
 
     return schemas;
@@ -224,7 +225,33 @@ public static partial class AresScriptAnalysis
     string parentIdentifier,
     string memberIdentifier)
   {
-    if(!environment.TryGetValue(parentIdentifier, out var parentValue))
+    if(TryResolveSystemParentValue(environment, parentIdentifier, out var systemParent)
+      && systemParent.ValueKind == AresSystemValue.AresSystemValueKind.Struct
+      && systemParent.StructFields is not null
+      && systemParent.StructFields.TryGetValue(memberIdentifier, out var systemMember))
+    {
+      if(systemMember.RawValue?.FunctionValue is not null
+        && environment.TryGetSystemFunction(systemMember.RawValue.FunctionValue.FunctionId, out var systemFunction))
+      {
+        return BuildFunctionMetadataForSymbolMetadata(
+          memberIdentifier,
+          parentIdentifier,
+          systemFunction.Detail ?? string.Empty,
+          systemFunction.Documentation ?? string.Empty,
+          systemFunction.InputSchema,
+          systemFunction.OutputSchema);
+      }
+
+      var normalizedSystemMember = systemMember with
+      {
+        Name = string.IsNullOrWhiteSpace(systemMember.Name) ? memberIdentifier : systemMember.Name,
+        ParentName = parentIdentifier
+      };
+
+      return ScriptSymbolMetadataMapper.ToMetadata(normalizedSystemMember, parentIdentifier: parentIdentifier);
+    }
+
+    if(!TryResolveValue(environment, parentIdentifier, out var parentValue))
     {
       return null;
     }
@@ -240,8 +267,8 @@ public static partial class AresScriptAnalysis
       return BuildFunctionMetadataForSymbolMetadata(
         memberIdentifier,
         parentIdentifier,
-        extensionFunction.Description ?? string.Empty,
-        extensionFunction.Description ?? string.Empty,
+        extensionFunction.Detail ?? string.Empty,
+        extensionFunction.Documentation ?? string.Empty,
         TrimReceiverFromSchema(extensionFunction.InputSchema),
         extensionFunction.OutputSchema,
         isExtension: true);

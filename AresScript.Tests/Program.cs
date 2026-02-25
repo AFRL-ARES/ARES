@@ -2,6 +2,7 @@ using Antlr4.Runtime;
 using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Scripting;
+using AresScript.Environment;
 using AresScript.Generated;
 using AresScript.Interpreters;
 using AresScript.ScriptAnalysis;

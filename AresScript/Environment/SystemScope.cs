@@ -1,14 +1,14 @@
 using AresScript.Symbols;
 
-namespace AresScript;
+namespace AresScript.Environment;
 
 public class SystemScope(string name = "")
 {
   public string Name { get; } = name;
 
-  public Dictionary<string, AresSystemValueSymbol> Variables { get; } = [];
+  public Dictionary<string, AresSystemValue> Variables { get; } = [];
 
-  public Dictionary<string, AresSystemFunction> Functions { get; } = [];
+  public Dictionary<string, AresSystemFunctionSymbol> Functions { get; } = [];
 
   public IEnumerable<IScriptSymbol> GetSymbols()
   {

@@ -1,5 +1,6 @@
 using Antlr4.Runtime;
 using Ares.Datamodel.Scripting;
+using AresScript.Environment;
 using AresScript.Generated;
 using AresScript.Interpreters;
 
