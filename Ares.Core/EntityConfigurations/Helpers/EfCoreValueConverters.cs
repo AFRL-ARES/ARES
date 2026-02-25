@@ -1,8 +1,5 @@
 ﻿using System.Text.Json;
-using Ares.Core.EntityConfigurations.Extensions;
-using Ares.Datamodel;
 using Google.Protobuf.Collections;
-using Google.Protobuf.WellKnownTypes;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -12,56 +9,6 @@ namespace Ares.Core.EntityConfigurations.Helpers;
 
 public static class EfCoreValueConverters
 {
-  public static PropertyBuilder<AresValue> HasAresValue(this PropertyBuilder<AresValue> value)
-  {
-    var settings = SerializerSettingsHelper.CreateCustomSerializationSettings();
-    return value.HasConversion(
-        v => JsonSerializer.Serialize(v, settings),
-        v => JsonSerializer.Deserialize<AresValue>(v, settings) ?? new AresValue())
-      .HasColumnType(SerializerSettingsHelper.DetermineColumnType());
-  }
-
-  public static PropertyBuilder<AresStructSchema> HasDataSchema(this PropertyBuilder<AresStructSchema> schema)
-  {
-    var settings = SerializerSettingsHelper.CreateCustomSerializationSettings();
-    return schema.HasConversion(
-      s => JsonSerializer.Serialize(s, settings),
-      s => JsonSerializer.Deserialize<AresStructSchema>(s, settings) ?? new AresStructSchema())
-      .HasColumnType(SerializerSettingsHelper.DetermineColumnType());
-  }
-
-  public static PropertyBuilder<AresStructSchema> HasDataSchemaSimplified(this PropertyBuilder<AresStructSchema> schema)
-  {
-    var settings = SerializerSettingsHelper.CreateCustomSerializationSettings();
-    return schema.HasConversion(
-      s => JsonSerializer.Serialize(s, settings),
-      s => JsonSerializer.Deserialize<AresStructSchema>(s, settings) ?? new AresStructSchema())
-      .HasColumnType(SerializerSettingsHelper.DetermineColumnType());
-  }
-
-  public static PropertyBuilder<AresStruct> HasAresStruct(this PropertyBuilder<AresStruct> aresStruct)
-  {
-    var settings = SerializerSettingsHelper.CreateCustomSerializationSettings();
-    return aresStruct.HasConversion(
-      s => JsonSerializer.Serialize(s, settings),
-      s => JsonSerializer.Deserialize<AresStruct>(s, settings) ?? new AresStruct())
-      .HasColumnType(SerializerSettingsHelper.DetermineColumnType());
-  }
-
-  public static PropertyBuilder<AresValueSchema> HasAresValueSchema(this PropertyBuilder<AresValueSchema> AresValueSchema)
-  {
-    var settings = SerializerSettingsHelper.CreateCustomSerializationSettings();
-    return AresValueSchema.HasConversion(
-      s => JsonSerializer.Serialize(s, settings),
-      s => JsonSerializer.Deserialize<AresValueSchema>(s, settings) ?? new AresValueSchema())
-      .HasColumnType(SerializerSettingsHelper.DetermineColumnType());
-  }
-
-  public static PropertyBuilder<Timestamp> HasTimestamp(this PropertyBuilder<Timestamp> timestamp)
-  {
-    return timestamp.HasConversion(t => t.ToDateTime(), time => time.ToTimestampUtc());
-  }
-
   public static PropertyBuilder<RepeatedField<T>> HasSerializedRepeatedField<T>(this PropertyBuilder<RepeatedField<T>> builder)
   {
     var converter = new ValueConverter<RepeatedField<T>, string>(

@@ -1,5 +1,4 @@
-﻿using Ares.Core.EntityConfigurations.Helpers;
-using Ares.Datamodel.Templates;
+﻿using Ares.Datamodel.Templates;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Ares.Core.EntityConfigurations.Execution.Parameters;
@@ -13,11 +12,6 @@ internal class ParameterMetadataEntityConfiguration : AresEntityTypeBaseConfigur
     builder.HasMany(parameterMetadata => parameterMetadata.Constraints)
       .WithOne()
       .IsRequired();
-
-    builder.Property(parameterMetadata => parameterMetadata.InitialValue).HasAresValue();
-
-    builder.Property(parameterMetadata => parameterMetadata.Schema)
-      .HasAresValueSchema();
 
     builder.Navigation(parameterMetadata => parameterMetadata.Constraints)
       .AutoInclude();

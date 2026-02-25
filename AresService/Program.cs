@@ -30,8 +30,7 @@ public class Program
   public static async Task<int> Main(string[] args)
   {
     // 1. Define the command-line interface
-    var migrateOption = new Option<bool>(
-        name: "--migrate")
+    var migrateOption = new Option<bool>(name: "--migrate")
     {
       Description = "Creates and/or updates the database"
     };

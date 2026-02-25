@@ -1,5 +1,4 @@
-﻿using Ares.Core.EntityConfigurations.Helpers;
-using Ares.Datamodel.Planning;
+﻿using Ares.Datamodel.Planning;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -15,7 +14,6 @@ public class PlannerCapabiltiesEntityConfiguration : AresEntityTypeBaseConfigura
       .WithOne()
       .OnDelete(DeleteBehavior.Cascade);
 
-    builder.Property(p => p.SettingsSchema).HasDataSchema();
     builder.Navigation(service => service.AvailablePlanners).AutoInclude();
   }
 }

@@ -1,5 +1,4 @@
-﻿using Ares.Core.EntityConfigurations.Helpers;
-using Ares.Datamodel.Device;
+﻿using Ares.Datamodel.Device;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Ares.Core.EntityConfigurations.Device;
@@ -8,7 +7,5 @@ internal class DeviceStateEntityConfiguration : AresEntityTypeBaseConfiguration<
   public override void Configure(EntityTypeBuilder<DeviceState> builder)
   {
     base.Configure(builder);
-    builder.Property(b => b.Data).HasAresStruct();
-    builder.Property(b => b.Timestamp).HasTimestamp();
   }
 }

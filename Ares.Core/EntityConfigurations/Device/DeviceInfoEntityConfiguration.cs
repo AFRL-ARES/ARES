@@ -1,5 +1,4 @@
-﻿using Ares.Core.EntityConfigurations.Helpers;
-using Ares.Datamodel.Device;
+﻿using Ares.Datamodel.Device;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -9,7 +8,6 @@ internal class DeviceInfoEntityConfiguration : AresEntityTypeBaseConfiguration<D
     public override void Configure(EntityTypeBuilder<DeviceInfo> builder)
     {
         base.Configure(builder);
-        builder.Property(b => b.SettingsSchema).HasDataSchema();
 
         builder.HasMany(b => b.Commands)
             .WithOne()

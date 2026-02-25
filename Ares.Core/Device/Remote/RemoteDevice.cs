@@ -5,7 +5,6 @@ using Ares.Datamodel;
 using Ares.Datamodel.Device;
 using Ares.Datamodel.Device.Remote;
 using Ares.Datamodel.Extensions;
-using Ares.Datamodel.Templates;
 using Ares.Device;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;

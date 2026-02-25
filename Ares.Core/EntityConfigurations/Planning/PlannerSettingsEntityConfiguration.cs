@@ -1,5 +1,4 @@
-﻿using Ares.Core.EntityConfigurations.Helpers;
-using Ares.Datamodel.Planning;
+﻿using Ares.Datamodel.Planning;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Ares.Core.EntityConfigurations.Planning;
@@ -9,6 +8,5 @@ public class PlannerSettingsEntityConfiguration : AresEntityTypeBaseConfiguratio
   public override void Configure(EntityTypeBuilder<PlannerSettings> builder)
   {
     base.Configure(builder);
-    builder.Property(p => p.Settings).HasAresStruct();
   }
 }

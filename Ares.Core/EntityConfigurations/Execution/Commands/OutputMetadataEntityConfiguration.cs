@@ -1,5 +1,4 @@
-﻿using Ares.Core.EntityConfigurations.Helpers;
-using Ares.Datamodel.Templates;
+﻿using Ares.Datamodel.Templates;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Ares.Core.EntityConfigurations.Execution.Commands;
@@ -9,6 +8,5 @@ public class OutputMetadataEntityConfiguration : AresEntityTypeBaseConfiguration
   public override void Configure(EntityTypeBuilder<OutputMetadata> builder)
   {
     base.Configure(builder);
-    builder.Property(output => output.DataSchema).HasAresValueSchema();
   }
 }

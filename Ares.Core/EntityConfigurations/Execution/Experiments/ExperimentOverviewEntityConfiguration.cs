@@ -1,5 +1,4 @@
-﻿using Ares.Core.EntityConfigurations.Helpers;
-using Ares.Datamodel;
+﻿using Ares.Datamodel;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -16,8 +15,6 @@ internal class ExperimentOverviewEntityConfiguration : AresEntityTypeBaseConfigu
       .WithOne()
       .OnDelete(DeleteBehavior.Cascade)
       .HasForeignKey<AnalysisOverview>(ao => ao.ExperimentOverviewId);
-
-    builder.Property(experiment => experiment.Result).HasAresStruct();
 
     builder.Navigation(e => e.AnalysisOverview).AutoInclude();
     builder.Navigation(e => e.Parameters).AutoInclude();

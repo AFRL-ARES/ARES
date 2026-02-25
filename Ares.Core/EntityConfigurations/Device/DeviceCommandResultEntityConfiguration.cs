@@ -1,5 +1,4 @@
-﻿using Ares.Core.EntityConfigurations.Helpers;
-using Ares.Datamodel;
+﻿using Ares.Datamodel;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -11,6 +10,5 @@ internal class DeviceCommandResultEntityConfiguration : AresEntityTypeBaseConfig
   {
     base.Configure(builder);
     builder.ToTable("DeviceCommandResults");
-    builder.Property(r => r.Result).HasAresValue();
   }
 }
