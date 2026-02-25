@@ -532,6 +532,27 @@ public class InterpreterTests
   }
 
   [Test]
+  public async Task Len_ReturnsExpectedLength_ForSupportedTypes()
+  {
+    var script = """
+      assert len("abc") == 3
+      assert len([1, 2, 3]) == 3
+      assert len({"a": 1, "b": 2}) == 2
+      """;
+
+    await RunScriptAsync(script);
+  }
+
+  [Test]
+  public Task Len_InvalidType_Throws()
+  {
+    var script = "len(1)";
+    var ex = Assert.ThrowsAsync<InvalidOperationException>(() => RunScriptAsync(script));
+    Assert.That(ex?.Message, Does.Contain("Len is not supported"));
+    return Task.CompletedTask;
+  }
+
+  [Test]
   public async Task WhileLoop_ExecutesCorrectly()
   {
     var script = """

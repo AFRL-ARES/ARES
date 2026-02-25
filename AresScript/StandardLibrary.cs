@@ -43,6 +43,34 @@ public static class StandardLibrary
       Documentation = "Turns the given AresValue into a string."
     },
 
+    new("len", "len", (args, _) =>
+    {
+      if(args.Count != 1)
+      {
+        throw new InvalidOperationException($"Len expects exactly 1 argument, got {args.Count}.");
+      }
+
+      var arg = args[0];
+      var length = arg.KindCase switch
+      {
+        AresValue.KindOneofCase.StringValue => arg.StringValue.Length,
+        AresValue.KindOneofCase.StringArrayValue => arg.StringArrayValue.Strings.Count,
+        AresValue.KindOneofCase.NumberArrayValue => arg.NumberArrayValue.Numbers.Count,
+        AresValue.KindOneofCase.ListValue => arg.ListValue.Values.Count,
+        AresValue.KindOneofCase.BytesValue => arg.BytesValue.Length,
+        AresValue.KindOneofCase.StructValue => arg.StructValue.Fields.Count,
+        _ => throw new InvalidOperationException($"Len is not supported for value type {arg.KindCase}.")
+      };
+
+      return Task.FromResult(AresValueHelper.CreateNumber(length));
+    },
+    AresSchemaBuilder.Create("value", AresDataType.Any).Build(),
+    AresSchemaBuilder.Entry(AresDataType.Number).Build(),
+    "")
+    {
+      Documentation = "Returns the length of a string, array, list, bytes, or struct."
+    },
+    
     new("range", "range", (args, _) => {
       double start = 0;
       double stop = 0;

@@ -221,7 +221,11 @@ public class AlicatSim : IAlicatSim
 
     var numeric = double.TryParse(command, out var setpoint);
     if(numeric)
+    {
       Trace.WriteLine($"{GetType().Name} does not support setpoints based on full scale yet.");
+      SendDataInfo();
+    }
+
   }
 
   private void ProcessHold(string query)

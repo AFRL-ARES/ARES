@@ -15,7 +15,8 @@ Project-local guidance for coding agents working in `AresScript`.
   - Validation behavior in `ARES/AresScript/Interpreters/AresValidationInterpreter.cs`
   - Type inference behavior in `ARES/AresScript/Interpreters/AresTypeInferenceInterpreter.cs`
   - Tests in `ARES/AresScript.Tests/Program.cs`
-- If parser/lexer generated artifacts are required by the repo workflow, regenerate them when grammar changes.
+  - Script builder support under `ARES/AresScript/ScriptBuilding/AresScriptBuilder.cs`
+- If the repo workflow requires parser/lexer generated artifacts, regenerate them when grammar changes.
 
 ## Functions and Extensions
 

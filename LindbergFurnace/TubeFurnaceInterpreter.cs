@@ -79,7 +79,13 @@ public class TubeFurnaceInterpreter : DeviceCommandInterpreter<ITubeFurnace, Tub
       {
         DeviceId = Device.UniqueId,
         Name = TubeFurnaceCommand.GetSetpoint.ToString(),
-        Description = "Get's the updated set point for the tube furnace."
+        Description = "Get's the updated set point for the tube furnace.",
+        OutputMetadata = new OutputMetadata()
+        {
+          Index = 0,
+          Description = "The current setpoint of the Tube Furnace",
+          DataSchema = AresSchemaBuilder.Create("Setpoint", AresDataType.Number).Build()
+        }
       },
 
       new()
@@ -98,7 +104,7 @@ public class TubeFurnaceInterpreter : DeviceCommandInterpreter<ITubeFurnace, Tub
         { 
           Index = 0,
           Description = "The current temperature of the Tube Furnace",
-          DataSchema = AresSchemaBuilder.Create("Setpoint", AresDataType.Number).Build()
+          DataSchema = AresSchemaBuilder.Create("Temperature", AresDataType.Number).Build()
         }
       },
 

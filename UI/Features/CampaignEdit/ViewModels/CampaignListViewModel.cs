@@ -21,6 +21,11 @@ public class CampaignListViewModel : ReactiveObject
     return await _automationClient.GetSingleCampaignAsync(new CampaignRequest { UniqueId = campaignId });
   }
 
+  public async Task<GetCopyOfCampaignResponse> GetCopyOfCampaignTemplate(string campaignId)
+  {
+    return await _automationClient.GetCopyOfCampaignAsync(new CampaignRequest { UniqueId = campaignId })  ;
+  }
+
   public async Task RefreshCampaigns()
   {
     var campaigns = await _automationClient.GetAllCampaignsAsync(new GetAllCampaignsRequest());
