@@ -60,10 +60,10 @@ internal static class ScriptImportConverter
     var id = declaration.ID();
     var parametersCtx = declaration.parameterList();
     var functionName = id.GetText();
-    var parameters = parametersCtx.parameter().Select(p => p.GetText()).ToArray();
+    var parameters = parametersCtx?.parameter() ?? [];
     var signature = parameters.Length == 0
       ? $"def {functionName}()"
-      : $"def {functionName}({string.Join(", ", parameters)})";
+      : $"def {functionName}({string.Join(", ", parameters.Select(p => p.ToParameterSignature()))})";
 
     var bodyCapabilities = new ScriptBuilderCapabilities(AllowReturn: true, AllowLoopControl: false);
     var bodyNodes = ConvertStatements(declaration.funcBlock().statement(), bodyCapabilities);
