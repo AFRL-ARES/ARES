@@ -1,14 +1,14 @@
 ﻿using AlicatMFCRemastered.Commands.Responses.Parsers;
 using AlicatMFCRemastered.Commands.Responses.Streamed;
-using Ares.Alicat.Mfc.Config;
+using AlicatMFCRemastered.Enums;
 
-namespace AlicatMFC.Commands.Requests;
+namespace AlicatMFCRemastered.Commands.Requests;
 
 internal class QueryGasCommand : MfcCommandExpectingResponse<GasInfoEntry>
 {
-  private readonly MfcType _mfcType;
+  private readonly MfcTypeEnum _mfcType;
 
-  public QueryGasCommand(char id, string firmware, MfcType mfcType, int? lineNum = null) : base(id, new GasInfoEntryParser(id, lineNum), firmware)
+  public QueryGasCommand(char id, string firmware, MfcTypeEnum mfcType, int? lineNum = null) : base(id, new GasInfoEntryParser(id, lineNum), firmware)
   {
     _mfcType = mfcType;
     LineNum = lineNum;
@@ -18,8 +18,8 @@ internal class QueryGasCommand : MfcCommandExpectingResponse<GasInfoEntry>
 
   protected override string SerializeToString()
     => _mfcType switch {
-      MfcType.Normal => $"??G{LineNum ?? '*'}",
-      MfcType.Basis2 => $"GS *",
-      _ => throw new ArgumentOutOfRangeException(nameof(MfcType))
+      MfcTypeEnum.Normal => $"??G{LineNum ?? '*'}",
+      MfcTypeEnum.Basis2 => $"GS *",
+      _ => throw new ArgumentOutOfRangeException(nameof(MfcTypeEnum))
     };
 }

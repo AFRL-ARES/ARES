@@ -1,7 +1,7 @@
 ﻿
 using System.Text.RegularExpressions;
-using Ares.Alicat.Mfc.Messaging;
-using Ares.Device.Serial.Commands;
+using AlicatMFCRemastered.Enums;
+using Ares.Toolkit.Serial.Commands;
 
 namespace AlicatMFCRemastered.Commands.Responses.Parsers;
 
@@ -50,67 +50,67 @@ internal class ManufactureInfoResponseEntryParser : AsciiResponseParser<Manufact
     lineValue = AlphaNumericize(lineValue);
     if(lineNumber == 0)
     {
-      response = new ManufacturerInfoEntry(unitId, lineNumber, ManufacturerInfoEntryType.Title, lineValue);
+      response = new ManufacturerInfoEntry(unitId, lineNumber, ManufacturerInfoEntryTypeEnum.Title, lineValue);
       return true;
     }
 
     if(lineValue.StartsWith("ph", StringComparison.InvariantCultureIgnoreCase))
     {
       var phoneNumber = lineValue.Trim().Split(" ", StringSplitOptions.RemoveEmptyEntries).Last();
-      response = new ManufacturerInfoEntry(unitId, lineNumber, ManufacturerInfoEntryType.PhoneNumber, phoneNumber);
+      response = new ManufacturerInfoEntry(unitId, lineNumber, ManufacturerInfoEntryTypeEnum.PhoneNumber, phoneNumber);
       return true;
     }
 
     if(lineValue.StartsWith("fax", StringComparison.InvariantCultureIgnoreCase))
     {
       var faxNumber = lineValue.Trim().Split(" ", StringSplitOptions.RemoveEmptyEntries).Last();
-      response = new ManufacturerInfoEntry(unitId, lineNumber, ManufacturerInfoEntryType.Fax, faxNumber);
+      response = new ManufacturerInfoEntry(unitId, lineNumber, ManufacturerInfoEntryTypeEnum.Fax, faxNumber);
       return true;
     }
 
     if(lineValue.Contains("model number", StringComparison.InvariantCultureIgnoreCase) || lineValue.Contains("mdl", StringComparison.InvariantCultureIgnoreCase))
     {
       var modelNumber = lineValue.Trim().Split(" ", StringSplitOptions.RemoveEmptyEntries).Last();
-      response = new ManufacturerInfoEntry(unitId, lineNumber, ManufacturerInfoEntryType.ModelNumber, modelNumber);
+      response = new ManufacturerInfoEntry(unitId, lineNumber, ManufacturerInfoEntryTypeEnum.ModelNumber, modelNumber);
       return true;
     }
 
     if(lineValue.StartsWith("serial number", StringComparison.InvariantCultureIgnoreCase))
     {
       var serialNumber = lineValue.Trim().Split(" ", StringSplitOptions.RemoveEmptyEntries).Last();
-      response = new ManufacturerInfoEntry(unitId, lineNumber, ManufacturerInfoEntryType.SerialNumber, serialNumber);
+      response = new ManufacturerInfoEntry(unitId, lineNumber, ManufacturerInfoEntryTypeEnum.SerialNumber, serialNumber);
       return true;
     }
 
     if(lineValue.StartsWith("date manufactured", StringComparison.InvariantCultureIgnoreCase))
     {
       _ = DateTime.TryParse(lineValue.Trim().Split(" ", StringSplitOptions.RemoveEmptyEntries).Last(), out var manufactureDate);
-      response = new ManufacturerInfoEntry(unitId, lineNumber, ManufacturerInfoEntryType.ManufactureDate, manufactureDate.ToString());
+      response = new ManufacturerInfoEntry(unitId, lineNumber, ManufacturerInfoEntryTypeEnum.ManufactureDate, manufactureDate.ToString());
       return true;
     }
 
     if(lineValue.StartsWith("date calibrated", StringComparison.InvariantCultureIgnoreCase))
     {
       _ = DateTime.TryParse(lineValue.Trim().Split(" ", StringSplitOptions.RemoveEmptyEntries).Last(), out var calibrationDate);
-      response = new ManufacturerInfoEntry(unitId, lineNumber, ManufacturerInfoEntryType.CalibrationDate, calibrationDate.ToString());
+      response = new ManufacturerInfoEntry(unitId, lineNumber, ManufacturerInfoEntryTypeEnum.CalibrationDate, calibrationDate.ToString());
       return true;
     }
 
     if(lineValue.StartsWith("software revision", StringComparison.InvariantCultureIgnoreCase))
     {
       var softwareRevision = lineValue.Trim().Split(" ", StringSplitOptions.RemoveEmptyEntries).Last();
-      response = new ManufacturerInfoEntry(unitId, lineNumber, ManufacturerInfoEntryType.CalibrationDate, softwareRevision);
+      response = new ManufacturerInfoEntry(unitId, lineNumber, ManufacturerInfoEntryTypeEnum.CalibrationDate, softwareRevision);
       return true;
     }
 
     if(lineValue.StartsWith("calibrated by", StringComparison.InvariantCultureIgnoreCase))
     {
       var calibratedBy = lineValue.Trim().Split(" ", StringSplitOptions.RemoveEmptyEntries).Last();
-      response = new ManufacturerInfoEntry(unitId, lineNumber, ManufacturerInfoEntryType.CalibratedBy, calibratedBy);
+      response = new ManufacturerInfoEntry(unitId, lineNumber, ManufacturerInfoEntryTypeEnum.CalibratedBy, calibratedBy);
       return true;
     }
 
-    response = new ManufacturerInfoEntry(unitId, lineNumber, ManufacturerInfoEntryType.Invalid, lineValue.Trim().Split(" ", StringSplitOptions.RemoveEmptyEntries).Last());
+    response = new ManufacturerInfoEntry(unitId, lineNumber, ManufacturerInfoEntryTypeEnum.Invalid, lineValue.Trim().Split(" ", StringSplitOptions.RemoveEmptyEntries).Last());
     return true;
   }
 

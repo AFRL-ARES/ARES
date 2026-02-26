@@ -1,6 +1,7 @@
 ﻿using System.Text.RegularExpressions;
 using AlicatMFCRemastered.Commands.Responses.Streamed;
-using Ares.Device.Serial.Commands;
+using Ares.Toolkit.Serial.Commands;
+using Parsers.AlicatMFCRemastered;
 
 namespace AlicatMFCRemastered.Commands.Responses.Parsers;
 
@@ -102,7 +103,6 @@ internal class DataFormatEntryParser : AsciiResponseParser<DataFrameFormatEntry>
 
     var identifierMatch = _identifierExpression.Match(lineCpy);
     if(!identifierMatch.Success)
-    // if (!identifierExpression.IsMatch(line))
     {
       response = null;
       return false;

@@ -1,6 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 using AlicatMFCRemastered.Commands.Responses.Streamed;
-using Ares.Device.Serial.Commands;
+using Ares.Toolkit.Serial.Commands;
 using UnitsNet;
 using UnitsNet.Units;
 

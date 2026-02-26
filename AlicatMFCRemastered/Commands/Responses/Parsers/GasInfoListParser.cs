@@ -1,14 +1,11 @@
 ﻿using System.Text.RegularExpressions;
 using AlicatMFCRemastered.Commands.Responses.Streamed;
-using Ares.Device.Serial.Commands;
+using Ares.Toolkit.Serial.Commands;
 
 namespace AlicatMFCRemastered.Commands.Responses.Parsers;
 
 internal class GasInfoListParser : AsciiResponseParser<GasInfoEntryList>
 {
-  // private static Regex _identifierExpression = new(@"G\d\d\s+");
-  // private static Regex _unitIdExpression = new(@"[A-Z]\s+");
-  // private static Regex _gasNameExpression = new(@"\w+");
   private static readonly Regex _gasInfoEntryRegex = new(@"[A-Z]\s+\d+\s+\w+");
   private char _assumedId;
 

@@ -1,12 +1,12 @@
-using Ares.Alicat.Mfc.Messaging;
+using AlicatMFCRemastered.Enums;
 
 namespace AlicatMFCRemastered.Commands.Responses;
 
 public class SetpointSourceResponse : CommandResponse
 {
-  public SetpointSource Source { get; }
+  public MfcSetpointSourceEnum Source { get; }
 
-  public SetpointSourceResponse(char id, SetpointSource source) : base(id)
+  public SetpointSourceResponse(char id, MfcSetpointSourceEnum source) : base(id)
   {
     Source = source;
   }

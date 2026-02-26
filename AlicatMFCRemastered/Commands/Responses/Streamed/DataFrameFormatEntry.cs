@@ -43,22 +43,4 @@ public class DataFrameFormatEntry : CommandResponse
   public string Notes { get; }
   public Enum? Unit { get; }
   public DataFormatField Field { get; }
-
-  public static DataFrameFormatEntry FromProto(Ares.Alicat.Mfc.Messaging.DataFrameFormatEntry protoEntry)
-  {
-    var dataField = Enum.Parse<DataFormatField>(protoEntry.Name);
-
-    var unit = DataFormatEntryParser.GetUnitFromEnumString(protoEntry.Units, dataField.ToUnitType());
-    var domainEntry = new DataFrameFormatEntry(protoEntry.Id[0],
-      protoEntry.LineNumber,
-      dataField,
-      protoEntry.Type,
-      protoEntry.MinimumValue,
-      protoEntry.MaximumValue,
-      protoEntry.Width,
-      protoEntry.Notes,
-      unit);
-
-    return domainEntry;
-  }
 }

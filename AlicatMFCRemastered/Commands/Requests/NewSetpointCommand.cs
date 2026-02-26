@@ -4,7 +4,7 @@ using AlicatMFCRemastered.Commands.Responses.Streamed;
 using UnitsNet;
 using UnitsNet.Units;
 
-namespace AlicatMFC.Commands.Requests;
+namespace AlicatMFCRemastered.Commands.Requests;
 
 internal class NewSetpointCommand : MfcCommandExpectingResponse<LiveDataResponse>
 {

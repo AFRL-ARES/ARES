@@ -1,13 +1,14 @@
 ﻿using AlicatMFCRemastered.Commands.Responses;
 using AlicatMFCRemastered.Commands.Responses.Parsers;
+using AlicatMFCRemastered.Enums;
 
-namespace AlicatMFC.Commands.Requests;
+namespace AlicatMFCRemastered.Commands.Requests;
 
 internal class SetSetpointSourceCommand : MfcCommandExpectingResponse<SetpointSourceResponse>
 {
-  private readonly Ares.Alicat.Mfc.Messaging.SetpointSource _source;
+  private readonly MfcSetpointSourceEnum _source;
 
-  public SetSetpointSourceCommand(char id, Ares.Alicat.Mfc.Messaging.SetpointSource source, string firmware)
+  public SetSetpointSourceCommand(char id, MfcSetpointSourceEnum source, string firmware)
     : base(id, new SetpointSourceParser(id), firmware)
   {
     _source = source;

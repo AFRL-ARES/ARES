@@ -1,4 +1,4 @@
-﻿namespace AlicatMFC.Commands.Requests;
+﻿namespace AlicatMFCRemastered.Commands.Requests;
 
 public class MfcGasCompositionEntry
 {

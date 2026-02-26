@@ -1,7 +1,7 @@
 ﻿using AlicatMFCRemastered.Commands.Responses;
 using AlicatMFCRemastered.Commands.Responses.Parsers;
 
-namespace AlicatMFC.Commands.Requests
+namespace AlicatMFCRemastered.Commands.Requests
 {
   internal class MfcFirmwareRequest : MfcCommandExpectingResponse<FirmwareVersionResponse>
   {

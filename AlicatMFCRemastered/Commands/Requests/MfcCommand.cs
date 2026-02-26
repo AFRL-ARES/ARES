@@ -1,7 +1,7 @@
-﻿using Ares.Device.Serial.Commands;
+﻿using Ares.Toolkit.Serial.Commands;
 using System.Text;
 
-namespace AlicatMFC.Commands.Requests;
+namespace AlicatMFCRemastered.Commands.Requests;
 
 public abstract class MfcCommand : SerialCommand
 {

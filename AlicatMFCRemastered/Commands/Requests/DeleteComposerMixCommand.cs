@@ -2,7 +2,7 @@
 using AlicatMFCRemastered.Commands.Responses.Parsers;
 using AlicatMFCRemastered.Commands.Responses.Streamed;
 
-namespace AlicatMFC.Commands.Requests;
+namespace AlicatMFCRemastered.Commands.Requests;
 
 internal class DeleteComposerMixCommand : MfcCommandExpectingResponse<LiveDataResponse>
 {

@@ -1,8 +1,8 @@
 ﻿using AlicatMFCRemastered.Commands.Responses;
 using AlicatMFCRemastered.Commands.Responses.Parsers;
-using Ares.Device.Serial.Commands;
 
-namespace AlicatMFC.Commands.Requests;
+namespace AlicatMFCRemastered.Commands.Requests;
+
 internal class GetSetpointSourceCommand : MfcCommandExpectingResponse<SetpointSourceResponse>
 {
   public GetSetpointSourceCommand(char id) : base(id, new SetpointSourceParser(id), ":)")

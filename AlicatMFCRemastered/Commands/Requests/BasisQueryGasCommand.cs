@@ -1,9 +1,7 @@
 ﻿using AlicatMFCRemastered.Commands.Responses;
 using AlicatMFCRemastered.Commands.Responses.Parsers;
-using AlicatMFCRemastered.Commands.Responses.Streamed;
-using Ares.Alicat.Mfc.Config;
 
-namespace AlicatMFC.Commands.Requests;
+namespace AlicatMFCRemastered.Commands.Requests;
 
 internal class BasisQueryGasCommand : MfcCommandExpectingResponse<GasInfoEntryList>
 {

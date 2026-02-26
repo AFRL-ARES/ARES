@@ -8,8 +8,6 @@ public interface IMassFlowController : IAsyncDisposable
 {
   char AssumedId { get; }
   bool HasValve { get; }
-  MfcTypeEnum MfcType { get; }
-
   Task Start();
   double? GetSetpoint();
   Task<bool> QueryManufacturerInfo();

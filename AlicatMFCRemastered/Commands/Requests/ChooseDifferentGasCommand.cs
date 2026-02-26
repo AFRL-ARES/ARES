@@ -1,16 +1,17 @@
-﻿using AlicatMFCRemastered.Commands.Responses;
+﻿using AlicatMFCRemastered.Commands.Requests;
+using AlicatMFCRemastered.Commands.Responses;
 using AlicatMFCRemastered.Commands.Responses.Parsers;
 using AlicatMFCRemastered.Commands.Responses.Streamed;
-using Ares.Alicat.Mfc.Config;
+using AlicatMFCRemastered.Enums;
 
-namespace AlicatMFC.Commands.Requests;
+namespace AlicatMFCRemastered.Commands.Requests;
 
 internal class ChooseDifferentGasCommand : MfcCommandExpectingResponse<LiveDataResponse>
 {
   private readonly int _gasNumber;
-  private readonly MfcType _mfcType;
+  private readonly MfcTypeEnum _mfcType;
 
-  public ChooseDifferentGasCommand(char id, int gasNumber, DataFrameFormatEntry[] formatEntries, string firmware, MfcType mfcType) : base(id, new LiveDataParser(formatEntries), firmware)
+  public ChooseDifferentGasCommand(char id, int gasNumber, DataFrameFormatEntry[] formatEntries, string firmware, MfcTypeEnum mfcType) : base(id, new LiveDataParser(formatEntries), firmware)
   {
     _gasNumber = gasNumber;
     _mfcType = mfcType;
@@ -19,8 +20,8 @@ internal class ChooseDifferentGasCommand : MfcCommandExpectingResponse<LiveDataR
   protected override string SerializeToString()
     => _mfcType switch
     {
-      MfcType.Normal => $"$$G{_gasNumber}",
-      MfcType.Basis2 => $"GS {_gasNumber}",
+      MfcTypeEnum.Normal => $"$$G{_gasNumber}",
+      MfcTypeEnum.Basis2 => $"GS {_gasNumber}",
       _ => throw new ArgumentOutOfRangeException(nameof(_gasNumber)),
     };
 }
