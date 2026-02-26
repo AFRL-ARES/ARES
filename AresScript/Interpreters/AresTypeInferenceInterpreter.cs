@@ -37,7 +37,7 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
     }
     if(_environment.TryGetUserFunction(id, out var _))
     {
-      return AresSchemaBuilder.Entry(AresDataType.Any).Build();
+      return AresSchemaBuilder.Entry(AresDataType.Function).Build();
     }
     if(_environment.TryGetUserLambda(id, out var _))
     {

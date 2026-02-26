@@ -134,7 +134,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       {
         foreach(var parameter in _pendingFunctions.Peek().Parameters)
         {
-          _environment.AssignVariable(parameter.Name, CreateUnknownValue());
+          _environment.AssignVariable(parameter.Name, DummyValueFactory.CreateDummyValue(parameter.Type));
         }
       }
 
@@ -1117,7 +1117,8 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
                 foreach(var structMember in structContext.structure().pair())
                 {
                   var key = structMember.ID()?.GetText() ?? InterpreterHelpers.Unquote(structMember.STRING().GetText());
-                  aresStruct.StructValue.Fields[key] = AresValueHelper.CreateNull();
+                  var value = TryBuildAssignmentValue(structMember.expression());
+                  aresStruct.StructValue.Fields[key] = value ?? AresValueHelper.CreateNull();
                 }
 
                 return aresStruct;
