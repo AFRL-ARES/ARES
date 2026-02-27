@@ -1,5 +1,6 @@
 using Ares.Datamodel.Analyzing;
 using Ares.Services;
+using Ares.Core.Grpc.Services;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
@@ -9,9 +10,9 @@ namespace UI.Features.Analyzing.Settings;
 
 public partial class AnalyzerSettingsListViewModel : ReactiveObject
 {
-  private readonly AresAnalyzerManagementService.AresAnalyzerManagementServiceClient _analyzerManagerService;
+  private readonly AnalyzerService _analyzerManagerService;
   private readonly INotificationReceivingService _notificationService;
-  public AnalyzerSettingsListViewModel(AresAnalyzerManagementService.AresAnalyzerManagementServiceClient analyzerManagerService, INotificationReceivingService notificationService)
+  public AnalyzerSettingsListViewModel(AnalyzerService analyzerManagerService, INotificationReceivingService notificationService)
   {
     _analyzerManagerService = analyzerManagerService;
     _notificationService = notificationService;
@@ -24,8 +25,8 @@ public partial class AnalyzerSettingsListViewModel : ReactiveObject
   {
     SettingsViewModels = null;
     return _analyzerManagerService
-      .GetAllAnalyzersAsync(new Empty())
-      .ResponseAsync.ContinueWith(task => UpdateViewModels(task.Result.Analyzers));
+      .GetAllAnalyzers(new Empty(), null)
+      .ContinueWith(task => { if(task.IsCompletedSuccessfully) UpdateViewModels(task.Result.Analyzers); });
   }
 
   private void UpdateViewModels(IEnumerable<AnalyzerInfo> analyzers)
@@ -38,7 +39,7 @@ public partial class AnalyzerSettingsListViewModel : ReactiveObject
   public async Task AddNewAnalyzer(AnalyzerConfig analyzerConfig)
   {
     var request = new AddRemoteAnalyzerRequest() { Name = analyzerConfig.Name, Url = analyzerConfig.Url };
-    var response = await _analyzerManagerService.AddRemoteAnalyzerAsync(request);
+    var response = await _analyzerManagerService.AddRemoteAnalyzer(request, null);
     if(response.Success)
     {
       PushNotification(new AresNotification() { Message = $"Added new analyzer {analyzerConfig.Name}", NotificationSeverity = Severity.Success, Title = "Successfully Added Remote Analyzer" });

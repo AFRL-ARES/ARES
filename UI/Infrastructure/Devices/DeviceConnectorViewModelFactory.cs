@@ -1,5 +1,6 @@
 using Ares.Datamodel.Device;
 using Ares.Services.Device;
+using Ares.Core.Grpc.Services;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using System.Reactive;
@@ -11,11 +12,11 @@ using UI.Application.Devices.Repos;
 namespace UI.Infrastructure.Devices;
 
 public abstract class DeviceConnectorViewModelFactory(
-    AresDevices.AresDevicesClient devicesClient,
+    DevicesService devicesClient,
     IDeviceControlViewModelRepo deviceControlViewModelRepo)
     : ReactiveObject, IAsyncDisposable
 {
-  protected readonly AresDevices.AresDevicesClient _devicesClient = devicesClient;
+  protected readonly DevicesService _devicesClient = devicesClient;
   protected readonly IDeviceControlViewModelRepo _deviceControlViewModelRepo = deviceControlViewModelRepo;
   private IDisposable _deviceUpdater = Disposable.Empty;
 
@@ -44,7 +45,7 @@ public abstract class DeviceConnectorViewModelFactory(
     foreach(var description in deviceDescriptions)
     {
       var deviceStatusRequest = new DeviceStatusRequest { DeviceId = description.DeviceId };
-      var deviceStatusResponse = _devicesClient.GetDeviceStatus(deviceStatusRequest);
+      var deviceStatusResponse = await _devicesClient.GetDeviceStatus(deviceStatusRequest, null);
 
       if(deviceStatusResponse.OperationalState == OperationalState.Active)
       {
@@ -73,7 +74,7 @@ public abstract class DeviceConnectorViewModelFactory(
 }
 
 public abstract class DeviceConnectorViewModelFactory<T>(
-    AresDevices.AresDevicesClient devicesClient,
+    DevicesService devicesClient,
     IDeviceControlViewModelRepo deviceControlViewModelRepo)
     : DeviceConnectorViewModelFactory(devicesClient, deviceControlViewModelRepo)
     where T : DeviceUnitControlViewModel

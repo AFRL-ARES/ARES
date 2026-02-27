@@ -1,5 +1,6 @@
 using Ares.Datamodel.Device;
 using Ares.Services.Device;
+using Ares.Core.Grpc.Services;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using UI.Application.Notifications;
@@ -9,10 +10,10 @@ namespace UI.Features.Devices.Plugin;
 public partial class PluginDeviceSettingsViewModel: ReactiveObject
 {
   private readonly DeviceConfig _deviceConfig;
-  private readonly AresDevices.AresDevicesClient _devicesClient;
+  private readonly DevicesService _devicesClient;
   private readonly INotificationReceivingService _notificationService;
   public PluginDeviceSettingsViewModel(DeviceConfig deviceConfig,
-  AresDevices.AresDevicesClient devicesClient,
+  DevicesService devicesClient,
   INotificationReceivingService notificationService)
   {
     _deviceConfig = deviceConfig;

@@ -1,5 +1,6 @@
 using Ares.Datamodel.Planning;
 using Ares.Services;
+using Ares.Core.Grpc.Services;
 using ReactiveUI;
 
 
@@ -7,16 +8,16 @@ namespace UI.Features.Planning.Settings
 {
   public class PlannerConfigEditViewModel : ReactiveObject
   {
-    private readonly AresPlannerManagementService.AresPlannerManagementServiceClient _client;
+    private readonly PlannerService _client;
     private readonly PlannerServiceInfo _plannerService;
-    public PlannerConfigEditViewModel(AresPlannerManagementService.AresPlannerManagementServiceClient client)
+    public PlannerConfigEditViewModel(PlannerService client)
     {
       _client = client;
       _plannerService = new PlannerServiceInfo();
       NewConfig = true;
     }
 
-    public PlannerConfigEditViewModel(AresPlannerManagementService.AresPlannerManagementServiceClient client, PlannerServiceInfo planner)
+    public PlannerConfigEditViewModel(PlannerService client, PlannerServiceInfo planner)
     {
       _client = client;
       _plannerService = planner;

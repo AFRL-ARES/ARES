@@ -1,11 +1,12 @@
 ﻿using Ares.Services.Device;
+using Ares.Core.Grpc.Services;
 using Google.Protobuf.WellKnownTypes;
 using UI.Application.Devices.Repos;
 
 namespace UI.Infrastructure.Devices;
 
 public class DeviceAdapterManager(
-    AresDevices.AresDevicesClient _devicesClient,
+    DevicesService _devicesClient,
     IDeviceAdapterRepository _deviceAdapterRepository,
     ILoggerFactory _loggerFactory,
     ILogger<DeviceAdapterManager> _logger) : IAsyncDisposable
@@ -28,9 +29,9 @@ public class DeviceAdapterManager(
       {
         // let's stick to remote devices for now as the built-int devices have their
         // own logic in viewmodels
-        var devices = await _devicesClient.ListRemoteAresDevicesAsync(
+        var devices = await _devicesClient.ListRemoteAresDevices(
             new Empty(),
-            cancellationToken: cancellationToken);
+            null);
 
         if (_isErrorState)
         {

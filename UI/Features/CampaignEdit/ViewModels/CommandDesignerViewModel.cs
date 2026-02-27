@@ -1,6 +1,7 @@
 ﻿using Ares.Datamodel;
 using Ares.Datamodel.Templates;
 using Ares.Services.Device;
+using Ares.Core.Grpc.Services;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using UI.Features.CampaignEdit.Factories;
@@ -11,7 +12,7 @@ public partial class CommandDesignerViewModel : ReactiveObject
 {
   private readonly CommandParameterDesignerFactory _commandParameterDesignerFactory;
   private readonly MetadataPickerFactory _metadataPickerFactory;
-  private readonly AresDevices.AresDevicesClient _devicesClient;
+  private readonly DevicesService _devicesClient;
   private CommandMetadata? _commandMetadata;
   private CommandTemplate _commandTemplate = null!;
 
@@ -19,7 +20,7 @@ public partial class CommandDesignerViewModel : ReactiveObject
     CommandTemplate existingTemplate,
     CommandParameterDesignerFactory commandParameterDesignerFactory,
     MetadataPickerFactory metadataPickerFactory,
-    AresDevices.AresDevicesClient devicesClient)
+    DevicesService devicesClient)
   {
     ArgumentDesigners = [];
     _commandParameterDesignerFactory = commandParameterDesignerFactory;
@@ -29,7 +30,7 @@ public partial class CommandDesignerViewModel : ReactiveObject
     CommandTemplate = existingTemplate;
   }
 
-  public CommandDesignerViewModel(CommandParameterDesignerFactory commandParameterDesignerFactory, MetadataPickerFactory metadataPickerFactory, AresDevices.AresDevicesClient devicesClient)
+  public CommandDesignerViewModel(CommandParameterDesignerFactory commandParameterDesignerFactory, MetadataPickerFactory metadataPickerFactory, DevicesService devicesClient)
   {
     ArgumentDesigners = [];
     _commandParameterDesignerFactory = commandParameterDesignerFactory;
@@ -137,7 +138,7 @@ public partial class CommandDesignerViewModel : ReactiveObject
     if(existingTemplate.Metadata?.DeviceId is not null)
     {
 
-      var deviceInfo = await _devicesClient.GetDeviceInfoAsync(new DeviceInfoRequest { DeviceId = existingTemplate.Metadata.DeviceId });
+      var deviceInfo = await _devicesClient.GetDeviceInfo(new DeviceInfoRequest { DeviceId = existingTemplate.Metadata.DeviceId }, null);
       TemplateDeviceName = string.IsNullOrEmpty(deviceInfo.Name) ? null : deviceInfo.Name;
     }
   }
@@ -161,7 +162,7 @@ public partial class CommandDesignerViewModel : ReactiveObject
 
     if(CommandMetadata?.DeviceId is not null)
     {
-      var deviceInfo = await _devicesClient.GetDeviceInfoAsync(new DeviceInfoRequest { DeviceId = CommandMetadata.DeviceId });
+      var deviceInfo = await _devicesClient.GetDeviceInfo(new DeviceInfoRequest { DeviceId = CommandMetadata.DeviceId }, null);
       MetadataDeviceName = string.IsNullOrEmpty(deviceInfo.Name) ? null : deviceInfo.Name;
     }
   }

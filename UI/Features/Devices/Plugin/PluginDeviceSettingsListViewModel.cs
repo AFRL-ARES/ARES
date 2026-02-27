@@ -2,13 +2,14 @@ using System.Collections.ObjectModel;
 using Ares.Datamodel.Device;
 using Ares.Services;
 using Ares.Services.Device;
+using Ares.Core.Grpc.Services;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using UI.Application.Notifications;
 
 namespace UI.Features.Devices.Plugin;
 
-public partial class PluginDeviceSettingsListViewModel(AresDevices.AresDevicesClient _devicesClient, INotificationReceivingService _notificationService) : ReactiveObject
+public partial class PluginDeviceSettingsListViewModel(DevicesService _devicesClient, INotificationReceivingService _notificationService) : ReactiveObject
 {
     public async Task Initialize(string driverName)
     {
@@ -22,7 +23,7 @@ public partial class PluginDeviceSettingsListViewModel(AresDevices.AresDevicesCl
         try
         {
             var request = new DeviceConfigRequest { DeviceType = DriverName };
-            var response = await _devicesClient.GetAllDeviceConfigsAsync(request);
+            var response = await _devicesClient.GetAllDeviceConfigs(request, null);
             UpdateViewModels(response.Configs);
         }
         catch (Exception e)

@@ -1,5 +1,6 @@
 using Ares.Datamodel;
 using Ares.Services;
+using Ares.Core.Grpc.Services;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
@@ -9,9 +10,9 @@ namespace UI.Features.DataViewer;
 
 public partial class DataViewerViewModel : ReactiveObject
 {
-  private readonly AresAutomation.AresAutomationClient _automationClient;
+  private readonly AutomationService _automationClient;
 
-  public DataViewerViewModel(AresAutomation.AresAutomationClient automationClient)
+  public DataViewerViewModel(AutomationService automationClient)
   {
     _automationClient = automationClient;
     SelectedSummaryStartTime = string.Empty;
@@ -28,7 +29,7 @@ public partial class DataViewerViewModel : ReactiveObject
     if(SelectedSummaryMetadata is null)
       return;
 
-    var fullSummary = await _automationClient.GetCampaignSummaryAsync(new CampaignExecutionSummaryRequest { SummaryId = SelectedSummaryMetadata.SummaryId });
+    var fullSummary = await _automationClient.GetCampaignSummary(new CampaignExecutionSummaryRequest { SummaryId = SelectedSummaryMetadata.SummaryId }, null);
 
     if(fullSummary is null)
       throw new InvalidOperationException("Campaign Summary Request returned null!");
@@ -44,7 +45,7 @@ public partial class DataViewerViewModel : ReactiveObject
   public async Task UpdateAvailableSummaries()
   {
     LoadingAvailableSumarries = true;
-    var summaries = await _automationClient.GetAvailableCampaignExecutionSummariesAsync(new Empty());
+    var summaries = await _automationClient.GetAvailableCampaignExecutionSummaries(new Empty(), null);
     AvailableSummaries = summaries.AvailableCampaignSummaries;
     LoadingAvailableSumarries = false;
   }

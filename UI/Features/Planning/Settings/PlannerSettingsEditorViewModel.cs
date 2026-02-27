@@ -1,6 +1,7 @@
 using Ares.Datamodel;
 using Ares.Datamodel.Planning;
 using Ares.Services;
+using Ares.Core.Grpc.Services;
 using Grpc.Core;
 using ReactiveUI;
 
@@ -8,10 +9,10 @@ namespace UI.Features.Planning.Settings;
 
 public class PlannerSettingsEditorViewModel : ReactiveObject
 {
-  private readonly AresPlannerManagementService.AresPlannerManagementServiceClient _client;
+  private readonly PlannerService _client;
   private readonly PlannerServiceInfo _plannerInfo;
 
-  public PlannerSettingsEditorViewModel(AresPlannerManagementService.AresPlannerManagementServiceClient client, PlannerServiceInfo plannerInfo)
+  public PlannerSettingsEditorViewModel(PlannerService client, PlannerServiceInfo plannerInfo)
   {
     _client = client;
     _plannerInfo = plannerInfo;
@@ -27,9 +28,9 @@ public class PlannerSettingsEditorViewModel : ReactiveObject
 
     try
     {
-      await _client.SetPlannerSettingsAsync(settings);
+      await _client.SetPlannerSettings(settings, null);
     }
-    catch(RpcException)
+    catch(Exception)
     {
 
     }
@@ -40,10 +41,10 @@ public class PlannerSettingsEditorViewModel : ReactiveObject
     var request = new PlannerSettingsRequest { PlannerId = _plannerInfo.UniqueId };
     try
     {
-      var settingsResponse = await _client.GetPlannerSettingsAsync(request);
+      var settingsResponse = await _client.GetPlannerSettings(request, null);
       Settings = settingsResponse;
     }
-    catch(RpcException)
+    catch(Exception)
     {
       Settings = new AresStruct();
     }
@@ -52,7 +53,7 @@ public class PlannerSettingsEditorViewModel : ReactiveObject
   public async Task UpdateInfo()
   {
     var request = new PlannerInfoRequest { PlannerId= _plannerInfo.UniqueId };
-    var infoResponse = await _client.GetInfoAsync(request);
+    var infoResponse = await _client.GetInfo(request, null);
     SettingsSchema = infoResponse.Info.Capabilities?.SettingsSchema ?? new AresStructSchema();
   }
 

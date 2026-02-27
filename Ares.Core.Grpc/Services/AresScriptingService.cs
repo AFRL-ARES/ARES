@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Threading.Tasks;
 using Ares.Services;
 using Grpc.Core;
@@ -22,8 +23,9 @@ public partial class AresScriptingService : Ares.Services.AresScriptingService.A
     _environmentBuilder = environmentBuilder;
 
   }
-  public override async Task ExecuteScript(ScriptExecutionRequest request, IServerStreamWriter<ScriptExecutionOutput> responseStream, ServerCallContext context)
+  public override async Task ExecuteScript(ScriptExecutionRequest request, IServerStreamWriter<ScriptExecutionOutput> responseStream, ServerCallContext? context)
   {
+    var cancellationToken = context?.CancellationToken ?? CancellationToken.None;
     var channel = Channel.CreateBounded<string>(new BoundedChannelOptions(100));
     var env = _environmentBuilder.Build();
     var runner = new ScriptRunner(env);
@@ -38,12 +40,12 @@ public partial class AresScriptingService : Ares.Services.AresScriptingService.A
     {
       try
       {
-        await foreach(var val in channel.Reader.ReadAllAsync(context.CancellationToken))
+        await foreach(var val in channel.Reader.ReadAllAsync(cancellationToken))
         {
           await responseStream.WriteAsync(new ScriptExecutionOutput { Output = val });
         }
       }
-      catch(OperationCanceledException) when(context.CancellationToken.IsCancellationRequested)
+      catch(OperationCanceledException) when(cancellationToken.IsCancellationRequested)
       {
         _logger.LogInformation("Grpc stream cancelled while sending script output.");
       }
@@ -60,7 +62,7 @@ public partial class AresScriptingService : Ares.Services.AresScriptingService.A
 
     try
     {
-      await runner.RunScriptAsync(request.Script, context.CancellationToken);
+      await runner.RunScriptAsync(request.Script, cancellationToken);
       channel.Writer.TryComplete();
     }
     catch(Exception e)
@@ -73,7 +75,7 @@ public partial class AresScriptingService : Ares.Services.AresScriptingService.A
     await readTask;
   }
 
-  public override Task<AutocompleteCatalogResponse> GetAutocompleteCatalog(Empty request, ServerCallContext context)
+  public override Task<AutocompleteCatalogResponse> GetAutocompleteCatalog(Empty request, ServerCallContext? context)
   {
     var environment = _environmentBuilder.Build();
     var catalog = AresScriptAnalysis.BuildAutocompleteCatalog(environment);
@@ -84,7 +86,7 @@ public partial class AresScriptingService : Ares.Services.AresScriptingService.A
     return Task.FromResult(response);
   }
 
-  public override async Task<CompletionResponse> GetCompletions(CompletionRequest request, ServerCallContext context)
+  public override async Task<CompletionResponse> GetCompletions(CompletionRequest request, ServerCallContext? context)
   {
     var environment = _environmentBuilder.Build();
     var items = await AresScriptAnalysis.BuildCompletionsAsync(
@@ -97,7 +99,7 @@ public partial class AresScriptingService : Ares.Services.AresScriptingService.A
     return response;
   }
 
-  public override async Task<ValidateScriptResponse> ValidateScript(ValidateScriptRequest request, ServerCallContext context)
+  public override async Task<ValidateScriptResponse> ValidateScript(ValidateScriptRequest request, ServerCallContext? context)
   {
     var environment = _environmentBuilder.Build();
     var diagnostics = await AresScriptAnalysis.ValidateScriptAsync(

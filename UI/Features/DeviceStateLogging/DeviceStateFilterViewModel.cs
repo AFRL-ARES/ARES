@@ -2,6 +2,7 @@
 using Ares.Datamodel.Device;
 using Ares.Services;
 using Ares.Services.Device;
+using Ares.Core.Grpc.Services;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
@@ -10,17 +11,17 @@ namespace UI.Features.DeviceStateLogging;
 
 public partial class DeviceStateFilterViewModel : ReactiveObject
 {
-  private readonly AresDevices.AresDevicesClient _deviceClient;
-  readonly AresAutomation.AresAutomationClient _automationClient;
+  private readonly DevicesService _deviceClient;
+  readonly AutomationService _automationClient;
 
-  public DeviceStateFilterViewModel(AresDevices.AresDevicesClient devicesClient, AresAutomation.AresAutomationClient automationClient)
+  public DeviceStateFilterViewModel(DevicesService devicesClient, AutomationService automationClient)
   {
     _automationClient = automationClient;
     _deviceClient = devicesClient;
-    _automationClient.GetAvailableCampaignExecutionSummariesAsync(new Empty()).ResponseAsync
-      .ContinueWith(task => UpdateCampaigns(task.Result));
-    _deviceClient.GetAllAvailableDevicesAsync(new Empty()).ResponseAsync
-      .ContinueWith(task => UpdateDevices(task.Result));
+    _ = _automationClient.GetAvailableCampaignExecutionSummaries(new Empty(), null)
+      .ContinueWith(task => { if(task.IsCompletedSuccessfully) UpdateCampaigns(task.Result); });
+    _ = _deviceClient.GetAllAvailableDevices(new Empty(), null)
+      .ContinueWith(task => { if(task.IsCompletedSuccessfully) UpdateDevices(task.Result); });
 
     var currentTime = DateTime.Now;
     // probably don't need millisecond precision
@@ -50,8 +51,8 @@ public partial class DeviceStateFilterViewModel : ReactiveObject
   public async Task UpdateExperiments(string? campaignResultId)
   {
     Experiments = null;
-    var campaignResult = await _automationClient.GetCampaignSummaryAsync(
-      new CampaignExecutionSummaryRequest { SummaryId = campaignResultId });
+    var campaignResult = await _automationClient.GetCampaignSummary(
+      new CampaignExecutionSummaryRequest { SummaryId = campaignResultId }, null);
     Experiments = campaignResult.ExperimentSummaries;
   }
 

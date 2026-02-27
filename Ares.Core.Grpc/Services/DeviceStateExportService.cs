@@ -1,4 +1,4 @@
-﻿using Ares.Core.Device.State.Export.ExportStreamProviders;
+using Ares.Core.Device.State.Export.ExportStreamProviders;
 using Ares.Datamodel.Device;
 using Ares.Services;
 using Google.Protobuf;
@@ -17,7 +17,7 @@ public class DeviceStateExportService : Ares.Services.DeviceStateExportService.D
     _exportProviders = exportProviders;
   }
 
-  public override Task<DeviceStateResponse> GetStateExport(DeviceStateRequest request, ServerCallContext context)
+  public override Task<DeviceStateResponse> GetStateExport(DeviceStateRequest request, ServerCallContext? context)
   {
     return request.ExportType switch
     {

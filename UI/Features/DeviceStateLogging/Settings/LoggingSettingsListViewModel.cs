@@ -2,6 +2,7 @@ using System.Reactive;
 using System.Reactive.Linq;
 using Ares.Services;
 using Ares.Services.Device;
+using Ares.Core.Grpc.Services;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
@@ -11,11 +12,11 @@ namespace UI.Features.DeviceStateLogging.Settings;
 
 public partial class LoggingSettingsListViewModel : ReactiveObject
 {
-  private readonly AresDevices.AresDevicesClient _devicesClient;
+  private readonly DevicesService _devicesClient;
   private readonly INotificationReceivingService _notificationService;
   private ObservableAsPropertyHelper<bool> _updated;
 
-  public LoggingSettingsListViewModel(AresDevices.AresDevicesClient devicesClient, INotificationReceivingService notificationService)
+  public LoggingSettingsListViewModel(DevicesService devicesClient, INotificationReceivingService notificationService)
   {
     _devicesClient = devicesClient;
     _notificationService = notificationService;
@@ -30,7 +31,7 @@ public partial class LoggingSettingsListViewModel : ReactiveObject
 
   public async Task FetchLoggers()
   {
-    var response = await _devicesClient.GetAllAvailableDevicesAsync(new Empty());
+    var response = await _devicesClient.GetAllAvailableDevices(new Empty(), null);
     var filteredDevices = response.Devices.Where(d => d.DeviceId != "ARES-CORE-DEVICE");
     LoggingSettingsViewModels = filteredDevices.Select(d => new LoggingSettingsViewModel(d.DeviceId, d.DeviceName, _devicesClient)).ToArray();
   }

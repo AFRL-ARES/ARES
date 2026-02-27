@@ -3,8 +3,10 @@ using System.Reactive.Subjects;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
 using Ares.Services.Device;
+using Ares.Core.Grpc.Services;
 using Grpc.Core;
 using UI.Application.Devices;
+using UI.Infrastructure.Grpc;
 
 namespace UI.Infrastructure.Devices;
 public sealed class RemoteDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
@@ -13,7 +15,7 @@ public sealed class RemoteDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
   private readonly BehaviorSubject<ConnectionStatus> _connectionStatusSubject =
     new BehaviorSubject<ConnectionStatus>(ConnectionStatus.Undefined);
 
-  private readonly AresDevices.AresDevicesClient _devicesClient;
+  private readonly DevicesService _devicesClient;
   private readonly ILogger<RemoteDeviceAdapter> _logger;
   private CancellationTokenSource _stateStreamCts = new();
   private CancellationTokenSource _statusStreamCts = new();
@@ -24,7 +26,7 @@ public sealed class RemoteDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
   };
 
 
-  public RemoteDeviceAdapter(AresDevices.AresDevicesClient devicesClient, string id, ILogger<RemoteDeviceAdapter> logger)
+  public RemoteDeviceAdapter(DevicesService devicesClient, string id, ILogger<RemoteDeviceAdapter> logger)
   {
     _devicesClient = devicesClient;
     _logger = logger;
@@ -87,13 +89,16 @@ public sealed class RemoteDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
     {
       try
       {
-        using var call = _devicesClient.GetDeviceStateStream(new DeviceStateStreamRequest { DeviceId = Id, PollingSettings = _pollingSettings });
+        var streamWriter = new LocalStreamWriter<DeviceStateResponse>(state => 
+        {
+            _stateSubject.OnNext(state.State);
+            return Task.CompletedTask;
+        });
+
         _logger.LogInformation("Started device state stream for device {}.", Name);
         UpdateStatusIfChanged(ConnectionStatus.ConnectedToService);
-        await foreach(var state in call.ResponseStream.ReadAllAsync(token))
-        {
-          _stateSubject.OnNext(state.State);
-        }
+
+        await _devicesClient.GetDeviceStateStream(new DeviceStateStreamRequest { DeviceId = Id, PollingSettings = _pollingSettings }, streamWriter, null);
       }
       catch(Exception e)
       {
@@ -109,8 +114,7 @@ public sealed class RemoteDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
   {
     try
     {
-      var callOpts = new CallOptions(deadline: DateTime.UtcNow.AddSeconds(5));
-      var status = await _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceId = Id }, callOpts);
+      var status = await _devicesClient.GetDeviceStatus(new DeviceStatusRequest { DeviceId = Id }, null);
       _logger.LogInformation("Fetched operational status for device {name}.", Name);
       if(status.OperationalState == OperationalState.Active)
       {
@@ -122,7 +126,7 @@ public sealed class RemoteDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
       }
       OperationalStatus = status;
     }
-    catch(RpcException e)
+    catch(Exception e)
     {
       _logger.LogError("Failed to fetch operational status for device {name}. {ex}", Name, e.Message);
       OperationalStatus = new DeviceOperationalStatus { OperationalState = OperationalState.Unspecified, Message = "Unknown operational state. Trouble connecting to ARES service." };
@@ -134,13 +138,12 @@ public sealed class RemoteDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
   {
     try
     {
-      var callOpts = new CallOptions(deadline: DateTime.UtcNow.AddSeconds(5));
-      var response = await _devicesClient.GetDeviceStateSchemaAsync(new DeviceStateSchemaRequest { DeviceId = Id }, callOpts);
+      var response = await _devicesClient.GetDeviceStateSchema(new DeviceStateSchemaRequest { DeviceId = Id }, null);
       _logger.LogInformation("Fetched state schema for device {name}.", Name);
       UpdateStatusIfChanged(ConnectionStatus.ConnectedToService);
       StateSchema = response.Schema;
     }
-    catch(RpcException)
+    catch(Exception)
     {
       _logger.LogError("Failed to fetch state schema for device {name}.", Name);
       UpdateStatusIfChanged(ConnectionStatus.Disconnected);
@@ -151,8 +154,7 @@ public sealed class RemoteDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
   {
     try
     {
-      var callOpts = new CallOptions(deadline: DateTime.UtcNow.AddSeconds(5));
-      var info = await _devicesClient.GetDeviceInfoAsync(new DeviceInfoRequest { DeviceId = Id }, callOpts);
+      var info = await _devicesClient.GetDeviceInfo(new DeviceInfoRequest { DeviceId = Id }, null);
       _logger.LogInformation("Fetched device info for device {name}.", Name);
       UpdateStatusIfChanged(ConnectionStatus.ConnectedToService);
       Name = info.Name;
@@ -160,7 +162,7 @@ public sealed class RemoteDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
       Description = info.Description;
       Type = info.Type;
     }
-    catch(RpcException)
+    catch(Exception)
     {
       _logger.LogError("Failed to fetch device info for device {name}.", Name);
       UpdateStatusIfChanged(ConnectionStatus.Disconnected);

@@ -4,6 +4,7 @@ using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Scripting;
 using Ares.Services;
+using Ares.Core.Grpc.Services;
 using AresScript;
 using AresScript.Generated;
 using AresScript.Interpreters;
@@ -13,9 +14,9 @@ using UI.Application.Scripting;
 
 namespace UI.Infrastructure.Monaco.Interops;
 
-public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServiceClient aresScriptingServiceClient) : IMonacoHoverProvider
+public sealed class MonacoHoverProvider(Ares.Core.Grpc.Services.AresScriptingService aresScriptingServiceClient) : IMonacoHoverProvider
 {
-  private readonly AresScriptingService.AresScriptingServiceClient _aresScriptingServiceClient = aresScriptingServiceClient;
+  private readonly Ares.Core.Grpc.Services.AresScriptingService _aresScriptingServiceClient = aresScriptingServiceClient;
   private AutocompleteCatalog? _cachedCatalog;
 
   [JSInvokable]
@@ -33,7 +34,7 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
       Script = script
     };
 
-    var completions = await _aresScriptingServiceClient.GetCompletionsAsync(request);
+    var completions = await _aresScriptingServiceClient.GetCompletions(request, null);
     var item = completions.Items.FirstOrDefault(i => string.Equals(i.Label, identifier, StringComparison.Ordinal));
 
     var hoverMarkdown = BuildHoverMarkdown(item);
@@ -210,7 +211,7 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
       return _cachedCatalog;
     }
 
-    var response = await _aresScriptingServiceClient.GetAutocompleteCatalogAsync(new Empty());
+    var response = await _aresScriptingServiceClient.GetAutocompleteCatalog(new Empty(), null);
     _cachedCatalog = response.Catalog;
     return _cachedCatalog;
   }

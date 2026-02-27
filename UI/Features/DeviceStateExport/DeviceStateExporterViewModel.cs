@@ -1,4 +1,5 @@
 ﻿using Ares.Services;
+using Ares.Core.Grpc.Services;
 using Microsoft.OpenApi;
 using ReactiveUI;
 using UI.Features.DeviceStateLogging;
@@ -8,10 +9,10 @@ namespace UI.Features.DeviceStateExport;
 
 public class DeviceStateExporterViewModel : ReactiveObject
 {
-  readonly DeviceStateExportService.DeviceStateExportServiceClient _stateExportServiceClient;
+  readonly Ares.Core.Grpc.Services.DeviceStateExportService _stateExportServiceClient;
 
   public DeviceStateExporterViewModel(DeviceStateFilterViewModelFactory vmFactory,
-    DeviceStateExportService.DeviceStateExportServiceClient stateExportServiceClient)
+    Ares.Core.Grpc.Services.DeviceStateExportService stateExportServiceClient)
   {
     _stateExportServiceClient = stateExportServiceClient;
     FilterViewModel = vmFactory.Create();
@@ -37,7 +38,7 @@ public class DeviceStateExporterViewModel : ReactiveObject
       ExportType = SelectedExportType.ExportType
     };
 
-    var result = await _stateExportServiceClient.GetStateExportAsync(request);
+    var result = await _stateExportServiceClient.GetStateExport(request, null);
 
     return result.Data.ToArray();
   }

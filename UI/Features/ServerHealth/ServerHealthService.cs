@@ -1,10 +1,12 @@
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Ares.Services;
+using Ares.Core.Grpc.Services;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Grpc.Health.V1;
 using UI.Application.Hosting;
+using UI.Infrastructure.Grpc;
 
 namespace UI.Features.ServerHealth;
 
@@ -14,8 +16,8 @@ namespace UI.Features.ServerHealth;
 /// </summary>
 internal class ServerHealthService : ILocalService
 {
-  private readonly AresServerInfo.AresServerInfoClient _aresServerInfo;
-  private readonly Health.HealthClient _healthClient;
+  private readonly AresServerInfoService _aresServerInfo;
+  private readonly HealthCheckService _healthClient;
   private readonly ILogger<ServerHealthService> _logger;
   private readonly ISubject<ServerStatusResponse> _serverStatusSubject = new BehaviorSubject<ServerStatusResponse>(new ServerStatusResponse { ServerStatus = Ares.Services.ServerStatus.Idle, StatusMessage = "Not Connected" });
 
@@ -24,7 +26,7 @@ internal class ServerHealthService : ILocalService
   private CancellationTokenSource _serviceCancellationTokenSource = new();
   private Task _stateListener = Task.CompletedTask;
 
-  public ServerHealthService(AresServerInfo.AresServerInfoClient aresServerInfo, Health.HealthClient healthClient, ILogger<ServerHealthService> logger)
+  public ServerHealthService(AresServerInfoService aresServerInfo, HealthCheckService healthClient, ILogger<ServerHealthService> logger)
   {
     _aresServerInfo = aresServerInfo;
     _healthClient = healthClient;
@@ -49,12 +51,12 @@ internal class ServerHealthService : ILocalService
     AresConnectionStatus = AresConnectionStatus.Connecting;
     try
     {
-      var info = await _aresServerInfo.GetServerInfoAsync(new Empty(), null, null, _serviceCancellationTokenSource.Token);
+      var info = await _aresServerInfo.GetServerInfo(new Empty(), null);
       ServerName = info.ServerName;
       ServerVersion = Version.Parse(info.Version);
       AresConnectionStatus = AresConnectionStatus.Connected;
     }
-    catch (RpcException e)
+    catch (Exception e)
     {
       AresConnectionStatus = AresConnectionStatus.Disconnected;
       ServerName = string.Empty;
@@ -82,7 +84,7 @@ internal class ServerHealthService : ILocalService
       {
         var timeout = TimeSpan.FromSeconds(15);
         var timeoutTask = Task.Delay(timeout, _serviceCancellationTokenSource.Token);
-        var healthTask = _healthClient.CheckAsync(healthRequest, null, null, _serviceCancellationTokenSource.Token).ResponseAsync;
+        var healthTask = _healthClient.Check(healthRequest, null);
         var completedTask = await Task.WhenAny(timeoutTask, healthTask);
 
         if (completedTask == timeoutTask)
@@ -91,21 +93,17 @@ internal class ServerHealthService : ILocalService
           return;
         }
 
-        if (completedTask.IsFaulted && completedTask.Exception?.InnerException is RpcException e)
+        if (completedTask.IsFaulted)
         {
-          HandleDisconnect(e.Message);
+          HandleDisconnect(completedTask.Exception?.Message ?? "Health check faulted");
           return;
         }
 
         await Task.Delay(timeout);
       }
-      catch (RpcException e)
+      catch (Exception e)
       {
         HandleDisconnect(e.Message);
-      }
-      catch (OperationCanceledException)
-      {
-        HandleDisconnect($"{GetType().Name} stopping.");
       }
   }
 
@@ -127,17 +125,18 @@ internal class ServerHealthService : ILocalService
 
   private async Task StartListening()
   {
-    var statusStream = _aresServerInfo.GetServerStatusStream(new Empty(), null, null, _serviceCancellationTokenSource.Token);
+    var stream = new LocalStream<ServerStatusResponse>();
+    _ = _aresServerInfo.GetServerStatusStream(new Empty(), stream, null);
     try
     {
-      while (await statusStream.ResponseStream.MoveNext(_serviceCancellationTokenSource.Token) && !_serviceCancellationTokenSource.IsCancellationRequested)
+      while (await stream.MoveNext(_serviceCancellationTokenSource.Token) && !_serviceCancellationTokenSource.IsCancellationRequested)
       {
-        var response = statusStream.ResponseStream.Current;
+        var response = stream.Current;
         _logger.LogInformation("Received state from server: {}", response.StatusMessage);
         _serverStatusSubject.OnNext(response);
       }
     }
-    catch (RpcException e)
+    catch (Exception e)
     {
       _logger.LogError("Failed to get state from server: {}", e.Message);
       HandleDisconnect(e.Message);

@@ -1,4 +1,4 @@
-﻿using Ares.Core.Device.Repos;
+using Ares.Core.Device.Repos;
 using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
@@ -18,7 +18,7 @@ public class AresDriverService : AresDeviceDriverService.AresDeviceDriverService
     _deviceDriverRepo = deviceDriverRepo;
   }
 
-  public override Task<DriverListResponse> GetAvailableDrivers(Empty request, ServerCallContext context)
+  public override Task<DriverListResponse> GetAvailableDrivers(Empty request, ServerCallContext? context)
   {
     var response = new DriverListResponse();
 
@@ -39,7 +39,7 @@ public class AresDriverService : AresDeviceDriverService.AresDeviceDriverService
     return Task.FromResult(response);
   }
 
-  public override async Task DownloadDriver(DriverRequest request, IServerStreamWriter<FileChunk> responseStream, ServerCallContext context)
+  public override async Task DownloadDriver(DriverRequest request, IServerStreamWriter<FileChunk> responseStream, ServerCallContext? context)
   {
     var matchingDriver = _deviceDriverRepo.GetById(request.DriverId);
 

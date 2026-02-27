@@ -3,6 +3,7 @@ using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
 using Ares.Services;
+using Ares.Core.Grpc.Services;
 using DynamicData;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
@@ -16,15 +17,15 @@ namespace UI.Features.Execution;
 
 public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 {
-  private readonly AresAutomation.AresAutomationClient _automationClient;
-  private readonly AresAnalyzerManagementService.AresAnalyzerManagementServiceClient _analyzerService;
+  private readonly AutomationService _automationClient;
+  private readonly AnalyzerService _analyzerService;
   public readonly ObservableCollection<CampaignTemplateSummary> CampaignTemplateSummaries = [];
   private readonly INotificationReceivingService _notificationService;
 
-  public ExecutionViewModel(AresAutomation.AresAutomationClient automationClient,
+  public ExecutionViewModel(AutomationService automationClient,
     IConfiguration configuration,
     INotificationReceivingService notificationService,
-    AresAnalyzerManagementService.AresAnalyzerManagementServiceClient analyzerService)
+    AnalyzerService analyzerService)
   {
     _automationClient = automationClient;
     _notificationService = notificationService;
@@ -40,7 +41,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
   public async Task RefreshCampaigns()
   {
-    var campaigns = await _automationClient.GetAllCampaignsAsync(new GetAllCampaignsRequest());
+    var campaigns = await _automationClient.GetAllCampaigns(new GetAllCampaignsRequest(), null);
     CampaignTemplateSummaries.Clear();
     CampaignTemplateSummaries.AddRange(campaigns.Campaigns);
   }
@@ -50,15 +51,15 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     if(templateSummary is null || templateSummary is not CampaignTemplateSummary campaignTemplateSummary)
       return;
 
-    CampaignTemplate = await _automationClient.GetSingleCampaignAsync(new CampaignRequest { UniqueId = campaignTemplateSummary.UniqueId });
-    await _automationClient.SetCampaignForExecutionAsync(new CampaignRequest { UniqueId = CampaignTemplate.UniqueId });
+    CampaignTemplate = await _automationClient.GetSingleCampaign(new CampaignRequest { UniqueId = campaignTemplateSummary.UniqueId }, null);
+    await _automationClient.SetCampaignForExecution(new CampaignRequest { UniqueId = CampaignTemplate.UniqueId }, null);
     _ = UpdateCurrentTemplate();
     DisplayExecutionSummary = false;
   }
 
   public async Task UpdateCurrentTemplate()
   {
-    var currentTemplateOpt = await _automationClient.GetCurrentlySelectedCampaignAsync(new Empty());
+    var currentTemplateOpt = await _automationClient.GetCurrentlySelectedCampaign(new Empty(), null);
     CampaignTemplate = currentTemplateOpt.Value;
     if(CampaignTemplate is null)
       return;
@@ -74,55 +75,55 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     {
       var request = new AnalyzerInfoRequest();
       request.AnalyzerId = analyzerId;
-      var response = await _analyzerService.GetInfoAsync(request);
+      var response = await _analyzerService.GetInfo(request, null);
       AnalyzerInfo = response.Info;
     }
   }
 
   public async Task SetDesiredAnalysis()
   {
-    await _automationClient.SetAnalysisResultStopConditionAsync(
-      new AnalysisResultCondition { DesiredResult = DesiredResult, Leeway = DesiredLeeway }).ResponseAsync;
+    await _automationClient.SetAnalysisResultStopCondition(
+      new AnalysisResultCondition { DesiredResult = DesiredResult, Leeway = DesiredLeeway }, null);
     CurrentStopCondition = await GetCurrentStopCondition();
   }
 
   public Task<ExperimentStopConditionResponse> GetCurrentStopCondition()
   {
-    return _automationClient.GetActiveStopConditionAsync(new Empty()).ResponseAsync;
+    return _automationClient.GetActiveStopCondition(new Empty(), null);
   }
 
   public Task<GetReplanRateResponse> GetCurrentReplanRate()
   {
-    return _automationClient.GetReplanRateAsync(new Empty()).ResponseAsync;
+    return _automationClient.GetReplanRate(new Empty(), null);
   }
 
   public async Task<CampaignExecutionStatus?> GetCampaignExecutionStatus()
   {
-    var response = await _automationClient.GetCampaignExecutionStatusAsync(new Empty());
+    var response = await _automationClient.GetCampaignExecutionStatus(new Empty(), null);
     return response.Status;
   }
 
   public async Task SetExperimentsToRun()
   {
-    await _automationClient.SetNumExperimentsStopConditionAsync(new NumExperimentsCondition { NumExperiments = ExperimentsToRun });
+    await _automationClient.SetNumExperimentsStopCondition(new NumExperimentsCondition { NumExperiments = ExperimentsToRun }, null);
     CurrentStopCondition = await GetCurrentStopCondition();
   }
 
   public async Task SetReplanRate()
   {
-    await _automationClient.SetReplanRateAsync(new ReplanRate { ReplanRate_ = DesiredReplanRate });
+    await _automationClient.SetReplanRate(new ReplanRate { ReplanRate_ = DesiredReplanRate }, null);
     var blah = await GetCurrentReplanRate();
     DesiredReplanRate = blah.ReplanRate;
   }
 
   public Task StopCampaign()
-    => _automationClient.StopExecutionAsync(new Empty()).ResponseAsync;
+    => _automationClient.StopExecution(new Empty(), null);
 
   public Task PauseCampaign()
-    => _automationClient.PauseExecutionAsync(new Empty()).ResponseAsync;
+    => _automationClient.PauseExecution(new Empty(), null);
 
   public Task ResumeCampaign()
-    => _automationClient.ResumeExecutionAsync(new Empty()).ResponseAsync;
+    => _automationClient.ResumeExecution(new Empty(), null);
 
   public async Task ExecutionNotesUploaded(Stream fileStream)
   {
@@ -176,25 +177,29 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     var currentTagCount = AvailableTags.Count;
     var request = new TagRequest();
     request.Tag = newProtoTag;
-    var tags = await _automationClient.AddTagAsync(request);
+    var tags = await _automationClient.AddTag(request, null);
 
     if(tags.AvailableTags.Count == currentTagCount + 1)
     {
-      var notification = new AresNotification();
-      notification.NotificationSeverity = Severity.Success;
-      notification.Title = $"Successfully Added {NewTagName} Tag";
-      notification.Message = "ARES has successfully added a new experiment tag, and it is now available for use";
-      notification.Timestamp = DateTime.UtcNow.ToTimestamp();
+      var notification = new AresNotification
+      {
+        NotificationSeverity = Severity.Success,
+        Title = $"Successfully Added {NewTagName} Tag",
+        Message = "ARES has successfully added a new experiment tag, and it is now available for use",
+        Timestamp = DateTime.UtcNow.ToTimestamp()
+      };
       _notificationService.PushNotification(notification);
     }
 
     else
     {
-      var notification = new AresNotification();
-      notification.NotificationSeverity = Severity.Error;
-      notification.Title = $"Failed to Add {NewTagName} Tag";
-      notification.Message = "ARES failed to add a new experiment tag";
-      notification.Timestamp = DateTime.UtcNow.ToTimestamp();
+      var notification = new AresNotification
+      {
+        NotificationSeverity = Severity.Error,
+        Title = $"Failed to Add {NewTagName} Tag",
+        Message = "ARES failed to add a new experiment tag",
+        Timestamp = DateTime.UtcNow.ToTimestamp()
+      };
       _notificationService.PushNotification(notification);
     }
 
@@ -208,7 +213,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
       return;
 
     var request = new TagRequest() { Tag = aresTag };
-    var tags = await _automationClient.RemoveTagAsync(request);
+    var tags = await _automationClient.RemoveTag(request, null);
 
     AvailableTags = tags.AvailableTags.ToList();
 
@@ -217,7 +222,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
   public async Task GetAllTags()
   {
-    var tags = await _automationClient.GetAllTagsAsync(new Empty());
+    var tags = await _automationClient.GetAllTags(new Empty(), null);
     AvailableTags = tags.AvailableTags.ToList();
   }
 

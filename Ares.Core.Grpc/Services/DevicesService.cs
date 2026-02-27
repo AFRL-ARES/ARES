@@ -1,4 +1,5 @@
-﻿using System;
+using System.Threading;
+using System;
 using System.Collections.Generic;
 using System.IO.Ports;
 using System.Linq;
@@ -37,7 +38,7 @@ public class DevicesService(
 {
   private readonly ILogger<DevicesService> _logger = logger;
 
-  public override Task<ListServerSerialPortsResponse> GetServerSerialPorts(Empty request, ServerCallContext context)
+  public override Task<ListServerSerialPortsResponse> GetServerSerialPorts(Empty request, ServerCallContext? context)
   {
     var availableSerialPorts = SerialPort.GetPortNames();
     var cleanPorts = CleanSerialPorts(availableSerialPorts);
@@ -50,7 +51,7 @@ public class DevicesService(
     return dirtyPortNames.Select(s => s.IndexOf('\0') > 0 ? s[..s.IndexOf('\0')] : s);
   }
 
-  public override async Task<Empty> Activate(DeviceActivateRequest request, ServerCallContext context)
+  public override async Task<Empty> Activate(DeviceActivateRequest request, ServerCallContext? context)
   {
     var device = GetAresDevice(request.DeviceId);
     if(device.Status.OperationalState == OperationalState.Active)
@@ -60,7 +61,7 @@ public class DevicesService(
     return new Empty();
   }
 
-  public override Task<ListAresDevicesResponse> ListAresDevices(Empty _, ServerCallContext context)
+  public override Task<ListAresDevicesResponse> ListAresDevices(Empty _, ServerCallContext? context)
   {
     var aresDeviceMessages = deviceRepo
       .GetSnapshot()
@@ -74,7 +75,7 @@ public class DevicesService(
     return Task.FromResult(response);
   }
 
-  public override Task<DeviceOperationalStatus> GetDeviceStatus(DeviceStatusRequest request, ServerCallContext context)
+  public override Task<DeviceOperationalStatus> GetDeviceStatus(DeviceStatusRequest request, ServerCallContext? context)
   {
     try
     {
@@ -88,7 +89,7 @@ public class DevicesService(
     }
   }
 
-  public override Task<CommandMetadatasResponse> GetCommandMetadatas(CommandMetadatasRequest request, ServerCallContext context)
+  public override Task<CommandMetadatasResponse> GetCommandMetadatas(CommandMetadatasRequest request, ServerCallContext? context)
   {
     var device = deviceRepo
       .GetAresDevice(request.DeviceId);
@@ -105,10 +106,10 @@ public class DevicesService(
     return Task.FromResult(response);
   }
 
-  public override async Task<DeviceExecutionResult> ExecuteCommand(CommandTemplate request, ServerCallContext context)
+  public override async Task<DeviceExecutionResult> ExecuteCommand(CommandTemplate request, ServerCallContext? context)
   {
     var device = deviceRepo.GetAresDevice(request.UniqueId);
-    var token = context.CancellationToken;
+    var token = context?.CancellationToken ?? CancellationToken.None;
 
     if(device is null)
       return new DeviceExecutionResult() { Error = $"Couldn't find a device with the id {request.UniqueId}, cannot execute command!", Success = false };
@@ -146,7 +147,7 @@ public class DevicesService(
     return aresDevice;
   }
 
-  public override async Task<DeviceConfigResponse> GetAllDeviceConfigs(DeviceConfigRequest request, ServerCallContext context)
+  public override async Task<DeviceConfigResponse> GetAllDeviceConfigs(DeviceConfigRequest request, ServerCallContext? context)
   {
     await using var dbContext = contextFactory.CreateDbContext();
     var configQuery = dbContext.DeviceConfigs.AsQueryable();
@@ -159,7 +160,7 @@ public class DevicesService(
     return response;
   }
 
-  public override Task<RemoteDeviceConfigResponse> GetAllRemoteDevicesConfigs(Empty request, ServerCallContext context)
+  public override Task<RemoteDeviceConfigResponse> GetAllRemoteDevicesConfigs(Empty request, ServerCallContext? context)
   {
     var remoteDevices = deviceRepo.GetAresDevices<RemoteDevice>().ToArray();
 
@@ -171,7 +172,7 @@ public class DevicesService(
     return Task.FromResult(response);
   }
 
-  public override Task<ListAresRemoteDevicesResponse> ListRemoteAresDevices(Empty request, ServerCallContext context)
+  public override Task<ListAresRemoteDevicesResponse> ListRemoteAresDevices(Empty request, ServerCallContext? context)
   {
     var remoteDevices = deviceRepo.GetAresDevices<RemoteDevice>().ToArray();
 
@@ -183,7 +184,7 @@ public class DevicesService(
     return Task.FromResult(response);
   }
 
-  public override async Task<UpdateRemoteDeviceResponse> UpdateRemoteDevice(UpdateRemoteDeviceRequest request, ServerCallContext context)
+  public override async Task<UpdateRemoteDeviceResponse> UpdateRemoteDevice(UpdateRemoteDeviceRequest request, ServerCallContext? context)
   {
     try
     {
@@ -206,7 +207,7 @@ public class DevicesService(
     }
   }
 
-  public override async Task<RemoveRemoteDeviceResponse> RemoveRemoteDevice(RemoveRemoteDeviceRequest request, ServerCallContext context)
+  public override async Task<RemoveRemoteDeviceResponse> RemoveRemoteDevice(RemoveRemoteDeviceRequest request, ServerCallContext? context)
   {
     try
     {
@@ -219,7 +220,7 @@ public class DevicesService(
     }
   }
 
-  public override async Task<AddRemoteDeviceResponse> AddRemoteDevice(AddRemoteDeviceRequest request, ServerCallContext context)
+  public override async Task<AddRemoteDeviceResponse> AddRemoteDevice(AddRemoteDeviceRequest request, ServerCallContext? context)
   {
     try
     {
@@ -232,7 +233,7 @@ public class DevicesService(
     }
   }
 
-  public override Task<DeviceInfo> GetDeviceInfo(DeviceInfoRequest request, ServerCallContext context)
+  public override Task<DeviceInfo> GetDeviceInfo(DeviceInfoRequest request, ServerCallContext? context)
   {
     var device = deviceRepo.GetAresDevice(request.DeviceId);
     if(device is null)
@@ -243,7 +244,7 @@ public class DevicesService(
     return Task.FromResult(info);
   }
 
-  public override Task<AresStruct> GetDeviceSettings(DeviceSettingsRequest request, ServerCallContext context)
+  public override Task<AresStruct> GetDeviceSettings(DeviceSettingsRequest request, ServerCallContext? context)
   {
     var device = deviceRepo.GetAresDevice(request.DeviceId);
     if(device is not RemoteDevice remoteDevice)
@@ -257,7 +258,7 @@ public class DevicesService(
     return Task.FromResult(aresSettings);
   }
 
-  public override Task<Empty> SetDeviceSettings(DeviceSettings request, ServerCallContext context)
+  public override Task<Empty> SetDeviceSettings(DeviceSettings request, ServerCallContext? context)
   {
     var device = deviceRepo.GetAresDevice(request.DeviceId);
     if(device is not RemoteDevice remoteDevice)
@@ -270,7 +271,7 @@ public class DevicesService(
     return Task.FromResult(new Empty());
   }
 
-  public override Task<DeviceStateResponse> GetDeviceState(DeviceStateRequest request, ServerCallContext context)
+  public override Task<DeviceStateResponse> GetDeviceState(DeviceStateRequest request, ServerCallContext? context)
   {
     // We can do the non-remote devices later
     var device = deviceRepo.GetAresDevice<RemoteDevice>(request.DeviceId);
@@ -286,8 +287,9 @@ public class DevicesService(
   public override async Task GetDeviceStateStream(
       DeviceStateStreamRequest request,
       IServerStreamWriter<DeviceStateResponse> responseStream,
-      ServerCallContext context)
+      ServerCallContext? context)
   {
+    var cancellationToken = context?.CancellationToken ?? CancellationToken.None;
     var device = deviceRepo.GetAresDevice<RemoteDevice>(request.DeviceId);
     if(device is null || request.PollingSettings.PollingType == PollingType.None)
     {
@@ -307,15 +309,15 @@ public class DevicesService(
       await stateStream
         .ForEachAsync(async state =>
         {
-          await responseStream.WriteAsync(new DeviceStateResponse { State = state }, context.CancellationToken);
-        }, context.CancellationToken);
+          await responseStream.WriteAsync(new DeviceStateResponse { State = state }, cancellationToken);
+        }, cancellationToken);
     }
     catch(OperationCanceledException)
     {
     }
   }
 
-  public override Task<DeviceStateSchemaResponse> GetDeviceStateSchema(DeviceStateSchemaRequest request, ServerCallContext context)
+  public override Task<DeviceStateSchemaResponse> GetDeviceStateSchema(DeviceStateSchemaRequest request, ServerCallContext? context)
   {
     // We can do the non-remote devices later
     var device = deviceRepo.GetAresDevice<RemoteDevice>(request.DeviceId);
@@ -328,14 +330,14 @@ public class DevicesService(
     return Task.FromResult(schema is null ? new DeviceStateSchemaResponse() : new DeviceStateSchemaResponse { Schema = schema });
   }
 
-  public override async Task<Empty> SetDeviceLoggerSettings(DeviceLoggingSettings request, ServerCallContext context)
+  public override async Task<Empty> SetDeviceLoggerSettings(DeviceLoggingSettings request, ServerCallContext? context)
   {
     await _stateLoggerManager.UpdateLogger(request.DeviceId, request);
 
     return new Empty();
   }
 
-  public override Task<DeviceLoggersResponse> GetDeviceLoggers(Empty request, ServerCallContext context)
+  public override Task<DeviceLoggersResponse> GetDeviceLoggers(Empty request, ServerCallContext? context)
   {
     var response = new DeviceLoggersResponse();
     var settingsResponses = _deviceStateLoggerRepository.Select(s => s.Value.Settings).ToArray();
@@ -345,14 +347,14 @@ public class DevicesService(
     return Task.FromResult(response);
   }
 
-  public override Task<DeviceLoggingSettings> GetDeviceLoggerSettings(DeviceLoggerSettingsRequest request, ServerCallContext context)
+  public override Task<DeviceLoggingSettings> GetDeviceLoggerSettings(DeviceLoggerSettingsRequest request, ServerCallContext? context)
   {
     var settings = _stateLoggerManager.GetCurrentLoggerSettings(request.DeviceId);
 
     return Task.FromResult(settings);
   }
 
-  public override Task<AvailableDeviceDriversResponse> GetAvailableDeviceDrivers(Empty request, ServerCallContext context)
+  public override Task<AvailableDeviceDriversResponse> GetAvailableDeviceDrivers(Empty request, ServerCallContext? context)
   {
     var availableDeviceDrivers = deviceDriverRepo.GetAll();
 
@@ -361,7 +363,7 @@ public class DevicesService(
     return Task.FromResult(response);
   }
 
-  public override Task<DeviceConfigResponse> GetDeviceConfig(GetDeviceConfigRequest request, ServerCallContext context)
+  public override Task<DeviceConfigResponse> GetDeviceConfig(GetDeviceConfigRequest request, ServerCallContext? context)
   {
     //TODO: Maybe utilize the SHA's of the DLL's instead of names?
     var matchingDriver = deviceDriverRepo.GetByName(request.DriverName);
@@ -369,7 +371,7 @@ public class DevicesService(
     throw new NotImplementedException("IMPLEMENT THIS IN THE DEVICES SERVICE!");
   }
 
-  public override Task<AvailableDevicesResponse> GetAllAvailableDevices(Empty request, ServerCallContext context)
+  public override Task<AvailableDevicesResponse> GetAllAvailableDevices(Empty request, ServerCallContext? context)
   {
     var response = new AvailableDevicesResponse();
     var devices = deviceRepo.GetSnapshot();
@@ -378,7 +380,7 @@ public class DevicesService(
     return Task.FromResult(response);
   }
 
-  public override async Task<AddDeviceResponse> AddAresDevice(AddDeviceRequest request, ServerCallContext context)
+  public override async Task<AddDeviceResponse> AddAresDevice(AddDeviceRequest request, ServerCallContext? context)
   {
     try
     {

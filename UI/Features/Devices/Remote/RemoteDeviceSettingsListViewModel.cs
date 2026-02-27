@@ -1,6 +1,7 @@
 using Ares.Datamodel.Device;
 using Ares.Services;
 using Ares.Services.Device;
+using Ares.Core.Grpc.Services;
 using CommunityToolkit.Mvvm.Messaging;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
@@ -12,11 +13,11 @@ namespace UI.Features.Devices.Remote;
 
 public partial class RemoteDeviceSettingsListViewModel : ReactiveObject
 {
-  private readonly AresDevices.AresDevicesClient _devicesClient;
+  private readonly DevicesService _devicesClient;
   private readonly INotificationReceivingService _notificationService;
   private readonly IMessenger _deviceDeletionMessenger;
 
-  public RemoteDeviceSettingsListViewModel(AresDevices.AresDevicesClient devicesClient, INotificationReceivingService notificationService, IMessenger deviceDeletionMessenger)
+  public RemoteDeviceSettingsListViewModel(DevicesService devicesClient, INotificationReceivingService notificationService, IMessenger deviceDeletionMessenger)
   {
     _devicesClient = devicesClient;
     _notificationService = notificationService;
@@ -32,7 +33,7 @@ public partial class RemoteDeviceSettingsListViewModel : ReactiveObject
     IsLoading = true;
     try
     {
-      var remoteDevices = await _devicesClient.ListRemoteAresDevicesAsync(new Empty());
+      var remoteDevices = await _devicesClient.ListRemoteAresDevices(new Empty(), null);
       UpdateViewModels(remoteDevices.Devices);
     }
     catch (Exception e)
@@ -61,7 +62,7 @@ public partial class RemoteDeviceSettingsListViewModel : ReactiveObject
     try
     {
       var request = new AddRemoteDeviceRequest() { Name = deviceConfig.Name, Url = deviceConfig.Url };
-      var response = await _devicesClient.AddRemoteDeviceAsync(request);
+      var response = await _devicesClient.AddRemoteDevice(request, null);
       if (response.Success)
       {
         PushNotification(new AresNotification() { Message = $"Added new device {deviceConfig.Name}", NotificationSeverity = Severity.Success, Title = "Successfully Added Remote Device" });

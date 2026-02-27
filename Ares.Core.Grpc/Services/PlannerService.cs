@@ -1,4 +1,4 @@
-﻿using Ares.Core.Exceptions;
+using Ares.Core.Exceptions;
 using Ares.Core.Planning;
 using Ares.Datamodel;
 using Ares.Datamodel.Connection;
@@ -18,7 +18,7 @@ public class PlannerService(IPlannerServiceRepo plannerRepo, IRemotePlannerManag
   private readonly IPlannerServiceRepo _plannerRepo = plannerRepo;
   private readonly IRemotePlannerManager _plannerManager = plannerManager;
 
-  public override async Task<GetAllPlannersResponse> GetAllPlanners(Empty request, ServerCallContext context)
+  public override async Task<GetAllPlannersResponse> GetAllPlanners(Empty request, ServerCallContext? context)
   {
     var response = new GetAllPlannersResponse();
     var availablePlanners = _plannerRepo.AvailablePlannerServices;
@@ -45,7 +45,7 @@ public class PlannerService(IPlannerServiceRepo plannerRepo, IRemotePlannerManag
     return info;
   }
 
-  public override async Task<AddPlannerResponse> AddPlanner(AddPlannerRequest request, ServerCallContext context)
+  public override async Task<AddPlannerResponse> AddPlanner(AddPlannerRequest request, ServerCallContext? context)
   {
     var response = new AddPlannerResponse();
     try
@@ -63,7 +63,7 @@ public class PlannerService(IPlannerServiceRepo plannerRepo, IRemotePlannerManag
     return response;
   }
 
-  public override async Task<UpdatePlannerResponse> UpdatePlanner(UpdatePlannerRequest request, ServerCallContext context)
+  public override async Task<UpdatePlannerResponse> UpdatePlanner(UpdatePlannerRequest request, ServerCallContext? context)
   {
     var response = new UpdatePlannerResponse();
     try
@@ -82,13 +82,13 @@ public class PlannerService(IPlannerServiceRepo plannerRepo, IRemotePlannerManag
     return response;
   }
 
-  public override async Task<Empty> RemovePlanner(RemovePlannerRequest request, ServerCallContext context)
+  public override async Task<Empty> RemovePlanner(RemovePlannerRequest request, ServerCallContext? context)
   {
     await _plannerManager.RemovePlanner(request.PlannerId);
     return new Empty();
   }
 
-  public override Task<StateResponse> GetState(StateRequest request, ServerCallContext context)
+  public override Task<StateResponse> GetState(StateRequest request, ServerCallContext? context)
   {
     var response = new StateResponse();
     var planner = _plannerRepo.GetPlannerById(request.Id) ?? throw new ItemNotFoundException(request.Id, typeof(IPlannerService), "Failed to get state as planned was not found.");
@@ -99,7 +99,7 @@ public class PlannerService(IPlannerServiceRepo plannerRepo, IRemotePlannerManag
     return Task.FromResult(response);
   }
 
-  public override async Task<PlannerInfoResponse> GetInfo(PlannerInfoRequest request, ServerCallContext context)
+  public override async Task<PlannerInfoResponse> GetInfo(PlannerInfoRequest request, ServerCallContext? context)
   {
     var planner = _plannerRepo.GetPlannerById(request.PlannerId);
     if(planner is null)
@@ -116,7 +116,7 @@ public class PlannerService(IPlannerServiceRepo plannerRepo, IRemotePlannerManag
     return response;
   }
 
-  public override Task<AresStruct> GetPlannerSettings(PlannerSettingsRequest request, ServerCallContext context)
+  public override Task<AresStruct> GetPlannerSettings(PlannerSettingsRequest request, ServerCallContext? context)
   {
     var planner = _plannerRepo.GetPlannerById(request.PlannerId);
 
@@ -126,7 +126,7 @@ public class PlannerService(IPlannerServiceRepo plannerRepo, IRemotePlannerManag
     return Task.FromResult(new AresStruct());
   }
 
-  public override async Task<Empty> SetPlannerSettings(PlannerSettings request, ServerCallContext context)
+  public override async Task<Empty> SetPlannerSettings(PlannerSettings request, ServerCallContext? context)
   {
     var planner = _plannerRepo.GetPlannerById(request.PlannerId);
 
@@ -142,7 +142,7 @@ public class PlannerService(IPlannerServiceRepo plannerRepo, IRemotePlannerManag
     return new Empty();
   }
 
-  public override async Task<Empty> SeedManualPlanner(ManualPlannerSeed request, ServerCallContext context)
+  public override async Task<Empty> SeedManualPlanner(ManualPlannerSeed request, ServerCallContext? context)
   {
     var planner = _plannerRepo.GetManualPlanner();
     await planner.Seed(request);
@@ -150,7 +150,7 @@ public class PlannerService(IPlannerServiceRepo plannerRepo, IRemotePlannerManag
     return new Empty();
   }
 
-  public override Task<ManualPlannerSetCollection> GetManualPlannerSeed(Empty request, ServerCallContext context)
+  public override Task<ManualPlannerSetCollection> GetManualPlannerSeed(Empty request, ServerCallContext? context)
   {
     var manualPlanner = _plannerRepo.GetManualPlanner() as ManualPlanner;
 
@@ -163,7 +163,7 @@ public class PlannerService(IPlannerServiceRepo plannerRepo, IRemotePlannerManag
     return Task.FromResult(collection);
   }
 
-  public override Task<Empty> ResetManualPlanner(Empty request, ServerCallContext context)
+  public override Task<Empty> ResetManualPlanner(Empty request, ServerCallContext? context)
   {
     var manualPlanner = _plannerRepo.GetManualPlanner() as ManualPlanner;
 

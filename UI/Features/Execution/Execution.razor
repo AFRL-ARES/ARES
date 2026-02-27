@@ -2,12 +2,14 @@
 @using System.Collections.ObjectModel
 @using Ares.Datamodel
 @using Ares.Services
+@using Ares.Core.Grpc.Services
 @using Google.Protobuf.WellKnownTypes
 @using UI.Domain.Execution
 @using UI.Application.Notifications
 @using UI.Features.Execution.Planning
+@using UI.Infrastructure.Grpc
 @inject ContextMenuService ContextMenuService
-@inject AresAutomation.AresAutomationClient AutomationClient
+@inject AutomationService AutomationClient
 @inject IUiNotificationService NotificationService
 @inject Radzen.DialogService DialogService
 @implements IDisposable
@@ -346,10 +348,11 @@
     return Task.Run(async () =>
     {
       Thread.CurrentThread.Name = "Campaign State Watch Thread";
-      var stream = AutomationClient.GetCampaignExecutionStateStream(new Empty());
-      while (await stream.ResponseStream.MoveNext(token) && !token.IsCancellationRequested)
+      var stream = new LocalStream<CampaignExecutionState>();
+      _ = AutomationClient.GetCampaignExecutionStateStream(new Empty(), stream, null);
+      while (await stream.MoveNext(token) && !token.IsCancellationRequested)
       {
-        var state = stream.ResponseStream.Current;
+        var state = stream.Current;
 
         ViewModel!.CampaignActive = state.IsActive();
         ViewModel!.CampaignPaused = state.IsPaused();
@@ -373,10 +376,11 @@
     return Task.Run(async () =>
     {
       Thread.CurrentThread.Name = "Experiment State Watch Thread";
-      var stream = AutomationClient.GetExecutionStatusStream(new Empty());
-      while (await stream.ResponseStream.MoveNext(token) && !token.IsCancellationRequested)
+      var stream = new LocalStream<ExperimentExecutionStatus>();
+      _ = AutomationClient.GetExecutionStatusStream(new Empty(), stream, null);
+      while (await stream.MoveNext(token) && !token.IsCancellationRequested)
       {
-        var status = stream.ResponseStream.Current;
+        var status = stream.Current;
         var existingStatus = ExperimentExecutionStatuses.FirstOrDefault(s => s.ExperimentId == status.ExperimentId);
         if (existingStatus is null)
         {
@@ -401,7 +405,7 @@
 
   protected async void StartCampaign()
   {
-    var executionEligibility = await AutomationClient.CheckExecutionEligibilityAsync(new Empty());
+    var executionEligibility = await AutomationClient.CheckExecutionEligibility(new Empty(), null);
 
     if (!executionEligibility.IsEligible)
     {
@@ -413,7 +417,7 @@
     var request = new StartCampaignRequest() { UserNotes = ViewModel!.ExecutionNotes};
     if(ViewModel!.SelectedTags is not null)
       request.CampaignTags.AddRange(ViewModel!.SelectedTags);
-    AutomationClient.StartExecution(request);
+    await AutomationClient.StartExecution(request, null);
     ViewModel!.DisplayExecutionSummary = true;
   }
 

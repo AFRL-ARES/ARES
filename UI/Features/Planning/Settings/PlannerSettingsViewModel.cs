@@ -1,6 +1,7 @@
 using Ares.Datamodel.Connection;
 using Ares.Datamodel.Planning;
 using Ares.Services;
+using Ares.Core.Grpc.Services;
 using Grpc.Core;
 using ReactiveUI;
 using UI.Application.Notifications;
@@ -10,10 +11,10 @@ namespace UI.Features.Planning.Settings;
 
 public class PlannerSettingsViewModel : ReactiveObject
 {
-  private readonly AresPlannerManagementService.AresPlannerManagementServiceClient _planningClient;
+  private readonly PlannerService _planningClient;
   private readonly INotificationReceivingService _notificationService;
 
-  public PlannerSettingsViewModel(AresPlannerManagementService.AresPlannerManagementServiceClient planningClient,
+  public PlannerSettingsViewModel(PlannerService planningClient,
     INotificationReceivingService notificationService,
     PlannerServiceInfo genericAdapter,
     Func<Task> onRemoveCallback)
@@ -42,7 +43,7 @@ public class PlannerSettingsViewModel : ReactiveObject
     request.Url = planner.Address;
     request.PlannerId = PlannerAdapter.UniqueId;
 
-    await _planningClient.UpdatePlannerAsync(request);
+    await _planningClient.UpdatePlanner(request, null);
     await OnRemoveCallback();
   }
 
@@ -51,7 +52,7 @@ public class PlannerSettingsViewModel : ReactiveObject
     var request = new RemovePlannerRequest();
     request.PlannerId = PlannerAdapter.UniqueId;
 
-    await _planningClient.RemovePlannerAsync(request);
+    await _planningClient.RemovePlanner(request, null);
     await OnRemoveCallback();
   }
 
@@ -59,10 +60,10 @@ public class PlannerSettingsViewModel : ReactiveObject
   {
     try
     {
-      return await _planningClient.GetStateAsync(new StateRequest { Id = PlannerAdapter.UniqueId });
+      return await _planningClient.GetState(new StateRequest { Id = PlannerAdapter.UniqueId }, null);
     }
 
-    catch(RpcException)
+    catch(Exception)
     {
       return new StateResponse 
       { 

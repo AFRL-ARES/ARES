@@ -2,6 +2,9 @@ using Ares.Core.Device.State.Export.ExportStreamProviders;
 using Ares.Core.Execution;
 using Ares.Core.Grpc;
 using Ares.Core;
+using Ares.Core.Grpc.Services;
+using Ares.Core.Grpc.Services.Safety;
+using Ares.Core.Grpc.Services.Notifications;
 using Ares.Services;
 using Ares.Services.Device;
 using Grpc.Health.V1;
@@ -66,7 +69,7 @@ internal static class ServiceCollectionExtensions
     services.AddSingleton<DeviceAdapterManager>();
     services.AddSingleton<DeviceDriverSyncManager>(sp => 
     {
-        var client = sp.GetRequiredService<AresDeviceDriverService.AresDeviceDriverServiceClient>();
+        var client = sp.GetRequiredService<AresDriverService>();
         var repo = sp.GetRequiredService<IDeviceDriverRepository>();
         var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Plugins");
         return new DeviceDriverSyncManager(client, repo, localPath);
@@ -83,25 +86,22 @@ internal static class ServiceCollectionExtensions
 
   public static void BindClients(this IServiceCollection services)
   {
-    var tempProvider = services.BuildServiceProvider();
-    var clientManager = tempProvider.GetRequiredService<IClientManager>();
+    //Ares Services
+    services.AddScoped<AresServerInfoService>();
+    services.AddScoped<AutomationService>();
+    services.AddScoped<HealthCheckService>();
+    services.AddScoped<PlannerService>();
+    services.AddScoped<ValidationService>();
+    services.AddScoped<AnalyzerService>();
+    services.AddScoped<AnalysisService>();
+    services.AddScoped<AresSafetyManagementService>();
+    services.AddScoped<Ares.Core.Grpc.Services.DeviceStateExportService>();
+    services.AddSingleton<AresNotificationService>();
+    services.AddSingleton<Ares.Core.Grpc.Services.AresScriptingService>();
+    services.AddSingleton<AresDriverService>();
 
-    //Ares Clients
-    services.AddScoped(_ => clientManager.GetClient<AresServerInfo.AresServerInfoClient>());
-    services.AddScoped(_ => clientManager.GetClient<AresAutomation.AresAutomationClient>());
-    services.AddScoped(_ => clientManager.GetClient<Health.HealthClient>());
-    services.AddScoped(_ => clientManager.GetClient<AresPlannerManagementService.AresPlannerManagementServiceClient>());
-    services.AddScoped(_ => clientManager.GetClient<AresValidation.AresValidationClient>());
-    services.AddScoped(_ => clientManager.GetClient<AresAnalyzerManagementService.AresAnalyzerManagementServiceClient>());
-    services.AddScoped(_ => clientManager.GetClient<AresAnalysisService.AresAnalysisServiceClient>());
-    services.AddScoped(_ => clientManager.GetClient<AresSafetyService.AresSafetyServiceClient>());
-    services.AddScoped(_ => clientManager.GetClient<DeviceStateExportService.DeviceStateExportServiceClient>());
-    services.AddSingleton(_ => clientManager.GetClient<AresNotificationRpc.AresNotificationRpcClient>());
-    services.AddSingleton(_ => clientManager.GetClient<AresScriptingService.AresScriptingServiceClient>());
-    services.AddSingleton(_ => clientManager.GetClient<AresDeviceDriverService.AresDeviceDriverServiceClient>());
-
-    //Device Clients
-    services.AddSingleton(_ => clientManager.GetClient<AresDevices.AresDevicesClient>());
+    //Device Services
+    services.AddSingleton<DevicesService>();
   }
 
   private static void BindViewModels(this IServiceCollection services)

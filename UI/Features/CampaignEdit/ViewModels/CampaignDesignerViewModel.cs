@@ -1,5 +1,6 @@
 ﻿using Ares.Datamodel.Templates;
 using Ares.Services;
+using Ares.Core.Grpc.Services;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using UI.Features.CampaignEdit.Factories;
@@ -8,7 +9,7 @@ namespace UI.Features.CampaignEdit.ViewModels;
 
 public partial class CampaignDesignerViewModel : ReactiveObject
 {
-  private readonly AresAutomation.AresAutomationClient _automationClient;
+  private readonly AutomationService _automationClient;
   private readonly CampaignEditContext _editContext;
   private readonly ExperimentDesignerFactory _experimentDesignerFactory;
   private readonly StartupDesignerFactory _startupDesignerFactory;
@@ -19,7 +20,7 @@ public partial class CampaignDesignerViewModel : ReactiveObject
   readonly AnalyzerInputDesignerVmFactory _analyzerInputDesignerFactory;
 
   public CampaignDesignerViewModel(
-    AresAutomation.AresAutomationClient automationClient,
+    AutomationService automationClient,
     ExperimentDesignerFactory experimentDesignerFactory,
     StartupDesignerFactory startupDesignerFactory,
     CloseoutDesignerFactory closeoutDesignerFactory,
@@ -132,7 +133,7 @@ public partial class CampaignDesignerViewModel : ReactiveObject
       UniqueId = campaignId.ToString(),
     };
 
-    CampaignTemplate = await _automationClient.GetSingleCampaignAsync(request);
+    CampaignTemplate = await _automationClient.GetSingleCampaign(request, null);
   }
 
   public async Task Update()
@@ -140,12 +141,12 @@ public partial class CampaignDesignerViewModel : ReactiveObject
     if(string.IsNullOrEmpty(CampaignName))
       CampaignName = Placeholder;
 
-    var isUpdating = await _automationClient.CampaignExistsAsync(new CampaignRequest { UniqueId = CampaignTemplate.UniqueId });
+    var isUpdating = await _automationClient.CampaignExists(new CampaignRequest { UniqueId = CampaignTemplate.UniqueId }, null);
 
     var nameChanged = CampaignTemplate.Name != CampaignName;
     if(nameChanged)
     {
-      var campaignExists = await _automationClient.CampaignExistsAsync(new CampaignRequest { CampaignName = CampaignName });
+      var campaignExists = await _automationClient.CampaignExists(new CampaignRequest { CampaignName = CampaignName }, null);
       if(campaignExists.Value)
       {
         CreationErrorText = "Campaign Name " + CampaignName + " Already Exists!";
@@ -156,9 +157,9 @@ public partial class CampaignDesignerViewModel : ReactiveObject
 
     var template = Save();
     if(isUpdating.Value)
-      await _automationClient.UpdateCampaignAsync(new AddOrUpdateCampaignRequest() { Template = template });
+      await _automationClient.UpdateCampaign(new AddOrUpdateCampaignRequest() { Template = template }, null);
 
     else
-      await _automationClient.AddCampaignAsync(new AddOrUpdateCampaignRequest() { Template = template });
+      await _automationClient.AddCampaign(new AddOrUpdateCampaignRequest() { Template = template }, null);
   }
 }

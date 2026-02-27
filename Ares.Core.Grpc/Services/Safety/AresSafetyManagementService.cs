@@ -1,4 +1,4 @@
-﻿using Ares.Core.Device.Repos;
+using Ares.Core.Device.Repos;
 using Ares.Core.Execution;
 using Ares.Services;
 using Grpc.Core;
@@ -18,7 +18,7 @@ public class AresSafetyManagementService : AresSafetyService.AresSafetyServiceBa
     _deviceRepo = deviceRepo;
   }
 
-  public override Task<EmergencyStopResponse> RequestEmergencyStop(EmergencyStopRequest request, ServerCallContext context)
+  public override Task<EmergencyStopResponse> RequestEmergencyStop(EmergencyStopRequest request, ServerCallContext? context)
   {
     EmergencyStopResponse response;
 

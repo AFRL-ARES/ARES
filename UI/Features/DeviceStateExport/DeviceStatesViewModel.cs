@@ -1,5 +1,6 @@
 ﻿using Ares.Datamodel.Device;
 using Ares.Services.Device;
+using Ares.Core.Grpc.Services;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
@@ -8,14 +9,14 @@ namespace UI.Features.DeviceStateExport;
 
 public partial class DeviceStatesViewModel : ReactiveObject
 {
-  readonly AresDevices.AresDevicesClient _devicesClient;
+  readonly DevicesService _devicesClient;
 
-  public DeviceStatesViewModel(AresDevices.AresDevicesClient devicesClient)
+  public DeviceStatesViewModel(DevicesService devicesClient)
   {
     _devicesClient = devicesClient;
-    _devicesClient
-      .ListAresDevicesAsync(new Empty()).ResponseAsync
-      .ContinueWith(task => AvailableDevices = task.Result.AresDevices);
+    _ = _devicesClient
+      .ListAresDevices(new Empty(), null)
+      .ContinueWith(task => { if(task.IsCompletedSuccessfully) AvailableDevices = task.Result.AresDevices; });
   }
   public string? SelectedDeviceName { get; set; }
 

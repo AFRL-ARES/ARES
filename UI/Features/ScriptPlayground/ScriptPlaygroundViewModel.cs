@@ -1,20 +1,22 @@
 using Ares.Services;
+using Ares.Core.Grpc.Services;
 using Grpc.Core;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using UI.Infrastructure.Grpc;
 
 namespace UI.Features.ScriptPlayground;
 
 public partial class ScriptPlaygroundViewModel : ReactiveObject
 {
-  private readonly AresScriptingService.AresScriptingServiceClient _scriptingClient;
+  private readonly Ares.Core.Grpc.Services.AresScriptingService _scriptingClient;
   private CancellationTokenSource _cancellationTokenSource = new();
   private readonly ISubject<string> _scriptOutput = new Subject<string>();
 
   public ScriptPlaygroundViewModel(
-    AresScriptingService.AresScriptingServiceClient scriptingClient)
+    Ares.Core.Grpc.Services.AresScriptingService scriptingClient)
   {
     _scriptingClient = scriptingClient;
     ScriptOutput = _scriptOutput.AsObservable();
@@ -25,16 +27,18 @@ public partial class ScriptPlaygroundViewModel : ReactiveObject
     _cancellationTokenSource = new();
     var token = _cancellationTokenSource.Token;
     ScriptRunning = true;
-    var something = _scriptingClient.ExecuteScript(new ScriptExecutionRequest { Script = script }, new CallOptions(cancellationToken: token));
+
+    var streamWriter = new LocalStreamWriter<ScriptExecutionOutput>(output => 
+    {
+        _scriptOutput.OnNext(output.Output);
+        return Task.CompletedTask;
+    });
 
     try
     {
-      await foreach(var output in something.ResponseStream.ReadAllAsync(token))
-      {
-        _scriptOutput.OnNext(output.Output);
-      }
+      await _scriptingClient.ExecuteScript(new ScriptExecutionRequest { Script = script }, streamWriter, null);
     }
-    catch(RpcException)
+    catch(Exception)
     {
     }
     finally

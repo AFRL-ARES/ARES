@@ -3,6 +3,7 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using Ares.Datamodel.Device;
 using Ares.Services.Device;
+using Ares.Core.Grpc.Services;
 using DynamicData;
 using ReactiveUI;
 using UI.Application.Devices;
@@ -12,10 +13,10 @@ namespace UI.Infrastructure.Devices;
 public abstract class UsbDeviceConnectorViewModel<TDeviceUnitVm> : ReactiveObject, IAsyncDisposable where TDeviceUnitVm : DeviceUnitControlViewModel
 {
   private readonly ISourceCache<TDeviceUnitVm, string> _connectedUsbDeviceUnitControlVmsSource = new SourceCache<TDeviceUnitVm, string>(vm => vm.DeviceName);
-  private readonly AresDevices.AresDevicesClient _devicesClient;
+  private readonly DevicesService _devicesClient;
   private IDisposable _deviceUpdater = Disposable.Empty;
 
-  public UsbDeviceConnectorViewModel(AresDevices.AresDevicesClient devicesClient)
+  public UsbDeviceConnectorViewModel(DevicesService devicesClient)
   {
     _devicesClient = devicesClient;
 
@@ -27,7 +28,8 @@ public abstract class UsbDeviceConnectorViewModel<TDeviceUnitVm> : ReactiveObjec
 
   public void Start(TimeSpan interval)
   {
-    _deviceUpdater = Observable.Interval(interval).Prepend(0).Subscribe(_ => UpdateAvailableDevices());
+    _ = UpdateAvailableDevices();
+    _deviceUpdater = Observable.Interval(interval).Subscribe(async _ => await UpdateAvailableDevices());
   }
 
   private async Task UpdateAvailableDevices()
@@ -38,7 +40,7 @@ public abstract class UsbDeviceConnectorViewModel<TDeviceUnitVm> : ReactiveObjec
     {
 
       var deviceStatusRequest = new DeviceStatusRequest { DeviceId = deviceDesc.DeviceId };
-      var deviceOperationalStatusResponse = _devicesClient.GetDeviceStatus(deviceStatusRequest);
+      var deviceOperationalStatusResponse = await _devicesClient.GetDeviceStatus(deviceStatusRequest, null);
 
       if(deviceOperationalStatusResponse.OperationalState == OperationalState.Active)
       {

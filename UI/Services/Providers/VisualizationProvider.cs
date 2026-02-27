@@ -1,6 +1,7 @@
 ﻿using Ares.Datamodel;
 using Ares.Datamodel.Device;
 using Ares.Services.Device;
+using Ares.Core.Grpc.Services;
 using Google.Protobuf.WellKnownTypes;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -9,13 +10,13 @@ namespace UI.Services.Providers;
 
 public class VisualizationProvider : IVisualizationProvider
 {
-  private readonly AresDevices.AresDevicesClient _devicesClient;
+  private readonly DevicesService _devicesClient;
   private readonly CancellationTokenSource _cts = new CancellationTokenSource();
   private readonly PeriodicTimer _timer;
   private readonly BehaviorSubject<IReadOnlyList<DeviceInfo>> _availableDevicesSubject = new(new List<DeviceInfo>());
   private readonly ILogger<VisualizationProvider> _logger;
 
-  public VisualizationProvider(AresDevices.AresDevicesClient devicesClient, ILogger<VisualizationProvider> logger)
+  public VisualizationProvider(DevicesService devicesClient, ILogger<VisualizationProvider> logger)
   {
     _devicesClient = devicesClient;
     _logger = logger;
@@ -48,7 +49,7 @@ public class VisualizationProvider : IVisualizationProvider
   {
     try
     {
-      var devices = await _devicesClient.ListAresDevicesAsync(new Empty());
+      var devices = await _devicesClient.ListAresDevices(new Empty(), null);
       _availableDevicesSubject.OnNext(devices.AresDevices.ToList());
     }
 
@@ -60,7 +61,7 @@ public class VisualizationProvider : IVisualizationProvider
 
   public async Task<AresDataSchema> GetDeviceStateOptions(string deviceId)
   {
-    var schema = await _devicesClient.GetDeviceStateSchemaAsync(new DeviceStateSchemaRequest { DeviceId = deviceId });
+    var schema = await _devicesClient.GetDeviceStateSchema(new DeviceStateSchemaRequest { DeviceId = deviceId }, null);
     return schema.Schema;
   }
 

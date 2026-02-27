@@ -1,6 +1,7 @@
 ﻿using Ares.Datamodel.Device;
 using Ares.Datamodel.Templates;
 using Ares.Services.Device;
+using Ares.Core.Grpc.Services;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
@@ -9,17 +10,17 @@ namespace UI.Features.CampaignEdit.ViewModels;
 
 public partial class MetadataPickerViewModel : ReactiveObject
 {
-  private readonly AresDevices.AresDevicesClient _devicesClient;
+  private readonly DevicesService _devicesClient;
   private Task _deviceRefreshTask = Task.CompletedTask;
 
-  public MetadataPickerViewModel(AresDevices.AresDevicesClient devicesClient)
+  public MetadataPickerViewModel(DevicesService devicesClient)
   {
     _devicesClient = devicesClient;
     AvailableDevices = [];
     AvailableMetadata = [];
   }
 
-  public MetadataPickerViewModel(CommandMetadata existingMetadata, AresDevices.AresDevicesClient devicesClient) : this(devicesClient)
+  public MetadataPickerViewModel(CommandMetadata existingMetadata, DevicesService devicesClient) : this(devicesClient)
   {
     SelectedCommandMetadata = existingMetadata;
     AvailableDevices = [];
@@ -63,7 +64,7 @@ public partial class MetadataPickerViewModel : ReactiveObject
 
   public async Task RefreshDevices()
   {
-    var devicesResponse = await _devicesClient.ListAresDevicesAsync(new Empty());
+    var devicesResponse = await _devicesClient.ListAresDevices(new Empty(), null);
     AvailableDevices = devicesResponse.AresDevices.ToArray();
     if (SelectedCommandMetadata is not null)
     {
@@ -82,7 +83,7 @@ public partial class MetadataPickerViewModel : ReactiveObject
     }
 
     var request = new CommandMetadatasRequest { DeviceId = SelectedDevice.UniqueId };
-    var metadataResponse = await _devicesClient.GetCommandMetadatasAsync(request);
+    var metadataResponse = await _devicesClient.GetCommandMetadatas(request, null);
     AvailableMetadata = metadataResponse.Metadatas.ToArray();
 
     if (SelectedCommandMetadata is null || SelectedCommandMetadata.DeviceId == SelectedDevice.UniqueId)

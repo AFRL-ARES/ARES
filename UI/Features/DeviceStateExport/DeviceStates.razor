@@ -1,7 +1,8 @@
 ﻿@page "/device_states"
 @using Ares.Services
+@using Ares.Core.Grpc.Services
 @inject DialogService DialogService
-@inject AresAutomation.AresAutomationClient AutomationClient
+@inject AutomationService AutomationClient
 
 
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<DeviceStatesViewModel>

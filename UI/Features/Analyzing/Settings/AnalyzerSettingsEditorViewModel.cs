@@ -1,6 +1,7 @@
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
 using Ares.Services;
+using Ares.Core.Grpc.Services;
 using Grpc.Core;
 using ReactiveUI;
 
@@ -8,10 +9,10 @@ namespace UI.Features.Analyzing.Settings;
 
 public class AnalyzerSettingsEditorViewModel : ReactiveObject
 {
-  private readonly AresAnalyzerManagementService.AresAnalyzerManagementServiceClient _client;
+  private readonly AnalyzerService _client;
   private readonly AnalyzerInfo _analyzerInfo;
 
-  public AnalyzerSettingsEditorViewModel(AresAnalyzerManagementService.AresAnalyzerManagementServiceClient client, AnalyzerInfo analyzerInfo)
+  public AnalyzerSettingsEditorViewModel(AnalyzerService client, AnalyzerInfo analyzerInfo)
   {
     _client = client;
     _analyzerInfo = analyzerInfo;
@@ -26,9 +27,9 @@ public class AnalyzerSettingsEditorViewModel : ReactiveObject
     };
     try
     {
-      await _client.SetAnalyzerSettingsAsync(settings);
+      await _client.SetAnalyzerSettings(settings, null);
     }
-    catch(RpcException)
+    catch(Exception)
     {
       // TODO maybe notify user
     }
@@ -39,10 +40,10 @@ public class AnalyzerSettingsEditorViewModel : ReactiveObject
     var request = new AnalyzerSettingsRequest() { AnalyzerId = _analyzerInfo.UniqueId };
     try
     {
-      var settingsResponse = await _client.GetAnalyzerSettingsAsync(request);
+      var settingsResponse = await _client.GetAnalyzerSettings(request, null);
       Settings = settingsResponse;
     }
-    catch(RpcException)
+    catch(Exception)
     {
       Settings = new AresStruct();
     }
@@ -51,7 +52,7 @@ public class AnalyzerSettingsEditorViewModel : ReactiveObject
   public async Task UpdateInfo()
   {
     var request = new AnalyzerInfoRequest { AnalyzerId = _analyzerInfo.UniqueId };
-    var infoResponse = await _client.GetInfoAsync(request);
+    var infoResponse = await _client.GetInfo(request, null);
     SettingsSchema = infoResponse.Info.Capabilities?.SettingsSchema ?? new AresStructSchema();
   }
 

@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Reactive.Disposables;
 using Ares.Datamodel.Device;
 using Ares.Services.Device;
+using Ares.Core.Grpc.Services;
 using DynamicData;
 using ReactiveUI;
 using UI.Application.Devices;
@@ -12,11 +13,11 @@ public abstract class SerialDeviceConnectorViewModel<TDeviceUnitVm> : ReactiveOb
 {
   private readonly ISourceCache<TDeviceUnitVm, string> _connectedSerialDeviceUnitControlVmsSource =
   new SourceCache<TDeviceUnitVm, string>(vm => vm.DeviceId);
-  private readonly AresDevices.AresDevicesClient _devicesClient;
+  private readonly DevicesService _devicesClient;
   private IDisposable _deviceUpdater = Disposable.Empty;
   private CancellationTokenSource _deviceUpdaterTokenSource = new CancellationTokenSource();
 
-  public SerialDeviceConnectorViewModel(AresDevices.AresDevicesClient devicesClient)
+  public SerialDeviceConnectorViewModel(DevicesService devicesClient)
   {
     _devicesClient = devicesClient;
 
@@ -44,7 +45,7 @@ public abstract class SerialDeviceConnectorViewModel<TDeviceUnitVm> : ReactiveOb
     foreach(var description in descriptions)
     {
       var deviceStatusRequest = new DeviceStatusRequest { DeviceId = description.DeviceId };
-      var deviceOperationalStatusResponse = await _devicesClient.GetDeviceStatusAsync(deviceStatusRequest);
+      var deviceOperationalStatusResponse = await _devicesClient.GetDeviceStatus(deviceStatusRequest, null);
 
       if(deviceOperationalStatusResponse.OperationalState == OperationalState.Active)
       {
@@ -72,7 +73,7 @@ public abstract class SerialDeviceConnectorViewModel<TDeviceUnitVm> : ReactiveOb
 
   protected abstract TDeviceUnitVm CreateUnitVm(AresDeviceDescription description);
 
-  protected AresDevices.AresDevicesClient DevicesClient => _devicesClient;
+  protected DevicesService DevicesClient => _devicesClient;
   
   public async ValueTask DisposeAsync()
   {

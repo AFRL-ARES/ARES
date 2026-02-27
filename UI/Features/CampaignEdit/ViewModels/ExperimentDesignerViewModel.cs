@@ -1,5 +1,6 @@
 ﻿using Ares.Datamodel.Templates;
 using Ares.Services;
+using Ares.Core.Grpc.Services;
 using Radzen;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
@@ -10,14 +11,14 @@ namespace UI.Features.CampaignEdit.ViewModels;
 public partial class ExperimentDesignerViewModel : ReactiveObject
 {
   private readonly StepDesignerFactory _stepDesignerFactory;
-  private readonly AresValidation.AresValidationClient _validationClient;
+  private readonly ValidationService _validationClient;
   private ExperimentTemplate _experimentTemplate = null!;
-  readonly AresAutomation.AresAutomationClient _automationClient;
+  readonly AutomationService _automationClient;
   private readonly NotificationService _notificationService;
 
   public ExperimentDesignerViewModel(StepDesignerFactory stepDesignerFactory,
-    AresAutomation.AresAutomationClient automationClient,
-    AresValidation.AresValidationClient validationClient,
+    AutomationService automationClient,
+    ValidationService validationClient,
     NotificationService notificationService)
   {
     _automationClient = automationClient;
@@ -34,8 +35,8 @@ public partial class ExperimentDesignerViewModel : ReactiveObject
 
   public ExperimentDesignerViewModel(ExperimentTemplate existingTemplate,
     StepDesignerFactory stepDesignerFactory,
-    AresAutomation.AresAutomationClient automationClient,
-    AresValidation.AresValidationClient validationClient,
+    AutomationService automationClient,
+    ValidationService validationClient,
     NotificationService notificationService) : this(stepDesignerFactory, automationClient, validationClient, notificationService)
   {
     ExperimentTemplate = existingTemplate;
