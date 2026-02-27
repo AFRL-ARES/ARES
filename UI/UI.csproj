@@ -16,10 +16,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Pages\Shared\Components\RightSidebar.razor.css" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Compile Remove="Pages\Settings\**" />
     <Compile Remove="Services\**" />
     <Content Remove="Pages\Settings\**" />
