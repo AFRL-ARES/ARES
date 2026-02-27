@@ -1,12 +1,18 @@
-using Ares.Messages;
+using Ares.Core.Device.State.Export.ExportStreamProviders;
+using Ares.Core.Execution;
+using Ares.Core.Grpc;
+using Ares.Core;
 using Ares.Services;
 using Ares.Services.Device;
 using Grpc.Health.V1;
 using Radzen;
+using UI.Application.Devices.Repos;
+using UI.Application.Dialog;
+using UI.Application.Handlers;
+using UI.Application.Notifications;
+using UI.Application.Scripting;
+using UI.Components.Formatting;
 using UI.Features.Analyzing.Settings;
-using UI.Features.DeviceStateLogging.Settings;
-using UI.Features.Notifications;
-using UI.Features.Planning.Settings;
 using UI.Features.Auth;
 using UI.Features.CampaignEdit;
 using UI.Features.CampaignEdit.Factories;
@@ -14,12 +20,16 @@ using UI.Features.CampaignEdit.ViewModels;
 using UI.Features.Devices.Remote;
 using UI.Features.DeviceStateExport;
 using UI.Features.DeviceStateLogging;
-using UI.Application.Notifications;
-using UI.Infrastructure.Monaco.Interops;
+using UI.Features.DeviceStateLogging.Settings;
+using UI.Features.Notifications;
+using UI.Features.Planning.Settings;
+using UI.Features.ServerHealth;
+using UI.Infrastructure.Auth;
+using UI.Infrastructure.Devices;
 using UI.Infrastructure.Dialog;
 using UI.Infrastructure.Grpc;
+using UI.Infrastructure.Monaco.Interops;
 using UI.Infrastructure.Notifications;
-using UI.Features.ServerHealth;
 using CampaignDesignerViewModel = UI.Features.CampaignEdit.ViewModels.CampaignDesignerViewModel;
 using DataViewerViewModel = UI.Features.DataViewer.DataViewerViewModel;
 using DeviceStatesViewModel = UI.Features.DeviceStateExport.DeviceStatesViewModel;
@@ -28,12 +38,6 @@ using ExecutionViewModel = UI.Features.Execution.ExecutionViewModel;
 using ManualPlannerViewModel = UI.Features.Execution.Planning.ManualPlannerViewModel;
 using RemoteDeviceSettingsListViewModel = UI.Features.Devices.Remote.RemoteDeviceSettingsListViewModel;
 using ScriptPlaygroundViewModel = UI.Features.ScriptPlayground.ScriptPlaygroundViewModel;
-using UI.Application.Dialog;
-using UI.Application.Scripting;
-using UI.Components.Formatting;
-using UI.Infrastructure.Auth;
-using UI.Infrastructure.Devices;
-using UI.Application.Devices.Repos;
 
 namespace UI;
 
@@ -83,9 +87,7 @@ internal static class ServiceCollectionExtensions
     var clientManager = tempProvider.GetRequiredService<IClientManager>();
 
     //Ares Clients
-    services.AddScoped(_ => clientManager.GetClient<Authentication.AuthenticationClient>());
     services.AddScoped(_ => clientManager.GetClient<AresServerInfo.AresServerInfoClient>());
-    services.AddScoped(_ => clientManager.GetClient<UserManagement.UserManagementClient>());
     services.AddScoped(_ => clientManager.GetClient<AresAutomation.AresAutomationClient>());
     services.AddScoped(_ => clientManager.GetClient<Health.HealthClient>());
     services.AddScoped(_ => clientManager.GetClient<AresPlannerManagementService.AresPlannerManagementServiceClient>());
@@ -142,6 +144,18 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<AnalyzerInputDesignerVmFactory>();
     services.AddScoped<DeviceStateFilterViewModelFactory>();
     services.AddSingleton<RemoteDeviceControlViewModelFactory>();
+  }
+
+  public static void LoadService(this IServiceCollection services, IConfiguration configuration)
+  {
+    services.AddAresCoreComponents();
+    services.AddNotificationHandlers();
+
+    services.AddSingleton<IExecutionSummaryHandler>(provider =>
+    {
+      var stateExporters = provider.GetServices<IDeviceStateExportStreamProvider>();
+      return new ExperimentResultJsonHandler(stateExporters);
+    });
   }
 }
 

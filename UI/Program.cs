@@ -34,6 +34,7 @@ builder.Services.Configure<CertificateSettings>(builder.Configuration.GetSection
 builder.Services.AddSingleton<IMessenger>(provider => new WeakReferenceMessenger());
 builder.Services.AddScoped<IClientManager, ClientManager>();
 builder.Services.LoadAresModules();
+builder.Services.LoadService(builder.Configuration);
 builder.Services.BindClients();
 builder.Services.AddSingleton<INotificationReceivingService, NotificationReceivingService>();
 
