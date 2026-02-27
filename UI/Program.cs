@@ -4,11 +4,18 @@ using Ares.Services;
 using AresService.Data;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using ReactiveUI;
+using ReactiveUI.Builder;
 using Serilog;
 using System.CommandLine;
 using System.Reflection;
 using UI;
 using UI.Application.Settings;
+
+RxAppBuilder
+   .CreateReactiveUIBuilder()
+   .WithCoreServices()
+   .BuildApp();
 
 #region Command Line Params
 
@@ -217,6 +224,7 @@ static void PopulateAresConfig(IConfiguration configuration)
 
 static Task RunWebAppAsync(params string[] args)
 {
+  var dummy = MessageBus.Current;
   var builder = WebApplication.CreateBuilder(args);
 
   Log.Logger = new LoggerConfiguration()
