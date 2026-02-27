@@ -27,7 +27,6 @@
 	<ItemGroup>
 		<ProjectReference Include="../../Ares.Toolkit.Device/Ares.Toolkit.Device/Ares.Toolkit.Device.csproj" />
 		<ProjectReference Include="../../Ares.Toolkit.Serial/Ares.Toolkit.Serial/Ares.Toolkit.Serial.csproj" />
-
 	</ItemGroup>
 
 	<Target Name="PackageAresDriver" AfterTargets="Build">

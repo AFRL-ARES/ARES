@@ -21,11 +21,6 @@
     <ProjectReference Include="..\Ares.Core\Ares.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="Ares.Toolkit.Device">
-      <HintPath>..\..\Ares.Toolkit.Device\Ares.Toolkit.Device\bin\net10.0\Ares.Toolkit.Device.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup>
     <Compile Update="Properties\Resources.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>

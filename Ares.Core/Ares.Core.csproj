@@ -34,12 +34,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AresScript\AresScript.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="Ares.Toolkit.Device">
-      <HintPath>..\..\Ares.Toolkit.Device\Ares.Toolkit.Device\bin\net10.0\Ares.Toolkit.Device.dll</HintPath>
-    </Reference>
-  </ItemGroup>
+		<ProjectReference Include="../../Ares.Toolkit.Device/Ares.Toolkit.Device/Ares.Toolkit.Device.csproj" />
+	</ItemGroup>
 
 </Project>
