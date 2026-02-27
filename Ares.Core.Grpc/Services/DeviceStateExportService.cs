@@ -1,13 +1,13 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Ares.Core.Device.State.Export.ExportStreamProviders;
+﻿using Ares.Core.Device.State.Export.ExportStreamProviders;
 using Ares.Datamodel.Device;
 using Ares.Services;
 using Google.Protobuf;
 using Grpc.Core;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
-namespace AresService.Services.OperationalState;
+namespace Ares.Core.Grpc.Services;
 
 public class DeviceStateExportService : Ares.Services.DeviceStateExportService.DeviceStateExportServiceBase
 {
