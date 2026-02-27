@@ -1,4 +1,6 @@
 using Ares.Core;
+using Ares.Core.Device.State.Export.ExportStreamProviders;
+using Ares.Core.Execution;
 using Ares.Core.Grpc;
 using Ares.Services;
 using AresService.Data;
@@ -13,9 +15,9 @@ using UI;
 using UI.Infrastructure.Grpc;
 using UI.Application.Notifications;
 using UI.Infrastructure.Notifications;
-using UI.Infrastructure.Persistence;
 using UI.Components.Formatting;
 using UI.Application.Settings;
+using UI.Application.Handlers;
 
 #region Command Line Params
 
@@ -27,7 +29,7 @@ var migrateOption = new Option<bool>(name: "--migrate")
 
 var checkDbOption = new Option<bool>(name: "--check-database")
 {
-  Description = "Checks if database exists and/or needs an update. Uses the exit code to return 0 if database is good, 1 if database is good but needs and update, 2 if database does not exist, 3 if other error.",
+  Description = "Checks if database exists and/or needs an update. Uses exit code 0 if database is good, 10 if migrations are pending, 11 if database is unavailable, and 3 for other errors.",
 };
 
 var rootCommand = new RootCommand("Ares Service")
@@ -41,8 +43,7 @@ rootCommand.SetAction(async parseResult =>
   var shouldMigrate = parseResult.GetValue(migrateOption);
   if(shouldMigrate)
   {
-    await RunMigrationsAsync(args);
-    return 0;
+    return await RunMigrationsAsync(args);
   }
 
   var checkUpdate = parseResult.GetValue(checkDbOption);
@@ -68,15 +69,15 @@ static async Task<int> CheckDatabase(string[] args)
 {
   var host = Host.CreateApplicationBuilder(args);
   host.Configuration
-    .AddJsonFile("appsettings.aresservice.json", optional: false, reloadOnChange: true)
-    .AddJsonFile($"appsettings.aresservice.{host.Environment.EnvironmentName}.json", optional: true);
+    .AddJsonFile("appsettings.ui.json", optional: false, reloadOnChange: true)
+    .AddJsonFile($"appsettings.ui.{host.Environment.EnvironmentName}.json", optional: true);
 
   try
   {
     ConfigureDatabaseServices(host.Services, host.Configuration);
     var app = host.Build();
     var settings = host.Configuration.Get<AppSettings>();
-    var provider = settings.DatabaseProvider;
+    var provider = settings?.DatabaseProvider;
     var aresDbContextFactory = app.Services.GetRequiredService<IDbContextFactory<AresDbContext>>();
 
     var contextResult = 0;
@@ -115,22 +116,22 @@ static async Task<int> CheckContext(DbContext context)
   return 0;
 }
 
-static async Task RunMigrationsAsync(string[] args)
+static async Task<int> RunMigrationsAsync(string[] args)
 {
   Console.WriteLine("Running database migrations...");
 
   // Build a temporary host to get the services
   var host = Host.CreateApplicationBuilder(args);
   host.Configuration
-    .AddJsonFile("appsettings.aresservice.json", optional: false, reloadOnChange: true)
-    .AddJsonFile($"appsettings.aresservice.{host.Environment.EnvironmentName}.json", optional: true);
+    .AddJsonFile("appsettings.ui.json", optional: false, reloadOnChange: true)
+    .AddJsonFile($"appsettings.ui.{host.Environment.EnvironmentName}.json", optional: true);
 
   try
   {
     ConfigureDatabaseServices(host.Services, host.Configuration);
     var app = host.Build();
     var settings = host.Configuration.Get<AppSettings>();
-    var provider = settings.DatabaseProvider;
+    var provider = settings?.DatabaseProvider;
     provider = string.IsNullOrEmpty(provider) ? "Sqlite" : provider;
     // DbContext factory
     var aresDbContextFactory = app.Services.GetRequiredService<IDbContextFactory<AresDbContext>>();
@@ -144,23 +145,25 @@ static async Task RunMigrationsAsync(string[] args)
     }
 
     Console.WriteLine("All database migrations completed.");
+    return 0;
   }
   catch(Exception ex)
   {
     Console.ForegroundColor = ConsoleColor.Red;
     Console.WriteLine($"An error occurred during migration: {ex.Message}");
     Console.ResetColor();
+    return 3;
   }
 }
 
 static void ConfigureDatabaseServices(IServiceCollection services, ConfigurationManager configuration)
 {
   var sqlConnectionStrings = configuration.GetSection("ConnectionStrings");
-  var provider = configuration.Get<AppSettings>().DatabaseProvider ?? "Sqlite";
+  var provider = configuration.Get<AppSettings>()?.DatabaseProvider ?? "Sqlite";
 
   if(provider == "SqlServer")
   {
-    services.AddDbContextFactory<ApplicationDbContext>(b =>
+    services.AddDbContextFactory<AresDbContext>(b =>
     {
       b.UseSqlServer(sqlConnectionStrings[provider]);
       b.EnableSensitiveDataLogging();
@@ -168,7 +171,7 @@ static void ConfigureDatabaseServices(IServiceCollection services, Configuration
   }
   else if(provider == "Sqlite")
   {
-    services.AddDbContextFactory<ApplicationDbContext>(b =>
+    services.AddDbContextFactory<AresDbContext>(b =>
     {
       b.UseSqlite(sqlConnectionStrings[provider]);
       b.EnableSensitiveDataLogging();
@@ -176,7 +179,7 @@ static void ConfigureDatabaseServices(IServiceCollection services, Configuration
   }
   else if(provider == "Postgres")
   {
-    services.AddDbContextFactory<ApplicationDbContext>(b =>
+    services.AddDbContextFactory<AresDbContext>(b =>
     {
       b.UseNpgsql(sqlConnectionStrings[provider]);
       b.EnableSensitiveDataLogging();
@@ -279,8 +282,8 @@ static Task RunWebAppAsync(params string[] args)
   configuration
     .AddJsonFile("appsettings.ui.json", optional: false, reloadOnChange: true)
     .AddJsonFile($"appsettings.ui.{builder.Environment.EnvironmentName}.json", optional: true);
-
-  ConfigureDatabaseServices(services, configuration);
+  
+  services.AddGrpc(options => options.EnableDetailedErrors = true);
 
   services.AddDatabaseDeveloperPageExceptionFilter();
 
@@ -292,10 +295,16 @@ static Task RunWebAppAsync(params string[] args)
 
   services.AddSingleton<IMessenger>(provider => new WeakReferenceMessenger());
   services.AddScoped<IClientManager, ClientManager>();
-  services.LoadService(configuration);
   services.LoadAresModules();
   services.BindClients();
   services.AddSingleton<INotificationReceivingService, NotificationReceivingService>();
+  services.AddAresCoreComponents();
+  services.AddNotificationHandlers();
+  services.AddSingleton<IExecutionSummaryHandler>(provider =>
+  {
+    var stateExporters = provider.GetServices<IDeviceStateExportStreamProvider>();
+    return new ExperimentResultJsonHandler(stateExporters);
+  });
 
   services.AddOptions();
   services.AddAntiforgery();
@@ -314,6 +323,8 @@ static Task RunWebAppAsync(params string[] args)
     new CovariantCoreDbContextFactory<CoreDatabaseContext, AresDbContext>(p.GetRequiredService<IDbContextFactory<AresDbContext>>()));
 
   var app = builder.Build();
+  PopulateAresConfig(configuration);
+  SetupExceptionHandling();
 
   // Configure the HTTP request pipeline.
   if(app.Environment.IsDevelopment())
