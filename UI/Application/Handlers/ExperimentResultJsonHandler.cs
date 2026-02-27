@@ -1,15 +1,11 @@
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text.Json;
-using System.Threading.Tasks;
 using Ares.Core;
 using Ares.Core.Device.State.Export.ExportStreamProviders;
 using Ares.Core.Execution;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
 
-namespace AresService;
+namespace UI.Application.Handlers;
 
 public class ExperimentResultJsonHandler : IExecutionSummaryHandler
 {
