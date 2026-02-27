@@ -172,7 +172,7 @@ internal static class ServiceCollectionExtensions
     {
       services.AddDbContextFactory<AresDbContext>(b =>
       {
-        b.UseSqlServer(sqlConnectionStrings[provider]);
+        b.UseSqlServer(sqlConnectionStrings[provider], builder => builder.MigrationsAssembly("AresService.Migrations.SqlServer"));
         b.EnableSensitiveDataLogging();
       });
     }
@@ -180,7 +180,7 @@ internal static class ServiceCollectionExtensions
     {
       services.AddDbContextFactory<AresDbContext>(b =>
       {
-        b.UseSqlite(sqlConnectionStrings[provider]);
+        b.UseSqlite(sqlConnectionStrings[provider], builder => builder.MigrationsAssembly("AresService.Migrations.Sqlite"));
         b.EnableSensitiveDataLogging();
       });
     }
@@ -188,7 +188,7 @@ internal static class ServiceCollectionExtensions
     {
       services.AddDbContextFactory<AresDbContext>(b =>
       {
-        b.UseNpgsql(sqlConnectionStrings[provider]);
+        b.UseNpgsql(sqlConnectionStrings[provider], builder => builder.MigrationsAssembly("AresService.Migrations.Postgres"));
         b.EnableSensitiveDataLogging();
       });
     }
