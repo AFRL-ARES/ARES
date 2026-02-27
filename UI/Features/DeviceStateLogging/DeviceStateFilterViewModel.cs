@@ -1,6 +1,5 @@
 ﻿using Ares.Datamodel;
 using Ares.Datamodel.Device;
-using Ares.Messages.DeviceStates;
 using Ares.Services;
 using Ares.Services.Device;
 using Google.Protobuf.WellKnownTypes;
@@ -43,7 +42,7 @@ public partial class DeviceStateFilterViewModel : ReactiveObject
   [Reactive]
   public partial IEnumerable<AresDeviceDescription>? AvailableDevices { get; private set; }
 
-  public IEnumerable<DevicesDescription>? SelectedDevices { get; set; }
+  public IEnumerable<AresDeviceDescription>? SelectedDevices { get; set; }
 
   [Reactive]
   public partial IEnumerable<CampaignExecutionSummaryMetadata>? Campaigns { get; private set; }

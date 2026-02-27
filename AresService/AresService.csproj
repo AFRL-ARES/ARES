@@ -32,7 +32,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Ares.Core.Grpc\Ares.Core.Grpc.csproj" />
-    <ProjectReference Include="..\AresMessaging\AresMessaging.csproj" />
     <ProjectReference Include="..\AresService.Migrations.Postgres\AresService.Migrations.Postgres.csproj" />
     <ProjectReference Include="..\AresService.Migrations.Sqlite\AresService.Migrations.Sqlite.csproj" />
     <ProjectReference Include="..\AresService.Migrations.SqlServer\AresService.Migrations.SqlServer.csproj" />

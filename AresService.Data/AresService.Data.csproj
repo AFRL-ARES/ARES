@@ -23,7 +23,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Ares.Core\Ares.Core.csproj" />
-    <ProjectReference Include="..\AresMessaging\AresMessaging.csproj" />
   </ItemGroup>
 
 </Project>
