@@ -2,5 +2,5 @@
 
 public interface IExecutionSafetyManager
 {
-  Task EnterSafeMode();
+  Task<bool> EnterSafeMode();
 }

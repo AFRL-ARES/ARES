@@ -1,3 +1,4 @@
+@using Ares.Core.Execution.Safety
 @using Ares.Services
 @using Google.Protobuf.WellKnownTypes
 @using UI.Application.Dialog
@@ -6,8 +7,8 @@
 @inherits LayoutComponentBase
 
 @inject IUiDialogService dialogService
-@inject AresSafetyService.AresSafetyServiceClient safetyServiceClient
 @inject INotificationReceivingService notificationService
+@inject IExecutionSafetyManager executionSafetyManager 
 
 <HeadContent>
     <link rel="icon" type="image/png" href="images/ARESLogo.png">
@@ -112,28 +113,29 @@
 
     if(result)
     {
-      var emergencyStopResponse = await safetyServiceClient.RequestEmergencyStopAsync(new EmergencyStopRequest());
+      var success = await executionSafetyManager.EnterSafeMode();
       AresNotification notification;
 
-      if(emergencyStopResponse.Status == EmergencyStopStatus.Success)
+      if(success)
       {
         notification = new AresNotification
         {
           Loiter = true,
-          Message = emergencyStopResponse.StatusMessage,
+          Message = "ARES has successfully processed an emergency shutdown request. All devices have entered safemode and any running campaigns have been completed.",
           Title = "Successfully Processed Emergency Shutdown Request",
           NotificationSeverity = Severity.Success,
           Timestamp = DateTime.UtcNow.ToTimestamp()
         };
       }
 
+
       else
       {
         notification = new AresNotification
         {
           Loiter = true,
-          Message = emergencyStopResponse.StatusMessage,
-          Title = "Failed to Process Emergency Shutdown Request!",
+          Message = "ARES HAS FAILED TO ENTER SAFE MODE. DEVICES MIGHT BE IN AN UNSTABLE STATE AND SHOULD BE POWERED OFF IMMEDIATELY IF IT IS SAFE TO DO SO.",
+          Title = "FAILED TO PROCESS EMERGENCY SHUTDOWN REQUEST!",
           NotificationSeverity = Severity.Danger,
           Timestamp = DateTime.UtcNow.ToTimestamp()
         };

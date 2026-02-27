@@ -1,7 +1,8 @@
-﻿@using Ares.Datamodel.Templates
+﻿@using Ares.Core.Device.Repos
+@using Ares.Datamodel.Templates
 @using Ares.Services.Device
 
-@inject AresDevices.AresDevicesClient DevicesClient
+@inject IAresDeviceRepo DeviceRepo;
 
 @if (CommandTemplate is not null)
 {
@@ -61,7 +62,7 @@
   [Parameter]
   public CommandTemplate? CommandTemplate { get; set; }
 
-  private string DeviceName { get; set; } = "";
+  public string? DeviceName { get; set; }
 
   public object TryUnpackDisplayData(Parameter argument)
   {
@@ -80,18 +81,11 @@
       return $"{argument.Metadata.Name}: Custom Data";
   }
 
-  private async Task<string> GetDeviceName(string deviceId)
+  protected override Task OnInitializedAsync()
   {
-    var info = await DevicesClient.GetDeviceInfoAsync(new DeviceInfoRequest { DeviceId = deviceId });
+    if(CommandTemplate is not null)
+      DeviceName = DeviceRepo.FirstOrDefault(d => d.UniqueId == CommandTemplate.Metadata.DeviceId)?.Name ?? string.Empty;
 
-    return info.Name;
-  }
-
-  protected override async Task OnInitializedAsync()
-  {
-    if(CommandTemplate is null)
-      return;
-
-    DeviceName = await GetDeviceName(CommandTemplate.Metadata.DeviceId);
+    return base.OnInitializedAsync();
   }
 }
