@@ -31,9 +31,6 @@
     <Reference Include="Ares.Toolkit.Serial">
       <HintPath>..\..\Ares.Toolkit.Serial\Ares.Toolkit.Serial\bin\net10.0\Ares.Toolkit.Serial.dll</HintPath>
     </Reference>
-    <Reference Include="Ares.Toolkit.UI">
-      <HintPath>..\..\Ares.Toolkit.UI\Ares.Toolkit.UI\bin\Debug\net10.0\Ares.Toolkit.UI.dll</HintPath>
-    </Reference>
   </ItemGroup>
 
 	<Target Name="PackageAresDriver" AfterTargets="Build">
@@ -48,8 +45,7 @@
 		<Copy SourceFiles="manifest.yaml" DestinationFolder="$(StagingFolder)" />
 
 		<ItemGroup>
-			<BinaryFiles Include="$(TargetDir)**\*.dll"
-									 Exclude="$(TargetDir)Ares.Device.*;$(TargetDir)Ares.Datamodel.*;$(TargetDir)Microsoft.*;$(TargetDir)System.*" />
+			<BinaryFiles Include="$(TargetDir)**\*.dll" Exclude="$(TargetDir)Ares.Device.*;$(TargetDir)Ares.Datamodel.*;$(TargetDir)Microsoft.*;$(TargetDir)System.*" />
 		</ItemGroup>
 
 		<Copy SourceFiles="@(BinaryFiles)" DestinationFolder="$(StagingFolder)bin" />

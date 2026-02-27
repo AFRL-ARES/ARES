@@ -1,7 +1,7 @@
 using AlicatMFCRemastered.Commands.Requests;
 using AlicatMFCRemastered.Commands.Responses.Streamed;
 using AlicatMFCRemastered.UI.State;
-using Ares.Toolkit.UI.ViewModels;
+using Ares.Toolkit.Device.UI;
 using DynamicData;
 using Grpc.Core;
 using Microsoft.Extensions.Logging;
