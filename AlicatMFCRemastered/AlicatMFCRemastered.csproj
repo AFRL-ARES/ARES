@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
+		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <ItemGroup>
@@ -34,4 +35,26 @@
       <HintPath>..\..\Ares.Toolkit.UI\Ares.Toolkit.UI\bin\Debug\net10.0\Ares.Toolkit.UI.dll</HintPath>
     </Reference>
   </ItemGroup>
+
+	<Target Name="PackageAresDriver" AfterTargets="Build">
+		<PropertyGroup>
+			<StagingFolder>$(ProjectDir)obj\AresStaging\</StagingFolder>
+			<PackageName>$(ProjectDir)bin\$(Configuration)\$(AssemblyName).ares</PackageName>
+		</PropertyGroup>
+
+		<RemoveDir Directories="$(StagingFolder)" />
+		<MakeDir Directories="$(StagingFolder);$(StagingFolder)bin" />
+
+		<Copy SourceFiles="manifest.yaml" DestinationFolder="$(StagingFolder)" />
+
+		<ItemGroup>
+			<BinaryFiles Include="$(TargetDir)**\*.dll"
+									 Exclude="$(TargetDir)Ares.Device.*;$(TargetDir)Ares.Datamodel.*;$(TargetDir)Microsoft.*;$(TargetDir)System.*" />
+		</ItemGroup>
+
+		<Copy SourceFiles="@(BinaryFiles)" DestinationFolder="$(StagingFolder)bin" />
+
+		<ZipDirectory SourceDirectory="$(StagingFolder)" DestinationFile="$(PackageName)" Overwrite="true" />
+		<RemoveDir Directories="$(StagingFolder)" />
+	</Target>
 </Project>
