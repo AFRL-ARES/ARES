@@ -1,6 +1,6 @@
-﻿using AresService.Data;
+using AresService.Data;
 
-namespace AresService.DbDesignFactories;
+namespace UI.Infrastructure.Persistence.DesignTime;
 
 public class AresIdentityContextFactory : BaseDesignFactory<AresIdentityContext>
 {

@@ -1,9 +1,15 @@
-﻿using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
-namespace AresService.DbDesignFactories;
+namespace UI.Infrastructure.Persistence.DesignTime;
 
+/// <summary>
+/// This factory is responsible for design time migration stuff.
+/// So like `dotnet ef migrations add" and `dotnet ef database update`
+/// Probably shouldn't use the database update directly though as it will put the database in the wrong
+/// location. Use the --migrate on the ares service itself.
+/// </summary>
+/// <typeparam name="T"></typeparam>
 public abstract class BaseDesignFactory<T> : IDesignTimeDbContextFactory<T> where T : DbContext
 {
   public T CreateDbContext(string[] args)
