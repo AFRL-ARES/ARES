@@ -7,13 +7,18 @@ using Ares.Core.Grpc.Services.Safety;
 using Ares.Core.Grpc.Services.Notifications;
 using Ares.Services;
 using Ares.Services.Device;
+using AresService.Data;
+using CommunityToolkit.Mvvm.Messaging;
 using Grpc.Health.V1;
+using Microsoft.EntityFrameworkCore;
 using Radzen;
+using Serilog;
 using UI.Application.Devices.Repos;
 using UI.Application.Dialog;
 using UI.Application.Handlers;
 using UI.Application.Notifications;
 using UI.Application.Scripting;
+using UI.Application.Settings;
 using UI.Components.Formatting;
 using UI.Features.Analyzing.Settings;
 using UI.Features.Auth;
@@ -157,5 +162,72 @@ internal static class ServiceCollectionExtensions
       return new ExperimentResultJsonHandler(stateExporters);
     });
   }
-}
 
+  public static void ConfigureDatabaseServices(this IServiceCollection services, IConfiguration configuration)
+  {
+    var sqlConnectionStrings = configuration.GetSection("ConnectionStrings");
+    var provider = configuration.Get<AppSettings>()?.DatabaseProvider ?? "Sqlite";
+
+    if(provider == "SqlServer")
+    {
+      services.AddDbContextFactory<AresDbContext>(b =>
+      {
+        b.UseSqlServer(sqlConnectionStrings[provider]);
+        b.EnableSensitiveDataLogging();
+      });
+    }
+    else if(provider == "Sqlite")
+    {
+      services.AddDbContextFactory<AresDbContext>(b =>
+      {
+        b.UseSqlite(sqlConnectionStrings[provider]);
+        b.EnableSensitiveDataLogging();
+      });
+    }
+    else if(provider == "Postgres")
+    {
+      services.AddDbContextFactory<AresDbContext>(b =>
+      {
+        b.UseNpgsql(sqlConnectionStrings[provider]);
+        b.EnableSensitiveDataLogging();
+      });
+    }
+    else
+    {
+      throw new InvalidOperationException($"Unsupported database provider: {provider}. Available provider values: {string.Join(',', sqlConnectionStrings.AsEnumerable().Select(scs => scs.Key.Split(':').LastOrDefault()).Where(s => s != "ConnectionStrings"))}");
+    }
+  }
+
+  public static void AddMergedHostServices(this IServiceCollection services, IConfiguration configuration)
+  {
+    services.AddGrpc(options => options.EnableDetailedErrors = true);
+    services.AddDatabaseDeveloperPageExceptionFilter();
+
+    services.AddRazorComponents().AddInteractiveServerComponents();
+    services.AddCascadingAuthenticationState();
+    services.AddRadzenComponents();
+    services.Configure<RemoteServiceSettings>(configuration.GetSection(nameof(RemoteServiceSettings)));
+    services.Configure<CertificateSettings>(configuration.GetSection(nameof(CertificateSettings)));
+
+    services.AddSingleton<IMessenger>(_ => new WeakReferenceMessenger());
+    services.AddScoped<IClientManager, ClientManager>();
+    services.LoadAresModules();
+    services.BindClients();
+    services.AddSingleton<INotificationReceivingService, NotificationReceivingService>();
+    services.LoadService(configuration);
+
+    services.AddOptions();
+    services.AddAntiforgery();
+    services.AddHostedService<ServiceStarter>();
+
+    services.AddSerilog((services, lc) => lc
+      .ReadFrom.Configuration(configuration)
+      .ReadFrom.Services(services)
+      .WriteTo.Console()
+      .Enrich.FromLogContext());
+
+    services.ConfigureDatabaseServices(configuration);
+    services.AddTransient<IDbContextFactory<CoreDatabaseContext>>(p =>
+      new CovariantCoreDbContextFactory<CoreDatabaseContext, AresDbContext>(p.GetRequiredService<IDbContextFactory<AresDbContext>>()));
+  }
+}

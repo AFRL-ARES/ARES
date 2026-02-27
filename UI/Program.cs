@@ -1,23 +1,14 @@
 using Ares.Core;
-using Ares.Core.Device.State.Export.ExportStreamProviders;
-using Ares.Core.Execution;
 using Ares.Core.Grpc;
 using Ares.Services;
 using AresService.Data;
-using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
-using Radzen;
 using Serilog;
 using System.CommandLine;
 using System.Reflection;
 using UI;
-using UI.Infrastructure.Grpc;
-using UI.Application.Notifications;
-using UI.Infrastructure.Notifications;
-using UI.Components.Formatting;
 using UI.Application.Settings;
-using UI.Application.Handlers;
 
 #region Command Line Params
 
@@ -74,7 +65,7 @@ static async Task<int> CheckDatabase(string[] args)
 
   try
   {
-    ConfigureDatabaseServices(host.Services, host.Configuration);
+    host.Services.ConfigureDatabaseServices(host.Configuration);
     var app = host.Build();
     var settings = host.Configuration.Get<AppSettings>();
     var provider = settings?.DatabaseProvider;
@@ -128,7 +119,7 @@ static async Task<int> RunMigrationsAsync(string[] args)
 
   try
   {
-    ConfigureDatabaseServices(host.Services, host.Configuration);
+    host.Services.ConfigureDatabaseServices(host.Configuration);
     var app = host.Build();
     var settings = host.Configuration.Get<AppSettings>();
     var provider = settings?.DatabaseProvider;
@@ -153,41 +144,6 @@ static async Task<int> RunMigrationsAsync(string[] args)
     Console.WriteLine($"An error occurred during migration: {ex.Message}");
     Console.ResetColor();
     return 3;
-  }
-}
-
-static void ConfigureDatabaseServices(IServiceCollection services, ConfigurationManager configuration)
-{
-  var sqlConnectionStrings = configuration.GetSection("ConnectionStrings");
-  var provider = configuration.Get<AppSettings>()?.DatabaseProvider ?? "Sqlite";
-
-  if(provider == "SqlServer")
-  {
-    services.AddDbContextFactory<AresDbContext>(b =>
-    {
-      b.UseSqlServer(sqlConnectionStrings[provider]);
-      b.EnableSensitiveDataLogging();
-    });
-  }
-  else if(provider == "Sqlite")
-  {
-    services.AddDbContextFactory<AresDbContext>(b =>
-    {
-      b.UseSqlite(sqlConnectionStrings[provider]);
-      b.EnableSensitiveDataLogging();
-    });
-  }
-  else if(provider == "Postgres")
-  {
-    services.AddDbContextFactory<AresDbContext>(b =>
-    {
-      b.UseNpgsql(sqlConnectionStrings[provider]);
-      b.EnableSensitiveDataLogging();
-    });
-  }
-  else
-  {
-    throw new InvalidOperationException($"Unsupported database provider: {provider}. Available provider values: {string.Join(',', sqlConnectionStrings.AsEnumerable().Select(scs => scs.Key.Split(':').LastOrDefault()).Where(s => s != "ConnectionStrings"))}");
   }
 }
 
@@ -257,16 +213,6 @@ static void PopulateAresConfig(IConfiguration configuration)
   AresConfig.TagsPath = Path.Combine(basePath, AppSettings.ExperimentTagsFile);
 }
 
-static void OnStopping()
-{
-  ServerStatusHelper.ServerStatusSubject.OnNext(new ServerStatusResponse { ServerStatus = ServerStatus.Stopping, StatusMessage = "Server is stopping." });
-}
-
-static void OnStopped()
-{
-  ServerStatusHelper.ServerStatusSubject.OnNext(new ServerStatusResponse { ServerStatus = ServerStatus.Stopped, StatusMessage = "Server has been stopped." });
-}
-
 #endregion
 
 static Task RunWebAppAsync(params string[] args)
@@ -283,44 +229,7 @@ static Task RunWebAppAsync(params string[] args)
     .AddJsonFile("appsettings.ui.json", optional: false, reloadOnChange: true)
     .AddJsonFile($"appsettings.ui.{builder.Environment.EnvironmentName}.json", optional: true);
   
-  services.AddGrpc(options => options.EnableDetailedErrors = true);
-
-  services.AddDatabaseDeveloperPageExceptionFilter();
-
-  services.AddRazorComponents().AddInteractiveServerComponents();
-  services.AddCascadingAuthenticationState();
-  services.AddRadzenComponents();
-  services.Configure<RemoteServiceSettings>(configuration.GetSection(nameof(RemoteServiceSettings)));
-  services.Configure<CertificateSettings>(configuration.GetSection(nameof(CertificateSettings)));
-
-  services.AddSingleton<IMessenger>(provider => new WeakReferenceMessenger());
-  services.AddScoped<IClientManager, ClientManager>();
-  services.LoadAresModules();
-  services.BindClients();
-  services.AddSingleton<INotificationReceivingService, NotificationReceivingService>();
-  services.AddAresCoreComponents();
-  services.AddNotificationHandlers();
-  services.AddSingleton<IExecutionSummaryHandler>(provider =>
-  {
-    var stateExporters = provider.GetServices<IDeviceStateExportStreamProvider>();
-    return new ExperimentResultJsonHandler(stateExporters);
-  });
-
-  services.AddOptions();
-  services.AddAntiforgery();
-
-  services.AddHostedService<ServiceStarter>();
-
-  services.AddSerilog((services, lc) => lc
-    .ReadFrom.Configuration(configuration)
-    .ReadFrom.Services(services)
-    .WriteTo.Console()
-    .Enrich.FromLogContext());
-
-  ConfigureDatabaseServices(services, configuration);
-
-  services.AddTransient<IDbContextFactory<CoreDatabaseContext>>(p =>
-    new CovariantCoreDbContextFactory<CoreDatabaseContext, AresDbContext>(p.GetRequiredService<IDbContextFactory<AresDbContext>>()));
+  services.AddMergedHostServices(configuration);
 
   var app = builder.Build();
   PopulateAresConfig(configuration);
@@ -337,25 +246,9 @@ static Task RunWebAppAsync(params string[] args)
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
   }
-
-  app.UseStatusCodePagesWithReExecute("/404");
-
-  app.UseHttpsRedirection();
-
-  app.MapStaticAssets();
-
-  app.UseRouting();
-  app.MapCoreAresServices();
-  app.MapAresServices();
-
-  app.UseAntiforgery();
-  app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
-  var appLifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
-  appLifetime.ApplicationStopping.Register(OnStopping);
-  appLifetime.ApplicationStopped.Register(OnStopped);
-
-
-  app.Services.GetService<UnitCategoryHelper>();
+  
+  app.UseAresUiPipeline();
+  app.MapAresUiEndpoints();
 
   return app.RunAsync();
 }
