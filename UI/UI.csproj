@@ -55,6 +55,7 @@
     <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.0" />
+    <PackageReference Include="System.CommandLine" Version="2.0.3" />
     <PackageReference Include="UnitsNet" Version="5.75.0" />
   </ItemGroup>
 
@@ -63,8 +64,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Ares.Core\Ares.Core.csproj" />
+    <ProjectReference Include="..\Ares.Core.Grpc\Ares.Core.Grpc.csproj" />
     <ProjectReference Include="..\AresScript\AresScript.csproj" />
+    <ProjectReference Include="..\AresService.Data\AresService.Data.csproj" />
   </ItemGroup>
 
   <ItemGroup>
