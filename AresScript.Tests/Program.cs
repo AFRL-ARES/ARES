@@ -1,8 +1,13 @@
-﻿using System.Diagnostics;
 using Antlr4.Runtime;
+using Ares.Datamodel;
+using Ares.Datamodel.Extensions;
+using Ares.Datamodel.Scripting;
+using AresScript.Environment;
 using AresScript.Generated;
 using AresScript.Interpreters;
+using AresScript.ScriptAnalysis;
 using NUnit.Framework;
+using System.Diagnostics;
 
 namespace AresScript.Tests;
 
@@ -39,12 +44,20 @@ public class InterpreterTests
     }
   }
 
-  private static Task RunScriptAsync(string script, CancellationToken cancellationToken = default)
+  private static Task RunScriptAsync(
+    string script,
+    CancellationToken cancellationToken = default,
+    Action<AresFunctionInvocation>? invocationObserver = null,
+    Action<AresFunctionExecutionEvent>? executionEventObserver = null)
   {
-    return RunScriptAsync(script, new ScriptExecutionControlToken(cancellationToken));
+    return RunScriptAsync(script, new ScriptExecutionControlToken(cancellationToken), invocationObserver, executionEventObserver);
   }
 
-  private static async Task RunScriptAsync(string script, ScriptExecutionControlToken executionControlToken)
+  private static async Task RunScriptAsync(
+    string script,
+    ScriptExecutionControlToken executionControlToken,
+    Action<AresFunctionInvocation>? invocationObserver = null,
+    Action<AresFunctionExecutionEvent>? executionEventObserver = null)
   {
     var stream = new AntlrInputStream(script);
     var lexer = new AresIndentationLexer(stream);
@@ -58,7 +71,7 @@ public class InterpreterTests
     var env = new AresScriptEnvironment();
     env.AssignSystemFunctions(StandardLibrary.Functions);
     env.AssignExtensionFunctions(StandardLibrary.ExtensionFunctions);
-    var visitor = new AresBaseInterpreter(env, executionControlToken);
+    var visitor = new AresBaseInterpreter(env, executionControlToken, invocationObserver, executionEventObserver);
 
     await visitor.Visit(programCtx);
   }
@@ -80,6 +93,81 @@ public class InterpreterTests
     var visitor = new AresValidationInterpreter(env);
 
     await visitor.Visit(programCtx);
+  }
+
+  private static async Task<AresFunctionInvocation[]> ValidateAndCollectInvocationsAsync(string script)
+  {
+    var env = new AresScriptEnvironment();
+    env.AssignSystemFunctions(StandardLibrary.Functions);
+    env.AssignExtensionFunctions(StandardLibrary.ExtensionFunctions);
+
+    var (invocations, diagnostics) = await AresScriptAnalysis.ValidateAndCollectInvocationsAsync(script, env);
+    Assert.That(diagnostics, Is.Empty);
+    return invocations;
+  }
+
+  private static async Task<AresFunctionInvocation[]> RunAndCollectRuntimeInvocationsAsync(string script)
+  {
+    var invocations = new List<AresFunctionInvocation>();
+    await RunScriptAsync(script, invocationObserver: invocations.Add);
+    return invocations.ToArray();
+  }
+
+  private static async Task<AresFunctionExecutionEvent[]> RunAndCollectRuntimeExecutionEventsAsync(string script)
+  {
+    var events = new List<AresFunctionExecutionEvent>();
+    await RunScriptAsync(script, executionEventObserver: events.Add);
+    return events.ToArray();
+  }
+
+  private static async Task<ScriptFunctionInvocation[]> BuildScriptSummaryAsync(
+    string script,
+    bool includeUserFunctions = false,
+    bool includeLambdas = false)
+  {
+    var env = new AresScriptEnvironment();
+    env.AssignSystemFunctions(StandardLibrary.Functions);
+    env.AssignExtensionFunctions(StandardLibrary.ExtensionFunctions);
+
+    var (steps, diagnostics) = await AresScriptAnalysis.BuildScriptSummaryAsync(
+      script,
+      env,
+      includeUserFunctions,
+      includeLambdas);
+    Assert.That(diagnostics, Is.Empty);
+    return steps;
+  }
+
+  private static async Task<CompletionItem[]> BuildCompletionsAsync(string script, int line, int column)
+  {
+    var env = new AresScriptEnvironment();
+    env.AssignSystemFunctions(StandardLibrary.Functions);
+    env.AssignExtensionFunctions(StandardLibrary.ExtensionFunctions);
+    var completions = await AresScriptAnalysis.BuildCompletionsAsync(env, script, line, column);
+    return completions.ToArray();
+  }
+
+  private static SchemaEntry InferExpressionSchema(
+    string expression,
+    Action<AresScriptEnvironment>? configureEnvironment = null)
+  {
+    var stream = new AntlrInputStream(expression);
+    var lexer = new AresIndentationLexer(stream);
+    lexer.RemoveErrorListeners();
+    lexer.AddErrorListener(new ThrowingLexerErrorListener());
+    var tokenStream = new CommonTokenStream(lexer);
+    var parser = new AresLangParser(tokenStream);
+    parser.RemoveErrorListeners();
+    parser.AddErrorListener(new ThrowingParserErrorListener());
+    var expressionContext = parser.expression();
+
+    var env = new AresScriptEnvironment();
+    env.AssignSystemFunctions(StandardLibrary.Functions);
+    env.AssignExtensionFunctions(StandardLibrary.ExtensionFunctions);
+    configureEnvironment?.Invoke(env);
+
+    var visitor = new AresTypeInferenceInterpreter(env);
+    return visitor.Visit(expressionContext);
   }
 
   [Test]
@@ -133,6 +221,121 @@ public class InterpreterTests
       """;
 
     await RunScriptAsync(script);
+  }
+
+  [Test]
+  public async Task Function_TypeHints_Are_Parsed_For_Parameters_And_Returns()
+  {
+    var script = """
+      def identity(value: Number) -> Number:
+        return value
+
+      assert identity(42) == 42
+      """;
+
+    await RunScriptAsync(script);
+  }
+
+  [Test]
+  public async Task Validation_Allows_Function_TypeHints()
+  {
+    var script = """
+      def format_value(value: Number) -> String:
+        return "ok"
+      """;
+
+    await ValidateScriptAsync(script);
+  }
+
+  [Test]
+  public Task Runtime_Rejects_Mismatched_Function_Argument_TypeHint()
+  {
+    var script = """
+      def echo_num(value: Number) -> Number:
+        return value
+
+      echo_num("oops")
+      """;
+
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
+    Assert.That(ex?.Message, Does.Contain("argument 'value' type mismatch"));
+    return Task.CompletedTask;
+  }
+
+  [Test]
+  public Task Validation_Rejects_Mismatched_Function_Argument_TypeHint()
+  {
+    var script = """
+      def echo_num(value: Number) -> Number:
+        return value
+
+      echo_num("oops")
+      """;
+
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
+    Assert.That(ex?.Message, Does.Contain("argument 'value' type mismatch"));
+    return Task.CompletedTask;
+  }
+
+  [Test]
+  public Task Runtime_Rejects_Mismatched_Function_Return_TypeHint()
+  {
+    var script = """
+      def bad_return() -> Number:
+        return "oops"
+
+      bad_return()
+      """;
+
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
+    Assert.That(ex?.Message, Does.Contain("return type mismatch"));
+    return Task.CompletedTask;
+  }
+
+  [Test]
+  public Task Validation_Rejects_Mismatched_Function_Return_TypeHint()
+  {
+    var script = """
+      def bad_return() -> Number:
+        return "oops"
+      """;
+
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
+    Assert.That(ex?.Message, Does.Contain("return type mismatch"));
+    return Task.CompletedTask;
+  }
+
+  [Test]
+  public async Task Completions_Include_DataTypes_In_Function_TypeHint_Context()
+  {
+    var script = "def typed(value: ";
+    var completions = await BuildCompletionsAsync(script, 1, script.Length + 1);
+    var labels = completions.Select(item => item.Label).ToHashSet(StringComparer.Ordinal);
+    Assert.That(labels, Does.Contain("Number"));
+    Assert.That(labels, Does.Contain("String"));
+    Assert.That(completions.Any(item => item.Metadata.Kind == SymbolKind.Type), Is.True);
+  }
+
+  [Test]
+  public async Task Completions_Include_DataTypes_In_Function_Return_TypeHint_Context()
+  {
+    var script = "def typed(value: Number) -> ";
+    var completions = await BuildCompletionsAsync(script, 1, script.Length + 1);
+    var labels = completions.Select(item => item.Label).ToHashSet(StringComparer.Ordinal);
+    Assert.That(labels, Does.Contain("Number"));
+    Assert.That(labels, Does.Contain("String"));
+    Assert.That(completions.Any(item => item.Metadata.Kind == SymbolKind.Type), Is.True);
+  }
+
+  [Test]
+  public async Task Completions_DoNot_Include_DataTypes_In_Function_Body_Context()
+  {
+    var script = """
+      def typed(value: Number) -> Number:
+        val = 
+      """;
+    var completions = await BuildCompletionsAsync(script, 2, 9);
+    Assert.That(completions.Any(item => item.Metadata.Kind == SymbolKind.Type), Is.False);
   }
 
   [Test]
@@ -241,6 +444,41 @@ public class InterpreterTests
       """;
 
     await ValidateScriptAsync(script);
+  }
+
+  [Test]
+  public void TypeInference_Resolves_Parenthesized_System_Function_Call_Output_Schema()
+  {
+    var schema = InferExpressionSchema("(range)(3)");
+    Assert.That(schema.Type, Is.EqualTo(AresDataType.NumberArray));
+  }
+
+  [Test]
+  public void TypeInference_Resolves_Extension_Call_From_Struct_String_Index()
+  {
+    var schema = InferExpressionSchema(
+      "payload[\"nums\"].append(3)",
+      env =>
+      {
+        var payload = AresValueHelper.CreateStruct();
+        payload.StructValue.Fields["nums"] = AresValueHelper.CreateNumberArray([1, 2]);
+        env.AssignVariable("payload", payload);
+      });
+
+    Assert.That(schema.Type, Is.EqualTo(AresDataType.Unit));
+  }
+
+  [Test]
+  public void TypeInference_Prefers_Declared_Schema_Over_Placeholder_Value()
+  {
+    var schema = InferExpressionSchema(
+      "bepis",
+      env => env.AssignVariable(
+        "bepis",
+        AresValueHelper.CreateNull(),
+        new SchemaEntry { Type = AresDataType.Any }));
+
+    Assert.That(schema.Type, Is.EqualTo(AresDataType.Any));
   }
 
   [Test]
@@ -442,6 +680,201 @@ public class InterpreterTests
   }
 
   [Test]
+  public async Task Validator_Collects_Ordered_System_And_User_Function_Invocations()
+  {
+    var script = """
+      def id(v):
+        return v
+
+      values = range(3)
+      id(values)
+      print(values)
+      """;
+
+    var invocations = await ValidateAndCollectInvocationsAsync(script);
+    Assert.That(invocations.Select(i => i.FunctionId), Is.EqualTo(["range", "id", "print"]));
+    Assert.That(invocations.Select(i => i.Kind), Is.EqualTo(
+    [
+      AresFunctionInvocationKind.System,
+      AresFunctionInvocationKind.User,
+      AresFunctionInvocationKind.System
+    ]));
+  }
+
+  [Test]
+  public async Task Validator_Collects_Extension_Function_Invocations()
+  {
+    var script = """
+      items = []
+      items.append(123)
+      """;
+
+    var invocations = await ValidateAndCollectInvocationsAsync(script);
+    Assert.That(invocations.Length, Is.EqualTo(1));
+    Assert.That(invocations[0].FunctionId, Is.EqualTo("list::append"));
+    Assert.That(invocations[0].FunctionName, Is.EqualTo("append"));
+    Assert.That(invocations[0].Kind, Is.EqualTo(AresFunctionInvocationKind.Extension));
+    Assert.That(invocations[0].Expression, Is.EqualTo("items.append(123)"));
+  }
+
+  [Test]
+  public async Task Validator_Collects_NumberArray_Extension_Function_Invocations()
+  {
+    var script = """
+      numbers = [1, 2]
+      numbers.append(3)
+      """;
+
+    var invocations = await ValidateAndCollectInvocationsAsync(script);
+    Assert.That(invocations.Length, Is.EqualTo(1));
+    Assert.That(invocations[0].FunctionId, Is.EqualTo("number_array::append"));
+    Assert.That(invocations[0].FunctionName, Is.EqualTo("append"));
+    Assert.That(invocations[0].Kind, Is.EqualTo(AresFunctionInvocationKind.Extension));
+    Assert.That(invocations[0].Expression, Is.EqualTo("numbers.append(3)"));
+  }
+
+  [Test]
+  public async Task Runtime_Collects_Ordered_System_User_And_Extension_Function_Invocations()
+  {
+    var script = """
+      def id(v):
+        return v
+
+      values = range(3)
+      items = []
+      items.append(values)
+      id(values)
+      print(values)
+      """;
+
+    var invocations = await RunAndCollectRuntimeInvocationsAsync(script);
+    Assert.That(invocations.Select(i => i.FunctionId), Is.EqualTo(["range", "list::append", "id", "print"]));
+    Assert.That(invocations.Select(i => i.Kind), Is.EqualTo(
+    [
+      AresFunctionInvocationKind.System,
+      AresFunctionInvocationKind.Extension,
+      AresFunctionInvocationKind.User,
+      AresFunctionInvocationKind.System
+    ]));
+    Assert.That(invocations.Select(i => i.Expression), Is.EqualTo(
+    [
+      "range(3)",
+      "items.append(values)",
+      "id(values)",
+      "print(values)"
+    ]));
+  }
+
+  [Test]
+  public async Task Runtime_Collects_Lambda_Function_Invocations()
+  {
+    var script = """
+      inc = x => x + 1
+      inc(2)
+      """;
+
+    var invocations = await RunAndCollectRuntimeInvocationsAsync(script);
+    Assert.That(invocations.Length, Is.EqualTo(1));
+    Assert.That(invocations[0].Kind, Is.EqualTo(AresFunctionInvocationKind.Lambda));
+    Assert.That(invocations[0].FunctionId, Does.StartWith("lambda::"));
+    Assert.That(invocations[0].Expression, Is.EqualTo("inc(2)"));
+  }
+
+  [Test]
+  public async Task Runtime_Function_Execution_Events_Include_Started_And_Completed()
+  {
+    var script = """
+      values = range(3)
+      """;
+
+    var events = await RunAndCollectRuntimeExecutionEventsAsync(script);
+    Assert.That(events.Select(e => e.Kind), Is.EqualTo(new[]
+    {
+      AresFunctionExecutionEventKind.Started,
+      AresFunctionExecutionEventKind.Completed
+    }));
+    Assert.That(events[0].Invocation.FunctionId, Is.EqualTo("range"));
+    Assert.That(events[1].CallId, Is.EqualTo(events[0].CallId));
+    Assert.That(events[1].Result, Is.Not.Null);
+  }
+
+  [Test]
+  public Task Runtime_Function_Execution_Events_Include_Failed()
+  {
+    var script = """
+      nums = [1]
+      nums.append("oops")
+      """;
+
+    var events = new List<AresFunctionExecutionEvent>();
+    Assert.ThrowsAsync<InvalidOperationException>(() => RunScriptAsync(script, executionEventObserver: events.Add));
+    Assert.That(events.Select(e => e.Kind), Is.EqualTo(new[]
+    {
+      AresFunctionExecutionEventKind.Started,
+      AresFunctionExecutionEventKind.Failed
+    }));
+    Assert.That(events[1].CallId, Is.EqualTo(events[0].CallId));
+    Assert.That(events[1].Error, Is.Not.Empty);
+    return Task.CompletedTask;
+  }
+
+  [Test]
+  public async Task Summary_Defaults_To_System_And_Extension_Functions()
+  {
+    var script = """
+      def identity(v):
+        return v
+
+      values = range(3)
+      items = []
+      items.append(values)
+      identity(values)
+      print(values)
+      """;
+
+    var steps = await BuildScriptSummaryAsync(script);
+    Assert.That(steps.Select(s => s.FunctionId), Is.EqualTo(["range", "list::append", "print"]));
+    Assert.That(steps.Select(s => s.Order), Is.EqualTo([1, 2, 3]));
+  }
+
+  [Test]
+  public async Task Summary_Can_Include_User_Functions()
+  {
+    var script = """
+      def identity(v):
+        return v
+
+      values = range(3)
+      identity(values)
+      print(values)
+      """;
+
+    var steps = await BuildScriptSummaryAsync(script, includeUserFunctions: true);
+    Assert.That(steps.Select(s => s.FunctionId), Is.EqualTo(["range", "identity", "print"]));
+  }
+
+  [Test]
+  public async Task Summary_Does_Not_Prepend_Function_Body_Invocations_From_Declarations()
+  {
+    var script = """
+      def main():
+        return True
+
+      def meme():
+        sleep(400)
+        return "meme"
+
+      sleep(1000)
+      main()
+      sleep(1000)
+      print(meme())
+      """;
+
+    var steps = await BuildScriptSummaryAsync(script, includeUserFunctions: true);
+    Assert.That(steps.Select(s => s.FunctionId), Is.EqualTo(["sleep", "main", "sleep", "meme", "print"]));
+  }
+
+  [Test]
   public Task Cancellation_Stops_Interpreter()
   {
     var script = "assert True";
@@ -550,6 +983,43 @@ public class InterpreterTests
   }
 
   [Test]
+  public async Task Number_Array_Append_Works()
+  {
+    var script = """
+      nums = [1, 2]
+      nums.append(3)
+      assert nums[2] == 3
+      """;
+
+    await RunScriptAsync(script);
+  }
+
+  [Test]
+  public async Task String_Array_Append_Works()
+  {
+    var script = """
+      words = ["a", "b"]
+      words.append("c")
+      assert words[2] == "c"
+      """;
+
+    await RunScriptAsync(script);
+  }
+
+  [Test]
+  public Task Validator_Rejects_Number_Array_Append_With_Wrong_Type()
+  {
+    var script = """
+      nums = [1, 2]
+      nums.append("oops")
+      """;
+
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
+    Assert.That(ex?.Message, Does.Contain("type mismatch"));
+    return Task.CompletedTask;
+  }
+
+  [Test]
   public async Task Lambda_Expression_Works()
   {
     var script = """
@@ -616,6 +1086,7 @@ public class InterpreterTests
                  test = empty_arr[1]
                  """;
     var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
+    Assert.That(ex?.Message, Does.Contain("Index was out of range."));
     return Task.CompletedTask;
   }
 
@@ -637,8 +1108,10 @@ public class InterpreterTests
   public async Task Top_Level_Loop_Works()
   {
     var script = """
+                 total = 0
                  for i in range(10):
-                   print(i + i)
+                   total = total + i
+                 assert total == 45
                  """;
 
     await RunScriptAsync(script);
@@ -754,8 +1227,9 @@ public class InterpreterTests
 
                  recurse(101)
                  """;
-    
-    Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
+
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
+    Assert.That(ex?.Message, Does.Contain("Maximum function call depth reached."));
     return Task.CompletedTask;
   }
 

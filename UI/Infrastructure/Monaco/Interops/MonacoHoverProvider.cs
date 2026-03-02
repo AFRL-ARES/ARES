@@ -1,14 +1,8 @@
-using System.Text;
-using Antlr4.Runtime;
 using Ares.Datamodel;
-using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Scripting;
 using Ares.Services;
-using AresScript;
-using AresScript.Generated;
-using AresScript.Interpreters;
-using Google.Protobuf.WellKnownTypes;
 using Microsoft.JSInterop;
+using System.Text;
 using UI.Application.Scripting;
 
 namespace UI.Infrastructure.Monaco.Interops;
@@ -16,99 +10,110 @@ namespace UI.Infrastructure.Monaco.Interops;
 public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServiceClient aresScriptingServiceClient) : IMonacoHoverProvider
 {
   private readonly AresScriptingService.AresScriptingServiceClient _aresScriptingServiceClient = aresScriptingServiceClient;
-  private AutocompleteCatalog? _cachedCatalog;
 
   [JSInvokable]
   public async Task<string?> GetHoverText(string script, int line, int column, string identifier)
   {
-    if(string.IsNullOrWhiteSpace(identifier))
+    var response = await _aresScriptingServiceClient.GetSymbolMetadataAsync(new SymbolMetadataRequest
+    {
+      Script = script,
+      CursorLine = line,
+      CursorColumn = column,
+      Identifier = identifier ?? string.Empty
+    });
+
+    if(response.Metadata is null || !response.Found)
     {
       return null;
     }
 
-    var request = new CompletionRequest
-    {
-      CursorColumn = column,
-      CursorLine = line,
-      Script = script
-    };
-
-    var completions = await _aresScriptingServiceClient.GetCompletionsAsync(request);
-    var item = completions.Items.FirstOrDefault(i => string.Equals(i.Label, identifier, StringComparison.Ordinal));
-
-    var hoverMarkdown = BuildHoverMarkdown(item);
-    var markdown = hoverMarkdown?.markdown;
-    var hasSchema = hoverMarkdown?.hasSchema ?? false;
-
-    if(!hasSchema)
-    {
-      var inferredSchema = await TryGetInferredSchema(script, line, column, identifier);
-      if(inferredSchema is not null)
-      {
-        markdown = AppendInferredSchema(markdown, identifier, inferredSchema);
-      }
-    }
-
-    return string.IsNullOrWhiteSpace(markdown) ? null : markdown;
+    return BuildHoverMarkdown(response.Metadata);
   }
 
-  private static (string markdown, bool hasSchema)? BuildHoverMarkdown(CompletionItem? item)
+  private static string? BuildHoverMarkdown(ScriptSymbolMetadata response)
   {
-    if(item is null)
-    {
-      return null;
-    }
     var sb = new StringBuilder();
-    var schemaFound = false;
-    var label = item.Label ?? string.Empty;
-    var name = string.IsNullOrWhiteSpace(item.ParentIdentifier) ? label : $"{item.ParentIdentifier}.{label}";
+    var displayName = string.IsNullOrWhiteSpace(response.ParentIdentifier)
+      ? response.Identifier
+      : $"{response.ParentIdentifier}.{response.Identifier}";
 
-    if(!string.IsNullOrWhiteSpace(name))
+    if(!string.IsNullOrWhiteSpace(displayName))
     {
-      sb.Append("**").Append(name).Append("**");
+      sb.Append("**").Append(displayName).Append("**");
     }
 
-    AppendDescription(sb, item.Detail, item.Documentation);
-    if(item.InputSchema is not null)
+    AppendDescription(sb, response.Detail, response.Documentation);
+
+    switch(response.ShapeCase)
     {
-      schemaFound = true;
-      AppendDataSchemaSection(sb, "Inputs", item.InputSchema);
-    }
-    if(item.OutputSchema?.Type != AresDataType.Unit)
-    {
-      schemaFound = true;
-      AppendSchemaEntrySection(sb, "Output", item.OutputSchema);
+      case ScriptSymbolMetadata.ShapeOneofCase.FunctionShape:
+        AppendFunctionShape(sb, response.FunctionShape);
+        break;
+      case ScriptSymbolMetadata.ShapeOneofCase.ValueShape:
+        AppendValueShape(sb, response.ValueShape);
+        break;
+      default:
+        break;
     }
 
-    if(item.Schema is not null)
+    return sb.Length == 0 ? null : sb.ToString();
+  }
+
+  private static void AppendFunctionShape(StringBuilder sb, ScriptSymbolMetadata.Types.FunctionShape functionShape)
+  {
+    if(functionShape.InputSchema is not null && functionShape.InputSchema.Fields.Count > 0)
     {
-      schemaFound = true;
-      AppendSchemaEntrySection(sb, "Schema", item.Schema);
+      AppendDataSchemaSection(sb, "Inputs", functionShape.InputSchema);
     }
 
-    return (sb.ToString(), schemaFound);
+    if(functionShape.OutputSchema is not null && functionShape.OutputSchema.Type is not AresDataType.Unit and not AresDataType.UnspecifiedType)
+    {
+      AppendSchemaEntrySection(sb, "Outputs", functionShape.OutputSchema);
+    }
+  }
+
+  private static void AppendValueShape(StringBuilder sb, ScriptSymbolMetadata.Types.ValueShape valueShape)
+  {
+    if(valueShape.Schema is not null && valueShape.Schema.Type is not AresDataType.UnspecifiedType)
+    {
+      AppendSchemaEntrySection(sb, "Schema", valueShape.Schema);
+    }
+
+    // TODO: revisit the value. It seems that we have a value regardless of whether or not there's
+    // a real value if that makes sense. Need to figure out if there's a way to distinguish a constant
+    // provided by the system instead of any ol' value symbol. -AB
+    //if(valueShape.Value is not null)
+    //{
+    //  sb.AppendLine();
+    //  sb.Append("Value: ");
+    //  sb.Append("```text");
+    //  sb.Append(valueShape.Value.Stringify());
+    //  sb.Append("```");
+    //}
   }
 
   private static void AppendDescription(StringBuilder sb, string? detail, string? documentation)
   {
     var trimmedDetail = detail?.Trim();
     var trimmedDoc = documentation?.Trim();
+    var detailNull = string.IsNullOrWhiteSpace(trimmedDetail);
+    var docNull = string.IsNullOrWhiteSpace(trimmedDoc);
 
-    if(string.IsNullOrWhiteSpace(trimmedDetail) && string.IsNullOrWhiteSpace(trimmedDoc))
+    if(detailNull && docNull)
     {
       return;
     }
 
     sb.AppendLine().AppendLine();
 
-    if(!string.IsNullOrWhiteSpace(trimmedDetail))
+    if(!detailNull)
     {
       sb.AppendLine(trimmedDetail);
     }
 
-    if(!string.IsNullOrWhiteSpace(trimmedDoc) && !string.Equals(trimmedDoc, trimmedDetail, StringComparison.Ordinal))
+    if(!docNull && !string.Equals(trimmedDoc, trimmedDetail, StringComparison.Ordinal))
     {
-      if(!string.IsNullOrWhiteSpace(trimmedDetail))
+      if(!detailNull)
       {
         sb.AppendLine();
       }
@@ -142,6 +147,7 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
     {
       return;
     }
+
     sb.AppendLine().AppendLine();
     sb.Append("**").Append(title).AppendLine("**");
     sb.AppendLine("```text");
@@ -160,6 +166,7 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
     {
       sb.AppendLine(FormatSchemaEntry(entry));
     }
+
     sb.AppendLine("```");
   }
 
@@ -168,110 +175,4 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
     var typeName = entry.Type.ToString();
     return entry.Optional ? $"{typeName} (optional)" : typeName;
   }
-
-  private async Task<SchemaEntry?> TryGetInferredSchema(string script, int line, int column, string identifier)
-  {
-    if(string.IsNullOrWhiteSpace(script))
-    {
-      return null;
-    }
-
-    var catalog = await GetAutocompleteCatalog();
-    if(catalog is null)
-    {
-      return null;
-    }
-
-    var env = BuildEnvironmentForInference(catalog);
-    var program = TryParseProgram(script);
-    if(program is null)
-    {
-      return null;
-    }
-
-    var globalSchemas = new Dictionary<string, SchemaEntry>(StringComparer.Ordinal);
-    foreach(var global in catalog.Globals)
-    {
-      if(global.Schema is not null && !string.IsNullOrWhiteSpace(global.Name))
-      {
-        globalSchemas[global.Name] = global.Schema;
-      }
-    }
-
-    var collector = new VariableSchemaCollector(env, globalSchemas, line, column, identifier);
-    collector.Visit(program);
-    return collector.FoundSchema;
-  }
-
-  private async Task<AutocompleteCatalog?> GetAutocompleteCatalog()
-  {
-    if(_cachedCatalog is not null)
-    {
-      return _cachedCatalog;
-    }
-
-    var response = await _aresScriptingServiceClient.GetAutocompleteCatalogAsync(new Empty());
-    _cachedCatalog = response.Catalog;
-    return _cachedCatalog;
-  }
-
-  private static AresLangParser.ProgramContext? TryParseProgram(string script)
-  {
-    try
-    {
-      var stream = new AntlrInputStream(script);
-      var lexer = new AresIndentationLexer(stream);
-      var tokenStream = new CommonTokenStream(lexer);
-      var parser = new AresLangParser(tokenStream);
-      return parser.program();
-    }
-    catch
-    {
-      return null;
-    }
-  }
-
-  private static AresScriptEnvironment BuildEnvironmentForInference(AutocompleteCatalog catalog)
-  {
-    var env = new AresScriptEnvironment();
-    var functions = catalog.GlobalFunctions
-      .Select(func => CreateSystemFunction(func, string.Empty))
-      .Concat(catalog.Namespaces.SelectMany(ns => ns.Functions.Select(func => CreateSystemFunction(func, ns.Identifier))))
-      .ToArray();
-
-    env.AssignSystemFunctions(functions);
-    return env;
-  }
-
-  private static AresSystemFunction CreateSystemFunction(FunctionSymbol function, string namespaceName)
-  {
-    var id = string.IsNullOrWhiteSpace(function.Id) ? function.Name : function.Id;
-    var name = string.IsNullOrWhiteSpace(function.Name) ? id : function.Name;
-    var inputSchema = function.InputSchema ?? new AresDataSchema();
-    var outputSchema = function.OutputSchema ?? new SchemaEntry();
-    var description = function.Description ?? string.Empty;
-    return new AresSystemFunction(id, name, DummyFunction, inputSchema, outputSchema, namespaceName, description);
-  }
-
-  private static Task<AresValue> DummyFunction(List<AresValue> _, ScriptExecutionControlToken __)
-  {
-    return Task.FromResult(AresValueHelper.CreateNull());
-  }
-
-  private static string AppendInferredSchema(string? markdown, string identifier, SchemaEntry schema)
-  {
-    var sb = new StringBuilder();
-    if(!string.IsNullOrWhiteSpace(markdown))
-    {
-      sb.Append(markdown);
-    }
-    else
-    {
-      sb.Append("**").Append(identifier).Append("**");
-    }
-
-    AppendSchemaEntrySection(sb, "Inferred Type", schema);
-    return sb.ToString();
-  }
 }
-

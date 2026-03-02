@@ -1,5 +1,6 @@
 using Antlr4.Runtime;
 using AresScript.Generated;
+using AresScript.Symbols;
 
 namespace AresScript.ScriptBuilding;
 
@@ -82,12 +83,12 @@ public sealed class AresScriptBuilder : AresScriptBlockBuilder
 
     var signature = existingParameters.Length == 0
       ? $"{_functionPrefix}{name}()"
-      : $"{_functionPrefix}{name}({string.Join(", ", existingParameters)})";
+      : $"{_functionPrefix}{name}({string.Join(", ", existingParameters.Select(p => p.ToFunctionSignature()))})";
     MutableStatements[index] = new BlockNode(signature, functionBody);
     return true;
   }
 
-  public bool ReplaceFunction(string name, Action<AresScriptBlockBuilder> configureBody, params string[] parameters)
+  public bool ReplaceFunction(string name, Action<AresScriptBlockBuilder> configureBody, params AresScriptParameter[] parameters)
   {
     ArgumentNullException.ThrowIfNull(configureBody);
     ArgumentNullException.ThrowIfNull(parameters);
@@ -97,7 +98,7 @@ public sealed class AresScriptBuilder : AresScriptBlockBuilder
     }
 
     var safeName = name.Trim();
-    var safeParameters = parameters.Select(p => p.Trim()).ToArray();
+    var safeParameters = parameters.ToArray();
     var bodyNodes = new List<ScriptNode>();
     var bodyBuilder = new AresScriptBlockBuilder(bodyNodes, IndentSize, new ScriptBuilderCapabilities(AllowReturn: true, AllowLoopControl: false));
     configureBody(bodyBuilder);
@@ -108,7 +109,7 @@ public sealed class AresScriptBuilder : AresScriptBlockBuilder
 
     var signature = safeParameters.Length == 0
       ? $"{_functionPrefix}{safeName}()"
-      : $"{_functionPrefix}{safeName}({string.Join(", ", safeParameters)})";
+      : $"{_functionPrefix}{safeName}({string.Join(", ", safeParameters.Select(p => p.ToFunctionSignature()))})";
     var functionNode = new BlockNode(signature, bodyNodes);
 
     var index = FindFunctionIndex(safeName, out _, out _);
@@ -124,7 +125,7 @@ public sealed class AresScriptBuilder : AresScriptBlockBuilder
     return true;
   }
 
-  private int FindFunctionIndex(string functionName, out string[] parameters, out string normalizedName)
+  private int FindFunctionIndex(string functionName, out AresScriptParameter[] parameters, out string normalizedName)
   {
     for(var i = 0; i < MutableStatements.Count; i++)
     {
@@ -149,7 +150,7 @@ public sealed class AresScriptBuilder : AresScriptBlockBuilder
     return -1;
   }
 
-  private static bool TryParseFunctionHeader(string header, out string functionName, out string[] parameters)
+  private static bool TryParseFunctionHeader(string header, out string functionName, out AresScriptParameter[] parameters)
   {
     functionName = string.Empty;
     parameters = [];
@@ -173,9 +174,11 @@ public sealed class AresScriptBuilder : AresScriptBlockBuilder
       return true;
     }
 
-    parameters = paramsText
+    var splitParamStrings = paramsText
       .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
       .ToArray();
+
+    parameters = splitParamStrings.Select(ScriptBuildingHelpers.StringToScriptParam).ToArray();
     return true;
   }
 }

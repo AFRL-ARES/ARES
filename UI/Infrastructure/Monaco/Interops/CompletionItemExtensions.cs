@@ -1,7 +1,7 @@
-﻿using CompletionItemKind = BlazorMonaco.Languages.CompletionItemKind;
-using MonacoCompletionItem = BlazorMonaco.Languages.CompletionItem;
+﻿using Ares.Datamodel.Scripting;
 using AresCompletionItem = Ares.Datamodel.Scripting.CompletionItem;
-using AresCompletionItemKind = Ares.Datamodel.Scripting.CompletionItemKind;
+using CompletionItemKind = BlazorMonaco.Languages.CompletionItemKind;
+using MonacoCompletionItem = BlazorMonaco.Languages.CompletionItem;
 
 namespace UI.Infrastructure.Monaco.Interops;
 
@@ -18,9 +18,9 @@ public static class CompletionItemExtensions
     {
       LabelAsString = label,
       InsertText = insertText,
-      Detail = completionItem.Detail ?? string.Empty,
-      DocumentationAsString = completionItem.Documentation ?? string.Empty,
-      Kind = MapKind(completionItem.Kind),
+      Detail = completionItem.Metadata.Detail ?? string.Empty,
+      DocumentationAsString = completionItem.Metadata.Documentation ?? string.Empty,
+      Kind = MapKind(completionItem.Metadata.Kind),
       FilterText = label,
       SortText = label,
     };
@@ -33,17 +33,18 @@ public static class CompletionItemExtensions
     return item;
   }
 
-  private static CompletionItemKind MapKind(AresCompletionItemKind kind)
+  private static CompletionItemKind MapKind(SymbolKind kind)
   {
     return kind switch
     {
-      AresCompletionItemKind.Device => CompletionItemKind.Class,
-      AresCompletionItemKind.Planner => CompletionItemKind.Module,
-      AresCompletionItemKind.Analyzer => CompletionItemKind.Interface,
-      AresCompletionItemKind.Function => CompletionItemKind.Function,
-      AresCompletionItemKind.Variable => CompletionItemKind.Variable,
-      AresCompletionItemKind.Struct => CompletionItemKind.Struct,
-      AresCompletionItemKind.Keyword => CompletionItemKind.Keyword,
+      SymbolKind.Device => CompletionItemKind.Class,
+      SymbolKind.Planner => CompletionItemKind.Module,
+      SymbolKind.Analyzer => CompletionItemKind.Interface,
+      SymbolKind.Function => CompletionItemKind.Function,
+      SymbolKind.Variable => CompletionItemKind.Variable,
+      SymbolKind.Struct => CompletionItemKind.Struct,
+      SymbolKind.Keyword => CompletionItemKind.Keyword,
+      SymbolKind.Type => CompletionItemKind.TypeParameter,
       _ => CompletionItemKind.Text
     };
   }

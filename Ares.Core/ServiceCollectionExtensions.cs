@@ -59,7 +59,7 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<DeviceIdHelper>();
     services.AddSingleton<INotifier, Notifier>();
 
-    services.AddSingleton<ISystemFunctionProvider, DeviceFunctionProvider>();
+    services.AddSingleton<ISymbolProvider, DeviceSymbolProvider>();
     services.AddSingleton<BaseEnvironmentBuilder>();
 
     services.BindComposers();

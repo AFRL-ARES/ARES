@@ -29,6 +29,20 @@ export const language: languages.IMonarchLanguage = {
   ],
 
   constants: ['True', 'False', 'None'],
+  typeKeywords: [
+    'Null',
+    'Boolean',
+    'String',
+    'Number',
+    'StringArray',
+    'NumberArray',
+    'List',
+    'Struct',
+    'ByteArray',
+    'Any',
+    'Unit',
+    'Function',
+  ],
 
   operators: [
     '=',
@@ -72,6 +86,7 @@ export const language: languages.IMonarchLanguage = {
         cases: {
           '@keywords': 'keyword',
           '@constants': 'constant',
+          '@typeKeywords': 'type',
           '@flowKeywords': 'keyword.flow',
           '@specialKeywords': 'keyword.special',
           '@default': 'identifier',

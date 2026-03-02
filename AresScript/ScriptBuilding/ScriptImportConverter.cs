@@ -57,12 +57,13 @@ internal static class ScriptImportConverter
 
   private static BlockNode ConvertFunctionDeclaration(AresLangParser.FunctionDeclarationContext declaration)
   {
-    var ids = declaration.ID();
-    var functionName = ids[0].GetText();
-    var parameters = ids.Skip(1).Select(id => id.GetText()).ToArray();
+    var id = declaration.ID();
+    var parametersCtx = declaration.parameterList();
+    var functionName = id.GetText();
+    var parameters = parametersCtx?.parameter() ?? [];
     var signature = parameters.Length == 0
       ? $"def {functionName}()"
-      : $"def {functionName}({string.Join(", ", parameters)})";
+      : $"def {functionName}({string.Join(", ", parameters.Select(p => p.ToParameterSignature()))})";
 
     var bodyCapabilities = new ScriptBuilderCapabilities(AllowReturn: true, AllowLoopControl: false);
     var bodyNodes = ConvertStatements(declaration.funcBlock().statement(), bodyCapabilities);

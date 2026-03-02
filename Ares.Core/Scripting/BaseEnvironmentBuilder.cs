@@ -1,38 +1,42 @@
 using AresScript;
+using AresScript.Environment;
+using AresScript.Symbols;
 
 namespace Ares.Core.Scripting;
 
-public class BaseEnvironmentBuilder(IEnumerable<ISystemFunctionProvider> systemFunctionProviders)
+public class BaseEnvironmentBuilder(IEnumerable<ISymbolProvider> symbolProviders)
 {
-  private readonly IEnumerable<ISystemFunctionProvider> _systemFunctionProvider = systemFunctionProviders;
+  private readonly IEnumerable<ISymbolProvider> _symbolProviders = symbolProviders;
 
   public AresScriptEnvironment Build()
   {
     var env = new AresScriptEnvironment();
-    var functions = _systemFunctionProvider.SelectMany(sfp => sfp.GetFunctions()).ToArray();
-    if(functions.Length == 0)
-    {
-      return env;
-    }
+    var providedSymbols = _symbolProviders.SelectMany(provider => provider.GetSymbols()).ToArray();
+    var allSystemFunctions = StandardLibrary.Functions
+      .Concat(providedSymbols.OfType<AresSystemFunctionSymbol>())
+      .ToArray();
 
-    // let's stick with global scope for now
-    env.AssignSystemFunctions(StandardLibrary.Functions);
+    env.AssignSystemFunctions(allSystemFunctions);
     env.AssignExtensionFunctions(StandardLibrary.ExtensionFunctions);
-    env.AssignSystemFunctions(functions);
-    env.AssignSystemVariables(BuildSystemValues(env));
+    env.AssignSystemVariables(BuildSystemValues(allSystemFunctions, providedSymbols.OfType<IValueSymbol>()));
 
     return env;
   }
 
-  private static IEnumerable<KeyValuePair<string, AresSystemValue>> BuildSystemValues(AresScriptEnvironment environment)
+  private static IEnumerable<KeyValuePair<string, AresSystemValue>> BuildSystemValues(
+    IEnumerable<AresSystemFunctionSymbol> systemFunctions,
+    IEnumerable<IValueSymbol> providedValueSymbols)
   {
     var rootVariables = new Dictionary<string, AresSystemValue>(StringComparer.Ordinal);
-    var functions = environment.GetAllSystemFunctions();
 
-    foreach(var func in functions)
+    foreach(var func in systemFunctions)
     {
       var fieldName = string.IsNullOrWhiteSpace(func.Name) ? func.Id : func.Name;
-      if(string.IsNullOrWhiteSpace(func.Namespace))
+      var parentPath = !string.IsNullOrWhiteSpace(func.ParentName)
+        ? func.ParentName
+        : func.Namespace;
+
+      if(string.IsNullOrWhiteSpace(parentPath))
       {
         if(!string.IsNullOrWhiteSpace(fieldName) && !rootVariables.ContainsKey(fieldName))
         {
@@ -46,7 +50,7 @@ public class BaseEnvironmentBuilder(IEnumerable<ISystemFunctionProvider> systemF
         continue;
       }
 
-      var pathSegments = func.Namespace
+      var pathSegments = parentPath
         .Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
       if(pathSegments.Length == 0)
       {
@@ -56,6 +60,32 @@ public class BaseEnvironmentBuilder(IEnumerable<ISystemFunctionProvider> systemF
       AddFunctionToPath(rootVariables, pathSegments, fieldName, func);
     }
 
+    foreach(var valueSymbol in providedValueSymbols)
+    {
+      var valueName = valueSymbol.Name;
+      if(string.IsNullOrWhiteSpace(valueName))
+      {
+        continue;
+      }
+
+      var systemValue = ToSystemValue(valueSymbol);
+      if(string.IsNullOrWhiteSpace(valueSymbol.ParentName))
+      {
+        rootVariables[valueName] = systemValue;
+        continue;
+      }
+
+      var pathSegments = valueSymbol.ParentName
+        .Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+      if(pathSegments.Length == 0)
+      {
+        rootVariables[valueName] = systemValue;
+        continue;
+      }
+
+      AddValueToPath(rootVariables, pathSegments, valueName, systemValue);
+    }
+
     return rootVariables.Select(kv => new KeyValuePair<string, AresSystemValue>(kv.Key, kv.Value));
   }
 
@@ -63,7 +93,7 @@ public class BaseEnvironmentBuilder(IEnumerable<ISystemFunctionProvider> systemF
     IDictionary<string, AresSystemValue> root,
     string[] pathSegments,
     string fieldName,
-    AresSystemFunction func)
+    AresSystemFunctionSymbol func)
   {
     if(pathSegments.Length == 0)
     {
@@ -72,7 +102,8 @@ public class BaseEnvironmentBuilder(IEnumerable<ISystemFunctionProvider> systemF
       return;
     }
 
-    var segment = pathSegments.Last();
+    var segment = pathSegments[0];
+    var remainingPath = pathSegments[1..];
 
     var valueExists = root.TryGetValue(segment, out var value);
 
@@ -80,15 +111,56 @@ public class BaseEnvironmentBuilder(IEnumerable<ISystemFunctionProvider> systemF
     {
       var newRoot = AresSystemValue.Struct();
       root[segment] = newRoot;
-      AddFunctionToPath(newRoot.StructFields!, pathSegments[..^1], fieldName, func);
+      AddFunctionToPath(newRoot.StructFields!, remainingPath, fieldName, func);
       return;
     }
 
-    if(value.Kind != AresSystemValue.AresSystemValueKind.Struct || value.StructFields is null)
+    if(value.ValueKind != AresSystemValue.AresSystemValueKind.Struct || value.StructFields is null)
     {
-      throw new InvalidOperationException($"Value {segment} already exists and is not a struct, but rather a {value.Kind}");
+      throw new InvalidOperationException($"Value {segment} already exists and is not a struct, but rather a {value.ValueKind}");
     }
 
-    AddFunctionToPath(value.StructFields, pathSegments[..^1], fieldName, func);
+    AddFunctionToPath(value.StructFields, remainingPath, fieldName, func);
+  }
+
+  private static void AddValueToPath(
+    IDictionary<string, AresSystemValue> root,
+    string[] pathSegments,
+    string fieldName,
+    AresSystemValue valueToSet)
+  {
+    if(pathSegments.Length == 0)
+    {
+      root[fieldName] = valueToSet;
+      return;
+    }
+
+    var segment = pathSegments[0];
+    var remainingPath = pathSegments[1..];
+    var valueExists = root.TryGetValue(segment, out var value);
+    if(!valueExists || value is null)
+    {
+      var newRoot = AresSystemValue.Struct();
+      root[segment] = newRoot;
+      AddValueToPath(newRoot.StructFields!, remainingPath, fieldName, valueToSet);
+      return;
+    }
+
+    if(value.ValueKind != AresSystemValue.AresSystemValueKind.Struct || value.StructFields is null)
+    {
+      throw new InvalidOperationException($"Value {segment} already exists and is not a struct, but rather a {value.ValueKind}");
+    }
+
+    AddValueToPath(value.StructFields, remainingPath, fieldName, valueToSet);
+  }
+
+  private static AresSystemValue ToSystemValue(IValueSymbol valueSymbol)
+  {
+    if(valueSymbol is AresSystemValue systemValueSymbol)
+    {
+      return systemValueSymbol;
+    }
+
+    return AresSystemValue.From(valueSymbol.Value);
   }
 }

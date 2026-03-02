@@ -1,6 +1,8 @@
 using Antlr4.Runtime;
+using Ares.Datamodel;
 using AresScript.Generated;
 using AresScript.ScriptBuilding;
+using AresScript.Symbols;
 using NUnit.Framework;
 
 namespace AresScript.Tests;
@@ -95,6 +97,40 @@ public class AresScriptBuilderTests
     Assert.That(removed, Is.True);
     Assert.That(script, Does.Not.Contain("def helper():"));
     Assert.That(script, Does.Contain("value = 10"));
+    Assert.That(() => Parse(script), Throws.Nothing);
+  }
+
+  [Test]
+  public void ReplaceFunction_WritesParameterTypeHints()
+  {
+    var builder = new AresScriptBuilder();
+    builder.ReplaceFunction(
+      "typed_fn",
+      body => body.AddReturn("value"),
+      new AresScriptParameter("value", AresDataType.String),
+      new AresScriptParameter("count", AresDataType.Number));
+
+    var script = builder.Build();
+
+    Assert.That(script, Does.Contain("def typed_fn(value: String, count: Number):"));
+    Assert.That(() => Parse(script), Throws.Nothing);
+  }
+
+  [Test]
+  public void EditFunction_PreservesImportedParameterTypeHints()
+  {
+    var existingScript = """
+      def typed_fn(value: String, count: Number):
+        return value
+      """;
+
+    var builder = AresScriptBuilder.FromScript(existingScript);
+    var edited = builder.EditFunction("typed_fn", body => body.AddAssignment("count", "count + 1"));
+    var script = builder.Build();
+
+    Assert.That(edited, Is.True);
+    Assert.That(script, Does.Contain("def typed_fn(value: String, count: Number):"));
+    Assert.That(script, Does.Contain("count = count + 1"));
     Assert.That(() => Parse(script), Throws.Nothing);
   }
 

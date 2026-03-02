@@ -1,13 +1,14 @@
-using System.Text;
-using Ares.Datamodel.Extensions;
 using Ares.Datamodel;
+using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
+using AresScript.Symbols;
+using System.Text;
 
 namespace AresScript;
 
 public static class StandardLibrary
 {
-  public static AresSystemFunction[] Functions { get; } =
+  public static AresSystemFunctionSymbol[] Functions { get; } =
   [
     new("print", "print", (args, _) =>
       {
@@ -20,9 +21,12 @@ public static class StandardLibrary
       },
     AresSchemaBuilder.Create("args", AresDataType.Any).Build(),
     AresSchemaBuilder.Entry(AresDataType.Unit).Build(),
-    "",
-    "Prints the given value/s of any ARES type to console."),
-    
+    Namespace: "")
+    {
+      Detail = "Prints the given value/s of any ARES type to console.",
+      Documentation = "Prints the given value/s of any ARES type to console."
+    },
+
     new("string", "string", (args, token) => {
       var strBuilder = new StringBuilder();
       foreach(var aresValue in args)
@@ -33,8 +37,11 @@ public static class StandardLibrary
     },
     AresSchemaBuilder.Create("args", AresDataType.Any).Build(),
     AresSchemaBuilder.Entry(AresDataType.String).Build(),
-    "",
-    "Turns the given AresValue into a string."),
+    Namespace: "")
+    {
+      Detail = "Turns the given AresValue into a string.",
+      Documentation = "Turns the given AresValue into a string."
+    },
 
     new("len", "len", (args, _) =>
     {
@@ -59,8 +66,10 @@ public static class StandardLibrary
     },
     AresSchemaBuilder.Create("value", AresDataType.Any).Build(),
     AresSchemaBuilder.Entry(AresDataType.Number).Build(),
-    "",
-    "Returns the length of a string, array, list, bytes, or struct."),
+    "")
+    {
+      Documentation = "Returns the length of a string, array, list, bytes, or struct."
+    },
     
     new("range", "range", (args, _) => {
       double start = 0;
@@ -109,9 +118,12 @@ public static class StandardLibrary
       .AddEntry("step", AresSchemaBuilder.NumberEntry().AsOptional().WithDescription("The step size.").Build())
       .Build(),
     AresSchemaBuilder.Entry(AresDataType.NumberArray).Build(),
-    "",
-    "Generates a list of numbers in a range."),
-    
+    Namespace: "")
+    {
+      Detail = "Generates a list of numbers in a range.",
+      Documentation = "Generates a list of numbers in a range."
+    },
+
     new("sleep", "sleep", async (args, token) => {
       if(args.Count != 1)
       {
@@ -142,9 +154,11 @@ public static class StandardLibrary
       .WithUnit("ms")
       .Build(),
     AresSchemaBuilder.Entry(AresDataType.Unit).Build(),
-    "",
-    "Sleep for a given number of milliseconds"
-    )
+    Namespace: "")
+    {
+      Detail = "Sleep for a given number of milliseconds",
+      Documentation = "Sleep for a given number of milliseconds"
+    }
   ];
 
   public static AresExtensionFunction[] ExtensionFunctions { get; } =
@@ -152,7 +166,7 @@ public static class StandardLibrary
     new(
       AresValue.KindOneofCase.ListValue,
       "append",
-      new AresSystemFunction(
+      new AresSystemFunctionSymbol(
         "list::append",
         "append",
         (args, _) =>
@@ -173,9 +187,85 @@ public static class StandardLibrary
         },
         BuildListAppendSchema(),
         AresSchemaBuilder.Entry(AresDataType.Unit).Build(),
-        "",
-        "Appends a value to the list."
-      ))
+        Namespace: "",
+        IsExtension: true
+      )
+      {
+        Detail = "Appends a value to the list.",
+        Documentation = "Appends a value to the list."
+      }),
+    new(
+      AresValue.KindOneofCase.NumberArrayValue,
+      "append",
+      new AresSystemFunctionSymbol(
+        "number_array::append",
+        "append",
+        (args, _) =>
+        {
+          if(args.Count != 2)
+          {
+            throw new ArgumentException("Expected exactly 1 argument to append.", nameof(args));
+          }
+
+          var numberArrayValue = args[0];
+          if(numberArrayValue.KindCase != AresValue.KindOneofCase.NumberArrayValue || numberArrayValue.NumberArrayValue is null)
+          {
+            throw new InvalidOperationException("append can only be called on number array values.");
+          }
+
+          if(!args[1].HasNumberValue)
+          {
+            throw new InvalidOperationException("append argument must be a number for number arrays.");
+          }
+
+          numberArrayValue.NumberArrayValue.Numbers.Add(args[1].NumberValue);
+          return Task.FromResult(AresValueHelper.CreateUnit());
+        },
+        BuildNumberArrayAppendSchema(),
+        AresSchemaBuilder.Entry(AresDataType.Unit).Build(),
+        Namespace: "",
+        IsExtension: true
+      )
+      {
+        Detail = "Appends a number to the number array.",
+        Documentation = "Appends a number to the number array."
+      }),
+    new(
+      AresValue.KindOneofCase.StringArrayValue,
+      "append",
+      new AresSystemFunctionSymbol(
+        "string_array::append",
+        "append",
+        (args, _) =>
+        {
+          if(args.Count != 2)
+          {
+            throw new ArgumentException("Expected exactly 1 argument to append.", nameof(args));
+          }
+
+          var stringArrayValue = args[0];
+          if(stringArrayValue.KindCase != AresValue.KindOneofCase.StringArrayValue || stringArrayValue.StringArrayValue is null)
+          {
+            throw new InvalidOperationException("append can only be called on string array values.");
+          }
+
+          if(!args[1].HasStringValue)
+          {
+            throw new InvalidOperationException("append argument must be a string for string arrays.");
+          }
+
+          stringArrayValue.StringArrayValue.Strings.Add(args[1].StringValue);
+          return Task.FromResult(AresValueHelper.CreateUnit());
+        },
+        BuildStringArrayAppendSchema(),
+        AresSchemaBuilder.Entry(AresDataType.Unit).Build(),
+        Namespace: "",
+        IsExtension: true
+      )
+      {
+        Detail = "Appends a string to the string array.",
+        Documentation = "Appends a string to the string array."
+      })
   ];
 
   private static AresDataSchema BuildListAppendSchema()
@@ -186,6 +276,22 @@ public static class StandardLibrary
     return AresSchemaBuilder.Empty()
       .AddEntry("self", listEntry)
       .AddEntry("value", AresSchemaBuilder.Entry(AresDataType.Any).Build())
+      .Build();
+  }
+
+  private static AresDataSchema BuildNumberArrayAppendSchema()
+  {
+    return AresSchemaBuilder.Empty()
+      .AddEntry("self", AresSchemaBuilder.Entry(AresDataType.NumberArray).Build())
+      .AddEntry("value", AresSchemaBuilder.Entry(AresDataType.Number).Build())
+      .Build();
+  }
+
+  private static AresDataSchema BuildStringArrayAppendSchema()
+  {
+    return AresSchemaBuilder.Empty()
+      .AddEntry("self", AresSchemaBuilder.Entry(AresDataType.StringArray).Build())
+      .AddEntry("value", AresSchemaBuilder.Entry(AresDataType.String).Build())
       .Build();
   }
 }

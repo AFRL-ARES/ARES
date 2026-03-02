@@ -1,11 +1,12 @@
 using Antlr4.Runtime;
 using Ares.Datamodel;
 using Ares.Datamodel.Scripting;
+using AresScript.Environment;
 using AresScript.Generated;
+using AresScript.Interpreters;
+using AresScript.Symbols;
 using System.Text;
 using System.Text.RegularExpressions;
-using Ares.Datamodel.Extensions;
-using AresScript.Interpreters;
 
 namespace AresScript.ScriptAnalysis;
 
@@ -44,13 +45,13 @@ public static partial class AresScriptAnalysis
     await BuildEnvironmentForCompletions(environment, script, cursorLine);
     var systemVariables = environment.GetAllSystemVariables();
     var userFunctions = environment.GetAllUserFunctions();
-    var userVariables = environment.GetAllUserVariables();
+    var userVariables = environment.GetAllUserVariableSymbols();
     var items = new List<CompletionItem>();
 
     if(TryGetParentIdentifier(script, cursorLine, cursorColumn, out var parentIdentifier))
     {
-      if(environment.TryGetSystemValue(parentIdentifier, out var systemParent)
-        && systemParent.Kind == AresSystemValue.AresSystemValueKind.Struct
+      if(TryResolveSystemParentValue(environment, parentIdentifier, out var systemParent)
+        && systemParent.ValueKind == AresSystemValue.AresSystemValueKind.Struct
         && systemParent.StructFields is not null)
       {
         foreach(var (key, fieldValue) in systemParent.StructFields)
@@ -60,7 +61,7 @@ public static partial class AresScriptAnalysis
 
         AddExtensionCompletions(items, environment, systemParent.ToAresValue(), parentIdentifier);
       }
-      else if(environment.TryGetValue(parentIdentifier, out var parentValue)
+      else if(TryResolveValue(environment, parentIdentifier, out var parentValue)
         && parentValue.KindCase == AresValue.KindOneofCase.StructValue
         && parentValue.StructValue is not null)
       {
@@ -71,7 +72,7 @@ public static partial class AresScriptAnalysis
 
         AddExtensionCompletions(items, environment, parentValue, parentIdentifier);
       }
-      else if(environment.TryGetValue(parentIdentifier, out var plainValue))
+      else if(TryResolveValue(environment, parentIdentifier, out var plainValue))
       {
         AddExtensionCompletions(items, environment, plainValue, parentIdentifier);
       }
@@ -87,18 +88,31 @@ public static partial class AresScriptAnalysis
       {
         Label = func.Name,
         InsertText = func.Name,
-        Detail = "User function",
-        Kind = CompletionItemKind.Function
+        Metadata = ScriptSymbolMetadataMapper.ToMetadata(
+          func,
+          detail: "User function",
+          documentation: "User-defined function.",
+          parentIdentifier: string.Empty)
       }));
 
       items.AddRange(userVariables.Select(variable => new CompletionItem
       {
         Label = variable.Key,
         InsertText = variable.Key,
-        Detail = "User variable",
-        Kind = CompletionItemKind.Variable,
-        Schema = variable.Value.ToSchemaEntry()
+        Metadata = ScriptSymbolMetadataMapper.ToMetadata(
+          variable.Value with
+          {
+            Detail = "User variable",
+            Documentation = "User-defined variable."
+          },
+          valueSchema: variable.Value.DeclaredSchema,
+          parentIdentifier: string.Empty)
       }));
+    }
+
+    if(IsTypeHintContext(script, cursorLine, cursorColumn))
+    {
+      AddTypeHintCompletions(items);
     }
 
     return items;
@@ -134,6 +148,7 @@ public static partial class AresScriptAnalysis
       return false;
     }
 
+    // ex.: don't get "my_furnace" in "my_furnace.get_temp(| "
     var lastOpenParen = prefix.LastIndexOf('(');
     var lastCloseParen = prefix.LastIndexOf(')');
     if(lastOpenParen > dotIndex && lastOpenParen > lastCloseParen)
@@ -142,7 +157,7 @@ public static partial class AresScriptAnalysis
     }
 
     var left = prefix[..dotIndex];
-    var identifier = ExtractTrailingIdentifier(left);
+    var identifier = ExtractTrailingIdentifierPath(left);
     if(string.IsNullOrEmpty(identifier))
     {
       return false;
@@ -152,10 +167,77 @@ public static partial class AresScriptAnalysis
     return true;
   }
 
-  private static string ExtractTrailingIdentifier(string text)
+  private static string ExtractTrailingIdentifierPath(string text)
   {
-    var match = IdentifierRegex().Match(text);
+    var match = IdentifierPathRegex().Match(text);
     return match.Success ? match.Groups[1].Value : string.Empty;
+  }
+
+  private static bool TryResolveSystemParentValue(
+    AresScriptEnvironment environment,
+    string identifierPath,
+    out AresSystemValue value)
+  {
+    var path = SplitIdentifierPath(identifierPath);
+    value = null!;
+    if(path.Length == 0)
+    {
+      return false;
+    }
+
+    if(!environment.TryGetSystemValueSymbol(path[0], out var current))
+    {
+      return false;
+    }
+
+    for(var i = 1; i < path.Length; i++)
+    {
+      if(current.ValueKind != AresSystemValue.AresSystemValueKind.Struct
+        || current.StructFields is null
+        || !current.StructFields.TryGetValue(path[i], out current))
+      {
+        return false;
+      }
+    }
+
+    value = current;
+    return true;
+  }
+
+  private static bool TryResolveValue(
+    AresScriptEnvironment environment,
+    string identifierPath,
+    out AresValue value)
+  {
+    var path = SplitIdentifierPath(identifierPath);
+    value = null!;
+    if(path.Length == 0)
+    {
+      return false;
+    }
+
+    if(!environment.TryGetValue(path[0], out var current))
+    {
+      return false;
+    }
+
+    for(var i = 1; i < path.Length; i++)
+    {
+      if(current.KindCase != AresValue.KindOneofCase.StructValue
+        || current.StructValue is null
+        || !current.StructValue.Fields.TryGetValue(path[i], out current))
+      {
+        return false;
+      }
+    }
+
+    value = current;
+    return true;
+  }
+
+  private static string[] SplitIdentifierPath(string identifierPath)
+  {
+    return identifierPath.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
   }
 
   private static string BuildSnippet(string funcName, AresDataSchema schema)
@@ -191,12 +273,14 @@ public static partial class AresScriptAnalysis
       {
         Label = extensionFunc.Name,
         InsertText = BuildSnippet(extensionFunc.Name, schemaForCall),
-        Detail = extensionFunc.Description,
-        Documentation = extensionFunc.Description,
-        Kind = CompletionItemKind.Function,
-        ParentIdentifier = parentIdentifier,
-        InputSchema = schemaForCall,
-        OutputSchema = extensionFunc.OutputSchema
+        InsertTextFormat = InsertTextFormat.Snippet,
+        Metadata = ScriptSymbolMetadataMapper.ToMetadata(
+          extensionFunc with
+          {
+            InputSchema = schemaForCall,
+            ParentName = parentIdentifier
+          },
+          parentIdentifier: parentIdentifier)
       });
     }
   }
@@ -228,35 +312,32 @@ public static partial class AresScriptAnalysis
     if(value.RawValue?.FunctionValue is not null
       && environment.TryGetSystemFunction(value.RawValue.FunctionValue.FunctionId, out var systemFunction))
     {
-      var description = string.IsNullOrWhiteSpace(value.Description)
-        ? systemFunction.Description
-        : value.Description;
       items.Add(new CompletionItem
       {
         Label = label,
         InsertText = BuildSnippet(label, systemFunction.InputSchema),
-        Detail = description,
-        Documentation = description,
-        Kind = CompletionItemKind.Function,
-        ParentIdentifier = parentIdentifier,
-        InputSchema = systemFunction.InputSchema,
-        OutputSchema = systemFunction.OutputSchema
+        InsertTextFormat = InsertTextFormat.Snippet,
+        Metadata = ScriptSymbolMetadataMapper.ToMetadata(
+          systemFunction with { Name = label, ParentName = parentIdentifier },
+          detail: value.Detail,
+          documentation: value.Documentation,
+          parentIdentifier: parentIdentifier)
       });
       return;
     }
 
-    var schemaValue = value.ToAresValue();
     items.Add(new CompletionItem
     {
       Label = label,
       InsertText = label,
-      Detail = value.Description ?? string.Empty,
-      Documentation = value.Description ?? string.Empty,
-      Kind = value.Kind == AresSystemValue.AresSystemValueKind.Struct
-        ? CompletionItemKind.Struct
-        : CompletionItemKind.Variable,
-      ParentIdentifier = parentIdentifier,
-      Schema = schemaValue.ToSchemaEntry()
+      Metadata = ScriptSymbolMetadataMapper.ToMetadata(
+        value with
+        {
+          Name = label,
+          ParentName = parentIdentifier,
+          IsReadOnly = true
+        },
+        parentIdentifier: parentIdentifier)
     });
   }
 
@@ -274,12 +355,10 @@ public static partial class AresScriptAnalysis
       {
         Label = label,
         InsertText = BuildSnippet(label, systemFunction.InputSchema),
-        Detail = systemFunction.Description,
-        Documentation = systemFunction.Description,
-        Kind = CompletionItemKind.Function,
-        ParentIdentifier = parentIdentifier,
-        InputSchema = systemFunction.InputSchema,
-        OutputSchema = systemFunction.OutputSchema
+        InsertTextFormat = InsertTextFormat.Snippet,
+        Metadata = ScriptSymbolMetadataMapper.ToMetadata(
+          systemFunction with { Name = label, ParentName = parentIdentifier },
+          parentIdentifier: parentIdentifier)
       });
       return;
     }
@@ -288,16 +367,83 @@ public static partial class AresScriptAnalysis
     {
       Label = label,
       InsertText = label,
-      Detail = string.Empty,
-      Documentation = string.Empty,
-      Kind = value.KindCase == AresValue.KindOneofCase.StructValue
-        ? CompletionItemKind.Struct
-        : CompletionItemKind.Variable,
-      ParentIdentifier = parentIdentifier,
-      Schema = value.ToSchemaEntry()
+      Metadata = ScriptSymbolMetadataMapper.ToMetadata(
+        new AresScriptValueSymbol(
+          Name: label,
+          Value: value,
+          SymbolKind: value.KindCase == AresValue.KindOneofCase.StructValue
+            ? SymbolKind.Struct
+            : SymbolKind.Variable,
+          ParentName: parentIdentifier),
+        parentIdentifier: parentIdentifier)
     });
   }
 
-  [GeneratedRegex(@"([A-Za-z_][A-Za-z0-9_]*)\s*$")]
-  private static partial Regex IdentifierRegex();
+  private static void AddTypeHintCompletions(ICollection<CompletionItem> items)
+  {
+    foreach(var typeName in AresScriptTypeHints.AvailableTypeNames)
+    {
+      items.Add(new CompletionItem
+      {
+        Label = typeName,
+        InsertText = typeName,
+        SortText = $"00_{typeName}",
+        Metadata = new ScriptSymbolMetadata
+        {
+          Identifier = typeName,
+          Kind = SymbolKind.Type,
+          Detail = "Ares data type",
+          Documentation = $"Ares data type '{typeName}'."
+        }
+      });
+    }
+  }
+
+  private static bool IsTypeHintContext(string script, int cursorLine, int cursorColumn)
+  {
+    if(cursorLine <= 0 || cursorColumn <= 0 || string.IsNullOrEmpty(script))
+    {
+      return false;
+    }
+
+    var lines = script.Split(["\r\n", "\n"], StringSplitOptions.None);
+    if(cursorLine > lines.Length)
+    {
+      return false;
+    }
+
+    var line = lines[cursorLine - 1];
+    var safeColumn = Math.Min(cursorColumn - 1, line.Length);
+    var prefix = line[..safeColumn];
+    if(!prefix.Contains("def", StringComparison.Ordinal))
+    {
+      return false;
+    }
+
+    var defIndex = prefix.IndexOf("def", StringComparison.Ordinal);
+    var openParenIndex = prefix.IndexOf('(', defIndex);
+    if(defIndex < 0 || openParenIndex < 0)
+    {
+      return false;
+    }
+
+    var closeParenIndex = prefix.LastIndexOf(')');
+    if(closeParenIndex < openParenIndex)
+    {
+      var parameterHintColonIndex = prefix.LastIndexOf(':');
+      return parameterHintColonIndex > openParenIndex;
+    }
+
+    var returnHintArrowIndex = prefix.IndexOf("->", closeParenIndex + 1, StringComparison.Ordinal);
+    if(returnHintArrowIndex < 0)
+    {
+      return false;
+    }
+
+    var suffixAfterReturnHintArrow = prefix[(returnHintArrowIndex + 2)..];
+    return !suffixAfterReturnHintArrow.Contains(':');
+  }
+
+  [GeneratedRegex(@"([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)\s*$")]
+  private static partial Regex IdentifierPathRegex();
 }

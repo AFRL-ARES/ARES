@@ -1,6 +1,7 @@
 using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
+using AresScript.Environment;
 using AresScript.Generated;
 
 namespace AresScript.Interpreters;
@@ -19,6 +20,7 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
   }
 
   protected override SchemaEntry DefaultResult => AresSchemaBuilder.Entry(AresDataType.Any).Build();
+  public override SchemaEntry VisitTypeHint(AresLangParser.TypeHintContext context) => AresScriptTypeHints.SchemaFromTypeHint(context.GetText());
 
   public override SchemaEntry VisitInt(AresLangParser.IntContext context) => AresSchemaBuilder.Entry(AresDataType.Number).Build();
   public override SchemaEntry VisitFloat(AresLangParser.FloatContext context) => AresSchemaBuilder.Entry(AresDataType.Number).Build();
@@ -35,16 +37,16 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
     }
     if(_environment.TryGetUserFunction(id, out var _))
     {
-      return AresSchemaBuilder.Entry(AresDataType.Any).Build();
+      return AresSchemaBuilder.Entry(AresDataType.Function).Build();
     }
     if(_environment.TryGetUserLambda(id, out var _))
     {
       return AresSchemaBuilder.Entry(AresDataType.Function).Build();
     }
 
-    if(_environment.TryGetValue(id, out var envVal))
+    if(_environment.TryGetValueSymbol(id, out var envSymbol))
     {
-      return envVal.ToSchemaEntry();
+      return envSymbol.DeclaredSchema ?? envSymbol.Value.ToSchemaEntry();
     }
 
     return AresSchemaBuilder.Entry(AresDataType.Any).Build();
@@ -158,6 +160,10 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
     {
       return systemFunc.OutputSchema;
     }
+    if(functionId is not null && _environment.TryGetUserFunction(functionId, out var userFunc))
+    {
+      return AresSchemaBuilder.Entry(userFunc.ReturnType).Build();
+    }
     if(functionId is not null && _environment.TryGetUserLambda(functionId, out var _))
     {
       return AresSchemaBuilder.Entry(AresDataType.Any).Build();
@@ -237,7 +243,6 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
     entry.ListElementSchema = elementSchema;
     return entry;
   }
-
 
   private string? TryResolveFunctionId(AresLangParser.ExpressionContext expression)
   {
