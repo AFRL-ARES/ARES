@@ -69,16 +69,8 @@ internal static class ServiceCollectionExtensions
     services.AddSingleton<IDeviceControlViewModelRepo, DeviceControlViewModelRepo>();
     services.AddSingleton<INotificationRepository, NotificationRepository>();
 
-    services.AddSingleton<IDeviceDriverRepository, DeviceDriverRepository>();
     services.AddSingleton<IDeviceAdapterRepository, DeviceAdapterRepository>();
     services.AddSingleton<DeviceAdapterManager>();
-    services.AddSingleton<DeviceDriverSyncManager>(sp => 
-    {
-        var client = sp.GetRequiredService<AresDriverService>();
-        var repo = sp.GetRequiredService<IDeviceDriverRepository>();
-        var localPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Plugins");
-        return new DeviceDriverSyncManager(client, repo, localPath);
-    });
     services.AddSingleton<MonacoCompletionProvider>();
     services.AddSingleton<MonacoDiagnosticsProvider>();
     services.AddSingleton<MonacoSemanticTokensProvider>();

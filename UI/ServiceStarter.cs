@@ -17,7 +17,6 @@ public class ServiceStarter : IHostedService
   private readonly IDeviceControlViewModelRepo _deviceControlViewModelRepo;
   private readonly DeviceAdapterManager _deviceAdapterManager;
   private readonly RemoteDeviceControlViewModelFactory _remoteDeviceViewModelFactory;
-  private readonly DeviceDriverSyncManager _deviceDriverSyncManager;
   private readonly IRemoteAnalyzerManager _analyzerManager;
   private readonly IRemotePlannerManager _plannerManager;
   private readonly IRemoteDeviceManager _remoteDeviceManager;
@@ -39,14 +38,12 @@ public class ServiceStarter : IHostedService
     IServiceProvider serviceProvider,
     IDeviceControlViewModelRepo deviceControlViewModelRepo,
     DeviceAdapterManager deviceAdapterManager,
-    RemoteDeviceControlViewModelFactory remoteDeviceViewModelFactory,
-    DeviceDriverSyncManager deviceDriverSyncManager)
+    RemoteDeviceControlViewModelFactory remoteDeviceViewModelFactory)
   {
     _notificationReceivingService = notificationReceivingService;
     _deviceControlViewModelRepo = deviceControlViewModelRepo;
     _deviceAdapterManager = deviceAdapterManager;
     _remoteDeviceViewModelFactory = remoteDeviceViewModelFactory;
-    _deviceDriverSyncManager = deviceDriverSyncManager;
 
     _analyzerManager = analyzerManager;
     _plannerManager = plannerManager;
@@ -62,7 +59,6 @@ public class ServiceStarter : IHostedService
 
   public async Task StartAsync(CancellationToken cancellationToken)
   {
-    await _deviceDriverSyncManager.SyncDriversAsync();
     _notificationReceivingService.StartNotificationStream();
     _deviceControlViewModelRepo.Initialize();
     _deviceAdapterManager.Activate();
