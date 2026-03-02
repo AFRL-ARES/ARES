@@ -469,6 +469,19 @@ public class InterpreterTests
   }
 
   [Test]
+  public void TypeInference_Prefers_Declared_Schema_Over_Placeholder_Value()
+  {
+    var schema = InferExpressionSchema(
+      "bepis",
+      env => env.AssignVariable(
+        "bepis",
+        AresValueHelper.CreateNull(),
+        new SchemaEntry { Type = AresDataType.Any }));
+
+    Assert.That(schema.Type, Is.EqualTo(AresDataType.Any));
+  }
+
+  [Test]
   public async Task Range_OneArg_GeneratesCorrectSequence()
   {
     var script = """

@@ -134,7 +134,10 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       {
         foreach(var parameter in _pendingFunctions.Peek().Parameters)
         {
-          _environment.AssignVariable(parameter.Name, DummyValueFactory.CreateDummyValue(parameter.Type));
+          _environment.AssignVariable(
+            parameter.Name,
+            DummyValueFactory.CreateDummyValue(parameter.Type),
+            AresSchemaBuilder.Entry(parameter.Type).Build());
         }
       }
 

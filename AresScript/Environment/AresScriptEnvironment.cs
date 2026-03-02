@@ -19,7 +19,7 @@ public class AresScriptEnvironment
     _userScopes.Push(globalUser);
   }
 
-  public void AssignVariable(string id, AresValue value)
+  public void AssignVariable(string id, AresValue value, SchemaEntry? declaredSchema = null)
   {
     if(SystemValueExists(id))
     {
@@ -31,7 +31,8 @@ public class AresScriptEnvironment
     {
       Name = id,
       IsReadOnly = false,
-      IsUserDefined = true
+      IsUserDefined = true,
+      DeclaredSchema = declaredSchema
     };
   }
 
@@ -57,36 +58,60 @@ public class AresScriptEnvironment
     currentScope.Lambdas[id] = value;
   }
 
-  public bool TryGetValue(string id, [NotNullWhen(true)] out AresValue? value)
+  public bool TryGetValueSymbol(string id, [NotNullWhen(true)] out AresSystemValue? symbol)
   {
     foreach(var scope in _userScopes)
     {
-      var valueExists = scope.Variables.TryGetValue(id, out var variableSymbol);
-      value = variableSymbol?.Value;
-      if(valueExists && value is not null)
+      if(scope.Variables.TryGetValue(id, out symbol))
+      {
         return true;
+      }
     }
 
     foreach(var scope in _systemScopes)
     {
-      var valueExists = scope.Variables.TryGetValue(id, out var systemVariableSymbol);
-      value = systemVariableSymbol?.Value;
-      if(valueExists && value is not null)
+      if(scope.Variables.TryGetValue(id, out symbol))
+      {
         return true;
+      }
+    }
+
+    symbol = null;
+    return false;
+  }
+
+  public bool TryGetValue(string id, [NotNullWhen(true)] out AresValue? value)
+  {
+    if(TryGetValueSymbol(id, out var symbol) && symbol?.Value is not null)
+    {
+      value = symbol.Value;
+      return true;
     }
 
     value = null;
     return false;
   }
 
-  public bool TryGetUserValue(string id, [NotNullWhen(true)] out AresValue? value)
+  public bool TryGetUserValueSymbol(string id, [NotNullWhen(true)] out AresSystemValue? symbol)
   {
     foreach(var scope in _userScopes)
     {
-      var valueExists = scope.Variables.TryGetValue(id, out var variableSymbol);
-      value = variableSymbol?.Value;
-      if(valueExists && value is not null)
+      if(scope.Variables.TryGetValue(id, out symbol))
+      {
         return true;
+      }
+    }
+
+    symbol = null;
+    return false;
+  }
+
+  public bool TryGetUserValue(string id, [NotNullWhen(true)] out AresValue? value)
+  {
+    if(TryGetUserValueSymbol(id, out var symbol) && symbol?.Value is not null)
+    {
+      value = symbol.Value;
+      return true;
     }
 
     value = null;
@@ -228,6 +253,24 @@ public class AresScriptEnvironment
         if(seen.Add(key))
         {
           results.Add(new KeyValuePair<string, AresValue>(key, symbol.Value));
+        }
+      }
+    }
+
+    return results.ToArray();
+  }
+
+  public KeyValuePair<string, AresSystemValue>[] GetAllUserVariableSymbols()
+  {
+    var seen = new HashSet<string>(StringComparer.Ordinal);
+    var results = new List<KeyValuePair<string, AresSystemValue>>();
+    foreach(var scope in _userScopes)
+    {
+      foreach(var (key, symbol) in scope.Variables)
+      {
+        if(seen.Add(key))
+        {
+          results.Add(new KeyValuePair<string, AresSystemValue>(key, symbol));
         }
       }
     }

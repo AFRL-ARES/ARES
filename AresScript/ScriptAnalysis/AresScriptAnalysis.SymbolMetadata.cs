@@ -207,14 +207,14 @@ public static partial class AresScriptAnalysis
   private static Dictionary<string, SchemaEntry> BuildGlobalSchemas(AresScriptEnvironment environment)
   {
     var schemas = new Dictionary<string, SchemaEntry>(StringComparer.Ordinal);
-    foreach(var (name, value) in environment.GetAllUserVariables())
+    foreach(var (name, value) in environment.GetAllUserVariableSymbols())
     {
-      schemas[name] = value.ToSchemaEntry();
+      schemas[name] = value.DeclaredSchema ?? value.Value.ToSchemaEntry();
     }
 
     foreach(var (name, systemValue) in environment.GetAllSystemVariables())
     {
-      schemas[name] = systemValue.Value.ToSchemaEntry();
+      schemas[name] = systemValue.DeclaredSchema ?? systemValue.Value.ToSchemaEntry();
     }
 
     return schemas;
