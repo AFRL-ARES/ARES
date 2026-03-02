@@ -2,6 +2,7 @@
 using Ares.Core.Device.State.Logging;
 using Ares.Core.Notifications;
 using Ares.Datamodel.Device;
+using DynamicData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -22,7 +23,7 @@ internal class RemoteDeviceManager(
   {
     var config = new RemoteDeviceConfig { UniqueId = Guid.NewGuid().ToString(), Name = name, Url = url };
     var device = ConfigToDevice(config);
-    _deviceRepo.Add(device);
+    _deviceRepo.Append(device);
 
     var monitor = new RemoteDeviceMonitor(device, _deviceCache, _loggerFactory.CreateLogger<RemoteDeviceMonitor>());
     _deviceMonitors.Add(monitor);
@@ -64,7 +65,7 @@ internal class RemoteDeviceManager(
     var nonNullDevices = devices.OfType<RemoteDevice>().ToArray();
     foreach(var device in nonNullDevices)
     {
-      _deviceRepo.Add(device);
+      _deviceRepo.Append(device);
       var monitor = new RemoteDeviceMonitor(device, _deviceCache, _loggerFactory.CreateLogger<RemoteDeviceMonitor>());
       _deviceMonitors.Add(monitor);
 
@@ -119,7 +120,8 @@ internal class RemoteDeviceManager(
     }
 
     _deviceRepo.Remove(config.UniqueId);
-    _deviceRepo.Add(device);
+    _deviceRepo.AddOrUpdate(device);
+
     await _stateLoggerManager.SetupLogger(device);
 
     monitor = new RemoteDeviceMonitor(device, _deviceCache, _loggerFactory.CreateLogger<RemoteDeviceMonitor>());

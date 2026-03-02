@@ -64,7 +64,7 @@ internal class CampaignExecutorTests
     _loggerFactory = loggerFactoryMock.Object;
 
     var deviceRepo = new AresDeviceRepo();
-    deviceRepo.Add(new TestDevice());
+    deviceRepo.AddOrUpdate(new TestDevice());
     var stepComposer = new StepComposer(deviceRepo, _notifier);
     var experimentComposer = new ExperimentComposer(stepComposer, _analyzerRepo);
 

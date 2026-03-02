@@ -1,9 +1,9 @@
+using Ares.Toolkit.Device.UI;
 using DynamicData;
 
-namespace UI.Application.Devices.Repos
+namespace UI.Application.Devices.Repos;
+
+public interface IDeviceControlViewModelRepo : IObservableList<IDeviceUnitControlViewModel>, IDisposable
 {
-  public interface IDeviceControlViewModelRepo : ISourceList<DeviceUnitControlViewModel>
-  {
-    void Initialize();
-  }
+  void Initialize();
 }

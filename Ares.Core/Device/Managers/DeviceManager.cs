@@ -1,6 +1,8 @@
+using Ares.Core.Device.Providers;
 using Ares.Core.Device.Repos;
 using Ares.Datamodel.Device;
 using Ares.Device;
+using DynamicData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -9,7 +11,7 @@ namespace Ares.Core.Device.Managers;
 
 public class DeviceManager : IDeviceManager
 {
-  private readonly IDeviceDriverRepo _driverRepo;
+  private readonly IAresDriverProvider _driverProvider;
   private readonly IAresDeviceRepo _deviceRepo;
   private readonly IServiceProvider _serviceProvider;
   private readonly ILoggerFactory _loggerFactory;
@@ -17,13 +19,13 @@ public class DeviceManager : IDeviceManager
   private readonly ILogger<DeviceManager> _logger;
 
   public DeviceManager(
-    IDeviceDriverRepo driverRepository,
+    IAresDriverProvider driverProvider,
     IAresDeviceRepo deviceRepository,
     IServiceProvider serviceProvider,
     ILoggerFactory loggerFactory,
     IDbContextFactory<CoreDatabaseContext> dbContextFactory)
   {
-    _driverRepo = driverRepository;
+    _driverProvider = driverProvider;
     _deviceRepo = deviceRepository;
     _serviceProvider = serviceProvider;
     _loggerFactory = loggerFactory;
@@ -39,7 +41,7 @@ public class DeviceManager : IDeviceManager
 
   public async Task<IAresDevice> Load(string deviceId, DeviceConfig config)
   {
-    var driver = _driverRepo.GetByName(config.DriverName);
+    var driver = _driverProvider.GetDriverByName(config.DriverName);
     if(driver == null)
     {
       throw new InvalidOperationException($"Driver '{config.DriverName}' not found.");
@@ -56,7 +58,7 @@ public class DeviceManager : IDeviceManager
       config.DriverSettings,
       logger);
     
-    _deviceRepo.Add(device);
+    _deviceRepo.AddOrUpdate(device);
     
     await device.Activate();
     
@@ -84,7 +86,7 @@ public class DeviceManager : IDeviceManager
 
   public async Task Remove(string deviceId)
   {
-    var device = _deviceRepo.GetAresDevice(deviceId);
+    var device = _deviceRepo.GetDevice(deviceId);
     if(device != null)
     {
       device.Dispose();
@@ -105,4 +107,9 @@ public class DeviceManager : IDeviceManager
     var configs = await context.DeviceConfigs.ToListAsync();
     await Load(configs);
   }
+
+  public IReadOnlyCollection<T> GetAll<T>() where T : IAresDevice => _deviceRepo.GetAll<T>();
+
+  public T? GetDevice<T>(string id) where T : class, IAresDevice => _deviceRepo.GetDevice<T>(id);
+
 }

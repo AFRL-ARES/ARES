@@ -1,4 +1,5 @@
 using System.Text;
+using Ares.Core.Device.Providers;
 using Ares.Core.Device.Repos;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
@@ -8,13 +9,13 @@ using AresScript;
 
 namespace Ares.Core.Scripting;
 
-public class DeviceFunctionProvider(IAresDeviceRepo deviceRepo) : ISystemFunctionProvider
+public class DeviceFunctionProvider(IAresDeviceProvider deviceProvider) : ISystemFunctionProvider
 {
-  private readonly IAresDeviceRepo _deviceRepo = deviceRepo;
+  private readonly IAresDeviceProvider _deviceProvider = deviceProvider;
 
   public AresSystemFunction[] GetFunctions()
   {
-    var devices = _deviceRepo.GetSnapshot();
+    var devices = _deviceProvider.GetAllDevices();
     var functions = new List<AresSystemFunction>();
 
     foreach(var device in devices)

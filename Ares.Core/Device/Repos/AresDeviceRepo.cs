@@ -1,66 +1,45 @@
-﻿using Ares.Core.CoreDevice;
-using Ares.Device;
+﻿using Ares.Device;
+using DynamicData;
+using System.Collections;
 
 namespace Ares.Core.Device.Repos;
 
-public class AresDeviceRepo : SynchronizedCollection<IAresDevice>, IAresDeviceRepo
+/// <summary>
+/// Implementation of the device repository. 
+/// Responsible for tracking device that are currently active in the ARES system.
+/// </summary>
+public class AresDeviceRepo : IAresDeviceRepo
 {
-  public AresDeviceRepo()
+  private readonly SourceCache<IAresDevice, string> _deviceCache = new(d => d.UniqueId);
+
+  public ISourceCache<IAresDevice, string> Cache => _deviceCache;
+
+  public IAresDevice? GetDevice(string id)
   {
-    var coreDevice = new AresCoreDevice();
-    Add(coreDevice);
+    var lookup = _deviceCache.Lookup(id);
+    return lookup.HasValue ? lookup.Value : null;
   }
 
-  public TDevice[] GetAresDevices<TDevice>() where TDevice : IAresDevice
+  public T? GetDevice<T>(string id) where T : class, IAresDevice
   {
-    lock(SyncRoot)
-    {
-      return this.Select(device => device)
-        .OfType<TDevice>()
-        .ToArray();
-    }
+    return GetDevice(id) as T;
   }
 
-  public IAresDevice? GetAresDevice(string deviceId)
+  public IReadOnlyCollection<T> GetAll<T>() where T : IAresDevice
   {
-    lock(SyncRoot)
-    {
-      return this.Select(device => device)
-        .FirstOrDefault(device => device.UniqueId == deviceId);
-    }
+    return _deviceCache.Items.OfType<T>().ToList().AsReadOnly();
   }
 
-  public TDevice? GetAresDevice<TDevice>(string deviceId) where TDevice : IAresDevice
+  public IEnumerator<IAresDevice> GetEnumerator() => _deviceCache.Items.GetEnumerator();
+  IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+  public IReadOnlyCollection<IAresDevice> GetAll() => _deviceCache.Items.ToList().AsReadOnly();
+  public void AddOrUpdate(IAresDevice device) => _deviceCache.AddOrUpdate(device);
+  public void Remove(string id) => _deviceCache.Remove(id);
+  public void Clear() => _deviceCache.Clear();
+
+  public void Dispose()
   {
-    lock(SyncRoot)
-    {
-      return this.Select(device => device)
-        .OfType<TDevice>()
-        .FirstOrDefault(device => device.UniqueId == deviceId);
-    }
-  }
-
-  public IAresDevice[] GetSnapshot()
-  {
-    List<IAresDevice> snapshot;
-    lock(SyncRoot)
-    {
-      snapshot = this.ToList();
-    }
-
-    return snapshot.ToArray();
-  }
-
-  public bool Remove(string deviceId)
-  {
-    IAresDevice? device;
-    lock(SyncRoot)
-    {
-      device = this.FirstOrDefault(device => device.UniqueId == deviceId);
-      if(device is null)
-        return false;
-    }
-
-    return Remove(device);
+    _deviceCache.Dispose();
+    GC.SuppressFinalize(this);
   }
 }

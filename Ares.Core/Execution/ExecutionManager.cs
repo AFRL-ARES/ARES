@@ -69,7 +69,7 @@ public class ExecutionManager : IExecutionManager
     if(campaignTags.Any())
       executor.UpdateCampaignTags(campaignTags);
 
-    executor.StopConditions.Add(CampaignStopConditions);
+    executor.StopConditions.AddRange(CampaignStopConditions);
     executor.ReplanRate = ReplanRate;
     _executionControlTokenSource = new ExecutionControlTokenSource();
     CampaignExecutionSummary campaignExecutionSummary;

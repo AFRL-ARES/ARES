@@ -1,31 +1,37 @@
-using System.Collections.Concurrent;
+using DynamicData;
+using System.Collections;
 
 namespace Ares.Core.Device.Repos;
 
 public class DeviceDriverRepo : IDeviceDriverRepo
 {
-  private readonly ConcurrentDictionary<string, DeviceDriver> _drivers = new(StringComparer.OrdinalIgnoreCase);
+  private readonly SourceCache<DeviceDriver, string> _driverCache = new(d => d.UniqueId);
 
-  public void Register(DeviceDriver driver)
+  public ISourceCache<DeviceDriver, string> Cache => _driverCache;
+
+  public DeviceDriver? GetDriverById(string id)
   {
-    if (driver == null) 
-      throw new ArgumentNullException(nameof(driver));
-    
-    _drivers[driver.Manifest.Name] = driver;
+    var lookup = _driverCache.Lookup(id);
+    return lookup.HasValue ? lookup.Value : null;
   }
 
-  public DeviceDriver? GetByName(string name)
+  public DeviceDriver? GetDriverByName(string name)
   {
-    return _drivers.TryGetValue(name, out var driver) ? driver : null;
+    var driver = _driverCache.Items.FirstOrDefault(d => d.Manifest.Name == name);
+    return driver;
   }
 
-  public DeviceDriver? GetById(string id)
-  {
-    return _drivers.Values.FirstOrDefault(driver => driver.UniqueId == id);
-  }
+  public IReadOnlyCollection<DeviceDriver> GetAllDrivers() => _driverCache.Items.ToList().AsReadOnly();
+  public IEnumerator<DeviceDriver> GetEnumerator() => GetEnumerator();
+  IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-  public IEnumerable<DeviceDriver> GetAll()
+  public void AddOrUpdate(DeviceDriver driver) => _driverCache.AddOrUpdate(driver);
+  public void Remove(string id) => _driverCache.Remove(id);
+  public void Clear() => _driverCache.Clear();
+
+  public void Dispose()
   {
-    return _drivers.Values;
+    _driverCache.Dispose();
+    GC.SuppressFinalize(this);
   }
 }

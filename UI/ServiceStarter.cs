@@ -16,7 +16,6 @@ public class ServiceStarter : IHostedService
   private readonly INotificationReceivingService _notificationReceivingService;
   private readonly IDeviceControlViewModelRepo _deviceControlViewModelRepo;
   private readonly DeviceAdapterManager _deviceAdapterManager;
-  private readonly RemoteDeviceControlViewModelFactory _remoteDeviceViewModelFactory;
   private readonly IRemoteAnalyzerManager _analyzerManager;
   private readonly IRemotePlannerManager _plannerManager;
   private readonly IRemoteDeviceManager _remoteDeviceManager;
@@ -37,13 +36,11 @@ public class ServiceStarter : IHostedService
     INotificationReceivingService notificationReceivingService,
     IServiceProvider serviceProvider,
     IDeviceControlViewModelRepo deviceControlViewModelRepo,
-    DeviceAdapterManager deviceAdapterManager,
-    RemoteDeviceControlViewModelFactory remoteDeviceViewModelFactory)
+    DeviceAdapterManager deviceAdapterManager)
   {
     _notificationReceivingService = notificationReceivingService;
     _deviceControlViewModelRepo = deviceControlViewModelRepo;
     _deviceAdapterManager = deviceAdapterManager;
-    _remoteDeviceViewModelFactory = remoteDeviceViewModelFactory;
 
     _analyzerManager = analyzerManager;
     _plannerManager = plannerManager;
@@ -62,7 +59,6 @@ public class ServiceStarter : IHostedService
     _notificationReceivingService.StartNotificationStream();
     _deviceControlViewModelRepo.Initialize();
     _deviceAdapterManager.Activate();
-    _remoteDeviceViewModelFactory.Start(TimeSpan.FromSeconds(5));
     await _plannerManager.LoadPlanners();
     await _analyzerManager.LoadAnalyzers();
     await _remoteDeviceManager.LoadDevices();
@@ -74,7 +70,6 @@ public class ServiceStarter : IHostedService
   {
     _deviceControlViewModelRepo.Dispose();
     await _deviceAdapterManager.DisposeAsync();
-    await _remoteDeviceViewModelFactory.DisposeAsync();
   }
 
   public Task EnsureDataPathsExist()

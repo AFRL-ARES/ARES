@@ -19,7 +19,7 @@ internal class RequiredDeviceInterpretersValidator : ICampaignValidator
         stepTemp.CommandTemplates.Select(cmdTemp => cmdTemp.Metadata.DeviceId)).Distinct().ToArray();
 
     var existingRequiredDevices = requiredDeviceIds
-      .Select(_deviceRepo.GetAresDevice)
+      .Select(_deviceRepo.GetDevice)
       .ToArray();
 
     var missingDeviceIds = requiredDeviceIds

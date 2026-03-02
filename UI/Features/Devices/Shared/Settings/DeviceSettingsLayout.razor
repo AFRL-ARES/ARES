@@ -1,13 +1,15 @@
-﻿@inherits LayoutComponentBase
+﻿@using Ares.Core.Device.Providers
+@inherits LayoutComponentBase
 @layout SettingsLayout
-@inject UI.Application.Devices.Repos.IDeviceDriverRepository DriverRepository
+
+@inject IAresDriverProvider DriverRepository
 
 <div class="d-flex" style="min-width: 15%"> 
   <div class="overflow-auto">
     <nav class="nav nav-pills d-flex flex-column flex-sm-column">
       <NavLink Match="NavLinkMatch.All" class="nav-link flex-sm-fill mt-2" href="settings/device/remote">Remote</NavLink>
       <hr />
-      @foreach (var driverName in DriverRepository.DriverNames)
+      @foreach (var driverName in DriverRepository.GetAllDeviceDrivers())
       {
         <NavLink Match="NavLinkMatch.All" class="nav-link flex-sm-fill" href="@($"settings/device/plugin/{driverName}")">@driverName</NavLink>
       }

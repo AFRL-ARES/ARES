@@ -60,7 +60,7 @@ public class DeviceDriverLoader : IDeviceDriverLoader
         try
         {
           var driver = await LoadFromDirectoryAsync(dir, ct);
-          _driverRepo.Register(driver);
+          _driverRepo.AddOrUpdate(driver);
         }
         catch(Exception)
         {

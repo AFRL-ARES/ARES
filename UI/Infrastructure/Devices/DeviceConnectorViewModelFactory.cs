@@ -1,24 +1,29 @@
 using Ares.Datamodel.Device;
 using Ares.Services.Device;
 using Ares.Core.Grpc.Services;
-using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using UI.Application.Devices;
 using UI.Application.Devices.Repos;
+using Ares.Core.Device.Repos;
+using Ares.Core.Device.Providers;
+using Ares.Device;
 
 namespace UI.Infrastructure.Devices;
 
-public abstract class DeviceConnectorViewModelFactory(
-    DevicesService devicesClient,
-    IDeviceControlViewModelRepo deviceControlViewModelRepo)
-    : ReactiveObject, IAsyncDisposable
+public class DeviceConnectorViewModelFactory : ReactiveObject, IAsyncDisposable
 {
-  protected readonly DevicesService _devicesClient = devicesClient;
-  protected readonly IDeviceControlViewModelRepo _deviceControlViewModelRepo = deviceControlViewModelRepo;
+  private readonly IAresDeviceProvider _deviceProvider;
+  protected readonly IDeviceControlViewModelRepo _deviceControlViewModelRepo;
   private IDisposable _deviceUpdater = Disposable.Empty;
+
+  public DeviceConnectorViewModelFactory(IAresDeviceProvider deviceProvider, IDeviceControlViewModelRepo deviceControlViewModelRepo)
+  {
+    _deviceProvider = deviceProvider;
+    _deviceControlViewModelRepo = deviceControlViewModelRepo;
+  }
 
   public void Start(TimeSpan interval)
   {
@@ -41,26 +46,24 @@ public abstract class DeviceConnectorViewModelFactory(
 
   private async Task UpdateAvailableDevices()
   {
-    var deviceDescriptions = await GetAvailableDevices();
-    foreach(var description in deviceDescriptions)
+    var availableDevices = _deviceProvider.GetAllDevices();
+    foreach(var device in availableDevices)
     {
-      var deviceStatusRequest = new DeviceStatusRequest { DeviceId = description.DeviceId };
-      var deviceStatusResponse = await _devicesClient.GetDeviceStatus(deviceStatusRequest, null);
-
-      if(deviceStatusResponse.OperationalState == OperationalState.Active)
+      if(device is not null && device.Status.OperationalState == OperationalState.Active)
       {
-        if(_deviceControlViewModelRepo.Items.Any(vm => vm.DeviceId.Equals(description.DeviceId)))
+        if(_deviceControlViewModelRepo.Items.Any(vm => vm.DeviceId.Equals(device.UniqueId)))
           continue;
 
-        CreateAndAddViewModel(description.DeviceId, description.DeviceName);
+        CreateAndAddViewModel(device.UniqueId, device.Name);
         continue;
       }
     }
   }
 
-  protected abstract Task<IEnumerable<AresDeviceDescription>> GetAvailableDevices();
-
-  protected abstract void CreateAndAddViewModel(string deviceId, string deviceName);
+  protected void CreateAndAddViewModel(string deviceId, string deviceName)
+  {
+    throw new NotImplementedException();
+  }
 
   public async ValueTask DisposeAsync()
   {
@@ -71,12 +74,4 @@ public abstract class DeviceConnectorViewModelFactory(
       await vm.DisposeAsync();
     }
   }
-}
-
-public abstract class DeviceConnectorViewModelFactory<T>(
-    DevicesService devicesClient,
-    IDeviceControlViewModelRepo deviceControlViewModelRepo)
-    : DeviceConnectorViewModelFactory(devicesClient, deviceControlViewModelRepo)
-    where T : DeviceUnitControlViewModel
-{
 }

@@ -22,7 +22,7 @@ public class AresDriverService : AresDeviceDriverService.AresDeviceDriverService
   {
     var response = new DriverListResponse();
 
-    foreach(var driver in _deviceDriverRepo.GetAll())
+    foreach(var driver in _deviceDriverRepo.GetAllDrivers())
     {
       var info = new FileInfo(driver.ModulePath);
 
@@ -41,7 +41,7 @@ public class AresDriverService : AresDeviceDriverService.AresDeviceDriverService
 
   public override async Task DownloadDriver(DriverRequest request, IServerStreamWriter<FileChunk> responseStream, ServerCallContext? context)
   {
-    var matchingDriver = _deviceDriverRepo.GetById(request.DriverId);
+    var matchingDriver = _deviceDriverRepo.GetDriverById(request.DriverId);
 
     if(matchingDriver is null || !File.Exists(matchingDriver.ModulePath)) 
       throw new RpcException(new Status(StatusCode.NotFound, "Driver not found"));

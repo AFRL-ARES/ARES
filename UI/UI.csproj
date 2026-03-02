@@ -78,7 +78,7 @@
     <ProjectReference Include="..\AresService.Migrations.Postgres\AresService.Migrations.Postgres.csproj" />
     <ProjectReference Include="..\AresService.Migrations.Sqlite\AresService.Migrations.Sqlite.csproj" />
     <ProjectReference Include="..\AresService.Migrations.SqlServer\AresService.Migrations.SqlServer.csproj" />
-  </ItemGroup>
+	</ItemGroup>
 
   <ItemGroup>
     <None Update="FC2ClientCert.pfx">

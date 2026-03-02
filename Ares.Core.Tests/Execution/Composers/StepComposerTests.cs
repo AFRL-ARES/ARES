@@ -12,14 +12,14 @@ namespace Ares.Core.Tests.Execution.Composers;
 internal class StepComposerTests
 {
   private StepTemplate _stepTemplate;
-  private IAresDeviceRepo _deviceRepo;
+  private AresDeviceRepo _deviceRepo;
   private INotifier _notifer;
 
   [SetUp]
   public void SetUp()
   {
     _deviceRepo = new AresDeviceRepo();
-    _deviceRepo.Add(new TestDevice("Test Device", "TestDeviceId"));
+    _deviceRepo.AddOrUpdate(new TestDevice("Test Device", "TestDeviceId"));
     var commandTemplate1 = new CommandTemplate
     {
       Index = 0,
@@ -63,6 +63,12 @@ internal class StepComposerTests
   public void OneTimeSetUp()
   {
     _notifer = new Mock<INotifier>().Object;
+  }
+
+  [TearDown]
+  public void Dispose()
+  {
+    _deviceRepo.Dispose();
   }
 
   [Test]
