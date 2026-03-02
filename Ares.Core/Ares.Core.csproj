@@ -35,6 +35,7 @@
   <ItemGroup>
     <ProjectReference Include="..\AresScript\AresScript.csproj" />
 		<ProjectReference Include="../../Ares.Toolkit.Device/Ares.Toolkit.Device/Ares.Toolkit.Device.csproj" />
+		<ProjectReference Include="../../Ares.Toolkit.Serial/Ares.Toolkit.Serial/Ares.Toolkit.Serial.csproj" />
 	</ItemGroup>
 
 </Project>

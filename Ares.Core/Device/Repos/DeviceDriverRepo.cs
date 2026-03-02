@@ -17,7 +17,7 @@ public class DeviceDriverRepo : IDeviceDriverRepo
 
   public DeviceDriver? GetDriverByName(string name)
   {
-    var driver = _driverCache.Items.FirstOrDefault(d => d.Manifest.Name == name);
+    var driver = _driverCache.Items.FirstOrDefault(d => d.Manifest.DeviceTypeName == name);
     return driver;
   }
 

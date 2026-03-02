@@ -358,7 +358,7 @@ public class DevicesService(
     var availableDeviceDrivers = driverProvider.GetAllDeviceDrivers();
 
     var response = new AvailableDeviceDriversResponse();
-    response.DeviceDrivers.AddRange(availableDeviceDrivers.Select(driver => driver.Manifest.Name));
+    response.DeviceDrivers.AddRange(availableDeviceDrivers.Select(driver => driver.Manifest.DeviceTypeName));
     return Task.FromResult(response);
   }
 

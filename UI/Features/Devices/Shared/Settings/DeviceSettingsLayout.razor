@@ -9,9 +9,9 @@
     <nav class="nav nav-pills d-flex flex-column flex-sm-column">
       <NavLink Match="NavLinkMatch.All" class="nav-link flex-sm-fill mt-2" href="settings/device/remote">Remote</NavLink>
       <hr />
-      @foreach (var driverName in DriverRepository.GetAllDeviceDrivers())
+      @foreach (var driver in DriverRepository.GetAllDeviceDrivers())
       {
-        <NavLink Match="NavLinkMatch.All" class="nav-link flex-sm-fill" href="@($"settings/device/plugin/{driverName}")">@driverName</NavLink>
+        <NavLink Match="NavLinkMatch.All" class="nav-link flex-sm-fill" href="@($"settings/device/plugin/{driver.Manifest.DeviceTypeName}")">@driver.Manifest.DeviceTypeName</NavLink>
       }
     </nav>
   </div>

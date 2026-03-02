@@ -1,12 +1,11 @@
 using Ares.Core.Analyzing;
+using Ares.Core.Device.Drivers.Loading;
 using Ares.Core.Device.Managers;
 using Ares.Core.Device.Remote;
 using Ares.Core.Planning;
-using System.Runtime.CompilerServices;
 using UI.Application.Devices.Repos;
 using UI.Application.Notifications;
 using UI.Application.Settings;
-using UI.Features.Devices.Remote;
 using UI.Infrastructure.Devices;
 
 namespace UI;
@@ -19,6 +18,7 @@ public class ServiceStarter : IHostedService
   private readonly IRemoteAnalyzerManager _analyzerManager;
   private readonly IRemotePlannerManager _plannerManager;
   private readonly IRemoteDeviceManager _remoteDeviceManager;
+  private readonly IDeviceDriverLoader _deviceDriverLoader;
   private readonly IDeviceManager _deviceManager;
   private readonly IConfiguration _configuration;
 
@@ -29,6 +29,7 @@ public class ServiceStarter : IHostedService
 
   public ServiceStarter(
     IRemotePlannerManager plannerManager,
+    IDeviceDriverLoader deviceDriverLoader,
     IRemoteAnalyzerManager analyzerManager,
     IConfiguration configuration,
     IRemoteDeviceManager remoteDeviceManager,
@@ -41,6 +42,7 @@ public class ServiceStarter : IHostedService
     _notificationReceivingService = notificationReceivingService;
     _deviceControlViewModelRepo = deviceControlViewModelRepo;
     _deviceAdapterManager = deviceAdapterManager;
+    _deviceDriverLoader = deviceDriverLoader;
 
     _analyzerManager = analyzerManager;
     _plannerManager = plannerManager;
@@ -59,6 +61,7 @@ public class ServiceStarter : IHostedService
     _notificationReceivingService.StartNotificationStream();
     _deviceControlViewModelRepo.Initialize();
     _deviceAdapterManager.Activate();
+    await _deviceDriverLoader.LoadModulesAsync("C:\\ARES\\ARES OS\\Ares.Core\\bin\\Debug\\net10.0\\plugins");
     await _plannerManager.LoadPlanners();
     await _analyzerManager.LoadAnalyzers();
     await _remoteDeviceManager.LoadDevices();

@@ -31,7 +31,7 @@ namespace UI.Application.Devices.Repos
     }
 
     public IObservable<IChangeSet<IDeviceUnitControlViewModel>> Connect(Func<IDeviceUnitControlViewModel, bool>? predicate = null)
-      => _viewModelCache.Connect().Filter(predicate ?? (_ => true)).RemoveKey();
+        => _viewModelCache.Connect().Filter(predicate ?? (_ => true)).RemoveKey();
 
     public IObservable<IChangeSet<IDeviceUnitControlViewModel>> Preview(Func<IDeviceUnitControlViewModel, bool>? predicate = null)
         => _viewModelCache.Preview(predicate).RemoveKey();
@@ -42,7 +42,7 @@ namespace UI.Application.Devices.Repos
 
     public int Count => _viewModelCache.Count;
 
-    IReadOnlyList<IDeviceUnitControlViewModel> IObservableList<IDeviceUnitControlViewModel>.Items => throw new NotImplementedException();
+    IReadOnlyList<IDeviceUnitControlViewModel> IObservableList<IDeviceUnitControlViewModel>.Items => _viewModelCache.Items.ToList();
 
     public void Dispose()
     {

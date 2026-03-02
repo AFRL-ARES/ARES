@@ -1,10 +1,10 @@
+using Ares.Core;
 using Ares.Core.Device.State.Export.ExportStreamProviders;
 using Ares.Core.Execution;
 using Ares.Core.Grpc;
-using Ares.Core;
 using Ares.Core.Grpc.Services;
-using Ares.Core.Grpc.Services.Safety;
 using Ares.Core.Grpc.Services.Notifications;
+using Ares.Core.Grpc.Services.Safety;
 using AresService.Data;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.EntityFrameworkCore;
@@ -22,7 +22,9 @@ using UI.Features.Auth;
 using UI.Features.CampaignEdit;
 using UI.Features.CampaignEdit.Factories;
 using UI.Features.CampaignEdit.ViewModels;
+using UI.Features.Devices.Plugin;
 using UI.Features.Devices.Remote;
+using UI.Features.Devices.Shared;
 using UI.Features.DeviceStateExport;
 using UI.Features.DeviceStateLogging;
 using UI.Features.DeviceStateLogging.Settings;
@@ -137,7 +139,8 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<PlanningDesignerFactory>();
     services.AddScoped<AnalyzerInputDesignerVmFactory>();
     services.AddScoped<DeviceStateFilterViewModelFactory>();
-    services.AddSingleton<RemoteDeviceControlViewModelFactory>();
+    services.AddSingleton<IDeviceViewModelFactory, RemoteDeviceControlViewModelFactory>();
+    services.AddSingleton<IDeviceViewModelFactory, PluginDeviceViewModelFactory>();
   }
 
   public static void LoadService(this IServiceCollection services, IConfiguration configuration)

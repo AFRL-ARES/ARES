@@ -1,12 +1,9 @@
 using Ares.Core.Analyzing;
 using Ares.Core.AresEnvironment;
-using Ares.Core.Device.Helpers;
-using Ares.Core.Device.Loaders;
 using Ares.Core.Device.Managers;
 using Ares.Core.Device.Repos;
 using Ares.Core.Device.Remote;
 using Ares.Core.Device.Remote.State;
-using Ares.Core.Device.Repos;
 using Ares.Core.Device.State.Export;
 using Ares.Core.Device.State.Export.ExportStreamProviders;
 using Ares.Core.Device.State.Export.StateGetters;
@@ -24,6 +21,8 @@ using Ares.Core.Validation.Campaign;
 using Ares.Datamodel.Templates;
 using Microsoft.Extensions.DependencyInjection;
 using Ares.Core.Device;
+using Ares.Core.Device.Providers;
+using Ares.Core.Device.Drivers.Loading;
 
 namespace Ares.Core;
 
@@ -72,6 +71,7 @@ public static class ServiceCollectionExtensions
     services.BindComposers();
     services.BindStartConditions();
     services.BindStateLogging();
+    services.BindProviders();
   }
 
   private static void BindStateLogging(this IServiceCollection services)
@@ -101,5 +101,11 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<ICommandComposer<StepTemplate, StepExecutor>, StepComposer>();
     services.AddSingleton<ICommandComposer<ExperimentTemplate, ExperimentExecutor>, ExperimentComposer>();
     services.AddSingleton<ICommandComposer<CampaignTemplate, ICampaignExecutor>, CampaignComposer>();
+  }
+
+  private static void BindProviders(this IServiceCollection services)
+  {
+    services.AddTransient<IAresDeviceProvider, AresDeviceProvider>();
+    services.AddTransient<IAresDriverProvider, AresDriverProvider>();
   }
 }

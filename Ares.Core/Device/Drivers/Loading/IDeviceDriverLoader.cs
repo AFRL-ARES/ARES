@@ -1,7 +1,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Ares.Core.Device.Loaders;
+namespace Ares.Core.Device.Drivers.Loading;
 
 public interface IDeviceDriverLoader
 {

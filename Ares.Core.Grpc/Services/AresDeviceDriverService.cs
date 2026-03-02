@@ -29,10 +29,9 @@ public class AresDriverService : AresDeviceDriverService.AresDeviceDriverService
       response.Drivers.Add(new DriverInfo
       {
         DriverId = driver.UniqueId,
-        DisplayName = driver.Manifest.Name,
-        Version = driver.Manifest.DriverVersion,
-        FileSizeBytes = driver.DriverSize,
-        Checksum = driver.CheckSum
+        DisplayName = driver.Manifest.DeviceTypeName,
+        Version = driver.Manifest.Version,
+        FileSizeBytes = driver.DriverSize
       });
     }
 
