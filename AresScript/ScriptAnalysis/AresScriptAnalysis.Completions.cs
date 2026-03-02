@@ -45,7 +45,7 @@ public static partial class AresScriptAnalysis
     await BuildEnvironmentForCompletions(environment, script, cursorLine);
     var systemVariables = environment.GetAllSystemVariables();
     var userFunctions = environment.GetAllUserFunctions();
-    var userVariables = environment.GetAllUserVariables();
+    var userVariables = environment.GetAllUserVariableSymbols();
     var items = new List<CompletionItem>();
 
     if(TryGetParentIdentifier(script, cursorLine, cursorColumn, out var parentIdentifier))
@@ -100,13 +100,12 @@ public static partial class AresScriptAnalysis
         Label = variable.Key,
         InsertText = variable.Key,
         Metadata = ScriptSymbolMetadataMapper.ToMetadata(
-          new AresScriptValueSymbol(
-            Name: variable.Key,
-            Value: variable.Value,
-            SymbolKind: variable.Value.KindCase == AresValue.KindOneofCase.StructValue ? SymbolKind.Struct : SymbolKind.Variable,
-            Detail: "User variable",
-            Documentation: "User-defined variable.",
-            IsUserDefined: true),
+          variable.Value with
+          {
+            Detail = "User variable",
+            Documentation = "User-defined variable."
+          },
+          valueSchema: variable.Value.DeclaredSchema,
           parentIdentifier: string.Empty)
       }));
     }

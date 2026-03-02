@@ -69,39 +69,4 @@ public static class DummyValueFactory
     }
   }
 
-  public static AresValue CreateDummyValue(AresDataType dataType)
-  {
-    switch(dataType)
-    {
-      case AresDataType.Struct:
-        {
-          var structValue = AresValueHelper.CreateStruct();
-          return structValue;
-        }
-      case AresDataType.List:
-        return AresValueHelper.CreateList();
-      case AresDataType.String:
-        return AresValueHelper.CreateString("");
-      case AresDataType.Number:
-        return AresValueHelper.CreateNumber(0);
-      case AresDataType.Boolean:
-        return AresValueHelper.CreateBool(false);
-      case AresDataType.StringArray:
-        return AresValueHelper.CreateStringArray([]);
-      case AresDataType.NumberArray:
-        return AresValueHelper.CreateNumberArray(Array.Empty<double>());
-      case AresDataType.ByteArray:
-        return AresValueHelper.CreateBytes([]);
-      case AresDataType.Unit:
-        return AresValueHelper.CreateUnit();
-      case AresDataType.Function:
-        return AresValueHelper.CreateFunction(string.Empty);
-      case AresDataType.Any:
-      case AresDataType.UnspecifiedType:
-        return new AresValue();
-      case AresDataType.Null:
-      default:
-        return AresValueHelper.CreateNull();
-    }
-  }
 }

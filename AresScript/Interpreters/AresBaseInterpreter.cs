@@ -672,8 +672,8 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
       _ => throw new AresInterpreterException("Invalid lambda expression.")
     };
 
-    var closure = Environment.GetAllUserVariables()
-      .ToDictionary(kv => kv.Key, kv => kv.Value.Clone(), StringComparer.Ordinal);
+    var closure = Environment.GetAllUserVariableSymbols()
+      .ToDictionary(kv => kv.Key, kv => kv.Value.Value.Clone(), StringComparer.Ordinal);
     var lambdaId = $"lambda::{Guid.NewGuid():N}";
     Environment.AssignLambda(lambdaId, new AresScriptLambda(lambdaId, parameters, body, closure));
     return Task.FromResult(AresValueHelper.CreateFunction(lambdaId));

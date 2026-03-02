@@ -84,7 +84,7 @@ public static class ScriptSymbolMetadataMapper
       case AresSystemValue systemValueSymbol:
       {
         var resolvedValue = value ?? systemValueSymbol.Value;
-        var resolvedSchema = valueSchema ?? resolvedValue.ToSchemaEntry();
+        var resolvedSchema = valueSchema ?? systemValueSymbol.DeclaredSchema ?? resolvedValue.ToSchemaEntry();
         metadata.ValueShape = new ScriptSymbolMetadata.Types.ValueShape
         {
           Schema = resolvedSchema,

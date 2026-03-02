@@ -242,24 +242,6 @@ public class AresScriptEnvironment
     return results;
   }
 
-  public KeyValuePair<string, AresValue>[] GetAllUserVariables()
-  {
-    var seen = new HashSet<string>(StringComparer.Ordinal);
-    var results = new List<KeyValuePair<string, AresValue>>();
-    foreach(var scope in _userScopes)
-    {
-      foreach(var (key, symbol) in scope.Variables)
-      {
-        if(seen.Add(key))
-        {
-          results.Add(new KeyValuePair<string, AresValue>(key, symbol.Value));
-        }
-      }
-    }
-
-    return results.ToArray();
-  }
-
   public KeyValuePair<string, AresSystemValue>[] GetAllUserVariableSymbols()
   {
     var seen = new HashSet<string>(StringComparer.Ordinal);

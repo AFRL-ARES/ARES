@@ -134,10 +134,11 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       {
         foreach(var parameter in _pendingFunctions.Peek().Parameters)
         {
+          var parameterSchema = AresSchemaBuilder.Entry(parameter.Type).Build();
           _environment.AssignVariable(
             parameter.Name,
-            DummyValueFactory.CreateDummyValue(parameter.Type),
-            AresSchemaBuilder.Entry(parameter.Type).Build());
+            DummyValueFactory.CreateDummyValue(parameterSchema),
+            parameterSchema);
         }
       }
 
@@ -511,7 +512,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       foreach(var parameter in parameterNames)
       {
-        _environment.AssignVariable(parameter, CreateUnknownValue());
+        _environment.AssignVariable(parameter, new AresValue());
       }
 
       await Visit(body);
@@ -587,12 +588,6 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       context.Start.Line,
       context.Stop.Column + 1
     );
-  }
-
-  private static AresValue CreateUnknownValue()
-  {
-    // A value with no active oneof kind maps to UnspecifiedType in schema inference.
-    return new AresValue();
   }
 
   public override async Task VisitFunctionCall(AresLangParser.FunctionCallContext ctx)
@@ -1206,7 +1201,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
             var declaredReturnType = userFunction.ReturnType;
             if(declaredReturnType is AresDataType.Any or AresDataType.UnspecifiedType)
             {
-              return CreateUnknownValue();
+              return new AresValue();
             }
 
             var returnSchema = AresSchemaBuilder.Entry(declaredReturnType).Build();
@@ -1216,7 +1211,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
           if(_environment.TryGetUserLambda(funcId, out var _))
           {
             // Lambda return type is not declared, so preserve unknown shape for validation.
-            return CreateUnknownValue();
+            return new AresValue();
           }
           break;
         }
@@ -1226,7 +1221,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     var inferredSchema = _typeInference.Visit(expression);
     if(inferredSchema.Type is AresDataType.Any or AresDataType.UnspecifiedType)
     {
-      return CreateUnknownValue();
+      return new AresValue();
     }
 
     return DummyValueFactory.CreateDummyValue(inferredSchema);
@@ -1248,8 +1243,8 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       _ => throw new AresInterpreterException("Invalid lambda expression.")
     };
 
-    var closure = _environment.GetAllUserVariables()
-      .ToDictionary(kv => kv.Key, kv => kv.Value.Clone(), StringComparer.Ordinal);
+    var closure = _environment.GetAllUserVariableSymbols()
+      .ToDictionary(kv => kv.Key, kv => kv.Value.Value.Clone(), StringComparer.Ordinal);
     var lambdaId = $"lambda::{Guid.NewGuid():N}";
     _environment.AssignLambda(lambdaId, new AresScriptLambda(lambdaId, parameters, body, closure));
     return AresValueHelper.CreateFunction(lambdaId);
