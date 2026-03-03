@@ -41,28 +41,34 @@ public class DeviceManager : IDeviceManager
 
   public async Task<IAresDevice> Load(string deviceId, DeviceConfig config)
   {
-    var driver = _driverProvider.GetDriverByName(config.DriverName);
-    if(driver == null)
+    try
     {
-      throw new InvalidOperationException($"Driver '{config.DriverName}' not found.");
+      var driver = _driverProvider.GetDriverById(config.DriverId);
+      if(driver == null)
+      {
+        throw new InvalidOperationException($"Driver '{config.DriverName}' not found.");
+      }
+
+      // Create a logger for the specific device type
+      var loggerType = typeof(ILogger<>).MakeGenericType(driver.DriverType);
+      var logger = _loggerFactory.CreateLogger(driver.DriverType);
+
+      // Instantiate with: string (name), AresStruct (config), and ILogger
+      // Using explicit arguments to match the requested constructor pattern
+      var device = (IAresDevice)ActivatorUtilities.CreateInstance(_serviceProvider, driver.DriverType, [config.DeviceName, config.DriverSettings, logger]);
+
+      _deviceRepo.AddOrUpdate(device);
+
+      await device.Activate();
+
+      return device;
     }
 
-    // Create a logger for the specific device type
-    var loggerType = typeof(ILogger<>).MakeGenericType(driver.DriverType);
-    var logger = _loggerFactory.CreateLogger(driver.DriverType);
-
-    // Instantiate with: string (name), AresStruct (config), and ILogger
-    // Using explicit arguments to match the requested constructor pattern
-    var device = (IAresDevice)ActivatorUtilities.CreateInstance(_serviceProvider, driver.DriverType, 
-      config.DeviceName, 
-      config.DriverSettings,
-      logger);
-    
-    _deviceRepo.AddOrUpdate(device);
-    
-    await device.Activate();
-    
-    return device;
+    catch(Exception e)
+    {
+      _logger.LogError($"Encountered an error when trying to add a device! {e.Message}");
+      throw;
+    }
   }
 
   public async Task<IAresDevice[]> Load(IEnumerable<DeviceConfig> configs)

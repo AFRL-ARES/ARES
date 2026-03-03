@@ -15,16 +15,16 @@ settings:
     display_name: "Unit ID"
     type: "string"
     description: "The hardware ID of the Alicat unit (e.g., A, B, C)."
-    default: "A"
+    constraints:
+      regex: "^[A-Z]$"
+      validation_hint: "Alicat Unit IDs must be a single letter (A-Z)."
 
   - key: "HasValve"
     display_name: "Has Integrated Valve"
     type: "boolean"
     description: "Specify true if this unit is a Controller (MFC), false if it is a Meter (MFM)."
-    default: true
 
   - key: "IsBasis"
     display_name: "Is Basis Series"
     type: "boolean"
     description: "Set to true if using Alicat Basis/Basis 2 hardware."
-    default: false

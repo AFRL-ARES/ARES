@@ -4,9 +4,15 @@ namespace Ares.Core.Device.Manifest;
 
 public class DriverSettingDefinition
 {
+  /// <summary>
+  /// The name to be associated with the setting.
+  /// </summary>
   [JsonPropertyName("key")]
   public string Key { get; set; } = string.Empty;
 
+  /// <summary>
+  /// A friendly display name for the UI to use when referring to this setting.
+  /// </summary>
   [JsonPropertyName("display_name")]
   public string DisplayName { get; set; } = string.Empty;
 
@@ -16,14 +22,16 @@ public class DriverSettingDefinition
   [JsonPropertyName("type")]
   public string Type { get; set; } = "string";
 
+  /// <summary>
+  /// A brief description of the setting.
+  /// </summary>
   [JsonPropertyName("description")]
   public string Description { get; set; } = string.Empty;
 
   /// <summary>
-  /// The default value for this setting. 
-  /// Note: Using 'object' allows this to hold booleans, strings, or numbers 
-  /// depending on the 'Type' property.
+  /// The constraints applied to the driver setting.
+  /// Can be supplied as a min + max OR a regex.
   /// </summary>
-  [JsonPropertyName("default")]
-  public object? Default { get; set; }
+  [JsonPropertyName("constraints")]
+  public Constraints Constraints { get; set; } = new();
 }

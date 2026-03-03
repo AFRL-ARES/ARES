@@ -1,5 +1,4 @@
 using Ares.Datamodel.Device;
-using Ares.Services.Device;
 using Ares.Core.Grpc.Services;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;

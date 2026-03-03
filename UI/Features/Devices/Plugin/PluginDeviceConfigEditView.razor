@@ -1,5 +1,31 @@
-﻿<h3>PluginDeviceConfigEditView</h3>
+﻿@using Ares.Datamodel
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<PluginDeviceConfigEditViewModel>
 
-@code {
+<RadzenTemplateForm TItem="PluginDeviceConfigEditViewModel" Data="@ViewModel" Submit="@OnValidSubmit">
+    <div class="d-flex flex-column gap-3">
+        <RadzenFormField Text="Device Name" Variant="Variant.Flat">
+            <RadzenTextBox @bind-Value="ViewModel!.Name"/>
+        </RadzenFormField>
 
+        @foreach (var prop in ViewModel!.DriverSettingsSchema.Fields)
+        {
+          <AresValueDesigner Name="@prop.Key"
+          Value="@ViewModel!.GetMatchingSettingValue(prop.Key)"
+          Schema="prop.Value"
+          ValueEditCallback="@(value => ValueEditCallback(prop.Key, value))"/>
+        }
+    </div>
+    <button type="submit" class="btn my-3 btn-outline-primary">Save Device</button>
+</RadzenTemplateForm>
+
+@code
+{
+  [Parameter]
+  public Action OnValidSubmit { get; set; } = delegate { };
+
+  private Task ValueEditCallback(string name, AresValue value)
+  {
+    ViewModel!.DeviceSettings.Fields[name] = value;
+    return Task.CompletedTask;
+  }
 }

@@ -2,6 +2,7 @@ using Ares.Core.Device.Manifest;
 using Ares.Core.Device.Repos;
 using Ares.Device;
 using Ares.Toolkit.Device.UI;
+using Microsoft.Extensions.Logging;
 using System.IO.Compression;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -14,10 +15,12 @@ public class DeviceDriverLoader : IDeviceDriverLoader
 {
   private readonly IDeviceDriverRepo _driverRepo;
   private readonly IDeserializer _deserializer;
+  private readonly ILogger<DeviceDriverLoader> _logger;
 
-  public DeviceDriverLoader(IDeviceDriverRepo driverRepo)
+  public DeviceDriverLoader(IDeviceDriverRepo driverRepo, ILogger<DeviceDriverLoader> logger)
   {
     _driverRepo = driverRepo;
+    _logger = logger;
     _deserializer = new DeserializerBuilder()
         .WithNamingConvention(UnderscoredNamingConvention.Instance)
         .Build();
@@ -75,8 +78,17 @@ public class DeviceDriverLoader : IDeviceDriverLoader
     if(!File.Exists(manifestPath))
       throw new FileNotFoundException("Manifest file not found", manifestPath);
 
+    DeviceDriverManifest manifest = new DeviceDriverManifest();
     var manifestYaml = await File.ReadAllTextAsync(manifestPath, ct);
-    var manifest = _deserializer.Deserialize<DeviceDriverManifest>(manifestYaml);
+    try
+    {
+      manifest = _deserializer.Deserialize<DeviceDriverManifest>(manifestYaml);
+    }
+
+    catch(Exception ex)
+    {
+      //TODO: Log
+    }
 
     var assemblyPath = Path.Combine(moduleDirectory, "bin", manifest.AssemblyName);
     if(!File.Exists(assemblyPath))
@@ -110,6 +122,7 @@ public class DeviceDriverLoader : IDeviceDriverLoader
     }
 
     var hashId = await ComputeFileHashAsync(assemblyPath, ct);
+    var convertedSettingsSchema = DriverLoaderUtils.CreateDriverSettingsSchema(manifest.Settings);
 
     return new DeviceDriver(hashId)
     {
@@ -118,7 +131,8 @@ public class DeviceDriverLoader : IDeviceDriverLoader
       DriverType = driverType,
       ViewModelType = viewModelType,
       ModulePath = moduleDirectory,
-      DriverSize = (int)fileInfo.Length
+      DriverSize = (int)fileInfo.Length,
+      DriverSettings = convertedSettingsSchema
     };
   }
 

@@ -11,7 +11,7 @@
       <hr />
       @foreach (var driver in DriverRepository.GetAllDeviceDrivers())
       {
-        <NavLink Match="NavLinkMatch.All" class="nav-link flex-sm-fill" href="@($"settings/device/plugin/{driver.Manifest.DeviceTypeName}")">@driver.Manifest.DeviceTypeName</NavLink>
+        <NavLink Match="NavLinkMatch.All" class="nav-link flex-sm-fill" href="@($"settings/device/{driver.UniqueId}")">@driver.Manifest.DeviceTypeName</NavLink>
       }
     </nav>
   </div>

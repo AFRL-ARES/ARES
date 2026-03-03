@@ -23,6 +23,7 @@ using UI.Features.CampaignEdit;
 using UI.Features.CampaignEdit.Factories;
 using UI.Features.CampaignEdit.ViewModels;
 using UI.Features.Devices.Plugin;
+using UI.Features.Devices.Plugin.Factories;
 using UI.Features.Devices.Remote;
 using UI.Features.Devices.Shared;
 using UI.Features.DeviceStateExport;
@@ -117,6 +118,7 @@ internal static class ServiceCollectionExtensions
     services.AddTransient<AnalyzerSettingsListViewModel>();
     services.AddTransient<PlannerSettingsListViewModel>();
     services.AddTransient<RemoteDeviceSettingsListViewModel>();
+    services.AddTransient<PluginDeviceSettingsListViewModel>();
 
     //Other View Models
     services.AddTransient<DeviceStatesViewModel>();
@@ -140,7 +142,7 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<AnalyzerInputDesignerVmFactory>();
     services.AddScoped<DeviceStateFilterViewModelFactory>();
     services.AddSingleton<IDeviceViewModelFactory, RemoteDeviceControlViewModelFactory>();
-    services.AddSingleton<IDeviceViewModelFactory, PluginDeviceViewModelFactory>();
+    services.AddSingleton<IPluginViewModelFactory, PluginViewModelFactory>();
   }
 
   public static void LoadService(this IServiceCollection services, IConfiguration configuration)
