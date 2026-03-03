@@ -8,14 +8,7 @@ public class MassFlowControllerConnection : AresHardwareConnection, IMfcConnecti
 {
   private readonly List<char> _unusedIds;
 
-  public MassFlowControllerConnection(string portName) : base(
-    new SerialPortConnectionInfo(
-      19200,
-      Parity.None,
-      8,
-      StopBits.One
-    ),
-    portName,
+  public MassFlowControllerConnection(string portName) : base(new SerialPortConnectionInfo(19200, Parity.None, 8, StopBits.One), portName,
     new SerialConnectionOptions
     {
       SendBuffer = TimeSpan.FromMilliseconds(50),

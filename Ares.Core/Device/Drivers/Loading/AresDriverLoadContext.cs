@@ -7,25 +7,25 @@ public class AresDriverLoadContext : AssemblyLoadContext
 {
   private readonly AssemblyDependencyResolver _resolver;
 
-  public AresDriverLoadContext(string pluginPath) : base(isCollectible: true)
+  public AresDriverLoadContext(string pluginPath) : base(name: "AresPluginContext", isCollectible: false)
   {
     _resolver = new AssemblyDependencyResolver(pluginPath);
   }
 
   protected override Assembly? Load(AssemblyName assemblyName)
   {
-    // This ensures that 'IAresDevice' in the driver is the EXACT same type as 'IAresDevice' in the host.
-    if(assemblyName.Name != null &&
-       (assemblyName.Name.StartsWith("Ares.Device") ||
-        assemblyName.Name.StartsWith("Ares.Datamodel") ||
-        assemblyName.Name.StartsWith("Google.Protobuf") ||
-        assemblyName.Name.StartsWith("Grpc.Core") ||
-        assemblyName.Name.StartsWith("Microsoft.Extensions.Logging") ||
-        assemblyName.Name.StartsWith("Ares.Toolkit.Device")))
+    // 1. "PROPER" WAY: Ask the Host first.
+    // If the Host has it (System.IO.Ports, Protobuf, etc.), use the Host's version.
+    try
     {
-      return null; // Fallback to the Default Load Context (the host)
+      // This prevents the "Illegal State" by ensuring we never load 
+      // a second copy of a shared system assembly.
+      var hostAssembly = Default.LoadFromAssemblyName(assemblyName);
+      if(hostAssembly != null) return hostAssembly;
     }
+    catch { /* Host doesn't have it, continue to local resolver */ }
 
+    // 2. Fallback to the plugin's 'bin' folder for unique hardware DLLs.
     string? assemblyPath = _resolver.ResolveAssemblyToPath(assemblyName);
     if(assemblyPath != null)
     {

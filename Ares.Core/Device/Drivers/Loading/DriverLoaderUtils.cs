@@ -2,20 +2,11 @@
 using Ares.Core.Resources;
 using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
-using System.Reflection;
 
 namespace Ares.Core.Device.Drivers.Loading;
 
 public static class DriverLoaderUtils
 {
-  public static Assembly LoadDriver(string dllPath)
-  {
-    var fullPath = Path.GetFullPath(dllPath);
-    var context = new AresDriverLoadContext(fullPath);
-
-    return context.LoadFromAssemblyPath(fullPath);
-  }
-
   public static AresStructSchema CreateDriverSettingsSchema(List<DriverSettingDefinition> manifestSettings)
   {
     var aresSettings = new AresStructSchema();
@@ -24,7 +15,7 @@ public static class DriverLoaderUtils
     {
       if(Enum.TryParse<AresDataType>(definition.Type, true, out var type))
       {
-        aresSettings.AddEntry(definition.DisplayName, type, description: definition.Description);
+        aresSettings.AddEntry(definition.Key, type, description: definition.Description);
       }
     }
 

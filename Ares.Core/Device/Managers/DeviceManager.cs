@@ -77,9 +77,6 @@ public class DeviceManager : IDeviceManager
       }
 
       _deviceRepo.AddOrUpdate(device);
-
-
-
       await device.Activate();
 
       return device;

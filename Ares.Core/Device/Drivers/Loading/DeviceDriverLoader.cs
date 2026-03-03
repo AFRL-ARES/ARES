@@ -76,67 +76,68 @@ public class DeviceDriverLoader : IDeviceDriverLoader
 
   public async Task<DeviceDriver> LoadFromDirectoryAsync(string moduleDirectory, CancellationToken ct = default)
   {
-    var manifestPath = Path.Combine(moduleDirectory, "manifest.yaml");
-    if(!File.Exists(manifestPath))
-      throw new FileNotFoundException("Manifest file not found", manifestPath);
-
-    DeviceDriverManifest manifest = new DeviceDriverManifest();
-    var manifestYaml = await File.ReadAllTextAsync(manifestPath, ct);
     try
     {
-      manifest = _deserializer.Deserialize<DeviceDriverManifest>(manifestYaml);
-    }
+      var manifestPath = Path.Combine(moduleDirectory, "manifest.yaml");
+      if(!File.Exists(manifestPath))
+        throw new FileNotFoundException("Manifest file not found", manifestPath);
 
+      DeviceDriverManifest manifest = new DeviceDriverManifest();
+      var manifestYaml = await File.ReadAllTextAsync(manifestPath, ct);
+
+      manifest = _deserializer.Deserialize<DeviceDriverManifest>(manifestYaml);
+
+      var assemblyPath = Path.Combine(moduleDirectory, "bin", manifest.AssemblyName);
+      if(!File.Exists(assemblyPath))
+        throw new FileNotFoundException($"Driver assembly not found: {assemblyPath}");
+
+      var fileInfo = new FileInfo(assemblyPath);
+      var loadContext = new AresDriverLoadContext(assemblyPath);
+      Assembly assembly = loadContext.LoadFromAssemblyPath(assemblyPath);
+
+      var driverType = assembly.GetTypes().FirstOrDefault(t =>
+          !t.IsInterface &&
+          !t.IsAbstract &&
+          t.GetInterfaces().Any(i => i.FullName == typeof(IAresDevice).FullName));
+
+      if(driverType == null)
+        throw new InvalidOperationException($"No IAresDevice implementation found in {manifest.AssemblyName}");
+
+      Type? viewModelType = null;
+      if(!string.IsNullOrEmpty(manifest.ViewModelTypeName))
+      {
+        viewModelType = assembly.GetType(manifest.ViewModelTypeName);
+      }
+
+      //Attempt to Manually Find the View Model
+      else
+      {
+        viewModelType = assembly.GetTypes().FirstOrDefault(t =>
+        !t.IsInterface &&
+        !t.IsAbstract &&
+        t.GetInterfaces().Any(i => i.FullName == typeof(IDeviceUnitControlViewModel).FullName));
+      }
+
+      var hashId = await ComputeFileHashAsync(assemblyPath, ct);
+      var convertedSettingsSchema = DriverLoaderUtils.CreateDriverSettingsSchema(manifest.Settings);
+
+      return new DeviceDriver(hashId)
+      {
+        Manifest = manifest,
+        Assembly = assembly,
+        DriverType = driverType,
+        ViewModelType = viewModelType,
+        ModulePath = moduleDirectory,
+        DriverSize = (int)fileInfo.Length,
+        DriverSettings = convertedSettingsSchema,
+        ConnectionType = DriverLoaderUtils.DetermineConnectionType(manifest.ConnectionType)
+      };
+    }
     catch(Exception ex)
     {
       _logger.LogError($"Encountered an error when trying to load device driver module! Could not deserialize the device manifest, likely due to a syntax error! {ex.Message}");
+      throw;
     }
-
-    var assemblyPath = Path.Combine(moduleDirectory, "bin", manifest.AssemblyName);
-    if(!File.Exists(assemblyPath))
-      throw new FileNotFoundException($"Driver assembly not found: {assemblyPath}");
-
-    var fileInfo = new FileInfo(assemblyPath);
-    var loadContext = new AresDriverLoadContext(assemblyPath);
-    Assembly assembly = loadContext.LoadFromAssemblyPath(assemblyPath);
-
-    var driverType = assembly.GetTypes().FirstOrDefault(t =>
-        !t.IsInterface &&
-        !t.IsAbstract &&
-        t.GetInterfaces().Any(i => i.FullName == typeof(IAresDevice).FullName));
-
-    if(driverType == null)
-      throw new InvalidOperationException($"No IAresDevice implementation found in {manifest.AssemblyName}");
-
-    Type? viewModelType = null;
-    if(!string.IsNullOrEmpty(manifest.ViewModelTypeName))
-    {
-      viewModelType = assembly.GetType(manifest.ViewModelTypeName);
-    }
-
-    //Attempt to Manually Find the View Model
-    else
-    {
-      viewModelType = assembly.GetTypes().FirstOrDefault(t =>
-      !t.IsInterface &&
-      !t.IsAbstract &&
-      t.GetInterfaces().Any(i => i.FullName == typeof(IDeviceUnitControlViewModel).FullName));
-    }
-
-    var hashId = await ComputeFileHashAsync(assemblyPath, ct);
-    var convertedSettingsSchema = DriverLoaderUtils.CreateDriverSettingsSchema(manifest.Settings);
-
-    return new DeviceDriver(hashId)
-    {
-      Manifest = manifest,
-      Assembly = assembly,
-      DriverType = driverType,
-      ViewModelType = viewModelType,
-      ModulePath = moduleDirectory,
-      DriverSize = (int)fileInfo.Length,
-      DriverSettings = convertedSettingsSchema,
-      ConnectionType = DriverLoaderUtils.DetermineConnectionType(manifest.ConnectionType)
-    };
   }
 
   public async Task<DeviceDriver> LoadAsync(string aresFilePath, CancellationToken ct = default)

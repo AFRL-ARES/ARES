@@ -7,6 +7,10 @@
 		<AddRazorSupportForMvc>true</AddRazorSupportForMvc>
 		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 		<GenerateDependencyFile>true</GenerateDependencyFile>
+
+		<DebugSymbols>true</DebugSymbols>
+		<DebugType>portable</DebugType>
+		<BaseOutputPath>C:\ARES\ARES OS\Ares.Core\bin\Debug\net10.0\plugins</BaseOutputPath>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -27,7 +31,10 @@
 
 	<ItemGroup>
 		<ProjectReference Include="../../Ares.Toolkit.Device/Ares.Toolkit.Device/Ares.Toolkit.Device.csproj" />
-		<ProjectReference Include="../../Ares.Toolkit.Serial/Ares.Toolkit.Serial/Ares.Toolkit.Serial.csproj" />
+		<ProjectReference Include="../../Ares.Toolkit.Serial/Ares.Toolkit.Serial/Ares.Toolkit.Serial.csproj">
+			<Private>true</Private>
+			<CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
+		</ProjectReference>
 	</ItemGroup>
 
 	<Target Name="PackageAresDriver" AfterTargets="Build">
@@ -42,18 +49,13 @@
 		<Copy SourceFiles="manifest.yaml" DestinationFolder="$(StagingFolder)" />
 
 		<ItemGroup>
-			<BinaryFiles Include="$(TargetDir)**\*.dll"
-                   Exclude="$(TargetDir)Ares.Device.dll;$(TargetDir)Ares.Datamodel.dll" />
-			<DepsFile Include="$(TargetDir)$(TargetName).deps.json" />
-			<RuntimeConfigFile Include="$(TargetDir)$(TargetName).runtimeconfig.json" />
+			<AllOutputFiles Include="$(TargetDir)**\*.*"
+											Exclude="$(TargetDir)Ares.Device.dll;$(TargetDir)Ares.Datamodel.dll;$(TargetDir)obj\**\*.*" />
 		</ItemGroup>
 
-		<Copy SourceFiles="@(BinaryFiles)" DestinationFolder="$(StagingFolder)bin" />
-		<Copy SourceFiles="@(DepsFile)" DestinationFolder="$(StagingFolder)bin" />
-
-		<Copy SourceFiles="@(RuntimeConfigFile)"
-          DestinationFolder="$(StagingFolder)bin"
-          Condition="Exists('%(FullPath)')" />
+		<Copy SourceFiles="@(AllOutputFiles)"
+          DestinationFiles="@(AllOutputFiles->'$(StagingFolder)bin\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
 
 		<ZipDirectory SourceDirectory="$(StagingFolder)" DestinationFile="$(PackageName)" Overwrite="true" />
 		<RemoveDir Directories="$(StagingFolder)" />

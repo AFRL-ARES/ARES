@@ -13,7 +13,7 @@ public class ResourceConnectionArbiter : IResourceConnectionArbiter
   /// <inheritdoc />
   public bool TryAcquireResource(ConnectionResource resource, IAresDevice owner)
   {
-      if(string.IsNullOrEmpty(owner?.UniqueId) || string.IsNullOrEmpty(owner?.Type) || resource == null)
+      if(string.IsNullOrEmpty(owner?.UniqueId) || resource == null)
           return false;
 
       return _resourceLocks.TryAdd(resource, owner);

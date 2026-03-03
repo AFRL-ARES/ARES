@@ -61,7 +61,7 @@ public class ServiceStarter : IHostedService
     _notificationReceivingService.StartNotificationStream();
     _deviceControlViewModelRepo.Initialize();
     _deviceAdapterManager.Activate();
-    await _deviceDriverLoader.LoadModulesAsync("C:\\ARES\\ARES OS\\Ares.Core\\bin\\Debug\\net10.0\\plugins");
+    await _deviceDriverLoader.LoadModulesAsync("C:\\ARES\\ARES OS\\plugins\\");
     await _plannerManager.LoadPlanners();
     await _analyzerManager.LoadAnalyzers();
     await _remoteDeviceManager.LoadDevices();

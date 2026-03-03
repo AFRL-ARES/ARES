@@ -18,14 +18,12 @@ using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
 using Ares.Core.Device.Providers;
-using Ares.Core.Resources;
 
 namespace Ares.Core.Grpc.Services;
 
 public class DevicesService(
   IAresDeviceProvider deviceProvider,
   IAresDriverProvider driverProvider,
-  IResourceConnectionArbiter resourceArbiter,
   IDeviceManager deviceManager,
   IDeviceConfigManager deviceConfigManager,
   IDbContextFactory<CoreDatabaseContext> contextFactory,

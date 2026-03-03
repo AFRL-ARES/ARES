@@ -7,7 +7,6 @@ using Ares.Datamodel;
 using Ares.Datamodel.Device;
 using Ares.Device;
 using Ares.Toolkit.Serial;
-using Microsoft.Extensions.Logging;
 using Parsers.AlicatMFCRemastered;
 using System.Diagnostics;
 using System.Reactive.Disposables;
@@ -37,8 +36,8 @@ public class MassFlowController : AresDevice, IMassFlowController
   public MassFlowController(string name, SerialConnection serialConnectionInfo, AresStruct config) : base(name)
   {
     HasValve = config.Fields["HasValve"]?.BoolValue ?? false;
-    var parsed = Enum.TryParse(config.Fields["MfcType"]?.StringValue, out MfcTypeEnum parsedType);
-    _mfcType = parsed ? parsedType : MfcTypeEnum.None;
+    _mfcType = config.Fields["IsBasis"].BoolValue ? MfcTypeEnum.Basis2 : MfcTypeEnum.Normal;
+
     //_logger = logger;
     StateStream = _stateSubject.AsObservable();
     AssumedId = config.Fields["serialId"].StringValue[0];
