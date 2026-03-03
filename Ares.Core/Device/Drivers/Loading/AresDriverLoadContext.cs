@@ -18,6 +18,9 @@ public class AresDriverLoadContext : AssemblyLoadContext
     if(assemblyName.Name != null &&
        (assemblyName.Name.StartsWith("Ares.Device") ||
         assemblyName.Name.StartsWith("Ares.Datamodel") ||
+        assemblyName.Name.StartsWith("Google.Protobuf") ||
+        assemblyName.Name.StartsWith("Grpc.Core") ||
+        assemblyName.Name.StartsWith("Microsoft.Extensions.Logging") ||
         assemblyName.Name.StartsWith("Ares.Toolkit.Device")))
     {
       return null; // Fallback to the Default Load Context (the host)

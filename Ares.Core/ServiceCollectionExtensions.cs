@@ -23,6 +23,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Ares.Core.Device;
 using Ares.Core.Device.Providers;
 using Ares.Core.Device.Drivers.Loading;
+using Ares.Core.Resources;
 
 namespace Ares.Core;
 
@@ -64,6 +65,7 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<IDesiredAnalysisResultFactory, DesiredAnalysisResultFactory>();
     services.AddSingleton<INotifier, Notifier>();
     services.AddSingleton<IDeviceConfigManager, DeviceConfigManager>();
+    services.AddSingleton<IResourceConnectionArbiter, ResourceConnectionArbiter>();
 
     services.AddSingleton<ISystemFunctionProvider, DeviceFunctionProvider>();
     services.AddSingleton<BaseEnvironmentBuilder>();

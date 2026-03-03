@@ -1,4 +1,5 @@
 ﻿using Ares.Core.Device.Manifest;
+using Ares.Core.Resources;
 using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
 using System.Reflection;
@@ -28,5 +29,15 @@ public static class DriverLoaderUtils
     }
 
     return aresSettings;
+  }
+
+  public static ConnectionType DetermineConnectionType(string connectionType)
+  {
+    var parsed = Enum.TryParse<ConnectionType>(connectionType, true, out var parsedType);
+
+    if(!parsed)
+      return ConnectionType.Other;
+
+    return parsedType;
   }
 }

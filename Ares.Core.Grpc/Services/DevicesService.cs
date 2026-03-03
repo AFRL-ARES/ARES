@@ -8,36 +8,31 @@ using System.Threading.Tasks;
 using Ares.Core.Device;
 using Ares.Core.Device.Managers;
 using Ares.Core.Device.Remote;
-using Ares.Core.Device.Repos;
 using Ares.Core.Device.State.Logging;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
 using Ares.Datamodel.Templates;
 using Ares.Device;
 using Ares.Services.Device;
-using DynamicData;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Ares.Core.Device.Providers;
+using Ares.Core.Resources;
 
 namespace Ares.Core.Grpc.Services;
 
 public class DevicesService(
   IAresDeviceProvider deviceProvider,
   IAresDriverProvider driverProvider,
+  IResourceConnectionArbiter resourceArbiter,
   IDeviceManager deviceManager,
   IDeviceConfigManager deviceConfigManager,
   IDbContextFactory<CoreDatabaseContext> contextFactory,
   IRemoteDeviceManager remoteDeviceManager,
-  ILogger<DevicesService> logger,
   StateLoggerManager _stateLoggerManager,
-  IDeviceStateLoggerRepository _deviceStateLoggerRepository)
-  : AresDevices.AresDevicesBase
+  IDeviceStateLoggerRepository _deviceStateLoggerRepository) : AresDevices.AresDevicesBase
 {
-  private readonly ILogger<DevicesService> _logger = logger;
-
   public override Task<ListServerSerialPortsResponse> GetServerSerialPorts(Empty request, ServerCallContext? context)
   {
     var availableSerialPorts = SerialPort.GetPortNames();
@@ -385,6 +380,7 @@ public class DevicesService(
     {
       var device = await deviceManager.Create(request.DeviceConfig);
       await deviceConfigManager.Add(device.UniqueId, device.Name, request.DeviceConfig);
+
       return new AddDeviceResponse() { Success = true };
     }
 

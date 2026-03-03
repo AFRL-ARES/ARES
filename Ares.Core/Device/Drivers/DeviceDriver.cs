@@ -3,7 +3,7 @@ using Ares.Core.Device.Manifest;
 using Ares.Core.Resources;
 using Ares.Datamodel;
 
-namespace Ares.Core.Device;
+namespace Ares.Core.Device.Drivers;
 
 public class DeviceDriver
 {

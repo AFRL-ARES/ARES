@@ -1,4 +1,5 @@
-﻿@using Ares.Datamodel
+﻿@using Ares.Core.Resources
+@using Ares.Datamodel
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<PluginDeviceConfigEditViewModel>
 
 <RadzenTemplateForm TItem="PluginDeviceConfigEditViewModel" Data="@ViewModel" Submit="@OnValidSubmit">
@@ -6,6 +7,20 @@
         <RadzenFormField Text="Device Name" Variant="Variant.Flat">
             <RadzenTextBox @bind-Value="ViewModel!.Name"/>
         </RadzenFormField>
+
+        @if(ViewModel!.ConnectionType == ConnectionType.Serial)
+        {
+      <input type="text" placeholder="@(ViewModel!.SelectedSerialPort is null ? "Port" : ViewModel!.SelectedSerialPort)" list="port-list" @onchange="PortChanged" class="form-select mfc-port" />
+          <datalist id="port-list">
+            @if(ViewModel!.AvailableSerialPorts is not null)
+            {
+              @foreach(var port in ViewModel!.AvailableSerialPorts)
+              {
+                <option value="@port">@port</option>
+              }
+            }
+          </datalist>
+        }
 
         @foreach (var prop in ViewModel!.DriverSettingsSchema.Fields)
         {
@@ -27,5 +42,12 @@
   {
     ViewModel!.DeviceSettings.Fields[name] = value;
     return Task.CompletedTask;
+  }
+
+  private async Task PortChanged(ChangeEventArgs obj)
+  {
+    if(obj.Value is not string stringValue)
+      throw new InvalidOperationException($"{obj.Value} is not a string and cannot be used as a port name.");
+    ViewModel!.SelectedSerialPort = stringValue;
   }
 }

@@ -26,7 +26,7 @@ public class MassFlowController : AresDevice, IMassFlowController
   private CancellationTokenSource _stateGetterLoopTokenSource = new();
   private CompositeDisposable _stateWatchers = new();
   private Task _stateUpdater = Task.CompletedTask;
-  readonly ILogger<MassFlowController> _logger;
+  //readonly ILogger<IAresDevice> _logger;
   private List<GasInfoEntry> _gases = new();
   private List<ManufacturerInfoEntry> _manufacturerInfo = new();
   private List<DataFrameFormatEntry> _dataFrameFormatEntries = new();
@@ -34,12 +34,12 @@ public class MassFlowController : AresDevice, IMassFlowController
   private readonly IMfcConnection _serialConnection;
   private MfcTypeEnum _mfcType;
 
-  public MassFlowController(string name, SerialConnection serialConnectionInfo, AresStruct config, ILogger<MassFlowController> logger) : base(name)
+  public MassFlowController(string name, SerialConnection serialConnectionInfo, AresStruct config) : base(name)
   {
     HasValve = config.Fields["HasValve"]?.BoolValue ?? false;
     var parsed = Enum.TryParse(config.Fields["MfcType"]?.StringValue, out MfcTypeEnum parsedType);
     _mfcType = parsed ? parsedType : MfcTypeEnum.None;
-    _logger = logger;
+    //_logger = logger;
     StateStream = _stateSubject.AsObservable();
     AssumedId = config.Fields["serialId"].StringValue[0];
     _serialConnection = new MassFlowControllerConnection(serialConnectionInfo.PortName);
@@ -105,7 +105,7 @@ public class MassFlowController : AresDevice, IMassFlowController
         var modelNumber = entry.Data.Split('-').Skip(1).FirstOrDefault();
         if(modelNumber is null)
         {
-          _logger.LogWarning("Failed to get max value for MFC {Name} with model number {Model}", Name, entry.Data);
+          //_logger.LogWarning("Failed to get max value for MFC {Name} with model number {Model}", Name, entry.Data);
           return;
         }
         var numMatch = Regex.Match(modelNumber, @"\d+");
@@ -116,14 +116,14 @@ public class MassFlowController : AresDevice, IMassFlowController
           var unitFound = MfcUnitParser.Parser.TryParse<StandardVolumeFlowUnit>(unitMatch.Value, out var unit);
           if(!unitFound)
           {
-            _logger.LogWarning("Failed to get max value for MFC {Name} as we couldn't get the value units from model number {Model}", Name, entry.Data);
+            //_logger.LogWarning("Failed to get max value for MFC {Name} as we couldn't get the value units from model number {Model}", Name, entry.Data);
             return;
           }
           if(!int.TryParse(num, out var numericNum) || numericNum <= 0)
           {
-            _logger.LogWarning(
-                "Failed to get max value for MFC {Name} as we couldn't get the numeric max value from model number {Model}",
-                Name, entry.Data);
+            //_logger.LogWarning(
+                //"Failed to get max value for MFC {Name} as we couldn't get the numeric max value from model number {Model}",
+                //Name, entry.Data);
             return;
           }
           var flowVal = StandardVolumeFlow.From(numericNum, unit);

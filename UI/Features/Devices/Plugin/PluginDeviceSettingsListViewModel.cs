@@ -1,9 +1,8 @@
-using Ares.Core.Device;
+using Ares.Core.Device.Drivers;
 using Ares.Core.Grpc.Services;
 using Ares.Datamodel.Device;
 using Ares.Services;
 using Ares.Services.Device;
-using Grpc.Net.Client.Configuration;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System.Collections.ObjectModel;
@@ -13,12 +12,12 @@ namespace UI.Features.Devices.Plugin;
 
 public partial class PluginDeviceSettingsListViewModel : ReactiveObject
 {
-  private readonly DevicesService _devicesClient;
+  private readonly DevicesService _devicesService;
   private readonly INotificationReceivingService _notificationService;
 
   public PluginDeviceSettingsListViewModel(DevicesService devicesClient, INotificationReceivingService notificationService)
   {
-    _devicesClient = devicesClient;
+    _devicesService = devicesClient;
     _notificationService = notificationService;
   }
 
@@ -35,7 +34,7 @@ public partial class PluginDeviceSettingsListViewModel : ReactiveObject
     try
     {
       var request = new DeviceConfigRequest { DeviceType = DeviceClassName };
-      var response = await _devicesClient.GetAllDeviceConfigs(request, null);
+      var response = await _devicesService.GetAllDeviceConfigs(request, null);
       UpdateViewModels(response.Configs);
     }
     catch (Exception e)
@@ -59,7 +58,7 @@ public partial class PluginDeviceSettingsListViewModel : ReactiveObject
     SettingsViewModels.Clear();
     foreach (var config in configs)
     {
-        SettingsViewModels.Add(new PluginDeviceSettingsViewModel(config, _devicesClient, _notificationService));
+        SettingsViewModels.Add(new PluginDeviceSettingsViewModel(config, _devicesService, _notificationService));
     }
   }
 
@@ -68,7 +67,7 @@ public partial class PluginDeviceSettingsListViewModel : ReactiveObject
     try
     {
       var request = new AddDeviceRequest { DeviceConfig = config, DeviceName = config.DeviceName, DriverName = config.DriverName };
-      var response = await _devicesClient.AddAresDevice(request, null);
+      var response = await _devicesService.AddAresDevice(request, null);
 
       if(response.Success)
       {
@@ -102,7 +101,7 @@ public partial class PluginDeviceSettingsListViewModel : ReactiveObject
     }
   }
 
-  public PluginDeviceConfigEditViewModel GetNewConfigEditViewModel() => new(Driver);
+  public PluginDeviceConfigEditViewModel GetNewConfigEditViewModel() => new(Driver, _devicesService);
   public void PushNotification(AresNotification notification) => _notificationService.PushNotification(notification);
 
   [Reactive]

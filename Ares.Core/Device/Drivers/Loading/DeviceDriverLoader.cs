@@ -28,7 +28,8 @@ public class DeviceDriverLoader : IDeviceDriverLoader
 
   public async Task LoadModulesAsync(string directoryPath, CancellationToken ct = default)
   {
-    if(!Directory.Exists(directoryPath)) return;
+    if(!Directory.Exists(directoryPath)) 
+      return;
 
     // 1. Process and extract all .ares files
     var aresFiles = Directory.GetFiles(directoryPath, "*.ares");
@@ -133,7 +134,8 @@ public class DeviceDriverLoader : IDeviceDriverLoader
       ViewModelType = viewModelType,
       ModulePath = moduleDirectory,
       DriverSize = (int)fileInfo.Length,
-      DriverSettings = convertedSettingsSchema
+      DriverSettings = convertedSettingsSchema,
+      ConnectionType = DriverLoaderUtils.DetermineConnectionType(manifest.ConnectionType)
     };
   }
 

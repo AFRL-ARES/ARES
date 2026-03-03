@@ -1,8 +1,8 @@
 using Ares.Core.Device.Providers;
 using Ares.Core.Device.Repos;
+using Ares.Core.Resources;
 using Ares.Datamodel.Device;
 using Ares.Device;
-using DynamicData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -17,13 +17,15 @@ public class DeviceManager : IDeviceManager
   private readonly ILoggerFactory _loggerFactory;
   private readonly IDbContextFactory<CoreDatabaseContext> _dbContextFactory;
   private readonly ILogger<DeviceManager> _logger;
+  private readonly IResourceConnectionArbiter _resourceConnectionArbiter;
 
   public DeviceManager(
     IAresDriverProvider driverProvider,
     IAresDeviceRepo deviceRepository,
     IServiceProvider serviceProvider,
     ILoggerFactory loggerFactory,
-    IDbContextFactory<CoreDatabaseContext> dbContextFactory)
+    IDbContextFactory<CoreDatabaseContext> dbContextFactory,
+    IResourceConnectionArbiter resourceConnectionArbiter)
   {
     _driverProvider = driverProvider;
     _deviceRepo = deviceRepository;
@@ -31,6 +33,7 @@ public class DeviceManager : IDeviceManager
     _loggerFactory = loggerFactory;
     _dbContextFactory = dbContextFactory;
     _logger = loggerFactory.CreateLogger<DeviceManager>();
+    _resourceConnectionArbiter = resourceConnectionArbiter;
   }
 
   public async Task<IAresDevice> Create(DeviceConfig config)
@@ -49,15 +52,33 @@ public class DeviceManager : IDeviceManager
         throw new InvalidOperationException($"Driver '{config.DriverName}' not found.");
       }
 
-      // Create a logger for the specific device type
-      var loggerType = typeof(ILogger<>).MakeGenericType(driver.DriverType);
-      var logger = _loggerFactory.CreateLogger(driver.DriverType);
+      // Create logger
+      var logger = _loggerFactory.CreateLogger(typeof(IAresDevice));
 
-      // Instantiate with: string (name), AresStruct (config), and ILogger
-      // Using explicit arguments to match the requested constructor pattern
-      var device = (IAresDevice)ActivatorUtilities.CreateInstance(_serviceProvider, driver.DriverType, [config.DeviceName, config.DriverSettings, logger]);
+      IAresDevice device;
+
+      if(driver.ConnectionType == ConnectionType.Serial)
+        device = (IAresDevice)ActivatorUtilities.CreateInstance(_serviceProvider, driver.DriverType, [config.DeviceName, config.Serial, config.DriverSettings]);
+
+      else
+        device = (IAresDevice)ActivatorUtilities.CreateInstance(_serviceProvider, driver.DriverType, [config.DeviceName, config.DriverSettings, logger]);
+
+      switch(config.TransportCase)
+      {
+        case DeviceConfig.TransportOneofCase.Serial:
+          var requestedPort = config.Serial.PortName;
+          var serialConnectionResource = new ConnectionResource(requestedPort, ConnectionType.Serial);
+          var success = _resourceConnectionArbiter.TryAcquireResource(serialConnectionResource, device);
+
+          if(!success)
+            throw new InvalidOperationException($"Failed to create device, resource already in use!");
+
+          break;
+      }
 
       _deviceRepo.AddOrUpdate(device);
+
+
 
       await device.Activate();
 
