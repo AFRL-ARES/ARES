@@ -1,6 +1,7 @@
 using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
+using AresScript.Generated;
 
 namespace AresScript;
 
@@ -34,6 +35,65 @@ internal static class AresScriptTypeHints
     return true;
   }
 
+  public static bool TryParseTypeHint(AresLangParser.TypeHintContext? typeHint, out SchemaEntry schema)
+  {
+    schema = AresSchemaBuilder.Entry(AresDataType.Any).Build();
+    if(typeHint is null)
+    {
+      return true;
+    }
+
+    switch(typeHint)
+    {
+      case AresLangParser.NamedTypeRefContext namedTypeHint:
+        if(!TryParseTypeHint(namedTypeHint.namedTypeHint().GetText(), out var resolvedType))
+        {
+          return false;
+        }
+
+        schema = AresSchemaBuilder.Entry(resolvedType).Build();
+        return true;
+
+      case AresLangParser.StructTypeRefContext structTypeHint:
+        {
+          var structSchema = new AresDataSchema();
+          foreach(var field in structTypeHint.structTypeHint().typeHintField())
+          {
+            if(!TryParseTypeHint(field.typeHint(), out var fieldSchema))
+            {
+              return false;
+            }
+
+            structSchema.Fields[field.ID().GetText()] = fieldSchema;
+          }
+
+          schema = AresSchemaBuilder.Entry(AresDataType.Struct).Build();
+          schema.StructSchema = structSchema;
+          return true;
+        }
+
+      case AresLangParser.ListTypeRefContext listTypeHint:
+        if(!TryParseTypeHint(listTypeHint.listTypeHint().typeHint(), out var elementSchema))
+        {
+          return false;
+        }
+
+        schema = AresSchemaBuilder.Entry(AresDataType.List).Build();
+        schema.ListElementSchema = elementSchema;
+        return true;
+
+      default:
+        return false;
+    }
+  }
+
+  public static SchemaEntry SchemaFromTypeHint(AresLangParser.TypeHintContext? typeHint)
+  {
+    return TryParseTypeHint(typeHint, out var schema)
+      ? schema
+      : AresSchemaBuilder.Entry(AresDataType.Any).Build();
+  }
+
   public static SchemaEntry SchemaFromTypeHint(string? typeHint)
   {
     return TryParseTypeHint(typeHint, out var parsedType)
@@ -41,9 +101,51 @@ internal static class AresScriptTypeHints
       : AresSchemaBuilder.Entry(AresDataType.Any).Build();
   }
 
+  public static bool IsCompatibleWithTypeHint(SchemaEntry actual, SchemaEntry expected)
+  {
+    return IsCompatible(expected, actual);
+  }
+
+  public static bool IsCompatibleWithTypeHint(AresValue actual, SchemaEntry expected)
+  {
+    return IsCompatibleWithTypeHint(actual.ToSchemaEntry(), expected);
+  }
+
   public static bool IsCompatibleWithTypeHint(SchemaEntry actual, AresDataType expectedType)
   {
-    if(expectedType == AresDataType.Any || expectedType == AresDataType.UnspecifiedType)
+    return IsCompatibleWithTypeHint(actual, AresSchemaBuilder.Entry(expectedType).Build());
+  }
+
+  public static bool IsCompatibleWithTypeHint(AresValue actual, AresDataType expectedType)
+  {
+    return IsCompatibleWithTypeHint(actual.ToSchemaEntry(), expectedType);
+  }
+
+  // TODO maybe add this to the datamodel's dotnet helper
+  public static string ToTypeHintString(SchemaEntry? schema)
+  {
+    if(schema is null)
+    {
+      return AresDataType.Any.ToString();
+    }
+
+    return schema.Type switch
+    {
+      AresDataType.Struct => schema.StructSchema is null
+        ? schema.Type.ToString()
+        : schema.StructSchema.Fields.Count == 0
+        ? "{}"
+        : $"{{{string.Join(", ", schema.StructSchema.Fields.Select(field => $"{field.Key}: {ToTypeHintString(field.Value)}"))}}}",
+      AresDataType.List => schema.ListElementSchema is null
+        ? schema.Type.ToString()
+        : $"[{ToTypeHintString(schema.ListElementSchema)}]",
+      _ => schema.Type.ToString()
+    };
+  }
+
+  private static bool IsCompatible(SchemaEntry expected, SchemaEntry actual)
+  {
+    if(expected.Type == AresDataType.Any || expected.Type == AresDataType.UnspecifiedType)
     {
       return true;
     }
@@ -53,16 +155,62 @@ internal static class AresScriptTypeHints
       return true;
     }
 
-    if(expectedType == actual.Type)
+    if(expected.Optional && actual.Type == AresDataType.Null)
     {
       return true;
     }
 
-    return false;
+    if(expected.Type != actual.Type)
+    {
+      return false;
+    }
+
+    switch(expected.Type)
+    {
+      case AresDataType.Struct:
+        return AreStructSchemasCompatible(expected.StructSchema, actual.StructSchema);
+      case AresDataType.List:
+        if(expected.ListElementSchema is null || actual.ListElementSchema is null)
+        {
+          return true;
+        }
+
+        return IsCompatible(expected.ListElementSchema, actual.ListElementSchema);
+      default:
+        return true;
+    }
   }
 
-  public static bool IsCompatibleWithTypeHint(AresValue actual, AresDataType expectedType)
+  private static bool AreStructSchemasCompatible(AresDataSchema? expected, AresDataSchema? actual)
   {
-    return IsCompatibleWithTypeHint(actual.ToSchemaEntry(), expectedType);
+    if(expected is null || expected.Fields.Count == 0)
+    {
+      return true;
+    }
+
+    if(actual is null)
+    {
+      return false;
+    }
+
+    foreach(var (name, expectedField) in expected.Fields)
+    {
+      if(!actual.Fields.TryGetValue(name, out var actualField))
+      {
+        if(expectedField.Optional)
+        {
+          continue;
+        }
+
+        return false;
+      }
+
+      if(!IsCompatible(expectedField, actualField))
+      {
+        return false;
+      }
+    }
+
+    return true;
   }
 }

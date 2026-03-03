@@ -18,7 +18,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
   private readonly Action<AresFunctionInvocation>? _functionInvocationObserver;
   private readonly Action<AresFunctionExecutionEvent>? _functionExecutionEventObserver;
   private readonly AsyncLocal<Stack<string>> _callStack = new();
-  private readonly Stack<(string FunctionId, AresDataType ReturnType)> _activeFunctionReturnTypes = [];
+  private readonly Stack<(string FunctionId, SchemaEntry ReturnSchema)> _activeFunctionReturnTypes = [];
   private long _nextCallId;
   private int _lvalueResolutionDepth;
 
@@ -525,38 +525,30 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     var parameters = (decl.parameterList()?.parameter() ?? [])
       .Select(parameter =>
       {
-        var typeHint = parameter.typeHint()?.GetText();
         var parameterName = parameter.ID().GetText();
-        if(string.IsNullOrWhiteSpace(typeHint))
-        {
-          return new AresScriptParameter(parameterName, AresDataType.Any);
-        }
-
-        if(!AresScriptTypeHints.TryParseTypeHint(typeHint, out var parsedType))
+        if(!AresScriptTypeHints.TryParseTypeHint(parameter.typeHint(), out var parsedSchema))
         {
           throw new AresInterpreterException(
-            $"Unknown type hint '{typeHint}' for parameter '{parameterName}' in function '{functionId}'.",
+            $"Unknown type hint '{parameter.typeHint()?.GetText()}' for parameter '{parameterName}' in function '{functionId}'.",
             parameter.Start.Line,
             parameter.Start.Column
           );
         }
 
-        return new AresScriptParameter(parameterName, parsedType);
+        return new AresScriptParameter(parameterName, parsedSchema);
       })
       .ToArray();
     var block = decl.funcBlock();
-    var returnType = AresDataType.Any;
-    var returnTypeHint = decl.typeHint()?.GetText();
-    if(!string.IsNullOrWhiteSpace(returnTypeHint) && !AresScriptTypeHints.TryParseTypeHint(returnTypeHint, out returnType))
+    if(!AresScriptTypeHints.TryParseTypeHint(decl.typeHint(), out var returnSchema))
     {
       throw new AresInterpreterException(
-        $"Unknown return type hint '{returnTypeHint}' in function '{functionId}'.",
+        $"Unknown return type hint '{decl.typeHint()?.GetText()}' in function '{functionId}'.",
         decl.Start.Line,
         decl.Start.Column
       );
     }
 
-    var userFunc = new AresScriptFunction(functionId, parameters, block, returnType);
+    var userFunc = new AresScriptFunction(functionId, parameters, block, returnSchema);
     Environment.AssignFunction(functionId, userFunc);
 
     return Task.FromResult(AresValueHelper.CreateFunction(functionId));
@@ -921,11 +913,11 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
       ValidateUserFunctionArgumentTypeHints(id, userFn, positionalArgs, keywordArgs, ctx);
 
-      var declaredReturnType = userFn.ReturnType;
+      var declaredReturnSchema = userFn.ReturnSchema;
 
       var result = await ExecuteFunctionInvocationAsync(ctx, userFn.Name, userFn.Name, AresFunctionInvocationKind.User, async () =>
       {
-        _activeFunctionReturnTypes.Push((id, declaredReturnType));
+        _activeFunctionReturnTypes.Push((id, declaredReturnSchema));
         try
         {
           return await Visit(userFn.Body);
@@ -936,11 +928,11 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
         }
       });
 
-      if(!AresScriptTypeHints.IsCompatibleWithTypeHint(result, declaredReturnType))
+      if(!AresScriptTypeHints.IsCompatibleWithTypeHint(result, declaredReturnSchema))
       {
-        var actualType = result.ToSchemaEntry().Type;
+        var actualSchema = result.ToSchemaEntry();
         throw new AresInterpreterException(
-          $"Function '{id}' return type mismatch. Expected {declaredReturnType}, received {actualType}.",
+          $"Function '{id}' return type mismatch. Expected {AresScriptTypeHints.ToTypeHintString(declaredReturnSchema)}, received {AresScriptTypeHints.ToTypeHintString(actualSchema)}.",
           ctx.Start.Line,
           ctx.Start.Column
         );
@@ -973,16 +965,16 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
       return;
     }
 
-    var (functionId, declaredReturnType) = _activeFunctionReturnTypes.Peek();
+    var (functionId, declaredReturnSchema) = _activeFunctionReturnTypes.Peek();
 
-    if(AresScriptTypeHints.IsCompatibleWithTypeHint(value, declaredReturnType))
+    if(AresScriptTypeHints.IsCompatibleWithTypeHint(value, declaredReturnSchema))
     {
       return;
     }
 
-    var actualType = value.ToSchemaEntry().Type;
+    var actualSchema = value.ToSchemaEntry();
     throw new AresInterpreterException(
-      $"Function '{functionId}' return type mismatch. Expected {declaredReturnType}, received {actualType}.",
+      $"Function '{functionId}' return type mismatch. Expected {AresScriptTypeHints.ToTypeHintString(declaredReturnSchema)}, received {AresScriptTypeHints.ToTypeHintString(actualSchema)}.",
       line,
       column
     );
@@ -999,7 +991,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     {
       var parameter = userFunction.Parameters[i];
       var parameterName = parameter.Name;
-      var expectedType = parameter.Type;
+      var expectedSchema = parameter.Schema;
 
       AresValue? argument = null;
       if(i < positionalArgs.Count)
@@ -1017,14 +1009,14 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
         continue;
       }
 
-      if(AresScriptTypeHints.IsCompatibleWithTypeHint(argument, expectedType))
+      if(AresScriptTypeHints.IsCompatibleWithTypeHint(argument, expectedSchema))
       {
         continue;
       }
 
-      var actualType = argument.ToSchemaEntry().Type;
+      var actualSchema = argument.ToSchemaEntry();
       throw new AresInterpreterException(
-        $"Function '{functionId}' argument '{parameterName}' type mismatch. Expected {expectedType}, received {actualType}.",
+        $"Function '{functionId}' argument '{parameterName}' type mismatch. Expected {AresScriptTypeHints.ToTypeHintString(expectedSchema)}, received {AresScriptTypeHints.ToTypeHintString(actualSchema)}.",
         context.Start.Line,
         context.Start.Column
       );

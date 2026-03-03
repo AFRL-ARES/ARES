@@ -65,7 +65,7 @@ public static partial class AresScriptAnalysis
         "User function",
         "User-defined function.",
         BuildUserFunctionInputSchema(userFunction),
-        AresSchemaBuilder.Entry(userFunction.ReturnType).Build(),
+        userFunction.ReturnSchema,
         isUserDefined: true);
     }
 
@@ -368,7 +368,7 @@ public static partial class AresScriptAnalysis
     var schema = new AresDataSchema();
     foreach(var parameter in userFunction.Parameters)
     {
-      schema.Fields[parameter.Name] = AresSchemaBuilder.Entry(parameter.Type).Build();
+      schema.Fields[parameter.Name] = parameter.Schema;
     }
 
     return schema;

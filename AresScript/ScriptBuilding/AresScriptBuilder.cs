@@ -46,7 +46,7 @@ public sealed class AresScriptBuilder : AresScriptBlockBuilder
       throw new ArgumentException("Function name cannot be null, empty, or whitespace.", nameof(name));
     }
 
-    var index = FindFunctionIndex(name.Trim(), out _, out _);
+    var index = FindFunctionIndex(name.Trim(), out _, out _, out _);
     if(index < 0)
     {
       return false;
@@ -64,7 +64,7 @@ public sealed class AresScriptBuilder : AresScriptBlockBuilder
       throw new ArgumentException("Function name cannot be null, empty, or whitespace.", nameof(name));
     }
 
-    var index = FindFunctionIndex(name.Trim(), out var existingParameters, out _);
+    var index = FindFunctionIndex(name.Trim(), out var existingParameters, out _, out var existingReturnTypeHint);
     if(index < 0)
     {
       return false;
@@ -84,6 +84,10 @@ public sealed class AresScriptBuilder : AresScriptBlockBuilder
     var signature = existingParameters.Length == 0
       ? $"{_functionPrefix}{name}()"
       : $"{_functionPrefix}{name}({string.Join(", ", existingParameters.Select(p => p.ToFunctionSignature()))})";
+    if(!string.IsNullOrWhiteSpace(existingReturnTypeHint))
+    {
+      signature += $" -> {existingReturnTypeHint}";
+    }
     MutableStatements[index] = new BlockNode(signature, functionBody);
     return true;
   }
@@ -112,7 +116,7 @@ public sealed class AresScriptBuilder : AresScriptBlockBuilder
       : $"{_functionPrefix}{safeName}({string.Join(", ", safeParameters.Select(p => p.ToFunctionSignature()))})";
     var functionNode = new BlockNode(signature, bodyNodes);
 
-    var index = FindFunctionIndex(safeName, out _, out _);
+    var index = FindFunctionIndex(safeName, out _, out _, out _);
     if(index >= 0)
     {
       MutableStatements[index] = functionNode;
@@ -125,7 +129,7 @@ public sealed class AresScriptBuilder : AresScriptBlockBuilder
     return true;
   }
 
-  private int FindFunctionIndex(string functionName, out AresScriptParameter[] parameters, out string normalizedName)
+  private int FindFunctionIndex(string functionName, out AresScriptParameter[] parameters, out string normalizedName, out string returnTypeHint)
   {
     for(var i = 0; i < MutableStatements.Count; i++)
     {
@@ -134,7 +138,7 @@ public sealed class AresScriptBuilder : AresScriptBlockBuilder
         continue;
       }
 
-      if(!TryParseFunctionHeader(block.Header, out normalizedName, out parameters))
+      if(!TryParseFunctionHeader(block.Header, out normalizedName, out parameters, out returnTypeHint))
       {
         continue;
       }
@@ -147,38 +151,39 @@ public sealed class AresScriptBuilder : AresScriptBlockBuilder
 
     parameters = [];
     normalizedName = string.Empty;
+    returnTypeHint = string.Empty;
     return -1;
   }
 
-  private static bool TryParseFunctionHeader(string header, out string functionName, out AresScriptParameter[] parameters)
+  private static bool TryParseFunctionHeader(string header, out string functionName, out AresScriptParameter[] parameters, out string returnTypeHint)
   {
     functionName = string.Empty;
     parameters = [];
+    returnTypeHint = string.Empty;
 
     if(!header.StartsWith(_functionPrefix, StringComparison.Ordinal))
     {
       return false;
     }
 
-    var leftParenIndex = header.IndexOf('(');
-    var rightParenIndex = header.LastIndexOf(')');
-    if(leftParenIndex < _functionPrefix.Length || rightParenIndex <= leftParenIndex)
+    var input = new AntlrInputStream($"{header}:\n  return None\n");
+    var lexer = new AresIndentationLexer(input);
+    var tokenStream = new CommonTokenStream(lexer);
+    var parser = new AresLangParser(tokenStream);
+    var program = parser.program();
+    if(parser.NumberOfSyntaxErrors > 0
+      || program.statement().FirstOrDefault() is not AresLangParser.SimpleStmtContext simpleStatement
+      || simpleStatement.simpleStatement() is not AresLangParser.FunctionDeclContext functionDecl)
     {
       return false;
     }
 
-    functionName = header[_functionPrefix.Length..leftParenIndex].Trim();
-    var paramsText = header[(leftParenIndex + 1)..rightParenIndex].Trim();
-    if(string.IsNullOrEmpty(paramsText))
-    {
-      return true;
-    }
-
-    var splitParamStrings = paramsText
-      .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+    var declaration = functionDecl.functionDeclaration();
+    functionName = declaration.ID().GetText();
+    parameters = (declaration.parameterList()?.parameter() ?? [])
+      .Select(ScriptBuildingHelpers.ToScriptParameter)
       .ToArray();
-
-    parameters = splitParamStrings.Select(ScriptBuildingHelpers.StringToScriptParam).ToArray();
+    returnTypeHint = declaration.typeHint()?.GetText() ?? string.Empty;
     return true;
   }
 }

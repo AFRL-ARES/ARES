@@ -64,6 +64,11 @@ internal static class ScriptImportConverter
     var signature = parameters.Length == 0
       ? $"def {functionName}()"
       : $"def {functionName}({string.Join(", ", parameters.Select(p => p.ToParameterSignature()))})";
+    var returnTypeHint = declaration.typeHint()?.GetText();
+    if(!string.IsNullOrWhiteSpace(returnTypeHint))
+    {
+      signature += $" -> {returnTypeHint}";
+    }
 
     var bodyCapabilities = new ScriptBuilderCapabilities(AllowReturn: true, AllowLoopControl: false);
     var bodyNodes = ConvertStatements(declaration.funcBlock().statement(), bodyCapabilities);

@@ -20,8 +20,6 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
   }
 
   protected override SchemaEntry DefaultResult => AresSchemaBuilder.Entry(AresDataType.Any).Build();
-  public override SchemaEntry VisitTypeHint(AresLangParser.TypeHintContext context) => AresScriptTypeHints.SchemaFromTypeHint(context.GetText());
-
   public override SchemaEntry VisitInt(AresLangParser.IntContext context) => AresSchemaBuilder.Entry(AresDataType.Number).Build();
   public override SchemaEntry VisitFloat(AresLangParser.FloatContext context) => AresSchemaBuilder.Entry(AresDataType.Number).Build();
   public override SchemaEntry VisitString(AresLangParser.StringContext context) => AresSchemaBuilder.Entry(AresDataType.String).Build();
@@ -66,10 +64,11 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
     }
 
     var elementTypes = expressions.Select(Visit).ToArray();
-    var firstType = elementTypes[0].Type;
-    var allSame = elementTypes.All(t => t.Type == firstType);
+    var firstElementSchema = elementTypes[0];
+    var firstType = firstElementSchema.Type;
+    var allSameSchema = elementTypes.All(schema => AreEquivalentSchemas(firstElementSchema, schema));
 
-    if(allSame)
+    if(allSameSchema)
     {
       if(firstType == AresDataType.String)
       {
@@ -80,6 +79,8 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
       {
         return AresSchemaBuilder.Entry(AresDataType.NumberArray).Build();
       }
+
+      return CreateListEntry(firstElementSchema);
     }
 
     return CreateListEntry(AresSchemaBuilder.Entry(AresDataType.Any).Build());
@@ -162,7 +163,7 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
     }
     if(functionId is not null && _environment.TryGetUserFunction(functionId, out var userFunc))
     {
-      return AresSchemaBuilder.Entry(userFunc.ReturnType).Build();
+      return userFunc.ReturnSchema;
     }
     if(functionId is not null && _environment.TryGetUserLambda(functionId, out var _))
     {
@@ -228,6 +229,12 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
     }
 
     return AresSchemaBuilder.Entry(elseType).Build();
+  }
+
+  private static bool AreEquivalentSchemas(SchemaEntry left, SchemaEntry right)
+  {
+    return AresScriptTypeHints.IsCompatibleWithTypeHint(left, right)
+      && AresScriptTypeHints.IsCompatibleWithTypeHint(right, left);
   }
 
   private static SchemaEntry CreateStructEntry(AresDataSchema schema)
