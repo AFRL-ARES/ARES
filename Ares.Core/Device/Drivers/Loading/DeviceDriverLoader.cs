@@ -47,9 +47,9 @@ public class DeviceDriverLoader : IDeviceDriverLoader
         ZipFile.ExtractToDirectory(file, targetDir);
         File.Delete(file); // Clean up the zip after extraction
       }
-      catch(Exception)
+      catch(Exception ex)
       {
-        // TODO: Log extraction error
+        _logger.LogError($"Encountered an error when trying to load device driver module! Could not load target directory! {ex.Message}");
       }
     }
 
@@ -64,9 +64,10 @@ public class DeviceDriverLoader : IDeviceDriverLoader
           var driver = await LoadFromDirectoryAsync(dir, ct);
           _driverRepo.AddOrUpdate(driver);
         }
-        catch(Exception)
+        catch(Exception ex)
         {
-          // TODO: Log load error
+          _logger.LogError($"Encountered an error when trying to load device driver module! Failed to load target driver {dir}! {ex.Message}");
+
         }
       }
     }
@@ -87,7 +88,7 @@ public class DeviceDriverLoader : IDeviceDriverLoader
 
     catch(Exception ex)
     {
-      //TODO: Log
+      _logger.LogError($"Encountered an error when trying to load device driver module! Could not deserialize the device manifest, likely due to a syntax error! {ex.Message}");
     }
 
     var assemblyPath = Path.Combine(moduleDirectory, "bin", manifest.AssemblyName);
