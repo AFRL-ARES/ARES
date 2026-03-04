@@ -1,23 +1,15 @@
 using Ares.Datamodel.Device;
-using Ares.Core.Grpc.Services;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using UI.Application.Notifications;
 
 namespace UI.Features.Devices.Plugin;
 
-public partial class PluginDeviceSettingsViewModel: ReactiveObject
+public partial class PluginDeviceSettingsViewModel : ReactiveObject
 {
   private readonly DeviceConfig _deviceConfig;
-  private readonly DevicesService _devicesClient;
-  private readonly INotificationReceivingService _notificationService;
-  public PluginDeviceSettingsViewModel(DeviceConfig deviceConfig,
-  DevicesService devicesClient,
-  INotificationReceivingService notificationService)
+  public PluginDeviceSettingsViewModel(DeviceConfig deviceConfig)
   {
     _deviceConfig = deviceConfig;
-    _devicesClient = devicesClient;
-    _notificationService = notificationService;
 
     Name = _deviceConfig.DeviceName;
     Id = _deviceConfig.UniqueId;

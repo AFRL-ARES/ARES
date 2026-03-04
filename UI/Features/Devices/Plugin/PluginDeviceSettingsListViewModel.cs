@@ -58,7 +58,7 @@ public partial class PluginDeviceSettingsListViewModel : ReactiveObject
     SettingsViewModels.Clear();
     foreach (var config in configs)
     {
-        SettingsViewModels.Add(new PluginDeviceSettingsViewModel(config, _devicesService, _notificationService));
+        SettingsViewModels.Add(new PluginDeviceSettingsViewModel(config));
     }
   }
 

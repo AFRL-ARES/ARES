@@ -45,7 +45,7 @@ public class DeviceConfigManager : IDeviceConfigManager
     await context.SaveChangesAsync();
   }
 
-  public async Task<DeviceConfig?> Get(string id)
+  public async Task<DeviceConfig?> GetConfig(string id)
   {
     await using var context = _dbContextFactory.CreateDbContext();
     return await context.DeviceConfigs.FirstOrDefaultAsync(config => config.UniqueId == id);

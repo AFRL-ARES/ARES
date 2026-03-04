@@ -7,4 +7,5 @@ public interface IDeviceConfigManager
   Task Add(string deviceId, string deviceName, DeviceConfig config); 
   Task Remove(string configId);
   Task Update(string configId, DeviceConfig config);
+  Task<DeviceConfig?> GetConfig(string deviceId);
 }

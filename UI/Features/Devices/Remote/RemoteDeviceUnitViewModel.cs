@@ -1,17 +1,20 @@
 using Ares.Datamodel;
+using Ares.Toolkit.Device.UI;
+using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using UI.Application.Devices;
 
 namespace UI.Features.Devices.Remote;
 
-public partial class RemoteDeviceUnitViewModel : DeviceUnitControlViewModel, IAsyncDisposable
+public partial class RemoteDeviceUnitViewModel : ReactiveObject, IDeviceUnitControlViewModel, IAsyncDisposable
 {
   private readonly IAresDeviceAdapter _deviceAdapter;
   private IDisposable? _stateListener;
   private IDisposable? _statusListener;
 
-  public RemoteDeviceUnitViewModel(IAresDeviceAdapter deviceAdapter) : base(deviceAdapter.Id, deviceAdapter.Name)
+  public RemoteDeviceUnitViewModel(IAresDeviceAdapter deviceAdapter)
   {
+    DeviceId = deviceAdapter.Id;
     _deviceAdapter = deviceAdapter;
     StartStateUpdater();
 
@@ -25,12 +28,17 @@ public partial class RemoteDeviceUnitViewModel : DeviceUnitControlViewModel, IAs
   }
 
   [Reactive]
-  public partial AresStruct? DeviceState { get; private set; }
+  public partial AresStruct? DeviceState { get; set; }
 
   [Reactive]
-  public partial ConnectionStatus ConnectionStatus { get; private set; }
+  public partial ConnectionStatus ConnectionStatus { get; set; }
 
   public string DeviceName => _deviceAdapter.Name;
+
+  public string DeviceId { get; }
+
+  public int DefaultWidth { get; set; }
+  public Type? ViewType { get; set; }
 
   public ValueTask DisposeAsync()
   {

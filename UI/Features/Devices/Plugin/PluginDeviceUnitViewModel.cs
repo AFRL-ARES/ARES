@@ -1,42 +1,42 @@
 using Ares.Datamodel;
+using Ares.Device;
+using Ares.Toolkit.Device.UI;
+using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using UI.Application.Devices;
 
 namespace UI.Features.Devices.Plugin;
 
-public partial class PluginDeviceUnitViewModel : DeviceUnitControlViewModel, IAsyncDisposable
+/// <summary>
+/// A default view model that can be used when we fail to load a device plugins view model implementation.
+/// </summary>
+public class PluginDeviceUnitViewModel : ReactiveObject, IDeviceUnitControlViewModel, IAsyncDisposable
 {
-  private readonly IAresDeviceAdapter _deviceAdapter;
+  private readonly IAresDevice _device;
   private IDisposable? _stateListener;
-  private IDisposable? _statusListener;
 
-  public PluginDeviceUnitViewModel(IAresDeviceAdapter deviceAdapter) : base(deviceAdapter.Id, deviceAdapter.Name)
+  public PluginDeviceUnitViewModel(IAresDevice device)
   {
-    _deviceAdapter = deviceAdapter;
+    _device = device;
+    DeviceId = device.UniqueId;
     StartStateUpdater();
-
-    // Default view type for plugins, or could be determined by driver name
     ViewType = typeof(PluginDeviceUnitView);
   }
 
-  private void StartStateUpdater()
-  {
-    _stateListener = _deviceAdapter.StateStream.Subscribe(s => DeviceState = s);
-    _statusListener = _deviceAdapter.ConnectionStatusStream.Subscribe(s => ConnectionStatus = s);
-  }
+  private void StartStateUpdater() =>
+    _stateListener = _device.StateStream.Subscribe(s => DeviceState = s);
 
   [Reactive]
-  public partial AresStruct? DeviceState { get; private set; }
+  public AresStruct? DeviceState { get; private set; }
 
-  [Reactive]
-  public partial ConnectionStatus ConnectionStatus { get; private set; }
+  public string DeviceName => _device.Name;
 
-  public string DeviceName => _deviceAdapter.Name;
+  public string DeviceId { get; }
+  public int DefaultWidth { get; set; }
+  public Type? ViewType { get; set; }
 
   public ValueTask DisposeAsync()
   {
     _stateListener?.Dispose();
-    _statusListener?.Dispose();
     GC.SuppressFinalize(this);
     return ValueTask.CompletedTask;
   }

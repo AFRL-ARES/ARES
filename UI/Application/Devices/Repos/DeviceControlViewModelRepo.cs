@@ -4,18 +4,18 @@ using DynamicData;
 using DynamicData.PLinq;
 using System.Reactive.Disposables;
 using System.Reactive.Disposables.Fluent;
-using UI.Features.Devices.Shared;
+using UI.Features.Devices.Plugin.Factories;
 
 namespace UI.Application.Devices.Repos
 {
   public class DeviceControlViewModelRepo : IDeviceControlViewModelRepo
   {
     private readonly IAresDeviceProvider _deviceProvider;
-    private readonly IDeviceViewModelFactory _factory;
+    private readonly IPluginViewModelFactory _factory;
     private readonly SourceCache<IDeviceUnitControlViewModel, string> _viewModelCache = new(vm => vm.DeviceId);
     private readonly CompositeDisposable _cleanup = new();
 
-    public DeviceControlViewModelRepo(IAresDeviceProvider deviceProvider, IDeviceViewModelFactory factory)
+    public DeviceControlViewModelRepo(IAresDeviceProvider deviceProvider, IPluginViewModelFactory factory)
     {
       _deviceProvider = deviceProvider;
       _factory = factory;
@@ -24,7 +24,7 @@ namespace UI.Application.Devices.Repos
     public void Initialize()
     {
       _deviceProvider.Connect()
-        .Transform(device => _factory.Create(device))
+        .TransformAsync(_factory.CreateUnitControlViewModel)
         .DisposeMany()
         .PopulateInto(_viewModelCache)
         .DisposeWith(_cleanup);
