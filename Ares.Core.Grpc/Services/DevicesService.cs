@@ -23,7 +23,7 @@ namespace Ares.Core.Grpc.Services;
 
 public class DevicesService(
   IAresDeviceProvider deviceProvider,
-  IAresDriverProvider driverProvider,
+  IDeviceDriverProvider driverProvider,
   IDeviceManager deviceManager,
   IDeviceConfigManager deviceConfigManager,
   IDbContextFactory<CoreDatabaseContext> contextFactory,

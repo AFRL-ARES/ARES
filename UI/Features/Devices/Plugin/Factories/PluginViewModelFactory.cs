@@ -8,18 +8,18 @@ namespace UI.Features.Devices.Plugin.Factories;
 public class PluginViewModelFactory : IPluginViewModelFactory
 {
   private readonly IServiceProvider _serviceProvider;
-  private readonly IAresDriverProvider _driverProvider;
-  private readonly IDeviceConfigManager _deviceConfigManager;
+  private readonly IDeviceDriverProvider _driverProvider;
+  private readonly IDeviceConfigProvider _deviceConfigProvider;
   private readonly ILogger<PluginViewModelFactory> _logger;
 
   public PluginViewModelFactory(IServiceProvider serviceProvider, 
-    IAresDriverProvider driverProvider,
-    IDeviceConfigManager deviceConfigManager,
+    IDeviceDriverProvider driverProvider,
+    IDeviceConfigProvider deviceConfigProvider,
     ILogger<PluginViewModelFactory> logger)
   {
     _serviceProvider = serviceProvider;
     _driverProvider = driverProvider;
-    _deviceConfigManager = deviceConfigManager;
+    _deviceConfigProvider = deviceConfigProvider;
     _logger = logger;
   }
 
@@ -54,9 +54,9 @@ public class PluginViewModelFactory : IPluginViewModelFactory
   //  var config = _deviceConfigManager.
   //}
 
-  public async Task<IDeviceUnitControlViewModel> CreateUnitControlViewModel(IAresDevice device)
+  public IDeviceUnitControlViewModel CreateUnitControlViewModel(IAresDevice device)
   {
-    var config = await _deviceConfigManager.GetConfig(device.UniqueId);
+    var config = _deviceConfigProvider.GetConfig(device.UniqueId);
 
     if(config is null)
       return CreateDefaultViewModel(device);

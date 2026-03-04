@@ -3,7 +3,7 @@ using DynamicData;
 
 namespace Ares.Core.Device.Providers;
 
-public interface IAresDriverProvider : IEnumerable<DeviceDriver>
+public interface IDeviceDriverProvider : IEnumerable<DeviceDriver>
 {
   /// <summary>
   /// Provides a reactive stream of changes. 

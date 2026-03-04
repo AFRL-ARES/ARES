@@ -8,11 +8,11 @@ namespace Ares.Core.Device.Providers;
 /// <summary>
 /// Mediates Read-Only access to the ARES device driver repository.
 /// </summary>
-public class AresDriverProvider : IAresDriverProvider
+public class DeviceDriverProvider : IDeviceDriverProvider
 {
   private readonly IDeviceDriverRepo _driverRepo;
 
-  public AresDriverProvider(IDeviceDriverRepo driverRepo)
+  public DeviceDriverProvider(IDeviceDriverRepo driverRepo)
   {
     _driverRepo = driverRepo;    
   }

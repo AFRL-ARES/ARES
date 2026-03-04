@@ -103,7 +103,7 @@ public static class ServiceCollectionExtensions
   private static void BindProviders(this IServiceCollection services)
   {
     services.AddTransient<IAresDeviceProvider, AresDeviceProvider>();
-    services.AddTransient<IAresDriverProvider, AresDriverProvider>();
+    services.AddTransient<IDeviceDriverProvider, DeviceDriverProvider>();
     services.AddTransient<IDeviceConfigProvider, DeviceConfigProvider>();
   }
 

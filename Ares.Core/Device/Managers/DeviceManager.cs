@@ -11,7 +11,7 @@ namespace Ares.Core.Device.Managers;
 
 public class DeviceManager : IDeviceManager
 {
-  private readonly IAresDriverProvider _driverProvider;
+  private readonly IDeviceDriverProvider _driverProvider;
   private readonly IAresDeviceRepo _deviceRepo;
   private readonly IServiceProvider _serviceProvider;
   private readonly ILoggerFactory _loggerFactory;
@@ -20,7 +20,7 @@ public class DeviceManager : IDeviceManager
   private readonly IResourceConnectionArbiter _resourceConnectionArbiter;
 
   public DeviceManager(
-    IAresDriverProvider driverProvider,
+    IDeviceDriverProvider driverProvider,
     IAresDeviceRepo deviceRepository,
     IServiceProvider serviceProvider,
     ILoggerFactory loggerFactory,

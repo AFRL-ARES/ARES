@@ -24,7 +24,7 @@ namespace UI.Application.Devices.Repos
     public void Initialize()
     {
       _deviceProvider.Connect()
-        .TransformAsync(_factory.CreateUnitControlViewModel)
+        .Transform(_factory.CreateUnitControlViewModel)
         .DisposeMany()
         .PopulateInto(_viewModelCache)
         .DisposeWith(_cleanup);
