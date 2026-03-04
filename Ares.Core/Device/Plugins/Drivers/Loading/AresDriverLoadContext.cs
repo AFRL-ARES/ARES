@@ -1,7 +1,7 @@
 ﻿using System.Reflection;
 using System.Runtime.Loader;
 
-namespace Ares.Core.Device.Drivers.Loading;
+namespace Ares.Core.Device.Plugins.Drivers.Loading;
 
 public class AresDriverLoadContext : AssemblyLoadContext
 {

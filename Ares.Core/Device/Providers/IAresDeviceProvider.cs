@@ -4,7 +4,7 @@ using DynamicData;
 namespace Ares.Core.Device.Providers;
 
 /// <summary>
-/// A functional interface for components that need to observe device state.
+/// A functional interface for components that need to access devices.
 /// Typically injected into UI or monitoring services.
 /// </summary>
 public interface IAresDeviceProvider : IEnumerable<IAresDevice>

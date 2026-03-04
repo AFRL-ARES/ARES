@@ -22,8 +22,8 @@ using Ares.Datamodel.Templates;
 using Microsoft.Extensions.DependencyInjection;
 using Ares.Core.Device;
 using Ares.Core.Device.Providers;
-using Ares.Core.Device.Drivers.Loading;
 using Ares.Core.Resources;
+using Ares.Core.Device.Plugins.Drivers.Loading;
 
 namespace Ares.Core;
 
@@ -40,17 +40,13 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<IPlanningHelper, PlanningHelper>();
     services.AddSingleton<IExecutionReporter, ExecutionReporter>();
     services.AddSingleton<IExecutionReportStore, ExecutionReportStore>();
-    services.AddSingleton<IAnalyzerRepo, AnalyzerRepo>();
-    services.AddSingleton<IPlannerServiceRepo, PlannerServiceRepo>();
     services.AddTransient<INumExperimentsRunFactory, NumExperimentsRunFactory>();
     services.AddSingleton<IActiveCampaignTemplateStore, ActiveCampaignTemplateStore>();
     services.AddSingleton<ICampaignValidatorRepository, CampaignValidatorRepository>();
     services.AddTransient<ICampaignValidator, AllPlannersAssignedCampaignValidator>();
     services.AddTransient<ICampaignValidator, GoodAnalyzerCampaignValidator>();
     services.AddTransient<ICampaignValidator, RequiredDeviceInterpretersValidator>();
-    services.AddSingleton<IDeviceDriverRepo, DeviceDriverRepo>();
     services.AddSingleton<IDeviceDriverLoader, DeviceDriverLoader>();
-    services.AddSingleton<IAresDeviceRepo, AresDeviceRepo>();
     services.AddSingleton<IDeviceManager, DeviceManager>();
     services.AddSingleton<IRemoteAnalyzerManager, RemoteAnalyzerManager>();
     services.AddSingleton<IRemotePlannerManager, RemotePlannerManager>();
@@ -59,8 +55,6 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<IDeviceCache, DeviceCache>();
     services.AddSingleton<IPlannerServiceCache, PlannerServiceCache>();
     services.AddSingleton<AresVariableManager>();
-    services.AddSingleton<AnalysisRepo>();
-    services.AddSingleton<PlannerServiceRepo>();
     services.AddSingleton<AnalysisHelper>();
     services.AddSingleton<IDesiredAnalysisResultFactory, DesiredAnalysisResultFactory>();
     services.AddSingleton<INotifier, Notifier>();
@@ -70,6 +64,7 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<ISystemFunctionProvider, DeviceFunctionProvider>();
     services.AddSingleton<BaseEnvironmentBuilder>();
 
+    services.BindRepositories();
     services.BindComposers();
     services.BindStartConditions();
     services.BindStateLogging();
@@ -109,5 +104,18 @@ public static class ServiceCollectionExtensions
   {
     services.AddTransient<IAresDeviceProvider, AresDeviceProvider>();
     services.AddTransient<IAresDriverProvider, AresDriverProvider>();
+    services.AddTransient<IDeviceConfigProvider, DeviceConfigProvider>();
   }
+
+  private static void BindRepositories(this IServiceCollection services)
+  {
+    services.AddSingleton<IAresDeviceRepo, AresDeviceRepo>();
+    services.AddSingleton<IDeviceDriverRepo, DeviceDriverRepo>();
+    services.AddSingleton<IDeviceConfigRepo, DeviceConfigRepo>();
+    services.AddSingleton<PlannerServiceRepo>();
+    services.AddSingleton<AnalysisRepo>();
+    services.AddSingleton<IAnalyzerRepo, AnalyzerRepo>();
+    services.AddSingleton<IPlannerServiceRepo, PlannerServiceRepo>();
+  }
+
 }

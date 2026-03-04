@@ -1,6 +1,6 @@
 using Ares.Core.Analyzing;
-using Ares.Core.Device.Drivers.Loading;
 using Ares.Core.Device.Managers;
+using Ares.Core.Device.Plugins.Drivers.Loading;
 using Ares.Core.Device.Remote;
 using Ares.Core.Planning;
 using UI.Application.Devices.Repos;

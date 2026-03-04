@@ -6,7 +6,7 @@ namespace Ares.Core.Device.Repos;
 
 /// <summary>
 /// Implementation of the device repository. 
-/// Responsible for tracking device that are currently active in the ARES system.
+/// Responsible for tracking devices that are currently active in the ARES system.
 /// </summary>
 public class AresDeviceRepo : IAresDeviceRepo
 {

@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Ares.Core.Device.Manifest;
+namespace Ares.Core.Device.Plugins.Manifest;
 
 /// <summary>
 /// Represents the root manifest structure for an ARES Device Driver.

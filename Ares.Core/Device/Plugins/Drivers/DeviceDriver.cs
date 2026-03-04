@@ -1,9 +1,9 @@
 using System.Reflection;
-using Ares.Core.Device.Manifest;
+using Ares.Core.Device.Plugins.Manifest;
 using Ares.Core.Resources;
 using Ares.Datamodel;
 
-namespace Ares.Core.Device.Drivers;
+namespace Ares.Core.Device.Plugins.Drivers;
 
 public class DeviceDriver
 {

@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Ares.Core.Device.Manifest;
+namespace Ares.Core.Device.Plugins.Manifest;
 
 public class DriverSettingDefinition
 {

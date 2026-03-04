@@ -1,4 +1,4 @@
-﻿using Ares.Core.Device.Drivers;
+﻿using Ares.Core.Device.Plugins.Drivers;
 using Ares.Core.Grpc.Services;
 using Ares.Core.Resources;
 using Ares.Datamodel;

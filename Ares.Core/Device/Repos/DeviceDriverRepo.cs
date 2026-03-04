@@ -1,4 +1,4 @@
-using Ares.Core.Device.Drivers;
+using Ares.Core.Device.Plugins.Drivers;
 using DynamicData;
 using System.Collections;
 

@@ -1,9 +1,9 @@
-﻿using Ares.Core.Device.Manifest;
+﻿using Ares.Core.Device.Plugins.Manifest;
 using Ares.Core.Resources;
 using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
 
-namespace Ares.Core.Device.Drivers.Loading;
+namespace Ares.Core.Device.Plugins.Drivers.Loading;
 
 public static class DriverLoaderUtils
 {

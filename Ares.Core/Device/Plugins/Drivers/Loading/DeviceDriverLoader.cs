@@ -1,4 +1,5 @@
-using Ares.Core.Device.Manifest;
+using Ares.Core.Device.Plugins.Drivers;
+using Ares.Core.Device.Plugins.Manifest;
 using Ares.Core.Device.Repos;
 using Ares.Device;
 using Ares.Toolkit.Device.UI;
@@ -9,7 +10,7 @@ using System.Security.Cryptography;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-namespace Ares.Core.Device.Drivers.Loading;
+namespace Ares.Core.Device.Plugins.Drivers.Loading;
 
 public class DeviceDriverLoader : IDeviceDriverLoader
 {
