@@ -1,4 +1,5 @@
 using Ares.Core.Analyzing;
+using Ares.Core.Device;
 using Ares.Core.Device.Managers;
 using Ares.Core.Device.Plugins.Drivers.Loading;
 using Ares.Core.Device.Remote;
@@ -18,6 +19,7 @@ public class ServiceStarter : IHostedService
   private readonly IRemoteAnalyzerManager _analyzerManager;
   private readonly IRemotePlannerManager _plannerManager;
   private readonly IRemoteDeviceManager _remoteDeviceManager;
+  private readonly IDeviceConfigManager _deviceConfigManager;
   private readonly IDeviceDriverLoader _deviceDriverLoader;
   private readonly IDeviceManager _deviceManager;
   private readonly IConfiguration _configuration;
@@ -31,6 +33,7 @@ public class ServiceStarter : IHostedService
     IRemotePlannerManager plannerManager,
     IDeviceDriverLoader deviceDriverLoader,
     IRemoteAnalyzerManager analyzerManager,
+    IDeviceConfigManager deviceConfigManager,
     IConfiguration configuration,
     IRemoteDeviceManager remoteDeviceManager,
     IDeviceManager deviceManager,
@@ -49,6 +52,7 @@ public class ServiceStarter : IHostedService
     _remoteDeviceManager = remoteDeviceManager;
     _configuration = configuration;
     _deviceManager = deviceManager;
+    _deviceConfigManager = deviceConfigManager;
 
     _dataPath = _configuration.Get<AppSettings>()?.AresDataPath ?? "";
     _resultsPath = Path.Combine(_dataPath, AppSettings.ResultsFolder);
@@ -61,6 +65,7 @@ public class ServiceStarter : IHostedService
     _notificationReceivingService.StartNotificationStream();
     _deviceControlViewModelRepo.Initialize();
     _deviceAdapterManager.Activate();
+    await _deviceConfigManager.LoadConfigs();
     await _deviceDriverLoader.LoadModulesAsync("C:\\ARES\\ARES OS\\plugins\\");
     await _plannerManager.LoadPlanners();
     await _analyzerManager.LoadAnalyzers();

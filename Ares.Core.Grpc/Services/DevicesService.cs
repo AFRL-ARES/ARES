@@ -144,7 +144,7 @@ public class DevicesService(
     await using var dbContext = contextFactory.CreateDbContext();
     var configQuery = dbContext.DeviceConfigs.AsQueryable();
     if(!string.IsNullOrEmpty(request.DeviceType))
-      configQuery = configQuery.Where(config => config.DriverName == request.DeviceType);
+      configQuery = configQuery.Where(config => config.DriverId == request.DeviceType);
 
     var configs = await configQuery.ToArrayAsync();
     var response = new DeviceConfigResponse();

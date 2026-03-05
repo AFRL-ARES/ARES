@@ -18,7 +18,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="ARES.Datamodel" Version="0.17.0-beta.20" />
+		<PackageReference Include="ARES.Datamodel" Version="0.17.0-beta.22" />
 		<PackageReference Include="ReactiveUI.Blazor" Version="23.1.1" />
 		<PackageReference Include="ReactiveUI.SourceGenerators" Version="2.6.1">
 			<PrivateAssets>all</PrivateAssets>
@@ -49,13 +49,10 @@
 		<Copy SourceFiles="manifest.yaml" DestinationFolder="$(StagingFolder)" />
 
 		<ItemGroup>
-			<AllOutputFiles Include="$(TargetDir)**\*.*"
-											Exclude="$(TargetDir)Ares.Device.dll;$(TargetDir)Ares.Datamodel.dll;$(TargetDir)obj\**\*.*" />
+			<AllOutputFiles Include="$(TargetDir)**\*.*" Exclude="$(TargetDir)Ares.Device.dll;$(TargetDir)Ares.Datamodel.dll;$(TargetDir)obj\**\*.*" />
 		</ItemGroup>
 
-		<Copy SourceFiles="@(AllOutputFiles)"
-          DestinationFiles="@(AllOutputFiles->'$(StagingFolder)bin\%(RecursiveDir)%(Filename)%(Extension)')"
-          SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(AllOutputFiles)" DestinationFiles="@(AllOutputFiles->'$(StagingFolder)bin\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
 
 		<ZipDirectory SourceDirectory="$(StagingFolder)" DestinationFile="$(PackageName)" Overwrite="true" />
 		<RemoveDir Directories="$(StagingFolder)" />

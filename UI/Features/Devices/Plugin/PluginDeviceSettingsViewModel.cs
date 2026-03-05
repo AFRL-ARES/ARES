@@ -12,8 +12,7 @@ public partial class PluginDeviceSettingsViewModel : ReactiveObject
     _deviceConfig = deviceConfig;
 
     Name = _deviceConfig.DeviceName;
-    Id = _deviceConfig.UniqueId;
-    DriverName = _deviceConfig.DriverName;
+    Id = _deviceConfig.DeviceId;
   }
 
   [Reactive]
@@ -21,7 +20,4 @@ public partial class PluginDeviceSettingsViewModel : ReactiveObject
 
   [Reactive]
   public partial string Id { get; private set; }
-
-  [Reactive]
-  public partial string DriverName { get; private set; }
 }

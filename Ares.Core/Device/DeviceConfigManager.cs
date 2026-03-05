@@ -1,4 +1,5 @@
-﻿using Ares.Datamodel.Device;
+﻿using Ares.Core.Device.Repos;
+using Ares.Datamodel.Device;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ares.Core.Device;
@@ -6,10 +7,19 @@ namespace Ares.Core.Device;
 public class DeviceConfigManager : IDeviceConfigManager
 {
   private readonly IDbContextFactory<CoreDatabaseContext> _dbContextFactory;
+  private IDeviceConfigRepo _configRepo;
 
-  public DeviceConfigManager(IDbContextFactory<CoreDatabaseContext> dbContextFactory)
+  public DeviceConfigManager(IDbContextFactory<CoreDatabaseContext> dbContextFactory, IDeviceConfigRepo configRepo)
   {
     _dbContextFactory = dbContextFactory;
+    _configRepo = configRepo;
+  }
+
+  public async Task LoadConfigs()
+  {
+    await using var context = _dbContextFactory.CreateDbContext();
+    var existingDeviceConfigs = await context.DeviceConfigs.ToListAsync();
+    existingDeviceConfigs.ForEach(_configRepo.AddOrUpdate);
   }
 
   public async Task Add(string id, string name, DeviceConfig config)
@@ -21,6 +31,7 @@ public class DeviceConfigManager : IDeviceConfigManager
 
     context.DeviceConfigs.Add(config);
     await context.SaveChangesAsync();
+    _configRepo.AddOrUpdate(config);
   }
 
   public async Task Remove(string id)
@@ -32,6 +43,7 @@ public class DeviceConfigManager : IDeviceConfigManager
 
     context.DeviceConfigs.Remove(genericConfig);
     await context.SaveChangesAsync();
+    _configRepo.Remove(id);
   }
 
   public async Task Update(string id, DeviceConfig config)
@@ -43,11 +55,6 @@ public class DeviceConfigManager : IDeviceConfigManager
 
     genericConfig = config;
     await context.SaveChangesAsync();
-  }
-
-  public async Task<DeviceConfig?> GetConfig(string id)
-  {
-    await using var context = _dbContextFactory.CreateDbContext();
-    return await context.DeviceConfigs.FirstOrDefaultAsync(config => config.UniqueId == id);
+    _configRepo.AddOrUpdate(config);
   }
 }

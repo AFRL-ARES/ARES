@@ -43,16 +43,15 @@ public partial class PluginDeviceConfigEditViewModel : ReactiveObject
   }
 
   public AresValue? GetMatchingSettingValue(string key) 
-    => _originalConfig.DriverSettings?.Fields.FirstOrDefault(f => f.Key == key).Value ?? null;
+    => _originalConfig.DeviceSettings?.Fields.FirstOrDefault(f => f.Key == key).Value ?? null;
 
   public DeviceConfig Save()
     => Modified ? new DeviceConfig
     {
       DeviceName = Name,
       DriverId = Driver.UniqueId,
-      DriverName = Driver.DriverType.ToString(),
-      DriverSettings = DeviceSettings ?? new AresStruct(),
-      Serial = new SerialConnection { PortName = SelectedSerialPort }
+      DeviceSettings = DeviceSettings ?? new AresStruct(),
+      SerialInfo = new SerialConnection { PortName = SelectedSerialPort }
     } : _originalConfig;
 
   public string Name

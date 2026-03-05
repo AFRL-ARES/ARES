@@ -66,7 +66,7 @@ public partial class PluginDeviceSettingsListViewModel : ReactiveObject
   {
     try
     {
-      var request = new AddDeviceRequest { DeviceConfig = config, DeviceName = config.DeviceName, DriverName = config.DriverName };
+      var request = new AddDeviceRequest { DeviceConfig = config, DeviceName = config.DeviceName };
       var response = await _devicesService.AddAresDevice(request, null);
 
       if(response.Success)
@@ -75,7 +75,7 @@ public partial class PluginDeviceSettingsListViewModel : ReactiveObject
         { 
           Message = $"Added new device {config.DeviceName}", 
           NotificationSeverity = Severity.Success, 
-          Title = $"Successfully Added {config.DriverName}" 
+          Title = $"Successfully Added {config.DeviceName}" 
         });
       }
 

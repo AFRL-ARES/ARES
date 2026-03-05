@@ -12,6 +12,7 @@ namespace Ares.Core.Device.Managers;
 public class DeviceManager : IDeviceManager
 {
   private readonly IDeviceDriverProvider _driverProvider;
+  private readonly IDeviceConfigProvider _configProvider;
   private readonly IAresDeviceRepo _deviceRepo;
   private readonly IServiceProvider _serviceProvider;
   private readonly ILoggerFactory _loggerFactory;
@@ -22,6 +23,7 @@ public class DeviceManager : IDeviceManager
   public DeviceManager(
     IDeviceDriverProvider driverProvider,
     IAresDeviceRepo deviceRepository,
+    IDeviceConfigProvider configProvider,
     IServiceProvider serviceProvider,
     ILoggerFactory loggerFactory,
     IDbContextFactory<CoreDatabaseContext> dbContextFactory,
@@ -29,6 +31,7 @@ public class DeviceManager : IDeviceManager
   {
     _driverProvider = driverProvider;
     _deviceRepo = deviceRepository;
+    _configProvider = configProvider;
     _serviceProvider = serviceProvider;
     _loggerFactory = loggerFactory;
     _dbContextFactory = dbContextFactory;
@@ -49,7 +52,7 @@ public class DeviceManager : IDeviceManager
       var driver = _driverProvider.GetDriverById(config.DriverId);
       if(driver == null)
       {
-        throw new InvalidOperationException($"Driver '{config.DriverName}' not found.");
+        throw new InvalidOperationException($"Driver for '{config.DeviceName}' not found.");
       }
 
       // Create logger
@@ -58,22 +61,19 @@ public class DeviceManager : IDeviceManager
       IAresDevice device;
 
       if(driver.ConnectionType == ConnectionType.Serial)
-        device = (IAresDevice)ActivatorUtilities.CreateInstance(_serviceProvider, driver.DriverType, [config.DeviceName, config.Serial, config.DriverSettings]);
+        device = (IAresDevice)ActivatorUtilities.CreateInstance(_serviceProvider, driver.DriverType, [config.DeviceName, config.SerialInfo, config.DeviceSettings]);
 
       else
-        device = (IAresDevice)ActivatorUtilities.CreateInstance(_serviceProvider, driver.DriverType, [config.DeviceName, config.DriverSettings, logger]);
+        device = (IAresDevice)ActivatorUtilities.CreateInstance(_serviceProvider, driver.DriverType, [config.DeviceName, config.DeviceSettings, logger]);
 
-      switch(config.TransportCase)
+      if(config.SerialInfo is not null)
       {
-        case DeviceConfig.TransportOneofCase.Serial:
-          var requestedPort = config.Serial.PortName;
-          var serialConnectionResource = new ConnectionResource(requestedPort, ConnectionType.Serial);
-          var success = _resourceConnectionArbiter.TryAcquireResource(serialConnectionResource, device);
+        var requestedPort = config.SerialInfo.PortName;
+        var serialConnectionResource = new ConnectionResource(requestedPort, ConnectionType.Serial);
+        var success = _resourceConnectionArbiter.TryAcquireResource(serialConnectionResource, device);
 
-          if(!success)
-            throw new InvalidOperationException($"Failed to create device, resource already in use!");
-
-          break;
+        if(!success)
+          throw new InvalidOperationException($"Failed to create device, resource already in use!");
       }
 
       _deviceRepo.AddOrUpdate(device);
@@ -102,7 +102,7 @@ public class DeviceManager : IDeviceManager
       }
       catch(Exception ex)
       {
-        _logger.LogError(ex, "Error loading device {DeviceName} with driver {DriverName}", config.DeviceName, config.DriverName);
+        _logger.LogError(ex, "Error loading device {DeviceName} with driver.", config.DeviceName);
       }
     }
     return devices.ToArray();
@@ -127,8 +127,7 @@ public class DeviceManager : IDeviceManager
 
   public async Task LoadDevices()
   {
-    using var context = await _dbContextFactory.CreateDbContextAsync();
-    var configs = await context.DeviceConfigs.ToListAsync();
+    var configs = _configProvider.GetAllConfigs();
     await Load(configs);
   }
 
