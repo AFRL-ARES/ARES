@@ -21,9 +21,9 @@ if (!$?)
     exit 1
 }
 
-$root = "../../"
+$root = "../../../../"
 $migrationProjectBase = "AresService.Migrations."
-$startupProject = "../AresService.csproj"
+$startupProject = "../../../UI.csproj"
 $solution = Join-Path $root "AresOS.sln"
 $contexts = @("AresDbContext", "AresIdentityContext")
 $migrationsRoot = "Migrations"
