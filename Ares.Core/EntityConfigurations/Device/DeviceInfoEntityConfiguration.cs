@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Ares.Core.EntityConfigurations.Device;
+
 internal class DeviceInfoEntityConfiguration : AresEntityTypeBaseConfiguration<DeviceInfo>
 {
     public override void Configure(EntityTypeBuilder<DeviceInfo> builder)

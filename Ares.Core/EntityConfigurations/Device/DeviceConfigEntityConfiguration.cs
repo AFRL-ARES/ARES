@@ -1,5 +1,4 @@
 ﻿using Ares.Datamodel.Device;
-using Google.Protobuf.WellKnownTypes;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -10,6 +9,10 @@ internal class DeviceConfigEntityConfiguration : AresEntityTypeBaseConfiguration
   public override void Configure(EntityTypeBuilder<DeviceConfig> builder)
   {
     base.Configure(builder);
+
+    builder.Navigation(config => config.SerialInfo)
+      .AutoInclude();
+    
     builder.ToTable("DeviceConfigs");
   }
 }
