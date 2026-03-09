@@ -5,7 +5,6 @@ using System.IO.Ports;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
-using Ares.Core.Device;
 using Ares.Core.Device.Managers;
 using Ares.Core.Device.Remote;
 using Ares.Core.Device.State.Logging;

@@ -2,7 +2,7 @@
 using Ares.Datamodel.Device;
 using Microsoft.EntityFrameworkCore;
 
-namespace Ares.Core.Device;
+namespace Ares.Core.Device.Managers;
 
 public class DeviceConfigManager : IDeviceConfigManager
 {
