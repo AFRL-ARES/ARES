@@ -1424,6 +1424,39 @@ namespace AresService.Migrations.SqlServer.Migrations
                     b.ToTable("StepTemplates", (string)null);
                 });
 
+            modelBuilder.Entity("Ares.Services.DriverInfo", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("DisplayName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DriverId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long>("FileSizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Version")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("DeviceDrivers");
+                });
+
             modelBuilder.Entity("Ares.Datamodel.AnalysisOverview", b =>
                 {
                     b.HasOne("Ares.Datamodel.ExperimentOverview", null)

@@ -20,10 +20,10 @@ using Ares.Core.Scripting;
 using Ares.Core.Validation.Campaign;
 using Ares.Datamodel.Templates;
 using Microsoft.Extensions.DependencyInjection;
-using Ares.Core.Device;
 using Ares.Core.Device.Providers;
 using Ares.Core.Resources;
 using Ares.Core.Device.Plugins.Drivers.Loading;
+using Ares.Core.Device.Plugins.Drivers;
 
 namespace Ares.Core;
 
@@ -59,6 +59,7 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<IDesiredAnalysisResultFactory, DesiredAnalysisResultFactory>();
     services.AddSingleton<INotifier, Notifier>();
     services.AddSingleton<IDeviceConfigManager, DeviceConfigManager>();
+    services.AddSingleton<IDriverDatabaseManager, DriverDatabaseManager>();
     services.AddSingleton<IResourceConnectionArbiter, ResourceConnectionArbiter>();
 
     services.AddSingleton<ISystemFunctionProvider, DeviceFunctionProvider>();

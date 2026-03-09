@@ -1,6 +1,6 @@
 using Ares.Core.Analyzing;
-using Ares.Core.Device;
 using Ares.Core.Device.Managers;
+using Ares.Core.Device.Plugins.Drivers;
 using Ares.Core.Device.Plugins.Drivers.Loading;
 using Ares.Core.Device.Remote;
 using Ares.Core.Planning;
@@ -22,6 +22,7 @@ public class ServiceStarter : IHostedService
   private readonly IDeviceConfigManager _deviceConfigManager;
   private readonly IDeviceDriverLoader _deviceDriverLoader;
   private readonly IDeviceManager _deviceManager;
+  private readonly IDriverDatabaseManager _driverDbManager;
   private readonly IConfiguration _configuration;
 
   private readonly string _dataPath;
@@ -36,6 +37,7 @@ public class ServiceStarter : IHostedService
     IDeviceConfigManager deviceConfigManager,
     IConfiguration configuration,
     IRemoteDeviceManager remoteDeviceManager,
+    IDriverDatabaseManager driverDbManager,
     IDeviceManager deviceManager,
     INotificationReceivingService notificationReceivingService,
     IServiceProvider serviceProvider,
@@ -53,6 +55,7 @@ public class ServiceStarter : IHostedService
     _configuration = configuration;
     _deviceManager = deviceManager;
     _deviceConfigManager = deviceConfigManager;
+    _driverDbManager = driverDbManager;
 
     _dataPath = _configuration.Get<AppSettings>()?.AresDataPath ?? "";
     _resultsPath = Path.Combine(_dataPath, AppSettings.ResultsFolder);
@@ -71,6 +74,7 @@ public class ServiceStarter : IHostedService
     await _plannerManager.LoadPlanners();
     await _analyzerManager.LoadAnalyzers();
     await _remoteDeviceManager.LoadDevices();
+    await _driverDbManager.RefreshDriverArchive();
     await EnsureDataPathsExist();
   }
 

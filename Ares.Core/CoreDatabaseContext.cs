@@ -4,6 +4,7 @@ using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Device;
 using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
+using Ares.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ares.Core;
@@ -23,6 +24,7 @@ public class CoreDatabaseContext : DbContext
   public DbSet<DeviceConfig> DeviceConfigs => Set<DeviceConfig>();
   public DbSet<RemoteDeviceConfig> RemoteDeviceConfigs => Set<RemoteDeviceConfig>();
   public DbSet<DeviceSettings> DeviceSettings => Set<DeviceSettings>();
+  public DbSet<DriverInfo> DeviceDrivers => Set<DriverInfo>(); 
 
   public DbSet<DeviceInfo> DeviceInfos => Set<DeviceInfo>();
   public DbSet<AnalyzerConfig> Analyzers => Set<AnalyzerConfig>();

@@ -1,3 +1,4 @@
+using Ares.Core.Device.Plugins.Drivers;
 using Ares.Core.Device.Providers;
 using Ares.Core.Device.Repos;
 using Ares.Core.Resources;
@@ -18,6 +19,7 @@ public class DeviceManager : IDeviceManager
 {
   private readonly IDeviceDriverProvider _driverProvider;
   private readonly IDeviceConfigProvider _configProvider;
+  private readonly IDriverDatabaseManager _driverDatabaseManager;
   private readonly IAresDeviceRepo _deviceRepo;
   private readonly IServiceProvider _serviceProvider;
   private readonly ILoggerFactory _loggerFactory;
@@ -28,6 +30,7 @@ public class DeviceManager : IDeviceManager
   public DeviceManager(
     IDeviceDriverProvider driverProvider,
     IAresDeviceRepo deviceRepository,
+    IDriverDatabaseManager driverDatabaseManager,
     IDeviceConfigProvider configProvider,
     IServiceProvider serviceProvider,
     ILoggerFactory loggerFactory,
@@ -35,6 +38,7 @@ public class DeviceManager : IDeviceManager
   {
     _driverProvider = driverProvider;
     _deviceRepo = deviceRepository;
+    _driverDatabaseManager = driverDatabaseManager;
     _configProvider = configProvider;
     _serviceProvider = serviceProvider;
     _loggerFactory = loggerFactory;
@@ -83,9 +87,16 @@ public class DeviceManager : IDeviceManager
     {
       var driver = _driverProvider.GetDriverById(config.DriverId);
 
-      //if(driver == null)
-      //  throw new InvalidOperationException($"Driver for '{config.DeviceName}' not found.");
+      if(driver is null)
+        driver = await HandleMissingDriver(config);
       
+
+      if(driver is null)
+      {
+        _logger.LogError($"Failed to initialize a stored device. Tried loading a driver for {config.DeviceName}, but no suitable driver was found.");
+        return null;
+      }
+
       // Create logger
       var logger = _loggerFactory.CreateLogger(typeof(IAresDevice));
 
@@ -120,25 +131,6 @@ public class DeviceManager : IDeviceManager
     }
   }
 
-  public async Task<IAresDevice[]> Load(IEnumerable<DeviceConfig> configs)
-  {
-    var devices = new List<IAresDevice>();
-    foreach(var config in configs)
-    {
-      try
-      {
-        var deviceId = string.IsNullOrEmpty(config.UniqueId) ? Guid.NewGuid().ToString() : config.UniqueId;
-        var device = await Load(deviceId, config);
-        devices.Add(device);
-      }
-      catch(Exception ex)
-      {
-        _logger.LogError(ex, "Error loading device {DeviceName} with driver.", config.DeviceName);
-      }
-    }
-    return devices.ToArray();
-  }
-
   public async Task Remove(string deviceId)
   {
     var device = _deviceRepo.GetDevice(deviceId);
@@ -156,10 +148,30 @@ public class DeviceManager : IDeviceManager
     return await Load(deviceId, config);
   }
 
-  public async Task LoadDevices()
+  private async Task<DeviceDriver?> HandleMissingDriver(DeviceConfig config)
   {
-    var configs = _configProvider.GetAllConfigs();
-    await Load(configs);
+    var archivedDrivers = await _driverDatabaseManager.GetAllDrivers();
+    var currentDrivers = _driverProvider.GetAllDeviceDrivers();
+    var matchingArchivedDriver = archivedDrivers.FirstOrDefault(d => d.DriverId == config.DriverId);
+
+    //This means we knew of the old driver, and should search to see if a potential replacement exists
+    if(matchingArchivedDriver is not null)
+    {
+      var currentMatch = currentDrivers.FirstOrDefault(cd => cd.Manifest.DeviceTypeName == matchingArchivedDriver.DisplayName);
+
+      //We successfully found a current driver matching the archived one, load it instead.
+      if(currentMatch is not null)
+      {
+        config.DriverId = currentMatch.UniqueId;
+        return currentMatch;
+      }
+
+      //No matching driver is present
+      else
+        return null;
+    }
+
+    return null;
   }
 
   public IReadOnlyCollection<T> GetAll<T>() where T : IAresDevice => _deviceRepo.GetAll<T>();
