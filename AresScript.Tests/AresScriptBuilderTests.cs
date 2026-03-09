@@ -134,6 +134,24 @@ public class AresScriptBuilderTests
     Assert.That(() => Parse(script), Throws.Nothing);
   }
 
+  [Test]
+  public void EditFunction_PreservesImportedSchemaTypeHints()
+  {
+    var existingScript = """
+      def typed_fn(value: { foo: Number, bar: String }) -> { foo: Number, bar: String }:
+        return value
+      """;
+
+    var builder = AresScriptBuilder.FromScript(existingScript);
+    var edited = builder.EditFunction("typed_fn", body => body.AddAssignment("value", "{ foo: 1, bar: \"ok\" }"));
+    var script = builder.Build();
+
+    Assert.That(edited, Is.True);
+    Assert.That(script, Does.Contain("def typed_fn(value: {foo: Number, bar: String}) -> {foo:Number,bar:String}:"));
+    Assert.That(script, Does.Contain("value = { foo: 1, bar: \"ok\" }"));
+    Assert.That(() => Parse(script), Throws.Nothing);
+  }
+
   private static void Parse(string script)
   {
     var input = new AntlrInputStream(script);

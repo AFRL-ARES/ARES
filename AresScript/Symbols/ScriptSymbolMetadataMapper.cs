@@ -57,7 +57,7 @@ public static class ScriptSymbolMetadataMapper
         metadata.FunctionShape = new ScriptSymbolMetadata.Types.FunctionShape
         {
           InputSchema = BuildUserFunctionInputSchema(userFunction),
-          OutputSchema = AresSchemaBuilder.Entry(userFunction.ReturnType).Build()
+          OutputSchema = userFunction.ReturnSchema
         };
         break;
 
@@ -153,7 +153,7 @@ public static class ScriptSymbolMetadataMapper
     var schema = new AresDataSchema();
     foreach(var parameter in userFunction.Parameters)
     {
-      schema.Fields[parameter.Name] = AresSchemaBuilder.Entry(parameter.Type).Build();
+      schema.Fields[parameter.Name] = parameter.Schema;
     }
 
     return schema;

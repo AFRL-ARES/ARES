@@ -84,7 +84,21 @@ parameter:
 	ID (COLON typeHint)?;
 
 typeHint:
+	namedTypeHint	# NamedTypeRef
+	| structTypeHint	# StructTypeRef
+	| listTypeHint	# ListTypeRef;
+
+namedTypeHint:
 	ID ('.' ID)*;
+
+structTypeHint:
+	LBRACE typeHintField (',' typeHintField)* ','? RBRACE;
+
+typeHintField:
+	ID COLON typeHint;
+
+listTypeHint:
+	LBRACK typeHint RBRACK;
 
 // Function body increments/decrements func depth for return validation
 funcBlock:

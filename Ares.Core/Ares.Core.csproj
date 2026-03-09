@@ -36,4 +36,9 @@
     <ProjectReference Include="..\AresScript\AresScript.csproj" />
   </ItemGroup>
 
+
+  <ItemGroup>
+    <Folder Include="Automation\" />
+  </ItemGroup>
+
 </Project>

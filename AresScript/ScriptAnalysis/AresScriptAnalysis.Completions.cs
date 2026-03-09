@@ -148,6 +148,14 @@ public static partial class AresScriptAnalysis
       return false;
     }
 
+    // Making sure that the potential parent is actually a part of the member access
+    // so "foo.bar + |" would get root suggestions instead of members of "foo"
+    var memberSuffix = prefix[(dotIndex + 1)..];
+    if(memberSuffix.Length > 0 && !IdentifierFragmentRegex().IsMatch(memberSuffix))
+    {
+      return false;
+    }
+
     // ex.: don't get "my_furnace" in "my_furnace.get_temp(| "
     var lastOpenParen = prefix.LastIndexOf('(');
     var lastCloseParen = prefix.LastIndexOf(')');
@@ -441,9 +449,52 @@ public static partial class AresScriptAnalysis
     }
 
     var suffixAfterReturnHintArrow = prefix[(returnHintArrowIndex + 2)..];
-    return !suffixAfterReturnHintArrow.Contains(':');
+    return !ContainsTopLevelFunctionColon(suffixAfterReturnHintArrow);
+  }
+
+  private static bool ContainsTopLevelFunctionColon(string text)
+  {
+    var braceDepth = 0;
+    var bracketDepth = 0;
+    var parenDepth = 0;
+
+    foreach(var ch in text)
+    {
+      switch(ch)
+      {
+        case '{':
+          braceDepth++;
+          break;
+        case '}':
+          braceDepth = Math.Max(0, braceDepth - 1);
+          break;
+        case '[':
+          bracketDepth++;
+          break;
+        case ']':
+          bracketDepth = Math.Max(0, bracketDepth - 1);
+          break;
+        case '(':
+          parenDepth++;
+          break;
+        case ')':
+          parenDepth = Math.Max(0, parenDepth - 1);
+          break;
+        case ':':
+          if(braceDepth == 0 && bracketDepth == 0 && parenDepth == 0)
+          {
+            return true;
+          }
+          break;
+      }
+    }
+
+    return false;
   }
 
   [GeneratedRegex(@"([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)\s*$")]
   private static partial Regex IdentifierPathRegex();
+
+  [GeneratedRegex(@"^[A-Za-z_][A-Za-z0-9_]*$")]
+  private static partial Regex IdentifierFragmentRegex();
 }

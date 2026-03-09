@@ -248,6 +248,20 @@ public class InterpreterTests
   }
 
   [Test]
+  public async Task Function_SchemaTypeHints_Are_Parsed_For_Parameters_And_Returns()
+  {
+    var script = """
+      def identity(value: { foo: Number, bar: String }) -> { foo: Number, bar: String }:
+        return value
+
+      payload = identity({ foo: 42, bar: "ok" })
+      assert payload.foo == 42
+      """;
+
+    await RunScriptAsync(script);
+  }
+
+  [Test]
   public Task Runtime_Rejects_Mismatched_Function_Argument_TypeHint()
   {
     var script = """
@@ -306,6 +320,47 @@ public class InterpreterTests
   }
 
   [Test]
+  public Task Validation_Rejects_Mismatched_Function_Struct_Argument_TypeHint()
+  {
+    var script = """
+      def echo_payload(value: { foo: Number, bar: String }) -> Number:
+        return value.foo
+
+      echo_payload({ foo: "oops", bar: "ok" })
+      """;
+
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
+    Assert.That(ex?.Message, Does.Contain("argument 'value' type mismatch"));
+    return Task.CompletedTask;
+  }
+
+  [Test]
+  public Task Validation_Rejects_Mismatched_Function_Struct_Return_TypeHint()
+  {
+    var script = """
+      def bad_return() -> { foo: Number, bar: String }:
+        return { foo: "oops", bar: "ok" }
+      """;
+
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
+    Assert.That(ex?.Message, Does.Contain("return type mismatch"));
+    return Task.CompletedTask;
+  }
+
+  [Test]
+  public async Task Validation_Allows_MemberAccess_On_Typed_Function_Return_Schema()
+  {
+    var script = """
+      def read_payload() -> { foo: Number, bar: String }:
+        return { foo: 1, bar: "ok" }
+
+      value = read_payload().foo
+      """;
+
+    await ValidateScriptAsync(script);
+  }
+
+  [Test]
   public async Task Completions_Include_DataTypes_In_Function_TypeHint_Context()
   {
     var script = "def typed(value: ";
@@ -328,6 +383,22 @@ public class InterpreterTests
   }
 
   [Test]
+  public async Task Completions_Include_DataTypes_In_Nested_Return_Schema_Field_TypeHint_Context()
+  {
+    var script = """
+      def main(foo: Number, bar: {qux: String}) -> {baz: String, memes: Numb
+        return {baz: bar.qux + foo}
+      """;
+
+    var line = script.Split(["\r\n", "\n"], StringSplitOptions.None)[0];
+    var completions = await BuildCompletionsAsync(script, 1, line.Length + 1);
+    var labels = completions.Select(item => item.Label).ToHashSet(StringComparer.Ordinal);
+    Assert.That(labels, Does.Contain("Number"));
+    Assert.That(labels, Does.Contain("String"));
+    Assert.That(completions.Any(item => item.Metadata.Kind == SymbolKind.Type), Is.True);
+  }
+
+  [Test]
   public async Task Completions_DoNot_Include_DataTypes_In_Function_Body_Context()
   {
     var script = """
@@ -336,6 +407,21 @@ public class InterpreterTests
       """;
     var completions = await BuildCompletionsAsync(script, 2, 9);
     Assert.That(completions.Any(item => item.Metadata.Kind == SymbolKind.Type), Is.False);
+  }
+
+  [Test]
+  public async Task Completions_DoNot_Treat_Previous_MemberAccess_As_Parent_For_New_Identifier()
+  {
+    var script = """
+      def main(foo: Number, bar: {qux: String}) -> {baz: String}:
+        return {baz: bar.qux + fo
+      """;
+
+    var line = script.Split(["\r\n", "\n"], StringSplitOptions.None)[1];
+    var completions = await BuildCompletionsAsync(script, 2, line.Length + 1);
+    var labels = completions.Select(item => item.Label).ToHashSet(StringComparer.Ordinal);
+    Assert.That(labels, Does.Contain("foo"));
+    Assert.That(labels, Does.Not.Contain("qux"));
   }
 
   [Test]
@@ -479,6 +565,23 @@ public class InterpreterTests
         new SchemaEntry { Type = AresDataType.Any }));
 
     Assert.That(schema.Type, Is.EqualTo(AresDataType.Any));
+  }
+
+  [Test]
+  public void TypeInference_Preserves_List_Of_Struct_Element_Schema()
+  {
+    var schema = InferExpressionSchema("""
+      [{ foo: 1, bar: "ok" }, { foo: 2, bar: "still ok" }]
+      """);
+
+    Assert.That(schema.Type, Is.EqualTo(AresDataType.List));
+    Assert.That(schema.ListElementSchema, Is.Not.Null);
+    Assert.That(schema.ListElementSchema!.Type, Is.EqualTo(AresDataType.Struct));
+    Assert.That(schema.ListElementSchema.StructSchema, Is.Not.Null);
+    Assert.That(schema.ListElementSchema.StructSchema!.Fields.ContainsKey("foo"), Is.True);
+    Assert.That(schema.ListElementSchema.StructSchema!.Fields["foo"].Type, Is.EqualTo(AresDataType.Number));
+    Assert.That(schema.ListElementSchema.StructSchema!.Fields.ContainsKey("bar"), Is.True);
+    Assert.That(schema.ListElementSchema.StructSchema!.Fields["bar"].Type, Is.EqualTo(AresDataType.String));
   }
 
   [Test]
