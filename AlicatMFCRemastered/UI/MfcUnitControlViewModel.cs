@@ -26,6 +26,7 @@ public partial class MfcUnitControlViewModel : DeviceUnitControlViewModel<MassFl
       .Subscribe(newState =>
       {
         AlicatState = newState;
+        HasValidData = true;
       });
 
     HoldValvesAtCurrentPositionCommand = ReactiveCommand.CreateFromTask(Device.HoldValvesAtCurrentPosition);
@@ -35,7 +36,7 @@ public partial class MfcUnitControlViewModel : DeviceUnitControlViewModel<MassFl
     TareAbsolutePressureWithBarometerCommand = ReactiveCommand.CreateFromTask(Device.TareAbsolutePressureWithBarometer);
     ViewType = typeof(MfcUnitControl);
     DefaultWidth = 19;
-    ListenForStates();
+
   }
 
   public async ValueTask DisposeAsync()
@@ -51,7 +52,8 @@ public partial class MfcUnitControlViewModel : DeviceUnitControlViewModel<MassFl
     _stateSubscription = Device.StateStream
         .Subscribe(
             _ => CapturingLiveData = true,
-            ex => {
+            ex =>
+            {
               _logger.LogError(ex, "State stream failed for {Name}", DeviceName);
               CapturingLiveData = false;
             },
@@ -84,7 +86,7 @@ public partial class MfcUnitControlViewModel : DeviceUnitControlViewModel<MassFl
   public ReactiveCommand<Unit, Unit> TareFlowCommand { get; }
   public ReactiveCommand<Unit, Unit> TareAbsolutePressureWithBarometerCommand { get; }
 
-  [ObservableAsProperty] 
-  public AlicatMfcState AlicatState { get; set; }
+  [Reactive]
+  public partial AlicatMfcState AlicatState { get; set; }
 }
 

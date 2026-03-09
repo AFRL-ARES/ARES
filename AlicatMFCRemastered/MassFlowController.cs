@@ -43,6 +43,10 @@ public class MassFlowController : AresDevice, IMassFlowController
     StateStream = _stateSubject.AsObservable();
     AssumedId = config.Fields["serialId"].StringValue[0];
     _serialConnection = new SimMassFlowControllerConnection(serialConnectionInfo.PortName);
+    if(_serialConnection is SimMassFlowControllerConnection simmyboi)
+    {
+      simmyboi.AddCat('A', _mfcType);
+    }
     _stateWatchers = new CompositeDisposable
     {
       _serialConnection.GetTransactionStream<LiveDataResponse>().Select(transaction => transaction.Response).Subscribe(UpdateLiveData)
@@ -122,8 +126,8 @@ public class MassFlowController : AresDevice, IMassFlowController
           if(!int.TryParse(num, out var numericNum) || numericNum <= 0)
           {
             //_logger.LogWarning(
-                //"Failed to get max value for MFC {Name} as we couldn't get the numeric max value from model number {Model}",
-                //Name, entry.Data);
+            //"Failed to get max value for MFC {Name} as we couldn't get the numeric max value from model number {Model}",
+            //Name, entry.Data);
             return;
           }
           var flowVal = StandardVolumeFlow.From(numericNum, unit);
@@ -304,7 +308,7 @@ public class MassFlowController : AresDevice, IMassFlowController
 
   public override Task<AresStruct> GetState()
   => Task.FromResult(_stateSubject.Value);
-  
+
 
   private void UpdateBasisDataFrames()
   {
@@ -531,6 +535,8 @@ public class MassFlowController : AresDevice, IMassFlowController
     {
       await InitBasis();
     }
+
+    _ = Start();
   }
 
   private async Task InitNormal()
@@ -588,7 +594,10 @@ public class MassFlowController : AresDevice, IMassFlowController
           {
             Status = new DeviceOperationalStatus { OperationalState = OperationalState.Active, Message = $"Get Live Data timed out at {DateTime.Now}" };
           }
+          catch(Exception)
+          {
 
+          }
           await Task.Delay(interval);
         }
       }
