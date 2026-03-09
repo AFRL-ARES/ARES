@@ -1,4 +1,5 @@
 using Ares.Core.Device.Plugins.Drivers;
+using Ares.Core.Device.Providers;
 using Ares.Core.Grpc.Services;
 using Ares.Datamodel.Device;
 using Ares.Services;
@@ -13,12 +14,14 @@ namespace UI.Features.Devices.Plugin;
 public partial class PluginDeviceSettingsListViewModel : ReactiveObject
 {
   private readonly DevicesService _devicesService;
+  private readonly IDeviceConfigProvider _configProvider;
   private readonly INotificationReceivingService _notificationService;
 
-  public PluginDeviceSettingsListViewModel(DevicesService devicesClient, INotificationReceivingService notificationService)
+  public PluginDeviceSettingsListViewModel(DevicesService devicesClient, INotificationReceivingService notificationService, IDeviceConfigProvider configProvider)
   {
     _devicesService = devicesClient;
     _notificationService = notificationService;
+    _configProvider = configProvider;
   }
 
   public async Task Initialize(DeviceDriver driver)
@@ -34,8 +37,8 @@ public partial class PluginDeviceSettingsListViewModel : ReactiveObject
     try
     {
       var request = new DeviceConfigRequest { DeviceType = DeviceClassName };
-      var response = await _devicesService.GetAllDeviceConfigs(request, null);
-      UpdateViewModels(response.Configs);
+      var response = _configProvider.GetAllConfigs().Where(c => c.DriverId == Driver.UniqueId).ToList();
+      UpdateViewModels(response);
     }
     catch (Exception e)
     {
@@ -53,13 +56,11 @@ public partial class PluginDeviceSettingsListViewModel : ReactiveObject
     }
   }
 
-  private void UpdateViewModels(IEnumerable<DeviceConfig> configs)
+  private void UpdateViewModels(IEnumerable<DeviceConfig> deviceConfigs)
   {
     SettingsViewModels.Clear();
-    foreach (var config in configs)
-    {
-        SettingsViewModels.Add(new PluginDeviceSettingsViewModel(config));
-    }
+    var viewModels = deviceConfigs.Select(device => new PluginDeviceSettingsViewModel(device, Driver, _devicesService, _notificationService, OnDeviceRemoved)).ToList();
+    viewModels.ForEach(SettingsViewModels.Add);
   }
 
   public async Task AddNewPluginDevice(DeviceConfig config)
@@ -77,6 +78,7 @@ public partial class PluginDeviceSettingsListViewModel : ReactiveObject
           NotificationSeverity = Severity.Success, 
           Title = $"Successfully Added {config.DeviceName}" 
         });
+        await UpdateAvailableDevices();
       }
 
       else
@@ -101,8 +103,14 @@ public partial class PluginDeviceSettingsListViewModel : ReactiveObject
     }
   }
 
-  public PluginDeviceConfigEditViewModel GetNewConfigEditViewModel() => new(Driver, _devicesService);
-  public void PushNotification(AresNotification notification) => _notificationService.PushNotification(notification);
+  private async Task OnDeviceRemoved() 
+    => await UpdateAvailableDevices();
+
+  public PluginDeviceConfigEditViewModel GetNewConfigEditViewModel() 
+    => new(new DeviceConfig(), Driver, true, _devicesService);
+  
+  public void PushNotification(AresNotification notification) 
+    => _notificationService.PushNotification(notification);
 
   [Reactive]
   public partial string DeviceClassName { get; set; }

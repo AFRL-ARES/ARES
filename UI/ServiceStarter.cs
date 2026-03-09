@@ -63,14 +63,14 @@ public class ServiceStarter : IHostedService
   public async Task StartAsync(CancellationToken cancellationToken)
   {
     _notificationReceivingService.StartNotificationStream();
+    await _deviceDriverLoader.LoadModulesAsync("C:\\ARES\\ARES OS\\plugins\\");
     _deviceControlViewModelRepo.Initialize();
+    _deviceManager.Initialize();
     _deviceAdapterManager.Activate();
     await _deviceConfigManager.LoadConfigs();
-    await _deviceDriverLoader.LoadModulesAsync("C:\\ARES\\ARES OS\\plugins\\");
     await _plannerManager.LoadPlanners();
     await _analyzerManager.LoadAnalyzers();
     await _remoteDeviceManager.LoadDevices();
-    await _deviceManager.LoadDevices();
     await EnsureDataPathsExist();
   }
 

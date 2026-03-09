@@ -80,7 +80,6 @@ else
     IsResolving = true;
     try
     {
-      // The Factory handles the 'How' and 'Why', the View just gets the result
       ViewModel = await ViewModelFactory.CreateListViewModelAsync(DriverId);
     }
     finally

@@ -3,9 +3,14 @@ using Ares.Core.Device.Repos;
 using Ares.Core.Resources;
 using Ares.Datamodel.Device;
 using Ares.Device;
+using DynamicData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System.Reactive;
+using System.Reactive.Disposables;
+using System.Reactive.Disposables.Fluent;
+using System.Reactive.Linq;
 
 namespace Ares.Core.Device.Managers;
 
@@ -16,9 +21,9 @@ public class DeviceManager : IDeviceManager
   private readonly IAresDeviceRepo _deviceRepo;
   private readonly IServiceProvider _serviceProvider;
   private readonly ILoggerFactory _loggerFactory;
-  private readonly IDbContextFactory<CoreDatabaseContext> _dbContextFactory;
   private readonly ILogger<DeviceManager> _logger;
   private readonly IResourceConnectionArbiter _resourceConnectionArbiter;
+  private readonly CompositeDisposable _cleanup = new();
 
   public DeviceManager(
     IDeviceDriverProvider driverProvider,
@@ -26,7 +31,6 @@ public class DeviceManager : IDeviceManager
     IDeviceConfigProvider configProvider,
     IServiceProvider serviceProvider,
     ILoggerFactory loggerFactory,
-    IDbContextFactory<CoreDatabaseContext> dbContextFactory,
     IResourceConnectionArbiter resourceConnectionArbiter)
   {
     _driverProvider = driverProvider;
@@ -34,37 +38,64 @@ public class DeviceManager : IDeviceManager
     _configProvider = configProvider;
     _serviceProvider = serviceProvider;
     _loggerFactory = loggerFactory;
-    _dbContextFactory = dbContextFactory;
     _logger = loggerFactory.CreateLogger<DeviceManager>();
     _resourceConnectionArbiter = resourceConnectionArbiter;
   }
 
-  public async Task<IAresDevice> Create(DeviceConfig config)
+  public void Initialize()
   {
-    var deviceId = Guid.NewGuid().ToString();
-    return await Load(deviceId, config);
+    _configProvider.Connect()
+      .SelectMany(async changes =>
+      {
+        foreach(var change in changes)
+        {
+          await HandleChangeAsync(change);
+        }
+        return Unit.Default;
+      })
+      .Subscribe()
+      .DisposeWith(_cleanup);
   }
 
-  public async Task<IAresDevice> Load(string deviceId, DeviceConfig config)
+  private async Task HandleChangeAsync(Change<DeviceConfig, string> change)
+  {
+    switch(change.Reason)
+    {
+      case ChangeReason.Add:
+        await Create(change.Current);
+        break;
+      case ChangeReason.Update:
+        await Update(change.Current.DeviceId, change.Current);
+        break;
+      case ChangeReason.Remove:
+        await Remove(change.Current.DeviceId);
+        break;
+    }
+  }
+
+  public async Task<IAresDevice?> Create(DeviceConfig config) 
+    => await Load(config.UniqueId, config);
+  
+
+  public async Task<IAresDevice?> Load(string deviceId, DeviceConfig config)
   {
     try
     {
       var driver = _driverProvider.GetDriverById(config.DriverId);
-      if(driver == null)
-      {
-        throw new InvalidOperationException($"Driver for '{config.DeviceName}' not found.");
-      }
 
+      //if(driver == null)
+      //  throw new InvalidOperationException($"Driver for '{config.DeviceName}' not found.");
+      
       // Create logger
       var logger = _loggerFactory.CreateLogger(typeof(IAresDevice));
 
       IAresDevice device;
 
       if(driver.ConnectionType == ConnectionType.Serial)
-        device = (IAresDevice)ActivatorUtilities.CreateInstance(_serviceProvider, driver.DriverType, [config.DeviceName, config.SerialInfo, config.DeviceSettings]);
+        device = (IAresDevice)ActivatorUtilities.CreateInstance(_serviceProvider, driver.DriverType, [config.DeviceName, config.DeviceId, config.SerialInfo, config.DeviceSettings]);
 
       else
-        device = (IAresDevice)ActivatorUtilities.CreateInstance(_serviceProvider, driver.DriverType, [config.DeviceName, config.DeviceSettings, logger]);
+        device = (IAresDevice)ActivatorUtilities.CreateInstance(_serviceProvider, driver.DriverType, [config.DeviceName, config.DeviceId, config.DeviceSettings, logger]);
 
       if(config.SerialInfo is not null)
       {
@@ -85,7 +116,7 @@ public class DeviceManager : IDeviceManager
     catch(Exception e)
     {
       _logger.LogError($"Encountered an error when trying to add a device! {e.Message}");
-      throw;
+      return null;
     }
   }
 
@@ -119,7 +150,7 @@ public class DeviceManager : IDeviceManager
     await Task.CompletedTask;
   }
 
-  public async Task<IAresDevice> Update(string deviceId, DeviceConfig config)
+  public async Task<IAresDevice?> Update(string deviceId, DeviceConfig config)
   {
     await Remove(deviceId);
     return await Load(deviceId, config);

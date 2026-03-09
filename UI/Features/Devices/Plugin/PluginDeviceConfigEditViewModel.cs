@@ -17,11 +17,7 @@ public partial class PluginDeviceConfigEditViewModel : ReactiveObject
   private readonly DevicesService _devicesService;
   private string _name;
 
-  public PluginDeviceConfigEditViewModel(DeviceDriver driver, DevicesService devicesService) : this(new DeviceConfig(), driver, isNew: true, devicesService) { }
-
-  public PluginDeviceConfigEditViewModel(DeviceConfig deviceConfig, DeviceDriver driver, DevicesService devicesService) : this(deviceConfig, driver, isNew: false, devicesService) { }
-
-  private PluginDeviceConfigEditViewModel(DeviceConfig deviceConfig, DeviceDriver driver, bool isNew, DevicesService devicesService)
+  public PluginDeviceConfigEditViewModel(DeviceConfig deviceConfig, DeviceDriver driver, bool isNew, DevicesService devicesService)
   {
     NewConfig = isNew;
     Driver = driver;
@@ -32,14 +28,14 @@ public partial class PluginDeviceConfigEditViewModel : ReactiveObject
     // A reactive property that tracks if the view model has been modified.
     _modified = this.WhenAnyValue(x => x.Name)
         .Select(_ => Name != _originalConfig.DeviceName)
+        .Select(_ => _originalConfig.DeviceSettings != DeviceSettings)
         .ToProperty(this, x => x.Modified, initialValue: false);
 
     DriverSettingsSchema = driver.DriverSettings ?? new AresStructSchema();
     ConnectionType = driver.ConnectionType;
     AvailableSerialPorts = _devicesService.GetServerSerialPorts(new Empty(), null).Result.SerialPorts.ToList();
-
-    if(isNew)
-      DeviceSettings = new AresStruct();
+    DeviceSettings = isNew ? new AresStruct() : deviceConfig.DeviceSettings;
+    SelectedSerialPort = _originalConfig.SerialInfo?.PortName ?? string.Empty;
   }
 
   public AresValue? GetMatchingSettingValue(string key) 

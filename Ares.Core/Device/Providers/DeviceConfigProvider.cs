@@ -18,6 +18,8 @@ public class DeviceConfigProvider : IDeviceConfigProvider
   public IObservable<IChangeSet<DeviceConfig, string>> Connect() => _configRepo.Cache.Connect();
   public IReadOnlyCollection<DeviceConfig> GetAllConfigs() => _configRepo.GetAll();
   public DeviceConfig? GetConfig(string id) => _configRepo.GetConfig(id);
+
+  public DeviceConfig? GetConfigByDeviceId(string deviceId) => _configRepo.GetConfigByDeviceId(deviceId);
   public IEnumerator<DeviceConfig> GetEnumerator() => _configRepo.GetEnumerator();
   IEnumerator IEnumerable.GetEnumerator() => _configRepo.GetEnumerator();
 }

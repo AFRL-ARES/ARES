@@ -3,15 +3,12 @@ using Ares.Datamodel.Device;
 using Ares.Services;
 using Ares.Services.Device;
 using Ares.Core.Grpc.Services;
-using CommunityToolkit.Mvvm.Messaging;
 using Grpc.Core;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System.Reactive;
 using System.Reactive.Linq;
-using UI.Features.Devices.Shared;
 using UI.Application.Notifications;
-using UI.Application.Devices;
 
 namespace UI.Features.Devices.Remote;
 
@@ -21,18 +18,15 @@ public partial class RemoteDeviceSettingsViewModel : ReactiveObject
   private readonly INotificationReceivingService _notificationService;
   private readonly DeviceInfo _deviceInfo;
   private readonly ObservableAsPropertyHelper<bool> _isBusy;
-  private readonly IMessenger _deviceDeletionMessenger;
 
   public RemoteDeviceSettingsViewModel(DevicesService devicesService,
       INotificationReceivingService notificationService,
       DeviceInfo deviceInfo,
-      IMessenger deviceDeletionMessenger,
       Func<Task> onRemoveCallback)
   {
     _devicesClient = devicesService;
     _notificationService = notificationService;
     _deviceInfo = deviceInfo;
-    _deviceDeletionMessenger = deviceDeletionMessenger;
 
     Name = _deviceInfo.Name;
     Address = _deviceInfo.Url;

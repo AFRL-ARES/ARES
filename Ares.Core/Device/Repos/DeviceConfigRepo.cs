@@ -19,6 +19,9 @@ public class DeviceConfigRepo : IDeviceConfigRepo
     return lookup.HasValue ? lookup.Value : null;
   }
 
+  public DeviceConfig? GetConfigByDeviceId(string deviceId) 
+    =>_configCache.Items.FirstOrDefault(x => x.DeviceId == deviceId);
+
   public IEnumerator<DeviceConfig> GetEnumerator() => _configCache.Items.GetEnumerator();
   IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
   public IReadOnlyCollection<DeviceConfig> GetAll() => _configCache.Items.ToList().AsReadOnly();

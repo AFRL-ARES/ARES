@@ -439,20 +439,17 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
 
+                    b.Property<string>("DeviceId")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("DeviceName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DeviceSettings")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("DriverId")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("DriverName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("DriverSettings")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid?>("EthernetUniqueId")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<bool>("IsSimulated")
                         .HasColumnType("bit");
@@ -462,19 +459,12 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
 
-                    b.Property<Guid?>("SerialUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("UsbUniqueId")
+                    b.Property<Guid?>("SerialInfoUniqueId")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("UniqueId");
 
-                    b.HasIndex("EthernetUniqueId");
-
-                    b.HasIndex("SerialUniqueId");
-
-                    b.HasIndex("UsbUniqueId");
+                    b.HasIndex("SerialInfoUniqueId");
 
                     b.ToTable("DeviceConfigs", (string)null);
                 });
@@ -608,36 +598,6 @@ namespace AresService.Migrations.SqlServer.Migrations
                     b.ToTable("DeviceStates");
                 });
 
-            modelBuilder.Entity("Ares.Datamodel.Device.EthernetConnection", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("IpAddress")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<int>("Port")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("UseTls")
-                        .HasColumnType("bit");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("EthernetConnection");
-                });
-
             modelBuilder.Entity("Ares.Datamodel.Device.RemoteDeviceConfig", b =>
                 {
                     b.Property<Guid>("UniqueId")
@@ -671,67 +631,22 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int>("BaudRate")
-                        .HasColumnType("int");
-
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
-
-                    b.Property<int>("DataBits")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Handshake")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
 
-                    b.Property<int>("Parity")
-                        .HasColumnType("int");
-
                     b.Property<string>("PortName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("StopBits")
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("UniqueId");
 
                     b.ToTable("SerialConnection");
-                });
-
-            modelBuilder.Entity("Ares.Datamodel.Device.UsbConnection", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("ProductId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("SerialNumber")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("VendorId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("UsbConnection");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.ExecutionInfo", b =>
@@ -1576,23 +1491,11 @@ namespace AresService.Migrations.SqlServer.Migrations
 
             modelBuilder.Entity("Ares.Datamodel.Device.DeviceConfig", b =>
                 {
-                    b.HasOne("Ares.Datamodel.Device.EthernetConnection", "Ethernet")
+                    b.HasOne("Ares.Datamodel.Device.SerialConnection", "SerialInfo")
                         .WithMany()
-                        .HasForeignKey("EthernetUniqueId");
+                        .HasForeignKey("SerialInfoUniqueId");
 
-                    b.HasOne("Ares.Datamodel.Device.SerialConnection", "Serial")
-                        .WithMany()
-                        .HasForeignKey("SerialUniqueId");
-
-                    b.HasOne("Ares.Datamodel.Device.UsbConnection", "Usb")
-                        .WithMany()
-                        .HasForeignKey("UsbUniqueId");
-
-                    b.Navigation("Ethernet");
-
-                    b.Navigation("Serial");
-
-                    b.Navigation("Usb");
+                    b.Navigation("SerialInfo");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.ExecutionInfo", b =>

@@ -1,4 +1,3 @@
-using AlicatMFCRemastered.Commands.Requests;
 using AlicatMFCRemastered.Commands.Responses.Streamed;
 using AlicatMFCRemastered.UI.State;
 using Ares.Toolkit.Device.UI;

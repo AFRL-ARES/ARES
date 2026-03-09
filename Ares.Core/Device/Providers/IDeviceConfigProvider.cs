@@ -22,6 +22,13 @@ public interface IDeviceConfigProvider : IEnumerable<DeviceConfig>
   DeviceConfig? GetConfig(string id);
 
   /// <summary>
+  /// Retreives a device config based on the corresponding device id.
+  /// </summary>
+  /// <param name="deviceId"></param>
+  /// <returns></returns>
+  DeviceConfig? GetConfigByDeviceId(string deviceId);
+
+  /// <summary>
   /// Retrieves a read-only snapshot of all currently available device configs.
   /// </summary>
   IReadOnlyCollection<DeviceConfig> GetAllConfigs();

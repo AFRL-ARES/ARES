@@ -22,12 +22,17 @@ public class DeviceConfigManager : IDeviceConfigManager
     existingDeviceConfigs.ForEach(_configRepo.AddOrUpdate);
   }
 
-  public async Task Add(string id, string name, DeviceConfig config)
+  public async Task Add(DeviceConfig config)
   {
+    //Initialize important ID's
+    config.UniqueId = Guid.NewGuid().ToString();
+    config.DeviceId = Guid.NewGuid().ToString();
+
+    //Add to storage mechanisms
     await using var context = _dbContextFactory.CreateDbContext();
-    var existingDeviceConfig = await context.DeviceConfigs.FirstOrDefaultAsync(deviceConfig => deviceConfig.UniqueId == id);
+    var existingDeviceConfig = await context.DeviceConfigs.FirstOrDefaultAsync(existingConfig => existingConfig.UniqueId == config.UniqueId);
     if(existingDeviceConfig is not null)
-      throw new InvalidOperationException($"A device with id {id} already exists in the configuration database");
+      throw new InvalidOperationException($"A device with id {config.UniqueId} already exists in the configuration database");
 
     context.DeviceConfigs.Add(config);
     await context.SaveChangesAsync();

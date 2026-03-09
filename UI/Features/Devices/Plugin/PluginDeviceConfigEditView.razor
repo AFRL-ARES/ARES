@@ -3,34 +3,34 @@
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<PluginDeviceConfigEditViewModel>
 
 <RadzenTemplateForm TItem="PluginDeviceConfigEditViewModel" Data="@ViewModel" Submit="@OnValidSubmit">
-    <div class="d-flex flex-column gap-3">
-        <RadzenFormField Text="Device Name" Variant="Variant.Flat">
-            <RadzenTextBox @bind-Value="ViewModel!.Name"/>
-        </RadzenFormField>
+  <div class="d-flex flex-column gap-3">
+  <RadzenFormField Text="Device Name" Variant="Variant.Flat">
+          <RadzenTextBox @bind-Value="ViewModel!.Name" Disabled="@(!ViewModel!.NewConfig)"/>
+      </RadzenFormField>
 
-        @if(ViewModel!.ConnectionType == ConnectionType.Serial)
+    @if(ViewModel!.ConnectionType == ConnectionType.Serial)
+    {
+    <input type="text" placeholder="@(ViewModel!.SelectedSerialPort is null ? "Port" : ViewModel!.SelectedSerialPort)" list="port-list" @onchange="PortChanged" class="form-select mfc-port" disabled="@(!ViewModel!.NewConfig)" />
+      <datalist id="port-list">
+        @if(ViewModel!.AvailableSerialPorts is not null)
         {
-      <input type="text" placeholder="@(ViewModel!.SelectedSerialPort is null ? "Port" : ViewModel!.SelectedSerialPort)" list="port-list" @onchange="PortChanged" class="form-select mfc-port" />
-          <datalist id="port-list">
-            @if(ViewModel!.AvailableSerialPorts is not null)
-            {
-              @foreach(var port in ViewModel!.AvailableSerialPorts)
-              {
-                <option value="@port">@port</option>
-              }
-            }
-          </datalist>
+          @foreach(var port in ViewModel!.AvailableSerialPorts)
+          {
+            <option value="@port">@port</option>
+          }
         }
+      </datalist>
+    }
 
-        @foreach (var prop in ViewModel!.DriverSettingsSchema.Fields)
-        {
-          <AresValueDesigner Name="@prop.Key"
-          Value="@ViewModel!.GetMatchingSettingValue(prop.Key)"
-          Schema="prop.Value"
-          ValueEditCallback="@(value => ValueEditCallback(prop.Key, value))"/>
-        }
-    </div>
-    <button type="submit" class="btn my-3 btn-outline-primary">Save Device</button>
+    @foreach (var prop in ViewModel!.DriverSettingsSchema.Fields)
+    {
+      <AresValueDesigner Name="@prop.Key"
+      Value="@ViewModel!.GetMatchingSettingValue(prop.Key)"
+      Schema="prop.Value"
+      ValueEditCallback="@(value => ValueEditCallback(prop.Key, value))"/>
+    }
+  </div>
+  <button type="submit" class="btn my-3 btn-outline-primary">Save Device</button>
 </RadzenTemplateForm>
 
 @code

@@ -9,7 +9,7 @@ public interface IDeviceConfigManager
   /// </summary>
   /// <returns></returns>
   Task LoadConfigs();
-  Task Add(string deviceId, string deviceName, DeviceConfig config); 
+  Task Add(DeviceConfig config); 
   Task Remove(string configId);
   Task Update(string configId, DeviceConfig config);
 }

@@ -5,10 +5,10 @@ namespace Ares.Core.Device.Managers;
 
 public interface IDeviceManager
 {
-  Task<IAresDevice> Create(DeviceConfig config);
-  Task<IAresDevice> Load(string deviceId, DeviceConfig config);
+  Task<IAresDevice?> Create(DeviceConfig config);
+  Task<IAresDevice?> Load(string deviceId, DeviceConfig config);
   Task<IAresDevice[]> Load(IEnumerable<DeviceConfig> configs);
-  Task<IAresDevice> Update(string deviceId, DeviceConfig config);
+  Task<IAresDevice?> Update(string deviceId, DeviceConfig config);
   /// <summary>
   /// Retrieves all managed devices of a specific type.
   /// </summary>
@@ -20,4 +20,5 @@ public interface IDeviceManager
   T? GetDevice<T>(string id) where T : class, IAresDevice;
   Task Remove(string deviceId);
   Task LoadDevices();
+  void Initialize();
 }

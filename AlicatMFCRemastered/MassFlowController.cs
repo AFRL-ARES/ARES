@@ -3,6 +3,7 @@ using AlicatMFCRemastered.Commands.Responses;
 using AlicatMFCRemastered.Commands.Responses.Streamed;
 using AlicatMFCRemastered.Enums;
 using AlicatMFCRemastered.Models;
+using AlicatMFCRemastered.Simulation;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
 using Ares.Device;
@@ -33,7 +34,7 @@ public class MassFlowController : AresDevice, IMassFlowController
   private readonly IMfcConnection _serialConnection;
   private MfcTypeEnum _mfcType;
 
-  public MassFlowController(string name, SerialConnection serialConnectionInfo, AresStruct config) : base(name)
+  public MassFlowController(string name, string id, SerialConnection serialConnectionInfo, AresStruct config) : base(name, id)
   {
     HasValve = config.Fields["HasValve"]?.BoolValue ?? false;
     _mfcType = config.Fields["IsBasis"].BoolValue ? MfcTypeEnum.Basis2 : MfcTypeEnum.Normal;
@@ -41,7 +42,7 @@ public class MassFlowController : AresDevice, IMassFlowController
     //_logger = logger;
     StateStream = _stateSubject.AsObservable();
     AssumedId = config.Fields["serialId"].StringValue[0];
-    _serialConnection = new MassFlowControllerConnection(serialConnectionInfo.PortName);
+    _serialConnection = new SimMassFlowControllerConnection(serialConnectionInfo.PortName);
     _stateWatchers = new CompositeDisposable
     {
       _serialConnection.GetTransactionStream<LiveDataResponse>().Select(transaction => transaction.Response).Subscribe(UpdateLiveData)

@@ -2,7 +2,6 @@
 using Ares.Core.Device.State.Logging;
 using Ares.Core.Notifications;
 using Ares.Datamodel.Device;
-using DynamicData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 

@@ -24,6 +24,7 @@ namespace Ares.Core.Grpc.Services;
 public class DevicesService(
   IAresDeviceProvider deviceProvider,
   IDeviceDriverProvider driverProvider,
+  IDeviceConfigProvider configProvider,
   IDeviceManager deviceManager,
   IDeviceConfigManager deviceConfigManager,
   IDbContextFactory<CoreDatabaseContext> contextFactory,
@@ -376,9 +377,7 @@ public class DevicesService(
   {
     try
     {
-      var device = await deviceManager.Create(request.DeviceConfig);
-      await deviceConfigManager.Add(device.UniqueId, device.Name, request.DeviceConfig);
-
+      await deviceConfigManager.Add(request.DeviceConfig);
       return new AddDeviceResponse() { Success = true };
     }
 
@@ -386,6 +385,44 @@ public class DevicesService(
     {
       return new AddDeviceResponse() { Success = false, ErrorMessage = $"Failed to add new device! Message: {ex.Message}"};
     }
+  }
+
+  public override async Task<RemoveDeviceResponse> RemoveAresDevice(RemoveDeviceRequest request, ServerCallContext context)
+  {
+    var response = new RemoveDeviceResponse();
+
+    try
+    {
+      await deviceConfigManager.Remove(request.DeviceId);
+      response.Success = true;
+    }
+
+    catch(Exception ex)
+    {
+      response.Success = false;
+      response.ErrorMessage = $"Error trying to remove device: {ex.Message}";
+    }
+
+    return response;
+  }
+
+  public override async Task<UpdateDeviceResponse> UpdateAresDevice(UpdateDeviceRequest request, ServerCallContext context)
+  {
+    var response = new UpdateDeviceResponse();
+    
+    try
+    {
+      await deviceConfigManager.Update(request.DeviceId, request.UpdatedConfig);
+      response.Success = true;
+    }
+
+    catch(Exception ex)
+    {
+      response.Success = false;
+      response.ErrorMessage = $"Could not update device {request.UpdatedConfig.DeviceName}: {ex.Message}";
+    }
+
+    return response;
   }
 
   private DeviceInfo GetInfo(IAresDevice device)

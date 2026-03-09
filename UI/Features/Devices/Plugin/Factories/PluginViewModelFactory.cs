@@ -1,5 +1,4 @@
-﻿using Ares.Core.Device;
-using Ares.Core.Device.Providers;
+﻿using Ares.Core.Device.Providers;
 using Ares.Device;
 using Ares.Toolkit.Device.UI;
 
@@ -49,14 +48,9 @@ public class PluginViewModelFactory : IPluginViewModelFactory
     }
   }
 
-  //public Task<PluginDeviceSettingsViewModel> CreateSettingsViewModel(IAresDevice device)
-  //{
-  //  var config = _deviceConfigManager.
-  //}
-
   public IDeviceUnitControlViewModel CreateUnitControlViewModel(IAresDevice device)
   {
-    var config = _deviceConfigProvider.GetConfig(device.UniqueId);
+    var config = _deviceConfigProvider.GetConfigByDeviceId(device.UniqueId);
 
     if(config is null)
       return CreateDefaultViewModel(device);

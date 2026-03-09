@@ -18,6 +18,13 @@ public interface IDeviceConfigRepo : IDisposable, IEnumerable<DeviceConfig>
   DeviceConfig? GetConfig(string id);
 
   /// <summary>
+  /// Retrieves a device config from storage by the corresponding device id.
+  /// </summary>
+  /// <param name="deviceId"></param>
+  /// <returns></returns>
+  DeviceConfig? GetConfigByDeviceId(string deviceId);
+
+  /// <summary>
   /// Retrieves all currently available configs.
   /// </summary>
   IReadOnlyCollection<DeviceConfig> GetAll();

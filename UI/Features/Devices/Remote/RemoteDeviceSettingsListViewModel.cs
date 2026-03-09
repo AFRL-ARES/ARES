@@ -50,7 +50,7 @@ public partial class RemoteDeviceSettingsListViewModel : ReactiveObject
   private void UpdateViewModels(IEnumerable<DeviceInfo> remoteDevices)
   {
     SettingsViewModels.Clear();
-    var viewModels = remoteDevices.Select(info => new RemoteDeviceSettingsViewModel(_devicesClient, _notificationService, info, _deviceDeletionMessenger, OnDeviceRemoved)).ToArray();
+    var viewModels = remoteDevices.Select(info => new RemoteDeviceSettingsViewModel(_devicesClient, _notificationService, info, OnDeviceRemoved)).ToArray();
     foreach (var vm in viewModels)
     {
       SettingsViewModels.Add(vm);
