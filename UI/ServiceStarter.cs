@@ -29,6 +29,7 @@ public class ServiceStarter : IHostedService
   private readonly string _resultsPath;
   private readonly string _templatesPath;
   private readonly string _devicesPath;
+  private readonly string _pluginsPath;
 
   public ServiceStarter(
     IRemotePlannerManager plannerManager,
@@ -61,12 +62,13 @@ public class ServiceStarter : IHostedService
     _resultsPath = Path.Combine(_dataPath, AppSettings.ResultsFolder);
     _templatesPath = Path.Combine(_dataPath, AppSettings.TemplatesFolder);
     _devicesPath = Path.Combine(_dataPath, AppSettings.DevicesFolder);
+    _pluginsPath = PluginPathResolver.Resolve(_configuration.Get<AppSettings>());
   }
 
   public async Task StartAsync(CancellationToken cancellationToken)
   {
     _notificationReceivingService.StartNotificationStream();
-    await _deviceDriverLoader.LoadModulesAsync("C:\\ARES\\ARES OS\\plugins\\");
+    await _deviceDriverLoader.LoadModulesAsync(_pluginsPath);
     _deviceControlViewModelRepo.Initialize();
     _deviceManager.Initialize();
     _deviceAdapterManager.Activate();

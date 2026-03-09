@@ -10,7 +10,6 @@
 
 		<DebugSymbols>true</DebugSymbols>
 		<DebugType>portable</DebugType>
-		<BaseOutputPath>C:\ARES\ARES OS\Ares.Core\bin\Debug\net10.0\plugins</BaseOutputPath>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -42,6 +41,12 @@
 			<StagingFolder>$(ProjectDir)obj\AresStaging\</StagingFolder>
 			<PackageName>$(ProjectDir)bin\$(Configuration)\$(AssemblyName).ares</PackageName>
 		</PropertyGroup>
+
+		<ItemGroup>
+			<ScopedCssBundle Include="$(IntermediateOutputPath)scopedcss\bundle\$(AssemblyName).styles.css" Condition="Exists('$(IntermediateOutputPath)scopedcss\bundle\$(AssemblyName).styles.css')" />
+		</ItemGroup>
+
+		<Copy SourceFiles="@(ScopedCssBundle)" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true" Condition="'@(ScopedCssBundle)' != ''" />
 
 		<RemoveDir Directories="$(StagingFolder)" />
 		<MakeDir Directories="$(StagingFolder);$(StagingFolder)bin" />

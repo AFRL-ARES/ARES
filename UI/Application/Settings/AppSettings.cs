@@ -4,6 +4,7 @@ public class AppSettings
 {
   public TokensConfig? TokensConfig { get; set; }
   public string AresDataPath { get; set; } = Environment.CurrentDirectory;
+  public string? PluginsPath { get; set; }
   public string DatabaseProvider { get; set; } = string.Empty;
 
   public static string ResultsFolder = "CampaignResults";

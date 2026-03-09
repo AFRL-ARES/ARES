@@ -1,4 +1,6 @@
+@using Ares.Core.Device.Providers
 @using Ares.Core.Execution.Safety
+@using Ares.Core.Device.Repos
 @using Ares.Services
 @using Google.Protobuf.WellKnownTypes
 @using UI.Application.Dialog
@@ -9,9 +11,14 @@
 @inject IUiDialogService dialogService
 @inject INotificationReceivingService notificationService
 @inject IExecutionSafetyManager executionSafetyManager 
+@inject IDeviceDriverProvider deviceDriverRepo
 
 <HeadContent>
     <link rel="icon" type="image/png" href="images/ARESLogo.png">
+    @foreach(var cssPath in GetPluginStylesheetPaths())
+    {
+      <link rel="stylesheet" href="@cssPath">
+    }
 </HeadContent>
 <PageTitle>ARES</PageTitle>
 
@@ -34,7 +41,7 @@
                                 <AresNavItem Text="Dashboard" Icon="dvr" Path="/"/>
                                 <AresNavItem Match="NavLinkMatch.Prefix" Expandable="true" Icon="science" Text="Automation" Path="automation">
                                     <AresNavItem Icon="brush" Text="Campaign Designer" Path="automation/campaignlist"/>
-                                    <AresNavItem Icon="stairs" Text="Custom Step Builder" Path="automation/customstepbuilder"/>
+                                    <AresNavItem Icon="stairs" Text="Step Designer" Path="automation/step_designer"/>
                                     <AresNavItem Icon="directions_run" Text="Execution" Path="automation/execution"/>
                                     <AresNavItem Icon="history" Text="Execution History" Path="automation/executionhistory"/>
                                 </AresNavItem>
@@ -144,6 +151,25 @@
       notificationService.PushNotification(notification);
     }
 
+  }
+
+  IEnumerable<string> GetPluginStylesheetPaths()
+  {
+    return deviceDriverRepo
+      .GetAllDeviceDrivers()
+      .Select(driver =>
+      {
+        var pluginFolder = Path.GetFileName(driver.ModulePath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+        var assemblyName = Path.GetFileNameWithoutExtension(driver.Manifest.AssemblyName);
+        if(string.IsNullOrWhiteSpace(pluginFolder) || string.IsNullOrWhiteSpace(assemblyName))
+        {
+          return null;
+        }
+
+        return $"/plugins/{Uri.EscapeDataString(pluginFolder)}/bin/{Uri.EscapeDataString(assemblyName)}.styles.css";
+      })
+      .OfType<string>()
+      .Distinct(StringComparer.OrdinalIgnoreCase);
   }
 
 }
