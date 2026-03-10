@@ -631,6 +631,9 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<int>("BaudRate")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
@@ -642,6 +645,9 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .HasDefaultValueSql("getdate()");
 
                     b.Property<string>("PortName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SerialId")
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("UniqueId");

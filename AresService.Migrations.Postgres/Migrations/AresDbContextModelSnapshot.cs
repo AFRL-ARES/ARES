@@ -629,6 +629,9 @@ namespace AresService.Migrations.Postgres.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<int>("BaudRate")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
@@ -640,6 +643,9 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("PortName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SerialId")
                         .HasColumnType("text");
 
                     b.HasKey("UniqueId");

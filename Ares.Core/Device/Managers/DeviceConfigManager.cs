@@ -54,12 +54,17 @@ public class DeviceConfigManager : IDeviceConfigManager
   public async Task Update(string id, DeviceConfig config)
   {
     await using var context = _dbContextFactory.CreateDbContext();
-    var genericConfig = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.UniqueId == id);
-    if(genericConfig is null)
+    var existingConfig = await context.DeviceConfigs.FirstOrDefaultAsync(c => c.UniqueId == id);
+    if(existingConfig is null)
       return;
 
-    genericConfig = config;
+    existingConfig.DeviceName = config.DeviceName;
+    existingConfig.SerialInfo = config.SerialInfo;
+    existingConfig.DeviceSettings = config.DeviceSettings;
+    existingConfig.DriverId = config.DriverId;
+    existingConfig.IsSimulated = config.IsSimulated;
+
     await context.SaveChangesAsync();
-    _configRepo.AddOrUpdate(config);
+    _configRepo.AddOrUpdate(existingConfig);
   }
 }

@@ -1,6 +1,7 @@
 using Ares.Core.Device.Plugins.Drivers;
 using Ares.Core.Device.Providers;
 using Ares.Core.Device.Repos;
+using Ares.Core.Notifications;
 using Ares.Core.Resources;
 using Ares.Datamodel.Device;
 using Ares.Device;
@@ -21,6 +22,7 @@ public class DeviceManager : IDeviceManager
   private readonly IDeviceConfigProvider _configProvider;
   private readonly IDeviceConfigManager _configManager;
   private readonly IDriverDatabaseManager _driverDatabaseManager;
+  private readonly INotificationHandler _notificationHandler;
   private readonly IAresDeviceRepo _deviceRepo;
   private readonly IServiceProvider _serviceProvider;
   private readonly ILoggerFactory _loggerFactory;
@@ -33,6 +35,7 @@ public class DeviceManager : IDeviceManager
     IAresDeviceRepo deviceRepository,
     IDriverDatabaseManager driverDatabaseManager,
     IDeviceConfigManager deviceConfigManager,
+    INotificationHandler notificationHandler,
     IDeviceConfigProvider configProvider,
     IServiceProvider serviceProvider,
     ILoggerFactory loggerFactory,
@@ -42,6 +45,7 @@ public class DeviceManager : IDeviceManager
     _deviceRepo = deviceRepository;
     _driverDatabaseManager = driverDatabaseManager;
     _configManager = deviceConfigManager;
+    _notificationHandler = notificationHandler;
     _configProvider = configProvider;
     _serviceProvider = serviceProvider;
     _loggerFactory = loggerFactory;
@@ -175,9 +179,22 @@ public class DeviceManager : IDeviceManager
 
       //No matching driver is present
       else
+      {
+        var noNewDriverMessage = $"ARES detected the driver for {config.DeviceName} was deleted, an archived driver was found, but ARES could not find a new driver for the device." +
+          $"To avoid the presence of ghost devices, ARES has deleted this device from your system.";
+        _logger.LogWarning(noNewDriverMessage);
+        await _notificationHandler.HandleNotification("Device Automatically Deleted", noNewDriverMessage, NotificationSeverityEnum.Warning);
+
+        await _configManager.Remove(config.UniqueId);
         return null;
+      }
     }
 
+    var message = $"ARES detected the driver for {config.DeviceName} was deleted, but no reference of this devices driver was found in the driver archive." +
+    $"To avoid the presence of ghost devices, ARES has deleted this device from your system.";
+    _logger.LogWarning(message);
+    await _notificationHandler.HandleNotification("Device Automatically Deleted", message, NotificationSeverityEnum.Warning);
+    await _configManager.Remove(config.UniqueId);
     return null;
   }
 
