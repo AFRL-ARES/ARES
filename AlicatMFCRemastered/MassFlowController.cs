@@ -34,19 +34,26 @@ public class MassFlowController : AresDevice, IMassFlowController
   private readonly IMfcConnection _serialConnection;
   private MfcTypeEnum _mfcType;
 
-  public MassFlowController(string name, string id, SerialConnection serialConnectionInfo, AresStruct config) : base(name, id)
+  public MassFlowController(DeviceConnectionInfo connectionInfo) : base(connectionInfo)
   {
-    HasValve = config.Fields["HasValve"]?.BoolValue ?? false;
-    _mfcType = config.Fields["IsBasis"].BoolValue ? MfcTypeEnum.Basis2 : MfcTypeEnum.Normal;
+    HasValve = connectionInfo.DeviceSettings.Fields["HasValve"]?.BoolValue ?? false;
+    _mfcType = connectionInfo.DeviceSettings.Fields["IsBasis"].BoolValue ? MfcTypeEnum.Basis2 : MfcTypeEnum.Normal;
 
     //_logger = logger;
     StateStream = _stateSubject.AsObservable();
-    AssumedId = config.Fields["serialId"].StringValue[0];
-    _serialConnection = new SimMassFlowControllerConnection(serialConnectionInfo.PortName);
-    if(_serialConnection is SimMassFlowControllerConnection simmyboi)
+    var serialInfo = connectionInfo.SerialConnectionInfo;
+    AssumedId = serialInfo.HasSerialId ? serialInfo.SerialId[0] : 'A';
+
+    if(connectionInfo.Simulated)
     {
-      simmyboi.AddCat('A', _mfcType);
+      var temp = new SimMassFlowControllerConnection(serialInfo.PortName);
+      temp.AddCat(AssumedId, _mfcType);
+      _serialConnection = temp;
     }
+
+    else
+      _serialConnection = new MassFlowControllerConnection(serialInfo.PortName);
+
     _stateWatchers = new CompositeDisposable
     {
       _serialConnection.GetTransactionStream<LiveDataResponse>().Select(transaction => transaction.Response).Subscribe(UpdateLiveData)

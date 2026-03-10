@@ -1,6 +1,5 @@
 ﻿using Ares.Datamodel;
 using Ares.Datamodel.Device;
-using Ares.Datamodel.Templates;
 using Ares.Device;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -11,11 +10,11 @@ public class TestDevice : AresDevice
 {
   private readonly BehaviorSubject<AresStruct> _stateSubject = new(new AresStruct());
 
-  public TestDevice() : base("Test Device", "TestDevice")
+  public TestDevice() : base(new DeviceConnectionInfo { DeviceId = "TestDevice", DeviceName = "Test Device"})
   {
   }
 
-  public TestDevice(string name, string id) : base(name, id)
+  public TestDevice(string name, string id) : base(new DeviceConnectionInfo { DeviceName = name, DeviceId = id })
   {
   }
 

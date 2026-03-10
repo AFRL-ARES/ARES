@@ -19,6 +19,7 @@ public class DeviceManager : IDeviceManager
 {
   private readonly IDeviceDriverProvider _driverProvider;
   private readonly IDeviceConfigProvider _configProvider;
+  private readonly IDeviceConfigManager _configManager;
   private readonly IDriverDatabaseManager _driverDatabaseManager;
   private readonly IAresDeviceRepo _deviceRepo;
   private readonly IServiceProvider _serviceProvider;
@@ -31,6 +32,7 @@ public class DeviceManager : IDeviceManager
     IDeviceDriverProvider driverProvider,
     IAresDeviceRepo deviceRepository,
     IDriverDatabaseManager driverDatabaseManager,
+    IDeviceConfigManager deviceConfigManager,
     IDeviceConfigProvider configProvider,
     IServiceProvider serviceProvider,
     ILoggerFactory loggerFactory,
@@ -39,6 +41,7 @@ public class DeviceManager : IDeviceManager
     _driverProvider = driverProvider;
     _deviceRepo = deviceRepository;
     _driverDatabaseManager = driverDatabaseManager;
+    _configManager = deviceConfigManager;
     _configProvider = configProvider;
     _serviceProvider = serviceProvider;
     _loggerFactory = loggerFactory;
@@ -100,13 +103,16 @@ public class DeviceManager : IDeviceManager
       // Create logger
       var logger = _loggerFactory.CreateLogger(typeof(IAresDevice));
 
-      IAresDevice device;
+      var connectionInfo = new DeviceConnectionInfo()
+      {
+        DeviceId = deviceId,
+        DeviceName = config.DeviceName,
+        Simulated = config.IsSimulated,
+        DeviceSettings = config.DeviceSettings,
+        SerialConnectionInfo = config.SerialInfo
+      };
 
-      if(driver.ConnectionType == ConnectionType.Serial)
-        device = (IAresDevice)ActivatorUtilities.CreateInstance(_serviceProvider, driver.DriverType, [config.DeviceName, config.DeviceId, config.SerialInfo, config.DeviceSettings]);
-
-      else
-        device = (IAresDevice)ActivatorUtilities.CreateInstance(_serviceProvider, driver.DriverType, [config.DeviceName, config.DeviceId, config.DeviceSettings, logger]);
+      var device = (IAresDevice)ActivatorUtilities.CreateInstance(_serviceProvider, driver.DriverType, [connectionInfo]);
 
       if(config.SerialInfo is not null)
       {
@@ -163,6 +169,7 @@ public class DeviceManager : IDeviceManager
       if(currentMatch is not null)
       {
         config.DriverId = currentMatch.UniqueId;
+        await _configManager.Update(config.UniqueId, config);
         return currentMatch;
       }
 

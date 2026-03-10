@@ -1,7 +1,6 @@
 ﻿using Ares.Datamodel;
 using Ares.Datamodel.Device;
 using Ares.Datamodel.Factories;
-using Ares.Datamodel.Templates;
 using Ares.Device;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -13,7 +12,7 @@ public class AresCoreDevice : AresDevice
 {
   private readonly BehaviorSubject<AresStruct> _stateSubject = new(new AresStruct());
 
-  public AresCoreDevice() : base("ARES", "ARES-CORE-DEVICE")
+  public AresCoreDevice() : base(new DeviceConnectionInfo {DeviceName = "ARES", DeviceId = "ARES-CORE-DEVICE" })
   {
     Status = new DeviceOperationalStatus()
     {

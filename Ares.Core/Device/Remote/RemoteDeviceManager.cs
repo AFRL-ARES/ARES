@@ -51,8 +51,18 @@ internal class RemoteDeviceManager(
       throw new InvalidOperationException($"Failed to load a remote device {config.Name} because the url {config.Url} is invalid.");
     }
 
-    var device = new RemoteDevice(config.Name, uri, config.UniqueId);
+    var remoteInfo = new RemoteConnectionInfo
+    {
+      Address = config.Url,
+      ConnectionInfo = new DeviceConnectionInfo
+      {
+        DeviceId = config.UniqueId,
+        DeviceName = config.Name,
+        Simulated = false,
+      }
+    };
 
+    var device = new RemoteDevice(remoteInfo);
     return device;
   }
 

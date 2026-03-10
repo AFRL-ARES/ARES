@@ -24,11 +24,11 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     PollingType = PollingType.Interval
   };
 
-  public RemoteDevice(string name, Uri address, string id) : base(name, id)
+  public RemoteDevice(RemoteConnectionInfo remoteInfo) : base(remoteInfo.ConnectionInfo)
   {
-    _channel = GrpcChannel.ForAddress(address);
-    UniqueId = id;
-    Address = address;
+    _channel = GrpcChannel.ForAddress(remoteInfo.Address);
+    UniqueId = remoteInfo.ConnectionInfo.DeviceId;
+    Address = new Uri(remoteInfo.Address);
   }
 
   public Uri Address { get; }
