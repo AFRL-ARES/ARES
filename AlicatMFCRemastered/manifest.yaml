@@ -9,16 +9,17 @@ connection_type: "Serial"
 # The DLL that contains the MassFlowController and ViewModel classes
 assembly_name: "AlicatMFCRemastered.dll"
 
+# Serial connection specifics (Parsed only if connection_type is "Serial")
+serial_settings:
+  requires_unit_id: true
+  unit_id_regex: "^[A-Z]$"
+  unit_id_validation_hint: "Alicat Unit IDs must be a single letter (A-Z)."
+  variable_baud_rate: true
+  allowed_baud_rates: [9600, 19200, 38400, 57600, 115200]
+  default_baud_rate: 19200 # Keeps the UI friendly by pre-filling
+
 # Settings required when adding the device through the ARES UI
 settings:
-  - key: "serialId"
-    display_name: "Unit ID"
-    type: "string"
-    description: "The hardware ID of the Alicat unit (e.g., A, B, C)."
-    constraints:
-      regex: "^[A-Z]$"
-      validation_hint: "Alicat Unit IDs must be a single letter (A-Z)."
-
   - key: "HasValve"
     display_name: "Has Integrated Valve"
     type: "boolean"

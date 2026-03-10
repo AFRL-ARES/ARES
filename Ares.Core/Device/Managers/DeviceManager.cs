@@ -88,15 +88,11 @@ public class DeviceManager : IDeviceManager
     => await Load(config.UniqueId, config);
   
 
-  public async Task<IAresDevice?> Load(string deviceId, DeviceConfig config)
+  public async Task<IAresDevice?> Load(string configId, DeviceConfig config)
   {
     try
     {
       var driver = _driverProvider.GetDriverById(config.DriverId);
-
-      if(driver is null)
-        driver = await HandleMissingDriver(config);
-      
 
       if(driver is null)
       {
@@ -109,7 +105,7 @@ public class DeviceManager : IDeviceManager
 
       var connectionInfo = new DeviceConnectionInfo()
       {
-        DeviceId = deviceId,
+        DeviceId = config.DeviceId,
         DeviceName = config.DeviceName,
         Simulated = config.IsSimulated,
         DeviceSettings = config.DeviceSettings,
@@ -125,7 +121,16 @@ public class DeviceManager : IDeviceManager
         var success = _resourceConnectionArbiter.TryAcquireResource(serialConnectionResource, device);
 
         if(!success)
-          throw new InvalidOperationException($"Failed to create device, resource already in use!");
+        {
+          var owner = _resourceConnectionArbiter.GetResourceOwner(serialConnectionResource);
+          if(owner?.UniqueId == device.UniqueId)
+          {
+            var message = $"Failed to add device {device.Name} as the resource it tried to use ({serialConnectionResource.ResourceName}) was already in use by another device.";
+            _logger.LogError(message);
+            await _notificationHandler.HandleNotification("Failed to Add Device", message, NotificationSeverityEnum.Error);
+            return null;
+          }
+        }
       }
 
       _deviceRepo.AddOrUpdate(device);
@@ -156,46 +161,6 @@ public class DeviceManager : IDeviceManager
   {
     await Remove(deviceId);
     return await Load(deviceId, config);
-  }
-
-  private async Task<DeviceDriver?> HandleMissingDriver(DeviceConfig config)
-  {
-    var archivedDrivers = await _driverDatabaseManager.GetAllDrivers();
-    var currentDrivers = _driverProvider.GetAllDeviceDrivers();
-    var matchingArchivedDriver = archivedDrivers.FirstOrDefault(d => d.DriverId == config.DriverId);
-
-    //This means we knew of the old driver, and should search to see if a potential replacement exists
-    if(matchingArchivedDriver is not null)
-    {
-      var currentMatch = currentDrivers.FirstOrDefault(cd => cd.Manifest.DeviceTypeName == matchingArchivedDriver.DisplayName);
-
-      //We successfully found a current driver matching the archived one, load it instead.
-      if(currentMatch is not null)
-      {
-        config.DriverId = currentMatch.UniqueId;
-        await _configManager.Update(config.UniqueId, config);
-        return currentMatch;
-      }
-
-      //No matching driver is present
-      else
-      {
-        var noNewDriverMessage = $"ARES detected the driver for {config.DeviceName} was deleted, an archived driver was found, but ARES could not find a new driver for the device." +
-          $"To avoid the presence of ghost devices, ARES has deleted this device from your system.";
-        _logger.LogWarning(noNewDriverMessage);
-        await _notificationHandler.HandleNotification("Device Automatically Deleted", noNewDriverMessage, NotificationSeverityEnum.Warning);
-
-        await _configManager.Remove(config.UniqueId);
-        return null;
-      }
-    }
-
-    var message = $"ARES detected the driver for {config.DeviceName} was deleted, but no reference of this devices driver was found in the driver archive." +
-    $"To avoid the presence of ghost devices, ARES has deleted this device from your system.";
-    _logger.LogWarning(message);
-    await _notificationHandler.HandleNotification("Device Automatically Deleted", message, NotificationSeverityEnum.Warning);
-    await _configManager.Remove(config.UniqueId);
-    return null;
   }
 
   public IReadOnlyCollection<T> GetAll<T>() where T : IAresDevice => _deviceRepo.GetAll<T>();

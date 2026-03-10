@@ -60,13 +60,6 @@ public class MassFlowController : AresDevice, IMassFlowController
     };
 
     _expectedDataFormatEntryCount = _mfcType == MfcTypeEnum.Normal ? 12 : 7;
-    _stateSubject.OnNext(AresStateBuilder.Create()
-      .Add("Id", AssumedId.ToString())
-      .Add("Name", Name)
-      .Add("HasValve", HasValve)
-      .Add("Firmware", FirmwareVersion)
-      .AddList("Gases", Array.Empty<AresValue>(), _ => _)
-      .Build());
   }
 
   public async Task<bool> QueryManufacturerInfo()
@@ -527,12 +520,14 @@ public class MassFlowController : AresDevice, IMassFlowController
       throw new NullReferenceException("Initialize was called, but Connection was not set");
 
     await StopUpdateLoop();
-    var state = AresStateBuilder
-      .Create()
-      .Add("HasValve", HasValve)
-      .Build();
 
-    _stateSubject.OnNext(state);
+    _stateSubject.OnNext(AresStateBuilder.Create()
+      .Add("Id", AssumedId.ToString())
+      .Add("Name", Name)
+      .Add("HasValve", HasValve)
+      .Add("Firmware", FirmwareVersion)
+      .AddList("Gases", Array.Empty<AresValue>(), _ => _)
+      .Build());
 
     if(_mfcType == MfcTypeEnum.Normal)
     {
@@ -765,7 +760,6 @@ public class MassFlowController : AresDevice, IMassFlowController
     if(_stateSubject.Value is null)
       return;
 
-
     var newState = AresStateBuilder
       .From(_stateSubject.Value)
       .AddList(
@@ -791,16 +785,6 @@ public class MassFlowController : AresDevice, IMassFlowController
   {
     var dataFormatEntries = _dataFrameFormatEntries?.Where(entry => entry is not null).ToArray() ?? Array.Empty<DataFrameFormatEntry>();
     return dataFormatEntries!;
-  }
-
-  private Task<IObservable<T>> Send<T>(MfcCommandWithStreamedResponse<T> command) where T : CommandResponse
-  {
-    return _serialConnection.SendAndStream(command);
-  }
-
-  private Task Send(MfcCommand command)
-  {
-    return _serialConnection.Send(command);
   }
 
   private Task<T> Send<T>(MfcCommandExpectingResponse<T> command) where T : CommandResponse

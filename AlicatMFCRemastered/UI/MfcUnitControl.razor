@@ -1,44 +1,51 @@
 ﻿@using AlicatMFCRemastered.Enums
 @using AlicatMFCRemastered.UI
+@using Radzen
+@using Radzen.Blazor
 
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<MfcUnitControlViewModel>
 
 <div class="mfc-container m-0 p-0">
-    <div class="mfc-id">
+  <div class="mfc-id">
     [@ViewModel!.AlicatState.Id]
-    </div>
-    <div class="mfc-title">
-      @ViewModel!.Device.Name
-    </div>
-  @if (ViewModel!.HasValidData)
+  </div>
+  <div class="mfc-title">
+    @ViewModel!.Device.Name
+  </div>
+
+  @if(ViewModel!.HasValidData)
   {
     <div class="mfc-gas">
       @(ViewModel!.AlicatState.ActiveGas)
     </div>
     <div class="mfc-state">
-      <div class="mfc-absolute-pressure field-descriptor">Absolute Pressure</div>
-      <div class="mfc-absolute-pressure">@($"{ViewModel!.AlicatState.LiveData.AbsolutePressure}")</div>
-      <input type="submit" class="btn btn-sm btn-secondary mfc-absolute-pressure p-0" value="Tare" @onclick="ViewModel.TareAbsolutePressureWithBarometer" />
-      
-      <div class="mfc-temperature field-descriptor">Temperature</div>
-      <div class="mfc-temperature">@($"{ViewModel!.AlicatState.LiveData.Temperature}")</div>      
+      <div class="field-descriptor">Temperature</div>
+      <div>@($"{ViewModel!.AlicatState.LiveData.Temperature}")</div>
+      <div></div> <div class="field-descriptor">Absolute Pressure</div>
+      <div>@($"{ViewModel!.AlicatState.LiveData.AbsolutePressure}")</div>
+      <RadzenButton Text="Tare" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.ExtraSmall" Click="@(() => ViewModel.TareAbsolutePressureWithBarometerCommand.Execute().Subscribe())" />
 
-      <div class="mfc-volumetric-flow field-descriptor">Volumetric Flow</div>
-      <div class="mfc-volumetric-flow">@($"{ViewModel!.AlicatState.LiveData.VolumetricFlow}")</div>
+      <div class="field-descriptor">Volumetric Flow</div>
+      <div>@($"{ViewModel!.AlicatState.LiveData.VolumetricFlow}")</div>
+      <div></div> <div class="field-descriptor">Mass Flow</div>
+      <div>@($"{ViewModel!.AlicatState.LiveData.MassFlow}")</div>
+      <RadzenButton Text="Tare" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.ExtraSmall" Click="@(() => ViewModel.TareFlowCommand.Execute().Subscribe())" />
 
-      <div class="mfc-mass-flow field-descriptor">Mass Flow</div>
-      <div class="mfc-mass-flow">@($"{ViewModel!.AlicatState.LiveData.MassFlow}")</div>
-      <input type="submit" class="btn btn-sm btn-secondary mfc-mass-flow p-0" value="Tare" @onclick="ViewModel.TareFLow" />
-
-
-      <div class="mfc-setpoint field-descriptor">Setpoint</div>
-      <div class="mfc-setpoint">@($"{ViewModel!.AlicatState.LiveData.Setpoint}")</div>
-      <div class="mfc-setpoint-control field-descriptor">New Setpoint</div>
-      <input type="number" class="form-control form-control-sm text-center mfc-setpoint-control mfc-setpoint-input" @bind="@ViewModel!.TargetSetpoint" placeholder="@ViewModel!.AlicatState.LiveData.Setpoint" tabindex="ViewModel!.TargetSetpoint" />
-      <input type="submit" class="btn btn-sm btn-secondary mx-2 mfc-setpoint-control" value="Set" @onclick="ViewModel.SetSetpoint" />
-
-      <div class="mfc-valve-drive field-descriptor">Valve Drive</div>
-      <div class="mfc-valve-drive">@($"{ViewModel!.AlicatState.LiveData.ValveDrive}")</div>
+      <div class="field-descriptor">Valve Drive</div>
+      <div>@($"{ViewModel!.AlicatState.LiveData.ValveDrive}")</div>
+      <div></div> <div class="field-descriptor">Setpoint</div>
+      <div>@($"{ViewModel!.AlicatState.LiveData.Setpoint}")</div>
+      <div></div> <div class="field-descriptor">New Setpoint</div>
+      <RadzenNumeric TValue="double?"
+                     @bind-Value="@ViewModel!.TargetSetpoint"
+                     Placeholder="@ViewModel!.AlicatState.LiveData.Setpoint.ToString()"
+                     ShowUpDown="false"
+                     class="mfc-setpoint-input text-center"
+                     Style="width: 100%;" />
+      <RadzenButton Text="Set"
+                    ButtonStyle="ButtonStyle.Secondary"
+                    Size="ButtonSize.Small"
+                    Click="@ViewModel!.SetSetpoint" />
     </div>
 
     @if(ViewModel!.AlicatState.HasValve)
@@ -46,42 +53,31 @@
       <fieldset class="valve-control p-1">
         <legend class="float-none w-auto valve-legend">Valve Hold Control</legend>
         <div class="valve-control-grid">
-          <button disabled="@(ValveHolding || ValveInteracting)" @onclick="HoldCurrentClicked" class="btn btn-secondary">
-            @if (_waitingOnHoldCurrent)
-            {
-              <LoadingSpinner SpinnerSize="SpinnerSize.Small"/>
-            }
-            else
-            {
-              <span>Current</span>
-            }
-          </button>
-          <button disabled="@(ValveHolding || ValveInteracting)" @onclick="HoldCloseClicked" class="btn btn-secondary">
-            @if (_waitingOnHoldClose)
-            {
-              <LoadingSpinner SpinnerSize="SpinnerSize.Small"/>
-            }
-            else
-            {
-              <span>Close</span>
-            }
-          </button>
-          <button disabled="@(!ValveHolding || ValveInteracting)" @onclick="CancelHoldClicked" class="btn btn-secondary">
-            @if (_cancellingHold)
-            {
-              <LoadingSpinner SpinnerSize="SpinnerSize.Small"/>
-            }
-            else
-            {
-              <span>Cancel</span>
-            }
-          </button></div>
+          <RadzenButton Text="Current"
+                        Disabled="@(ValveHolding || ValveInteracting)"
+                        IsBusy="@_waitingOnHoldCurrent"
+                        Click="@HoldCurrentClicked"
+                        ButtonStyle="ButtonStyle.Secondary" />
+
+          <RadzenButton Text="Close"
+                        Disabled="@(ValveHolding || ValveInteracting)"
+                        IsBusy="@_waitingOnHoldClose"
+                        Click="@HoldCloseClicked"
+                        ButtonStyle="ButtonStyle.Secondary" />
+
+          <RadzenButton Text="Cancel"
+                        Disabled="@(!ValveHolding || ValveInteracting)"
+                        IsBusy="@_cancellingHold"
+                        Click="@CancelHoldClicked"
+                        ButtonStyle="ButtonStyle.Secondary" />
+        </div>
       </fieldset>
     }
-    <div class="d-flex gap-2 status-codes">
-      @foreach (var stat in ViewModel!.StatusCodes.Items)
+
+    <div class="d-flex gap-2 status-codes mt-3">
+      @foreach(var stat in ViewModel!.StatusCodes.Items)
       {
-        <div class="status-display mt-3 px-2 py-1 rounded-3">@stat.ToString().ToUpper()</div>
+        <RadzenBadge BadgeStyle="BadgeStyle.Dark" Text="@stat.ToString().ToUpper()" class="px-2 py-1 rounded-3" />
       }
     </div>
   }
@@ -105,7 +101,7 @@
     _cancellingHold = true;
     ViewModel!.CancelValveHoldCommand.Execute().Subscribe();
     _cancellingHold = false;
-    StateHasChanged();
+    // StateHasChanged() might not be strictly necessary here if Radzen handles the event lifecycle, but safe to keep if ReactiveUI needs it
   }
 
   private async Task HoldCurrentClicked()
@@ -113,7 +109,6 @@
     _waitingOnHoldCurrent = true;
     ViewModel!.HoldValvesAtCurrentPositionCommand.Execute().Subscribe();
     _waitingOnHoldCurrent = false;
-    StateHasChanged();
   }
 
   private async Task HoldCloseClicked()
@@ -121,6 +116,5 @@
     _waitingOnHoldClose = true;
     ViewModel!.HoldValvesClosedCommand.Execute().Subscribe();
     _waitingOnHoldClose = false;
-    StateHasChanged();
   }
 }

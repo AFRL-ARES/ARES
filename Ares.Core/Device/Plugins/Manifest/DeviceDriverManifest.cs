@@ -8,9 +8,15 @@ namespace Ares.Core.Device.Plugins.Manifest;
 /// </summary>
 public class DeviceDriverManifest
 {
+  /// <summary>
+  /// The name of the associated device type this driver was built for.
+  /// </summary>
   [JsonPropertyName("device_type_name")]
   public string DeviceTypeName { get; set; } = string.Empty;
 
+  /// <summary>
+  /// The ID associated with this driver.
+  /// </summary>
   [JsonPropertyName("driver_id")]
   public string DriverId { get; set; } = string.Empty;
 
@@ -20,8 +26,17 @@ public class DeviceDriverManifest
   [JsonPropertyName("version")]
   public string Version { get; set; } = "1.0.0";
 
+  /// <summary>
+  /// The connection type the device uses for communication.
+  /// </summary>
   [JsonPropertyName("connection_type")]
   public string ConnectionType { get; set; } = string.Empty;
+
+  /// <summary>
+  /// Serial connection specifics. Will be null if connection_type is not "Serial".
+  /// </summary>
+  [JsonPropertyName("serial_settings")]
+  public SerialSettingsDefinition? SerialSettings { get; set; }
 
   /// <summary>
   /// The name of the DLL (e.g., "AlicatMFCRemastered.dll") that contains 

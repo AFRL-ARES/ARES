@@ -10,7 +10,7 @@
 
     @if(ViewModel!.ConnectionType == ConnectionType.Serial)
     {
-    <input type="text" placeholder="@(ViewModel!.SelectedSerialPort is null ? "Port" : ViewModel!.SelectedSerialPort)" list="port-list" @onchange="PortChanged" class="form-select mfc-port" disabled="@(!ViewModel!.NewConfig)" />
+      <input type="text" placeholder="@(ViewModel!.SelectedSerialPort is null ? "Port" : ViewModel!.SelectedSerialPort)" list="port-list" @onchange="PortChanged" class="form-select mfc-port" disabled="@(!ViewModel!.NewConfig)" />
       <datalist id="port-list">
         @if(ViewModel!.AvailableSerialPorts is not null)
         {
@@ -20,6 +20,33 @@
           }
         }
       </datalist>
+
+      if(ViewModel!.BaudRateOptions.Any())
+      {
+        <RadzenLabel Text="Baud Rate" Component="BaudRateDropdown" Style="margin-right: 8px;" />
+    
+        <RadzenDropDown TValue="int" 
+          Data="@ViewModel!.BaudRateOptions" 
+          @bind-Value="ViewModel!.SelectedBaudRate"
+          Style="width: 100%; max-width: 200px;" 
+          Name="BaudRateDropdown" />
+      }
+
+      if(ViewModel!.RequiresId)
+      {
+        <div class="rz-p-sm-4">
+            <RadzenLabel Text="Unit ID" Component="UnitIdInput" Style="display: block; margin-bottom: 4px;" />
+    
+            <RadzenTextBox @bind-Value="ViewModel!.SerialUnitId" 
+                           Name="UnitIdInput" 
+                           Style="width: 100%; max-width: 200px;" />
+
+            <RadzenRegexValidator Component="UnitIdInput" 
+                                  Text="@ViewModel!.UnitIdHint" 
+                                  Pattern="@ViewModel!.IdRegex" 
+                                  Style="display: block; margin-top: 4px; font-size: 0.8em;" />
+        </div>
+      }
     }
 
     @foreach (var prop in ViewModel!.DriverSettingsSchema.Fields)
@@ -29,6 +56,11 @@
       Schema="prop.Value"
       ValueEditCallback="@(value => ValueEditCallback(prop.Key, value))"/>
     }
+
+    <div style="display: flex; align-items: center; gap: 8px;" class="rz-p-sm-4">
+      <RadzenSwitch @bind-Value="ViewModel!.IsSimulated" Name="SimulatedDeviceSwitch" />
+      <RadzenLabel Text="Run as Simulated Device" Component="SimulatedDeviceSwitch" />
+    </div>
   </div>
   <button type="submit" class="btn my-3 btn-outline-primary">Save Device</button>
 </RadzenTemplateForm>

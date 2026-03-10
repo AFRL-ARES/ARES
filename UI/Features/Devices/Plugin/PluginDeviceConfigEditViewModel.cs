@@ -7,6 +7,7 @@ using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System.Reactive.Linq;
+using System.Text.RegularExpressions;
 
 namespace UI.Features.Devices.Plugin;
 
@@ -19,6 +20,13 @@ public partial class PluginDeviceConfigEditViewModel : ReactiveObject
 
   public PluginDeviceConfigEditViewModel(DeviceConfig deviceConfig, DeviceDriver driver, bool isNew, DevicesService devicesService)
   {
+    AvailableSerialPorts = [];
+    SerialConnection = deviceConfig.SerialInfo;
+    BaudRateOptions = [];
+    UnitIdHint = string.Empty;
+    SerialUnitId = string.Empty;
+    SelectedSerialPort = string.Empty;
+
     NewConfig = isNew;
     Driver = driver;
     _originalConfig = deviceConfig ?? throw new ArgumentNullException(nameof(deviceConfig));
@@ -33,22 +41,65 @@ public partial class PluginDeviceConfigEditViewModel : ReactiveObject
 
     DriverSettingsSchema = driver.DriverSettings ?? new AresStructSchema();
     ConnectionType = driver.ConnectionType;
-    AvailableSerialPorts = _devicesService.GetServerSerialPorts(new Empty(), null).Result.SerialPorts.ToList();
     DeviceSettings = isNew ? new AresStruct() : deviceConfig.DeviceSettings;
+    IsSimulated = isNew ? false : deviceConfig.IsSimulated;
+
+
+    if(ConnectionType == ConnectionType.Serial)
+      InitializeSerialSettings();
+  }
+
+  private void InitializeSerialSettings()
+  {
+    var serialSettings = Driver.Manifest.SerialSettings;
+    AvailableSerialPorts = _devicesService.GetServerSerialPorts(new Empty(), null).Result.SerialPorts.ToList();
     SelectedSerialPort = _originalConfig.SerialInfo?.PortName ?? string.Empty;
+    if(serialSettings is not null)
+    {
+      if(serialSettings.VariableBaudRate)
+      {
+        BaudRateOptions = serialSettings.AllowedBaudRates ?? [];
+        SelectedBaudRate = serialSettings.DefaultBaudRate;
+      }
+
+      if(serialSettings.RequiresUnitId && _originalConfig.SerialInfo is not null)
+      {
+        RequiresId = true;
+        UnitIdHint = serialSettings.UnitIdValidationHint;
+        IdRegex = serialSettings.UnitIdRegex ?? "[\\s\\S]";
+        SerialUnitId = _originalConfig.SerialInfo.HasSerialId ? _originalConfig.SerialInfo.SerialId : string.Empty;
+      }
+    }  
   }
 
   public AresValue? GetMatchingSettingValue(string key) 
     => _originalConfig.DeviceSettings?.Fields.FirstOrDefault(f => f.Key == key).Value ?? null;
 
   public DeviceConfig Save()
-    => Modified ? new DeviceConfig
+  {
+    if(Modified)
     {
-      DeviceName = Name,
-      DriverId = Driver.UniqueId,
-      DeviceSettings = DeviceSettings ?? new AresStruct(),
-      SerialInfo = new SerialConnection { PortName = SelectedSerialPort }
-    } : _originalConfig;
+      var newConfig = new DeviceConfig();
+      newConfig.DeviceName = Name;
+      newConfig.DriverId = Driver.UniqueId;
+      newConfig.DeviceSettings = DeviceSettings;
+      newConfig.IsSimulated = IsSimulated;
+
+      if(ConnectionType == ConnectionType.Serial)
+      {
+        newConfig.SerialInfo = new SerialConnection();
+        newConfig.SerialInfo.PortName = SelectedSerialPort;
+        newConfig.SerialInfo.BaudRate = SelectedBaudRate;
+        
+        if(RequiresId)
+          newConfig.SerialInfo.SerialId = SerialUnitId; 
+      }
+
+      return newConfig;
+    }
+
+    return _originalConfig;
+  }
 
   public string Name
   {
@@ -66,5 +117,21 @@ public partial class PluginDeviceConfigEditViewModel : ReactiveObject
   [Reactive]
   public partial List<string> AvailableSerialPorts { get; set; }
   [Reactive]
+  public partial SerialConnection SerialConnection { get; set; }
+  [Reactive]
+  public partial bool RequiresId { get; set; }
+  [Reactive]
+  public partial string? IdRegex { get; set; }
+  [Reactive]
+  public partial List<int> BaudRateOptions { get; set; }
+  [Reactive]
+  public partial string UnitIdHint { get; set; }
+  [Reactive]
+  public partial string SerialUnitId { get; set; }
+  [Reactive]
+  public partial int SelectedBaudRate { get; set; }
+  [Reactive]
   public partial string SelectedSerialPort { get; set; }
+  [Reactive]
+  public partial bool IsSimulated { get; set; }
 }

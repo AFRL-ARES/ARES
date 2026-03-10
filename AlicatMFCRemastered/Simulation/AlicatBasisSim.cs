@@ -217,6 +217,7 @@ public class AlicatBasisSim : IAlicatSim
 
     if(_setpointSource == MfcSetpointSourceEnum.Analog || _setpointSource == MfcSetpointSourceEnum.UnknownSource)
     {
+      SendDataFrame();
       // ignore?
       return;
     }
