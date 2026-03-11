@@ -54,6 +54,7 @@ internal static class ExecutorSummaryHelpers
       ExecutionInfo = MakeExecutionInfo(startTime, endTime),
       CommandId = Guid.NewGuid().ToString(),
       Result = deviceResult,
+      TemplateId = template.UniqueId,
       CommandDescription = template.Metadata.Description,
       CommandName = template.Metadata.Name
     };

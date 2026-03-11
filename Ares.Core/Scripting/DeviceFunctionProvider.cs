@@ -21,7 +21,8 @@ public class DeviceFunctionProvider(IAresDeviceProvider deviceProvider) : ISyste
     foreach(var device in devices)
     {
       var devicePrefix = SanitizeIdentifier(string.IsNullOrWhiteSpace(device.Name) ? device.UniqueId : device.Name);
-      var commandDescriptors = device.CommandDescriptors.ToArray();
+      //This isn't an ideal fix, but without giving devices a seperate synchronous cache for their descriptors this is an OK temporary fix
+      var commandDescriptors = Task.Run(() => device.GetCommandDescriptorsAsync()).GetAwaiter().GetResult();
 
       foreach(var descriptor in commandDescriptors)
       {

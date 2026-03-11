@@ -1,16 +1,15 @@
-﻿using Ares.Core.Device.Repos;
+﻿using Ares.Core.Device.Providers;
 using Ares.Datamodel.Device;
 using Ares.Datamodel.Templates;
-using Ares.Device;
 
 namespace Ares.Core.Validation.Campaign;
 
 internal class RequiredDeviceInterpretersValidator : ICampaignValidator
 {
-  private readonly IAresDeviceRepo _deviceRepo;
-  public RequiredDeviceInterpretersValidator(IAresDeviceRepo deviceRepo)
+  private readonly IAresDeviceProvider _deviceProvider;
+  public RequiredDeviceInterpretersValidator(IAresDeviceProvider deviceProvider)
   {
-    _deviceRepo = deviceRepo;
+    _deviceProvider = deviceProvider;
   }
 
   public Task<ValidationResult> Validate(CampaignTemplate template)
@@ -19,7 +18,7 @@ internal class RequiredDeviceInterpretersValidator : ICampaignValidator
         stepTemp.CommandTemplates.Select(cmdTemp => cmdTemp.Metadata.DeviceId)).Distinct().ToArray();
 
     var existingRequiredDevices = requiredDeviceIds
-      .Select(_deviceRepo.GetDevice)
+      .Select(_deviceProvider.GetDevice)
       .ToArray();
 
     var missingDeviceIds = requiredDeviceIds

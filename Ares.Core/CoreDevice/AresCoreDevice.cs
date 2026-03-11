@@ -20,7 +20,6 @@ public class AresCoreDevice : AresDevice
     };
 
     StateStream = _stateSubject.AsObservable();
-    CommandDescriptors = BuildCommandDescriptors();
   }
 
   public override Task<bool> Activate(CancellationToken ct)
@@ -108,9 +107,9 @@ public class AresCoreDevice : AresDevice
     return result;
   }
 
-  private List<DeviceCommandDescriptor> BuildCommandDescriptors()
+  protected override Task<List<DeviceCommandDescriptor>> BuildCommandDescriptorsAsync()
   {
-    return
+    return Task.FromResult<List<DeviceCommandDescriptor>>(
     [
       new()
       {
@@ -138,7 +137,7 @@ public class AresCoreDevice : AresDevice
         Name = AresCoreDeviceCommand.WaitForUser.ToString(),
         Description = "Have ARES request user confirmation before continuing."
       }
-    ];
+    ]);
   }
 
   public override Task UpdateSettings(AresStruct settings)

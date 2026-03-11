@@ -40,5 +40,8 @@ public class TestDevice : AresDevice
   public override Task<AresStruct> GetSettings()
     => Task.FromResult(new AresStruct());
 
+  protected override Task<List<DeviceCommandDescriptor>> BuildCommandDescriptorsAsync()
+    => Task.FromResult<List<DeviceCommandDescriptor>>([]);
+
   public override IObservable<AresStruct> StateStream => _stateSubject.AsObservable();
 }

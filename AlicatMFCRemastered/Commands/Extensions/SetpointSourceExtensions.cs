@@ -1,6 +1,6 @@
 ﻿using AlicatMFCRemastered.Enums;
 
-namespace AlicatMFCRemastered;
+namespace AlicatMFCRemastered.Commands.Extensions;
 internal static class SetpointSourceExtensions
 {
   public static string ToStringSource(this MfcSetpointSourceEnum source) =>

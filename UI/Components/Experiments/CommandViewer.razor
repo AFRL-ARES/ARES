@@ -1,17 +1,17 @@
-﻿@using Ares.Core.Device.Repos
+﻿@using Ares.Core.Device.Providers
 @using Ares.Datamodel.Templates
 @using Ares.Services.Device
 
-@inject IAresDeviceRepo DeviceRepo;
+@inject IAresDeviceProvider DeviceProvider;
 
 @if (CommandTemplate is not null)
 {
     if (CommandTemplate.Metadata?.Name is not null)
     {
-        <div class="d-flex align-items-center">
-          <div class="border border-2 border-primary rounded px-2 py-1 mx-2">
-                @DeviceName
-            </div>
+      <div class="d-flex align-items-center">
+        <div class="border border-2 border-primary rounded px-2 py-1 mx-2">
+          @(DeviceName ?? "UNKNOWN DEVICE")
+        </div>
           <div class="border border-2 border-primary rounded px-2 py-1 mx-2">
         @CommandTemplate.Metadata.Name
       </div>
@@ -84,7 +84,7 @@
   protected override Task OnInitializedAsync()
   {
     if(CommandTemplate is not null)
-      DeviceName = DeviceRepo.FirstOrDefault(d => d.UniqueId == CommandTemplate.Metadata.DeviceId)?.Name ?? string.Empty;
+      DeviceName = DeviceProvider.GetDevice(CommandTemplate.Metadata.DeviceId)?.Name ?? string.Empty;
 
     return base.OnInitializedAsync();
   }

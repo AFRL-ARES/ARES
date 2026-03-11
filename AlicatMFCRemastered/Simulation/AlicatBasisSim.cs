@@ -1,4 +1,5 @@
-﻿using AlicatMFCRemastered.Commands.Responses;
+﻿using AlicatMFCRemastered.Commands.Extensions;
+using AlicatMFCRemastered.Commands.Responses;
 using AlicatMFCRemastered.Enums;
 using System.Diagnostics;
 using System.Text;

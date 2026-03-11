@@ -54,18 +54,20 @@ public class DevicesService(
     return new Empty();
   }
 
-  public override Task<ListAresDevicesResponse> ListAresDevices(Empty _, ServerCallContext? context)
+  public override async Task<ListAresDevicesResponse> ListAresDevices(Empty _, ServerCallContext? context)
   {
-    var aresDeviceMessages = deviceProvider
+    var aresDeviceMessagesTasks = deviceProvider
       .GetAllDevices()
       .Select(GetInfo);
+
+    var aresDeviceMessages = await Task.WhenAll(aresDeviceMessagesTasks);
 
     var response = new ListAresDevicesResponse
     {
       AresDevices = { aresDeviceMessages }
     };
 
-    return Task.FromResult(response);
+    return response;
   }
 
   public override Task<DeviceOperationalStatus> GetDeviceStatus(DeviceStatusRequest request, ServerCallContext? context)
@@ -82,20 +84,22 @@ public class DevicesService(
     }
   }
 
-  public override Task<CommandMetadatasResponse> GetCommandMetadatas(CommandMetadatasRequest request, ServerCallContext? context)
+  public override async Task<CommandMetadatasResponse> GetCommandMetadatas(CommandMetadatasRequest request, ServerCallContext? context)
   {
     var device = deviceProvider.GetDevice(request.DeviceId);
 
     var response = new CommandMetadatasResponse();
 
     if(device is null)
-      return Task.FromResult(response);
+      return response;
 
-    var metadata = CommandHelpers.ToCommandMetadata(device.CommandDescriptors, device.UniqueId);
+    var descriptors = await device.GetCommandDescriptorsAsync();
+
+    var metadata = CommandHelpers.ToCommandMetadata(descriptors, device.UniqueId);
 
     response.Metadatas.AddRange(metadata);
 
-    return Task.FromResult(response);
+    return response;
   }
 
   public override async Task<DeviceExecutionResult> ExecuteCommand(CommandTemplate request, ServerCallContext? context)
@@ -164,16 +168,17 @@ public class DevicesService(
     return Task.FromResult(response);
   }
 
-  public override Task<ListAresRemoteDevicesResponse> ListRemoteAresDevices(Empty request, ServerCallContext? context)
+  public override async Task<ListAresRemoteDevicesResponse> ListRemoteAresDevices(Empty request, ServerCallContext? context)
   {
     var remoteDevices = deviceProvider.GetAllDevices<RemoteDevice>().ToArray();
 
     var response = new ListAresRemoteDevicesResponse();
-    var infos = remoteDevices.Select(GetInfo);
+    var infoTasks = remoteDevices.Select(GetInfo);
+    var infos = await Task.WhenAll(infoTasks);
 
     response.Devices.AddRange(infos);
 
-    return Task.FromResult(response);
+    return response;
   }
 
   public override async Task<UpdateRemoteDeviceResponse> UpdateRemoteDevice(UpdateRemoteDeviceRequest request, ServerCallContext? context)
@@ -225,15 +230,15 @@ public class DevicesService(
     }
   }
 
-  public override Task<DeviceInfo> GetDeviceInfo(DeviceInfoRequest request, ServerCallContext? context)
+  public override async Task<DeviceInfo> GetDeviceInfo(DeviceInfoRequest request, ServerCallContext? context)
   {
     var device = deviceProvider.GetDevice(request.DeviceId);
     if(device is null)
-      return Task.FromResult(new DeviceInfo());
+      return new DeviceInfo();
 
-    var info = GetInfo(device);
+    var info = await GetInfo(device);
 
-    return Task.FromResult(info);
+    return info;
   }
 
   public override Task<AresStruct> GetDeviceSettings(DeviceSettingsRequest request, ServerCallContext? context)
@@ -424,7 +429,7 @@ public class DevicesService(
     return response;
   }
 
-  private DeviceInfo GetInfo(IAresDevice device)
+  private async Task<DeviceInfo> GetInfo(IAresDevice device)
   {
     var info = new DeviceInfo
     {
@@ -437,9 +442,10 @@ public class DevicesService(
 
     if(device is RemoteDevice remoteDevice)
     {
+      var descriptors = await device.GetCommandDescriptorsAsync();
       info.Url = remoteDevice.Address.ToString();
       info.SettingsSchema = remoteDevice.SettingSchema;
-      info.Commands.AddRange(remoteDevice.CommandDescriptors);
+      info.Commands.AddRange(descriptors);
     }
 
     else

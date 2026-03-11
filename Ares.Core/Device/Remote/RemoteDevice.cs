@@ -35,8 +35,6 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
 
   public ConcurrentDictionary<string, AresValue> Settings { get; } = new();
 
-  public AresStructSchema SettingSchema { get; private set; } = new();
-
   // sets the polling options with the option to restart/start the stream
   public void SetPollingSettings(DevicePollingSettings pollingSettings, bool restartStream = false)
   {
@@ -282,8 +280,6 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     await client.SetSettingsAsync(new SetSettingsRequest { Settings = aresSettings });    
   }
 
-  public IReadOnlyList<DeviceCommandDescriptor> CommandDescriptors => _commands;
-
   private AresRemoteDeviceService.AresRemoteDeviceServiceClient GetClient()
   {
     return new AresRemoteDeviceService.AresRemoteDeviceServiceClient(_channel);
@@ -304,5 +300,22 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     var client = GetClient();
     var response = await client.GetCurrentSettingsAsync(new Empty());
     return response.Settings;
+  }
+
+  protected override async Task<List<DeviceCommandDescriptor>> BuildCommandDescriptorsAsync()
+  {
+    var client = GetClient();
+    try
+    {
+      var callOpts = new CallOptions(deadline: DateTime.UtcNow.AddSeconds(5));
+      var cmdResponse = await client.GetCommandsAsync(new Empty(), callOpts);
+      _commands = [.. cmdResponse.Commands];
+      return _commands.ToList();
+    }
+    catch(RpcException)
+    {
+      Status = new DeviceOperationalStatus { OperationalState = OperationalState.Inactive, Message = $"Failed to fetch commands. Possible connection issue." };
+      return [];
+    }
   }
 }

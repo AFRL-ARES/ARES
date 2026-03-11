@@ -1,4 +1,5 @@
-﻿using Ares.Toolkit.Serial.Commands;
+﻿using AlicatMFCRemastered.Commands.Extensions;
+using Ares.Toolkit.Serial.Commands;
 
 namespace AlicatMFCRemastered.Commands.Responses.Parsers;
 internal class SetpointSourceParser : AsciiResponseParser<SetpointSourceResponse>

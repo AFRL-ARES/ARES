@@ -1,16 +1,19 @@
-﻿using AlicatMFCRemastered.Commands.Requests;
+﻿using AlicatMFCRemasterd.Commands;
+using AlicatMFCRemastered.Commands.Requests;
 using AlicatMFCRemastered.Commands.Responses;
 using AlicatMFCRemastered.Commands.Responses.Streamed;
+using AlicatMFCRemastered.Commands.Types;
 using AlicatMFCRemastered.Enums;
 using AlicatMFCRemastered.Models;
 using AlicatMFCRemastered.Simulation;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
 using Ares.Datamodel.Extensions;
+using Ares.Datamodel.Factories;
 using Ares.Device;
 using Ares.Toolkit.Serial;
-using DynamicData;
 using Parsers.AlicatMFCRemastered;
+using ReactiveUI;
 using System.Diagnostics;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
@@ -28,7 +31,6 @@ public class MassFlowController : AresDevice, IMassFlowController
   private CancellationTokenSource _stateGetterLoopTokenSource = new();
   private CompositeDisposable _stateWatchers = new();
   private Task _stateUpdater = Task.CompletedTask;
-  //readonly ILogger<IAresDevice> _logger;
   private List<GasInfoEntry> _gases = new();
   private List<ManufacturerInfoEntry> _manufacturerInfo = new();
   private List<DataFrameFormatEntry> _dataFrameFormatEntries = new();
@@ -475,6 +477,7 @@ public class MassFlowController : AresDevice, IMassFlowController
     {
       await Initialize();
       activated = true;
+      Status = new DeviceOperationalStatus { OperationalState = OperationalState.Active, Message = $"MFC {Name} is active!" };
     }
     catch(Exception e)
     {
@@ -814,9 +817,117 @@ public class MassFlowController : AresDevice, IMassFlowController
     await StartUpdateLoop(TimeSpan.FromMilliseconds(500));
   }
 
-  public override Task<CommandResult> ExecuteCommand(string command, List<DeviceCommandArgument> arguments, CancellationToken token)
+  
+  public override async Task<CommandResult> ExecuteCommand(string command, List<DeviceCommandArgument> arguments, CancellationToken token)
   {
-    throw new NotImplementedException();
+    if(!Enum.TryParse<MassFlowControllerCommand>(command, out var deviceCommandEnum))
+    {
+      return new CommandResult
+      {
+        Success = false,
+        Error = $"Invalid or unsupported command: '{command}'"
+      };
+    }
+
+    var result = new CommandResult { Success = true };
+
+    // Helper function to safely extract an argument by name (assuming DeviceCommandArgument has Name and Value properties)
+    AresValue? GetArg(MassFlowControllerCommandParameter param) =>
+        arguments.FirstOrDefault(a => a.ArgName == param.ToString())?.ArgValue;
+
+    try
+    {
+      // Route the command
+      switch(deviceCommandEnum)
+      {
+        case MassFlowControllerCommand.PollLiveDataFrame:
+          // TODO: stringify live info
+          break;
+
+        case MassFlowControllerCommand.ManufacturerInfo:
+          // await Device.GetManufacturerDataInfoAsync(token);
+          break;
+
+        case MassFlowControllerCommand.CancelValveHold:
+          await CancelValveHold();
+          break;
+
+        case MassFlowControllerCommand.ChooseDifferentGas:
+          if(GetArg(MassFlowControllerCommandParameter.GasNumber) is not { HasNumberValue: true, NumberValue: var gasNum })
+            return ArgumentError("ChooseDifferentGas", "GasNumber", "number");
+
+          await ChooseDifferentGas((int)gasNum);
+          break;
+
+        case MassFlowControllerCommand.DeleteComposerMix:
+          if(GetArg(MassFlowControllerCommandParameter.MixNumber) is not { HasNumberValue: true, NumberValue: var mixNum })
+            return ArgumentError("DeleteComposerMix", "MixNumber", "number");
+
+          await DeleteComposerMix((int)mixNum);
+          break;
+
+        case MassFlowControllerCommand.HoldValvesAtCurrentPosition:
+          await HoldValvesAtCurrentPosition();
+          break;
+
+        case MassFlowControllerCommand.HoldValvesClosed:
+          // Note: Your old code called CancelValveHold() here. Ensure this wasn't a typo in the original!
+          await CancelValveHold();
+          break;
+
+        case MassFlowControllerCommand.NewComposerMix:
+          throw new NotImplementedException("NewComposerMix is not yet implemented.");
+
+        case MassFlowControllerCommand.NewSetpoint:
+          if(GetArg(MassFlowControllerCommandParameter.Setpoint) is not { HasNumberValue: true, NumberValue: var setpoint })
+            return ArgumentError("NewSetpoint", "Setpoint", "number");
+
+          await NewSetpoint(StandardVolumeFlow.FromStandardLitersPerMinute(setpoint));
+          break;
+
+        case MassFlowControllerCommand.GetSetpoint:
+          var setpt = _liveData?.Setpoint?.Value ?? double.MinValue;
+
+          //var structPayload = setpt is not null
+          //    ? AresStructHelper.CreateNumberStruct(MfcDataTypes.Setpoint.Key, setpt.Value)
+          //    : AresStructHelper.CreateNullStruct(MfcDataTypes.Setpoint.Key);
+
+
+          result.Result = AresValueHelper.CreateNumber(setpt);
+          break;
+
+        case MassFlowControllerCommand.TareAbsolutePressureWithBarometer:
+          await TareAbsolutePressureWithBarometer();
+          break;
+
+        case MassFlowControllerCommand.TareFlow:
+          await TareFlow();
+          break;
+
+        default:
+          return new CommandResult
+          {
+            Success = false,
+            Error = $"Command '{deviceCommandEnum}' is defined but execution logic is missing."
+          };
+      }
+    }
+    catch(Exception ex)
+    {
+      result.Success = false;
+      result.Error = ex.Message;
+    }
+
+    return result;
+  }
+
+  private static CommandResult ArgumentError(string commandName, string paramName, string expectedType)
+  {
+    return new CommandResult
+    {
+      Success = false,
+      Error = $"The {commandName} command requires a valid {expectedType} for '{paramName}', but none was provided or the type was incorrect."
+    };
   }
 
   public override async Task UpdateSettings(AresStruct settings)
@@ -851,6 +962,116 @@ public class MassFlowController : AresDevice, IMassFlowController
     return response;
   }
 
-  private AresStruct Current => _stateSubject.Value;
+  protected override Task<List<DeviceCommandDescriptor>> BuildCommandDescriptorsAsync()
+  {
+    var descriptors = new List<DeviceCommandDescriptor>
+    {
+        new()
+        {
+            Name = MassFlowControllerCommand.NewSetpoint.ToString(),
+            Description = "Sets a new target mass flow",
+            InputSchema = AresSchemaBuilder.Empty()
+                .AddEntry(MassFlowControllerCommandParameter.Setpoint.ToString(),
+                          AresSchemaBuilder.NumberEntry().Build())
+                .Build()
+        },
+        new()
+        {
+            Name = MassFlowControllerCommand.ChangeUnitId.ToString(),
+            Description = "Assigns the device a new letter ID",
+            InputSchema = AresSchemaBuilder.Empty()
+                .AddEntry(MassFlowControllerCommandParameter.DeviceId.ToString(),
+                          AresSchemaBuilder.StringEntry().AsOptional().Build())
+                .Build()
+        },
+        new()
+        {
+            Name = MassFlowControllerCommand.PollLiveDataFrame.ToString(),
+            Description = "Queries the device for a live data entry containing device ID, temperature, flow, setpoint, and gas. Depending on the type of the MFC, it may also include pressure and other data items."
+        },
+        new()
+        {
+            Name = MassFlowControllerCommand.CancelValveHold.ToString(),
+            Description = "Cancels holds on the device's valve(s)"
+        },
+        new()
+        {
+            Name = MassFlowControllerCommand.ChooseDifferentGas.ToString(),
+            Description = "Changes the currently managed gas",
+            InputSchema = AresSchemaBuilder.Empty()
+                .AddEntry(MassFlowControllerCommandParameter.GasNumber.ToString(),
+                          AresSchemaBuilder.StringEntry().AsOptional().Build())
+                .Build()
+        },
+        new()
+        {
+            Name = MassFlowControllerCommand.GetSetpoint.ToString(),
+            Description = "Gets the current setpoint of the MFC",
+            OutputSchema = AresSchemaBuilder.NumberEntry()
+                .WithDescription("Current setpoint")
+                .Build()
+        }
+    };
 
+    if(_mfcType == MfcTypeEnum.Basis2)
+    {
+      descriptors.Add(new DeviceCommandDescriptor
+      {
+        Name = MassFlowControllerCommand.HoldValvesClosed.ToString(),
+        Description = "Holds the device's valve(s) at the given position",
+        InputSchema = AresSchemaBuilder.Empty()
+              .AddEntry(MassFlowControllerCommandParameter.ValvePercent.ToString(),
+                        AresSchemaBuilder.NumberEntry().Build())
+              .Build()
+      });
+    }
+
+    if(_mfcType == MfcTypeEnum.Normal)
+    {
+      descriptors.AddRange(
+      [
+        new DeviceCommandDescriptor
+        {
+            Name = MassFlowControllerCommand.ManufacturerInfo.ToString(),
+            Description = "Queries the manufacturer info"
+        },
+        new DeviceCommandDescriptor
+        {
+            Name = MassFlowControllerCommand.TareAbsolutePressureWithBarometer.ToString(),
+            Description = "Tares the device's absolute pressure with barometer"
+        },
+        new DeviceCommandDescriptor
+        {
+            Name = MassFlowControllerCommand.TareFlow.ToString(),
+            Description = "Tares the device's flow"
+        },
+        new DeviceCommandDescriptor
+        {
+            Name = MassFlowControllerCommand.HoldValvesAtCurrentPosition.ToString(),
+            Description = "Holds the device's valve(s) at the current position"
+        },
+        new DeviceCommandDescriptor
+        {
+            Name = MassFlowControllerCommand.HoldValvesClosed.ToString(),
+            Description = "Holds the device's valve(s) at the closed position"
+        },
+        new DeviceCommandDescriptor
+        {
+            Name = MassFlowControllerCommand.NewComposerMix.ToString(),
+            Description = "Adds a new COMPOSER mix to the device's memory"
+        },
+        new DeviceCommandDescriptor
+        {
+            Name = MassFlowControllerCommand.DeleteComposerMix.ToString(),
+            Description = "Deletes the indicated COMPOSER Mix number from the device's memory",
+            InputSchema = AresSchemaBuilder.Empty()
+                .AddEntry(MassFlowControllerCommandParameter.MixNumber.ToString(),
+                          AresSchemaBuilder.StringEntry().AsOptional().Build())
+                .Build()
+        }
+      ]);
+    }
+
+    return Task.FromResult(descriptors);
+  }
 }
