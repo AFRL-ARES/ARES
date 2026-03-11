@@ -23,6 +23,13 @@
                        Schema="prop.Value"
                        ValueEditCallback="@(value => ValueEditCallback(prop.Key, value))" />
   }
+
+  <RadzenButton Text="Submit"
+                ButtonType="ButtonType.Button"
+                ButtonStyle="ButtonStyle.Primary"
+                Click="@ViewModel!.PushSettingsAsync"
+                Icon="save" />
+
 </DeviceSettingsContainer>
 
 @code {

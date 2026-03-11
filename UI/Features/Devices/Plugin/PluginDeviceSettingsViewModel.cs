@@ -41,7 +41,6 @@ public partial class PluginDeviceSettingsViewModel : ReactiveObject
 
     SaveCommand = ReactiveCommand.CreateFromTask(SaveAsync);
     RemoveCommand = ReactiveCommand.CreateFromTask(() => RemoveAsync(onRemoveCallback));
-    PushSettingsCommand = ReactiveCommand.CreateFromTask(PushSettingsAsync);
   }
 
   private async Task SaveAsync()
@@ -93,9 +92,34 @@ public partial class PluginDeviceSettingsViewModel : ReactiveObject
       Settings = new AresStruct();
   }
 
-  private async Task PushSettingsAsync()
+  public async Task PushSettingsAsync()
   {
+    try
+    {
+      if(Device is not null)
+        await Device.UpdateSettings(Settings);
 
+      var successNotification = new AresNotification()
+      {
+        Title = "Update Device Settings",
+        Message = $"ARES successfully updated the settings for {Device?.Name}!",
+        NotificationSeverity = Severity.Success
+      };
+
+      _notificationService.PushNotification(successNotification);
+    }
+
+    catch(Exception ex)
+    {
+      var failedNotification = new AresNotification 
+      { 
+        Title = "Failed to Update Settings", 
+        Message = $"ARES failed to update the settings for {Device?.Name}. Reason: {ex.Message}", 
+        NotificationSeverity = Severity.Warning 
+      };
+
+      _notificationService.PushNotification(failedNotification);
+    }
   }
 
   public AresValue? GetMatchingSettingValue(string key)
@@ -107,7 +131,6 @@ public partial class PluginDeviceSettingsViewModel : ReactiveObject
 
   public ReactiveCommand<Unit, Unit> SaveCommand { get; }
   public ReactiveCommand<Unit, Unit> RemoveCommand { get; }
-  public ReactiveCommand<Unit, Unit> PushSettingsCommand { get; }
 
   public IAresDevice? Device { get; set; }
 

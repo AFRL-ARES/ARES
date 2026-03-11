@@ -9,6 +9,7 @@ using Ares.Datamodel.Device;
 using Ares.Datamodel.Extensions;
 using Ares.Device;
 using Ares.Toolkit.Serial;
+using DynamicData;
 using Parsers.AlicatMFCRemastered;
 using System.Diagnostics;
 using System.Reactive.Disposables;
@@ -818,9 +819,26 @@ public class MassFlowController : AresDevice, IMassFlowController
     throw new NotImplementedException();
   }
 
-  public override Task UpdateSettings(AresStruct settings)
+  public override async Task UpdateSettings(AresStruct settings)
   {
-    throw new NotImplementedException();
+    settings.Fields.TryGetValue("Selected Gas", out var selectedGas);
+
+    if(selectedGas is { HasStringValue: true, StringValue: var newGas } && newGas != _liveData?.Gas)
+    {
+      var gasNumber = _gases.FindIndex(g => g.Gas == newGas);
+      await ChooseDifferentGas(gasNumber);
+    }
+
+    if(_mfcType == MfcTypeEnum.Basis2)
+    {
+      settings.Fields.TryGetValue("Setpoint Source", out var setpointSource);
+
+      if(setpointSource is { HasStringValue: true, StringValue: var source }  && source != _setpointSource.ToString())
+      {
+        if(Enum.TryParse<MfcSetpointSourceEnum>(setpointSource.StringValue, out var parsedSource))
+          await SetSetpointSource(parsedSource);
+      }
+    }
   }
 
   public override async Task<AresStruct> GetSettings()
