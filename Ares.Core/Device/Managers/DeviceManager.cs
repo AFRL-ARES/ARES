@@ -20,8 +20,6 @@ public class DeviceManager : IDeviceManager
 {
   private readonly IDeviceDriverProvider _driverProvider;
   private readonly IDeviceConfigProvider _configProvider;
-  private readonly IDeviceConfigManager _configManager;
-  private readonly IDriverDatabaseManager _driverDatabaseManager;
   private readonly INotificationHandler _notificationHandler;
   private readonly IAresDeviceRepo _deviceRepo;
   private readonly IServiceProvider _serviceProvider;
@@ -33,8 +31,6 @@ public class DeviceManager : IDeviceManager
   public DeviceManager(
     IDeviceDriverProvider driverProvider,
     IAresDeviceRepo deviceRepository,
-    IDriverDatabaseManager driverDatabaseManager,
-    IDeviceConfigManager deviceConfigManager,
     INotificationHandler notificationHandler,
     IDeviceConfigProvider configProvider,
     IServiceProvider serviceProvider,
@@ -43,8 +39,6 @@ public class DeviceManager : IDeviceManager
   {
     _driverProvider = driverProvider;
     _deviceRepo = deviceRepository;
-    _driverDatabaseManager = driverDatabaseManager;
-    _configManager = deviceConfigManager;
     _notificationHandler = notificationHandler;
     _configProvider = configProvider;
     _serviceProvider = serviceProvider;
@@ -162,9 +156,4 @@ public class DeviceManager : IDeviceManager
     await Remove(deviceId);
     return await Load(deviceId, config);
   }
-
-  public IReadOnlyCollection<T> GetAll<T>() where T : IAresDevice => _deviceRepo.GetAll<T>();
-
-  public T? GetDevice<T>(string id) where T : class, IAresDevice => _deviceRepo.GetDevice<T>(id);
-
 }

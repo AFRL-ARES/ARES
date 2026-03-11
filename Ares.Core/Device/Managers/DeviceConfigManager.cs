@@ -92,7 +92,6 @@ public class DeviceConfigManager : IDeviceConfigManager
     var archivedDrivers = await _driverDbManager.GetAllDrivers();
     var currentDrivers = _driverProvider.GetAllDeviceDrivers();
 
-    // Optimization: Pre-compute fast lookups to avoid O(N*M) loop iterations
     var currentDriverIds = currentDrivers.Select(d => d.UniqueId).ToHashSet();
     var archivedDriverMap = archivedDrivers.ToDictionary(d => d.DriverId);
 
