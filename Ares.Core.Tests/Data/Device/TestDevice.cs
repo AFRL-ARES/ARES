@@ -37,5 +37,8 @@ public class TestDevice : AresDevice
     throw new NotImplementedException();
   }
 
+  public override Task<AresStruct> GetSettings()
+    => Task.FromResult(new AresStruct());
+
   public override IObservable<AresStruct> StateStream => _stateSubject.AsObservable();
 }

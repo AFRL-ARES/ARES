@@ -15,13 +15,18 @@ public partial class PluginDeviceSettingsListViewModel : ReactiveObject
 {
   private readonly DevicesService _devicesService;
   private readonly IDeviceConfigProvider _configProvider;
+  private readonly IAresDeviceProvider _deviceProvider;
   private readonly INotificationReceivingService _notificationService;
 
-  public PluginDeviceSettingsListViewModel(DevicesService devicesClient, INotificationReceivingService notificationService, IDeviceConfigProvider configProvider)
+  public PluginDeviceSettingsListViewModel(DevicesService devicesClient, 
+    INotificationReceivingService notificationService, 
+    IAresDeviceProvider deviceProvider, 
+    IDeviceConfigProvider configProvider)
   {
     _devicesService = devicesClient;
     _notificationService = notificationService;
     _configProvider = configProvider;
+    _deviceProvider = deviceProvider;
   }
 
   public async Task Initialize(DeviceDriver driver)
@@ -59,7 +64,7 @@ public partial class PluginDeviceSettingsListViewModel : ReactiveObject
   private void UpdateViewModels(IEnumerable<DeviceConfig> deviceConfigs)
   {
     SettingsViewModels.Clear();
-    var viewModels = deviceConfigs.Select(device => new PluginDeviceSettingsViewModel(device, Driver, _devicesService, _notificationService, OnDeviceRemoved)).ToList();
+    var viewModels = deviceConfigs.Select(device => new PluginDeviceSettingsViewModel(device, Driver, _devicesService, _deviceProvider, _notificationService, OnDeviceRemoved)).ToList();
     viewModels.ForEach(SettingsViewModels.Add);
   }
 

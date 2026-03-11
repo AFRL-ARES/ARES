@@ -146,5 +146,8 @@ public class AresCoreDevice : AresDevice
     return Task.FromResult(new AresStruct());
   }
 
+  public override Task<AresStruct> GetSettings()
+    => Task.FromResult(new AresStruct());
+
   public override IObservable<AresStruct> StateStream { get; }
 }

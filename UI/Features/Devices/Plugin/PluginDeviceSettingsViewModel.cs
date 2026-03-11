@@ -1,6 +1,9 @@
 using Ares.Core.Device.Plugins.Drivers;
+using Ares.Core.Device.Providers;
 using Ares.Core.Grpc.Services;
+using Ares.Datamodel;
 using Ares.Datamodel.Device;
+using Ares.Device;
 using Ares.Services;
 using Ares.Services.Device;
 using ReactiveUI;
@@ -14,25 +17,30 @@ public partial class PluginDeviceSettingsViewModel : ReactiveObject
 {
   private readonly DeviceConfig _deviceConfig;
   private readonly DevicesService _devicesService;
+  private readonly IAresDeviceProvider _deviceProvider;
   private readonly INotificationReceivingService _notificationService;
 
   public PluginDeviceSettingsViewModel(DeviceConfig deviceConfig, 
     DeviceDriver driver, 
-    DevicesService devicesService, 
+    DevicesService devicesService,
+    IAresDeviceProvider deviceProvider,
     INotificationReceivingService notificationService,
     Func<Task> onRemoveCallback)
   {
     _deviceConfig = deviceConfig;
     _devicesService = devicesService;
     _notificationService = notificationService;
+    _deviceProvider = deviceProvider;
     Name = _deviceConfig.DeviceName;
     Id = _deviceConfig.DeviceId;
 
+    Device = _deviceProvider.GetDevice(Id);
+    SettingsSchema = Device?.SettingSchema ?? new AresStructSchema();
+    Settings = new AresStruct();
     EditViewModel = new PluginDeviceConfigEditViewModel(_deviceConfig, driver, false, devicesService);
 
     SaveCommand = ReactiveCommand.CreateFromTask(SaveAsync);
     RemoveCommand = ReactiveCommand.CreateFromTask(() => RemoveAsync(onRemoveCallback));
-    FetchSettingsCommand = ReactiveCommand.CreateFromTask(FetchSettingsAsync);
     PushSettingsCommand = ReactiveCommand.CreateFromTask(PushSettingsAsync);
   }
 
@@ -76,9 +84,13 @@ public partial class PluginDeviceSettingsViewModel : ReactiveObject
     await onRemoveCallback();
   }
 
-  private async Task FetchSettingsAsync()
+  public async Task FetchSettingsAsync()
   {
+    if(Device is not null)
+      Settings = await Device.GetSettings();
 
+    else
+      Settings = new AresStruct();
   }
 
   private async Task PushSettingsAsync()
@@ -86,18 +98,28 @@ public partial class PluginDeviceSettingsViewModel : ReactiveObject
 
   }
 
+  public AresValue? GetMatchingSettingValue(string key)
+  => Settings?.Fields.FirstOrDefault(f => f.Key == key).Value ?? null;
+
   private void PushNotification(AresNotification notification) => _notificationService.PushNotification(notification);
 
   public PluginDeviceConfigEditViewModel EditViewModel { get; }
 
   public ReactiveCommand<Unit, Unit> SaveCommand { get; }
   public ReactiveCommand<Unit, Unit> RemoveCommand { get; }
-  public ReactiveCommand<Unit, Unit> FetchSettingsCommand { get; }
   public ReactiveCommand<Unit, Unit> PushSettingsCommand { get; }
+
+  public IAresDevice? Device { get; set; }
 
   [Reactive]
   public partial string Name { get; private set; }
 
   [Reactive]
   public partial string Id { get; private set; }
+
+  [Reactive]
+  public partial AresStructSchema SettingsSchema { get; private set; }
+
+  [Reactive]
+  public partial AresStruct Settings { get; set; }
 }

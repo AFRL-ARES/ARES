@@ -6,6 +6,7 @@ using AlicatMFCRemastered.Models;
 using AlicatMFCRemastered.Simulation;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
+using Ares.Datamodel.Extensions;
 using Ares.Device;
 using Ares.Toolkit.Serial;
 using Parsers.AlicatMFCRemastered;
@@ -33,6 +34,7 @@ public class MassFlowController : AresDevice, IMassFlowController
   private LiveDataResponse? _liveData;
   private readonly IMfcConnection _serialConnection;
   private MfcTypeEnum _mfcType;
+  private MfcSetpointSourceEnum _setpointSource = MfcSetpointSourceEnum.UnknownSource;
 
   public MassFlowController(DeviceConnectionInfo connectionInfo) : base(connectionInfo)
   {
@@ -539,6 +541,8 @@ public class MassFlowController : AresDevice, IMassFlowController
     }
 
     _ = Start();
+
+    SettingSchema.AddEntry("Selected Gas", AresDataType.String, false, _gases.Select(g => g.Gas));
   }
 
   private async Task InitNormal()
@@ -571,9 +575,11 @@ public class MassFlowController : AresDevice, IMassFlowController
 
   private async Task InitBasis()
   {
+    _setpointSource = await GetSetpointSource();
     UpdateBasisDataFrames();
     await QueryBasisGasList();
     await QueryFirmwareVersion();
+    SettingSchema.AddEntry("Setpoint Source", AresDataType.String, false, Enum.GetNames(typeof(MfcSetpointSourceEnum)));
   }
 
   public async Task StartUpdateLoop(TimeSpan interval)
@@ -815,6 +821,16 @@ public class MassFlowController : AresDevice, IMassFlowController
   public override Task UpdateSettings(AresStruct settings)
   {
     throw new NotImplementedException();
+  }
+
+  public override async Task<AresStruct> GetSettings()
+  {
+    var response = AresStructHelper.CreateStringStruct("Selected Gas", _liveData?.Gas ?? "Unknown");
+    
+    if(_mfcType == MfcTypeEnum.Basis2)
+      response.AddString("Setpoint Source", _setpointSource.ToString());
+
+    return response;
   }
 
   private AresStruct Current => _stateSubject.Value;

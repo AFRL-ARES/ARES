@@ -1,4 +1,5 @@
 @using System.Reactive.Linq
+@using Ares.Datamodel
 @using UI.Features.Devices.Plugin.Factories
 @using UI.Features.Devices.Shared.Settings
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<PluginDeviceSettingsViewModel>
@@ -14,9 +15,23 @@
     <span>Name: @ViewModel.Name</span>
     <span>ID: @ViewModel.Id</span>
   </div>
+
+  @foreach(var prop in ViewModel!.SettingsSchema.Fields)
+  {
+    <AresValueDesigner Name="@prop.Key"
+                       Value="@ViewModel!.GetMatchingSettingValue(prop.Key)"
+                       Schema="prop.Value"
+                       ValueEditCallback="@(value => ValueEditCallback(prop.Key, value))" />
+  }
 </DeviceSettingsContainer>
 
 @code {
+  private Task ValueEditCallback(string name, AresValue value)
+  {
+    ViewModel!.Settings.Fields[name] = value;
+    return Task.CompletedTask;
+  }
+
   private async Task EditCallback()
   {
     var viewModel = ViewModel!.EditViewModel;
@@ -44,4 +59,10 @@
   }
 
   private bool IsResolving { get; set; }
+
+  protected override async Task OnInitializedAsync()
+  {
+    await ViewModel!.FetchSettingsAsync();
+    await base.OnInitializedAsync();
+  }
 }

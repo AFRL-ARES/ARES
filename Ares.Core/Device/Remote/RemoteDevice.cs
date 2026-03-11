@@ -298,4 +298,11 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     await _channel.ShutdownAsync();
     _channel.Dispose();
   }
+
+  public override async Task<AresStruct> GetSettings()
+  {
+    var client = GetClient();
+    var response = await client.GetCurrentSettingsAsync(new Empty());
+    return response.Settings;
+  }
 }
