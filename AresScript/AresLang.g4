@@ -84,12 +84,25 @@ parameter:
 	ID (COLON typeHint)?;
 
 typeHint:
-	namedTypeHint	# NamedTypeRef
+	namedTypeHint typeHintConstraints?	# NamedTypeRef
 	| structTypeHint	# StructTypeRef
 	| listTypeHint	# ListTypeRef;
 
 namedTypeHint:
 	ID ('.' ID)*;
+
+typeHintConstraints:
+	LBRACK typeHintConstraint (',' typeHintConstraint)* ','? RBRACK;
+
+typeHintConstraint:
+	ID '=' typeHintConstraintValue;
+
+typeHintConstraintValue:
+	STRING
+	| signedNumber;
+
+signedNumber:
+	SUB? (INT | FLOAT);
 
 structTypeHint:
 	LBRACE typeHintField (',' typeHintField)* ','? RBRACE;

@@ -1,4 +1,5 @@
 using Ares.Datamodel;
+using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Scripting;
 using Ares.Services;
 using Microsoft.JSInterop;
@@ -135,7 +136,7 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
 
     foreach(var field in schema.Fields)
     {
-      sb.Append(field.Key).Append(": ").AppendLine(FormatSchemaEntry(field.Value));
+      sb.Append(field.Key).Append(": ").AppendLine(field.Value.Stringify());
     }
 
     sb.AppendLine("```");
@@ -151,6 +152,9 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
     sb.AppendLine().AppendLine();
     sb.Append("**").Append(title).AppendLine("**");
     sb.AppendLine("```text");
+    sb.AppendLine(entry.Stringify());
+    sb.AppendLine("```");
+    return;
     if(entry.Type == AresDataType.Struct && entry.StructSchema is not null && entry.StructSchema.Fields.Count > 0)
     {
       foreach(var field in entry.StructSchema.Fields)

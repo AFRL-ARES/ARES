@@ -1,6 +1,7 @@
 using Antlr4.Runtime;
 using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
+using Ares.Datamodel.Factories;
 using Ares.Datamodel.Scripting;
 using AresScript.Environment;
 using AresScript.Generated;
@@ -187,6 +188,22 @@ public class InterpreterTests
     return (bool)result!;
   }
 
+  private static bool IsValueTypeHintCompatible(AresValue actual, SchemaEntry expected)
+  {
+    var typeHintsType = typeof(StandardLibrary).Assembly.GetType("AresScript.AresScriptTypeHints");
+    Assert.That(typeHintsType, Is.Not.Null);
+
+    var method = typeHintsType!.GetMethod(
+      "IsCompatibleWithTypeHint",
+      BindingFlags.Public | BindingFlags.Static,
+      [typeof(AresValue), typeof(SchemaEntry)]);
+    Assert.That(method, Is.Not.Null);
+
+    var result = method!.Invoke(null, [actual, expected]);
+    Assert.That(result, Is.TypeOf<bool>());
+    return (bool)result!;
+  }
+
   [Test]
   public async Task Assert_Passes_OnTrueCondition()
   {
@@ -276,6 +293,88 @@ public class InterpreterTests
       """;
 
     await RunScriptAsync(script);
+  }
+
+  [Test]
+  public async Task Function_NumberRangeTypeHints_Are_Parsed_For_Parameters_And_Returns()
+  {
+    var script = """
+      def clamp_value(value: Number[min=0, max=30]) -> Number[min=0, max=30]:
+        return value
+      """;
+
+    await ValidateScriptAsync(script);
+  }
+
+  [Test]
+  public async Task Function_QuantityRangeTypeHints_Are_Parsed_For_Parameters_And_Returns()
+  {
+    var script = """
+      def take_duration(value: Quantity.Duration[unit="s", min=0, max=30]) -> Quantity.Duration[unit="s", min=0, max=30]:
+        return value
+      """;
+
+    await ValidateScriptAsync(script);
+  }
+
+  [Test]
+  public Task Validation_Rejects_QuantityRangeTypeHint_Without_Unit()
+  {
+    var script = """
+      def bad_duration(value: Quantity.Duration[min=0, max=30]) -> Quantity:
+        return value
+      """;
+
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
+    Assert.That(ex?.Message, Does.Contain("must specify a bounds unit"));
+    return Task.CompletedTask;
+  }
+
+  [Test]
+  public Task Validation_Rejects_QuantityRangeTypeHint_With_Invalid_Unit_For_QuantityType()
+  {
+    var script = """
+      def bad_length(value: Quantity.Length[unit="m/s", min=0, max=30]) -> Quantity:
+        return value
+      """;
+
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
+    Assert.That(ex?.Message, Does.Contain("Unit 'm/s' is not valid for quantity type 'Length'"));
+    return Task.CompletedTask;
+  }
+
+  [Test]
+  public void NumberTypeHintCompatibility_Enforces_MinMax_For_Values()
+  {
+    var expected = AresSchemaBuilder.Entry(AresDataType.Number)
+      .WithNumberRange(0, 30)
+      .Build();
+
+    var withinBounds = AresValueHelper.CreateNumber(12);
+    var belowBounds = AresValueHelper.CreateNumber(-1);
+    var aboveBounds = AresValueHelper.CreateNumber(40);
+
+    Assert.That(IsValueTypeHintCompatible(withinBounds, expected), Is.True);
+    Assert.That(IsValueTypeHintCompatible(belowBounds, expected), Is.False);
+    Assert.That(IsValueTypeHintCompatible(aboveBounds, expected), Is.False);
+  }
+
+  [Test]
+  public void QuantityTypeHintCompatibility_Enforces_Type_Unit_AndBounds_For_Values()
+  {
+    var expected = AresSchemaBuilder.Entry(AresDataType.Quantity)
+      .WithQuantityRange(QuantityType.Duration, "s", minScalarValue: 0, maxScalarValue: 30)
+      .Build();
+
+    var withinBounds = AresValueHelper.CreateQuantity(UnitsNet.Duration.FromSeconds(5).ToQuantityValue());
+    var belowBounds = AresValueHelper.CreateQuantity(UnitsNet.Duration.FromMilliseconds(-1).ToQuantityValue());
+    var aboveBounds = AresValueHelper.CreateQuantity(UnitsNet.Duration.FromSeconds(31).ToQuantityValue());
+    var wrongDimension = AresValueHelper.CreateQuantity(UnitsNet.Length.FromMeters(2).ToQuantityValue());
+
+    Assert.That(IsValueTypeHintCompatible(withinBounds, expected), Is.True);
+    Assert.That(IsValueTypeHintCompatible(belowBounds, expected), Is.False);
+    Assert.That(IsValueTypeHintCompatible(aboveBounds, expected), Is.False);
+    Assert.That(IsValueTypeHintCompatible(wrongDimension, expected), Is.False);
   }
 
   [Test]

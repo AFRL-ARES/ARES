@@ -987,7 +987,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
 
   private SchemaEntry ResolveTypeHint(AresLangParser.TypeHintContext? typeHint, string targetName, IToken token)
   {
-    if(AresScriptTypeHints.TryParseTypeHint(typeHint, out var resolvedSchema))
+    if(AresScriptTypeHints.TryParseTypeHint(typeHint, out var resolvedSchema, out var error))
     {
       return resolvedSchema;
     }
@@ -995,7 +995,9 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     if(_mode == ValidationMode.Strict)
     {
       throw new AresInterpreterException(
-        $"Unknown type hint '{typeHint?.GetText()}' for {targetName}.",
+        string.IsNullOrWhiteSpace(error)
+          ? $"Unknown type hint '{typeHint?.GetText()}' for {targetName}."
+          : $"Invalid type hint '{typeHint?.GetText()}' for {targetName}: {error}",
         token.Line,
         token.Column
       );
