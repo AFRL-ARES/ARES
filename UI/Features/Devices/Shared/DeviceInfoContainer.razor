@@ -1,5 +1,6 @@
 ﻿@using Ares.Datamodel
 @using Ares.Datamodel.Device
+@using Ares.Datamodel.Extensions
 
 <RadzenStack Gap="1rem" Style="padding: 20px;">
 
@@ -136,13 +137,6 @@
 
   private string FormatDataType(SchemaEntry entry)
   {
-    if(entry.Type != AresDataType.Quantity)
-      return $"{entry.Type}";
-
-    var schema = entry.QuantitySchema;
-    // if(string.IsNullOrEmpty(entry.Unit))
-    //   return entry.Type.ToString();
-
-    return $"{entry.Type} ({entry.Unit})";
+    return entry.Stringify();
   }
 }

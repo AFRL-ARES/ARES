@@ -149,15 +149,15 @@ public static class StandardLibrary
 
       return AresValueHelper.CreateUnit();
     },
-    AresSchemaBuilder.Create("time", AresDataType.Number)
-      .WithDescription("Number of milliseconds to sleep")
-      .WithUnit("ms")
+    AresSchemaBuilder.Create("time", AresDataType.Quantity)
+      .WithDescription("How much time to sleep")
+      .WithQuantity(QuantityType.Duration)
       .Build(),
     AresSchemaBuilder.Entry(AresDataType.Unit).Build(),
     Namespace: "")
     {
-      Detail = "Sleep for a given number of milliseconds",
-      Documentation = "Sleep for a given number of milliseconds"
+      Detail = "Sleep for a given time",
+      Documentation = "Sleep for a time"
     }
   ];
 
