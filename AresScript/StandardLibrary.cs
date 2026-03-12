@@ -3,6 +3,7 @@ using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
 using AresScript.Symbols;
 using System.Text;
+using UnitsNet.Units;
 
 namespace AresScript;
 
@@ -130,12 +131,7 @@ public static class StandardLibrary
         throw new ArgumentException("Expected exactly 1 argument for duration.", nameof(args));
       }
 
-      if(!args[0].HasNumberValue)
-      {
-        throw new InvalidOperationException("Argument provided is not a number");
-      }
-
-      var remaining = TimeSpan.FromMilliseconds(args[0].NumberValue);
+      var remaining = TimeSpan.FromMilliseconds(ToDurationMilliseconds(args[0]));
       var interval = TimeSpan.FromMilliseconds(50);
       while(remaining > TimeSpan.Zero)
       {
@@ -293,5 +289,27 @@ public static class StandardLibrary
       .AddEntry("self", AresSchemaBuilder.Entry(AresDataType.StringArray).Build())
       .AddEntry("value", AresSchemaBuilder.Entry(AresDataType.String).Build())
       .Build();
+  }
+
+  private static double ToDurationMilliseconds(AresValue value)
+  {
+    if(value.HasNumberValue)
+    {
+      return value.NumberValue;
+    }
+
+    if(value.KindCase != AresValue.KindOneofCase.QuantityValue)
+    {
+      throw new InvalidOperationException("Argument provided is not a number or duration quantity.");
+    }
+
+    var quantity = value.QuantityValue.ToUnitsNetQuantity();
+    if(!string.Equals(quantity.QuantityInfo.Name, "Duration", StringComparison.OrdinalIgnoreCase))
+    {
+      throw new InvalidOperationException(
+        $"Duration quantity expected but got {quantity.QuantityInfo.Name}.");
+    }
+
+    return quantity.As(DurationUnit.Millisecond);
   }
 }

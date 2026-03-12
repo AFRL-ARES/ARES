@@ -1376,6 +1376,30 @@ public class InterpreterTests
   }
 
   [Test]
+  public async Task Sleep_Accepts_Duration_Quantity()
+  {
+    var sleepFn = StandardLibrary.Functions.First(function => function.Id == "sleep");
+    var duration = AresValueHelper.CreateQuantity(UnitsNet.Duration.FromSeconds(0.1).ToQuantityValue());
+
+    var stopwatch = Stopwatch.StartNew();
+    await sleepFn.Body([duration], new ScriptExecutionControlToken(CancellationToken.None));
+    stopwatch.Stop();
+
+    Assert.That(stopwatch.ElapsedMilliseconds, Is.AtLeast(80));
+  }
+
+  [Test]
+  public void Sleep_Rejects_Non_Duration_Quantity()
+  {
+    var sleepFn = StandardLibrary.Functions.First(function => function.Id == "sleep");
+    var length = AresValueHelper.CreateQuantity(UnitsNet.Length.FromCentimeters(1).ToQuantityValue());
+
+    var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
+      await sleepFn.Body([length], new ScriptExecutionControlToken(CancellationToken.None)));
+    Assert.That(ex?.Message, Does.Contain("Duration quantity expected"));
+  }
+
+  [Test]
   [CancelAfter(5000)]
   public async Task Sleep_Cancel(CancellationToken testToken)
   {
