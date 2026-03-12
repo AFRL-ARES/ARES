@@ -1,0 +1,46 @@
+@using Radzen
+@using Radzen.Blazor
+@using ReactiveUI.Blazor
+@using ValveController.UI
+@inherits ReactiveComponentBase<ValveControllerUnitControlViewModel>
+@inject TooltipService? tooltipService
+
+<RadzenCard Style="min-width: 250px; padding: 1rem;">
+  <RadzenRow>
+    <RadzenText TextStyle="TextStyle.H6"> Valve Controller </RadzenText>
+  </RadzenRow>
+
+  <RadzenRow class="rz-mb-2"> 
+    <RadzenColumn Style="width: auto">
+        <RadzenLabel Text="Relay One"/>
+    </RadzenColumn>
+    <RadzenColumn Style="width: auto">
+       <RadzenLabel Text="Relay Two"/>
+    </RadzenColumn>
+  </RadzenRow>
+
+  <RadzenRow Style="padding: 10px 0px 0px 10px">
+    <RadzenColumn Style="height: auto">
+        <RadzenButton Click="@(() => ViewModel!.EngageRelayOneCommand.Execute().Subscribe())" Icon="lock" MouseEnter="@(args => ShowEngageValveOneTip(args) )" Size="ButtonSize.Large" ButtonStyle="ButtonStyle.Primary" />
+    </RadzenColumn>
+    <RadzenColumn Style="height: auto">
+        <RadzenButton Click="@(() => ViewModel!.EngageRelayTwoCommand.Execute().Subscribe())" Icon="lock" MouseEnter="@(args => ShowEngageValveTwoTip(args) )" Size="ButtonSize.Large" ButtonStyle="ButtonStyle.Primary" />
+    </RadzenColumn>
+  </RadzenRow>
+  
+  <RadzenRow Style="padding: 10px 0px 0px 10px">
+    <RadzenColumn Style="height: auto">
+      <RadzenButton Click="@(() => ViewModel!.DisengageRelayOneCommand.Execute().Subscribe())" Icon="lock_open" MouseEnter="@(args => ShowDisengageValveOneTip(args) )" Size="ButtonSize.Large" ButtonStyle="ButtonStyle.Light" />
+    </RadzenColumn>
+    <RadzenColumn Style="height: auto">
+      <RadzenButton Click="@(() => ViewModel!.DisengageRelayTwoCommand.Execute().Subscribe())" Icon="lock_open" MouseEnter="@(args => ShowDisengageValveTwoTip(args) )" Size="ButtonSize.Large" ButtonStyle="ButtonStyle.Light" />
+    </RadzenColumn>
+  </RadzenRow>
+</RadzenCard>
+
+@code {
+  void ShowEngageValveOneTip(ElementReference elementReference, TooltipOptions? options = null) => tooltipService?.Open(elementReference, "Engage Valve One", options);
+  void ShowEngageValveTwoTip(ElementReference elementReference, TooltipOptions? options = null) => tooltipService?.Open(elementReference, "Engage Valve Two", options);
+  void ShowDisengageValveOneTip(ElementReference elementReference, TooltipOptions? options = null) => tooltipService?.Open(elementReference, "Disengage Valve One", options);
+  void ShowDisengageValveTwoTip(ElementReference elementReference, TooltipOptions? options = null) => tooltipService?.Open(elementReference, "Disengage Valve Two", options);
+}

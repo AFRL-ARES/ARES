@@ -1,13 +1,16 @@
-﻿using Ares.Device.Serial;
-using Ares.Device.Serial.Simulation;
+using Ares.Toolkit.Serial;
+using Ares.Toolkit.Serial.Simulation;
+using ValveController.Connection;
 using System.IO.Ports;
 
-namespace ValveController.Simulated;
+namespace ValveController.Simulation;
+
 public class SimValveControllerConnection : AresSerialSimConnection, IValveControllerConnection
 {
   private readonly SimulatedValveController _valveController;
 
-  public SimValveControllerConnection(string portName) : base(new SerialPortConnectionInfo(0, Parity.None, 0, StopBits.None), portName)
+  public SimValveControllerConnection(string portName) 
+    : base(new SerialPortConnectionInfo(9600, Parity.None, 8, StopBits.One), portName, new SerialConnectionOptions { SendBuffer = TimeSpan.FromMilliseconds(50) })
   {
     _valveController = new SimulatedValveController(AddDataReceived);
   }

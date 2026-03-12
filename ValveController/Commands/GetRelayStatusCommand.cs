@@ -1,4 +1,4 @@
-﻿using Ares.Device.Serial.Commands;
+using Ares.Toolkit.Serial.Commands;
 using ValveController.Commands.Responses;
 using ValveController.Commands.Responses.Parsers;
 

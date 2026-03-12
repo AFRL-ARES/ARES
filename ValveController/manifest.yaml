@@ -1,0 +1,20 @@
+# ARES Device Driver Manifest
+# Target: Dual Relay Valve Controller
+
+# Basic Metadata
+device_type_name: "Valve Controller"
+driver_id: "valve_controller_v1"
+connection_type: "Serial"
+
+# The DLL that contains the ValveController and ViewModel classes
+assembly_name: "ValveController.dll"
+
+# Serial connection specifics
+serial_settings:
+  requires_unit_id: false
+  variable_baud_rate: false
+  allowed_baud_rates: [9600]
+  default_baud_rate: 9600
+
+# Settings required when adding the device through the ARES UI
+settings: []
