@@ -53,8 +53,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AresScript", "AresScript\Ar
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AresScript.Tests", "AresScript.Tests\AresScript.Tests.csproj", "{6B350BA0-E2B9-46A6-842F-0E55FD00761E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlicatMFCRemastered", "AlicatMFCRemastered\AlicatMFCRemastered.csproj", "{8CB75D33-E535-4C5B-A02B-8DED86D896A4}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -146,10 +144,6 @@ Global
 		{6B350BA0-E2B9-46A6-842F-0E55FD00761E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6B350BA0-E2B9-46A6-842F-0E55FD00761E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6B350BA0-E2B9-46A6-842F-0E55FD00761E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8CB75D33-E535-4C5B-A02B-8DED86D896A4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8CB75D33-E535-4C5B-A02B-8DED86D896A4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8CB75D33-E535-4C5B-A02B-8DED86D896A4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8CB75D33-E535-4C5B-A02B-8DED86D896A4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
