@@ -136,8 +136,12 @@
 
   private string FormatDataType(SchemaEntry entry)
   {
-    if(string.IsNullOrEmpty(entry.Unit))
-      return entry.Type.ToString();
+    if(entry.Type != AresDataType.Quantity)
+      return $"{entry.Type}";
+
+    var schema = entry.QuantitySchema;
+    // if(string.IsNullOrEmpty(entry.Unit))
+    //   return entry.Type.ToString();
 
     return $"{entry.Type} ({entry.Unit})";
   }
