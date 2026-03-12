@@ -16,12 +16,12 @@ public class AlicatMfcState
 
 public class MfcLiveData
 {
-  public double AbsolutePressure { get; set; }
+  public double? AbsolutePressure { get; set; }
   public double Temperature { get; set; }
-  public double VolumetricFlow { get; set; }
+  public double? VolumetricFlow { get; set; }
   public double MassFlow { get; set; }
   public double Setpoint { get; set; }
-  public double ValveDrive { get; set; }
+  public double? ValveDrive { get; set; }
   public List<string> StatusCodes { get; set; } = new();
 }
 

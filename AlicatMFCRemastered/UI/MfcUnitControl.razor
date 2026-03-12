@@ -21,19 +21,33 @@
     <div class="mfc-state">
       <div class="field-descriptor">Temperature</div>
       <div>@($"{ViewModel!.AlicatState.LiveData.Temperature}")</div>
-      <div></div> <div class="field-descriptor">Absolute Pressure</div>
-      <div>@($"{ViewModel!.AlicatState.LiveData.AbsolutePressure}")</div>
-      <RadzenButton Text="Tare" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.ExtraSmall" Click="@(() => ViewModel.TareAbsolutePressureWithBarometerCommand.Execute().Subscribe())" />
+      @if(ViewModel!.AlicatState.LiveData.AbsolutePressure is not null)
+      {
+        <div></div> <div class="field-descriptor">Absolute Pressure</div>
+        <div>@($"{ViewModel!.AlicatState.LiveData.AbsolutePressure}")</div>
+        <RadzenButton Text="Tare" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.ExtraSmall" Click="@(() => ViewModel.TareAbsolutePressureWithBarometerCommand.Execute().Subscribe())" />
+      }
 
-      <div class="field-descriptor">Volumetric Flow</div>
-      <div>@($"{ViewModel!.AlicatState.LiveData.VolumetricFlow}")</div>
-      <div></div> <div class="field-descriptor">Mass Flow</div>
+      
+      @if(ViewModel!.AlicatState.LiveData.VolumetricFlow is not null)
+      {
+        <div class="field-descriptor">Volumetric Flow</div>
+        <div>@($"{ViewModel!.AlicatState.LiveData.VolumetricFlow}")</div>
+      }
+      <div></div>
+
+      <div class="field-descriptor">Mass Flow</div>
       <div>@($"{ViewModel!.AlicatState.LiveData.MassFlow}")</div>
       <RadzenButton Text="Tare" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.ExtraSmall" Click="@(() => ViewModel.TareFlowCommand.Execute().Subscribe())" />
+      
+      @if(ViewModel!.AlicatState.LiveData.ValveDrive is not null)
+      {
+        <div class="field-descriptor">Valve Drive</div>
+        <div>@($"{ViewModel!.AlicatState.LiveData.ValveDrive}")</div>
+        <div></div> 
+      }
 
-      <div class="field-descriptor">Valve Drive</div>
-      <div>@($"{ViewModel!.AlicatState.LiveData.ValveDrive}")</div>
-      <div></div> <div class="field-descriptor">Setpoint</div>
+      <div class="field-descriptor">Setpoint</div>
       <div>@($"{ViewModel!.AlicatState.LiveData.Setpoint}")</div>
       <div></div> <div class="field-descriptor">New Setpoint</div>
       <RadzenNumeric TValue="double?"

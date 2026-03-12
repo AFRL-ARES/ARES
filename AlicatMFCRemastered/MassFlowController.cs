@@ -677,12 +677,10 @@ public class MassFlowController : AresDevice, IMassFlowController
       .From(_stateSubject.Value)
       .AddStruct("LiveData", b =>
       {
-        b.Add("AbsolutePressure", liveResponse.AbsolutePressure?.Value ?? 0)
+        b
          .Add("Temperature", liveResponse.Temperature?.Value ?? 0)
          .Add("MassFlow", liveResponse.MassFlow?.Value ?? 0)
-         .Add("VolumetricFlow", liveResponse.VolumetricFlow?.Value ?? 0)
          .Add("Setpoint", liveResponse.Setpoint?.Value ?? 0)
-         .Add("ValveDrive", liveResponse.ValveDrive ?? 0)
          .AddList(
           key: "StatusCodes",
           items: liveResponse.StatusCodes,
@@ -691,11 +689,19 @@ public class MassFlowController : AresDevice, IMassFlowController
             {
               StringValue = entry.ToString()
             });
-      })
-      .Add("ActiveGas", liveResponse.Gas ?? "Unknown")
-      .Build();
 
-    _stateSubject.OnNext(next);
+        if(liveResponse.AbsolutePressure is not null)
+          b.Add("AbsolutePressure", liveResponse.AbsolutePressure?.Value ?? 0);
+
+        if(liveResponse.VolumetricFlow is not null)
+          b.Add("VolumetricFlow", liveResponse.VolumetricFlow?.Value ?? 0);
+
+        if(liveResponse.ValveDrive is not null)
+          b.Add("ValveDrive", liveResponse.ValveDrive ?? 0);
+      })
+      .Add("ActiveGas", liveResponse.Gas ?? "Unknown").Build();
+
+      _stateSubject.OnNext(next);
   }
 
   private void UpdateDataFrameFormat(DataFrameFormatEntry formatEntry)
@@ -887,12 +893,6 @@ public class MassFlowController : AresDevice, IMassFlowController
 
         case MassFlowControllerCommand.GetSetpoint:
           var setpt = _liveData?.Setpoint?.Value ?? double.MinValue;
-
-          //var structPayload = setpt is not null
-          //    ? AresStructHelper.CreateNumberStruct(MfcDataTypes.Setpoint.Key, setpt.Value)
-          //    : AresStructHelper.CreateNullStruct(MfcDataTypes.Setpoint.Key);
-
-
           result.Result = AresValueHelper.CreateNumber(setpt);
           break;
 

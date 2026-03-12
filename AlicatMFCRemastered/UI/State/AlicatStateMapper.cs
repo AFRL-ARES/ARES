@@ -21,12 +21,12 @@ public static class AlicatStateMapper
       var liveFields = liveVal.StructValue.Fields;
       model.LiveData = new MfcLiveData
       {
-        AbsolutePressure = liveFields.GetValueOrDefault("Pressure")?.NumberValue ?? 0,
+        AbsolutePressure = liveFields.GetValueOrDefault("AbsolutePressure")?.NumberValue ?? null,
         Temperature = liveFields.GetValueOrDefault("Temperature")?.NumberValue ?? 0,
         MassFlow = liveFields.GetValueOrDefault("MassFlow")?.NumberValue ?? 0,
-        VolumetricFlow = liveFields.GetValueOrDefault("VolumetricFlow")?.NumberValue ?? 0,
+        VolumetricFlow = liveFields.GetValueOrDefault("VolumetricFlow")?.NumberValue ?? null,
         Setpoint = liveFields.GetValueOrDefault("Setpoint")?.NumberValue ?? 0,
-        ValveDrive = liveFields.GetValueOrDefault("ValveDrive")?.NumberValue ?? 0,
+        ValveDrive = liveFields.GetValueOrDefault("ValveDrive")?.NumberValue ?? null,
         StatusCodes = liveFields.GetValueOrDefault("StatusCodes")?.ListValue?.Values?.Select(v => v.StringValue).ToList() ?? new List<string>()
       };
     }
