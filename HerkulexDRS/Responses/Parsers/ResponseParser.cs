@@ -1,5 +1,5 @@
-﻿using Ares.Device.Serial;
-using Ares.Device.Serial.Commands;
+using Ares.Toolkit.Serial;
+using Ares.Toolkit.Serial.Commands;
 using System.Text;
 
 namespace HerkulexDRS.Responses.Parsers

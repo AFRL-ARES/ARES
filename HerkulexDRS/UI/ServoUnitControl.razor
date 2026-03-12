@@ -1,0 +1,47 @@
+@using HerkulexDRS.UI
+@using Radzen
+@using Radzen.Blazor
+
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<ServoUnitControlViewModel>
+@inject TooltipService tooltipService
+
+<RadzenRow>
+  <RadzenColumn>
+      @ViewModel!.DeviceName
+  </RadzenColumn>
+
+  <RadzenColumn>
+    <RadzenButton Click="@(() => ViewModel!.PistonUpCommand.Execute().Subscribe())" 
+                  Icon="arrow_upward" 
+                  Size="ButtonSize.Large"
+                  MouseEnter="@(args => ShowTooltip(args, "Raise Servo"))" />
+  </RadzenColumn>
+
+  <RadzenColumn>
+    <RadzenButton Click="@(() => ViewModel!.PistonDownCommand.Execute().Subscribe())" 
+                  Icon="arrow_downward" 
+                  Size="ButtonSize.Large"
+                  MouseEnter="@(args => ShowTooltip(args, "Lower Servo"))" />
+  </RadzenColumn>
+
+  <RadzenColumn>
+    <RadzenButton Click="@(() => ViewModel!.ResetServoCommand.Execute().Subscribe())" 
+                  Icon="restart_alt" 
+                  Size="ButtonSize.Large"
+                  MouseEnter="@(args => ShowTooltip(args, "Reset Servo"))" />
+  </RadzenColumn>
+</RadzenRow>
+
+@code {
+    void ShowTooltip(ElementReference elementReference, string text)
+    {
+        if (tooltipService != null)
+        {
+            try 
+            {
+                tooltipService.Open(elementReference, text);
+            }
+            catch { /* Fallback for cases where service call fails */ }
+        }
+    }
+}

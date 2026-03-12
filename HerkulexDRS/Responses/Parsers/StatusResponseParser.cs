@@ -1,4 +1,4 @@
-﻿namespace HerkulexDRS.Responses.Parsers;
+namespace HerkulexDRS.Responses.Parsers;
 
 internal class StatusResponseParser : ResponseParser<StatusResponse>
 {

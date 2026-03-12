@@ -1,20 +1,20 @@
-﻿using Ares.Device.Serial.Commands;
+using Ares.Toolkit.Serial.Commands;
 
 namespace HerkulexDRS.Responses.Parsers;
 public class GetPositionResponseParser : SerialResponseParser<GetPositionResponse>
 {
   public override bool TryParseResponse(byte[] buffer, out GetPositionResponse? response, out ArraySegment<byte>? dataToRemove)
   {
-    var bufferArray = buffer.ToArray();
-    if (bufferArray.Length == 0)
+    if (buffer.Length == 0)
     {
       response = null;
       dataToRemove = null;
       return false;
     }
 
-    response = null;
-    dataToRemove = null;
+    // TODO: Implement actual protocol parsing
+    response = new GetPositionResponse { Position = 0 };
+    dataToRemove = new ArraySegment<byte>(buffer, 0, buffer.Length);
     return true;
   }
 }

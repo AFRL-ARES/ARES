@@ -1,4 +1,4 @@
-﻿namespace HerkulexDRS.Responses;
+namespace HerkulexDRS.Responses;
 public class StatusResponse : CommandResponse
 {
   public StatusResponse(int servoId) : base(servoId)

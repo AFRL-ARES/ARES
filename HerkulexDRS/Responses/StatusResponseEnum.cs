@@ -1,4 +1,4 @@
-﻿namespace HerkulexDRS.Responses;
+namespace HerkulexDRS.Responses;
 internal enum StatusResponseEnum
 {
 
