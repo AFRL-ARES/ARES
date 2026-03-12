@@ -303,7 +303,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     if(!AresScriptTypeHints.IsCompatibleWithTypeHint(actual, expectedSchema))
     {
       throw new AresInterpreterException(
-        $"Function return type mismatch. Expected {AresScriptTypeHints.ToTypeHintString(expectedSchema)}, received {AresScriptTypeHints.ToTypeHintString(actual)}.",
+        $"Function return type mismatch. Expected {expectedSchema.Stringify()}, received {actual.Stringify()}.",
         context.Start.Line,
         context.Start.Column
       );
@@ -828,7 +828,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     if(!AresScriptTypeHints.IsCompatibleWithTypeHint(receiverSchema, receiverExpected))
     {
       throw new AresInterpreterException(
-        $"Function '{function.Id}' receiver type mismatch. Expected {AresScriptTypeHints.ToTypeHintString(receiverExpected)}, received {AresScriptTypeHints.ToTypeHintString(receiverSchema)}.",
+        $"Function '{function.Id}' receiver type mismatch. Expected {receiverExpected.Stringify()}, received {receiverSchema.Stringify()}.",
         ctx.Start.Line,
         ctx.Start.Column
       );
@@ -868,7 +868,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       if(!AresScriptTypeHints.IsCompatibleWithTypeHint(actual, expected))
       {
         throw new AresInterpreterException(
-          $"Function '{functionId}' argument '{name}' type mismatch. Expected {AresScriptTypeHints.ToTypeHintString(expected)}, received {AresScriptTypeHints.ToTypeHintString(actual)}.",
+          $"Function '{functionId}' argument '{name}' type mismatch. Expected {expected.Stringify()}, received {actual.Stringify()}.",
           ctx.Start.Line,
           ctx.Start.Column
         );
@@ -907,7 +907,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
         if(!AresScriptTypeHints.IsCompatibleWithTypeHint(actual, expected))
         {
           throw new AresInterpreterException(
-            $"Function '{functionId}' argument '{name}' type mismatch. Expected {AresScriptTypeHints.ToTypeHintString(expected)}, received {AresScriptTypeHints.ToTypeHintString(actual)}.",
+            $"Function '{functionId}' argument '{name}' type mismatch. Expected {expected.Stringify()}, received {actual.Stringify()}.",
             ctx.Start.Line,
             ctx.Start.Column
           );
@@ -978,7 +978,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       }
 
       throw new AresInterpreterException(
-        $"Function '{functionId}' argument '{parameterName}' type mismatch. Expected {AresScriptTypeHints.ToTypeHintString(expectedSchema)}, received {AresScriptTypeHints.ToTypeHintString(actual)}.",
+        $"Function '{functionId}' argument '{parameterName}' type mismatch. Expected {expectedSchema.Stringify()}, received {actual.Stringify()}.",
         context.Start.Line,
         context.Start.Column
       );

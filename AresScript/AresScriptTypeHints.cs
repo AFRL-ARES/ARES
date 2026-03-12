@@ -121,28 +121,6 @@ internal static class AresScriptTypeHints
     return IsCompatibleWithTypeHint(actual.ToSchemaEntry(), expectedType);
   }
 
-  // TODO maybe add this to the datamodel's dotnet helper
-  public static string ToTypeHintString(SchemaEntry? schema)
-  {
-    if(schema is null)
-    {
-      return AresDataType.Any.ToString();
-    }
-
-    return schema.Type switch
-    {
-      AresDataType.Struct => schema.StructSchema is null
-        ? schema.Type.ToString()
-        : schema.StructSchema.Fields.Count == 0
-        ? "{}"
-        : $"{{{string.Join(", ", schema.StructSchema.Fields.Select(field => $"{field.Key}: {ToTypeHintString(field.Value)}"))}}}",
-      AresDataType.List => schema.ListElementSchema is null
-        ? schema.Type.ToString()
-        : $"[{ToTypeHintString(schema.ListElementSchema)}]",
-      _ => schema.Type.ToString()
-    };
-  }
-
   private static bool IsCompatible(SchemaEntry expected, SchemaEntry actual)
   {
     if(expected.Type == AresDataType.Any || expected.Type == AresDataType.UnspecifiedType)

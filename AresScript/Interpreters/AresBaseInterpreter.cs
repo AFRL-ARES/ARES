@@ -932,7 +932,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
       {
         var actualSchema = result.ToSchemaEntry();
         throw new AresInterpreterException(
-          $"Function '{id}' return type mismatch. Expected {AresScriptTypeHints.ToTypeHintString(declaredReturnSchema)}, received {AresScriptTypeHints.ToTypeHintString(actualSchema)}.",
+          $"Function '{id}' return type mismatch. Expected {declaredReturnSchema.Stringify()}, received {actualSchema.Stringify()}.",
           ctx.Start.Line,
           ctx.Start.Column
         );
@@ -974,7 +974,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
     var actualSchema = value.ToSchemaEntry();
     throw new AresInterpreterException(
-      $"Function '{functionId}' return type mismatch. Expected {AresScriptTypeHints.ToTypeHintString(declaredReturnSchema)}, received {AresScriptTypeHints.ToTypeHintString(actualSchema)}.",
+      $"Function '{functionId}' return type mismatch. Expected {declaredReturnSchema.Stringify()}, received {actualSchema.Stringify()}.",
       line,
       column
     );
@@ -1016,7 +1016,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
       var actualSchema = argument.ToSchemaEntry();
       throw new AresInterpreterException(
-        $"Function '{functionId}' argument '{parameterName}' type mismatch. Expected {AresScriptTypeHints.ToTypeHintString(expectedSchema)}, received {AresScriptTypeHints.ToTypeHintString(actualSchema)}.",
+        $"Function '{functionId}' argument '{parameterName}' type mismatch. Expected {expectedSchema.Stringify()}, received {actualSchema.Stringify()}.",
         context.Start.Line,
         context.Start.Column
       );

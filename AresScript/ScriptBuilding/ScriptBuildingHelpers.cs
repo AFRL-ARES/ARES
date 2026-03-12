@@ -1,4 +1,5 @@
 ﻿using Ares.Datamodel;
+using Ares.Datamodel.Extensions;
 using AresScript.Generated;
 using AresScript.Symbols;
 using System.Text;
@@ -9,7 +10,7 @@ internal static class ScriptBuildingHelpers
 {
   public static string ToFunctionSignature(this AresScriptParameter parameter)
   {
-    return $"{parameter.Name}: {AresScriptTypeHints.ToTypeHintString(parameter.Schema)}";
+    return $"{parameter.Name}: {parameter.Schema.Stringify()}";
   }
 
   public static string ToParameterSignature(this AresLangParser.ParameterContext parameterContext)
