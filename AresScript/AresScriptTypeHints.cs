@@ -2,6 +2,7 @@ using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
 using AresScript.Generated;
+using UnitsNet;
 
 namespace AresScript;
 
@@ -154,9 +155,150 @@ internal static class AresScriptTypeHints
         }
 
         return IsCompatible(expected.ListElementSchema, actual.ListElementSchema);
+      case AresDataType.Quantity:
+        return IsCompatible(expected.QuantitySchema, actual.QuantitySchema);
       default:
         return true;
     }
+  }
+
+  private static bool IsCompatible(QuantitySchema? expected, QuantitySchema? actual)
+  {
+    if(expected is null || actual is null)
+    {
+      return true;
+    }
+
+    if(expected.QuantityType != QuantityType.Unspecified
+      && actual.QuantityType != QuantityType.Unspecified
+      && expected.QuantityType != actual.QuantityType)
+    {
+      return false;
+    }
+
+    if(expected.HasMinScalarValue
+      && actual.HasMinScalarValue
+      && !IsQuantityBoundCompatible(expected, actual, isMinBound: true))
+    {
+      return false;
+    }
+
+    if(expected.HasMaxScalarValue
+      && actual.HasMaxScalarValue
+      && !IsQuantityBoundCompatible(expected, actual, isMinBound: false))
+    {
+      return false;
+    }
+
+    return true;
+  }
+
+  private static bool IsQuantityBoundCompatible(
+    QuantitySchema expectedSchema,
+    QuantitySchema actualSchema,
+    bool isMinBound)
+  {
+    var expectedScalar = isMinBound ? expectedSchema.MinScalarValue : expectedSchema.MaxScalarValue;
+    var actualScalar = isMinBound ? actualSchema.MinScalarValue : actualSchema.MaxScalarValue;
+
+    if(TryConvertToComparableScalars(expectedSchema, actualSchema, isMinBound, out var expectedComparable, out var actualComparable))
+    {
+      return isMinBound
+        ? actualComparable >= expectedComparable
+        : actualComparable <= expectedComparable;
+    }
+
+    return isMinBound
+      ? actualScalar >= expectedScalar
+      : actualScalar <= expectedScalar;
+  }
+
+  private static bool TryConvertToComparableScalars(
+    QuantitySchema expectedSchema,
+    QuantitySchema actualSchema,
+    bool isMinBound,
+    out double expectedComparable,
+    out double actualComparable)
+  {
+    var expectedScalar = isMinBound ? expectedSchema.MinScalarValue : expectedSchema.MaxScalarValue;
+    var actualScalar = isMinBound ? actualSchema.MinScalarValue : actualSchema.MaxScalarValue;
+
+    expectedComparable = expectedScalar;
+    actualComparable = actualScalar;
+
+    if(!TryToUnitsNetQuantity(expectedSchema, actualSchema, expectedScalar, out var expectedQuantity))
+    {
+      return false;
+    }
+
+    if(!TryToUnitsNetQuantity(actualSchema, expectedSchema, actualScalar, out var actualQuantity))
+    {
+      return false;
+    }
+
+    var expectedBaseUnit = expectedQuantity.QuantityInfo.BaseUnitInfo.Value;
+    var actualBaseUnit = actualQuantity.QuantityInfo.BaseUnitInfo.Value;
+    expectedComparable = expectedQuantity.As(expectedBaseUnit);
+    actualComparable = actualQuantity.As(actualBaseUnit);
+    return true;
+  }
+
+  private static bool TryToUnitsNetQuantity(
+    QuantitySchema schema,
+    QuantitySchema otherSchema,
+    double scalar,
+    out IQuantity quantity)
+  {
+    quantity = default!;
+
+    if(string.IsNullOrWhiteSpace(schema.BoundsUnit))
+    {
+      return false;
+    }
+
+    var quantityType = ResolveQuantityType(schema, otherSchema);
+    if(quantityType == QuantityType.Unspecified)
+    {
+      return false;
+    }
+
+    var unitsNetQuantityName = quantityType.ToUnitsNetQuantityName();
+    var quantityInfo = Quantity.Infos.FirstOrDefault(info => info.Name.Equals(unitsNetQuantityName, StringComparison.OrdinalIgnoreCase));
+    if(quantityInfo is null)
+    {
+      return false;
+    }
+
+    var enumUnit = quantityInfo.UnitInfos
+      .Select(unitInfo => unitInfo.Value)
+      .FirstOrDefault(u => u.ToString().Equals(schema.BoundsUnit, StringComparison.OrdinalIgnoreCase));
+
+    // Try strict enum-name matching first, then fall back to UnitsNet parsing so
+    // aliases/abbreviations (e.g. "s", "sec") can still resolve correctly.
+    if(enumUnit is null && !UnitParser.Default.TryParse(schema.BoundsUnit, quantityInfo.UnitType, out enumUnit))
+    {
+      return false;
+    }
+
+    if(enumUnit is null)
+    {
+      return false;
+    }
+
+    quantity = Quantity.From(scalar, enumUnit);
+    return true;
+  }
+
+  private static QuantityType ResolveQuantityType(QuantitySchema schema, QuantitySchema otherSchema)
+  {
+    if(schema.QuantityType != QuantityType.Unspecified)
+    {
+      return schema.QuantityType;
+    }
+
+    return otherSchema.QuantityType != QuantityType.Unspecified
+      ? otherSchema.QuantityType
+      : QuantityType.Unspecified;
   }
 
   private static bool AreStructSchemasCompatible(AresDataSchema? expected, AresDataSchema? actual)

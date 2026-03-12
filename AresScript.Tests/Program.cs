@@ -8,6 +8,7 @@ using AresScript.Interpreters;
 using AresScript.ScriptAnalysis;
 using NUnit.Framework;
 using System.Diagnostics;
+using System.Reflection;
 
 namespace AresScript.Tests;
 
@@ -170,6 +171,22 @@ public class InterpreterTests
     return visitor.Visit(expressionContext);
   }
 
+  private static bool IsTypeHintCompatible(SchemaEntry actual, SchemaEntry expected)
+  {
+    var typeHintsType = typeof(StandardLibrary).Assembly.GetType("AresScript.AresScriptTypeHints");
+    Assert.That(typeHintsType, Is.Not.Null);
+
+    var method = typeHintsType!.GetMethod(
+      "IsCompatibleWithTypeHint",
+      BindingFlags.Public | BindingFlags.Static,
+      [typeof(SchemaEntry), typeof(SchemaEntry)]);
+    Assert.That(method, Is.Not.Null);
+
+    var result = method!.Invoke(null, [actual, expected]);
+    Assert.That(result, Is.TypeOf<bool>());
+    return (bool)result!;
+  }
+
   [Test]
   public async Task Assert_Passes_OnTrueCondition()
   {
@@ -259,6 +276,74 @@ public class InterpreterTests
       """;
 
     await RunScriptAsync(script);
+  }
+
+  [Test]
+  public void QuantitySchemaCompatibility_NormalizesUnits_WhenOneSideTypeIsSpecified()
+  {
+    var expected = new SchemaEntry
+    {
+      Type = AresDataType.Quantity,
+      QuantitySchema = new QuantitySchema
+      {
+        QuantityType = QuantityType.Unspecified,
+        BoundsUnit = "Minute",
+        MinScalarValue = 1
+      }
+    };
+
+    var actualTooSmall = new SchemaEntry
+    {
+      Type = AresDataType.Quantity,
+      QuantitySchema = new QuantitySchema
+      {
+        QuantityType = QuantityType.Duration,
+        BoundsUnit = "Second",
+        MinScalarValue = 30
+      }
+    };
+
+    var actualLargeEnough = new SchemaEntry
+    {
+      Type = AresDataType.Quantity,
+      QuantitySchema = new QuantitySchema
+      {
+        QuantityType = QuantityType.Duration,
+        BoundsUnit = "Second",
+        MinScalarValue = 90
+      }
+    };
+
+    Assert.That(IsTypeHintCompatible(actualTooSmall, expected), Is.False);
+    Assert.That(IsTypeHintCompatible(actualLargeEnough, expected), Is.True);
+  }
+
+  [Test]
+  public void QuantitySchemaCompatibility_FallsBackToRawScalars_WhenBothTypesAreUnspecified()
+  {
+    var expected = new SchemaEntry
+    {
+      Type = AresDataType.Quantity,
+      QuantitySchema = new QuantitySchema
+      {
+        QuantityType = QuantityType.Unspecified,
+        BoundsUnit = "Minute",
+        MinScalarValue = 1
+      }
+    };
+
+    var actual = new SchemaEntry
+    {
+      Type = AresDataType.Quantity,
+      QuantitySchema = new QuantitySchema
+      {
+        QuantityType = QuantityType.Unspecified,
+        BoundsUnit = "Second",
+        MinScalarValue = 30
+      }
+    };
+
+    Assert.That(IsTypeHintCompatible(actual, expected), Is.True);
   }
 
   [Test]
