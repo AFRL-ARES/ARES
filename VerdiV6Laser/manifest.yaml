@@ -1,0 +1,20 @@
+# ARES Device Driver Manifest
+# Target: Coherent Verdi V6 Laser
+
+# Basic Metadata
+device_type_name: "Verdi V6 Laser"
+driver_id: "verdi_v6_laser_v1"
+connection_type: "Serial"
+
+# The DLL that contains the Device and ViewModel classes
+assembly_name: "VerdiV6Laser.dll"
+
+# Serial connection specifics
+serial_settings:
+  requires_unit_id: false
+  variable_baud_rate: true
+  allowed_baud_rates: [9600, 19200, 38400, 57600, 115200]
+  default_baud_rate: 19200
+
+# Settings required when adding the device through the ARES UI
+settings: []

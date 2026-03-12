@@ -1,52 +1,74 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <OutputType>Library</OutputType>
+    <IsPackable>true</IsPackable>
+    <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <GenerateDependencyFile>true</GenerateDependencyFile>
+    <NoWarn>NU1605</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Proto\DataModel.proto" />
-    <None Remove="Proto\Services.proto" />
-    <None Remove="Proto\VerdiConfig.proto" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Google.Protobuf" Version="3.33.3" />
-    <PackageReference Include="Grpc.Tools" Version="2.76.0">
+    <PackageReference Include="Ares.Toolkit.Device" Version="0.0.1-beta.6" />
+    <PackageReference Include="Radzen.Blazor" Version="10.0.1" />
+    <PackageReference Include="ReactiveUI.Blazor" Version="23.1.8" />
+    <PackageReference Include="ReactiveUI.SourceGenerators" Version="2.6.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="System.IO.Ports" Version="10.0.3" />
+    <PackageReference Include="System.Reactive" Version="6.1.0" />
+    <PackageReference Include="UnitsNet" Version="5.75.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ApplicationDefinition Include="Proto\DataModel.proto" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="../../Ares.Toolkit.Serial/Ares.Toolkit.Serial/Ares.Toolkit.Serial.csproj">
+			<Private>true</Private>
+			<CopyLocalSatelliteAssemblies>true</CopyLocalSatelliteAssemblies>
+		</ProjectReference>
+	</ItemGroup>
 
   <ItemGroup>
-    <Content Include="VerdiV6Laser\VerdiLaserConfigEditView.razor">
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-    </Content>
-    <Content Include="VerdiV6Laser\VerdiLaserControlWidgetView.razor">
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-    </Content>
-    <Content Include="VerdiV6Laser\VerdiLaserSettingsList.razor">
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-    </Content>
-    <Content Include="VerdiV6Laser\VerdiLaserSettingsView.razor">
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-    </Content>
+    <None Update="manifest.yaml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Ares.Device.Serial\AresSerial\Ares.Device.Serial.csproj" />
-  </ItemGroup>
+  <!-- Automated packaging logic for .ares drivers -->
+  <Target Name="PackageAresDriver" AfterTargets="Build">
+    <PropertyGroup>
+      <StagingFolder>$(ProjectDir)obj\AresStaging\</StagingFolder>
+      <PackageName>$(ProjectDir)bin\$(Configuration)\$(AssemblyName).ares</PackageName>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <Protobuf Include="Proto\Services.proto" ProtoRoot="Proto" />
-    <Protobuf Include="Proto\VerdiConfig.proto" GrpcServices="None" />
-		<Protobuf Include="Proto\DataModel.proto" GrpcServices="None" />
-  </ItemGroup>
+    <ItemGroup>
+      <ScopedCssBundle Include="$(IntermediateOutputPath)scopedcss\bundle\$(AssemblyName).styles.css" Condition="Exists('$(IntermediateOutputPath)scopedcss\bundle\$(AssemblyName).styles.css')" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(ScopedCssBundle)" DestinationFolder="$(TargetDir)" SkipUnchangedFiles="true" Condition="'@(ScopedCssBundle)' != ''" />
+
+    <RemoveDir Directories="$(StagingFolder)" />
+    <MakeDir Directories="$(StagingFolder);$(StagingFolder)bin" />
+
+    <Copy SourceFiles="manifest.yaml" DestinationFolder="$(StagingFolder)" />
+
+    <ItemGroup>
+      <AllOutputFiles Include="$(TargetDir)**\*.*" Exclude="$(TargetDir)Ares.Device.dll;$(TargetDir)Ares.Datamodel.dll;$(TargetDir)obj\**\*.*" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(AllOutputFiles)" DestinationFiles="@(AllOutputFiles->'$(StagingFolder)bin\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+
+    <ZipDirectory SourceDirectory="$(StagingFolder)" DestinationFile="$(PackageName)" Overwrite="true" />
+    <RemoveDir Directories="$(StagingFolder)" />
+    <Message Importance="high" Text="ARES Driver Packaged: $(PackageName)" />
+  </Target>
 
 </Project>

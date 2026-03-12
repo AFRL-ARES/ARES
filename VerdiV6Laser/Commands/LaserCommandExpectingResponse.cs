@@ -1,21 +1,20 @@
-﻿using Ares.Device.Serial.Commands;
+using Ares.Toolkit.Serial.Commands;
 using System.Text;
+using VerdiV6Laser.Responses;
 
-namespace VerdiV6Laser.Commands
+namespace VerdiV6Laser.Commands;
+
+public abstract class LaserCommandExpectingResponse<T> : SerialCommandWithResponse<T> where T : SerialResponse
 {
-  public abstract class LaserCommandExpectingResponse<T> : SerialCommandWithResponse<T> where T : CommandResponse
+  protected LaserCommandExpectingResponse(SerialResponseParser<T> parser) : base(parser)
   {
-    protected LaserCommandExpectingResponse(SerialResponseParser<T> parser) : base(parser)
-    {
-    }
+  }
 
-    protected abstract string SerializeToString();
+  protected abstract string SerializeToString();
 
-    protected override byte[] Serialize()
-    {
-      var commandString = SerializeToString();
-      var serialCommand = Encoding.ASCII.GetBytes(commandString.ToCharArray());
-      return serialCommand;
-    }
+  protected override byte[] Serialize()
+  {
+    var commandString = SerializeToString();
+    return Encoding.ASCII.GetBytes(commandString);
   }
 }

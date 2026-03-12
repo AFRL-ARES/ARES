@@ -1,8 +1,7 @@
-﻿using Ares.Device.Serial;
+using Ares.Toolkit.Serial;
 
-namespace VerdiV6Laser
+namespace VerdiV6Laser;
+
+public interface ILaserConnection : IAresSerialConnection
 {
-  public interface ILaserConnection : IAresSerialConnection
-  {
-  }
 }
