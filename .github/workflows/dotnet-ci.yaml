@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 env:
-  SOLUTION_FILE: 'AresOS.sln' 
+  SOLUTION_FILE: 'AresOS.slnx' 
 
 jobs:
   build-and-test:
