@@ -1,6 +1,5 @@
 @using ChemyxPumpPlugin.Enums
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<IndividualPumpViewModel>
-@implements IAsyncDisposable
 
 @if(ViewModel == null)
 {
@@ -129,6 +128,4 @@ else
   }
 
   private async Task UpdateDiameter(double value) => await ViewModel!.SetDiameter(value);
-
-  public ValueTask DisposeAsync() => ViewModel!.DisposeAsync();
 }

@@ -21,9 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="ARES.Datamodel" Version="0.17.0-beta.27" />
     <PackageReference Include="Ares.Toolkit.Device" Version="0.0.1-beta.6" />
-    <PackageReference Include="Radzen.Blazor" Version="10.0.1" />
     <PackageReference Include="ReactiveUI" Version="23.1.8" />
     <PackageReference Include="ReactiveUI.Blazor" Version="23.1.8" />
     <PackageReference Include="ReactiveUI.SourceGenerators" Version="2.6.1">
