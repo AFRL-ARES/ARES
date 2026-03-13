@@ -182,9 +182,8 @@ public class VerdiV6LaserDevice : AresDevice, IVerdiV6Laser
   public override async Task<CommandResult> ExecuteCommand(string command, List<DeviceCommandArgument> arguments, CancellationToken token)
   {
     if (!Enum.TryParse<VerdiV6LaserCommand>(command, out var laserCommand))
-    {
       return new CommandResult { Success = false, Error = $"Unknown command: {command}" };
-    }
+    
 
     try
     {

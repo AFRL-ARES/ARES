@@ -1,0 +1,49 @@
+# ARES Device Driver Manifest
+# Target: Pololu Tic Stepper Controller
+
+# Basic Metadata
+device_type_name: "Pololu Tic Stepper Controller"
+driver_id: "pololu_tic_stepper_v1"
+connection_type: "Serial"
+
+# The DLL that contains the TicStepperController and ViewModel classes
+assembly_name: "TicStepperController.dll"
+
+# Serial connection specifics
+serial_settings:
+  requires_unit_id: false
+  variable_baud_rate: true
+  allowed_baud_rates: [9600, 19200, 38400, 57600, 115200]
+  default_baud_rate: 9600
+
+# Settings required when adding the device through the ARES UI
+settings:
+  - key: "CustomStepSize"
+    display_name: "User Step Size"
+    type: "number"
+    description: "Manual step size for move commands (default: 1)."
+
+  - key: "DynamicStepCalculation"
+    display_name: "Use Spool Calculation"
+    type: "boolean"
+    description: "Enable automatic step size calculation based on spool geometry."
+
+  - key: "SpoolRadius"
+    display_name: "Initial Spool Radius (mm)"
+    type: "number"
+    description: "Radius of the spool with no paper/material."
+
+  - key: "FilterPaperThickness"
+    display_name: "Material Thickness (mm)"
+    type: "number"
+    description: "Thickness of one layer of material on the spool."
+
+  - key: "IdealLinearStepSize"
+    display_name: "Ideal Linear Step (mm)"
+    type: "number"
+    description: "Target linear distance per user-triggered step."
+
+  - key: "StepAngle"
+    display_name: "Motor Step Angle (deg)"
+    type: "number"
+    description: "The native step angle of the motor (usually 1.8)."
