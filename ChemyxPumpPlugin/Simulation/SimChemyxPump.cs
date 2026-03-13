@@ -1,23 +1,10 @@
-﻿using System.Text;
-using System.Threading;
+using ChemyxPumpPlugin.Enums;
+using System.Text;
 
 namespace ChemyxPumpPlugin.Simulation;
 
 public class SimChemyxPump
 {
-  private sealed class PumpState
-  {
-    public double Units { get; set; }
-    public double Diameter { get; set; }
-    public double Rate { get; set; }
-    public double Volume { get; set; }
-    public double Delay { get; set; }
-    public double SetTime { get; set; }
-    public double DispensedVolume { get; set; }
-    public double ElapsedMinutes { get; set; }
-    public PumpStatus Status { get; set; } = PumpStatus.Stopped;
-  }
-
   private readonly Action<byte[]> _byteSender;
   private readonly object _lock = new();
   private readonly PumpState[] _pumps;
@@ -57,12 +44,11 @@ public class SimChemyxPump
       var delta = (now - _lastUpdate).TotalMinutes;
       _lastUpdate = now;
 
-      if(delta <= 0)
-        return;
+      if(delta <= 0) return;
 
       foreach(var pump in _pumps)
       {
-        if(pump.Status != PumpStatus.Running)
+        if(pump.Status != PumpStatus.Running) 
           continue;
 
         pump.ElapsedMinutes += delta;
@@ -100,11 +86,11 @@ public class SimChemyxPump
 
   private void ProcessCommand(string command)
   {
-    if(string.IsNullOrWhiteSpace(command))
+    if(string.IsNullOrWhiteSpace(command)) 
       return;
 
     var trimmedCommand = command.TrimEnd('\0', '\r', '\n');
-    if(string.IsNullOrWhiteSpace(trimmedCommand))
+    if(string.IsNullOrWhiteSpace(trimmedCommand)) 
       return;
 
     var originalCommand = trimmedCommand;
@@ -209,15 +195,12 @@ public class SimChemyxPump
   {
     lock(_lock)
     {
-      if(applyAll)
-      {
-        foreach(var pump in _pumps)
+      if(applyAll) 
+        foreach(var pump in _pumps) 
           pump.Status = PumpStatus.Stopped;
-      }
-      else
-      {
+      
+      else 
         _pumps[pumpIndex - 1].Status = PumpStatus.Stopped;
-      }
     }
 
     SendResponse(originalCommand, "Pump stop!");
@@ -227,15 +210,8 @@ public class SimChemyxPump
   {
     lock(_lock)
     {
-      if(applyAll)
-      {
-        foreach(var pump in _pumps)
-          pump.Status = PumpStatus.Paused;
-      }
-      else
-      {
-        _pumps[pumpIndex - 1].Status = PumpStatus.Paused;
-      }
+      if(applyAll) foreach(var pump in _pumps) pump.Status = PumpStatus.Paused;
+      else _pumps[pumpIndex - 1].Status = PumpStatus.Paused;
     }
 
     SendResponse(originalCommand, "Pump pause!");
@@ -245,15 +221,12 @@ public class SimChemyxPump
   {
     lock(_lock)
     {
-      if(applyAll)
-      {
-        foreach(var pump in _pumps)
+      if(applyAll) 
+        foreach(var pump in _pumps) 
           pump.Status = PumpStatus.Running;
-      }
-      else
-      {
+      
+      else 
         _pumps[pumpIndex - 1].Status = PumpStatus.Running;
-      }
     }
 
     SendResponse(originalCommand, "Pump restart!");
@@ -262,10 +235,8 @@ public class SimChemyxPump
   private void HandleStatus(string originalCommand, int pumpIndex)
   {
     var status = 0;
-    lock(_lock)
-    {
+    lock(_lock) 
       status = (int)_pumps[pumpIndex - 1].Status;
-    }
 
     SendResponse(originalCommand, status.ToString());
   }
@@ -291,38 +262,23 @@ public class SimChemyxPump
     switch(setting)
     {
       case "units":
-        lock(_lock)
-        {
-          pump.Units = value;
-        }
+        lock(_lock) pump.Units = value;
         SendResponse(originalCommand, $"units = {value:0}");
         break;
       case "diameter":
-        lock(_lock)
-        {
-          pump.Diameter = value;
-        }
+        lock(_lock) pump.Diameter = value;
         SendResponse(originalCommand, $"diameter = {value:F3}");
         break;
       case "rate":
-        lock(_lock)
-        {
-          pump.Rate = value;
-        }
+        lock(_lock) pump.Rate = value;
         SendResponse(originalCommand, $"rate = {value:F6}");
         break;
       case "volume":
-        lock(_lock)
-        {
-          pump.Volume = value;
-        }
+        lock(_lock) pump.Volume = value;
         SendResponse(originalCommand, $"volume = {value:F6}");
         break;
       case "delay":
-        lock(_lock)
-        {
-          pump.Delay = value;
-        }
+        lock(_lock) pump.Delay = value;
         SendResponse(originalCommand, $"delay = {value:F6}");
         break;
       case "time":
@@ -354,10 +310,7 @@ public class SimChemyxPump
       return;
     }
 
-    lock(_lock)
-    {
-      _pumps[pumpIndex - 1].Rate = value;
-    }
+    lock(_lock) _pumps[pumpIndex - 1].Rate = value;
 
     SendResponse(originalCommand, $"pump {pumpIndex} change rate = {value:F6}");
   }
@@ -365,10 +318,7 @@ public class SimChemyxPump
   private void HandleDispensedVolume(string originalCommand, int pumpIndex)
   {
     double dispensed;
-    lock(_lock)
-    {
-      dispensed = _pumps[pumpIndex - 1].DispensedVolume;
-    }
+    lock(_lock) dispensed = _pumps[pumpIndex - 1].DispensedVolume;
 
     SendResponse(originalCommand, $"dispensed volume = {dispensed:F4}");
   }
@@ -376,10 +326,7 @@ public class SimChemyxPump
   private void HandleElapsedTime(string originalCommand, int pumpIndex)
   {
     double elapsed;
-    lock(_lock)
-    {
-      elapsed = _pumps[pumpIndex - 1].ElapsedMinutes;
-    }
+    lock(_lock) elapsed = _pumps[pumpIndex - 1].ElapsedMinutes;
 
     SendResponse(originalCommand, $"elapsed time = {elapsed:0.00000}");
   }
@@ -430,14 +377,25 @@ public class SimChemyxPump
 
     sb.Append('>');
     var sbString = sb.ToString();
-    //Console.WriteLine($"I have processed the command {commandEcho} and will be sending back a response");
-    return Task.Run(async () =>
+    return Task.Run(() =>
     {
       foreach(var responseChar in sbString)
       {
         _byteSender(Encoding.UTF8.GetBytes([responseChar]));
-        //await Task.Delay(1);
       }
     });
+  }
+
+  private sealed class PumpState
+  {
+    public double Units { get; set; }
+    public double Diameter { get; set; }
+    public double Rate { get; set; }
+    public double Volume { get; set; }
+    public double Delay { get; set; }
+    public double SetTime { get; set; }
+    public double DispensedVolume { get; set; }
+    public double ElapsedMinutes { get; set; }
+    public PumpStatus Status { get; set; } = PumpStatus.Stopped;
   }
 }

@@ -1,0 +1,24 @@
+# ARES Device Driver Manifest
+# Target: Chemyx Syringe Pump
+
+# Basic Metadata
+device_type_name: "Chemyx Syringe Pump"
+driver_id: "chemyx_pump_v1"
+connection_type: "Serial"
+
+# The DLL that contains the ChemyxPump and ViewModel classes
+assembly_name: "ChemyxPumpPlugin.dll"
+
+# Serial connection specifics
+serial_settings:
+  requires_unit_id: false
+  variable_baud_rate: true
+  allowed_baud_rates: [9600, 19200, 38400, 57600, 115200]
+  default_baud_rate: 9600
+
+# Settings required when adding the device through the ARES UI
+settings:
+  - key: "DualPump"
+    display_name: "Dual Pump Mode"
+    type: "boolean"
+    description: "Specify true if this unit is a dual pump system."

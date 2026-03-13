@@ -1,337 +1,210 @@
-﻿using Ares.Datamodel;
+using Ares.Datamodel;
+using Ares.Datamodel.Device;
+using Ares.Datamodel.Extensions;
+using Ares.Datamodel.Factories;
 using Ares.Device;
-using Ares.Device.Serial;
+using Ares.Toolkit.Serial;
 using ChemyxPumpPlugin.Commands;
-using ChemyxPumpPlugin.Commands.Requests;
-using ChemyxPumpPlugin.Commands.Responses;
+using ChemyxPumpPlugin.Enums;
+using ChemyxPumpPlugin.Responses;
+using ChemyxPumpPlugin.Simulation;
+using System.IO.Ports;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 
 namespace ChemyxPumpPlugin;
 
-public class ChemyxPump : SerialDevice<IChemyxPumpConnection>, IChemyxPump
+public class ChemyxPump : AresDevice, IChemyxPump
 {
-  private const int DefaultPumpIndex = 1;
   private readonly BehaviorSubject<AresStruct> _stateSubject = new(new AresStruct());
-  private CancellationTokenSource _internalPollToken = new();
-  private Task _internalPollers = Task.CompletedTask;
+  private readonly IAresSerialConnection _connection;
+  private Task _pollingTask = Task.CompletedTask;
+  private CancellationTokenSource _pollingCancellation = new();
+  private ViewParametersResponse? _cachedParameters;
 
-  public ChemyxPump(string name, bool dualPump, IChemyxPumpConnection connection) : base(name, connection)
+  public ChemyxPump(DeviceConnectionInfo connectionInfo) : base(connectionInfo)
   {
-    DualPump = dualPump;
-    StateStream = _stateSubject.AsObservable();
+    var serialInfo = connectionInfo.SerialConnectionInfo;
+    _connection = connectionInfo.Simulated 
+      ? new SimChemyxConnection(serialInfo.PortName)
+      : new AresHardwareConnection(new SerialPortConnectionInfo(9600, Parity.None, 8, StopBits.One), serialInfo.PortName);
+
+    DualPump = connectionInfo.DeviceSettings.Fields.GetValueOrDefault("DualPump")?.BoolValue ?? false;
   }
-  public async Task Start(int? pump = null, int mode = 0)
-    => await Connection.Send(new StartCommand(pump, mode));
 
-  public async Task Stop(int? pump = null)
-    => await Connection.Send(new StopCommand(pump));
-
-  public async Task Pause(int? pump = null)
-    => await Connection.Send(new PauseCommand(pump));
-
-  private async Task<PumpStatus?> PollStatus(int? pump = null)
+  public override async Task<bool> Activate(CancellationToken ct)
   {
     try
     {
-      var response = await Connection.Send(new PumpStatusCommand(pump ?? DefaultPumpIndex), TimeSpan.FromSeconds(5));
-      if(response is null)
-        return null;
-
-      return response.Status;
+      _cachedParameters = await _connection.Send(new ViewParameterCommand());
+      StartPolling();
+      Status = new DeviceOperationalStatus { OperationalState = OperationalState.Active, Message = "Chemyx Pump is active" };
+      return true;
     }
-    catch(Exception ex)
+    catch(Exception e)
     {
-      Console.WriteLine(ex.ToString());
+      Status = new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Failed to activate: {e.Message}" };
+      return false;
     }
-
-    return null;
-
   }
-
-  private async Task<double?> PollDispensedVolume(int? pump = null)
-  {
-    var response = await Connection.Send(new DispensedVolumeCommand(pump ?? DefaultPumpIndex), TimeSpan.FromSeconds(5));
-    return response.Value;
-  }
-
-  private async Task<TimeSpan?> PollElapsedTime(int? pump = null)
-  {
-    var response = await Connection.Send(new ElapsedTimeCommand(pump ?? DefaultPumpIndex), TimeSpan.FromSeconds(5));
-    if(response?.Value is not double minutes)
-    {
-      return null;
-    }
-    var timeSpan = TimeSpan.FromMinutes(minutes);
-    return timeSpan;
-  }
-
-  private async Task<LimitParameterResponse?> PollLimitParameter(int? pump = null, int program = 0)
-  {
-    var response = await Connection.Send(new ReadLimitParameterCommand(pump ?? DefaultPumpIndex, program), TimeSpan.FromSeconds(5));
-    if(response is null)
-      return null;
-
-    return response;
-  }
-
-  public async Task<double?> SetDiameter(double diameter, int? pump = null)
-  {
-    var response = await Connection.Send(new SetDiameterCommand(pump ?? DefaultPumpIndex, diameter), TimeSpan.FromSeconds(5));
-    ViewParameters = await PollViewParameters();
-    return response.Value;
-  }
-
-  public async Task<double?> SetRate(double rate, int? pump = null)
-  {
-    var response = await Connection.Send(new SetRateCommand(pump ?? DefaultPumpIndex, rate), TimeSpan.FromSeconds(5));
-    ViewParameters = await PollViewParameters();
-    return response.Value;
-  }
-
-  public async Task<double?> SetVolume(double volume, int? pump = null)
-  {
-    var response = await Connection.Send(new SetVolumeCommand(pump ?? DefaultPumpIndex, volume), TimeSpan.FromSeconds(5));
-    ViewParameters = await PollViewParameters();
-    return response.Value;
-  }
-
-  public async Task<double?> SetUnits(PumpUnits units, int? pump = null)
-  {
-    var response = await Connection.Send(new SetUnitsCommand(pump ?? DefaultPumpIndex, units), TimeSpan.FromSeconds(5));
-    ViewParameters = await PollViewParameters();
-    return response.Value;
-  }
-
-  public async Task<TimeSpan?> SetDelay(TimeSpan delay, int? pump = null)
-  {
-    var response = await Connection.Send(new SetDelayCommand(pump ?? DefaultPumpIndex, delay.TotalSeconds), TimeSpan.FromSeconds(5));
-    if(response?.Value is not double responseSeconds)
-    {
-      return null;
-    }
-    ViewParameters = await PollViewParameters();
-    var responseTime = TimeSpan.FromSeconds(responseSeconds);
-    return responseTime;
-  }
-
-  public async Task<(double rate, TimeSpan time)?> SetTime(TimeSpan time, int? pump = null)
-  {
-    var totalMinutes = time.TotalMinutes;
-    var response = await Connection.Send(new SetTimeCommand(pump ?? DefaultPumpIndex, totalMinutes), TimeSpan.FromSeconds(5));
-    if(response is null || !response.Rate.HasValue || !response.Time.HasValue)
-      return null;
-
-    ViewParameters = await PollViewParameters();
-    var responseTimespan = TimeSpan.FromMinutes(response.Time.Value);
-    return (response.Rate.Value, responseTimespan);
-  }
-
-  private async Task<ViewParametersResponse?> PollViewParameters()
-    => await Connection.Send(new ViewParameterCommand(), TimeSpan.FromSeconds(5));
 
   public override async Task EnterSafeMode(CancellationToken ct)
   {
-    await Stop(null);
+    await _connection.Send(new StopCommand(null));
   }
 
-  protected override async Task<SerialDeviceValidationResult> Validate()
+  public override Task<AresStruct> GetState() => Task.FromResult(_stateSubject.Value);
+  public override IObservable<AresStruct> StateStream => _stateSubject.AsObservable();
+
+  private void StartPolling()
   {
-    try
+    _pollingCancellation.Cancel();
+    _pollingCancellation = new CancellationTokenSource();
+    _pollingTask = Task.Run(async () =>
     {
-      var status = await PollStatus(DefaultPumpIndex);
-      var valid = status.HasValue;
-      return new SerialDeviceValidationResult(valid, valid ? string.Empty : "Unable to query pump status.");
-    }
-    catch(Exception ex)
-    {
-      return new SerialDeviceValidationResult(false, ex.Message);
-    }
-  }
-
-  public ValueTask DisposeAsync()
-  {
-    throw new NotImplementedException();
-  }
-
-  public void StartPolling()
-  {
-    _internalPollToken = new CancellationTokenSource();
-    _internalPollers = Task.WhenAll(PollParams(_internalPollToken.Token), PollState(_internalPollToken.Token));
-  }
-
-  public async Task StopPolling()
-  {
-    await _internalPollToken.CancelAsync();
-    try
-    {
-      await _internalPollers;
-    }
-    catch(OperationCanceledException)
-    { }
-  }
-
-  private Task PollParams(CancellationToken token)
-  {
-    return Task.Run(async () =>
-    {
-      while(!token.IsCancellationRequested)
+      while(!_pollingCancellation.Token.IsCancellationRequested)
       {
         try
         {
-        ViewParameters = await PollViewParameters();
-        await Task.Delay(TimeSpan.FromSeconds(30), token);
-      }
-        catch(Exception ex)
-        {
-          Console.WriteLine(ex);
+          await UpdateStateFromDevice();
         }
+        catch { /* Ignore poll errors */ }
+        await Task.Delay(TimeSpan.FromMilliseconds(750), _pollingCancellation.Token);
       }
-    }, token);
+    }, _pollingCancellation.Token);
   }
 
-  private Task PollState(CancellationToken token)
+  private async Task UpdateStateFromDevice()
   {
-    return Task.Run(async () =>
+    var pumpCount = DualPump ? 2 : 1;
+    var pumpStates = new List<AresValue>();
+
+    for(int i = 1; i <= pumpCount; i++)
     {
-      while(!token.IsCancellationRequested)
+      var status = await _connection.Send(new PumpStatusCommand(i));
+      var disp = await _connection.Send(new DispensedVolumeCommand(i));
+      var elapsed = await _connection.Send(new ElapsedTimeCommand(i));
+
+      var config = i == 1 ? _cachedParameters?.Pump1 : _cachedParameters?.Pump2;
+
+      var builder = AresStateBuilder.Create()
+        .Add("Index", i)
+        .Add("Status", status.Status?.ToString() ?? "Unknown")
+        .Add("Volume", disp.Value ?? 0)
+        .Add("Time", elapsed.Value.HasValue ? TimeSpan.FromMinutes(elapsed.Value.Value).ToString(@"hh\:mm\:ss") : "00:00:00");
+
+      if(config != null)
       {
-        try
-        {
-          var pumpStatuses = new List<PumpStatus>();
-          var status = await PollStatus(1);
-          if(status.HasValue)
-          {
-            pumpStatuses.Add(status.Value);
-          }
-
-          var dispensedVolumes = new List<double>();
-          var dispensed = await PollDispensedVolume(1);
-          if(dispensed.HasValue)
-          {
-            dispensedVolumes.Add(dispensed.Value);
-          }
-
-          var elapsedTimes = new List<TimeSpan>();
-          var elapsed = await PollElapsedTime(1);
-          if(elapsed.HasValue)
-          {
-            elapsedTimes.Add(elapsed.Value);
-          }
-
-          var limitParameters = new List<LimitParameterResponse>();
-          var limit = await PollLimitParameter(1);
-          if(limit is not null)
-          {
-            limitParameters.Add(limit);
-          }
-
-          status = await PollStatus(2);
-          if(status.HasValue)
-            pumpStatuses.Add(status.Value);
-
-          dispensed = await PollDispensedVolume(2);
-          if(dispensed.HasValue)
-            dispensedVolumes.Add(dispensed.Value);
-
-          elapsed = await PollElapsedTime(2);
-          if(elapsed.HasValue)
-            elapsedTimes.Add(elapsed.Value);
-
-          limit = await PollLimitParameter(2);
-          if(limit is not null)
-            limitParameters.Add(limit);
-
-          PumpStatuses = pumpStatuses.Any() ? pumpStatuses.ToArray() : null;
-          DispensedVolumes = dispensedVolumes.Any() ? dispensedVolumes.ToArray() : null;
-          ElapsedTimes = elapsedTimes.Any() ? elapsedTimes.ToArray() : null;
-          LimitParameters = limitParameters.Any() ? limitParameters.ToArray() : null;
-          await Task.Delay(TimeSpan.FromMilliseconds(750), token);
-        }
-        catch(Exception ex)
-        {
-          Console.WriteLine(ex);
-        }
+        builder.Add("Diameter", config.Diameter);
+        builder.Add("TargetVolume", config.Volume);
+        builder.Add("Rate", config.Rate);
+        builder.Add("Delay", config.Delay);
+        builder.Add("Units", config.Units.ToString());
       }
-    }, token);
+
+      pumpStates.Add(new AresValue { StructValue = builder.Build() });
+    }
+
+    var rootBuilder = AresStateBuilder.Create()
+      .Add("Name", Name)
+      .Add("DualPump", DualPump)
+      .AddList("Pumps", pumpStates, v => v);
+
+    _stateSubject.OnNext(rootBuilder.Build());
   }
 
-  public override Task<AresStruct> GetState()
+  public override async Task UpdateSettings(AresStruct settings)
   {
-    return Task.FromResult(AresStateBuilder.Create()
-    .AddList("PumpStatuses", PumpStatuses ?? [], status =>
+    DualPump = settings.Fields.GetValueOrDefault("DualPump")?.BoolValue ?? false;
+    await Task.CompletedTask;
+  }
+
+  public override Task<AresStruct> GetSettings()
+  {
+    return Task.FromResult(AresStateBuilder.Create().Add("DualPump", DualPump).Build());
+  }
+
+  protected override Task<List<DeviceCommandDescriptor>> BuildCommandDescriptorsAsync()
+  {
+    return Task.FromResult(new List<DeviceCommandDescriptor>
     {
-      // Create a child struct for the status object
-      var statusStruct = AresStateBuilder.Create()
-      .Add("Status", status.ToString())
-      .Build();
+      new() { Name = ChemyxPumpCommand.Start.ToString(), Description = "Starts the pump." },
+      new() { Name = ChemyxPumpCommand.Stop.ToString(), Description = "Stops the pump." },
+      new() { Name = ChemyxPumpCommand.Pause.ToString(), Description = "Pauses the pump." },
+      new() {
+        Name = ChemyxPumpCommand.SetRate.ToString(),
+        Description = "Sets the flow rate.",
+        InputSchema = AresSchemaBuilder.Empty()
+          .AddEntry("PumpIndex", AresSchemaBuilder.NumberEntry().Build())
+          .AddEntry("Rate", AresSchemaBuilder.NumberEntry().Build())
+          .Build()
+      },
+      new() {
+        Name = ChemyxPumpCommand.SetVolume.ToString(),
+        Description = "Sets the target volume.",
+        InputSchema = AresSchemaBuilder.Empty()
+          .AddEntry("PumpIndex", AresSchemaBuilder.NumberEntry().Build())
+          .AddEntry("Volume", AresSchemaBuilder.NumberEntry().Build())
+          .Build()
+      }
+    });
+  }
 
-      return new AresValue { StructValue = statusStruct };
-    })
+  public override async Task<CommandResult> ExecuteCommand(string command, List<DeviceCommandArgument> arguments, CancellationToken token)
+  {
+    if(!Enum.TryParse<ChemyxPumpCommand>(command, out var chemyxCommand))
+      return new CommandResult { Success = false, Error = $"Unknown command: {command}" };
 
-    .AddList("DispensedVolumes", DispensedVolumes ?? [], vol =>
-        new AresValue { NumberValue = vol })
-
-    .AddList("ElapsedTimes", ElapsedTimes ?? [], time =>
-        new AresValue { StringValue = time.ToString(@"hh\:mm\:ss") })
-
-    .AddList("LimitParameters", LimitParameters ?? [], limit =>
+    try
     {
-      var limitStruct = AresStateBuilder.Create()
-      .Add("MaxVolume", limit.MaxVolume)
-      .Add("MaxRate", limit.MaxRate)
-      .Add("MinRate", limit.MinRate)
-      .Build();
-
-      return new AresValue { StructValue = limitStruct };
-    })
-    .Build());
+      int? pumpIdx = (int?)arguments.FirstOrDefault(a => a.ArgName == "PumpIndex")?.ArgValue.NumberValue;
+      
+      switch(chemyxCommand)
+      {
+        case ChemyxPumpCommand.Start:
+          int mode = (int)(arguments.FirstOrDefault(a => a.ArgName == "Mode")?.ArgValue.NumberValue ?? 0);
+          await _connection.Send(new StartCommand(pumpIdx, mode));
+          break;
+        case ChemyxPumpCommand.Stop:
+          await _connection.Send(new StopCommand(pumpIdx));
+          break;
+        case ChemyxPumpCommand.Pause:
+          await _connection.Send(new PauseCommand(pumpIdx));
+          break;
+        case ChemyxPumpCommand.SetRate:
+          var rateArg = arguments.FirstOrDefault(a => a.ArgName == "Rate");
+          if(rateArg != null && rateArg.ArgValue.HasNumberValue)
+          {
+            await _connection.Send(new SetRateCommand(pumpIdx ?? 1, rateArg.ArgValue.NumberValue));
+            _cachedParameters = await _connection.Send(new ViewParameterCommand());
+          }
+          break;
+        case ChemyxPumpCommand.SetVolume:
+          var volArg = arguments.FirstOrDefault(a => a.ArgName == "Volume");
+          if(volArg != null && volArg.ArgValue.HasNumberValue)
+          {
+            await _connection.Send(new SetVolumeCommand(pumpIdx ?? 1, volArg.ArgValue.NumberValue));
+            _cachedParameters = await _connection.Send(new ViewParameterCommand());
+          }
+          break;
+        default:
+          return new CommandResult { Success = false, Error = "Not implemented" };
+      }
+      return new CommandResult { Success = true };
+    }
+    catch(Exception e)
+    {
+      return new CommandResult { Success = false, Error = e.Message };
+    }
   }
 
-  public override IObservable<AresStruct> StateStream { get; }
-
-  public PumpStatus[]? PumpStatuses { get; private set; }
-
-  public double[]? DispensedVolumes { get; private set; }
-
-  public TimeSpan[]? ElapsedTimes { get; private set; }
-
-  public LimitParameterResponse[]? LimitParameters { get; private set; }
-
-  public ViewParametersResponse? ViewParameters { get; private set; }
-
-  public PumpStatus? GetStatus(int? pump = null)
+  public async ValueTask DisposeAsync()
   {
-    if(PumpStatuses is null || PumpStatuses.Length == 0 || pump > PumpStatuses.Count())
-      return PumpStatus.Stopped;
-
-    pump -= 1;
-    return PumpStatuses?[pump ?? 0];
+    _pollingCancellation.Cancel();
+    await _pollingTask;
+    await _connection.DisposeAsync();
+    _stateSubject.OnCompleted();
   }
 
-  public double? GetDispensedVolume(int? pump = null)
-  {
-    if(DispensedVolumes is null || DispensedVolumes.Length == 0 || pump > DispensedVolumes.Count())
-      return 0;
-
-    pump -= 1;
-    return DispensedVolumes?[pump ?? 0];
-  }
-
-  public TimeSpan? GetElapsedTime(int? pump = null)
-  {
-    if(ElapsedTimes is null || ElapsedTimes.Length == 0 || pump > ElapsedTimes.Count())
-      return TimeSpan.FromSeconds(0);
-
-    pump -= 1;
-    return ElapsedTimes?[pump ?? 0];
-  }
-
-  public LimitParameterResponse? ReadLimitParameter(int? pump = null)
-  {
-    pump -= 1;
-    return LimitParameters?[pump ?? 0];
-  }
-
-  public bool DualPump { get; set; } = false;
+  public bool DualPump { get; private set; }
 }

@@ -1,0 +1,20 @@
+@using ChemyxPumpPlugin.UI
+@using Radzen
+@using Radzen.Blazor
+
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<ChemyxPumpUnitControlViewModel>
+
+<div class="d-flex flex-column gap-3">
+  <div class="h5 text-center">@ViewModel!.Device.Name</div>
+
+  <div class="d-flex justify-content-between gap-3">
+    <!-- Pump 1 -->
+    <IndividualPump ViewModel="@ViewModel.Pump1ViewModel" />
+
+    @if(ViewModel.Device.DualPump)
+    {
+      <!-- Pump 2 -->
+      <IndividualPump ViewModel="@ViewModel.Pump2ViewModel" />
+    }
+  </div>
+</div>
