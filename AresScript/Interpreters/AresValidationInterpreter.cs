@@ -324,6 +324,17 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       return;
     }
 
+    var conditionExpr = expressions[0];
+    var conditionSchema = _typeInference.Visit(conditionExpr);
+    if(conditionSchema.Type != AresDataType.Boolean && _mode == ValidationMode.Strict)
+    {
+      throw new AresInterpreterException(
+        "Assert condition must be boolean.",
+        conditionExpr.Start.Line,
+        conditionExpr.Start.Column
+      );
+    }
+
     foreach(var expr in expressions)
     {
       await Visit(expr);
