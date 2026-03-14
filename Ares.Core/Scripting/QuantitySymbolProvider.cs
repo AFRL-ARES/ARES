@@ -50,15 +50,16 @@ public class QuantitySymbolProvider : ISymbolProvider
             // We should only concern ourselves with validating the actual units.
             if(args.Count < 2 || args[1] is not { HasStringValue: true } unitArg || string.IsNullOrWhiteSpace(unitArg.StringValue))
             {
-              return null;
+              return new StaticArgValidation(true);
             }
 
             if(!QuantityUnitHelper.TryValidateConstructionArgs(quantityType, args.ElementAtOrDefault(0), unitArg, out _, out _, out var error))
             {
-              return $"Function '{functionId}' {error}";
+              return new StaticArgValidation(false, $"Function '{functionId}' {error}", 1);
+              
             }
 
-            return null;
+            return new StaticArgValidation(true);
           }
         });
     }

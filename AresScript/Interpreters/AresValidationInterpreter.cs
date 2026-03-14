@@ -662,8 +662,8 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       {
         throw new AresInterpreterException(
           $"Unknown function '{unresolvedMemberCtx.ID().GetText()}' on '{unresolvedMemberCtx.expression().GetText()}'.",
-          unresolvedMemberCtx.Stop.Line,
-          unresolvedMemberCtx.Stop.Column
+          unresolvedMemberCtx.ID().Symbol.Line,
+          unresolvedMemberCtx.ID().Symbol.Column
         );
       }
       throw new AresInterpreterException(
@@ -682,7 +682,12 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       if(keywordArgs.Count > 0)
       {
-        throw new AresInterpreterException($"Runtime function '{functionId}' does not support keyword arguments", ctx.Start.Line, ctx.Start.Column);
+        var firstKeywordArg = keywordArgs.Values.First();
+        throw new AresInterpreterException(
+          $"Runtime function '{functionId}' does not support keyword arguments",
+          firstKeywordArg.Start.Line,
+          firstKeywordArg.Start.Column
+        );
       }
 
       ValidateSystemFunctionArgs(systemFn, positionalArgs, keywordArgs, ctx);
@@ -694,10 +699,11 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       if(positionalArgs.Count > userFn.ParameterNames.Count)
       {
+        var extraArgument = positionalArgs[userFn.ParameterNames.Count];
         throw new AresInterpreterException(
           $"Function '{functionId}' expected {userFn.ParameterNames.Count} arguments but got {positionalArgs.Count}",
-          ctx.Start.Line,
-          ctx.Start.Column
+          extraArgument.Start.Line,
+          extraArgument.Start.Column
         );
       }
 
@@ -706,12 +712,22 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
         var index = FindParameterIndex(userFn.ParameterNames, name);
         if(index < 0)
         {
-          throw new AresInterpreterException($"Function '{functionId}' got an unexpected keyword argument '{name}'", ctx.Start.Line, ctx.Start.Column);
+          var keywordArgument = keywordArgs[name];
+          throw new AresInterpreterException(
+            $"Function '{functionId}' got an unexpected keyword argument '{name}'",
+            keywordArgument.Start.Line,
+            keywordArgument.Start.Column
+          );
         }
 
         if(index < positionalArgs.Count)
         {
-          throw new AresInterpreterException($"Function '{functionId}' got multiple values for argument '{name}'", ctx.Start.Line, ctx.Start.Column);
+          var keywordArgument = keywordArgs[name];
+          throw new AresInterpreterException(
+            $"Function '{functionId}' got multiple values for argument '{name}'",
+            keywordArgument.Start.Line,
+            keywordArgument.Start.Column
+          );
         }
       }
 
@@ -737,10 +753,11 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       if(positionalArgs.Count > lambda.Parameters.Count)
       {
+        var extraArgument = positionalArgs[lambda.Parameters.Count];
         throw new AresInterpreterException(
           $"Function '{functionId}' expected {lambda.Parameters.Count} arguments but got {positionalArgs.Count}",
-          ctx.argList().Start.Line,
-          ctx.argList().Start.Column
+          extraArgument.Start.Line,
+          extraArgument.Start.Column
         );
       }
 
@@ -749,19 +766,21 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
         var index = FindParameterIndex(lambda.Parameters, name);
         if(index < 0)
         {
+          var keywordArgument = keywordArgs[name];
           throw new AresInterpreterException(
             $"Function '{functionId}' got an unexpected keyword argument '{name}'",
-            ctx.argList().Start.Line,
-            ctx.argList().Start.Column
+            keywordArgument.Start.Line,
+            keywordArgument.Start.Column
           );
         }
 
         if(index < positionalArgs.Count)
         {
+          var keywordArgument = keywordArgs[name];
           throw new AresInterpreterException(
             $"Function '{functionId}' got multiple values for argument '{name}'",
-            ctx.argList().Start.Line,
-            ctx.argList().Start.Column
+            keywordArgument.Start.Line,
+            keywordArgument.Start.Column
           );
         }
       }
@@ -813,10 +832,15 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       var resolvedArgs = positionalArgs
         .Select(TryBuildAssignmentValue)
         .ToArray();
-      var error = function.StaticArgumentValidator(resolvedArgs);
-      if(error is not null)
+      var validation = function.StaticArgumentValidator(resolvedArgs);
+      if(!validation.Success)
       {
-        throw new AresInterpreterException(error, ctx.Start.Line, ctx.Start.Column);
+        var arg = positionalArgs.ElementAtOrDefault(validation.Index);
+        throw new AresInterpreterException(
+          validation.Error ?? "",
+          arg?.Start.Line ?? ctx.Start.Line,
+          arg?.Start.Column ?? ctx.Start.Column
+        );
       }
     }
   }
@@ -830,7 +854,12 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
   {
     if(keywordArgs.Count > 0)
     {
-      throw new AresInterpreterException($"Runtime function '{function.Name}' does not support keyword arguments", ctx.Start.Line, ctx.Start.Column);
+      var firstKeywordArg = keywordArgs.Values.First();
+      throw new AresInterpreterException(
+        $"Runtime function '{function.Name}' does not support keyword arguments",
+        firstKeywordArg.Start.Line,
+        firstKeywordArg.Start.Column
+      );
     }
 
     if(function.InputSchema.Fields.Count == 0)
@@ -843,8 +872,8 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       throw new AresInterpreterException(
         $"Function '{function.Id}' receiver type mismatch. Expected {receiverExpected.Stringify()}, received {receiverSchema.Stringify()}.",
-        ctx.Start.Line,
-        ctx.Start.Column
+        ctx.expression().Start.Line,
+        ctx.expression().Start.Column
       );
     }
 
@@ -873,8 +902,8 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       {
         throw new AresInterpreterException(
           $"Function '{functionId}' got an unexpected keyword argument '{name}'.",
-          ctx.Start.Line,
-          ctx.Start.Column
+          expr.Start.Line,
+          expr.Start.Column
         );
       }
 
@@ -883,8 +912,8 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       {
         throw new AresInterpreterException(
           $"Function '{functionId}' argument '{name}' type mismatch. Expected {expected.Stringify()}, received {actual.Stringify()}.",
-          ctx.Start.Line,
-          ctx.Start.Column
+          expr.Start.Line,
+          expr.Start.Column
         );
       }
     }
@@ -893,10 +922,11 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       if(!variadicAnyArgs && positionalArgs.Count > schemaFields.Length)
       {
+        var extraArgument = positionalArgs[schemaFields.Length];
         throw new AresInterpreterException(
           $"Function '{functionId}' expected at most {schemaFields.Length} arguments but got {positionalArgs.Count}.",
-          ctx.Start.Line,
-          ctx.Start.Column
+          extraArgument.Start.Line,
+          extraArgument.Start.Column
         );
       }
 
@@ -922,8 +952,8 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
         {
           throw new AresInterpreterException(
             $"Function '{functionId}' argument '{name}' type mismatch. Expected {expected.Stringify()}, received {actual.Stringify()}.",
-            ctx.Start.Line,
-            ctx.Start.Column
+            positionalArgs[i].Start.Line,
+            positionalArgs[i].Start.Column
           );
         }
       }
@@ -993,8 +1023,8 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
 
       throw new AresInterpreterException(
         $"Function '{functionId}' argument '{parameterName}' type mismatch. Expected {expectedSchema.Stringify()}, received {actual.Stringify()}.",
-        context.Start.Line,
-        context.Start.Column
+        argument.Start.Line,
+        argument.Start.Column
       );
     }
   }

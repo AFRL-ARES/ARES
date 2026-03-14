@@ -5,6 +5,8 @@ namespace AresScript.Symbols;
 
 public delegate Task<AresValue> AresFunctionDelegate(List<AresValue> args, ScriptExecutionControlToken token);
 
+public record StaticArgValidation(bool Success, string? Error = null, int Index = 0);
+
 public record AresSystemFunctionSymbol(
   string Id,
   string Name,
@@ -27,5 +29,5 @@ public record AresSystemFunctionSymbol(
   /// Arguments may be exact constant values, environment-resolved values, or typed dummy
   /// values produced by inference when the original expression cannot be fully resolved.
   /// </summary>
-  public Func<IReadOnlyList<AresValue?>, string?>? StaticArgumentValidator { get; set; }
+  public Func<IReadOnlyList<AresValue?>, StaticArgValidation>? StaticArgumentValidator { get; set; }
 }

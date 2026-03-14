@@ -164,8 +164,8 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     {
       throw new AresInterpreterException(
         "Assert condition must be boolean.",
-        context.Start.Line,
-        context.Start.Column
+        assertContext.expression(0).Start.Line,
+        assertContext.expression(0).Start.Column
       );
     }
 
@@ -778,7 +778,9 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     await CheckExecutionControlAsync();
 
     var positionalArgs = new List<AresValue>();
+    var positionalArgExpressions = new List<AresLangParser.ExpressionContext>();
     var keywordArgs = new Dictionary<string, AresValue>(StringComparer.Ordinal);
+    var keywordArgContexts = new Dictionary<string, AresLangParser.KeywordArgContext>(StringComparer.Ordinal);
     var seenKeywordArg = false;
 
     var argContexts = ctx.argList()?.argument() ?? Enumerable.Empty<AresLangParser.ArgumentContext>();
@@ -798,6 +800,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
               );
             }
 
+            positionalArgExpressions.Add(positionalArg.expression());
             positionalArgs.Add(await Visit(positionalArg.expression()));
             break;
           }
@@ -815,6 +818,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
             }
 
             keywordArgs[name] = await Visit(keywordArg.expression());
+            keywordArgContexts[name] = keywordArg;
             break;
           }
         default:
@@ -826,7 +830,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
       }
     }
 
-    var memberResolution = await TryResolveMemberCallee(ctx, ctx.expression(), positionalArgs, keywordArgs);
+    var memberResolution = await TryResolveMemberCallee(ctx, ctx.expression(), positionalArgs, keywordArgs, keywordArgContexts);
     if(memberResolution.ExtensionHandled)
     {
       return memberResolution.ExtensionResult!;
@@ -843,7 +847,12 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     {
       if(keywordArgs.Count > 0)
       {
-        throw new AresInterpreterException($"Runtime function '{id}' does not support keyword arguments", ctx.Start.Line, ctx.Start.Column);
+        var firstKeywordArg = keywordArgContexts.Values.First();
+        throw new AresInterpreterException(
+          $"Runtime function '{id}' does not support keyword arguments",
+          firstKeywordArg.Start.Line,
+          firstKeywordArg.Start.Column
+        );
       }
 
       await CheckExecutionControlAsync();
@@ -862,7 +871,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
       return await ExecuteFunctionInvocationAsync(ctx, id, id, AresFunctionInvocationKind.Lambda, async () =>
       {
-        return await ExecuteLambda(userLambda, id, positionalArgs, keywordArgs);
+        return await ExecuteLambda(ctx, userLambda, id, positionalArgs, keywordArgs, keywordArgContexts);
       });
     }
 
@@ -876,10 +885,11 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     {
       if(positionalArgs.Count > userFn.ParameterNames.Count)
       {
+        var extraArgument = positionalArgExpressions[userFn.ParameterNames.Count];
         throw new AresInterpreterException(
           $"Function '{id}' expected {userFn.ParameterNames.Count} arguments but got {positionalArgs.Count}",
-          ctx.Start.Line,
-          ctx.Start.Column
+          extraArgument.Start.Line,
+          extraArgument.Start.Column
         );
       }
 
@@ -893,12 +903,22 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
         var index = FindParameterIndex(userFn.ParameterNames, name);
         if(index < 0)
         {
-          throw new AresInterpreterException($"Function '{id}' got an unexpected keyword argument '{name}'", ctx.Start.Line, ctx.Start.Column);
+          var keywordArg = keywordArgContexts[name];
+          throw new AresInterpreterException(
+            $"Function '{id}' got an unexpected keyword argument '{name}'",
+            keywordArg.Start.Line,
+            keywordArg.Start.Column
+          );
         }
 
         if(index < positionalArgs.Count)
         {
-          throw new AresInterpreterException($"Function '{id}' got multiple values for argument '{name}'", ctx.Start.Line, ctx.Start.Column);
+          var keywordArg = keywordArgContexts[name];
+          throw new AresInterpreterException(
+            $"Function '{id}' got multiple values for argument '{name}'",
+            keywordArg.Start.Line,
+            keywordArg.Start.Column
+          );
         }
 
         Environment[name] = value;
@@ -913,7 +933,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
         }
       }
 
-      ValidateUserFunctionArgumentTypeHints(id, userFn, positionalArgs, keywordArgs, ctx);
+      ValidateUserFunctionArgumentTypeHints(id, userFn, positionalArgs, positionalArgExpressions, keywordArgs, keywordArgContexts);
 
       var declaredReturnSchema = userFn.ReturnSchema;
 
@@ -986,8 +1006,9 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     string functionId,
     AresScriptFunction userFunction,
     IReadOnlyList<AresValue> positionalArgs,
+    IReadOnlyList<AresLangParser.ExpressionContext> positionalArgExpressions,
     IReadOnlyDictionary<string, AresValue> keywordArgs,
-    AresLangParser.FunctionCallContext context)
+    IReadOnlyDictionary<string, AresLangParser.KeywordArgContext> keywordArgContexts)
   {
     for(var i = 0; i < userFunction.Parameters.Count; i++)
     {
@@ -999,10 +1020,34 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
       if(i < positionalArgs.Count)
       {
         argument = positionalArgs[i];
+        if(AresScriptTypeHints.IsCompatibleWithTypeHint(argument, expectedSchema))
+        {
+          continue;
+        }
+
+        var actualSchema = argument.ToSchemaEntry();
+        var argumentExpression = positionalArgExpressions[i];
+        throw new AresInterpreterException(
+          $"Function '{functionId}' argument '{parameterName}' type mismatch. Expected {expectedSchema.Stringify()}, received {actualSchema.Stringify()}.",
+          argumentExpression.Start.Line,
+          argumentExpression.Start.Column
+        );
       }
       else if(keywordArgs.TryGetValue(parameterName, out var keywordArgument))
       {
         argument = keywordArgument;
+        if(AresScriptTypeHints.IsCompatibleWithTypeHint(argument, expectedSchema))
+        {
+          continue;
+        }
+
+        var actualSchema = argument.ToSchemaEntry();
+        var keywordArg = keywordArgContexts[parameterName];
+        throw new AresInterpreterException(
+          $"Function '{functionId}' argument '{parameterName}' type mismatch. Expected {expectedSchema.Stringify()}, received {actualSchema.Stringify()}.",
+          keywordArg.expression().Start.Line,
+          keywordArg.expression().Start.Column
+        );
       }
 
       // Shouldn't be hit here, but should still check so it doesn't complain about nulls.
@@ -1011,17 +1056,6 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
         continue;
       }
 
-      if(AresScriptTypeHints.IsCompatibleWithTypeHint(argument, expectedSchema))
-      {
-        continue;
-      }
-
-      var actualSchema = argument.ToSchemaEntry();
-      throw new AresInterpreterException(
-        $"Function '{functionId}' argument '{parameterName}' type mismatch. Expected {expectedSchema.Stringify()}, received {actualSchema.Stringify()}.",
-        context.Start.Line,
-        context.Start.Column
-      );
     }
   }
 
@@ -1029,7 +1063,8 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     AresLangParser.FunctionCallContext functionCallContext,
     AresLangParser.ExpressionContext expression,
     List<AresValue> positionalArgs,
-    IReadOnlyDictionary<string, AresValue> keywordArgs)
+    IReadOnlyDictionary<string, AresValue> keywordArgs,
+    IReadOnlyDictionary<string, AresLangParser.KeywordArgContext> keywordArgContexts)
   {
     if(expression is not AresLangParser.MemberAccessContext memberAccess)
     {
@@ -1050,7 +1085,12 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
     if(keywordArgs.Count > 0)
     {
-      throw new AresInterpreterException($"Runtime function '{memberName}' does not support keyword arguments", functionCallContext.Start.Line, functionCallContext.Start.Column);
+      var firstKeywordArg = keywordArgContexts.Values.First();
+      throw new AresInterpreterException(
+        $"Runtime function '{memberName}' does not support keyword arguments",
+        firstKeywordArg.Start.Line,
+        firstKeywordArg.Start.Column
+      );
     }
 
     positionalArgs.Insert(0, receiver);
@@ -1121,15 +1161,17 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
   }
 
   private async Task<AresValue> ExecuteLambda(
+    AresLangParser.FunctionCallContext context,
     AresScriptLambda lambda,
     string id,
     IReadOnlyList<AresValue> positionalArgs,
-    IReadOnlyDictionary<string, AresValue> keywordArgs)
+    IReadOnlyDictionary<string, AresValue> keywordArgs,
+    IReadOnlyDictionary<string, AresLangParser.KeywordArgContext> keywordArgContexts)
   {
     await CheckExecutionControlAsync();
     if(Environment.Depth > 100)
     {
-      throw new AresInterpreterException("Maximum function call depth reached.");
+      throw new AresInterpreterException("Maximum function call depth reached.", context.Start.Line, context.Start.Column);
     }
 
     Environment.EnterScope();
@@ -1142,8 +1184,14 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
       if(positionalArgs.Count > lambda.Parameters.Count)
       {
+        var extraArgument = context.argList()?.argument()
+          .OfType<AresLangParser.PositionalArgContext>()
+          .Skip(lambda.Parameters.Count)
+          .FirstOrDefault();
         throw new AresInterpreterException(
-          $"Function '{id}' expected {lambda.Parameters.Count} arguments but got {positionalArgs.Count}"
+          $"Function '{id}' expected {lambda.Parameters.Count} arguments but got {positionalArgs.Count}",
+          extraArgument?.Start.Line ?? context.Start.Line,
+          extraArgument?.Start.Column ?? context.Start.Column
         );
       }
 
@@ -1157,12 +1205,22 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
         var index = FindParameterIndex(lambda.Parameters, name);
         if(index < 0)
         {
-          throw new AresInterpreterException($"Function '{id}' got an unexpected keyword argument '{name}'");
+          var keywordArg = keywordArgContexts[name];
+          throw new AresInterpreterException(
+            $"Function '{id}' got an unexpected keyword argument '{name}'",
+            keywordArg.Start.Line,
+            keywordArg.Start.Column
+          );
         }
 
         if(index < positionalArgs.Count)
         {
-          throw new AresInterpreterException($"Function '{id}' got multiple values for argument '{name}'");
+          var keywordArg = keywordArgContexts[name];
+          throw new AresInterpreterException(
+            $"Function '{id}' got multiple values for argument '{name}'",
+            keywordArg.Start.Line,
+            keywordArg.Start.Column
+          );
         }
 
         Environment[name] = value;
@@ -1173,7 +1231,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
         var name = lambda.Parameters[i];
         if(!Environment.TryGetValueCurrentScope(name, out var _))
         {
-          throw new AresInterpreterException($"Function '{id}' missing required argument '{name}'");
+          throw new AresInterpreterException($"Function '{id}' missing required argument '{name}'", context.Start.Line, context.Start.Column);
         }
       }
 
@@ -1218,12 +1276,12 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
     if(!left.HasNumberValue)
     {
-      throw new AresInterpreterException("Left hand side is not numeric.", context.Start.Line, context.Start.Column);
+      throw new AresInterpreterException("Left hand side is not numeric.", context.expression(0).Start.Line, context.expression(0).Start.Column);
     }
 
     if(!right.HasNumberValue)
     {
-      throw new AresInterpreterException("Right hand side is not numeric.", context.Start.Line, context.Start.Column);
+      throw new AresInterpreterException("Right hand side is not numeric.", context.expression(1).Start.Line, context.expression(1).Start.Column);
     }
 
     var result = context.op.Type switch
@@ -1264,12 +1322,12 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
     if(!left.HasNumberValue)
     {
-      throw new AresInterpreterException("Left hand side is not numeric.", context.Start.Line, context.Start.Column);
+      throw new AresInterpreterException("Left hand side is not numeric.", context.expression(0).Start.Line, context.expression(0).Start.Column);
     }
 
     if(!right.HasNumberValue)
     {
-      throw new AresInterpreterException("Right hand side is not numeric.", context.Start.Line, context.Start.Column);
+      throw new AresInterpreterException("Right hand side is not numeric.", context.expression(1).Start.Line, context.expression(1).Start.Column);
     }
 
     return AresValueHelper.CreateNumber(left.NumberValue - right.NumberValue);
@@ -1282,12 +1340,12 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
     if(!left.HasNumberValue)
     {
-      throw new AresInterpreterException("Left hand side is not numeric.", context.Start.Line, context.Start.Column);
+      throw new AresInterpreterException("Left hand side is not numeric.", context.expression(0).Start.Line, context.expression(0).Start.Column);
     }
 
     if(!right.HasNumberValue)
     {
-      throw new AresInterpreterException("Right hand side is not numeric.", context.Start.Line, context.Start.Column);
+      throw new AresInterpreterException("Right hand side is not numeric.", context.expression(1).Start.Line, context.expression(1).Start.Column);
     }
 
     var result = context.op.Type switch
@@ -1348,8 +1406,8 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     {
       throw new AresInterpreterException(
         $"Cannot perform AND on type {left.KindCase}.",
-        context.Start.Line,
-        context.Start.Column
+        context.expression(0).Start.Line,
+        context.expression(0).Start.Column
       );
     }
 
@@ -1357,8 +1415,8 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     {
       throw new AresInterpreterException(
         $"Cannot perform AND on type {right.KindCase}.",
-        context.Start.Line,
-        context.Start.Column
+        context.expression(1).Start.Line,
+        context.expression(1).Start.Column
       );
     }
 
@@ -1373,8 +1431,8 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     {
       throw new AresInterpreterException(
         $"Cannot perform OR on type {left.KindCase}.",
-        context.Start.Line,
-        context.Start.Column
+        context.expression(0).Start.Line,
+        context.expression(0).Start.Column
       );
     }
 
@@ -1382,8 +1440,8 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     {
       throw new AresInterpreterException(
         $"Cannot perform OR on type {right.KindCase}.",
-        context.Start.Line,
-        context.Start.Column
+        context.expression(1).Start.Line,
+        context.expression(1).Start.Column
       );
     }
 
