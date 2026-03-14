@@ -805,6 +805,18 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
   private void ValidateSystemFunctionArgs(AresSystemFunctionSymbol function, IReadOnlyList<AresLangParser.ExpressionContext> positionalArgs, IReadOnlyDictionary<string, AresLangParser.ExpressionContext> keywordArgs, AresLangParser.FunctionCallContext ctx)
   {
     ValidateArgsAgainstSchema(function.Id, function.InputSchema, positionalArgs, keywordArgs, ctx);
+
+    if(function.StaticArgumentValidator is not null)
+    {
+      var resolvedArgs = positionalArgs
+        .Select(TryBuildAssignmentValue)
+        .ToArray();
+      var error = function.StaticArgumentValidator(resolvedArgs);
+      if(error is not null)
+      {
+        throw new AresInterpreterException(error, ctx.Start.Line, ctx.Start.Column);
+      }
+    }
   }
 
   private void ValidateExtensionFunctionArgs(

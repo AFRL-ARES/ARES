@@ -1,6 +1,7 @@
 using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
+using AresScript;
 using AresScript.Symbols;
 using UnitsNet;
 
@@ -14,9 +15,9 @@ public class QuantitySymbolProvider : ISymbolProvider
 
     foreach(var quantityType in Enum.GetValues<QuantityType>().Where(type => type != QuantityType.Unspecified))
     {
-      var quantityInfo = ResolveQuantityInfo(quantityType);
       var quantityTypeName = quantityType.ToString();
       var functionId = $"unit::{quantityTypeName.ToLowerInvariant()}::from";
+      var baseUnitName = QuantityUnitHelper.GetBaseUnitName(quantityType);
 
       symbols.Add(
         new AresSystemFunctionSymbol(
@@ -26,22 +27,15 @@ public class QuantitySymbolProvider : ISymbolProvider
           {
             if(args.Count != 2)
             {
-              throw new InvalidOperationException($"Function '{functionId}' expected exactly 2 arguments but got {args.Count}.");
+              throw new InvalidOperationException($"Quantity creation expects exactly 2 arguments but got {args.Count}.");
             }
 
-            if(!args[0].HasNumberValue)
+            if(!QuantityUnitHelper.TryCreateQuantity(quantityType, args[0], args[1], out var quantityValue, out var error))
             {
-              throw new InvalidOperationException($"Function '{functionId}' expected first argument 'value' to be a number.");
+              throw new InvalidOperationException($"Error creating quantity. {error}");
             }
 
-            if(!args[1].HasStringValue || string.IsNullOrWhiteSpace(args[1].StringValue))
-            {
-              throw new InvalidOperationException($"Function '{functionId}' expected second argument 'unit' to be a non-empty string.");
-            }
-
-            var unit = ParseUnit(quantityInfo, args[1].StringValue, quantityType);
-            var quantity = Quantity.From(args[0].NumberValue, unit);
-            return Task.FromResult(AresValueHelper.CreateQuantity(quantity.ToQuantityValue()));
+            return Task.FromResult(quantityValue!);
           },
           BuildFromInputSchema(),
           AresSchemaBuilder.Entry(AresDataType.Quantity).WithQuantity(quantityType).Build(),
@@ -49,7 +43,23 @@ public class QuantitySymbolProvider : ISymbolProvider
           ParentName: $"Unit.{quantityTypeName}")
         {
           Detail = $"Create a {quantityTypeName} quantity from a scalar and unit string.",
-          Documentation = $"Create a {quantityTypeName} quantity. Example: Unit.{quantityTypeName}.from(5, \"{quantityInfo.BaseUnitInfo.Name}\")"
+          Documentation = $"Create a {quantityTypeName} quantity. Example: Unit.{quantityTypeName}.from(5, \"{baseUnitName}\")",
+          StaticArgumentValidator = args =>
+          {
+            // Ignore the incorrect arg count and stuff, all those should be caught by the outer validation.
+            // We should only concern ourselves with validating the actual units.
+            if(args.Count < 2 || args[1] is not { HasStringValue: true } unitArg || string.IsNullOrWhiteSpace(unitArg.StringValue))
+            {
+              return null;
+            }
+
+            if(!QuantityUnitHelper.TryValidateConstructionArgs(quantityType, args.ElementAtOrDefault(0), unitArg, out _, out _, out var error))
+            {
+              return $"Function '{functionId}' {error}";
+            }
+
+            return null;
+          }
         });
     }
 
@@ -62,36 +72,5 @@ public class QuantitySymbolProvider : ISymbolProvider
       .AddEntry("value", AresSchemaBuilder.Entry(AresDataType.Number).Build())
       .AddEntry("unit", AresSchemaBuilder.Entry(AresDataType.String).Build())
       .Build();
-  }
-
-  private static QuantityInfo ResolveQuantityInfo(QuantityType quantityType)
-  {
-    var quantityName = quantityType.ToUnitsNetQuantityName();
-    var quantityInfo = Quantity.Infos.FirstOrDefault(
-      info => info.Name.Equals(quantityName, StringComparison.OrdinalIgnoreCase));
-
-    return quantityInfo is null
-      ? throw new InvalidOperationException($"No UnitsNet quantity info exists for QuantityType '{quantityType}'.")
-      : quantityInfo;
-  }
-
-  private static Enum ParseUnit(QuantityInfo quantityInfo, string unitText, QuantityType quantityType)
-  {
-    var enumUnit = quantityInfo.UnitInfos
-      .Select(unitInfo => unitInfo.Value)
-      .FirstOrDefault(u => u.ToString().Equals(unitText, StringComparison.OrdinalIgnoreCase));
-
-    if(enumUnit is not null)
-    {
-      return enumUnit;
-    }
-
-    if(UnitParser.Default.TryParse(unitText, quantityInfo.UnitType, out Enum? parsedUnit) && parsedUnit is not null)
-    {
-      return parsedUnit;
-    }
-
-    throw new InvalidOperationException(
-      $"Unit '{unitText}' is not valid for QuantityType '{quantityType}'. Use a valid {quantityInfo.Name} unit.");
   }
 }

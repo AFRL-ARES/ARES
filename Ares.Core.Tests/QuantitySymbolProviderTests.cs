@@ -42,4 +42,37 @@ public class QuantitySymbolProviderTests
     Assert.That(quantity.QuantityInfo.Name, Is.EqualTo(nameof(Duration)));
     Assert.That(quantity.As(DurationUnit.Second), Is.EqualTo(1).Within(0.0001));
   }
+
+  [Test]
+  public void Duration_From_Rejects_Invalid_Unit_At_Runtime()
+  {
+    var provider = new QuantitySymbolProvider();
+    var function = provider
+      .GetSymbols()
+      .OfType<AresSystemFunctionSymbol>()
+      .First(symbol => symbol.ParentName == "Unit.Duration" && symbol.Name == "from");
+
+    var ex = Assert.ThrowsAsync<InvalidOperationException>(() => function.Body(
+      [AresValueHelper.CreateNumber(1), AresValueHelper.CreateString("kg")],
+      new ScriptExecutionControlToken(CancellationToken.None)));
+
+    Assert.That(ex?.Message, Does.Contain("Function 'unit::duration::from'"));
+    Assert.That(ex?.Message, Does.Contain("not valid for quantity type 'Duration'"));
+  }
+
+  [Test]
+  public void Duration_From_StaticArgumentValidator_Rejects_Invalid_Unit()
+  {
+    var provider = new QuantitySymbolProvider();
+    var function = provider
+      .GetSymbols()
+      .OfType<AresSystemFunctionSymbol>()
+      .First(symbol => symbol.ParentName == "Unit.Duration" && symbol.Name == "from");
+
+    var error = function.StaticArgumentValidator?.Invoke(
+      [AresValueHelper.CreateNumber(1), AresValueHelper.CreateString("kg")]);
+
+    Assert.That(error, Does.Contain("Function 'unit::duration::from'"));
+    Assert.That(error, Does.Contain("not valid for quantity type 'Duration'"));
+  }
 }
