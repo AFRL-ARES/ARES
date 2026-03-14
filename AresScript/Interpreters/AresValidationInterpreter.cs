@@ -218,8 +218,8 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
         {
           throw new AresInterpreterException(
             $"Unknown identifier '{memberContext.lvalue().GetText()}'.",
-            context.Start.Line,
-            context.Start.Column
+            memberContext.lvalue().Start.Line,
+            memberContext.lvalue().Start.Column
           );
         }
 
@@ -238,8 +238,8 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
         {
           throw new AresInterpreterException(
             $"Unknown identifier '{indexContext.lvalue().GetText()}'.",
-            context.Start.Line,
-            context.Start.Column
+            indexContext.lvalue().Start.Line,
+            indexContext.lvalue().Start.Column
           );
         }
 
@@ -253,8 +253,8 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
         {
           throw new AresInterpreterException(
             "Provided index expression was not a string.",
-            context.Start.Line,
-            context.Start.Column
+            indexContext.expression().Start.Line,
+            indexContext.expression().Start.Column
           );
         }
 
@@ -558,8 +558,8 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       throw new AresInterpreterException(
         $"Unable to resolve value of {ctxExpr.GetText()}",
-        context.Start.Line,
-        context.Start.Column + 1
+        ctxExpr.Start.Line,
+        ctxExpr.Start.Column
       );
     }
 
@@ -583,8 +583,8 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
 
     throw new AresInterpreterException(
       $"Unknown identifier {context.ID().GetText()} on {ctxExpr.GetText()}.",
-      context.Start.Line,
-      context.Stop.Column + 1
+      context.Stop.Line,
+      context.Stop.Column
     );
   }
 
@@ -662,8 +662,8 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       {
         throw new AresInterpreterException(
           $"Unknown function '{unresolvedMemberCtx.ID().GetText()}' on '{unresolvedMemberCtx.expression().GetText()}'.",
-          unresolvedMemberCtx.Start.Line,
-          unresolvedMemberCtx.Stop.Column + 1
+          unresolvedMemberCtx.Stop.Line,
+          unresolvedMemberCtx.Stop.Column
         );
       }
       throw new AresInterpreterException(
@@ -682,7 +682,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       if(keywordArgs.Count > 0)
       {
-        throw new AresInterpreterException($"Runtime function '{functionId}' does not support keyword arguments");
+        throw new AresInterpreterException($"Runtime function '{functionId}' does not support keyword arguments", ctx.Start.Line, ctx.Start.Column);
       }
 
       ValidateSystemFunctionArgs(systemFn, positionalArgs, keywordArgs, ctx);
@@ -695,7 +695,9 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       if(positionalArgs.Count > userFn.ParameterNames.Count)
       {
         throw new AresInterpreterException(
-          $"Function '{functionId}' expected {userFn.ParameterNames.Count} arguments but got {positionalArgs.Count}"
+          $"Function '{functionId}' expected {userFn.ParameterNames.Count} arguments but got {positionalArgs.Count}",
+          ctx.Start.Line,
+          ctx.Start.Column
         );
       }
 
@@ -704,12 +706,12 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
         var index = FindParameterIndex(userFn.ParameterNames, name);
         if(index < 0)
         {
-          throw new AresInterpreterException($"Function '{functionId}' got an unexpected keyword argument '{name}'");
+          throw new AresInterpreterException($"Function '{functionId}' got an unexpected keyword argument '{name}'", ctx.Start.Line, ctx.Start.Column);
         }
 
         if(index < positionalArgs.Count)
         {
-          throw new AresInterpreterException($"Function '{functionId}' got multiple values for argument '{name}'");
+          throw new AresInterpreterException($"Function '{functionId}' got multiple values for argument '{name}'", ctx.Start.Line, ctx.Start.Column);
         }
       }
 
@@ -828,7 +830,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
   {
     if(keywordArgs.Count > 0)
     {
-      throw new AresInterpreterException($"Runtime function '{function.Name}' does not support keyword arguments");
+      throw new AresInterpreterException($"Runtime function '{function.Name}' does not support keyword arguments", ctx.Start.Line, ctx.Start.Column);
     }
 
     if(function.InputSchema.Fields.Count == 0)
@@ -1222,7 +1224,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       AresLangParser.LambdaSingleParamContext singleParam => singleParam.expression(),
       AresLangParser.LambdaParamListContext paramList => paramList.expression(),
-      _ => throw new AresInterpreterException("Invalid lambda expression.")
+      _ => throw new AresInterpreterException("Invalid lambda expression.", lambdaExpression.Start.Line, lambdaExpression.Start.Column)
     };
 
     var closure = _environment.GetAllUserVariableSymbols()
