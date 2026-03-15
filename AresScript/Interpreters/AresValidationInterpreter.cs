@@ -387,6 +387,16 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     }
 
     await Visit(expression);
+    var iterableSchema = _typeInference.Visit(expression);
+    if(!IsIterableSchema(iterableSchema) && _mode == ValidationMode.Strict)
+    {
+      throw new AresInterpreterException(
+        $"Value is not iterable: {iterableSchema.Type}.",
+        expression.Start.Line,
+        expression.Start.Column
+      );
+    }
+
     _environment.EnterScope();
     try
     {
@@ -492,6 +502,18 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     try
     {
       await Visit(block);
+
+      var unitSchema = AresSchemaBuilder.Entry(AresDataType.Unit).Build();
+      if(_mode == ValidationMode.Strict
+        && !AresScriptTypeHints.IsCompatibleWithTypeHint(unitSchema, declaredReturnSchema)
+        && !AlwaysReturns(block))
+      {
+        throw new AresInterpreterException(
+          $"Function '{functionId}' may complete without returning a value of type {declaredReturnSchema.Stringify()}.",
+          functionNameToken.Symbol.Line,
+          functionNameToken.Symbol.Column
+        );
+      }
     }
     finally
     {
@@ -597,6 +619,50 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       context.Stop.Line,
       context.Stop.Column
     );
+  }
+
+  public override async Task VisitIndexAccess([NotNull] AresLangParser.IndexAccessContext context)
+  {
+    var receiver = context.expression(0);
+    var index = context.expression(1);
+    await Visit(receiver);
+    await Visit(index);
+
+    var receiverSchema = _typeInference.Visit(receiver);
+    if(receiverSchema.Type is not AresDataType.Any and not AresDataType.UnspecifiedType
+      && !IsIndexableSchema(receiverSchema))
+    {
+      throw new AresInterpreterException(
+        "Cannot access index of a value that is not of list or struct type.",
+        receiver.Start.Line,
+        receiver.Start.Column
+      );
+    }
+
+    var indexSchema = _typeInference.Visit(index);
+    if(receiverSchema.Type == AresDataType.Struct)
+    {
+      if(indexSchema.Type is not AresDataType.Any and not AresDataType.UnspecifiedType and not AresDataType.String)
+      {
+        throw new AresInterpreterException(
+          "Provided index expression was not a string.",
+          index.Start.Line,
+          index.Start.Column
+        );
+      }
+
+      return;
+    }
+
+    if(receiverSchema.Type is not AresDataType.Any and not AresDataType.UnspecifiedType
+      && indexSchema.Type is not AresDataType.Any and not AresDataType.UnspecifiedType and not AresDataType.Number)
+    {
+      throw new AresInterpreterException(
+        "Provided index expression was not a number.",
+        index.Start.Line,
+        index.Start.Column
+      );
+    }
   }
 
   public override async Task VisitFunctionCall(AresLangParser.FunctionCallContext ctx)
@@ -817,6 +883,58 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       throw new AresInterpreterException($"Function '{functionId}' not found.", ctx.Start.Line, ctx.Start.Column);
     }
+  }
+
+  public override async Task VisitUnaryMinus([NotNull] AresLangParser.UnaryMinusContext context)
+  {
+    await Visit(context.expression());
+    ValidateNumericExpression(context.expression(), $"Cannot perform unary minus on type {_typeInference.Visit(context.expression()).Type}.");
+  }
+
+  public override async Task VisitMulDiv(AresLangParser.MulDivContext context)
+  {
+    await Visit(context.expression(0));
+    await Visit(context.expression(1));
+    ValidateNumericExpression(context.expression(0), "Left hand side is not numeric.");
+    ValidateNumericExpression(context.expression(1), "Right hand side is not numeric.");
+  }
+
+  public override async Task VisitSub(AresLangParser.SubContext context)
+  {
+    await Visit(context.expression(0));
+    await Visit(context.expression(1));
+    ValidateNumericExpression(context.expression(0), "Left hand side is not numeric.");
+    ValidateNumericExpression(context.expression(1), "Right hand side is not numeric.");
+  }
+
+  public override async Task VisitRelational([NotNull] AresLangParser.RelationalContext context)
+  {
+    await Visit(context.expression(0));
+    await Visit(context.expression(1));
+    ValidateNumericExpression(context.expression(0), "Left hand side is not numeric.");
+    ValidateNumericExpression(context.expression(1), "Right hand side is not numeric.");
+  }
+
+  public override async Task VisitLogicalNot([NotNull] AresLangParser.LogicalNotContext context)
+  {
+    await Visit(context.expression());
+    ValidateBooleanExpression(context.expression(), $"Cannot perform negation on type {_typeInference.Visit(context.expression()).Type}.");
+  }
+
+  public override async Task VisitLogicAnd([NotNull] AresLangParser.LogicAndContext context)
+  {
+    await Visit(context.expression(0));
+    await Visit(context.expression(1));
+    ValidateBooleanExpression(context.expression(0), $"Cannot perform AND on type {_typeInference.Visit(context.expression(0)).Type}.");
+    ValidateBooleanExpression(context.expression(1), $"Cannot perform AND on type {_typeInference.Visit(context.expression(1)).Type}.");
+  }
+
+  public override async Task VisitLogicOr([NotNull] AresLangParser.LogicOrContext context)
+  {
+    await Visit(context.expression(0));
+    await Visit(context.expression(1));
+    ValidateBooleanExpression(context.expression(0), $"Cannot perform OR on type {_typeInference.Visit(context.expression(0)).Type}.");
+    ValidateBooleanExpression(context.expression(1), $"Cannot perform OR on type {_typeInference.Visit(context.expression(1)).Type}.");
   }
 
   private void RecordFunctionInvocation(
@@ -1070,6 +1188,112 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     }
 
     return -1;
+  }
+
+  private void ValidateNumericExpression(AresLangParser.ExpressionContext expression, string message)
+  {
+    var schema = _typeInference.Visit(expression);
+    if(schema.Type is AresDataType.Any or AresDataType.UnspecifiedType or AresDataType.Number)
+    {
+      return;
+    }
+
+    if(_mode == ValidationMode.Strict)
+    {
+      throw new AresInterpreterException(message, expression.Start.Line, expression.Start.Column);
+    }
+  }
+
+  private void ValidateBooleanExpression(AresLangParser.ExpressionContext expression, string message)
+  {
+    var schema = _typeInference.Visit(expression);
+    if(schema.Type is AresDataType.Any or AresDataType.UnspecifiedType or AresDataType.Boolean)
+    {
+      return;
+    }
+
+    if(_mode == ValidationMode.Strict)
+    {
+      throw new AresInterpreterException(message, expression.Start.Line, expression.Start.Column);
+    }
+  }
+
+  private static bool IsIterableSchema(SchemaEntry schema)
+  {
+    return schema.Type is AresDataType.Any
+      or AresDataType.UnspecifiedType
+      or AresDataType.List
+      or AresDataType.StringArray
+      or AresDataType.NumberArray
+      or AresDataType.ByteArray;
+  }
+
+  private static bool IsIndexableSchema(SchemaEntry schema)
+  {
+    return schema.Type is AresDataType.Any
+      or AresDataType.UnspecifiedType
+      or AresDataType.Struct
+      or AresDataType.List
+      or AresDataType.StringArray
+      or AresDataType.NumberArray
+      or AresDataType.ByteArray;
+  }
+
+  private static bool AlwaysReturns(AresLangParser.FuncBlockContext block)
+  {
+    foreach(var statement in block.statement())
+    {
+      if(AlwaysReturns(statement))
+      {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private static bool AlwaysReturns(AresLangParser.StatementContext statement)
+  {
+    return statement switch
+    {
+      AresLangParser.FuncControlStmtContext funcControlStmt => funcControlStmt.funcControlStatement() is AresLangParser.ReturnStmtContext,
+      AresLangParser.IfStmtContext ifStmt => AlwaysReturns(ifStmt),
+      _ => false
+    };
+  }
+
+  private static bool AlwaysReturns(AresLangParser.IfStmtContext ifStatement)
+  {
+    var stmt = ifStatement.ifStatement();
+    var blocks = stmt.block();
+    var expressions = stmt.expression();
+    if(blocks.Length != expressions.Length + 1)
+    {
+      return false;
+    }
+
+    foreach(var block in blocks)
+    {
+      if(!AlwaysReturns(block))
+      {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  private static bool AlwaysReturns(AresLangParser.BlockContext block)
+  {
+    foreach(var statement in block.statement())
+    {
+      if(AlwaysReturns(statement))
+      {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   private string? TryResolveFunctionId(AresLangParser.ExpressionContext expression)
