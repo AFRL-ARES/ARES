@@ -40,10 +40,10 @@ public class QuantitySymbolProvider : ISymbolProvider
           BuildFromInputSchema(),
           AresSchemaBuilder.Entry(AresDataType.Quantity).WithQuantity(quantityType).Build(),
           Namespace: string.Empty,
-          ParentName: $"Unit.{quantityTypeName}")
+          ParentName: $"Quantity.{quantityTypeName}")
         {
           Detail = $"Create a {quantityTypeName} quantity from a scalar and unit string.",
-          Documentation = $"Create a {quantityTypeName} quantity. Example: Unit.{quantityTypeName}.from(5, \"{baseUnitName}\")",
+          Documentation = $"Create a {quantityTypeName} quantity. Example: Quantity.{quantityTypeName}.from(5, \"{baseUnitName}\")",
           StaticArgumentValidator = args =>
           {
             // Ignore the incorrect arg count and stuff, all those should be caught by the outer validation.

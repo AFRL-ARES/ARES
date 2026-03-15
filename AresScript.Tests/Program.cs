@@ -149,6 +149,11 @@ public class InterpreterTests
     return completions.ToArray();
   }
 
+  private static ScriptSemanticToken[] BuildSemanticTokens(string script)
+  {
+    return AresScriptAnalysis.BuildSemanticTokens(script).ToArray();
+  }
+
   private static SchemaEntry InferExpressionSchema(
     string expression,
     Action<AresScriptEnvironment>? configureEnvironment = null)
@@ -255,6 +260,48 @@ public class InterpreterTests
       """;
 
     await RunScriptAsync(script);
+  }
+
+  [Test]
+  public void SemanticTokens_ClassifyFunctionCalls()
+  {
+    var script = """
+      foo()
+      """;
+
+    var tokens = BuildSemanticTokens(script);
+
+    Assert.That(tokens, Has.Exactly(1).Matches<ScriptSemanticToken>(t =>
+      t.Type == ScriptSemanticTokenType.Function
+      && t.Line == 0
+      && t.StartColumn == 1
+      && t.Length == 3));
+  }
+
+  [Test]
+  public void SemanticTokens_ClassifyAssignedIdentifiersAsVariables()
+  {
+    var script = """
+      value = foo(bar)
+      """;
+
+    var tokens = BuildSemanticTokens(script);
+
+    Assert.That(tokens, Has.Some.Matches<ScriptSemanticToken>(t =>
+      t.Type == ScriptSemanticTokenType.Variable
+      && t.Line == 0
+      && t.StartColumn == 1
+      && t.Length == 5));
+    Assert.That(tokens, Has.Some.Matches<ScriptSemanticToken>(t =>
+      t.Type == ScriptSemanticTokenType.Function
+      && t.Line == 0
+      && t.StartColumn == 9
+      && t.Length == 3));
+    Assert.That(tokens, Has.Some.Matches<ScriptSemanticToken>(t =>
+      t.Type == ScriptSemanticTokenType.Variable
+      && t.Line == 0
+      && t.StartColumn == 13
+      && t.Length == 3));
   }
 
   [Test]
