@@ -152,7 +152,30 @@ public static class StandardLibrary
     Namespace: "")
     {
       Detail = "Sleep for a given time",
-      Documentation = "Sleep for a time. Accepts a Duration quantity (e.g. Unit.Duration.from(500, \"ms\")) or a plain number treated as milliseconds (e.g. sleep(500))."
+      Documentation = "Sleep for a time. Accepts a Duration quantity (e.g. Quantity.Duration.from(500, \"ms\")) or a plain number treated as milliseconds (e.g. sleep(500)).",
+      StaticArgumentValidator = args =>
+      {
+        if(args.Count != 1 || args[0] is null)
+        {
+          return new StaticArgValidation(true);
+        }
+
+        var argument = args[0]!;
+        if(argument.HasNumberValue)
+        {
+          return new StaticArgValidation(true);
+        }
+
+        if(argument.KindCase == AresValue.KindOneofCase.QuantityValue
+          && argument.QuantityValue.TryToUnitsNetQuantity(out var quantity)
+          && quantity is not null
+          && string.Equals(quantity.QuantityInfo.Name, nameof(UnitsNet.Duration), StringComparison.OrdinalIgnoreCase))
+        {
+          return new StaticArgValidation(true);
+        }
+
+        return new StaticArgValidation(false, "Sleep expects a Duration quantity or a plain number.", 0);
+      }
     }
   ];
 

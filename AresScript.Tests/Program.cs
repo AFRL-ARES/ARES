@@ -103,6 +103,11 @@ public class InterpreterTests
 
   private static async Task ValidateScriptAsync(string script)
   {
+    await ValidateScriptAsync(script, _ => { });
+  }
+
+  private static async Task ValidateScriptAsync(string script, Action<AresScriptEnvironment> configureEnvironment)
+  {
     var stream = new AntlrInputStream(script);
     var lexer = new AresIndentationLexer(stream);
     lexer.RemoveErrorListeners();
@@ -115,6 +120,7 @@ public class InterpreterTests
     var env = new AresScriptEnvironment();
     env.AssignSystemFunctions(StandardLibrary.Functions);
     env.AssignExtensionFunctions(StandardLibrary.ExtensionFunctions);
+    configureEnvironment(env);
     var visitor = new AresValidationInterpreter(env);
 
     await visitor.Visit(programCtx);
@@ -568,6 +574,16 @@ public class InterpreterTests
     };
 
     Assert.That(IsTypeHintCompatible(actual, expected), Is.True);
+  }
+
+  [Test]
+  public void DummyValueFactory_Creates_Quantity_For_Bare_QuantitySchema()
+  {
+    var schema = AresSchemaBuilder.Entry(AresDataType.Quantity).Build();
+
+    var value = DummyValueFactory.CreateDummyValue(schema);
+
+    Assert.That(value.KindCase, Is.EqualTo(AresValue.KindOneofCase.QuantityValue));
   }
 
   [Test]
@@ -1621,6 +1637,19 @@ public class InterpreterTests
     var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
       await sleepFn.Body([length], new ScriptExecutionControlToken(CancellationToken.None)));
     Assert.That(ex?.Message, Does.Contain("Duration quantity expected"));
+  }
+
+  [Test]
+  public void Validation_Rejects_Sleep_With_NonDuration_Quantity()
+  {
+    var script = "sleep(length)";
+    var length = AresValueHelper.CreateQuantity(UnitsNet.Length.FromCentimeters(1).ToQuantityValue());
+
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(async () => await ValidateScriptAsync(
+      script,
+      env => env.AssignVariable("length", length)));
+
+    Assert.That(ex?.Message, Does.Contain("Sleep expects a Duration quantity or a plain number."));
   }
 
   [Test]

@@ -987,13 +987,11 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
 
     if(function.StaticArgumentValidator is not null)
     {
-      var resolvedArgs = positionalArgs
-        .Select(TryBuildAssignmentValue)
-        .ToArray();
+      var resolvedArgs = ResolveStaticValidatorArgs(function.InputSchema, positionalArgs, keywordArgs);
       var validation = function.StaticArgumentValidator(resolvedArgs);
       if(!validation.Success)
       {
-        var arg = positionalArgs.ElementAtOrDefault(validation.Index);
+        var arg = ResolveStaticValidatorErrorExpression(function.InputSchema, positionalArgs, keywordArgs, validation.Index);
         throw new AresInterpreterException(
           validation.Error ?? "",
           arg?.Start.Line ?? ctx.Start.Line,
@@ -1001,6 +999,64 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
         );
       }
     }
+  }
+
+  private AresValue?[] ResolveStaticValidatorArgs(
+    AresDataSchema schema,
+    IReadOnlyList<AresLangParser.ExpressionContext> positionalArgs,
+    IReadOnlyDictionary<string, AresLangParser.ExpressionContext> keywordArgs)
+  {
+    // Runtime/system functions currently reject keyword args before static validators run,
+    // so today this mostly preserves positional behavior. Keep the schema-ordered resolution
+    // here so validators are ready if runtime keyword-arg support is added later.
+    var schemaFields = schema.Fields.ToArray();
+    if(schemaFields.Length == 0)
+    {
+      return positionalArgs.Select(TryBuildAssignmentValue).ToArray();
+    }
+
+    var resolvedArgs = new AresValue?[schemaFields.Length];
+    for(var i = 0; i < schemaFields.Length; i++)
+    {
+      AresLangParser.ExpressionContext? argument = null;
+      if(i < positionalArgs.Count)
+      {
+        argument = positionalArgs[i];
+      }
+      else if(keywordArgs.TryGetValue(schemaFields[i].Key, out var keywordArgument))
+      {
+        argument = keywordArgument;
+      }
+
+      resolvedArgs[i] = argument is null ? null : TryBuildAssignmentValue(argument);
+    }
+
+    return resolvedArgs;
+  }
+
+  private static AresLangParser.ExpressionContext? ResolveStaticValidatorErrorExpression(
+    AresDataSchema schema,
+    IReadOnlyList<AresLangParser.ExpressionContext> positionalArgs,
+    IReadOnlyDictionary<string, AresLangParser.ExpressionContext> keywordArgs,
+    int index)
+  {
+    if(index < 0)
+    {
+      return null;
+    }
+
+    if(index < positionalArgs.Count)
+    {
+      return positionalArgs[index];
+    }
+
+    var schemaFields = schema.Fields.ToArray();
+    if(index < schemaFields.Length && keywordArgs.TryGetValue(schemaFields[index].Key, out var keywordArgument))
+    {
+      return keywordArgument;
+    }
+
+    return null;
   }
 
   private void ValidateExtensionFunctionArgs(
