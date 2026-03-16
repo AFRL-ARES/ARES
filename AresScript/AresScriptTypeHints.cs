@@ -14,36 +14,6 @@ internal static class AresScriptTypeHints
     .Select(type => type.ToString())
     .ToArray();
 
-  public static bool TryParseTypeHint(string? typeHint, out AresDataType type)
-    => TryParseTypeHint(typeHint, out type, out _);
-
-  public static bool TryParseTypeHint(string? typeHint, out AresDataType type, out string? error)
-  {
-    error = null;
-    type = AresDataType.Any;
-    if(string.IsNullOrWhiteSpace(typeHint))
-    {
-      error = "Type hint is empty.";
-      return false;
-    }
-
-    var leafName = typeHint.Trim().Split('.').Last();
-    if(!Enum.TryParse(leafName, true, out AresDataType parsedType))
-    {
-      error = $"'{typeHint}' is not a known ARES data type.";
-      return false;
-    }
-
-    if(parsedType == AresDataType.UnspecifiedType)
-    {
-      error = "UnspecifiedType is not a valid type hint.";
-      return false;
-    }
-
-    type = parsedType;
-    return true;
-  }
-
   public static bool TryParseTypeHint(AresLangParser.TypeHintContext? typeHint, out SchemaEntry schema)
     => TryParseTypeHint(typeHint, out schema, out _);
 
@@ -107,9 +77,24 @@ internal static class AresScriptTypeHints
 
   public static SchemaEntry SchemaFromTypeHint(string? typeHint)
   {
-    return TryParseTypeHint(typeHint, out var parsedType, out _)
-      ? AresSchemaBuilder.Entry(parsedType).Build()
-      : AresSchemaBuilder.Entry(AresDataType.Any).Build();
+    if(string.IsNullOrWhiteSpace(typeHint))
+    {
+      return AresSchemaBuilder.Entry(AresDataType.Any).Build();
+    }
+
+    var input = new Antlr4.Runtime.AntlrInputStream($"def __type_hint_probe(value: {typeHint}):\n  return value\n");
+    var lexer = new AresIndentationLexer(input);
+    var tokenStream = new Antlr4.Runtime.CommonTokenStream(lexer);
+    var parser = new AresLangParser(tokenStream);
+    var program = parser.program();
+    if(parser.NumberOfSyntaxErrors > 0
+      || program.statement().FirstOrDefault() is not AresLangParser.SimpleStmtContext simpleStatement
+      || simpleStatement.simpleStatement() is not AresLangParser.FunctionDeclContext functionDecl)
+    {
+      return AresSchemaBuilder.Entry(AresDataType.Any).Build();
+    }
+
+    return SchemaFromTypeHint(functionDecl.functionDeclaration().parameterList()?.parameter().FirstOrDefault()?.typeHint());
   }
 
   public static bool IsCompatibleWithTypeHint(SchemaEntry actual, SchemaEntry expected)

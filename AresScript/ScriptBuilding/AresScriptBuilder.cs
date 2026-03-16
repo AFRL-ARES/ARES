@@ -1,4 +1,5 @@
 using Antlr4.Runtime;
+using Ares.Datamodel;
 using AresScript.Generated;
 using AresScript.Symbols;
 
@@ -81,18 +82,24 @@ public sealed class AresScriptBuilder : AresScriptBlockBuilder
       throw new InvalidOperationException("Function body must contain at least one statement.");
     }
 
-    var signature = existingParameters.Length == 0
-      ? $"{_functionPrefix}{name}()"
-      : $"{_functionPrefix}{name}({string.Join(", ", existingParameters.Select(p => p.ToFunctionSignature()))})";
-    if(!string.IsNullOrWhiteSpace(existingReturnTypeHint))
-    {
-      signature += $" -> {existingReturnTypeHint}";
-    }
+    var returnSchema = string.IsNullOrWhiteSpace(existingReturnTypeHint)
+      ? null
+      : AresScriptTypeHints.SchemaFromTypeHint(existingReturnTypeHint);
+    var signature = ScriptBuildingHelpers.BuildFunctionSignature(name, existingParameters, returnSchema);
     MutableStatements[index] = new BlockNode(signature, functionBody);
     return true;
   }
 
   public bool ReplaceFunction(string name, Action<AresScriptBlockBuilder> configureBody, params AresScriptParameter[] parameters)
+  {
+    return ReplaceFunction(name, configureBody, null, parameters);
+  }
+
+  public bool ReplaceFunction(
+    string name,
+    Action<AresScriptBlockBuilder> configureBody,
+    SchemaEntry? returnSchema,
+    params AresScriptParameter[] parameters)
   {
     ArgumentNullException.ThrowIfNull(configureBody);
     ArgumentNullException.ThrowIfNull(parameters);
@@ -102,19 +109,36 @@ public sealed class AresScriptBuilder : AresScriptBlockBuilder
     }
 
     var safeName = name.Trim();
-    var safeParameters = parameters.ToArray();
-    var bodyNodes = new List<ScriptNode>();
-    var bodyBuilder = new AresScriptBlockBuilder(bodyNodes, IndentSize, new ScriptBuilderCapabilities(AllowReturn: true, AllowLoopControl: false));
-    configureBody(bodyBuilder);
-    if(bodyNodes.Count == 0)
+    var index = FindFunctionIndex(safeName, out _, out _, out _);
+    if(index < 0)
     {
-      throw new InvalidOperationException("Function body must contain at least one statement.");
+      return false;
     }
 
-    var signature = safeParameters.Length == 0
-      ? $"{_functionPrefix}{safeName}()"
-      : $"{_functionPrefix}{safeName}({string.Join(", ", safeParameters.Select(p => p.ToFunctionSignature()))})";
-    var functionNode = new BlockNode(signature, bodyNodes);
+    MutableStatements[index] = BuildFunctionNode(safeName, configureBody, returnSchema, parameters);
+    return true;
+  }
+
+  public bool AddOrReplaceFunction(string name, Action<AresScriptBlockBuilder> configureBody, params AresScriptParameter[] parameters)
+  {
+    return AddOrReplaceFunction(name, configureBody, null, parameters);
+  }
+
+  public bool AddOrReplaceFunction(
+    string name,
+    Action<AresScriptBlockBuilder> configureBody,
+    SchemaEntry? returnSchema,
+    params AresScriptParameter[] parameters)
+  {
+    ArgumentNullException.ThrowIfNull(configureBody);
+    ArgumentNullException.ThrowIfNull(parameters);
+    if(string.IsNullOrWhiteSpace(name))
+    {
+      throw new ArgumentException("Function name cannot be null, empty, or whitespace.", nameof(name));
+    }
+
+    var safeName = name.Trim();
+    var functionNode = BuildFunctionNode(safeName, configureBody, returnSchema, parameters);
 
     var index = FindFunctionIndex(safeName, out _, out _, out _);
     if(index >= 0)
@@ -127,6 +151,25 @@ public sealed class AresScriptBuilder : AresScriptBlockBuilder
     }
 
     return true;
+  }
+
+  private BlockNode BuildFunctionNode(
+    string functionName,
+    Action<AresScriptBlockBuilder> configureBody,
+    SchemaEntry? returnSchema,
+    IReadOnlyCollection<AresScriptParameter> parameters)
+  {
+    var safeParameters = parameters.ToArray();
+    var bodyNodes = new List<ScriptNode>();
+    var bodyBuilder = new AresScriptBlockBuilder(bodyNodes, IndentSize, new ScriptBuilderCapabilities(AllowReturn: true, AllowLoopControl: false));
+    configureBody(bodyBuilder);
+    if(bodyNodes.Count == 0)
+    {
+      throw new InvalidOperationException("Function body must contain at least one statement.");
+    }
+
+    var signature = ScriptBuildingHelpers.BuildFunctionSignature(functionName, safeParameters, returnSchema);
+    return new BlockNode(signature, bodyNodes);
   }
 
   private int FindFunctionIndex(string functionName, out AresScriptParameter[] parameters, out string normalizedName, out string returnTypeHint)
