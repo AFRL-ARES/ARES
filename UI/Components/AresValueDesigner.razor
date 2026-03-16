@@ -32,8 +32,8 @@
   else if(Schema?.Type is AresDataType.Boolean)
   { 
     <RadzenRow Gap="1rem" AlignItems="AlignItems.Center" Style="padding-top: 0.5rem; padding-bottom: 0.5rem;">
-      @Name
       <RadzenSwitch @bind-Value="_boolValue" Name="@Name" Change="@OnBoolChanged" Style="width: 20px"/>
+      <RadzenLabel Text="@Name" Component="@Name" />
     </RadzenRow>
   }
 

@@ -35,6 +35,7 @@ public partial class PluginDeviceSettingsViewModel : ReactiveObject
     Id = _deviceConfig.DeviceId;
 
     Device = _deviceProvider.GetDevice(Id);
+    Description = Device?.Description ?? string.Empty;
     SettingsSchema = Device?.SettingSchema ?? new AresStructSchema();
     Settings = new AresStruct();
     EditViewModel = new PluginDeviceConfigEditViewModel(_deviceConfig, driver, false, devicesService);
@@ -141,8 +142,12 @@ public partial class PluginDeviceSettingsViewModel : ReactiveObject
   public partial string Id { get; private set; }
 
   [Reactive]
+  public partial string Description { get; set; }
+
+  [Reactive]
   public partial AresStructSchema SettingsSchema { get; private set; }
 
   [Reactive]
   public partial AresStruct Settings { get; set; }
+
 }

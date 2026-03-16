@@ -10,7 +10,11 @@
 
     @if(ViewModel!.ConnectionType == ConnectionType.Serial)
     {
-      <input type="text" placeholder="@(ViewModel!.SelectedSerialPort is null ? "Port" : ViewModel!.SelectedSerialPort)" list="port-list" @onchange="PortChanged" class="form-select mfc-port" disabled="@(!ViewModel!.NewConfig)" />
+      <RadzenTextBox @bind-Value="@ViewModel!.SelectedSerialPort" 
+                     Placeholder="Port" 
+                     list="port-list" 
+                     class="w-100" />
+
       <datalist id="port-list">
         @if(ViewModel!.AvailableSerialPorts is not null)
         {
@@ -24,7 +28,6 @@
       if(ViewModel!.BaudRateOptions.Any())
       {
         <RadzenLabel Text="Baud Rate" Component="BaudRateDropdown" Style="margin-right: 8px;" />
-    
         <RadzenDropDown TValue="int" 
           Data="@ViewModel!.BaudRateOptions" 
           @bind-Value="ViewModel!.SelectedBaudRate"
@@ -57,10 +60,10 @@
       ValueEditCallback="@(value => ValueEditCallback(prop.Key, value))"/>
     }
 
-    <div style="display: flex; align-items: center; gap: 8px;" class="rz-p-sm-4">
+    <RadzenRow Gap="1rem" AlignItems="AlignItems.Center" Style="padding-top: 0.5rem; padding-bottom: 0.5rem;">
       <RadzenSwitch @bind-Value="ViewModel!.IsSimulated" Name="SimulatedDeviceSwitch" />
-      <RadzenLabel Text="Run as Simulated Device" Component="SimulatedDeviceSwitch" />
-    </div>
+      <RadzenLabel Text="Simulated Device" Component="SimulatedDeviceSwitch" />
+    </RadzenRow>
   </div>
   <button type="submit" class="btn my-3 btn-outline-primary">Save Device</button>
 </RadzenTemplateForm>

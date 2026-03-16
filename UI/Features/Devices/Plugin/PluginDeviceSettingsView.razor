@@ -12,7 +12,7 @@
   RemoveCallback="RemoveCallback"
   SettingsCallback="SettingsCallback">
   <div style="display: flex; flex-direction: column">
-    <span>Name: @ViewModel.Name</span>
+    <span>Description: @ViewModel.Description</span>
     <span>ID: @ViewModel.Id</span>
   </div>
 
@@ -24,11 +24,14 @@
                        ValueEditCallback="@(value => ValueEditCallback(prop.Key, value))" />
   }
 
-  <RadzenButton Text="Submit"
-                ButtonType="ButtonType.Button"
-                ButtonStyle="ButtonStyle.Primary"
-                Click="@ViewModel!.PushSettingsAsync"
-                Icon="save" />
+  @if(ViewModel!.SettingsSchema.Fields.Any())
+  {
+    <RadzenButton Text="Submit"
+                  ButtonType="ButtonType.Button"
+                  ButtonStyle="ButtonStyle.Primary"
+                  Click="@ViewModel!.PushSettingsAsync"
+                  Icon="save" />
+  }
 
 </DeviceSettingsContainer>
 
