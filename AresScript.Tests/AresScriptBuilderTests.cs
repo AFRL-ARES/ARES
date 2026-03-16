@@ -1,5 +1,6 @@
 using Antlr4.Runtime;
 using Ares.Datamodel;
+using Ares.Datamodel.Factories;
 using AresScript.Generated;
 using AresScript.ScriptBuilding;
 using AresScript.Symbols;
@@ -149,6 +150,44 @@ public class AresScriptBuilderTests
     Assert.That(edited, Is.True);
     Assert.That(script, Does.Contain("def typed_fn(value: {foo: Number, bar: String}) -> {foo:Number,bar:String}:"));
     Assert.That(script, Does.Contain("value = { foo: 1, bar: \"ok\" }"));
+    Assert.That(() => Parse(script), Throws.Nothing);
+  }
+
+  [Test]
+  public void ReplaceFunction_WritesConstrainedQuantityTypeHints()
+  {
+    var valueSchema = AresSchemaBuilder.Entry(AresDataType.Quantity)
+      .WithQuantityRange(QuantityType.Duration, "s", minScalarValue: 0, maxScalarValue: 30)
+      .Build();
+
+    var builder = new AresScriptBuilder();
+    builder.ReplaceFunction(
+      "typed_fn",
+      body => body.AddReturn("value"),
+      new AresScriptParameter("value", valueSchema));
+
+    var script = builder.Build();
+
+    Assert.That(script, Does.Contain("def typed_fn(value: Quantity.Duration[unit=\"s\", min=0, max=30]):"));
+    Assert.That(() => Parse(script), Throws.Nothing);
+  }
+
+  [Test]
+  public void ReplaceFunction_WritesConstrainedNumberTypeHints()
+  {
+    var valueSchema = AresSchemaBuilder.Entry(AresDataType.Number)
+      .WithNumberRange(minValue: 0, maxValue: 30)
+      .Build();
+
+    var builder = new AresScriptBuilder();
+    builder.ReplaceFunction(
+      "typed_fn",
+      body => body.AddReturn("value"),
+      new AresScriptParameter("value", valueSchema));
+
+    var script = builder.Build();
+
+    Assert.That(script, Does.Contain("def typed_fn(value: Number[min=0, max=30]):"));
     Assert.That(() => Parse(script), Throws.Nothing);
   }
 
