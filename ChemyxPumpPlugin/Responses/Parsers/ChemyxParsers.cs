@@ -124,14 +124,17 @@ public partial class ViewParametersResponseParser(string originalCommand) : Chem
 {
   protected override ViewParametersResponse CreateResponse(string echo, string[] lines, string raw)
   {
-    if(lines.Length > 0 && lines[0].StartsWith("pump", StringComparison.OrdinalIgnoreCase))
+    var cleanedLines = lines.Where(l => !string.IsNullOrWhiteSpace(l)).ToArray();
+
+    if(cleanedLines.Length > 0 && cleanedLines[0].StartsWith("pump", StringComparison.OrdinalIgnoreCase))
     {
       var split = SplitByPump(lines).ToArray();
       var p1 = ParsePump(split[0]);
       var p2 = split.Length > 1 ? ParsePump(split[1]) : null;
-      return new ViewParametersResponse(echo, lines, raw, p1, p2);
+      return new ViewParametersResponse(echo, cleanedLines, raw, p1, p2);
     }
-    return new ViewParametersResponse(echo, lines, raw, ParsePump(lines), null);
+
+    return new ViewParametersResponse(echo, cleanedLines, raw, ParsePump(cleanedLines), null);
   }
 
   private SinglePumpParameters ParsePump(string[] lines)
@@ -142,13 +145,24 @@ public partial class ViewParametersResponseParser(string originalCommand) : Chem
     {
       var l = line.ToLower();
       var match = PumpParamRegex().Match(l);
-      if(!match.Success) continue;
+      if(!match.Success) 
+        continue;
+      
       var val = match.Groups[1].Value;
-      if(l.StartsWith("unit")) unit = (PumpUnits)int.Parse(val);
-      else if(l.StartsWith("dia")) dia = double.Parse(val);
-      else if(l.StartsWith("rate")) rate = double.Parse(val);
-      else if(l.StartsWith("vol")) vol = double.Parse(val);
-      else if(l.StartsWith("delay")) delay = double.Parse(val);
+      if(l.StartsWith("unit")) 
+        unit = (PumpUnits)int.Parse(val);
+      
+      else if(l.StartsWith("dia")) 
+        dia = double.Parse(val);
+
+      else if(l.StartsWith("rate")) 
+        rate = double.Parse(val);
+
+      else if(l.StartsWith("vol")) 
+        vol = double.Parse(val);
+
+      else if(l.StartsWith("delay")) 
+        delay = double.Parse(val);
     }
     return new SinglePumpParameters(dia, vol, rate, delay, unit);
   }

@@ -1,6 +1,5 @@
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
-using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
 using Ares.Device;
 using Ares.Toolkit.Serial;
