@@ -22,12 +22,13 @@ public class PumpStatusResponse(string commandEcho, string[] responseLines, stri
   public PumpStatus? Status { get; } = status;
 }
 
-public class LimitParameterResponse(string commandEcho, string[] responseLines, string raw, double? maxVolume, double? maxRate, double? minRate) 
+public class LimitParameterResponse(string commandEcho, string[] responseLines, string raw, double maxVolume, double maxRate, double minRate, double minVolume) 
   : ChemyxResponse(commandEcho, responseLines, raw)
 {
-  public double? MaxVolume { get; } = maxVolume;
-  public double? MaxRate { get; } = maxRate;
-  public double? MinRate { get; } = minRate;
+  public double MaxVolume { get; } = maxVolume;
+  public double MaxRate { get; } = maxRate;
+  public double MinRate { get; } = minRate;
+  public double MinVolume { get; } = minVolume;
 }
 
 public class SetTimeResponse(string commandEcho, string[] responseLines, string raw, double? rate, double? time) 

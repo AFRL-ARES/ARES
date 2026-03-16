@@ -1,5 +1,6 @@
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
+using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
 using Ares.Device;
 using Ares.Toolkit.Serial;
@@ -7,6 +8,8 @@ using ChemyxPumpPlugin.Commands;
 using ChemyxPumpPlugin.Enums;
 using ChemyxPumpPlugin.Responses;
 using ChemyxPumpPlugin.Simulation;
+using Google.Protobuf.WellKnownTypes;
+using ReactiveUI;
 using System.IO.Ports;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -127,10 +130,33 @@ public class ChemyxPump : AresDevice, IChemyxPump
   {
     return Task.FromResult(new List<DeviceCommandDescriptor>
     {
-      new() { Name = ChemyxPumpCommand.Start.ToString(), Description = "Starts the pump." },
-      new() { Name = ChemyxPumpCommand.Stop.ToString(), Description = "Stops the pump." },
-      new() { Name = ChemyxPumpCommand.Pause.ToString(), Description = "Pauses the pump." },
-      new() {
+      new()
+      {
+        Name = ChemyxPumpCommand.Start.ToString(),
+        Description = "Starts the pump.",
+        InputSchema = AresSchemaBuilder.Empty()
+          .AddEntry("PumpIndex", AresSchemaBuilder.NumberEntry().Build())
+          .AddEntry("Mode", AresSchemaBuilder.NumberEntry().AsOptional().Build())
+          .Build()
+      },
+      new()
+      {
+        Name = ChemyxPumpCommand.Stop.ToString(),
+        Description = "Stops the pump.",
+        InputSchema = AresSchemaBuilder.Empty()
+          .AddEntry("PumpIndex", AresSchemaBuilder.NumberEntry().Build())
+          .Build()
+      },
+      new()
+      {
+        Name = ChemyxPumpCommand.Pause.ToString(),
+        Description = "Pauses the pump.",
+        InputSchema = AresSchemaBuilder.Empty()
+          .AddEntry("PumpIndex", AresSchemaBuilder.NumberEntry().Build())
+          .Build()
+      },
+      new()
+      {
         Name = ChemyxPumpCommand.SetRate.ToString(),
         Description = "Sets the flow rate.",
         InputSchema = AresSchemaBuilder.Empty()
@@ -138,38 +164,133 @@ public class ChemyxPump : AresDevice, IChemyxPump
           .AddEntry("Rate", AresSchemaBuilder.NumberEntry().Build())
           .Build()
       },
-      new() {
+      new()
+      {
         Name = ChemyxPumpCommand.SetVolume.ToString(),
         Description = "Sets the target volume.",
         InputSchema = AresSchemaBuilder.Empty()
           .AddEntry("PumpIndex", AresSchemaBuilder.NumberEntry().Build())
           .AddEntry("Volume", AresSchemaBuilder.NumberEntry().Build())
           .Build()
+      },
+      new()
+      {
+        Name = ChemyxPumpCommand.SetDiameter.ToString(),
+        Description = "Sets the inner diameter of the syringe.",
+        InputSchema = AresSchemaBuilder.Empty()
+          .AddEntry("PumpIndex", AresSchemaBuilder.NumberEntry().Build())
+          .AddEntry("Diameter", AresSchemaBuilder.NumberEntry().Build())
+          .Build(),
+        OutputSchema = AresSchemaBuilder.NumberEntry().Build()
+      },
+      new()
+      {
+        Name = ChemyxPumpCommand.SetUnits.ToString(),
+        Description = "Sets the measurement units for the pump.",
+        InputSchema = AresSchemaBuilder.Empty()
+          .AddEntry("PumpIndex", AresSchemaBuilder.NumberEntry().Build())
+          .AddEntry(ChemyxParameter.Units.ToString(), AresSchemaBuilder.NumberEntry().Build())
+          .Build(),
+        OutputSchema = AresSchemaBuilder.NumberEntry().Build()
+      },
+      new()
+      {
+        Name = ChemyxPumpCommand.SetDelay.ToString(),
+        Description = "Sets the start delay time in seconds.",
+        InputSchema = AresSchemaBuilder.Empty()
+          .AddEntry("PumpIndex", AresSchemaBuilder.NumberEntry().Build())
+          .AddEntry(ChemyxParameter.Delay.ToString(), AresSchemaBuilder.NumberEntry().Build())
+          .Build(),
+        OutputSchema = AresSchemaBuilder.NumberEntry().Build()
+      },
+      new()
+      {
+        Name = ChemyxPumpCommand.SetTime.ToString(),
+        Description = "Sets the runtime in minutes.",
+        InputSchema = AresSchemaBuilder.Empty()
+          .AddEntry("PumpIndex", AresSchemaBuilder.NumberEntry().Build())
+          .AddEntry(ChemyxParameter.Time.ToString(), AresSchemaBuilder.NumberEntry().Build())
+          .Build(),
+        OutputSchema = AresSchemaBuilder.Entry(AresDataType.Struct)
+          .WithStructSchema(s => s
+            .AddEntry("Rate", AresDataType.Number, false)
+            .AddEntry("Time", AresDataType.Number, false))
+          .Build()
+      },
+      new()
+      {
+        Name = ChemyxPumpCommand.GetDispensedVolume.ToString(),
+        Description = "Gets the volume dispensed by the pump.",
+        InputSchema = AresSchemaBuilder.Empty()
+          .AddEntry("PumpIndex", AresSchemaBuilder.NumberEntry().Build())
+          .Build(),
+        OutputSchema = AresSchemaBuilder.NumberEntry().Build()
+      },
+      new()
+      {
+        Name = ChemyxPumpCommand.GetElapsedTime.ToString(),
+        Description = "Gets the elapsed time since the pump started running.",
+        InputSchema = AresSchemaBuilder.Empty()
+          .AddEntry("PumpIndex", AresSchemaBuilder.NumberEntry().Build())
+          .Build(),
+        OutputSchema = AresSchemaBuilder.NumberEntry().Build()
+      },
+      new()
+      {
+        Name = ChemyxPumpCommand.GetLimitParameter.ToString(),
+        Description = "Gets the hardware limit parameters of the pump.",
+        InputSchema = AresSchemaBuilder.Empty()
+          .AddEntry("PumpIndex", AresSchemaBuilder.NumberEntry().Build())
+          .Build(),
+        OutputSchema = AresSchemaBuilder.Entry(AresDataType.Struct)
+          .WithStructSchema(s => s
+            .AddEntry("MaxRate", AresDataType.Number, false)
+            .AddEntry("MinRate", AresDataType.Number, false)
+            .AddEntry("MaxVolume", AresDataType.Number, false)
+            .AddEntry("MinVolume", AresDataType.Number, false))
+          .Build()
       }
     });
   }
 
+  private async Task<(double rate, TimeSpan time)?> SetTime(TimeSpan time, int? pump = null)
+  {
+    var totalMinutes = time.TotalMinutes;
+    var response = await _connection.Send(new SetTimeCommand(pump ?? 1, totalMinutes), TimeSpan.FromSeconds(5));
+    if(response is null || !response.Rate.HasValue || !response.Time.HasValue)
+      return null;
+
+    _cachedParameters = await _connection.Send(new ViewParameterCommand());
+    var responseTimespan = TimeSpan.FromMinutes(response.Time.Value);
+    return (response.Rate.Value, responseTimespan);
+  }
+
   public override async Task<CommandResult> ExecuteCommand(string command, List<DeviceCommandArgument> arguments, CancellationToken token)
   {
-    if(!Enum.TryParse<ChemyxPumpCommand>(command, out var chemyxCommand))
+    if(!System.Enum.TryParse<ChemyxPumpCommand>(command, out var chemyxCommand))
       return new CommandResult { Success = false, Error = $"Unknown command: {command}" };
+
+    var result = new CommandResult();
 
     try
     {
       int? pumpIdx = (int?)arguments.FirstOrDefault(a => a.ArgName == "PumpIndex")?.ArgValue.NumberValue;
-      
+
       switch(chemyxCommand)
       {
         case ChemyxPumpCommand.Start:
           int mode = (int)(arguments.FirstOrDefault(a => a.ArgName == "Mode")?.ArgValue.NumberValue ?? 0);
           await _connection.Send(new StartCommand(pumpIdx, mode));
           break;
+
         case ChemyxPumpCommand.Stop:
           await _connection.Send(new StopCommand(pumpIdx));
           break;
+
         case ChemyxPumpCommand.Pause:
           await _connection.Send(new PauseCommand(pumpIdx));
           break;
+
         case ChemyxPumpCommand.SetRate:
           var rateArg = arguments.FirstOrDefault(a => a.ArgName == "Rate");
           if(rateArg != null && rateArg.ArgValue.HasNumberValue)
@@ -177,7 +298,9 @@ public class ChemyxPump : AresDevice, IChemyxPump
             await _connection.Send(new SetRateCommand(pumpIdx ?? 1, rateArg.ArgValue.NumberValue));
             _cachedParameters = await _connection.Send(new ViewParameterCommand());
           }
+
           break;
+
         case ChemyxPumpCommand.SetVolume:
           var volArg = arguments.FirstOrDefault(a => a.ArgName == "Volume");
           if(volArg != null && volArg.ArgValue.HasNumberValue)
@@ -185,17 +308,112 @@ public class ChemyxPump : AresDevice, IChemyxPump
             await _connection.Send(new SetVolumeCommand(pumpIdx ?? 1, volArg.ArgValue.NumberValue));
             _cachedParameters = await _connection.Send(new ViewParameterCommand());
           }
+
+          result.Success = true;
           break;
+
+        case ChemyxPumpCommand.SetDiameter:
+          var diameterArg = arguments.FirstOrDefault(a => a.ArgName == "Diameter");
+          NumericResponse? response;
+
+          if(diameterArg is not null && diameterArg.ArgValue.HasNumberValue)
+          {
+            response = await _connection.Send(new SetDiameterCommand(pumpIdx ?? 1, diameterArg.ArgValue.NumberValue));
+            result.Result = response.Value is not null ? AresValueHelper.CreateNumber((int)response.Value) : AresValueHelper.CreateNull();
+            result.Success = !result.Result.HasNullValue;
+            return result;
+          }
+
+          return Failure($"Could not execute the Set Diamter command on {Name}, as the diameter argument was either not provided or malformed.");
+
+        case ChemyxPumpCommand.SetUnits:
+          var value = GetNumberParam(ChemyxParameter.Units.ToString(), arguments);
+          if(!value.HasValue)
+            return Failure("SetUnits requires a numeric Value parameter.");
+
+          var units = (PumpUnits)(int)value.Value;
+          var setUnitsResponse = await _connection.Send(new SetUnitsCommand(pumpIdx ?? 1, units));
+          result.Result = setUnitsResponse.Value is not null ? AresValueHelper.CreateNumber((double)setUnitsResponse.Value) : AresValueHelper.CreateNull();
+          result.Success = !result.Result.HasNullValue;
+          return result;
+
+        case ChemyxPumpCommand.SetDelay:
+          var delayValue = GetNumberParam(ChemyxParameter.Delay.ToString(), arguments);
+          if(!delayValue.HasValue)
+            return Failure("SetDelay requires a numeric Value parameter.");
+          var delayReq = TimeSpan.FromSeconds(delayValue.Value);
+          var setDelayResponse = await _connection.Send(new SetDelayCommand(pumpIdx ?? 1, delayValue.Value));
+          result.Result = setDelayResponse.Value is not null ? AresValueHelper.CreateNumber((double)setDelayResponse.Value) : AresValueHelper.CreateNull();
+          result.Success = !result.Result.HasNullValue;
+          return result;
+
+        case ChemyxPumpCommand.SetTime:
+          var timeValue = GetNumberParam(ChemyxParameter.Time.ToString(), arguments);
+          if(!timeValue.HasValue)
+            return Failure("SetTime requires a numeric Value parameter.");
+
+          var timeSpan = TimeSpan.FromMinutes(timeValue.Value);
+          var setTimeResponse = await SetTime(timeSpan, pumpIdx);
+          if(setTimeResponse.HasValue)
+          {
+            var responseTime = setTimeResponse.Value.time.TotalMinutes;
+            var valueStruct = AresValueHelper.CreateStruct();
+            valueStruct.StructValue.AddNumber("Rate", setTimeResponse.Value.rate).AddNumber("Time", responseTime);
+            result.Result = valueStruct; 
+          }
+          else
+            result.Result = AresValueHelper.CreateNull();
+          
+          return result;
+
+        case ChemyxPumpCommand.GetDispensedVolume:
+          var dispensedVolumeResponse = await _connection.Send(new DispensedVolumeCommand(pumpIdx ?? 1), TimeSpan.FromSeconds(5));
+          result.Result = dispensedVolumeResponse.Value is not null ? AresValueHelper.CreateNumber((double)dispensedVolumeResponse.Value) : AresValueHelper.CreateNull();
+          result.Success = !result.Result.HasNullValue;
+          return result;
+
+        case ChemyxPumpCommand.GetElapsedTime:
+          var elapsedTimeResponse = await _connection.Send(new ElapsedTimeCommand(pumpIdx ?? 1), TimeSpan.FromSeconds(5));
+          result.Result = elapsedTimeResponse.Value is not null ? AresValueHelper.CreateNumber((double)elapsedTimeResponse.Value) : AresValueHelper.CreateNull();
+          result.Success = !result.Result.HasNullValue;
+          return result;
+
+        case ChemyxPumpCommand.GetLimitParameter:
+          var limitResponse = await _connection.Send(new ReadLimitParameterCommand(pumpIdx ?? 1, 0), TimeSpan.FromSeconds(5));
+          if(limitResponse is null)
+          {
+            result.Result = AresValueHelper.CreateNull();
+            break;
+          }
+
+          var limitValueStruct = AresValueHelper.CreateStruct();
+          limitValueStruct.StructValue.AddNumber("MaxRate", limitResponse.MaxRate)
+            .AddNumber("MinRate", limitResponse.MinRate)
+            .AddNumber("MaxVolume", limitResponse.MaxVolume)
+            .AddNumber("MinVolume", limitResponse.MinVolume);
+
+          result.Result = limitValueStruct;
+          result.Success = true;
+          return result;
+
         default:
           return new CommandResult { Success = false, Error = "Not implemented" };
       }
       return new CommandResult { Success = true };
     }
+
     catch(Exception e)
     {
       return new CommandResult { Success = false, Error = e.Message };
     }
   }
+
+  private double? GetNumberParam(string name, List<DeviceCommandArgument> arguments, double? fallback = null)
+  {
+    var param = arguments.FirstOrDefault(p => p.ArgName == name);
+    return param != null && param.ArgValue.HasNumberValue ? param.ArgValue.NumberValue : fallback;
+  }
+  private CommandResult Failure(string message) => new CommandResult { Success = false, Error = message };
 
   public async ValueTask DisposeAsync()
   {
@@ -206,4 +424,6 @@ public class ChemyxPump : AresDevice, IChemyxPump
   }
 
   public bool DualPump { get; private set; }
+
+  public double[]? DispensedVolumes { get; private set; }
 }

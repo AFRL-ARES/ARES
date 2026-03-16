@@ -96,7 +96,7 @@ public class LimitParameterResponseParser(string originalCommand) : ChemyxRespon
       if(double.TryParse(parts[i], NumberStyles.Float, CultureInfo.InvariantCulture, out var v))
         values[i] = v;
     }
-    return new LimitParameterResponse(echo, lines, raw, values[0], values[1], values[2]);
+    return new LimitParameterResponse(echo, lines, raw, values[0] ?? -1.0, values[1] ?? -1.0, values[2] ?? -1.0, values[3] ?? -1.0);
   }
 }
 
