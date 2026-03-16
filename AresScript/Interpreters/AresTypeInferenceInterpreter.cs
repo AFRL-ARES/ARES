@@ -175,23 +175,28 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
 
   public override SchemaEntry VisitUnaryMinus(AresLangParser.UnaryMinusContext context)
   {
+    var operand = Visit(context.expression());
+    if(operand.Type == AresDataType.Quantity)
+    {
+      return CreateQuantityResultEntry(operand);
+    }
+
     return AresSchemaBuilder.Entry(AresDataType.Number).Build();
   }
 
   public override SchemaEntry VisitMulDiv(AresLangParser.MulDivContext context)
   {
-    return NumericOrElse(context.expression(0), context.expression(1));
+    return NumericOrQuantityOrElse(context.expression(0), context.expression(1));
   }
 
   public override SchemaEntry VisitSub(AresLangParser.SubContext context)
   {
-    return NumericOrElse(context.expression(0), context.expression(1));
+    return NumericOrQuantityOrElse(context.expression(0), context.expression(1), allowRightNumberForQuantityLeft: false);
   }
 
   public override SchemaEntry VisitAdd(AresLangParser.AddContext context)
   {
-    
-    return NumericOrElse(context.expression(0), context.expression(1), AresDataType.String);
+    return NumericOrQuantityOrElse(context.expression(0), context.expression(1), allowRightNumberForQuantityLeft: false, elseType: AresDataType.String);
   }
 
   public override SchemaEntry VisitRelational(AresLangParser.RelationalContext context)
@@ -219,7 +224,11 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
     return AresSchemaBuilder.Entry(AresDataType.Boolean).Build();
   }
 
-  private SchemaEntry NumericOrElse(AresLangParser.ExpressionContext left, AresLangParser.ExpressionContext right, AresDataType elseType = AresDataType.Any)
+  private SchemaEntry NumericOrQuantityOrElse(
+    AresLangParser.ExpressionContext left,
+    AresLangParser.ExpressionContext right,
+    bool allowRightNumberForQuantityLeft = true,
+    AresDataType elseType = AresDataType.Any)
   {
     var leftType = Visit(left);
     var rightType = Visit(right);
@@ -228,7 +237,45 @@ public sealed class AresTypeInferenceInterpreter : AresLangBaseVisitor<SchemaEnt
       return AresSchemaBuilder.Entry(AresDataType.Number).Build();
     }
 
+    if(leftType.Type == AresDataType.Quantity)
+    {
+      if((allowRightNumberForQuantityLeft && rightType.Type == AresDataType.Number)
+        || (rightType.Type == AresDataType.Quantity && AreQuantitySchemasCompatible(leftType.QuantitySchema, rightType.QuantitySchema))
+        || rightType.Type is AresDataType.Any or AresDataType.UnspecifiedType)
+      {
+        return CreateQuantityResultEntry(leftType, rightType);
+      }
+    }
+
     return AresSchemaBuilder.Entry(elseType).Build();
+  }
+
+  private static bool AreQuantitySchemasCompatible(QuantitySchema? left, QuantitySchema? right)
+  {
+    if(left is null || right is null)
+    {
+      return true;
+    }
+
+    return left.QuantityType == QuantityType.Unspecified
+      || right.QuantityType == QuantityType.Unspecified
+      || left.QuantityType == right.QuantityType;
+  }
+
+  private static SchemaEntry CreateQuantityResultEntry(params SchemaEntry[] candidates)
+  {
+    var quantityType = candidates
+      .Select(candidate => candidate.QuantitySchema?.QuantityType ?? QuantityType.Unspecified)
+      .FirstOrDefault(type => type != QuantityType.Unspecified);
+
+    return new SchemaEntry
+    {
+      Type = AresDataType.Quantity,
+      QuantitySchema = new QuantitySchema
+      {
+        QuantityType = quantityType
+      }
+    };
   }
 
   private static bool AreEquivalentSchemas(SchemaEntry left, SchemaEntry right)

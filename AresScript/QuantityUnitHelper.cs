@@ -7,6 +7,42 @@ namespace AresScript;
 
 public static class QuantityUnitHelper
 {
+  public static bool TryNegateQuantity(AresValue value, [NotNullWhen(true)] out AresValue? result)
+  {
+    return TryApplyArithmeticOperation(value, AresValueHelper.CreateNumber(-1),
+      static (l, r) => l * r, allowRightNumberOperand: true, out result);
+  }
+
+  public static bool TryApplyArithmeticOperation(
+    AresValue left,
+    AresValue right,
+    Func<double, double, double> operation,
+    bool allowRightNumberOperand,
+    [NotNullWhen(true)]
+    out AresValue? result)
+  {
+    result = null;
+
+    if(left.KindCase != AresValue.KindOneofCase.QuantityValue)
+    {
+      return false;
+    }
+
+    if(!left.QuantityValue.TryToUnitsNetQuantity(out var leftQuantity) || leftQuantity is null)
+    {
+      throw new AresQuantityException("Left hand side quantity is invalid.");
+    }
+
+    var rightScalar = ResolveRightOperandScalar(leftQuantity, right, allowRightNumberOperand);
+
+    var leftBaseUnit = leftQuantity.QuantityInfo.BaseUnitInfo.Value;
+    var leftBaseScalar = leftQuantity.As(leftBaseUnit);
+    var resultBaseScalar = operation(leftBaseScalar, rightScalar);
+    var resultInLeftUnit = Quantity.From(resultBaseScalar, leftBaseUnit).As(leftQuantity.Unit);
+    result = AresValueHelper.CreateQuantity(Quantity.From(resultInLeftUnit, leftQuantity.Unit).ToQuantityValue());
+    return true;
+  }
+
   public static bool TryParseUnit(QuantityType quantityType, string unitText, out Enum? unit, out string? error)
   {
     unit = null;
@@ -120,5 +156,33 @@ public static class QuantityUnitHelper
     return quantityInfo is null
       ? throw new InvalidOperationException($"No UnitsNet quantity mapping exists for QuantityType '{quantityType}'.")
       : quantityInfo;
+  }
+
+  private static double ResolveRightOperandScalar(
+    IQuantity leftQuantity,
+    AresValue right,
+    bool allowRightNumberOperand)
+  {
+    if(right.KindCase == AresValue.KindOneofCase.QuantityValue)
+    {
+      if(!right.QuantityValue.TryToUnitsNetQuantity(out var rightQuantity) || rightQuantity is null)
+      {
+        throw new AresQuantityException("Right hand side quantity is invalid.");
+      }
+
+      if(!string.Equals(leftQuantity.QuantityInfo.Name, rightQuantity.QuantityInfo.Name, StringComparison.OrdinalIgnoreCase))
+      {
+        throw new AresQuantityException($"Quantity types '{leftQuantity.QuantityInfo.Name}' and '{rightQuantity.QuantityInfo.Name}' are not compatible.");
+      }
+
+      return rightQuantity.As(rightQuantity.QuantityInfo.BaseUnitInfo.Value);
+    }
+
+    if(allowRightNumberOperand && right.HasNumberValue)
+    {
+      return right.NumberValue;
+    }
+
+    throw new AresQuantityException("Right hand side must be a compatible quantity.");
   }
 }

@@ -78,6 +78,29 @@ public class InterpreterTests
     await visitor.Visit(programCtx);
   }
 
+  private static async Task<AresScriptEnvironment> RunScriptWithEnvironmentAsync(
+    string script,
+    Action<AresScriptEnvironment> configureEnvironment)
+  {
+    var stream = new AntlrInputStream(script);
+    var lexer = new AresIndentationLexer(stream);
+    lexer.RemoveErrorListeners();
+    lexer.AddErrorListener(new ThrowingLexerErrorListener());
+    var tokenStream = new CommonTokenStream(lexer);
+    var parser = new AresLangParser(tokenStream);
+    parser.RemoveErrorListeners();
+    parser.AddErrorListener(new ThrowingParserErrorListener());
+    var programCtx = parser.program();
+    var env = new AresScriptEnvironment();
+    env.AssignSystemFunctions(StandardLibrary.Functions);
+    env.AssignExtensionFunctions(StandardLibrary.ExtensionFunctions);
+    configureEnvironment(env);
+    var visitor = new AresBaseInterpreter(env);
+
+    await visitor.Visit(programCtx);
+    return env;
+  }
+
   private static async Task ValidateScriptAsync(string script)
   {
     var stream = new AntlrInputStream(script);
@@ -260,6 +283,61 @@ public class InterpreterTests
       """;
 
     await RunScriptAsync(script);
+  }
+
+  [Test]
+  public async Task Quantity_Add_Returns_Result_In_Left_Unit()
+  {
+    var env = await RunScriptWithEnvironmentAsync("result = lhs + rhs", environment =>
+    {
+      environment.AssignVariable("lhs", AresValueHelper.CreateQuantity(UnitsNet.Length.FromCentimeters(10).ToQuantityValue()));
+      environment.AssignVariable("rhs", AresValueHelper.CreateQuantity(UnitsNet.Length.FromMeters(1).ToQuantityValue()));
+    });
+
+    var result = env["result"];
+    Assert.That(result.KindCase, Is.EqualTo(AresValue.KindOneofCase.QuantityValue));
+    var quantity = result.QuantityValue.ToUnitsNetQuantity();
+    Assert.That(quantity.QuantityInfo.Name, Is.EqualTo(nameof(UnitsNet.Length)));
+    Assert.That(quantity.As(UnitsNet.Units.LengthUnit.Centimeter), Is.EqualTo(110).Within(0.0001));
+  }
+
+  [Test]
+  public async Task Quantity_Multiply_By_Number_Preserves_Left_Unit()
+  {
+    var env = await RunScriptWithEnvironmentAsync("result = lhs * 3", environment =>
+    {
+      environment.AssignVariable("lhs", AresValueHelper.CreateQuantity(UnitsNet.Duration.FromMilliseconds(500).ToQuantityValue()));
+    });
+
+    var result = env["result"];
+    Assert.That(result.KindCase, Is.EqualTo(AresValue.KindOneofCase.QuantityValue));
+    var quantity = result.QuantityValue.ToUnitsNetQuantity();
+    Assert.That(quantity.QuantityInfo.Name, Is.EqualTo(nameof(UnitsNet.Duration)));
+    Assert.That(quantity.As(UnitsNet.Units.DurationUnit.Millisecond), Is.EqualTo(1500).Within(0.0001));
+  }
+
+  [Test]
+  public async Task Validation_Allows_Quantity_Arithmetic_Return_Type()
+  {
+    var script = """
+      def add_duration(a: Quantity.Duration, b: Quantity.Duration) -> Quantity.Duration:
+        return a + b
+      """;
+
+    await ValidateScriptAsync(script);
+  }
+
+  [Test]
+  public Task Validation_Rejects_Arithmetic_On_Different_Quantity_Types()
+  {
+    var script = """
+      def bad_add(a: Quantity.Duration, b: Quantity.Length) -> Quantity:
+        return a + b
+      """;
+
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
+    Assert.That(ex?.Message, Does.Contain("compatible quantity"));
+    return Task.CompletedTask;
   }
 
   [Test]

@@ -1262,6 +1262,18 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
       return AresValueHelper.CreateNumber(-value.NumberValue);
     }
 
+    try
+    {
+      if(QuantityUnitHelper.TryNegateQuantity(value, out var quantityResult))
+      {
+        return quantityResult!;
+      }
+    }
+    catch(AresQuantityException ex)
+    {
+      throw new AresInterpreterException(ex.Message, context.Start.Line, context.Start.Column);
+    }
+
     throw new AresInterpreterException(
       $"Cannot perform unary minus on type {value.KindCase}.",
       context.Start.Line,
@@ -1273,6 +1285,29 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
   {
     var left = await Visit(context.expression(0));
     var right = await Visit(context.expression(1));
+
+    try
+    {
+      Func<double, double, double> op = context.op.Type switch
+      {
+        AresLangParser.MUL => (l, r) => l * r,
+        AresLangParser.DIV => (l, r) => l / r,
+        AresLangParser.MOD => (l, r) => l % r,
+        _ => throw new AresInterpreterException(
+          $"Wrong operation type {context.op.Type}.",
+          context.op.Line,
+          context.op.Column)
+      };
+
+      if(QuantityUnitHelper.TryApplyArithmeticOperation(left, right, op, allowRightNumberOperand: true, out var quantityResult))
+      {
+        return quantityResult;
+      }
+    }
+    catch(AresQuantityException ex)
+    {
+      throw new AresInterpreterException(ex.Message, context.expression(1).Start.Line, context.expression(1).Start.Column);
+    }
 
     if(!left.HasNumberValue)
     {
@@ -1309,6 +1344,18 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
       return AresValueHelper.CreateNumber(left.NumberValue + right.NumberValue);
     }
 
+    try
+    {
+      if(QuantityUnitHelper.TryApplyArithmeticOperation(left, right, static (l, r) => l + r, allowRightNumberOperand: false, out var quantityResult))
+      {
+        return quantityResult;
+      }
+    }
+    catch(AresQuantityException ex)
+    {
+      throw new AresInterpreterException(ex.Message, context.expression(1).Start.Line, context.expression(1).Start.Column);
+    }
+
     var leftStr = left.Stringify();
     var rightStr = right.Stringify();
 
@@ -1319,6 +1366,18 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
   {
     var left = await Visit(context.expression(0));
     var right = await Visit(context.expression(1));
+
+    try
+    {
+      if(QuantityUnitHelper.TryApplyArithmeticOperation(left, right, static (l, r) => l - r, allowRightNumberOperand: false, out var quantityResult))
+      {
+        return quantityResult;
+      }
+    }
+    catch(AresQuantityException ex)
+    {
+      throw new AresInterpreterException(ex.Message, context.expression(1).Start.Line, context.expression(1).Start.Column);
+    }
 
     if(!left.HasNumberValue)
     {

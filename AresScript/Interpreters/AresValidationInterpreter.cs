@@ -485,7 +485,15 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     }
 
     var userFunc = new AresScriptFunction(functionId, parameters, block, declaredReturnSchema);
-    _environment.AssignFunction(functionId, userFunc);
+    try
+    {
+      _environment.AssignFunction(functionId, userFunc);
+    }
+    catch(InvalidOperationException e)
+    {
+      throw new AresInterpreterException(e.Message, functionNameToken.Symbol.Line, functionNameToken.Symbol.Column);
+    }
+    
 
     if(_line is not null && _line.Value == context.Start.Line)
     {
@@ -888,23 +896,44 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
   public override async Task VisitUnaryMinus([NotNull] AresLangParser.UnaryMinusContext context)
   {
     await Visit(context.expression());
-    ValidateNumericExpression(context.expression(), $"Cannot perform unary minus on type {_typeInference.Visit(context.expression()).Type}.");
+    ValidateArithmeticExpression(context.expression(), $"Cannot perform unary minus on type {_typeInference.Visit(context.expression()).Type}.");
   }
 
   public override async Task VisitMulDiv(AresLangParser.MulDivContext context)
   {
     await Visit(context.expression(0));
     await Visit(context.expression(1));
-    ValidateNumericExpression(context.expression(0), "Left hand side is not numeric.");
-    ValidateNumericExpression(context.expression(1), "Right hand side is not numeric.");
+    ValidateArithmeticOperands(context.expression(0), context.expression(1), "Left hand side is not numeric or quantity.", "Right hand side is not numeric or compatible quantity.", allowRightNumberForQuantityLeft: true);
   }
 
   public override async Task VisitSub(AresLangParser.SubContext context)
   {
     await Visit(context.expression(0));
     await Visit(context.expression(1));
-    ValidateNumericExpression(context.expression(0), "Left hand side is not numeric.");
-    ValidateNumericExpression(context.expression(1), "Right hand side is not numeric.");
+    ValidateArithmeticOperands(context.expression(0), context.expression(1), "Left hand side is not numeric or quantity.", "Right hand side is not numeric or compatible quantity.", allowRightNumberForQuantityLeft: false);
+  }
+
+  public override async Task VisitAdd(AresLangParser.AddContext context)
+  {
+    await Visit(context.expression(0));
+    await Visit(context.expression(1));
+
+    var leftSchema = _typeInference.Visit(context.expression(0));
+    if(leftSchema.Type == AresDataType.Quantity)
+    {
+      ValidateArithmeticOperands(
+        context.expression(0),
+        context.expression(1),
+        "Left hand side is not numeric or quantity.",
+        "Right hand side is not a compatible quantity.",
+        allowRightNumberForQuantityLeft: false);
+      return;
+    }
+
+    if(leftSchema.Type == AresDataType.Number)
+    {
+      ValidateNumericExpression(context.expression(1), "Right hand side is not numeric.");
+    }
   }
 
   public override async Task VisitRelational([NotNull] AresLangParser.RelationalContext context)
@@ -1190,6 +1219,20 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     return -1;
   }
 
+  private void ValidateArithmeticExpression(AresLangParser.ExpressionContext expression, string message)
+  {
+    var schema = _typeInference.Visit(expression);
+    if(schema.Type is AresDataType.Any or AresDataType.UnspecifiedType or AresDataType.Number or AresDataType.Quantity)
+    {
+      return;
+    }
+
+    if(_mode == ValidationMode.Strict)
+    {
+      throw new AresInterpreterException(message, expression.Start.Line, expression.Start.Column);
+    }
+  }
+
   private void ValidateNumericExpression(AresLangParser.ExpressionContext expression, string message)
   {
     var schema = _typeInference.Visit(expression);
@@ -1202,6 +1245,80 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       throw new AresInterpreterException(message, expression.Start.Line, expression.Start.Column);
     }
+  }
+
+  private void ValidateArithmeticOperands(
+    AresLangParser.ExpressionContext leftExpression,
+    AresLangParser.ExpressionContext rightExpression,
+    string leftMessage,
+    string rightMessage,
+    bool allowRightNumberForQuantityLeft)
+  {
+    var leftSchema = _typeInference.Visit(leftExpression);
+    var rightSchema = _typeInference.Visit(rightExpression);
+
+    if(leftSchema.Type is AresDataType.Any or AresDataType.UnspecifiedType)
+    {
+      return;
+    }
+
+    if(leftSchema.Type == AresDataType.Number)
+    {
+      if(rightSchema.Type is AresDataType.Any or AresDataType.UnspecifiedType or AresDataType.Number)
+      {
+        return;
+      }
+
+      if(_mode == ValidationMode.Strict)
+      {
+        throw new AresInterpreterException(rightMessage, rightExpression.Start.Line, rightExpression.Start.Column);
+      }
+
+      return;
+    }
+
+    if(leftSchema.Type != AresDataType.Quantity)
+    {
+      if(_mode == ValidationMode.Strict)
+      {
+        throw new AresInterpreterException(leftMessage, leftExpression.Start.Line, leftExpression.Start.Column);
+      }
+
+      return;
+    }
+
+    if(rightSchema.Type is AresDataType.Any or AresDataType.UnspecifiedType)
+    {
+      return;
+    }
+
+    if(allowRightNumberForQuantityLeft && rightSchema.Type == AresDataType.Number)
+    {
+      return;
+    }
+
+    if(rightSchema.Type == AresDataType.Quantity
+      && AreQuantitySchemasCompatible(leftSchema.QuantitySchema, rightSchema.QuantitySchema))
+    {
+      return;
+    }
+
+    if(_mode == ValidationMode.Strict)
+    {
+      throw new AresInterpreterException(rightMessage, rightExpression.Start.Line, rightExpression.Start.Column);
+    }
+  }
+
+  private static bool AreQuantitySchemasCompatible(QuantitySchema? left, QuantitySchema? right)
+  {
+    if(left is null || right is null)
+    {
+      return true;
+    }
+
+    return left.QuantityType == QuantityType.Unspecified
+      || right.QuantityType == QuantityType.Unspecified
+      || left.QuantityType == right.QuantityType;
   }
 
   private void ValidateBooleanExpression(AresLangParser.ExpressionContext expression, string message)
