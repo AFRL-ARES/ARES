@@ -16,7 +16,7 @@ public class QuantitySymbolProvider : ISymbolProvider
     foreach(var quantityType in Enum.GetValues<QuantityType>().Where(type => type != QuantityType.Unspecified))
     {
       var quantityTypeName = quantityType.ToString();
-      var functionId = $"unit::{quantityTypeName.ToLowerInvariant()}::from";
+      var functionId = $"quantity::{quantityTypeName.ToLowerInvariant()}::from";
       var baseUnitName = QuantityUnitHelper.GetBaseUnitName(quantityType);
 
       symbols.Add(

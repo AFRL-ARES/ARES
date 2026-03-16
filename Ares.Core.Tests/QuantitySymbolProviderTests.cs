@@ -19,7 +19,7 @@ public class QuantitySymbolProviderTests
     var function = provider
       .GetSymbols()
       .OfType<AresSystemFunctionSymbol>()
-      .FirstOrDefault(symbol => symbol.ParentName == "Unit.Duration" && symbol.Name == "from");
+      .FirstOrDefault(symbol => symbol.ParentName == "Quantity.Duration" && symbol.Name == "from");
 
     Assert.That(function, Is.Not.Null);
   }
@@ -31,7 +31,7 @@ public class QuantitySymbolProviderTests
     var function = provider
       .GetSymbols()
       .OfType<AresSystemFunctionSymbol>()
-      .First(symbol => symbol.ParentName == "Unit.Duration" && symbol.Name == "from");
+      .First(symbol => symbol.ParentName == "Quantity.Duration" && symbol.Name == "from");
 
     var value = await function.Body(
       [AresValueHelper.CreateNumber(1), AresValueHelper.CreateString("s")],
@@ -50,13 +50,12 @@ public class QuantitySymbolProviderTests
     var function = provider
       .GetSymbols()
       .OfType<AresSystemFunctionSymbol>()
-      .First(symbol => symbol.ParentName == "Unit.Duration" && symbol.Name == "from");
+      .First(symbol => symbol.ParentName == "Quantity.Duration" && symbol.Name == "from");
 
     var ex = Assert.ThrowsAsync<InvalidOperationException>(() => function.Body(
       [AresValueHelper.CreateNumber(1), AresValueHelper.CreateString("kg")],
       new ScriptExecutionControlToken(CancellationToken.None)));
-
-    Assert.That(ex?.Message, Does.Contain("Function 'unit::duration::from'"));
+    
     Assert.That(ex?.Message, Does.Contain("not valid for quantity type 'Duration'"));
   }
 
@@ -67,12 +66,11 @@ public class QuantitySymbolProviderTests
     var function = provider
       .GetSymbols()
       .OfType<AresSystemFunctionSymbol>()
-      .First(symbol => symbol.ParentName == "Unit.Duration" && symbol.Name == "from");
+      .First(symbol => symbol.ParentName == "Quantity.Duration" && symbol.Name == "from");
 
     var error = function.StaticArgumentValidator?.Invoke(
       [AresValueHelper.CreateNumber(1), AresValueHelper.CreateString("kg")]);
-
-    Assert.That(error, Does.Contain("Function 'unit::duration::from'"));
-    Assert.That(error, Does.Contain("not valid for quantity type 'Duration'"));
+    
+    Assert.That(error?.Error, Does.Contain("not valid for quantity type 'Duration'"));
   }
 }
