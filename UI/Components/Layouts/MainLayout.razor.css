@@ -40,9 +40,29 @@ main {
   display: flex;
   flex-direction: column;
 }
+.ares-throbber-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #212529;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.8s ease-out, visibility 0.8s ease-out;
+}
+
+.ares-throbber-overlay.fade-out {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
 
 .ares-throbber-pulse {
-  /* Adjust based on your layout */
   max-width: 250px;
   animation: ares-breathe 2s ease-in-out infinite;
 }
