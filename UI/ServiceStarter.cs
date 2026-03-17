@@ -95,6 +95,7 @@ public class ServiceStarter : BackgroundService
     );
 
     await Task.WhenAll(localTrack, infraTrack, remoteTrack);
+    await Task.Delay(TimeSpan.FromMinutes(0.5));
     _tracker.MarkAsReady();
   }
 
