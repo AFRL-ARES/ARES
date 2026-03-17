@@ -106,16 +106,60 @@
 </div>
 
 <div class="ares-throbber-overlay @(Tracker.IsReady ? "fade-out" : "")">
-  <div class="text-center">
+  <div class="throbber-content-wrapper">
     <img src="/images/ARESLogo.png" class="ares-throbber-pulse" alt="ARES OS Booting..." />
-    <h5 class="text-light mt-4">Warming up system...</h5>
+    <h5 class="text-light mt-4 throbber-text-nudge">@_loadingMessage</h5>
   </div>
 </div>
-
 
 @code {
   public bool SidebarExpanded { get; set; } = true;
   public bool BodyExpanded { get; set; }
+  private CancellationTokenSource _cts = new();
+  private string _loadingMessage = "Initializing ARES OS...";
+
+  private readonly string[] _loadingMessageOptions = new[]
+  {
+    "Applying percussive maintenance to simulated hardware...",
+    "Negotiating peace treaties with the serial ports...",
+    "Convincing the lab equipment to cooperate...",
+    "Topping off the blinker fluid...",
+    "Herding the autonomous research agents...",
+    "Downloading more RAM...",
+    "Warming up the lasers...",
+    "Purging the digital fluid lines...",
+    "Waiting for the valves to make up their minds...",
+    "Dividing by zero... please wait...",
+    "Locating the missing 10mm socket...",
+    "Giving the planner a quick pep talk...",
+    "Sweeping up the broken simulated beakers...",
+    "Convincing the analyzer the sample isn't contaminated..."
+  };
+
+  protected override void OnInitialized()
+  {
+    Tracker.OnSystemReady += HandleSystemReady;
+
+    // Fire and forget the message cycler
+    _ = CycleLoadingMessagesAsync(_cts.Token);
+  }
+
+  private async Task CycleLoadingMessagesAsync(CancellationToken token)
+  {
+    var random = new Random();
+
+    while(!Tracker.IsReady && !token.IsCancellationRequested)
+    {
+      // Wait 4 seconds before swapping to a new message
+      await Task.Delay(4000, token);
+
+      if(!Tracker.IsReady)
+      {
+        _loadingMessage = _loadingMessageOptions[random.Next(_loadingMessageOptions.Length)];
+        await InvokeAsync(StateHasChanged);
+      }
+    }
+  }
 
   private void SidebarExpandClick()
   {
@@ -182,20 +226,18 @@
       .Distinct(StringComparer.OrdinalIgnoreCase);
   }
 
-  protected override void OnInitialized()
-  {
-    // Listen for the signal from the background service
-    Tracker.OnSystemReady += HandleSystemReady;
-  }
-  
   private void HandleSystemReady()
   {
-    // InvokeAsync ensures the UI updates on the correct Blazor thread
+    // Cancel the timer just to be safe
+    _cts.Cancel();
     InvokeAsync(StateHasChanged);
   }
 
   public void Dispose()
   {
     Tracker.OnSystemReady -= HandleSystemReady;
+    _cts.Cancel();
+    _cts.Dispose();
   }
+}
 }

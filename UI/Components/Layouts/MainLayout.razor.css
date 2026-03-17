@@ -83,3 +83,18 @@ main {
     opacity: 0.6;
   }
 }
+
+.throbber-content-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Strict geometric centering */
+  justify-content: center;
+}
+
+.throbber-text-nudge {
+  /* Positive values move the text to the right. 
+       Tweak this 10px up or down until it visually locks in under the 'E' in ARES. */
+  transform: translateX(-15px);
+  /* Optional: Add a little letter-spacing to make the loading text look more premium */
+  letter-spacing: 1.5px;
+}
