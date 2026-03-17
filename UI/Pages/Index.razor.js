@@ -89,13 +89,24 @@ function observeWidget(grid, item) {
   const content = item.querySelector('.grid-stack-item-content');
   if (!content) return;
 
+  // We want to observe the actual Blazor component inside the wrapper
+  // because GridStack applies aggressive sizing CSS to the wrapper itself.
+  const innerWidget = content.firstElementChild;
+  const targetToObserve = innerWidget ? innerWidget : content;
+
+  let timeoutId;
   const observer = new ResizeObserver(() => {
-    grid.resizeToContent(item);
+    // Debounce: Clear the previous timeout if Blazor is still mutating the DOM rapidly
+    clearTimeout(timeoutId);
+
+    // Wait 50ms for the DOM to completely settle before measuring
+    timeoutId = setTimeout(() => {
+      grid.resizeToContent(item);
+    }, 50);
   });
 
-  observer.observe(content);
+  observer.observe(targetToObserve);
 }
-
 function handleResponsiveGrid(gridId) {
   const width = document.body.clientWidth;
   const el = document.getElementById(gridId);

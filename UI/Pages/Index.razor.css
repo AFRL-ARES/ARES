@@ -16,6 +16,8 @@
 /* 2. Clamp your actual device component */
 .grid-stack-item-content > div {
 	width: 100%;
+	height: max-content !important; /* Forces the div to be exactly as tall as the Blazor component inside it */
+	min-height: 250px;
 	/* Optional: Maintain aspect ratio internally if needed */
-	aspect-ratio: 16 / 9;
+	/* aspect-ratio: 16 / 9; */
 }
