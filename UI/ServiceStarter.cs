@@ -68,16 +68,29 @@ public class ServiceStarter : IHostedService
   public async Task StartAsync(CancellationToken cancellationToken)
   {
     _notificationReceivingService.StartNotificationStream();
-    await _deviceDriverLoader.LoadModulesAsync(_pluginsPath);
-    _deviceControlViewModelRepo.Initialize();
-    _deviceManager.Initialize();
-    _deviceAdapterManager.Activate();
-    await _deviceConfigManager.LoadConfigs();
-    await _plannerManager.LoadPlanners();
-    await _analyzerManager.LoadAnalyzers();
-    await _remoteDeviceManager.LoadDevices();
-    await _driverDbManager.RefreshDriverArchive();
-    await EnsureDataPathsExist();
+
+    var localTrack = Task.Run(async () =>
+    {
+      await _deviceDriverLoader.LoadModulesAsync(_pluginsPath);
+      _deviceControlViewModelRepo.Initialize();
+      _deviceManager.Initialize();
+      _deviceAdapterManager.Activate();
+      await _deviceConfigManager.LoadConfigs();
+      //It's important that we run this last. The archive serves as our bridge to update replaced drivers.
+      //If we overwrite it too early, our archive wipes out the references to the deleted drivers making
+      //it impossible to migrate devices to updated drivers.
+      await _driverDbManager.RefreshDriverArchive();
+    }, cancellationToken);
+
+    var infraTrack = EnsureDataPathsExist();
+
+    var remoteTrack = Task.WhenAll(
+      _plannerManager.LoadPlanners(),
+      _analyzerManager.LoadAnalyzers(),
+      _remoteDeviceManager.LoadDevices()
+    );
+
+    await Task.WhenAll(localTrack, infraTrack, remoteTrack);
   }
 
   public async Task StopAsync(CancellationToken cancellationToken)
