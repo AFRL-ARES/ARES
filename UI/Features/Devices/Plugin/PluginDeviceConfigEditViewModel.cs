@@ -7,7 +7,6 @@ using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System.Reactive.Linq;
-using System.Text.RegularExpressions;
 
 namespace UI.Features.Devices.Plugin;
 
