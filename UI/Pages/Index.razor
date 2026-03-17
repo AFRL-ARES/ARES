@@ -1,7 +1,6 @@
 @page "/"
 @using Ares.Toolkit.Device.UI
 @using Components
-@using Features.DeviceStateLogging
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.JSInterop
 @using UI.Application.Devices
@@ -26,8 +25,8 @@
         <div class="grid-stack-item" @key="viewModel.DeviceId" gs-w="@width" gs-size-to-content="true">
           <div class="grid-stack-item-content">
             <DashboardWidget>
-              <DynamicComponent Type="@viewModel.ViewType" Parameters="@CreateViewArguments(viewModel!)"/>
-            </DashboardWidget>
+            <DynamicComponent Type="@viewModel.ViewType" Parameters="@GetOrCreateArgs(viewModel)" />
+          </DashboardWidget>
           </div>
         </div>
       }
@@ -38,6 +37,19 @@
   private IJSObjectReference? _module;
   private DotNetObjectReference<Index>? _objRef;
   private bool _isReady = false;
+  private bool _jsModuleLoaded = false;
+
+  private Dictionary<string, Dictionary<string, object>> _cachedViewArgs = new();
+
+  private Dictionary<string, object> GetOrCreateArgs(IDeviceUnitControlViewModel vm)
+  {
+    if(!_cachedViewArgs.TryGetValue(vm.DeviceId, out var args))
+    {
+      args = new Dictionary<string, object> { { "ViewModel", vm } };
+      _cachedViewArgs[vm.DeviceId] = args;
+    }
+    return args;
+  }
 
   private Dictionary<string, object> CreateViewArguments(IDeviceUnitControlViewModel viewModel) => new Dictionary<string, object>() { { "ViewModel", viewModel } };
 
@@ -47,24 +59,28 @@
     {
       _objRef = DotNetObjectReference.Create(this);
       _module = await JS.InvokeAsync<IJSObjectReference>("import", "./Pages/Index.razor.js");
-      await _module.InvokeVoidAsync("initDashboard", "my-dashboard", _objRef);
-      
-      // Wait for GridStack to finish its initial layout and size-to-content calculations
-      await Task.Delay(250);
-      _isReady = true;
+      _jsModuleLoaded = true;
+
       StateHasChanged();
     }
 
-    else
+    if(_jsModuleLoaded && !_isReady && ViewModelRepo.Items.Any())
     {
-      if (_module is not null)
+      await Task.Delay(250);
+      await _module!.InvokeVoidAsync("initDashboard", "my-dashboard", _objRef);
+
+      _isReady = true;
+      StateHasChanged();
+    }
+    else if(_jsModuleLoaded && _isReady)
+    {
+      // Only refresh the grid if it has already been successfully initialized
+      if(_module is not null)
       {
         await _module.InvokeVoidAsync("refreshGrid", "my-dashboard");
         await _module.InvokeVoidAsync("resizeToContent", "my-dashboard");
       }
     }
-
-    //await base.OnAfterRenderAsync(firstRender);
   }
 
   private void ViewModelsUpdated()

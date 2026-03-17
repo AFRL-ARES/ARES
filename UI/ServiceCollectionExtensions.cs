@@ -38,6 +38,7 @@ using UI.Infrastructure.Dialog;
 using UI.Infrastructure.Grpc;
 using UI.Infrastructure.Monaco.Interops;
 using UI.Infrastructure.Notifications;
+using UI.Infrastructure.Startup;
 using CampaignDesignerViewModel = UI.Features.CampaignEdit.ViewModels.CampaignDesignerViewModel;
 using DataViewerViewModel = UI.Features.DataViewer.DataViewerViewModel;
 using DeviceStatesViewModel = UI.Features.DeviceStateExport.DeviceStatesViewModel;
@@ -208,6 +209,7 @@ internal static class ServiceCollectionExtensions
     services.LoadAresModules();
     services.BindClients();
     services.AddSingleton<INotificationReceivingService, NotificationReceivingService>();
+    services.AddSingleton<StartupStateTracker>();
     services.LoadService(configuration);
 
     services.AddOptions();

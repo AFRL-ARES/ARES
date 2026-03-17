@@ -41,11 +41,24 @@ function attachEvents(grid) {
 export function initDashboard(id, componentInstance) {
   _componentInstance = componentInstance; // Save for later re-inits
 
-  var options = getGridOptions(100); // Default to 100
-  var grid = GridStack.init(options, document.getElementById(id));
+  // Force the browser to execute a layout paint first
+  requestAnimationFrame(() => {
+    var options = getGridOptions(100);
+    var grid = GridStack.init(options, document.getElementById(id));
 
-  attachEvents(grid);
-  resizeToContent(id);
+    attachEvents(grid);
+
+    // Attach ResizeObservers to the initial items
+    var el = document.getElementById(id);
+    if (el) {
+      var initialItems = el.querySelectorAll('.grid-stack-item[gs-size-to-content="true"]');
+      initialItems.forEach(item => {
+        observeWidget(grid, item);
+      });
+    }
+
+    resizeToContent(id);
+  });
 }
 
 export function refreshGrid(id) {
@@ -54,7 +67,6 @@ export function refreshGrid(id) {
     var grid = el.gridstack;
     var allItems = el.querySelectorAll('.grid-stack-item');
 
-    // Filter for new items only
     var newItems = Array.from(allItems).filter(item => !item.gridstackNode);
 
     newItems.forEach(item => {
@@ -82,11 +94,13 @@ export function resizeToContent(id) {
 // --- INTERNAL HELPERS ---
 
 function observeWidget(grid, item) {
-  const content = item.querySelector('.grid-stack-item-content div');
+  const content = item.querySelector('.grid-stack-item-content');
   if (!content) return;
+
   const observer = new ResizeObserver(() => {
     grid.resizeToContent(item);
   });
+
   observer.observe(content);
 }
 

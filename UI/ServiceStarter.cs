@@ -8,10 +8,11 @@ using UI.Application.Devices.Repos;
 using UI.Application.Notifications;
 using UI.Application.Settings;
 using UI.Infrastructure.Devices;
+using UI.Infrastructure.Startup;
 
 namespace UI;
 
-public class ServiceStarter : IHostedService
+public class ServiceStarter : BackgroundService
 {
   private readonly INotificationReceivingService _notificationReceivingService;
   private readonly IDeviceControlViewModelRepo _deviceControlViewModelRepo;
@@ -24,6 +25,7 @@ public class ServiceStarter : IHostedService
   private readonly IDeviceManager _deviceManager;
   private readonly IDriverDatabaseManager _driverDbManager;
   private readonly IConfiguration _configuration;
+  private readonly StartupStateTracker _tracker;
 
   private readonly string _dataPath;
   private readonly string _resultsPath;
@@ -43,7 +45,8 @@ public class ServiceStarter : IHostedService
     INotificationReceivingService notificationReceivingService,
     IServiceProvider serviceProvider,
     IDeviceControlViewModelRepo deviceControlViewModelRepo,
-    DeviceAdapterManager deviceAdapterManager)
+    DeviceAdapterManager deviceAdapterManager,
+    StartupStateTracker tracker)
   {
     _notificationReceivingService = notificationReceivingService;
     _deviceControlViewModelRepo = deviceControlViewModelRepo;
@@ -57,6 +60,7 @@ public class ServiceStarter : IHostedService
     _deviceManager = deviceManager;
     _deviceConfigManager = deviceConfigManager;
     _driverDbManager = driverDbManager;
+    _tracker = tracker;
 
     _dataPath = _configuration.Get<AppSettings>()?.AresDataPath ?? "";
     _resultsPath = Path.Combine(_dataPath, AppSettings.ResultsFolder);
@@ -65,7 +69,7 @@ public class ServiceStarter : IHostedService
     _pluginsPath = PluginPathResolver.Resolve(_configuration.Get<AppSettings>());
   }
 
-  public async Task StartAsync(CancellationToken cancellationToken)
+  protected override async Task ExecuteAsync(CancellationToken cancellationToken)
   {
     _notificationReceivingService.StartNotificationStream();
 
@@ -91,9 +95,10 @@ public class ServiceStarter : IHostedService
     );
 
     await Task.WhenAll(localTrack, infraTrack, remoteTrack);
+    _tracker.MarkAsReady();
   }
 
-  public async Task StopAsync(CancellationToken cancellationToken)
+  public override async Task StopAsync(CancellationToken cancellationToken)
   {
     _deviceControlViewModelRepo.Dispose();
     await _deviceAdapterManager.DisposeAsync();
