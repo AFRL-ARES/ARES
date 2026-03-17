@@ -12,15 +12,15 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AresService.Migrations.SqlServer.Migrations.AresDb
 {
     [DbContext(typeof(AresDbContext))]
-    [Migration("20260309165715_AddedDriverEntity_AresDbContext")]
-    partial class AddedDriverEntity_AresDbContext
+    [Migration("20260317191139_DeviceRework_AresDbContext")]
+    partial class DeviceRework_AresDbContext
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.1")
+                .HasAnnotation("ProductVersion", "10.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -346,6 +346,9 @@ namespace AresService.Migrations.SqlServer.Migrations.AresDb
                     b.Property<Guid?>("StepExecutionSummaryUniqueId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("TemplateId")
+                        .HasColumnType("nvarchar(max)");
+
                     b.HasKey("UniqueId");
 
                     b.HasIndex("StepExecutionSummaryUniqueId");
@@ -634,6 +637,9 @@ namespace AresService.Migrations.SqlServer.Migrations.AresDb
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<int>("BaudRate")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
@@ -645,6 +651,9 @@ namespace AresService.Migrations.SqlServer.Migrations.AresDb
                         .HasDefaultValueSql("getdate()");
 
                     b.Property<string>("PortName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SerialId")
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("UniqueId");

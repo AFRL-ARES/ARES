@@ -11,14 +11,14 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AresService.Migrations.Sqlite.Migrations.AresDb
 {
     [DbContext(typeof(AresDbContext))]
-    [Migration("20260225203909_ArchitectureV2_ModularDeviceRework_AresDbContext")]
-    partial class ArchitectureV2_ModularDeviceRework_AresDbContext
+    [Migration("20260317191128_DeviceRework_AresDbContext")]
+    partial class DeviceRework_AresDbContext
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.1");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.4");
 
             modelBuilder.Entity("Ares.Datamodel.AnalysisOverview", b =>
                 {
@@ -340,6 +340,9 @@ namespace AresService.Migrations.Sqlite.Migrations.AresDb
                     b.Property<Guid?>("StepExecutionSummaryUniqueId")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("TemplateId")
+                        .HasColumnType("TEXT");
+
                     b.HasKey("UniqueId");
 
                     b.HasIndex("StepExecutionSummaryUniqueId");
@@ -435,19 +438,16 @@ namespace AresService.Migrations.Sqlite.Migrations.AresDb
                         .HasColumnType("TEXT")
                         .HasDefaultValueSql("DATETIME('now')");
 
+                    b.Property<string>("DeviceId")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("DeviceName")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("DeviceSettings")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("DriverId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("DriverName")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("DriverSettings")
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid?>("EthernetUniqueId")
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsSimulated")
@@ -458,19 +458,12 @@ namespace AresService.Migrations.Sqlite.Migrations.AresDb
                         .HasColumnType("TEXT")
                         .HasDefaultValueSql("DATETIME('now')");
 
-                    b.Property<Guid?>("SerialUniqueId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid?>("UsbUniqueId")
+                    b.Property<Guid?>("SerialInfoUniqueId")
                         .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
-                    b.HasIndex("EthernetUniqueId");
-
-                    b.HasIndex("SerialUniqueId");
-
-                    b.HasIndex("UsbUniqueId");
+                    b.HasIndex("SerialInfoUniqueId");
 
                     b.ToTable("DeviceConfigs", (string)null);
                 });
@@ -604,36 +597,6 @@ namespace AresService.Migrations.Sqlite.Migrations.AresDb
                     b.ToTable("DeviceStates");
                 });
 
-            modelBuilder.Entity("Ares.Datamodel.Device.EthernetConnection", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
-
-                    b.Property<string>("IpAddress")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
-
-                    b.Property<int>("Port")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("UseTls")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("EthernetConnection");
-                });
-
             modelBuilder.Entity("Ares.Datamodel.Device.RemoteDeviceConfig", b =>
                 {
                     b.Property<Guid>("UniqueId")
@@ -675,59 +638,20 @@ namespace AresService.Migrations.Sqlite.Migrations.AresDb
                         .HasColumnType("TEXT")
                         .HasDefaultValueSql("DATETIME('now')");
 
-                    b.Property<int>("DataBits")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Handshake")
-                        .HasColumnType("TEXT");
-
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("TEXT")
                         .HasDefaultValueSql("DATETIME('now')");
 
-                    b.Property<int>("Parity")
-                        .HasColumnType("INTEGER");
-
                     b.Property<string>("PortName")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("StopBits")
+                    b.Property<string>("SerialId")
                         .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
                     b.ToTable("SerialConnection");
-                });
-
-            modelBuilder.Entity("Ares.Datamodel.Device.UsbConnection", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
-
-                    b.Property<string>("ProductId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("SerialNumber")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("VendorId")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("UsbConnection");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.ExecutionInfo", b =>
@@ -1495,6 +1419,39 @@ namespace AresService.Migrations.Sqlite.Migrations.AresDb
                     b.ToTable("StepTemplates", (string)null);
                 });
 
+            modelBuilder.Entity("Ares.Services.DriverInfo", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
+
+                    b.Property<string>("DisplayName")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DriverId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("FileSizeBytes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
+
+                    b.Property<string>("Version")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("DeviceDrivers");
+                });
+
             modelBuilder.Entity("Ares.Datamodel.AnalysisOverview", b =>
                 {
                     b.HasOne("Ares.Datamodel.ExperimentOverview", null)
@@ -1562,23 +1519,11 @@ namespace AresService.Migrations.Sqlite.Migrations.AresDb
 
             modelBuilder.Entity("Ares.Datamodel.Device.DeviceConfig", b =>
                 {
-                    b.HasOne("Ares.Datamodel.Device.EthernetConnection", "Ethernet")
+                    b.HasOne("Ares.Datamodel.Device.SerialConnection", "SerialInfo")
                         .WithMany()
-                        .HasForeignKey("EthernetUniqueId");
+                        .HasForeignKey("SerialInfoUniqueId");
 
-                    b.HasOne("Ares.Datamodel.Device.SerialConnection", "Serial")
-                        .WithMany()
-                        .HasForeignKey("SerialUniqueId");
-
-                    b.HasOne("Ares.Datamodel.Device.UsbConnection", "Usb")
-                        .WithMany()
-                        .HasForeignKey("UsbUniqueId");
-
-                    b.Navigation("Ethernet");
-
-                    b.Navigation("Serial");
-
-                    b.Navigation("Usb");
+                    b.Navigation("SerialInfo");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.ExecutionInfo", b =>

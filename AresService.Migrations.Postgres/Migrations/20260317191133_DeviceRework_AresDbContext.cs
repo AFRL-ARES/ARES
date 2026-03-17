@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace AresService.Migrations.Postgres.Migrations.AresDb
 {
     /// <inheritdoc />
-    public partial class ArchitectureV2_ModularDeviceRework_AresDbContext : Migration
+    public partial class DeviceRework_AresDbContext : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -57,7 +57,7 @@ namespace AresService.Migrations.Postgres.Migrations.AresDb
             migrationBuilder.RenameColumn(
                 name: "DeviceType",
                 table: "DeviceConfigs",
-                newName: "DriverSettings");
+                newName: "DriverId");
 
             migrationBuilder.AlterColumn<string>(
                 name: "Settings",
@@ -166,21 +166,15 @@ namespace AresService.Migrations.Postgres.Migrations.AresDb
                 oldNullable: true);
 
             migrationBuilder.AddColumn<string>(
-                name: "DriverId",
+                name: "DeviceId",
                 table: "DeviceConfigs",
                 type: "text",
                 nullable: true);
 
             migrationBuilder.AddColumn<string>(
-                name: "DriverName",
+                name: "DeviceSettings",
                 table: "DeviceConfigs",
                 type: "text",
-                nullable: true);
-
-            migrationBuilder.AddColumn<Guid>(
-                name: "EthernetUniqueId",
-                table: "DeviceConfigs",
-                type: "uuid",
                 nullable: true);
 
             migrationBuilder.AddColumn<bool>(
@@ -191,13 +185,7 @@ namespace AresService.Migrations.Postgres.Migrations.AresDb
                 defaultValue: false);
 
             migrationBuilder.AddColumn<Guid>(
-                name: "SerialUniqueId",
-                table: "DeviceConfigs",
-                type: "uuid",
-                nullable: true);
-
-            migrationBuilder.AddColumn<Guid>(
-                name: "UsbUniqueId",
+                name: "SerialInfoUniqueId",
                 table: "DeviceConfigs",
                 type: "uuid",
                 nullable: true);
@@ -229,6 +217,12 @@ namespace AresService.Migrations.Postgres.Migrations.AresDb
                 oldType: "jsonb",
                 oldNullable: true);
 
+            migrationBuilder.AddColumn<string>(
+                name: "TemplateId",
+                table: "CommandExecutionSummaries",
+                type: "text",
+                nullable: true);
+
             migrationBuilder.AlterColumn<string>(
                 name: "Settings",
                 table: "AnalyzerSettings",
@@ -248,19 +242,20 @@ namespace AresService.Migrations.Postgres.Migrations.AresDb
                 oldNullable: true);
 
             migrationBuilder.CreateTable(
-                name: "EthernetConnection",
+                name: "DeviceDrivers",
                 columns: table => new
                 {
                     UniqueId = table.Column<Guid>(type: "uuid", nullable: false),
-                    IpAddress = table.Column<string>(type: "text", nullable: true),
-                    Port = table.Column<int>(type: "integer", nullable: false),
-                    UseTls = table.Column<bool>(type: "boolean", nullable: false),
+                    DriverId = table.Column<string>(type: "text", nullable: true),
+                    DisplayName = table.Column<string>(type: "text", nullable: true),
+                    Version = table.Column<string>(type: "text", nullable: true),
+                    FileSizeBytes = table.Column<long>(type: "bigint", nullable: false),
                     CreationTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()"),
                     LastModified = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_EthernetConnection", x => x.UniqueId);
+                    table.PrimaryKey("PK_DeviceDrivers", x => x.UniqueId);
                 });
 
             migrationBuilder.CreateTable(
@@ -269,11 +264,8 @@ namespace AresService.Migrations.Postgres.Migrations.AresDb
                 {
                     UniqueId = table.Column<Guid>(type: "uuid", nullable: false),
                     PortName = table.Column<string>(type: "text", nullable: true),
+                    SerialId = table.Column<string>(type: "text", nullable: true),
                     BaudRate = table.Column<int>(type: "integer", nullable: false),
-                    DataBits = table.Column<int>(type: "integer", nullable: false),
-                    Parity = table.Column<int>(type: "integer", nullable: false),
-                    StopBits = table.Column<string>(type: "text", nullable: true),
-                    Handshake = table.Column<string>(type: "text", nullable: true),
                     CreationTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()"),
                     LastModified = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()")
                 },
@@ -282,56 +274,16 @@ namespace AresService.Migrations.Postgres.Migrations.AresDb
                     table.PrimaryKey("PK_SerialConnection", x => x.UniqueId);
                 });
 
-            migrationBuilder.CreateTable(
-                name: "UsbConnection",
-                columns: table => new
-                {
-                    UniqueId = table.Column<Guid>(type: "uuid", nullable: false),
-                    VendorId = table.Column<string>(type: "text", nullable: true),
-                    ProductId = table.Column<string>(type: "text", nullable: true),
-                    SerialNumber = table.Column<string>(type: "text", nullable: true),
-                    CreationTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()"),
-                    LastModified = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW()")
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_UsbConnection", x => x.UniqueId);
-                });
-
             migrationBuilder.CreateIndex(
-                name: "IX_DeviceConfigs_EthernetUniqueId",
+                name: "IX_DeviceConfigs_SerialInfoUniqueId",
                 table: "DeviceConfigs",
-                column: "EthernetUniqueId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_DeviceConfigs_SerialUniqueId",
-                table: "DeviceConfigs",
-                column: "SerialUniqueId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_DeviceConfigs_UsbUniqueId",
-                table: "DeviceConfigs",
-                column: "UsbUniqueId");
+                column: "SerialInfoUniqueId");
 
             migrationBuilder.AddForeignKey(
-                name: "FK_DeviceConfigs_EthernetConnection_EthernetUniqueId",
+                name: "FK_DeviceConfigs_SerialConnection_SerialInfoUniqueId",
                 table: "DeviceConfigs",
-                column: "EthernetUniqueId",
-                principalTable: "EthernetConnection",
-                principalColumn: "UniqueId");
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_DeviceConfigs_SerialConnection_SerialUniqueId",
-                table: "DeviceConfigs",
-                column: "SerialUniqueId",
+                column: "SerialInfoUniqueId",
                 principalTable: "SerialConnection",
-                principalColumn: "UniqueId");
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_DeviceConfigs_UsbConnection_UsbUniqueId",
-                table: "DeviceConfigs",
-                column: "UsbUniqueId",
-                principalTable: "UsbConnection",
                 principalColumn: "UniqueId");
         }
 
@@ -339,48 +291,25 @@ namespace AresService.Migrations.Postgres.Migrations.AresDb
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropForeignKey(
-                name: "FK_DeviceConfigs_EthernetConnection_EthernetUniqueId",
-                table: "DeviceConfigs");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_DeviceConfigs_SerialConnection_SerialUniqueId",
-                table: "DeviceConfigs");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_DeviceConfigs_UsbConnection_UsbUniqueId",
+                name: "FK_DeviceConfigs_SerialConnection_SerialInfoUniqueId",
                 table: "DeviceConfigs");
 
             migrationBuilder.DropTable(
-                name: "EthernetConnection");
+                name: "DeviceDrivers");
 
             migrationBuilder.DropTable(
                 name: "SerialConnection");
 
-            migrationBuilder.DropTable(
-                name: "UsbConnection");
-
             migrationBuilder.DropIndex(
-                name: "IX_DeviceConfigs_EthernetUniqueId",
-                table: "DeviceConfigs");
-
-            migrationBuilder.DropIndex(
-                name: "IX_DeviceConfigs_SerialUniqueId",
-                table: "DeviceConfigs");
-
-            migrationBuilder.DropIndex(
-                name: "IX_DeviceConfigs_UsbUniqueId",
+                name: "IX_DeviceConfigs_SerialInfoUniqueId",
                 table: "DeviceConfigs");
 
             migrationBuilder.DropColumn(
-                name: "DriverId",
+                name: "DeviceId",
                 table: "DeviceConfigs");
 
             migrationBuilder.DropColumn(
-                name: "DriverName",
-                table: "DeviceConfigs");
-
-            migrationBuilder.DropColumn(
-                name: "EthernetUniqueId",
+                name: "DeviceSettings",
                 table: "DeviceConfigs");
 
             migrationBuilder.DropColumn(
@@ -388,15 +317,15 @@ namespace AresService.Migrations.Postgres.Migrations.AresDb
                 table: "DeviceConfigs");
 
             migrationBuilder.DropColumn(
-                name: "SerialUniqueId",
+                name: "SerialInfoUniqueId",
                 table: "DeviceConfigs");
 
             migrationBuilder.DropColumn(
-                name: "UsbUniqueId",
-                table: "DeviceConfigs");
+                name: "TemplateId",
+                table: "CommandExecutionSummaries");
 
             migrationBuilder.RenameColumn(
-                name: "DriverSettings",
+                name: "DriverId",
                 table: "DeviceConfigs",
                 newName: "DeviceType");
 

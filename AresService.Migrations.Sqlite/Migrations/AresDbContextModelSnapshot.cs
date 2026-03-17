@@ -15,7 +15,7 @@ namespace AresService.Migrations.Sqlite.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.1");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.4");
 
             modelBuilder.Entity("Ares.Datamodel.AnalysisOverview", b =>
                 {
@@ -335,6 +335,9 @@ namespace AresService.Migrations.Sqlite.Migrations
                         .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<Guid?>("StepExecutionSummaryUniqueId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TemplateId")
                         .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");

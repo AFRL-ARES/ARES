@@ -5,7 +5,7 @@
 namespace AresService.Migrations.Sqlite.Migrations.AresIdentity
 {
     /// <inheritdoc />
-    public partial class FinalizeSchemaCleanup_AresIdentityContext : Migration
+    public partial class DeviceRework_AresIdentityContext : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

@@ -12,15 +12,15 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AresService.Migrations.Postgres.Migrations.AresDb
 {
     [DbContext(typeof(AresDbContext))]
-    [Migration("20260310145633_AddedConnectionInfo_AresDbContext")]
-    partial class AddedConnectionInfo_AresDbContext
+    [Migration("20260317191133_DeviceRework_AresDbContext")]
+    partial class DeviceRework_AresDbContext
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.1")
+                .HasAnnotation("ProductVersion", "10.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -344,6 +344,9 @@ namespace AresService.Migrations.Postgres.Migrations.AresDb
 
                     b.Property<Guid?>("StepExecutionSummaryUniqueId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("TemplateId")
+                        .HasColumnType("text");
 
                     b.HasKey("UniqueId");
 

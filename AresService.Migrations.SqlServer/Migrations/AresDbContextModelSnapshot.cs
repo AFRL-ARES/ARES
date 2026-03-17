@@ -17,7 +17,7 @@ namespace AresService.Migrations.SqlServer.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.1")
+                .HasAnnotation("ProductVersion", "10.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -342,6 +342,9 @@ namespace AresService.Migrations.SqlServer.Migrations
 
                     b.Property<Guid?>("StepExecutionSummaryUniqueId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("TemplateId")
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("UniqueId");
 

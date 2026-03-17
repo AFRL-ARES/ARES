@@ -2,10 +2,10 @@
 
 #nullable disable
 
-namespace AresService.Migrations.Sqlite.Migrations.AresIdentity
+namespace AresService.Migrations.Postgres.Migrations.AresIdentity
 {
     /// <inheritdoc />
-    public partial class ArchitectureV2_ModularDeviceRework_AresIdentityContext : Migration
+    public partial class DeviceRework_AresIdentityContext : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

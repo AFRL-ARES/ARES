@@ -25,23 +25,28 @@ public abstract class BaseDesignFactory<T> : IDesignTimeDbContextFactory<T> wher
       }
     }
 
+    var config = new ConfigurationBuilder()
+        .SetBasePath(Directory.GetCurrentDirectory())
+        .AddJsonFile("appsettings.ui.json", optional: true)
+        .Build();
+
     var optionsBuilder = new DbContextOptionsBuilder<T>();
 
     switch(provider)
     {
       case "Sqlite":
-        optionsBuilder.UseSqlite(
-            "Data Source=Data/app.db", b => b.MigrationsAssembly("AresService.Migrations.Sqlite"));
+        var sqliteConn = config.GetConnectionString("Sqlite") ?? "Data Source=../Data/ares_database.db";
+        optionsBuilder.UseSqlite(sqliteConn, b => b.MigrationsAssembly("AresService.Migrations.Sqlite"));
         break;
 
       case "Postgres":
-        optionsBuilder.UseNpgsql(
-            "Host=localhost;Database=ares;Username=postgres;Password=postgres", b => b.MigrationsAssembly("AresService.Migrations.Postgres"));
+        var pgConn = config.GetConnectionString("Postgres") ?? "Host=localhost;Database=ARES;Username=postgres;Password=postgres";
+        optionsBuilder.UseNpgsql(pgConn, b => b.MigrationsAssembly("AresService.Migrations.Postgres"));
         break;
 
       case "SqlServer":
-        optionsBuilder.UseSqlServer(
-            "Server=localhost;Database=Ares;Trusted_Connection=True;TrustServerCertificate=True;", b => b.MigrationsAssembly("AresService.Migrations.SqlServer"));
+        var sqlConn = config.GetConnectionString("SqlServer") ?? "Server=(localdb)\\MSSQLLocalDB;Database=ARES;Trusted_Connection=True;";
+        optionsBuilder.UseSqlServer(sqlConn, b => b.MigrationsAssembly("AresService.Migrations.SqlServer"));
         break;
 
       default:
