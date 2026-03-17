@@ -45,6 +45,7 @@ export function initDashboard(id, componentInstance) {
   var grid = GridStack.init(options, document.getElementById(id));
 
   attachEvents(grid);
+  resizeToContent(id);
 }
 
 export function refreshGrid(id) {

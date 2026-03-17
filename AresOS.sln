@@ -13,8 +13,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DemoRemoteAnalyzer", "DemoR
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DemoRemotePlanner", "DemoRemotePlanner\DemoRemotePlanner.csproj", "{40B07241-8FF5-630A-99A2-4A1E33DC86EA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LindbergFurnace", "LindbergFurnace\LindbergFurnace.csproj", "{3FC919BE-446D-ABB8-B50E-BA8EE30B55DC}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RestDevice", "RestDevice\RestDevice.csproj", "{00CB7BE5-297C-8F1D-A334-753B702F0486}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RestSerialDevice", "RestSerialDevice\RestSerialDevice.csproj", "{A0148FF8-B875-499B-D9D2-1C37FBB35C30}"
@@ -59,9 +57,6 @@ Global
 		{40B07241-8FF5-630A-99A2-4A1E33DC86EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{40B07241-8FF5-630A-99A2-4A1E33DC86EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{40B07241-8FF5-630A-99A2-4A1E33DC86EA}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3FC919BE-446D-ABB8-B50E-BA8EE30B55DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3FC919BE-446D-ABB8-B50E-BA8EE30B55DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3FC919BE-446D-ABB8-B50E-BA8EE30B55DC}.Release|Any CPU.Build.0 = Release|Any CPU
 		{00CB7BE5-297C-8F1D-A334-753B702F0486}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{00CB7BE5-297C-8F1D-A334-753B702F0486}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{00CB7BE5-297C-8F1D-A334-753B702F0486}.Release|Any CPU.Build.0 = Release|Any CPU

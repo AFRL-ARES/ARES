@@ -17,7 +17,7 @@
     <ManualDeviceLoggerWidget />
   </div>
 
-  <div class="grid-stack" id="my-dashboard">
+  <div class="grid-stack @(_isReady ? "dashboard-ready" : "")" id="my-dashboard">
       @foreach(var viewModel in ViewModelRepo.Items)
       {
         //Fallback Values
@@ -37,6 +37,7 @@
 @code {
   private IJSObjectReference? _module;
   private DotNetObjectReference<Index>? _objRef;
+  private bool _isReady = false;
 
   private Dictionary<string, object> CreateViewArguments(IDeviceUnitControlViewModel viewModel) => new Dictionary<string, object>() { { "ViewModel", viewModel } };
 
@@ -47,6 +48,11 @@
       _objRef = DotNetObjectReference.Create(this);
       _module = await JS.InvokeAsync<IJSObjectReference>("import", "./Pages/Index.razor.js");
       await _module.InvokeVoidAsync("initDashboard", "my-dashboard", _objRef);
+      
+      // Wait for GridStack to finish its initial layout and size-to-content calculations
+      await Task.Delay(250);
+      _isReady = true;
+      StateHasChanged();
     }
 
     else
