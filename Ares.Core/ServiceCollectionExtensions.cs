@@ -3,7 +3,6 @@ using Ares.Core.AresEnvironment;
 using Ares.Core.Device.Managers;
 using Ares.Core.Device.Repos;
 using Ares.Core.Device.Remote;
-using Ares.Core.Device.Remote.State;
 using Ares.Core.Device.State.Export;
 using Ares.Core.Device.State.Export.ExportStreamProviders;
 using Ares.Core.Device.State.Export.StateGetters;
@@ -76,12 +75,11 @@ public static class ServiceCollectionExtensions
   {
     services.AddSingleton<StateLoggerManager>();
     services.AddSingleton<IDeviceStateStreamProvider, DeviceStateStreamProvider>();
-    services.AddSingleton<IDeviceStateDataProvider, RemoteDeviceExportDataProvider>();
     services.AddSingleton<IDeviceStateExportStreamProvider, CombinedDeviceStateExportStreamProvider>();
     services.AddSingleton<IDeviceStateExportStreamProvider, ZippedStatesExportStreamProvider>();
     services.AddSingleton<IDeviceStateLoggerRepository, DeviceStateLoggerRepository>();
     services.AddSingleton<IDeviceStateGetter, DeviceStateGetter>();
-    services.AddSingleton<IDeviceStateLoggerFactory, RemoteDeviceStateLoggerFactory>();
+    services.AddSingleton<IDeviceStateLoggerFactory, AresDeviceStateLoggerFactory>();
   }
 
   private static void BindStartConditions(this IServiceCollection services)

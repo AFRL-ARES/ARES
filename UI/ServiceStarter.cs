@@ -3,6 +3,7 @@ using Ares.Core.Device.Managers;
 using Ares.Core.Device.Plugins.Drivers;
 using Ares.Core.Device.Plugins.Drivers.Loading;
 using Ares.Core.Device.Remote;
+using Ares.Core.Device.State.Logging;
 using Ares.Core.Planning;
 using UI.Application.Devices.Repos;
 using UI.Application.Notifications;
@@ -24,6 +25,7 @@ public class ServiceStarter : BackgroundService
   private readonly IDeviceDriverLoader _deviceDriverLoader;
   private readonly IDeviceManager _deviceManager;
   private readonly IDriverDatabaseManager _driverDbManager;
+  private readonly StateLoggerManager _stateLoggerManager;
   private readonly IConfiguration _configuration;
   private readonly StartupStateTracker _tracker;
 
@@ -46,12 +48,14 @@ public class ServiceStarter : BackgroundService
     IServiceProvider serviceProvider,
     IDeviceControlViewModelRepo deviceControlViewModelRepo,
     DeviceAdapterManager deviceAdapterManager,
+    StateLoggerManager stateLoggerManager,
     StartupStateTracker tracker)
   {
     _notificationReceivingService = notificationReceivingService;
     _deviceControlViewModelRepo = deviceControlViewModelRepo;
     _deviceAdapterManager = deviceAdapterManager;
     _deviceDriverLoader = deviceDriverLoader;
+    _stateLoggerManager = stateLoggerManager;
 
     _analyzerManager = analyzerManager;
     _plannerManager = plannerManager;
@@ -75,6 +79,7 @@ public class ServiceStarter : BackgroundService
 
     var localTrack = Task.Run(async () =>
     {
+      _stateLoggerManager.Initialize();
       await _deviceDriverLoader.LoadModulesAsync(_pluginsPath);
       _deviceControlViewModelRepo.Initialize();
       _deviceManager.Initialize();
@@ -95,7 +100,7 @@ public class ServiceStarter : BackgroundService
     );
 
     await Task.WhenAll(localTrack, infraTrack, remoteTrack);
-    await Task.Delay(TimeSpan.FromMinutes(0.5));
+    await Task.Delay(TimeSpan.FromSeconds(6));
     _tracker.MarkAsReady();
   }
 

@@ -15,6 +15,7 @@ using Ares.Core.Tests.Data.Device;
 using Moq;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Ares.Core.Device.Providers;
 
 namespace Ares.Core.Tests.Execution;
 
@@ -36,7 +37,7 @@ internal class CampaignExecutorTests
   private ILogger<CampaignExecutor> _campaignExecutorLogger;
   private ILogger<AnalysisHelper> _analysisHelperLogger;
   private ILoggerFactory _loggerFactory;
-
+  private IAresDeviceProvider _deviceProvider;
 
   private IAnalyzer _replyAnalyzer;
 
@@ -57,6 +58,7 @@ internal class CampaignExecutorTests
     _notifier = new Mock<INotifier>().Object;
     _stateLoggerManagerLogger = new Mock<ILogger<StateLoggerManager>>().Object;
     _campaignExecutorLogger = new Mock<ILogger<CampaignExecutor>>().Object;
+    _deviceProvider = new Mock<IAresDeviceProvider>().Object;
     
     var loggerFactoryMock = new Mock<ILoggerFactory>();
     loggerFactoryMock.Setup(f => f.CreateLogger(typeof(CampaignExecutor).FullName))
@@ -69,9 +71,9 @@ internal class CampaignExecutorTests
     var experimentComposer = new ExperimentComposer(stepComposer, _analyzerRepo);
 
     var stateLoggerRepository = new DeviceStateLoggerRepository();
-    var factories = Array.Empty<IDeviceStateLoggerFactory>();
+    var factory = Mock.Of<IDeviceStateLoggerFactory>();
     var dbContextFactory = Mock.Of<IDbContextFactory<CoreDatabaseContext>>();
-    _stateLoggerManager = new StateLoggerManager(stateLoggerRepository, factories, _stateLoggerManagerLogger, dbContextFactory);
+    _stateLoggerManager = new StateLoggerManager(stateLoggerRepository, factory, _stateLoggerManagerLogger, dbContextFactory, _deviceProvider);
     _campaignComposer = new CampaignComposer(_analysisHelper, experimentComposer, _planningHelper, _executionReporter, _resultHandlers, _analysisRepo, _analyzerRepo, _notifier, _loggerFactory, _variableManager, _stateLoggerManager);
   }
 

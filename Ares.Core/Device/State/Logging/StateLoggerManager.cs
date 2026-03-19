@@ -1,14 +1,70 @@
+using Ares.Core.Device.Providers;
 using Ares.Datamodel.Device;
 using Ares.Device;
+using DynamicData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Reactive;
+using System.Reactive.Disposables;
+using System.Reactive.Disposables.Fluent;
+using System.Reactive.Linq;
 
 namespace Ares.Core.Device.State.Logging;
 
-public class StateLoggerManager(IDeviceStateLoggerRepository _stateLoggerRepository, IEnumerable<IDeviceStateLoggerFactory> _factories, ILogger<StateLoggerManager> _logger, IDbContextFactory<CoreDatabaseContext> _dbContextFactory)
+public class StateLoggerManager
 {
+  private readonly IDeviceStateLoggerRepository _stateLoggerRepository;
+  private readonly IDeviceStateLoggerFactory _deviceLoggerFactory;
+  private readonly ILogger<StateLoggerManager> _logger;
+  private readonly IDbContextFactory<CoreDatabaseContext> _dbContextFactory;
+  private readonly IAresDeviceProvider _deviceProvider;
+  private readonly CompositeDisposable _cleanup = new();
   private bool _overrideActive;
   private readonly SemaphoreSlim _overrideLock = new(1, 1);
+
+  public StateLoggerManager(IDeviceStateLoggerRepository stateLoggerRepository,
+  IDeviceStateLoggerFactory deviceLoggerFactory,
+  ILogger<StateLoggerManager> logger,
+  IDbContextFactory<CoreDatabaseContext> dbContextFactory,
+  IAresDeviceProvider deviceProvider)
+  {
+    _stateLoggerRepository = stateLoggerRepository;
+    _deviceLoggerFactory = deviceLoggerFactory;
+    _logger = logger;
+    _dbContextFactory = dbContextFactory;
+    _deviceProvider = deviceProvider;
+  }
+
+
+  public void Initialize()
+  {
+    _deviceProvider.Connect()
+      .SelectMany(async changes =>
+      {
+        foreach(var change in changes)
+        {
+          await HandleChangesAsync(change);
+        }
+
+        return Unit.Default;
+      })
+      .Subscribe()
+      .DisposeWith(_cleanup);
+  }
+
+  private async Task HandleChangesAsync(Change<IAresDevice, string> change)
+  {
+    switch(change.Reason)
+    {
+      case ChangeReason.Add:
+        await SetupLogger(change.Current);
+        break;
+
+      case ChangeReason.Remove:
+        await RemoveLogger(change.Current.UniqueId);
+        break;
+    }
+  }
 
   public async Task SetupLogger(IAresDevice device)
   {
@@ -19,14 +75,13 @@ public class StateLoggerManager(IDeviceStateLoggerRepository _stateLoggerReposit
       _stateLoggerRepository.Remove(device.UniqueId);
     }
 
-    var factory = _factories.FirstOrDefault(f => f.CanHandle(device));
-    if(factory is null)
+    if(_deviceLoggerFactory is null)
     {
       _logger.LogError("No suitable logger factory found for device type {DeviceType}", device.GetType().Name);
       return;
     }
 
-    var logger = factory.Create(device);
+    var logger = _deviceLoggerFactory.Create(device);
 
     using var ctx = _dbContextFactory.CreateDbContext();
     var existingSettings = await ctx.DeviceLoggingSettings.FirstOrDefaultAsync(s => s.DeviceId == device.UniqueId);

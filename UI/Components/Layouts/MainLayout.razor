@@ -134,7 +134,8 @@
     "Giving the planner a quick pep talk...",
     "Sweeping up the broken simulated beakers...",
     "Convincing the analyzer the sample isn't contaminated...",
-    "Checking the ceiling tiles for water spots..."
+    "Checking the ceiling tiles for water spots...",
+    "Analyzing the files..."
   };
 
   protected override void OnInitialized()
@@ -152,7 +153,7 @@
     while(!Tracker.IsReady && !token.IsCancellationRequested)
     {
       // Wait 4 seconds before swapping to a new message
-      await Task.Delay(4000, token);
+      await Task.Delay(2500, token);
 
       if(!Tracker.IsReady)
       {
