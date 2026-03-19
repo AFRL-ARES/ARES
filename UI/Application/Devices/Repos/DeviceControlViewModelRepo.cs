@@ -1,32 +1,48 @@
 using Ares.Core.Device.Providers;
+using Ares.Core.Device.Remote;
 using Ares.Toolkit.Device.UI;
 using DynamicData;
 using DynamicData.PLinq;
 using System.Reactive.Disposables;
 using System.Reactive.Disposables.Fluent;
-using UI.Features.Devices.Plugin.Factories;
+using UI.Features.Devices;
+using UI.Features.Devices.Remote.Factory;
 
 namespace UI.Application.Devices.Repos
 {
   public class DeviceControlViewModelRepo : IDeviceControlViewModelRepo
   {
     private readonly IAresDeviceProvider _deviceProvider;
-    private readonly IPluginViewModelFactory _factory;
+    private readonly IDeviceAdapterRepository _deviceAdapterRepo;
+    private readonly IAresDeviceViewModelFactory _factory;
+    private readonly IRemoteDeviceControlViewModelFactory _remoteVmFactory;
     private readonly SourceCache<IDeviceUnitControlViewModel, string> _viewModelCache = new(vm => vm.DeviceId);
     private readonly CompositeDisposable _cleanup = new();
 
-    public DeviceControlViewModelRepo(IAresDeviceProvider deviceProvider, IPluginViewModelFactory factory)
+    public DeviceControlViewModelRepo(IAresDeviceProvider deviceProvider,
+      IAresDeviceViewModelFactory factory,
+      IRemoteDeviceControlViewModelFactory remoteVmFactory,
+      IDeviceAdapterRepository deviceAdapterRepo)
     {
       _deviceProvider = deviceProvider;
       _factory = factory;
+      _deviceAdapterRepo = deviceAdapterRepo;
+      _remoteVmFactory = remoteVmFactory;
     }
 
     public void Initialize()
     {
       _deviceProvider.Connect()
+        .Filter(d => d is not RemoteDevice)
         .Transform(_factory.CreateUnitControlViewModel)
         .DisposeMany()
         .PopulateInto(_viewModelCache)
+        .DisposeWith(_cleanup);
+
+      _deviceAdapterRepo.Connect()
+        .Transform(_remoteVmFactory.Create)
+        .DisposeMany()
+        .PopulateInto (_viewModelCache)
         .DisposeWith(_cleanup);
     }
 

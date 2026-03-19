@@ -19,6 +19,7 @@ public partial class RemoteDeviceUnitViewModel : ReactiveObject, IDeviceUnitCont
     StartStateUpdater();
 
     ViewType = typeof(RemoteDeviceUnitView);
+    DefaultWidth = 20;
   }
 
   private void StartStateUpdater()

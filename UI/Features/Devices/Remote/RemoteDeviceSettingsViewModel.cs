@@ -135,9 +135,6 @@ public partial class RemoteDeviceSettingsViewModel : ReactiveObject
   private async Task RemoveAsync(Func<Task> onRemoveCallback)
   {
     var request = new RemoveRemoteDeviceRequest() { DeviceId = _deviceInfo.UniqueId };
-    //TODO: FIX MEEEEEEEEEE
-    throw new NotImplementedException();
-    //_deviceDeletionMessenger.Send(new DeviceDeletedMessage(_deviceInfo.UniqueId));
     await _devicesClient.RemoveRemoteDevice(request, null);
     await onRemoveCallback();
   }

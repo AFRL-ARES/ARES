@@ -5,8 +5,7 @@ using UI.Application.Devices.Repos;
 
 namespace UI.Infrastructure.Devices;
 
-public class DeviceAdapterManager(
-    DevicesService _devicesClient,
+public class DeviceAdapterManager(DevicesService _devicesClient,
     IDeviceAdapterRepository _deviceAdapterRepository,
     ILoggerFactory _loggerFactory,
     ILogger<DeviceAdapterManager> _logger) : IAsyncDisposable
@@ -21,6 +20,11 @@ public class DeviceAdapterManager(
     _pollingTask = Task.Run(() => PollDevicesAsync(_cts.Token));
   }
 
+  public async Task CreateDeviceAdapter()
+  {
+
+  }
+
   private async Task PollDevicesAsync(CancellationToken cancellationToken)
   {
     while (!cancellationToken.IsCancellationRequested)
@@ -29,9 +33,7 @@ public class DeviceAdapterManager(
       {
         // let's stick to remote devices for now as the built-int devices have their
         // own logic in viewmodels
-        var devices = await _devicesClient.ListRemoteAresDevices(
-            new Empty(),
-            null);
+        var devices = await _devicesClient.ListRemoteAresDevices(new Empty(), null);
 
         if (_isErrorState)
         {

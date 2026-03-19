@@ -22,10 +22,9 @@ using UI.Features.Auth;
 using UI.Features.CampaignEdit;
 using UI.Features.CampaignEdit.Factories;
 using UI.Features.CampaignEdit.ViewModels;
+using UI.Features.Devices;
 using UI.Features.Devices.Plugin;
-using UI.Features.Devices.Plugin.Factories;
-using UI.Features.Devices.Remote;
-using UI.Features.Devices.Shared;
+using UI.Features.Devices.Remote.Factory;
 using UI.Features.DeviceStateExport;
 using UI.Features.DeviceStateLogging;
 using UI.Features.DeviceStateLogging.Settings;
@@ -142,8 +141,8 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<PlanningDesignerFactory>();
     services.AddScoped<AnalyzerInputDesignerVmFactory>();
     services.AddScoped<DeviceStateFilterViewModelFactory>();
-    services.AddSingleton<IDeviceViewModelFactory, RemoteDeviceControlViewModelFactory>();
-    services.AddSingleton<IPluginViewModelFactory, PluginViewModelFactory>();
+    services.AddSingleton<IAresDeviceViewModelFactory,  AresDeviceViewModelFactory>();
+    services.AddSingleton<IRemoteDeviceControlViewModelFactory, RemoteDeviceControlViewModelFactory>();
   }
 
   public static void LoadService(this IServiceCollection services, IConfiguration configuration)

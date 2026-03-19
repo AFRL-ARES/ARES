@@ -1,24 +1,29 @@
 ﻿using Ares.Core.Device.Providers;
 using Ares.Device;
 using Ares.Toolkit.Device.UI;
+using UI.Application.Devices.Repos;
+using UI.Features.Devices.Plugin;
 
-namespace UI.Features.Devices.Plugin.Factories;
+namespace UI.Features.Devices;
 
-public class PluginViewModelFactory : IPluginViewModelFactory
+public class AresDeviceViewModelFactory : IAresDeviceViewModelFactory
 {
   private readonly IServiceProvider _serviceProvider;
   private readonly IDeviceDriverProvider _driverProvider;
   private readonly IDeviceConfigProvider _deviceConfigProvider;
-  private readonly ILogger<PluginViewModelFactory> _logger;
+  private readonly IDeviceAdapterRepository _deviceAdapterRepo;
+  private readonly ILogger<IAresDeviceViewModelFactory> _logger;
 
-  public PluginViewModelFactory(IServiceProvider serviceProvider, 
+  public AresDeviceViewModelFactory(IServiceProvider serviceProvider,
     IDeviceDriverProvider driverProvider,
     IDeviceConfigProvider deviceConfigProvider,
-    ILogger<PluginViewModelFactory> logger)
+    IDeviceAdapterRepository deviceAdapterRepo,
+    ILogger<IAresDeviceViewModelFactory> logger)
   {
     _serviceProvider = serviceProvider;
     _driverProvider = driverProvider;
     _deviceConfigProvider = deviceConfigProvider;
+    _deviceAdapterRepo = deviceAdapterRepo;
     _logger = logger;
   }
 
@@ -56,7 +61,7 @@ public class PluginViewModelFactory : IPluginViewModelFactory
       return CreateDefaultViewModel(device);
 
     var driver = _driverProvider.GetDriverById(config.DriverId);
-    
+
     if(driver is null || driver.ViewModelType is null)
       return CreateDefaultViewModel(device);
 

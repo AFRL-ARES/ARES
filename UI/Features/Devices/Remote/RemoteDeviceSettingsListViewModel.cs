@@ -2,27 +2,24 @@ using Ares.Datamodel.Device;
 using Ares.Services;
 using Ares.Services.Device;
 using Ares.Core.Grpc.Services;
-using CommunityToolkit.Mvvm.Messaging;
-using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System.Collections.ObjectModel;
 using UI.Application.Notifications;
+using Google.Protobuf.WellKnownTypes;
 
 namespace UI.Features.Devices.Remote;
 
 public partial class RemoteDeviceSettingsListViewModel : ReactiveObject
 {
-  private readonly DevicesService _devicesClient;
   private readonly INotificationReceivingService _notificationService;
-  private readonly IMessenger _deviceDeletionMessenger;
+  private readonly DevicesService _devicesService;
 
-  public RemoteDeviceSettingsListViewModel(DevicesService devicesClient, INotificationReceivingService notificationService, IMessenger deviceDeletionMessenger)
+  public RemoteDeviceSettingsListViewModel(DevicesService devicesService, INotificationReceivingService notificationService)
   {
-    _devicesClient = devicesClient;
     _notificationService = notificationService;
-    _deviceDeletionMessenger = deviceDeletionMessenger;
     SettingsViewModels = [];
+    _devicesService = devicesService;
     _ = UpdateAvailableDevices();
   }
 
@@ -33,7 +30,7 @@ public partial class RemoteDeviceSettingsListViewModel : ReactiveObject
     IsLoading = true;
     try
     {
-      var remoteDevices = await _devicesClient.ListRemoteAresDevices(new Empty(), null);
+      var remoteDevices = await _devicesService.ListRemoteAresDevices(new Empty(), null); 
       UpdateViewModels(remoteDevices.Devices);
     }
     catch (Exception e)
@@ -50,7 +47,7 @@ public partial class RemoteDeviceSettingsListViewModel : ReactiveObject
   private void UpdateViewModels(IEnumerable<DeviceInfo> remoteDevices)
   {
     SettingsViewModels.Clear();
-    var viewModels = remoteDevices.Select(info => new RemoteDeviceSettingsViewModel(_devicesClient, _notificationService, info, OnDeviceRemoved)).ToArray();
+    var viewModels = remoteDevices.Select(info => new RemoteDeviceSettingsViewModel(_devicesService, _notificationService, info, OnDeviceRemoved)).ToArray();
     foreach (var vm in viewModels)
     {
       SettingsViewModels.Add(vm);
@@ -62,7 +59,7 @@ public partial class RemoteDeviceSettingsListViewModel : ReactiveObject
     try
     {
       var request = new AddRemoteDeviceRequest() { Name = deviceConfig.Name, Url = deviceConfig.Url };
-      var response = await _devicesClient.AddRemoteDevice(request, null);
+      var response = await _devicesService.AddRemoteDevice(request, null);
       if (response.Success)
       {
         PushNotification(new AresNotification() { Message = $"Added new device {deviceConfig.Name}", NotificationSeverity = Severity.Success, Title = "Successfully Added Remote Device" });

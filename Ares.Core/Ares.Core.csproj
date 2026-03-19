@@ -11,6 +11,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Device\Remote\State\**" />
+    <EmbeddedResource Remove="Device\Remote\State\**" />
+    <None Remove="Device\Remote\State\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
       <_Parameter1>$(ProjectName).Tests</_Parameter1>
     </AssemblyAttribute>

@@ -22,7 +22,7 @@ internal class RemoteDeviceManager(
   {
     var config = new RemoteDeviceConfig { UniqueId = Guid.NewGuid().ToString(), Name = name, Url = url };
     var device = ConfigToDevice(config);
-    _deviceRepo.Append(device);
+    _deviceRepo.AddOrUpdate(device);
 
     var monitor = new RemoteDeviceMonitor(device, _deviceCache, _loggerFactory.CreateLogger<RemoteDeviceMonitor>());
     _deviceMonitors.Add(monitor);
@@ -74,7 +74,7 @@ internal class RemoteDeviceManager(
     var nonNullDevices = devices.OfType<RemoteDevice>().ToArray();
     foreach(var device in nonNullDevices)
     {
-      _deviceRepo.Append(device);
+      _deviceRepo.AddOrUpdate(device);
       var monitor = new RemoteDeviceMonitor(device, _deviceCache, _loggerFactory.CreateLogger<RemoteDeviceMonitor>());
       _deviceMonitors.Add(monitor);
 

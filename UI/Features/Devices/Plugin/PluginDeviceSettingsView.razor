@@ -1,10 +1,9 @@
 @using System.Reactive.Linq
 @using Ares.Datamodel
-@using UI.Features.Devices.Plugin.Factories
 @using UI.Features.Devices.Shared.Settings
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<PluginDeviceSettingsViewModel>
 @inject DialogService DialogService
-@inject IPluginViewModelFactory ViewModelFactory
+@inject IDeviceViewModelFactory ViewModelFactory
 
 <DeviceSettingsContainer 
   Name="@ViewModel!.Name"
