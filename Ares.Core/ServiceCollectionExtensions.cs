@@ -61,7 +61,8 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<IDriverDatabaseManager, DriverDatabaseManager>();
     services.AddSingleton<IResourceConnectionArbiter, ResourceConnectionArbiter>();
 
-    services.AddSingleton<ISystemFunctionProvider, DeviceFunctionProvider>();
+    services.AddSingleton<ISymbolProvider, DeviceSymbolProvider>();
+    services.AddSingleton<ISymbolProvider, QuantitySymbolProvider>();
     services.AddSingleton<BaseEnvironmentBuilder>();
 
     services.BindRepositories();

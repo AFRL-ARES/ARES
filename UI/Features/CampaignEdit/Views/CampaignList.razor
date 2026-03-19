@@ -86,16 +86,13 @@
   private async void ExportTemplate(CampaignTemplateSummary templateSummary)
   {
     //Generate a copy of the template, create a new unique ID and change the name to avoid collisions if the user adds it to their templates folder
-    var template = await ViewModel!.GetFullCampaignTemplate(templateSummary.UniqueId);
+    var response = await ViewModel!.GetCopyOfCampaignTemplate(templateSummary.UniqueId);
 
-    if(template is not null)
+    if(response.HasSerializedJsonData)
     {
-      var templateCopy = template.Clone();
-      templateCopy.UniqueId = Guid.NewGuid().ToString();
-      templateCopy.Name = $"{template.Name}-Copy";
+      var templateCopy = response.Template;
       var fileName = templateCopy.UniqueId;
-      var jsonData = JsonConvert.SerializeObject(templateCopy, new JsonSerializerSettings() { TypeNameHandling = TypeNameHandling.All });
-      await JS.InvokeVoidAsync("downloadJsonFile", fileName, jsonData);
+      await JS.InvokeVoidAsync("downloadJsonFile", fileName, response.SerializedJsonData);
     }
 
     else

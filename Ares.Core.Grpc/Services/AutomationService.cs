@@ -513,6 +513,23 @@ public class AutomationService : AresAutomation.AresAutomationBase
     return summary;
   }
 
+  public override async Task<GetCopyOfCampaignResponse> GetCopyOfCampaign(CampaignRequest request, ServerCallContext context)
+  {
+    var template = await GetCampaignTemplate(request, context);
+    var response = new GetCopyOfCampaignResponse();
+
+    if(template is not null)
+    {
+      var templateCopy = template.Clone();
+      templateCopy.UniqueId = Guid.NewGuid().ToString();
+      templateCopy.Name = $"{template.Name}-Copy";
+      response.Template = templateCopy;
+      response.SerializedJsonData = JsonSerializer.Serialize(templateCopy, _serializerSettings);
+    }
+
+    return response;
+  }
+
   private void HandleNotification(string title, string message, NotificationSeverityEnum severity)
   {
     foreach(var handler in _notificationHandlers)

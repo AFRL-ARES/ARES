@@ -1,5 +1,6 @@
 ﻿@using Ares.Datamodel
 @using Ares.Datamodel.Device
+@using Ares.Datamodel.Extensions
 
 <RadzenStack Gap="1rem" Style="padding: 20px;">
 
@@ -128,11 +129,5 @@
   }
     
 
-  private string FormatDataType(AresValueSchema entry)
-  {
-    // if(string.IsNullOrEmpty(entry.Unit))
-    //   return entry.Type.ToString();
-
-    return $"{entry.Type}";
-  }
+  private string FormatDataType(AresValueSchema entry) => entry.Stringify();
 }

@@ -2,6 +2,7 @@ using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
 using Ares.Datamodel;
 using Ares.Datamodel.Factories;
+using AresScript.Environment;
 using AresScript.Generated;
 
 namespace AresScript.Interpreters;
@@ -54,16 +55,10 @@ public sealed class VariableSchemaCollector : AresLangBaseVisitor<object?>
     var decl = context.functionDeclaration();
     if(decl is not null)
     {
-      var ids = decl.ID();
-      var parameters = new List<string>();
-      for(var i = 1; i < ids.Length; i++)
-      {
-        var id = ids[i].GetText();
-        if(!string.IsNullOrWhiteSpace(id))
-        {
-          parameters.Add(id);
-        }
-      }
+      var parameters = decl.parameterList()?.parameter()
+        .Select(p => p.ID().GetText())
+        .Where(id => !string.IsNullOrWhiteSpace(id))
+        .ToList() ?? [];
 
       _pendingFunctionParameters.Push(parameters);
     }
