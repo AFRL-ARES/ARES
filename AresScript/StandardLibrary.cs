@@ -3,6 +3,7 @@ using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
 using AresScript.Symbols;
 using System.Text;
+using UnitsNet.Units;
 
 namespace AresScript;
 
@@ -130,12 +131,7 @@ public static class StandardLibrary
         throw new ArgumentException("Expected exactly 1 argument for duration.", nameof(args));
       }
 
-      if(!args[0].HasNumberValue)
-      {
-        throw new InvalidOperationException("Argument provided is not a number");
-      }
-
-      var remaining = TimeSpan.FromMilliseconds(args[0].NumberValue);
+      var remaining = TimeSpan.FromMilliseconds(ToDurationMilliseconds(args[0]));
       var interval = TimeSpan.FromMilliseconds(50);
       while(remaining > TimeSpan.Zero)
       {
@@ -149,15 +145,37 @@ public static class StandardLibrary
 
       return AresValueHelper.CreateUnit();
     },
-    AresSchemaBuilder.Create("time", AresDataType.Number)
-      .WithDescription("Number of milliseconds to sleep")
-      .WithUnit("ms")
+    AresSchemaBuilder.Create("time", AresDataType.Any)
+      .WithDescription("How much time to sleep. Accepts a Duration quantity or a plain number (treated as milliseconds).")
       .Build(),
     AresSchemaBuilder.Entry(AresDataType.Unit).Build(),
     Namespace: "")
     {
-      Detail = "Sleep for a given number of milliseconds",
-      Documentation = "Sleep for a given number of milliseconds"
+      Detail = "Sleep for a given time",
+      Documentation = "Sleep for a time. Accepts a Duration quantity (e.g. Quantity.Duration.from(500, \"ms\")) or a plain number treated as milliseconds (e.g. sleep(500)).",
+      StaticArgumentValidator = args =>
+      {
+        if(args.Count != 1 || args[0] is null)
+        {
+          return new StaticArgValidation(true);
+        }
+
+        var argument = args[0]!;
+        if(argument.HasNumberValue)
+        {
+          return new StaticArgValidation(true);
+        }
+
+        if(argument.KindCase == AresValue.KindOneofCase.QuantityValue
+          && argument.QuantityValue.TryToUnitsNetQuantity(out var quantity)
+          && quantity is not null
+          && string.Equals(quantity.QuantityInfo.Name, nameof(UnitsNet.Duration), StringComparison.OrdinalIgnoreCase))
+        {
+          return new StaticArgValidation(true);
+        }
+
+        return new StaticArgValidation(false, "Sleep expects a Duration quantity or a plain number.", 0);
+      }
     }
   ];
 
@@ -293,5 +311,27 @@ public static class StandardLibrary
       .AddEntry("self", AresSchemaBuilder.Entry(AresDataType.StringArray).Build())
       .AddEntry("value", AresSchemaBuilder.Entry(AresDataType.String).Build())
       .Build();
+  }
+
+  private static double ToDurationMilliseconds(AresValue value)
+  {
+    if(value.HasNumberValue)
+    {
+      return value.NumberValue;
+    }
+
+    if(value.KindCase != AresValue.KindOneofCase.QuantityValue)
+    {
+      throw new InvalidOperationException("Argument provided is not a number or duration quantity.");
+    }
+
+    var quantity = value.QuantityValue.ToUnitsNetQuantity();
+    if(!string.Equals(quantity.QuantityInfo.Name, "Duration", StringComparison.OrdinalIgnoreCase))
+    {
+      throw new InvalidOperationException(
+        $"Duration quantity expected but got {quantity.QuantityInfo.Name}.");
+    }
+
+    return quantity.As(DurationUnit.Millisecond);
   }
 }

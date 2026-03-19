@@ -60,6 +60,11 @@ public static class DummyValueFactory
         return AresValueHelper.CreateUnit();
       case AresDataType.Function:
         return AresValueHelper.CreateFunction(string.Empty);
+      case AresDataType.Quantity:
+        return AresValueHelper.CreateQuantity(
+          0,
+          schema.QuantitySchema?.QuantityType ?? QuantityType.Unspecified,
+          schema.QuantitySchema?.BoundsUnit ?? string.Empty);
       case AresDataType.UnspecifiedType:
       case AresDataType.Any:
         return new AresValue();

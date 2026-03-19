@@ -9,7 +9,22 @@ internal static class ScriptBuildingHelpers
 {
   public static string ToFunctionSignature(this AresScriptParameter parameter)
   {
-    return $"{parameter.Name}: {AresScriptTypeHints.ToTypeHintString(parameter.Schema)}";
+    return $"{parameter.Name}: {AresScriptSchemaFormatter.ToTypeHint(parameter.Schema)}";
+  }
+
+  public static string BuildFunctionSignature(string functionName, IEnumerable<AresScriptParameter> parameters, SchemaEntry? returnSchema = null)
+  {
+    var normalizedParameters = parameters.ToArray();
+    var signature = normalizedParameters.Length == 0
+      ? $"def {functionName}()"
+      : $"def {functionName}({string.Join(", ", normalizedParameters.Select(p => p.ToFunctionSignature()))})";
+
+    if(returnSchema is not null)
+    {
+      signature += $" -> {AresScriptSchemaFormatter.ToTypeHint(returnSchema)}";
+    }
+
+    return signature;
   }
 
   public static string ToParameterSignature(this AresLangParser.ParameterContext parameterContext)

@@ -1,6 +1,7 @@
 using Antlr4.Runtime;
 using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
+using Ares.Datamodel.Factories;
 using Ares.Datamodel.Scripting;
 using AresScript.Environment;
 using AresScript.Generated;
@@ -8,6 +9,7 @@ using AresScript.Interpreters;
 using AresScript.ScriptAnalysis;
 using NUnit.Framework;
 using System.Diagnostics;
+using System.Reflection;
 
 namespace AresScript.Tests;
 
@@ -76,7 +78,9 @@ public class InterpreterTests
     await visitor.Visit(programCtx);
   }
 
-  private static async Task ValidateScriptAsync(string script)
+  private static async Task<AresScriptEnvironment> RunScriptWithEnvironmentAsync(
+    string script,
+    Action<AresScriptEnvironment> configureEnvironment)
   {
     var stream = new AntlrInputStream(script);
     var lexer = new AresIndentationLexer(stream);
@@ -90,6 +94,33 @@ public class InterpreterTests
     var env = new AresScriptEnvironment();
     env.AssignSystemFunctions(StandardLibrary.Functions);
     env.AssignExtensionFunctions(StandardLibrary.ExtensionFunctions);
+    configureEnvironment(env);
+    var visitor = new AresBaseInterpreter(env);
+
+    await visitor.Visit(programCtx);
+    return env;
+  }
+
+  private static async Task ValidateScriptAsync(string script)
+  {
+    await ValidateScriptAsync(script, _ => { });
+  }
+
+  private static async Task ValidateScriptAsync(string script, Action<AresScriptEnvironment> configureEnvironment)
+  {
+    var stream = new AntlrInputStream(script);
+    var lexer = new AresIndentationLexer(stream);
+    lexer.RemoveErrorListeners();
+    lexer.AddErrorListener(new ThrowingLexerErrorListener());
+    var tokenStream = new CommonTokenStream(lexer);
+    var parser = new AresLangParser(tokenStream);
+    parser.RemoveErrorListeners();
+    parser.AddErrorListener(new ThrowingParserErrorListener());
+    var programCtx = parser.program();
+    var env = new AresScriptEnvironment();
+    env.AssignSystemFunctions(StandardLibrary.Functions);
+    env.AssignExtensionFunctions(StandardLibrary.ExtensionFunctions);
+    configureEnvironment(env);
     var visitor = new AresValidationInterpreter(env);
 
     await visitor.Visit(programCtx);
@@ -147,6 +178,11 @@ public class InterpreterTests
     return completions.ToArray();
   }
 
+  private static ScriptSemanticToken[] BuildSemanticTokens(string script)
+  {
+    return AresScriptAnalysis.BuildSemanticTokens(script).ToArray();
+  }
+
   private static SchemaEntry InferExpressionSchema(
     string expression,
     Action<AresScriptEnvironment>? configureEnvironment = null)
@@ -168,6 +204,38 @@ public class InterpreterTests
 
     var visitor = new AresTypeInferenceInterpreter(env);
     return visitor.Visit(expressionContext);
+  }
+
+  private static bool IsTypeHintCompatible(SchemaEntry actual, SchemaEntry expected)
+  {
+    var typeHintsType = typeof(StandardLibrary).Assembly.GetType("AresScript.AresScriptTypeHints");
+    Assert.That(typeHintsType, Is.Not.Null);
+
+    var method = typeHintsType!.GetMethod(
+      "IsCompatibleWithTypeHint",
+      BindingFlags.Public | BindingFlags.Static,
+      [typeof(SchemaEntry), typeof(SchemaEntry)]);
+    Assert.That(method, Is.Not.Null);
+
+    var result = method!.Invoke(null, [actual, expected]);
+    Assert.That(result, Is.TypeOf<bool>());
+    return (bool)result!;
+  }
+
+  private static bool IsValueTypeHintCompatible(AresValue actual, SchemaEntry expected)
+  {
+    var typeHintsType = typeof(StandardLibrary).Assembly.GetType("AresScript.AresScriptTypeHints");
+    Assert.That(typeHintsType, Is.Not.Null);
+
+    var method = typeHintsType!.GetMethod(
+      "IsCompatibleWithTypeHint",
+      BindingFlags.Public | BindingFlags.Static,
+      [typeof(AresValue), typeof(SchemaEntry)]);
+    Assert.That(method, Is.Not.Null);
+
+    var result = method!.Invoke(null, [actual, expected]);
+    Assert.That(result, Is.TypeOf<bool>());
+    return (bool)result!;
   }
 
   [Test]
@@ -224,6 +292,103 @@ public class InterpreterTests
   }
 
   [Test]
+  public async Task Quantity_Add_Returns_Result_In_Left_Unit()
+  {
+    var env = await RunScriptWithEnvironmentAsync("result = lhs + rhs", environment =>
+    {
+      environment.AssignVariable("lhs", AresValueHelper.CreateQuantity(UnitsNet.Length.FromCentimeters(10).ToQuantityValue()));
+      environment.AssignVariable("rhs", AresValueHelper.CreateQuantity(UnitsNet.Length.FromMeters(1).ToQuantityValue()));
+    });
+
+    var result = env["result"];
+    Assert.That(result.KindCase, Is.EqualTo(AresValue.KindOneofCase.QuantityValue));
+    var quantity = result.QuantityValue.ToUnitsNetQuantity();
+    Assert.That(quantity.QuantityInfo.Name, Is.EqualTo(nameof(UnitsNet.Length)));
+    Assert.That(quantity.As(UnitsNet.Units.LengthUnit.Centimeter), Is.EqualTo(110).Within(0.0001));
+  }
+
+  [Test]
+  public async Task Quantity_Multiply_By_Number_Preserves_Left_Unit()
+  {
+    var env = await RunScriptWithEnvironmentAsync("result = lhs * 3", environment =>
+    {
+      environment.AssignVariable("lhs", AresValueHelper.CreateQuantity(UnitsNet.Duration.FromMilliseconds(500).ToQuantityValue()));
+    });
+
+    var result = env["result"];
+    Assert.That(result.KindCase, Is.EqualTo(AresValue.KindOneofCase.QuantityValue));
+    var quantity = result.QuantityValue.ToUnitsNetQuantity();
+    Assert.That(quantity.QuantityInfo.Name, Is.EqualTo(nameof(UnitsNet.Duration)));
+    Assert.That(quantity.As(UnitsNet.Units.DurationUnit.Millisecond), Is.EqualTo(1500).Within(0.0001));
+  }
+
+  [Test]
+  public async Task Validation_Allows_Quantity_Arithmetic_Return_Type()
+  {
+    var script = """
+      def add_duration(a: Quantity.Duration, b: Quantity.Duration) -> Quantity.Duration:
+        return a + b
+      """;
+
+    await ValidateScriptAsync(script);
+  }
+
+  [Test]
+  public Task Validation_Rejects_Arithmetic_On_Different_Quantity_Types()
+  {
+    var script = """
+      def bad_add(a: Quantity.Duration, b: Quantity.Length) -> Quantity:
+        return a + b
+      """;
+
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
+    Assert.That(ex?.Message, Does.Contain("compatible quantity"));
+    return Task.CompletedTask;
+  }
+
+  [Test]
+  public void SemanticTokens_ClassifyFunctionCalls()
+  {
+    var script = """
+      foo()
+      """;
+
+    var tokens = BuildSemanticTokens(script);
+
+    Assert.That(tokens, Has.Exactly(1).Matches<ScriptSemanticToken>(t =>
+      t.Type == ScriptSemanticTokenType.Function
+      && t.Line == 0
+      && t.StartColumn == 1
+      && t.Length == 3));
+  }
+
+  [Test]
+  public void SemanticTokens_ClassifyAssignedIdentifiersAsVariables()
+  {
+    var script = """
+      value = foo(bar)
+      """;
+
+    var tokens = BuildSemanticTokens(script);
+
+    Assert.That(tokens, Has.Some.Matches<ScriptSemanticToken>(t =>
+      t.Type == ScriptSemanticTokenType.Variable
+      && t.Line == 0
+      && t.StartColumn == 1
+      && t.Length == 5));
+    Assert.That(tokens, Has.Some.Matches<ScriptSemanticToken>(t =>
+      t.Type == ScriptSemanticTokenType.Function
+      && t.Line == 0
+      && t.StartColumn == 9
+      && t.Length == 3));
+    Assert.That(tokens, Has.Some.Matches<ScriptSemanticToken>(t =>
+      t.Type == ScriptSemanticTokenType.Variable
+      && t.Line == 0
+      && t.StartColumn == 13
+      && t.Length == 3));
+  }
+
+  [Test]
   public async Task Function_TypeHints_Are_Parsed_For_Parameters_And_Returns()
   {
     var script = """
@@ -259,6 +424,166 @@ public class InterpreterTests
       """;
 
     await RunScriptAsync(script);
+  }
+
+  [Test]
+  public async Task Function_NumberRangeTypeHints_Are_Parsed_For_Parameters_And_Returns()
+  {
+    var script = """
+      def clamp_value(value: Number[min=0, max=30]) -> Number[min=0, max=30]:
+        return value
+      """;
+
+    await ValidateScriptAsync(script);
+  }
+
+  [Test]
+  public async Task Function_QuantityRangeTypeHints_Are_Parsed_For_Parameters_And_Returns()
+  {
+    var script = """
+      def take_duration(value: Quantity.Duration[unit="s", min=0, max=30]) -> Quantity.Duration[unit="s", min=0, max=30]:
+        return value
+      """;
+
+    await ValidateScriptAsync(script);
+  }
+
+  [Test]
+  public Task Validation_Rejects_QuantityRangeTypeHint_Without_Unit()
+  {
+    var script = """
+      def bad_duration(value: Quantity.Duration[min=0, max=30]) -> Quantity:
+        return value
+      """;
+
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
+    Assert.That(ex?.Message, Does.Contain("must specify a bounds unit"));
+    return Task.CompletedTask;
+  }
+
+  [Test]
+  public Task Validation_Rejects_QuantityRangeTypeHint_With_Invalid_Unit_For_QuantityType()
+  {
+    var script = """
+      def bad_length(value: Quantity.Length[unit="m/s", min=0, max=30]) -> Quantity:
+        return value
+      """;
+
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
+    Assert.That(ex?.Message, Does.Contain("Unit 'm/s' is not valid for quantity type 'Length'"));
+    return Task.CompletedTask;
+  }
+
+  [Test]
+  public void NumberTypeHintCompatibility_Enforces_MinMax_For_Values()
+  {
+    var expected = AresSchemaBuilder.Entry(AresDataType.Number)
+      .WithNumberRange(0, 30)
+      .Build();
+
+    var withinBounds = AresValueHelper.CreateNumber(12);
+    var belowBounds = AresValueHelper.CreateNumber(-1);
+    var aboveBounds = AresValueHelper.CreateNumber(40);
+
+    Assert.That(IsValueTypeHintCompatible(withinBounds, expected), Is.True);
+    Assert.That(IsValueTypeHintCompatible(belowBounds, expected), Is.False);
+    Assert.That(IsValueTypeHintCompatible(aboveBounds, expected), Is.False);
+  }
+
+  [Test]
+  public void QuantityTypeHintCompatibility_Enforces_Type_Unit_AndBounds_For_Values()
+  {
+    var expected = AresSchemaBuilder.Entry(AresDataType.Quantity)
+      .WithQuantityRange(QuantityType.Duration, "s", minScalarValue: 0, maxScalarValue: 30)
+      .Build();
+
+    var withinBounds = AresValueHelper.CreateQuantity(UnitsNet.Duration.FromSeconds(5).ToQuantityValue());
+    var belowBounds = AresValueHelper.CreateQuantity(UnitsNet.Duration.FromMilliseconds(-1).ToQuantityValue());
+    var aboveBounds = AresValueHelper.CreateQuantity(UnitsNet.Duration.FromSeconds(31).ToQuantityValue());
+    var wrongDimension = AresValueHelper.CreateQuantity(UnitsNet.Length.FromMeters(2).ToQuantityValue());
+
+    Assert.That(IsValueTypeHintCompatible(withinBounds, expected), Is.True);
+    Assert.That(IsValueTypeHintCompatible(belowBounds, expected), Is.False);
+    Assert.That(IsValueTypeHintCompatible(aboveBounds, expected), Is.False);
+    Assert.That(IsValueTypeHintCompatible(wrongDimension, expected), Is.False);
+  }
+
+  [Test]
+  public void QuantitySchemaCompatibility_NormalizesUnits_WhenOneSideTypeIsSpecified()
+  {
+    var expected = new SchemaEntry
+    {
+      Type = AresDataType.Quantity,
+      QuantitySchema = new QuantitySchema
+      {
+        QuantityType = QuantityType.Unspecified,
+        BoundsUnit = "Minute",
+        MinScalarValue = 1
+      }
+    };
+
+    var actualTooSmall = new SchemaEntry
+    {
+      Type = AresDataType.Quantity,
+      QuantitySchema = new QuantitySchema
+      {
+        QuantityType = QuantityType.Duration,
+        BoundsUnit = "Second",
+        MinScalarValue = 30
+      }
+    };
+
+    var actualLargeEnough = new SchemaEntry
+    {
+      Type = AresDataType.Quantity,
+      QuantitySchema = new QuantitySchema
+      {
+        QuantityType = QuantityType.Duration,
+        BoundsUnit = "Second",
+        MinScalarValue = 90
+      }
+    };
+
+    Assert.That(IsTypeHintCompatible(actualTooSmall, expected), Is.False);
+    Assert.That(IsTypeHintCompatible(actualLargeEnough, expected), Is.True);
+  }
+
+  [Test]
+  public void QuantitySchemaCompatibility_FallsBackToRawScalars_WhenBothTypesAreUnspecified()
+  {
+    var expected = new SchemaEntry
+    {
+      Type = AresDataType.Quantity,
+      QuantitySchema = new QuantitySchema
+      {
+        QuantityType = QuantityType.Unspecified,
+        BoundsUnit = "Minute",
+        MinScalarValue = 1
+      }
+    };
+
+    var actual = new SchemaEntry
+    {
+      Type = AresDataType.Quantity,
+      QuantitySchema = new QuantitySchema
+      {
+        QuantityType = QuantityType.Unspecified,
+        BoundsUnit = "Second",
+        MinScalarValue = 30
+      }
+    };
+
+    Assert.That(IsTypeHintCompatible(actual, expected), Is.True);
+  }
+
+  [Test]
+  public void DummyValueFactory_Creates_Quantity_For_Bare_QuantitySchema()
+  {
+    var schema = AresSchemaBuilder.Entry(AresDataType.Quantity).Build();
+
+    var value = DummyValueFactory.CreateDummyValue(schema);
+
+    Assert.That(value.KindCase, Is.EqualTo(AresValue.KindOneofCase.QuantityValue));
   }
 
   [Test]
@@ -1288,6 +1613,43 @@ public class InterpreterTests
     await RunScriptAsync(script);
     stopwatch.Stop();
     Assert.That(stopwatch.ElapsedMilliseconds, Is.AtLeast(990));
+  }
+
+  [Test]
+  public async Task Sleep_Accepts_Duration_Quantity()
+  {
+    var sleepFn = StandardLibrary.Functions.First(function => function.Id == "sleep");
+    var duration = AresValueHelper.CreateQuantity(UnitsNet.Duration.FromSeconds(0.1).ToQuantityValue());
+
+    var stopwatch = Stopwatch.StartNew();
+    await sleepFn.Body([duration], new ScriptExecutionControlToken(CancellationToken.None));
+    stopwatch.Stop();
+
+    Assert.That(stopwatch.ElapsedMilliseconds, Is.AtLeast(80));
+  }
+
+  [Test]
+  public void Sleep_Rejects_Non_Duration_Quantity()
+  {
+    var sleepFn = StandardLibrary.Functions.First(function => function.Id == "sleep");
+    var length = AresValueHelper.CreateQuantity(UnitsNet.Length.FromCentimeters(1).ToQuantityValue());
+
+    var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
+      await sleepFn.Body([length], new ScriptExecutionControlToken(CancellationToken.None)));
+    Assert.That(ex?.Message, Does.Contain("Duration quantity expected"));
+  }
+
+  [Test]
+  public void Validation_Rejects_Sleep_With_NonDuration_Quantity()
+  {
+    var script = "sleep(length)";
+    var length = AresValueHelper.CreateQuantity(UnitsNet.Length.FromCentimeters(1).ToQuantityValue());
+
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(async () => await ValidateScriptAsync(
+      script,
+      env => env.AssignVariable("length", length)));
+
+    Assert.That(ex?.Message, Does.Contain("Sleep expects a Duration quantity or a plain number."));
   }
 
   [Test]

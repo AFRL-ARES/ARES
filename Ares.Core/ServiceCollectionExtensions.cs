@@ -60,6 +60,7 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<INotifier, Notifier>();
 
     services.AddSingleton<ISymbolProvider, DeviceSymbolProvider>();
+    services.AddSingleton<ISymbolProvider, QuantitySymbolProvider>();
     services.AddSingleton<BaseEnvironmentBuilder>();
 
     services.BindComposers();

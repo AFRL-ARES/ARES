@@ -218,8 +218,8 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
         {
           throw new AresInterpreterException(
             $"Unknown identifier '{memberContext.lvalue().GetText()}'.",
-            context.Start.Line,
-            context.Start.Column
+            memberContext.lvalue().Start.Line,
+            memberContext.lvalue().Start.Column
           );
         }
 
@@ -238,8 +238,8 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
         {
           throw new AresInterpreterException(
             $"Unknown identifier '{indexContext.lvalue().GetText()}'.",
-            context.Start.Line,
-            context.Start.Column
+            indexContext.lvalue().Start.Line,
+            indexContext.lvalue().Start.Column
           );
         }
 
@@ -253,8 +253,8 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
         {
           throw new AresInterpreterException(
             "Provided index expression was not a string.",
-            context.Start.Line,
-            context.Start.Column
+            indexContext.expression().Start.Line,
+            indexContext.expression().Start.Column
           );
         }
 
@@ -303,7 +303,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     if(!AresScriptTypeHints.IsCompatibleWithTypeHint(actual, expectedSchema))
     {
       throw new AresInterpreterException(
-        $"Function return type mismatch. Expected {AresScriptTypeHints.ToTypeHintString(expectedSchema)}, received {AresScriptTypeHints.ToTypeHintString(actual)}.",
+        $"Function return type mismatch. Expected {expectedSchema.Stringify()}, received {actual.Stringify()}.",
         context.Start.Line,
         context.Start.Column
       );
@@ -322,6 +322,17 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       }
 
       return;
+    }
+
+    var conditionExpr = expressions[0];
+    var conditionSchema = _typeInference.Visit(conditionExpr);
+    if(conditionSchema.Type != AresDataType.Boolean && _mode == ValidationMode.Strict)
+    {
+      throw new AresInterpreterException(
+        "Assert condition must be boolean.",
+        conditionExpr.Start.Line,
+        conditionExpr.Start.Column
+      );
     }
 
     foreach(var expr in expressions)
@@ -376,6 +387,16 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     }
 
     await Visit(expression);
+    var iterableSchema = _typeInference.Visit(expression);
+    if(!IsIterableSchema(iterableSchema) && _mode == ValidationMode.Strict)
+    {
+      throw new AresInterpreterException(
+        $"Value is not iterable: {iterableSchema.Type}.",
+        expression.Start.Line,
+        expression.Start.Column
+      );
+    }
+
     _environment.EnterScope();
     try
     {
@@ -464,7 +485,15 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     }
 
     var userFunc = new AresScriptFunction(functionId, parameters, block, declaredReturnSchema);
-    _environment.AssignFunction(functionId, userFunc);
+    try
+    {
+      _environment.AssignFunction(functionId, userFunc);
+    }
+    catch(InvalidOperationException e)
+    {
+      throw new AresInterpreterException(e.Message, functionNameToken.Symbol.Line, functionNameToken.Symbol.Column);
+    }
+    
 
     if(_line is not null && _line.Value == context.Start.Line)
     {
@@ -481,6 +510,18 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     try
     {
       await Visit(block);
+
+      var unitSchema = AresSchemaBuilder.Entry(AresDataType.Unit).Build();
+      if(_mode == ValidationMode.Strict
+        && !AresScriptTypeHints.IsCompatibleWithTypeHint(unitSchema, declaredReturnSchema)
+        && !AlwaysReturns(block))
+      {
+        throw new AresInterpreterException(
+          $"Function '{functionId}' may complete without returning a value of type {declaredReturnSchema.Stringify()}.",
+          functionNameToken.Symbol.Line,
+          functionNameToken.Symbol.Column
+        );
+      }
     }
     finally
     {
@@ -558,8 +599,8 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       throw new AresInterpreterException(
         $"Unable to resolve value of {ctxExpr.GetText()}",
-        context.Start.Line,
-        context.Start.Column + 1
+        ctxExpr.Start.Line,
+        ctxExpr.Start.Column
       );
     }
 
@@ -583,9 +624,53 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
 
     throw new AresInterpreterException(
       $"Unknown identifier {context.ID().GetText()} on {ctxExpr.GetText()}.",
-      context.Start.Line,
-      context.Stop.Column + 1
+      context.Stop.Line,
+      context.Stop.Column
     );
+  }
+
+  public override async Task VisitIndexAccess([NotNull] AresLangParser.IndexAccessContext context)
+  {
+    var receiver = context.expression(0);
+    var index = context.expression(1);
+    await Visit(receiver);
+    await Visit(index);
+
+    var receiverSchema = _typeInference.Visit(receiver);
+    if(receiverSchema.Type is not AresDataType.Any and not AresDataType.UnspecifiedType
+      && !IsIndexableSchema(receiverSchema))
+    {
+      throw new AresInterpreterException(
+        "Cannot access index of a value that is not of list or struct type.",
+        receiver.Start.Line,
+        receiver.Start.Column
+      );
+    }
+
+    var indexSchema = _typeInference.Visit(index);
+    if(receiverSchema.Type == AresDataType.Struct)
+    {
+      if(indexSchema.Type is not AresDataType.Any and not AresDataType.UnspecifiedType and not AresDataType.String)
+      {
+        throw new AresInterpreterException(
+          "Provided index expression was not a string.",
+          index.Start.Line,
+          index.Start.Column
+        );
+      }
+
+      return;
+    }
+
+    if(receiverSchema.Type is not AresDataType.Any and not AresDataType.UnspecifiedType
+      && indexSchema.Type is not AresDataType.Any and not AresDataType.UnspecifiedType and not AresDataType.Number)
+    {
+      throw new AresInterpreterException(
+        "Provided index expression was not a number.",
+        index.Start.Line,
+        index.Start.Column
+      );
+    }
   }
 
   public override async Task VisitFunctionCall(AresLangParser.FunctionCallContext ctx)
@@ -662,8 +747,8 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       {
         throw new AresInterpreterException(
           $"Unknown function '{unresolvedMemberCtx.ID().GetText()}' on '{unresolvedMemberCtx.expression().GetText()}'.",
-          unresolvedMemberCtx.Start.Line,
-          unresolvedMemberCtx.Stop.Column + 1
+          unresolvedMemberCtx.ID().Symbol.Line,
+          unresolvedMemberCtx.ID().Symbol.Column
         );
       }
       throw new AresInterpreterException(
@@ -682,7 +767,12 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       if(keywordArgs.Count > 0)
       {
-        throw new AresInterpreterException($"Runtime function '{functionId}' does not support keyword arguments");
+        var firstKeywordArg = keywordArgs.Values.First();
+        throw new AresInterpreterException(
+          $"Runtime function '{functionId}' does not support keyword arguments",
+          firstKeywordArg.Start.Line,
+          firstKeywordArg.Start.Column
+        );
       }
 
       ValidateSystemFunctionArgs(systemFn, positionalArgs, keywordArgs, ctx);
@@ -694,8 +784,11 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       if(positionalArgs.Count > userFn.ParameterNames.Count)
       {
+        var extraArgument = positionalArgs[userFn.ParameterNames.Count];
         throw new AresInterpreterException(
-          $"Function '{functionId}' expected {userFn.ParameterNames.Count} arguments but got {positionalArgs.Count}"
+          $"Function '{functionId}' expected {userFn.ParameterNames.Count} arguments but got {positionalArgs.Count}",
+          extraArgument.Start.Line,
+          extraArgument.Start.Column
         );
       }
 
@@ -704,12 +797,22 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
         var index = FindParameterIndex(userFn.ParameterNames, name);
         if(index < 0)
         {
-          throw new AresInterpreterException($"Function '{functionId}' got an unexpected keyword argument '{name}'");
+          var keywordArgument = keywordArgs[name];
+          throw new AresInterpreterException(
+            $"Function '{functionId}' got an unexpected keyword argument '{name}'",
+            keywordArgument.Start.Line,
+            keywordArgument.Start.Column
+          );
         }
 
         if(index < positionalArgs.Count)
         {
-          throw new AresInterpreterException($"Function '{functionId}' got multiple values for argument '{name}'");
+          var keywordArgument = keywordArgs[name];
+          throw new AresInterpreterException(
+            $"Function '{functionId}' got multiple values for argument '{name}'",
+            keywordArgument.Start.Line,
+            keywordArgument.Start.Column
+          );
         }
       }
 
@@ -735,10 +838,11 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       if(positionalArgs.Count > lambda.Parameters.Count)
       {
+        var extraArgument = positionalArgs[lambda.Parameters.Count];
         throw new AresInterpreterException(
           $"Function '{functionId}' expected {lambda.Parameters.Count} arguments but got {positionalArgs.Count}",
-          ctx.argList().Start.Line,
-          ctx.argList().Start.Column
+          extraArgument.Start.Line,
+          extraArgument.Start.Column
         );
       }
 
@@ -747,19 +851,21 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
         var index = FindParameterIndex(lambda.Parameters, name);
         if(index < 0)
         {
+          var keywordArgument = keywordArgs[name];
           throw new AresInterpreterException(
             $"Function '{functionId}' got an unexpected keyword argument '{name}'",
-            ctx.argList().Start.Line,
-            ctx.argList().Start.Column
+            keywordArgument.Start.Line,
+            keywordArgument.Start.Column
           );
         }
 
         if(index < positionalArgs.Count)
         {
+          var keywordArgument = keywordArgs[name];
           throw new AresInterpreterException(
             $"Function '{functionId}' got multiple values for argument '{name}'",
-            ctx.argList().Start.Line,
-            ctx.argList().Start.Column
+            keywordArgument.Start.Line,
+            keywordArgument.Start.Column
           );
         }
       }
@@ -787,6 +893,79 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     }
   }
 
+  public override async Task VisitUnaryMinus([NotNull] AresLangParser.UnaryMinusContext context)
+  {
+    await Visit(context.expression());
+    ValidateArithmeticExpression(context.expression(), $"Cannot perform unary minus on type {_typeInference.Visit(context.expression()).Type}.");
+  }
+
+  public override async Task VisitMulDiv(AresLangParser.MulDivContext context)
+  {
+    await Visit(context.expression(0));
+    await Visit(context.expression(1));
+    ValidateArithmeticOperands(context.expression(0), context.expression(1), "Left hand side is not numeric or quantity.", "Right hand side is not numeric or compatible quantity.", allowRightNumberForQuantityLeft: true);
+  }
+
+  public override async Task VisitSub(AresLangParser.SubContext context)
+  {
+    await Visit(context.expression(0));
+    await Visit(context.expression(1));
+    ValidateArithmeticOperands(context.expression(0), context.expression(1), "Left hand side is not numeric or quantity.", "Right hand side is not numeric or compatible quantity.", allowRightNumberForQuantityLeft: false);
+  }
+
+  public override async Task VisitAdd(AresLangParser.AddContext context)
+  {
+    await Visit(context.expression(0));
+    await Visit(context.expression(1));
+
+    var leftSchema = _typeInference.Visit(context.expression(0));
+    if(leftSchema.Type == AresDataType.Quantity)
+    {
+      ValidateArithmeticOperands(
+        context.expression(0),
+        context.expression(1),
+        "Left hand side is not numeric or quantity.",
+        "Right hand side is not a compatible quantity.",
+        allowRightNumberForQuantityLeft: false);
+      return;
+    }
+
+    if(leftSchema.Type == AresDataType.Number)
+    {
+      ValidateNumericExpression(context.expression(1), "Right hand side is not numeric.");
+    }
+  }
+
+  public override async Task VisitRelational([NotNull] AresLangParser.RelationalContext context)
+  {
+    await Visit(context.expression(0));
+    await Visit(context.expression(1));
+    ValidateNumericExpression(context.expression(0), "Left hand side is not numeric.");
+    ValidateNumericExpression(context.expression(1), "Right hand side is not numeric.");
+  }
+
+  public override async Task VisitLogicalNot([NotNull] AresLangParser.LogicalNotContext context)
+  {
+    await Visit(context.expression());
+    ValidateBooleanExpression(context.expression(), $"Cannot perform negation on type {_typeInference.Visit(context.expression()).Type}.");
+  }
+
+  public override async Task VisitLogicAnd([NotNull] AresLangParser.LogicAndContext context)
+  {
+    await Visit(context.expression(0));
+    await Visit(context.expression(1));
+    ValidateBooleanExpression(context.expression(0), $"Cannot perform AND on type {_typeInference.Visit(context.expression(0)).Type}.");
+    ValidateBooleanExpression(context.expression(1), $"Cannot perform AND on type {_typeInference.Visit(context.expression(1)).Type}.");
+  }
+
+  public override async Task VisitLogicOr([NotNull] AresLangParser.LogicOrContext context)
+  {
+    await Visit(context.expression(0));
+    await Visit(context.expression(1));
+    ValidateBooleanExpression(context.expression(0), $"Cannot perform OR on type {_typeInference.Visit(context.expression(0)).Type}.");
+    ValidateBooleanExpression(context.expression(1), $"Cannot perform OR on type {_typeInference.Visit(context.expression(1)).Type}.");
+  }
+
   private void RecordFunctionInvocation(
     string functionId,
     string functionName,
@@ -805,6 +984,79 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
   private void ValidateSystemFunctionArgs(AresSystemFunctionSymbol function, IReadOnlyList<AresLangParser.ExpressionContext> positionalArgs, IReadOnlyDictionary<string, AresLangParser.ExpressionContext> keywordArgs, AresLangParser.FunctionCallContext ctx)
   {
     ValidateArgsAgainstSchema(function.Id, function.InputSchema, positionalArgs, keywordArgs, ctx);
+
+    if(function.StaticArgumentValidator is not null)
+    {
+      var resolvedArgs = ResolveStaticValidatorArgs(function.InputSchema, positionalArgs, keywordArgs);
+      var validation = function.StaticArgumentValidator(resolvedArgs);
+      if(!validation.Success)
+      {
+        var arg = ResolveStaticValidatorErrorExpression(function.InputSchema, positionalArgs, keywordArgs, validation.Index);
+        throw new AresInterpreterException(
+          validation.Error ?? "",
+          arg?.Start.Line ?? ctx.Start.Line,
+          arg?.Start.Column ?? ctx.Start.Column
+        );
+      }
+    }
+  }
+
+  private AresValue?[] ResolveStaticValidatorArgs(
+    AresDataSchema schema,
+    IReadOnlyList<AresLangParser.ExpressionContext> positionalArgs,
+    IReadOnlyDictionary<string, AresLangParser.ExpressionContext> keywordArgs)
+  {
+    // Runtime/system functions currently reject keyword args before static validators run,
+    // so today this mostly preserves positional behavior. Keep the schema-ordered resolution
+    // here so validators are ready if runtime keyword-arg support is added later.
+    var schemaFields = schema.Fields.ToArray();
+    if(schemaFields.Length == 0)
+    {
+      return positionalArgs.Select(TryBuildAssignmentValue).ToArray();
+    }
+
+    var resolvedArgs = new AresValue?[schemaFields.Length];
+    for(var i = 0; i < schemaFields.Length; i++)
+    {
+      AresLangParser.ExpressionContext? argument = null;
+      if(i < positionalArgs.Count)
+      {
+        argument = positionalArgs[i];
+      }
+      else if(keywordArgs.TryGetValue(schemaFields[i].Key, out var keywordArgument))
+      {
+        argument = keywordArgument;
+      }
+
+      resolvedArgs[i] = argument is null ? null : TryBuildAssignmentValue(argument);
+    }
+
+    return resolvedArgs;
+  }
+
+  private static AresLangParser.ExpressionContext? ResolveStaticValidatorErrorExpression(
+    AresDataSchema schema,
+    IReadOnlyList<AresLangParser.ExpressionContext> positionalArgs,
+    IReadOnlyDictionary<string, AresLangParser.ExpressionContext> keywordArgs,
+    int index)
+  {
+    if(index < 0)
+    {
+      return null;
+    }
+
+    if(index < positionalArgs.Count)
+    {
+      return positionalArgs[index];
+    }
+
+    var schemaFields = schema.Fields.ToArray();
+    if(index < schemaFields.Length && keywordArgs.TryGetValue(schemaFields[index].Key, out var keywordArgument))
+    {
+      return keywordArgument;
+    }
+
+    return null;
   }
 
   private void ValidateExtensionFunctionArgs(
@@ -816,7 +1068,12 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
   {
     if(keywordArgs.Count > 0)
     {
-      throw new AresInterpreterException($"Runtime function '{function.Name}' does not support keyword arguments");
+      var firstKeywordArg = keywordArgs.Values.First();
+      throw new AresInterpreterException(
+        $"Runtime function '{function.Name}' does not support keyword arguments",
+        firstKeywordArg.Start.Line,
+        firstKeywordArg.Start.Column
+      );
     }
 
     if(function.InputSchema.Fields.Count == 0)
@@ -828,9 +1085,9 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     if(!AresScriptTypeHints.IsCompatibleWithTypeHint(receiverSchema, receiverExpected))
     {
       throw new AresInterpreterException(
-        $"Function '{function.Id}' receiver type mismatch. Expected {AresScriptTypeHints.ToTypeHintString(receiverExpected)}, received {AresScriptTypeHints.ToTypeHintString(receiverSchema)}.",
-        ctx.Start.Line,
-        ctx.Start.Column
+        $"Function '{function.Id}' receiver type mismatch. Expected {receiverExpected.Stringify()}, received {receiverSchema.Stringify()}.",
+        ctx.expression().Start.Line,
+        ctx.expression().Start.Column
       );
     }
 
@@ -859,8 +1116,8 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       {
         throw new AresInterpreterException(
           $"Function '{functionId}' got an unexpected keyword argument '{name}'.",
-          ctx.Start.Line,
-          ctx.Start.Column
+          expr.Start.Line,
+          expr.Start.Column
         );
       }
 
@@ -868,9 +1125,9 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       if(!AresScriptTypeHints.IsCompatibleWithTypeHint(actual, expected))
       {
         throw new AresInterpreterException(
-          $"Function '{functionId}' argument '{name}' type mismatch. Expected {AresScriptTypeHints.ToTypeHintString(expected)}, received {AresScriptTypeHints.ToTypeHintString(actual)}.",
-          ctx.Start.Line,
-          ctx.Start.Column
+          $"Function '{functionId}' argument '{name}' type mismatch. Expected {expected.Stringify()}, received {actual.Stringify()}.",
+          expr.Start.Line,
+          expr.Start.Column
         );
       }
     }
@@ -879,10 +1136,11 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       if(!variadicAnyArgs && positionalArgs.Count > schemaFields.Length)
       {
+        var extraArgument = positionalArgs[schemaFields.Length];
         throw new AresInterpreterException(
           $"Function '{functionId}' expected at most {schemaFields.Length} arguments but got {positionalArgs.Count}.",
-          ctx.Start.Line,
-          ctx.Start.Column
+          extraArgument.Start.Line,
+          extraArgument.Start.Column
         );
       }
 
@@ -907,9 +1165,9 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
         if(!AresScriptTypeHints.IsCompatibleWithTypeHint(actual, expected))
         {
           throw new AresInterpreterException(
-            $"Function '{functionId}' argument '{name}' type mismatch. Expected {AresScriptTypeHints.ToTypeHintString(expected)}, received {AresScriptTypeHints.ToTypeHintString(actual)}.",
-            ctx.Start.Line,
-            ctx.Start.Column
+            $"Function '{functionId}' argument '{name}' type mismatch. Expected {expected.Stringify()}, received {actual.Stringify()}.",
+            positionalArgs[i].Start.Line,
+            positionalArgs[i].Start.Column
           );
         }
       }
@@ -978,16 +1236,16 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       }
 
       throw new AresInterpreterException(
-        $"Function '{functionId}' argument '{parameterName}' type mismatch. Expected {AresScriptTypeHints.ToTypeHintString(expectedSchema)}, received {AresScriptTypeHints.ToTypeHintString(actual)}.",
-        context.Start.Line,
-        context.Start.Column
+        $"Function '{functionId}' argument '{parameterName}' type mismatch. Expected {expectedSchema.Stringify()}, received {actual.Stringify()}.",
+        argument.Start.Line,
+        argument.Start.Column
       );
     }
   }
 
   private SchemaEntry ResolveTypeHint(AresLangParser.TypeHintContext? typeHint, string targetName, IToken token)
   {
-    if(AresScriptTypeHints.TryParseTypeHint(typeHint, out var resolvedSchema))
+    if(AresScriptTypeHints.TryParseTypeHint(typeHint, out var resolvedSchema, out var error))
     {
       return resolvedSchema;
     }
@@ -995,7 +1253,9 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     if(_mode == ValidationMode.Strict)
     {
       throw new AresInterpreterException(
-        $"Unknown type hint '{typeHint?.GetText()}' for {targetName}.",
+        string.IsNullOrWhiteSpace(error)
+          ? $"Unknown type hint '{typeHint?.GetText()}' for {targetName}."
+          : $"Invalid type hint '{typeHint?.GetText()}' for {targetName}: {error}",
         token.Line,
         token.Column
       );
@@ -1013,6 +1273,200 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     }
 
     return -1;
+  }
+
+  private void ValidateArithmeticExpression(AresLangParser.ExpressionContext expression, string message)
+  {
+    var schema = _typeInference.Visit(expression);
+    if(schema.Type is AresDataType.Any or AresDataType.UnspecifiedType or AresDataType.Number or AresDataType.Quantity)
+    {
+      return;
+    }
+
+    if(_mode == ValidationMode.Strict)
+    {
+      throw new AresInterpreterException(message, expression.Start.Line, expression.Start.Column);
+    }
+  }
+
+  private void ValidateNumericExpression(AresLangParser.ExpressionContext expression, string message)
+  {
+    var schema = _typeInference.Visit(expression);
+    if(schema.Type is AresDataType.Any or AresDataType.UnspecifiedType or AresDataType.Number)
+    {
+      return;
+    }
+
+    if(_mode == ValidationMode.Strict)
+    {
+      throw new AresInterpreterException(message, expression.Start.Line, expression.Start.Column);
+    }
+  }
+
+  private void ValidateArithmeticOperands(
+    AresLangParser.ExpressionContext leftExpression,
+    AresLangParser.ExpressionContext rightExpression,
+    string leftMessage,
+    string rightMessage,
+    bool allowRightNumberForQuantityLeft)
+  {
+    var leftSchema = _typeInference.Visit(leftExpression);
+    var rightSchema = _typeInference.Visit(rightExpression);
+
+    if(leftSchema.Type is AresDataType.Any or AresDataType.UnspecifiedType)
+    {
+      return;
+    }
+
+    if(leftSchema.Type == AresDataType.Number)
+    {
+      if(rightSchema.Type is AresDataType.Any or AresDataType.UnspecifiedType or AresDataType.Number)
+      {
+        return;
+      }
+
+      if(_mode == ValidationMode.Strict)
+      {
+        throw new AresInterpreterException(rightMessage, rightExpression.Start.Line, rightExpression.Start.Column);
+      }
+
+      return;
+    }
+
+    if(leftSchema.Type != AresDataType.Quantity)
+    {
+      if(_mode == ValidationMode.Strict)
+      {
+        throw new AresInterpreterException(leftMessage, leftExpression.Start.Line, leftExpression.Start.Column);
+      }
+
+      return;
+    }
+
+    if(rightSchema.Type is AresDataType.Any or AresDataType.UnspecifiedType)
+    {
+      return;
+    }
+
+    if(allowRightNumberForQuantityLeft && rightSchema.Type == AresDataType.Number)
+    {
+      return;
+    }
+
+    if(rightSchema.Type == AresDataType.Quantity
+      && AreQuantitySchemasCompatible(leftSchema.QuantitySchema, rightSchema.QuantitySchema))
+    {
+      return;
+    }
+
+    if(_mode == ValidationMode.Strict)
+    {
+      throw new AresInterpreterException(rightMessage, rightExpression.Start.Line, rightExpression.Start.Column);
+    }
+  }
+
+  private static bool AreQuantitySchemasCompatible(QuantitySchema? left, QuantitySchema? right)
+  {
+    if(left is null || right is null)
+    {
+      return true;
+    }
+
+    return left.QuantityType == QuantityType.Unspecified
+      || right.QuantityType == QuantityType.Unspecified
+      || left.QuantityType == right.QuantityType;
+  }
+
+  private void ValidateBooleanExpression(AresLangParser.ExpressionContext expression, string message)
+  {
+    var schema = _typeInference.Visit(expression);
+    if(schema.Type is AresDataType.Any or AresDataType.UnspecifiedType or AresDataType.Boolean)
+    {
+      return;
+    }
+
+    if(_mode == ValidationMode.Strict)
+    {
+      throw new AresInterpreterException(message, expression.Start.Line, expression.Start.Column);
+    }
+  }
+
+  private static bool IsIterableSchema(SchemaEntry schema)
+  {
+    return schema.Type is AresDataType.Any
+      or AresDataType.UnspecifiedType
+      or AresDataType.List
+      or AresDataType.StringArray
+      or AresDataType.NumberArray
+      or AresDataType.ByteArray;
+  }
+
+  private static bool IsIndexableSchema(SchemaEntry schema)
+  {
+    return schema.Type is AresDataType.Any
+      or AresDataType.UnspecifiedType
+      or AresDataType.Struct
+      or AresDataType.List
+      or AresDataType.StringArray
+      or AresDataType.NumberArray
+      or AresDataType.ByteArray;
+  }
+
+  private static bool AlwaysReturns(AresLangParser.FuncBlockContext block)
+  {
+    foreach(var statement in block.statement())
+    {
+      if(AlwaysReturns(statement))
+      {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private static bool AlwaysReturns(AresLangParser.StatementContext statement)
+  {
+    return statement switch
+    {
+      AresLangParser.FuncControlStmtContext funcControlStmt => funcControlStmt.funcControlStatement() is AresLangParser.ReturnStmtContext,
+      AresLangParser.IfStmtContext ifStmt => AlwaysReturns(ifStmt),
+      _ => false
+    };
+  }
+
+  private static bool AlwaysReturns(AresLangParser.IfStmtContext ifStatement)
+  {
+    var stmt = ifStatement.ifStatement();
+    var blocks = stmt.block();
+    var expressions = stmt.expression();
+    if(blocks.Length != expressions.Length + 1)
+    {
+      return false;
+    }
+
+    foreach(var block in blocks)
+    {
+      if(!AlwaysReturns(block))
+      {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  private static bool AlwaysReturns(AresLangParser.BlockContext block)
+  {
+    foreach(var statement in block.statement())
+    {
+      if(AlwaysReturns(statement))
+      {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   private string? TryResolveFunctionId(AresLangParser.ExpressionContext expression)
@@ -1208,7 +1662,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     {
       AresLangParser.LambdaSingleParamContext singleParam => singleParam.expression(),
       AresLangParser.LambdaParamListContext paramList => paramList.expression(),
-      _ => throw new AresInterpreterException("Invalid lambda expression.")
+      _ => throw new AresInterpreterException("Invalid lambda expression.", lambdaExpression.Start.Line, lambdaExpression.Start.Column)
     };
 
     var closure = _environment.GetAllUserVariableSymbols()

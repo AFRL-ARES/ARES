@@ -13,18 +13,20 @@ public sealed class AresInterpreterException : InvalidOperationException
   }
 
   public AresInterpreterException(string message, int line, int column)
-    : base($"{message} (Line {line}, Column {column})")
+    : base($"{message} (Line {line}, Column {NormalizeColumn(column)})")
   {
     Line = line;
-    Column = column;
+    Column = NormalizeColumn(column);
     DetailMessage = message;
   }
 
   public AresInterpreterException(string message, int line, int column, Exception? innerException)
-    : base($"{message} (Line {line}, Column {column})", innerException)
+    : base($"{message} (Line {line}, Column {NormalizeColumn(column)})", innerException)
   {
     Line = line;
-    Column = column;
+    Column = NormalizeColumn(column);
     DetailMessage = message;
   }
+
+  private static int NormalizeColumn(int column) => Math.Max(1, column + 1);
 }

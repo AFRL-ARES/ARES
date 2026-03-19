@@ -1,5 +1,6 @@
 using Antlr4.Runtime;
 using Ares.Datamodel;
+using Ares.Datamodel.Factories;
 using AresScript.Generated;
 using AresScript.ScriptBuilding;
 using AresScript.Symbols;
@@ -101,10 +102,10 @@ public class AresScriptBuilderTests
   }
 
   [Test]
-  public void ReplaceFunction_WritesParameterTypeHints()
+  public void AddOrReplaceFunction_WritesParameterTypeHints()
   {
     var builder = new AresScriptBuilder();
-    builder.ReplaceFunction(
+    builder.AddOrReplaceFunction(
       "typed_fn",
       body => body.AddReturn("value"),
       new AresScriptParameter("value", AresDataType.String),
@@ -147,9 +148,107 @@ public class AresScriptBuilderTests
     var script = builder.Build();
 
     Assert.That(edited, Is.True);
-    Assert.That(script, Does.Contain("def typed_fn(value: {foo: Number, bar: String}) -> {foo:Number,bar:String}:"));
+    Assert.That(script, Does.Contain("def typed_fn(value: {foo: Number, bar: String}) -> {foo: Number, bar: String}:"));
     Assert.That(script, Does.Contain("value = { foo: 1, bar: \"ok\" }"));
     Assert.That(() => Parse(script), Throws.Nothing);
+  }
+
+  [Test]
+  public void AddOrReplaceFunction_WritesConstrainedQuantityTypeHints()
+  {
+    var valueSchema = AresSchemaBuilder.Entry(AresDataType.Quantity)
+      .WithQuantityRange(QuantityType.Duration, "s", minScalarValue: 0, maxScalarValue: 30)
+      .Build();
+
+    var builder = new AresScriptBuilder();
+    builder.AddOrReplaceFunction(
+      "typed_fn",
+      body => body.AddReturn("value"),
+      new AresScriptParameter("value", valueSchema));
+
+    var script = builder.Build();
+
+    Assert.That(script, Does.Contain("def typed_fn(value: Quantity.Duration[unit=\"s\", min=0, max=30]):"));
+    Assert.That(() => Parse(script), Throws.Nothing);
+  }
+
+  [Test]
+  public void ReplaceFunction_WritesProgrammaticQuantityReturnTypeHint()
+  {
+    var valueSchema = AresSchemaBuilder.Entry(AresDataType.Quantity)
+      .WithQuantityRange(QuantityType.Duration, "s", minScalarValue: 0, maxScalarValue: 30)
+      .Build();
+
+    var existingScript = """
+      def typed_fn(value):
+        return value
+      """;
+
+    var builder = AresScriptBuilder.FromScript(existingScript);
+    var replaced = builder.ReplaceFunction(
+      "typed_fn",
+      body => body.AddReturn("value"),
+      valueSchema,
+      new AresScriptParameter("value", valueSchema));
+
+    var script = builder.Build();
+
+    Assert.That(replaced, Is.True);
+    Assert.That(script, Does.Contain("def typed_fn(value: Quantity.Duration[unit=\"s\", min=0, max=30]) -> Quantity.Duration[unit=\"s\", min=0, max=30]:"));
+    Assert.That(() => Parse(script), Throws.Nothing);
+  }
+
+  [Test]
+  public void AddOrReplaceFunction_WritesConstrainedNumberTypeHints()
+  {
+    var valueSchema = AresSchemaBuilder.Entry(AresDataType.Number)
+      .WithNumberRange(minValue: 0, maxValue: 30)
+      .Build();
+
+    var builder = new AresScriptBuilder();
+    builder.AddOrReplaceFunction(
+      "typed_fn",
+      body => body.AddReturn("value"),
+      new AresScriptParameter("value", valueSchema));
+
+    var script = builder.Build();
+
+    Assert.That(script, Does.Contain("def typed_fn(value: Number[min=0, max=30]):"));
+    Assert.That(() => Parse(script), Throws.Nothing);
+  }
+
+  [Test]
+  public void AddFunction_WritesProgrammaticQuantitySchemas()
+  {
+    var valueSchema = AresSchemaBuilder.Entry(AresDataType.Quantity)
+      .WithQuantityRange(QuantityType.Duration, "s", minScalarValue: 0, maxScalarValue: 30)
+      .Build();
+
+    var builder = new AresScriptBuilder();
+    builder.AddFunction(
+      "typed_fn",
+      body => body.AddReturn("value"),
+      valueSchema,
+      new AresScriptParameter("value", valueSchema));
+
+    var script = builder.Build();
+
+    Assert.That(script, Does.Contain("def typed_fn(value: Quantity.Duration[unit=\"s\", min=0, max=30]) -> Quantity.Duration[unit=\"s\", min=0, max=30]:"));
+    Assert.That(() => Parse(script), Throws.Nothing);
+  }
+
+  [Test]
+  public void ReplaceFunction_WhenFunctionDoesNotExist_ReturnsFalse()
+  {
+    var builder = new AresScriptBuilder();
+
+    var replaced = builder.ReplaceFunction(
+      "missing_fn",
+      body => body.AddReturn("1"),
+      new AresScriptParameter("value", AresDataType.Number));
+
+    Assert.That(replaced, Is.False);
+    Assert.That(builder.Build(), Is.Empty);
   }
 
   private static void Parse(string script)

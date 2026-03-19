@@ -1,3 +1,5 @@
+using Ares.Datamodel;
+using AresScript.Symbols;
 using System.Text.RegularExpressions;
 using System.Text;
 
@@ -132,6 +134,42 @@ public class AresScriptBlockBuilder
     var signature = normalizedParameters.Length == 0
       ? $"def {safeName}()"
       : $"def {safeName}({string.Join(", ", normalizedParameters)})";
+    _statements.Add(new BlockNode(signature, body.Statements));
+    return this;
+  }
+
+  public AresScriptBlockBuilder AddFunction(string name, Action<AresScriptBlockBuilder> configureBody, params AresScriptParameter[] parameters)
+  {
+    return AddFunction(name, configureBody, null, parameters);
+  }
+
+  public AresScriptBlockBuilder AddFunction(
+    string name,
+    Action<AresScriptBlockBuilder> configureBody,
+    SchemaEntry? returnSchema,
+    params AresScriptParameter[] parameters)
+  {
+    return AddFunction(name, parameters, configureBody, returnSchema);
+  }
+
+  public AresScriptBlockBuilder AddFunction(string name, IEnumerable<AresScriptParameter> parameters, Action<AresScriptBlockBuilder> configureBody, SchemaEntry? returnSchema = null)
+  {
+    var safeName = ValidateIdentifier(name, nameof(name));
+    ArgumentNullException.ThrowIfNull(parameters);
+    ArgumentNullException.ThrowIfNull(configureBody);
+
+    var normalizedParameters = parameters
+      .Select((parameter, index) => parameter with
+      {
+        Name = ValidateIdentifier(parameter.Name, $"{nameof(parameters)}[{index}].{nameof(AresScriptParameter.Name)}")
+      })
+      .ToArray();
+
+    var body = CreateChildBlockBuilder(allowReturn: true, allowLoopControl: false);
+    configureBody(body);
+    EnsureHasStatements(body, "Function body must contain at least one statement.");
+
+    var signature = ScriptBuildingHelpers.BuildFunctionSignature(safeName, normalizedParameters, returnSchema);
     _statements.Add(new BlockNode(signature, body.Statements));
     return this;
   }
