@@ -3,7 +3,7 @@
 @using UI.Features.Devices.Shared.Settings
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<PluginDeviceSettingsViewModel>
 @inject DialogService DialogService
-@inject IDeviceViewModelFactory ViewModelFactory
+@inject IAresDeviceViewModelFactory ViewModelFactory
 
 <DeviceSettingsContainer 
   Name="@ViewModel!.Name"

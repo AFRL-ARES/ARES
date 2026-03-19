@@ -88,7 +88,7 @@ public class DeviceDriverLoader : IDeviceDriverLoader
 
       manifest = _deserializer.Deserialize<DeviceDriverManifest>(manifestYaml);
 
-      var assemblyPath = Path.Combine(moduleDirectory, "bin", manifest.AssemblyName);
+      var assemblyPath = Path.Combine(moduleDirectory, manifest.AssemblyName);
       if(!File.Exists(assemblyPath))
         throw new FileNotFoundException($"Driver assembly not found: {assemblyPath}");
 
