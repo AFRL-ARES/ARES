@@ -43,7 +43,7 @@ public class ScriptRunner
     });
     Print = new AresSystemFunctionSymbol("print", "print", (args, _) =>
     {
-      var stringy = args.Select(v => v.Value.Stringify());
+      var stringy = args.Select(v => v.Stringify());
       foreach(var s in stringy)
       {
         _outputSubject.OnNext(s);

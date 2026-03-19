@@ -1,21 +1,21 @@
 using Ares.Services;
-using Ares.Core.Grpc.Services;
 using Microsoft.JSInterop;
 using UI.Application.Scripting;
+using ScriptingService = Ares.Core.Grpc.Services.AresScriptingService;
 
 namespace UI.Infrastructure.Monaco.Interops;
 
-public sealed class MonacoDiagnosticsProvider(Ares.Core.Grpc.Services.AresScriptingService aresScriptingServiceClient) : IMonacoDiagnosticsProvider
+public sealed class MonacoDiagnosticsProvider(ScriptingService scriptingService) : IMonacoDiagnosticsProvider
 {
-  private readonly Ares.Core.Grpc.Services.AresScriptingService _aresScriptingServiceClient = aresScriptingServiceClient;
+  private readonly ScriptingService _scriptingService = scriptingService;
 
   [JSInvokable]
   public async Task<MonacoDiagnostic[]> GetDiagnostics(string script)
   {
-    var response = await _aresScriptingServiceClient.ValidateScript(new ValidateScriptRequest
+    var response = await _scriptingService.ValidateScript(new ValidateScriptRequest
     {
       Script = script ?? string.Empty
-    }, null);
+    }, null!);
 
     return response.Diagnostics.Select(d => new MonacoDiagnostic(
       d.StartLine,

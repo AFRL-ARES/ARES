@@ -1,4 +1,4 @@
-using Ares.Core.Device;
+using Ares.Core.Device.Providers;
 using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
@@ -9,79 +9,58 @@ using System.Text;
 
 namespace Ares.Core.Scripting;
 
-public class DeviceSymbolProvider(IDeviceCommandInterpreterRepo interpreterRepo) : ISymbolProvider
+public class DeviceSymbolProvider(IAresDeviceProvider deviceProvider) : ISymbolProvider
 {
-  private readonly IDeviceCommandInterpreterRepo _interpreterRepo = interpreterRepo;
+  private readonly IAresDeviceProvider _deviceProvider = deviceProvider;
 
 
   public IScriptSymbol[] GetSymbols()
   {
-    var interpreters = _interpreterRepo.GetSnapshot();
+    var devices = _deviceProvider.GetAllDevices();
     var symbols = new List<IScriptSymbol>();
 
-    foreach(var interpreter in interpreters)
+    foreach(var device in devices)
     {
-      var device = interpreter.Device;
       var devicePrefix = SanitizeIdentifier(string.IsNullOrWhiteSpace(device.Name) ? device.UniqueId : device.Name);
-      var commandMetadatas = interpreter.CommandsToIndexedMetadatas().ToArray();
+      var descriptors = device.GetCommandDescriptorsAsync().GetAwaiter().GetResult();
       var deviceFunctionFields = new Dictionary<string, AresSystemFunctionSymbol>(StringComparer.Ordinal);
 
-      foreach(var metadata in commandMetadatas)
+      foreach(var descriptor in descriptors)
       {
-        var commandName = SanitizeIdentifier(metadata.Name);
+        var commandName = SanitizeIdentifier(descriptor.Name);
         var functionId = $"devices::{devicePrefix}::{commandName}";
-        var parameterMetadatas = metadata.ParameterMetadatas.OrderBy(p => p.Index).ToArray();
 
-        var inputSchema = BuildInputSchema(parameterMetadatas);
-
-        var outputSchema = metadata.OutputMetadata?.DataSchema is null
-          ? AresSchemaBuilder.Entry(AresDataType.Unit).Build()
-          : AresSchemaBuilder.Entry(AresDataType.Struct).WithStructSchema(metadata.OutputMetadata.DataSchema).Build();
+        var outputSchema = descriptor.OutputSchema ?? AresSchemaBuilder.Entry(AresDataType.Unit).Build();
+        var inputSchema = descriptor.InputSchema ?? new AresStructSchema();
 
         var functionSymbol = new AresSystemFunctionSymbol(
           functionId,
           commandName,
           async (args, token) =>
           {
-            if(args.Count > parameterMetadatas.Length)
+            if(args.Count > (descriptor.InputSchema?.Fields.Count ?? 0))
             {
               throw new InvalidOperationException(
-                $"Function '{functionId}' expected at most {parameterMetadatas.Length} arguments but got {args.Count}.");
+                $"Function '{functionId}' expected at most {descriptor.InputSchema?.Fields.Count ?? 0} arguments but got {args.Count}.");
             }
 
-            var template = new CommandTemplate { Metadata = metadata };
-            for(var i = 0; i < args.Count; i++)
-            {
-              var parameterMetadata = parameterMetadatas[i];
-              template.Parameters.Add(
-                new Parameter
-                {
-                  Metadata = parameterMetadata,
-                  Value = args[i],
-                  Index = parameterMetadata.Index
-                });
-            }
-
-            var command = interpreter.TemplateToDeviceCommand(template);
-            var result = await command(token.CancellationToken);
+            var result = await device.ExecuteCommand(commandName, args.Select(arg => new Datamodel.Device.DeviceCommandArgument { ArgName = Guid.NewGuid().ToString(), ArgValue = arg }).ToList(), token.CancellationToken);
             if(!result.Success)
             {
               throw new InvalidOperationException(
                 string.IsNullOrWhiteSpace(result.Error)
-                  ? $"Device command '{metadata.Name}' failed."
+                  ? $"Device command '{descriptor.Name}' failed."
                   : result.Error);
             }
 
-            return result.Result is null
-              ? AresValueHelper.CreateUnit()
-              : AresValueHelper.CreateStruct(result.Result);
+            return result.Result ?? AresValueHelper.CreateUnit();
           },
           inputSchema,
           outputSchema,
           Namespace: string.Empty,
           ParentName: $"devices.{devicePrefix}")
         {
-          Documentation = metadata.Description
+          Documentation = descriptor.Description
         };
 
         symbols.Add(functionSymbol);
@@ -117,12 +96,12 @@ public class DeviceSymbolProvider(IDeviceCommandInterpreterRepo interpreterRepo)
     return structVal;
   }
 
-  private static AresDataSchema BuildInputSchema(IEnumerable<ParameterMetadata> parameterMetadatas)
+  private static AresStructSchema BuildInputSchema(IEnumerable<ParameterMetadata> parameterMetadatas)
   {
-    var schema = new AresDataSchema();
+    var schema = new AresStructSchema();
     foreach(var parameterMetadata in parameterMetadatas)
     {
-      var entry = parameterMetadata.Schema ?? new SchemaEntry { Type = AresDataType.Any, Optional = true };
+      var entry = parameterMetadata.Schema ?? new AresValueSchema { Type = AresDataType.Any, Optional = true };
       schema.Fields[parameterMetadata.Name] = entry;
     }
 

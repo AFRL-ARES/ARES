@@ -12,7 +12,7 @@ public static class ScriptSymbolMetadataMapper
     string? parentIdentifier = null,
     string? detail = null,
     string? documentation = null,
-    SchemaEntry? valueSchema = null,
+    AresValueSchema? valueSchema = null,
     AresValue? value = null)
   {
     ArgumentNullException.ThrowIfNull(symbol);
@@ -72,7 +72,7 @@ public static class ScriptSymbolMetadataMapper
       case AresScriptValueSymbol scriptValueSymbol:
       {
         var resolvedValue = value ?? scriptValueSymbol.Value;
-        var resolvedSchema = valueSchema ?? resolvedValue.ToSchemaEntry();
+        var resolvedSchema = valueSchema ?? resolvedValue.ToAresValueSchema();
         metadata.ValueShape = new ScriptSymbolMetadata.Types.ValueShape
         {
           Schema = resolvedSchema,
@@ -84,7 +84,7 @@ public static class ScriptSymbolMetadataMapper
       case AresSystemValue systemValueSymbol:
       {
         var resolvedValue = value ?? systemValueSymbol.Value;
-        var resolvedSchema = valueSchema ?? systemValueSymbol.DeclaredSchema ?? resolvedValue.ToSchemaEntry();
+        var resolvedSchema = valueSchema ?? systemValueSymbol.DeclaredSchema ?? resolvedValue.ToAresValueSchema();
         metadata.ValueShape = new ScriptSymbolMetadata.Types.ValueShape
         {
           Schema = resolvedSchema,
@@ -96,10 +96,10 @@ public static class ScriptSymbolMetadataMapper
       case IValueSymbol valueSymbol:
       {
         var resolvedValue = value ?? valueSymbol.Value;
-        var resolvedSchema = valueSchema ?? resolvedValue.ToSchemaEntry();
+        var resolvedSchema = valueSchema ?? resolvedValue.ToAresValueSchema();
         if(resolvedSchema is null && symbol.SymbolKind is SymbolKind.Variable or SymbolKind.Struct)
         {
-          resolvedSchema = new SchemaEntry { Type = AresDataType.UnspecifiedType };
+          resolvedSchema = new AresValueSchema { Type = AresDataType.UnspecifiedType };
         }
 
         if(resolvedSchema is not null || resolvedValue is not null)
@@ -148,9 +148,9 @@ public static class ScriptSymbolMetadataMapper
     }
   }
 
-  private static AresDataSchema BuildUserFunctionInputSchema(AresScriptFunction userFunction)
+  private static AresStructSchema BuildUserFunctionInputSchema(AresScriptFunction userFunction)
   {
-    var schema = new AresDataSchema();
+    var schema = new AresStructSchema();
     foreach(var parameter in userFunction.Parameters)
     {
       schema.Fields[parameter.Name] = parameter.Schema;
@@ -159,9 +159,9 @@ public static class ScriptSymbolMetadataMapper
     return schema;
   }
 
-  private static AresDataSchema BuildLambdaInputSchema(AresScriptLambda lambda)
+  private static AresStructSchema BuildLambdaInputSchema(AresScriptLambda lambda)
   {
-    var schema = new AresDataSchema();
+    var schema = new AresStructSchema();
     foreach(var parameter in lambda.Parameters)
     {
       schema.Fields[parameter] = AresSchemaBuilder.Entry(AresDataType.Any).Build();

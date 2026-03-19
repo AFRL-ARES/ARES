@@ -6,7 +6,7 @@ namespace AresScript;
 
 internal static class AresScriptSchemaFormatter
 {
-  public static string ToTypeHint(SchemaEntry schema)
+  public static string ToTypeHint(AresValueSchema schema)
   {
     return schema.Type switch
     {
@@ -27,7 +27,7 @@ internal static class AresScriptSchemaFormatter
     };
   }
 
-  private static string FormatStruct(SchemaEntry schema)
+  private static string FormatStruct(AresValueSchema schema)
   {
     if(schema.StructSchema is null || schema.StructSchema.Fields.Count == 0)
     {
@@ -39,7 +39,7 @@ internal static class AresScriptSchemaFormatter
     return $"{{{string.Join(", ", fields)}}}";
   }
 
-  private static string FormatList(SchemaEntry schema)
+  private static string FormatList(AresValueSchema schema)
   {
     var elementType = schema.ListElementSchema is null
       ? nameof(AresDataType.Any)
@@ -47,7 +47,7 @@ internal static class AresScriptSchemaFormatter
     return $"[{elementType}]";
   }
 
-  private static string FormatQuantity(SchemaEntry schema)
+  private static string FormatQuantity(AresValueSchema schema)
   {
     var quantitySchema = schema.QuantitySchema;
     var baseType = quantitySchema is not null && quantitySchema.QuantityType != QuantityType.Unspecified
@@ -56,7 +56,7 @@ internal static class AresScriptSchemaFormatter
     return AppendConstraints(baseType, FormatQuantityConstraints(quantitySchema));
   }
 
-  private static IReadOnlyList<string> FormatNumberConstraints(SchemaEntry schema)
+  private static IReadOnlyList<string> FormatNumberConstraints(AresValueSchema schema)
   {
     var constraints = new List<string>();
     if(schema.HasMinNumberValue)

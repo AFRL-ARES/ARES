@@ -183,7 +183,7 @@ public class InterpreterTests
     return AresScriptAnalysis.BuildSemanticTokens(script).ToArray();
   }
 
-  private static SchemaEntry InferExpressionSchema(
+  private static AresValueSchema InferExpressionSchema(
     string expression,
     Action<AresScriptEnvironment>? configureEnvironment = null)
   {
@@ -206,7 +206,7 @@ public class InterpreterTests
     return visitor.Visit(expressionContext);
   }
 
-  private static bool IsTypeHintCompatible(SchemaEntry actual, SchemaEntry expected)
+  private static bool IsTypeHintCompatible(AresValueSchema actual, AresValueSchema expected)
   {
     var typeHintsType = typeof(StandardLibrary).Assembly.GetType("AresScript.AresScriptTypeHints");
     Assert.That(typeHintsType, Is.Not.Null);
@@ -214,7 +214,7 @@ public class InterpreterTests
     var method = typeHintsType!.GetMethod(
       "IsCompatibleWithTypeHint",
       BindingFlags.Public | BindingFlags.Static,
-      [typeof(SchemaEntry), typeof(SchemaEntry)]);
+      [typeof(AresValueSchema), typeof(AresValueSchema)]);
     Assert.That(method, Is.Not.Null);
 
     var result = method!.Invoke(null, [actual, expected]);
@@ -222,7 +222,7 @@ public class InterpreterTests
     return (bool)result!;
   }
 
-  private static bool IsValueTypeHintCompatible(AresValue actual, SchemaEntry expected)
+  private static bool IsValueTypeHintCompatible(AresValue actual, AresValueSchema expected)
   {
     var typeHintsType = typeof(StandardLibrary).Assembly.GetType("AresScript.AresScriptTypeHints");
     Assert.That(typeHintsType, Is.Not.Null);
@@ -230,7 +230,7 @@ public class InterpreterTests
     var method = typeHintsType!.GetMethod(
       "IsCompatibleWithTypeHint",
       BindingFlags.Public | BindingFlags.Static,
-      [typeof(AresValue), typeof(SchemaEntry)]);
+      [typeof(AresValue), typeof(AresValueSchema)]);
     Assert.That(method, Is.Not.Null);
 
     var result = method!.Invoke(null, [actual, expected]);
@@ -511,7 +511,7 @@ public class InterpreterTests
   [Test]
   public void QuantitySchemaCompatibility_NormalizesUnits_WhenOneSideTypeIsSpecified()
   {
-    var expected = new SchemaEntry
+    var expected = new AresValueSchema
     {
       Type = AresDataType.Quantity,
       QuantitySchema = new QuantitySchema
@@ -522,7 +522,7 @@ public class InterpreterTests
       }
     };
 
-    var actualTooSmall = new SchemaEntry
+    var actualTooSmall = new AresValueSchema
     {
       Type = AresDataType.Quantity,
       QuantitySchema = new QuantitySchema
@@ -533,7 +533,7 @@ public class InterpreterTests
       }
     };
 
-    var actualLargeEnough = new SchemaEntry
+    var actualLargeEnough = new AresValueSchema
     {
       Type = AresDataType.Quantity,
       QuantitySchema = new QuantitySchema
@@ -551,7 +551,7 @@ public class InterpreterTests
   [Test]
   public void QuantitySchemaCompatibility_FallsBackToRawScalars_WhenBothTypesAreUnspecified()
   {
-    var expected = new SchemaEntry
+    var expected = new AresValueSchema
     {
       Type = AresDataType.Quantity,
       QuantitySchema = new QuantitySchema
@@ -562,7 +562,7 @@ public class InterpreterTests
       }
     };
 
-    var actual = new SchemaEntry
+    var actual = new AresValueSchema
     {
       Type = AresDataType.Quantity,
       QuantitySchema = new QuantitySchema
@@ -887,7 +887,7 @@ public class InterpreterTests
       env => env.AssignVariable(
         "bepis",
         AresValueHelper.CreateNull(),
-        new SchemaEntry { Type = AresDataType.Any }));
+        new AresValueSchema { Type = AresDataType.Any }));
 
     Assert.That(schema.Type, Is.EqualTo(AresDataType.Any));
   }

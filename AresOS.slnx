@@ -2,8 +2,6 @@
   <Project Path="Ares.Core.Grpc/Ares.Core.Grpc.csproj" />
   <Project Path="Ares.Core.Tests/Ares.Core.Tests.csproj" />
   <Project Path="Ares.Core/Ares.Core.csproj" />
-  <Project Path="Ares.Device/AresDevicePluginBase/Ares.Device.csproj" />
-  <Project Path="AresMessaging/AresMessaging.csproj" />
   <Project Path="AresScript.Tests/AresScript.Tests.csproj" />
   <Project Path="AresScript/AresScript.csproj" />
   <Project Path="AresService.Data/AresService.Data.csproj" />

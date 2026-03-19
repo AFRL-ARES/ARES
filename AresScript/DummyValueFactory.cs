@@ -5,7 +5,7 @@ namespace AresScript;
 
 public static class DummyValueFactory
 {
-  public static AresValue CreateDummyValue(SchemaEntry? schema)
+  public static AresValue CreateDummyValue(AresValueSchema? schema)
   {
     if(schema is null)
     {

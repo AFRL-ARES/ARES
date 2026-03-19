@@ -5,23 +5,24 @@ using Ares.Services;
 using Microsoft.JSInterop;
 using System.Text;
 using UI.Application.Scripting;
+using ScriptingService = Ares.Core.Grpc.Services.AresScriptingService;
 
 namespace UI.Infrastructure.Monaco.Interops;
 
-public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServiceClient aresScriptingServiceClient) : IMonacoHoverProvider
+public sealed class MonacoHoverProvider(ScriptingService scriptingService) : IMonacoHoverProvider
 {
-  private readonly AresScriptingService.AresScriptingServiceClient _aresScriptingServiceClient = aresScriptingServiceClient;
+  private readonly ScriptingService _scriptingService = scriptingService;
 
   [JSInvokable]
   public async Task<string?> GetHoverText(string script, int line, int column, string identifier)
   {
-    var response = await _aresScriptingServiceClient.GetSymbolMetadataAsync(new SymbolMetadataRequest
+    var response = await _scriptingService.GetSymbolMetadata(new SymbolMetadataRequest
     {
       Script = script,
       CursorLine = line,
       CursorColumn = column,
       Identifier = identifier ?? string.Empty
-    });
+    }, null!);
 
     if(response.Metadata is null || !response.Found)
     {
@@ -69,7 +70,7 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
 
     if(functionShape.OutputSchema is not null && functionShape.OutputSchema.Type is not AresDataType.Unit and not AresDataType.UnspecifiedType)
     {
-      AppendSchemaEntrySection(sb, "Outputs", functionShape.OutputSchema);
+      AppendAresValueSchemaSection(sb, "Outputs", functionShape.OutputSchema);
     }
   }
 
@@ -77,7 +78,7 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
   {
     if(valueShape.Schema is not null && valueShape.Schema.Type is not AresDataType.UnspecifiedType)
     {
-      AppendSchemaEntrySection(sb, "Schema", valueShape.Schema);
+      AppendAresValueSchemaSection(sb, "Schema", valueShape.Schema);
     }
 
     // TODO: revisit the value. It seems that we have a value regardless of whether or not there's
@@ -123,7 +124,7 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
     }
   }
 
-  private static void AppendDataSchemaSection(StringBuilder sb, string title, AresDataSchema? schema)
+  private static void AppendDataSchemaSection(StringBuilder sb, string title, AresStructSchema? schema)
   {
     if(schema is null || schema.Fields.Count == 0)
     {
@@ -142,7 +143,7 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
     sb.AppendLine("```");
   }
 
-  private static void AppendSchemaEntrySection(StringBuilder sb, string title, SchemaEntry? entry)
+  private static void AppendAresValueSchemaSection(StringBuilder sb, string title, AresValueSchema? entry)
   {
     if(entry is null)
     {
@@ -159,22 +160,22 @@ public sealed class MonacoHoverProvider(AresScriptingService.AresScriptingServic
     {
       foreach(var field in entry.StructSchema.Fields)
       {
-        sb.Append(field.Key).Append(": ").AppendLine(FormatSchemaEntry(field.Value));
+        sb.Append(field.Key).Append(": ").AppendLine(FormatAresValueSchema(field.Value));
       }
     }
     else if(entry.Type == AresDataType.List && entry.ListElementSchema is not null)
     {
-      sb.Append("List<").Append(FormatSchemaEntry(entry.ListElementSchema)).AppendLine(">");
+      sb.Append("List<").Append(FormatAresValueSchema(entry.ListElementSchema)).AppendLine(">");
     }
     else
     {
-      sb.AppendLine(FormatSchemaEntry(entry));
+      sb.AppendLine(FormatAresValueSchema(entry));
     }
 
     sb.AppendLine("```");
   }
 
-  private static string FormatSchemaEntry(SchemaEntry entry)
+  private static string FormatAresValueSchema(AresValueSchema entry)
   {
     var typeName = entry.Type.ToString();
     return entry.Optional ? $"{typeName} (optional)" : typeName;

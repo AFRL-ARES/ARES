@@ -222,7 +222,7 @@
           return null;
         }
 
-        return $"/plugins/{Uri.EscapeDataString(pluginFolder)}/bin/{Uri.EscapeDataString(assemblyName)}.styles.css";
+        return $"/plugins/{Uri.EscapeDataString(pluginFolder)}/{Uri.EscapeDataString(assemblyName)}.styles.css";
       })
       .OfType<string>()
       .Distinct(StringComparer.OrdinalIgnoreCase);

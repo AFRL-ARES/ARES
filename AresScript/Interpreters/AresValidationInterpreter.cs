@@ -20,7 +20,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
   private readonly int? _line = null;
   private readonly ValidationMode _mode;
   private readonly bool _traverseFunctionDeclarationBodies;
-  private readonly Stack<(IReadOnlyList<AresScriptParameter> Parameters, SchemaEntry ReturnSchema)> _pendingFunctions = new();
+  private readonly Stack<(IReadOnlyList<AresScriptParameter> Parameters, AresValueSchema ReturnSchema)> _pendingFunctions = new();
   private readonly AresTypeInferenceInterpreter _typeInference;
   private readonly List<AresFunctionInvocation> _functionInvocations = [];
 
@@ -1002,7 +1002,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
   }
 
   private AresValue?[] ResolveStaticValidatorArgs(
-    AresDataSchema schema,
+    AresStructSchema schema,
     IReadOnlyList<AresLangParser.ExpressionContext> positionalArgs,
     IReadOnlyDictionary<string, AresLangParser.ExpressionContext> keywordArgs)
   {
@@ -1035,7 +1035,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
   }
 
   private static AresLangParser.ExpressionContext? ResolveStaticValidatorErrorExpression(
-    AresDataSchema schema,
+    AresStructSchema schema,
     IReadOnlyList<AresLangParser.ExpressionContext> positionalArgs,
     IReadOnlyDictionary<string, AresLangParser.ExpressionContext> keywordArgs,
     int index)
@@ -1061,7 +1061,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
 
   private void ValidateExtensionFunctionArgs(
     AresSystemFunctionSymbol function,
-    SchemaEntry receiverSchema,
+    AresValueSchema receiverSchema,
     IReadOnlyList<AresLangParser.ExpressionContext> positionalArgs,
     IReadOnlyDictionary<string, AresLangParser.ExpressionContext> keywordArgs,
     AresLangParser.FunctionCallContext ctx)
@@ -1097,7 +1097,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
 
   private void ValidateArgsAgainstSchema(
     string functionId,
-    AresDataSchema schema,
+    AresStructSchema schema,
     IReadOnlyList<AresLangParser.ExpressionContext> positionalArgs,
     IReadOnlyDictionary<string, AresLangParser.ExpressionContext> keywordArgs,
     AresLangParser.FunctionCallContext ctx)
@@ -1174,7 +1174,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     }
   }
 
-  private static bool IsVariadicAnyArgsSchema(IReadOnlyList<KeyValuePair<string, SchemaEntry>> schemaFields)
+  private static bool IsVariadicAnyArgsSchema(IReadOnlyList<KeyValuePair<string, AresValueSchema>> schemaFields)
   {
     if(schemaFields.Count != 1)
     {
@@ -1185,14 +1185,14 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     return string.Equals(name, "args", StringComparison.Ordinal) && entry.Type == AresDataType.Any;
   }
 
-  private static AresDataSchema TrimReceiverFromSchema(AresDataSchema schema)
+  private static AresStructSchema TrimReceiverFromSchema(AresStructSchema schema)
   {
     if(schema.Fields.Count <= 1)
     {
-      return new AresDataSchema();
+      return new AresStructSchema();
     }
 
-    var trimmed = new AresDataSchema();
+    var trimmed = new AresStructSchema();
     foreach(var (name, entry) in schema.Fields.Skip(1))
     {
       trimmed.Fields[name] = entry;
@@ -1243,7 +1243,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     }
   }
 
-  private SchemaEntry ResolveTypeHint(AresLangParser.TypeHintContext? typeHint, string targetName, IToken token)
+  private AresValueSchema ResolveTypeHint(AresLangParser.TypeHintContext? typeHint, string targetName, IToken token)
   {
     if(AresScriptTypeHints.TryParseTypeHint(typeHint, out var resolvedSchema, out var error))
     {
@@ -1391,7 +1391,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     }
   }
 
-  private static bool IsIterableSchema(SchemaEntry schema)
+  private static bool IsIterableSchema(AresValueSchema schema)
   {
     return schema.Type is AresDataType.Any
       or AresDataType.UnspecifiedType
@@ -1401,7 +1401,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       or AresDataType.ByteArray;
   }
 
-  private static bool IsIndexableSchema(SchemaEntry schema)
+  private static bool IsIndexableSchema(AresValueSchema schema)
   {
     return schema.Type is AresDataType.Any
       or AresDataType.UnspecifiedType

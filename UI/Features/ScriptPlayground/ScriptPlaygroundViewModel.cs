@@ -1,10 +1,11 @@
+using Ares.Core.Scripting;
 using Ares.Datamodel.Scripting;
 using Ares.Services;
-using Grpc.Core;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using ScriptingService = Ares.Core.Grpc.Services.AresScriptingService;
 
 namespace UI.Features.ScriptPlayground;
 
@@ -24,16 +25,16 @@ public sealed record SummaryCallFailedEvent(string CallId, string Error) : Scrip
 
 public partial class ScriptPlaygroundViewModel : ReactiveObject
 {
-  private readonly AresScriptingService.AresScriptingServiceClient _scriptingClient;
+  private readonly ScriptingService _scriptingService;
   private CancellationTokenSource _cancellationTokenSource = new();
   private readonly Subject<string> _scriptOutput = new();
   private readonly Subject<ScriptFunctionInvocation> _scriptInvocations = new();
   private readonly Subject<ScriptSummaryEvent> _scriptSummaryEvents = new();
 
   public ScriptPlaygroundViewModel(
-    AresScriptingService.AresScriptingServiceClient scriptingClient)
+    ScriptingService scriptingService)
   {
-    _scriptingClient = scriptingClient;
+    _scriptingService = scriptingService;
     ScriptOutput = _scriptOutput.AsObservable();
     ScriptInvocations = _scriptInvocations.AsObservable();
     ScriptSummaryEvents = _scriptSummaryEvents.AsObservable();
@@ -47,52 +48,53 @@ public partial class ScriptPlaygroundViewModel : ReactiveObject
 
     await PublishSummaryAsync(script, token);
 
-    var something = _scriptingClient.ExecuteScript(new ScriptExecutionRequest { Script = script }, new CallOptions(cancellationToken: token));
-
     try
     {
-      await foreach(var output in something.ResponseStream.ReadAllAsync(token))
+      await foreach(var output in _scriptingService.ExecuteScript(new ScriptExecutionRequest { Script = script }, token))
       {
-        if(output.FunctionStarted is not null)
+        if(output is ScriptFunctionStartedEvent functionStarted)
         {
-          _scriptInvocations.OnNext(output.FunctionStarted.Invocation);
+          _scriptInvocations.OnNext(functionStarted.Invocation);
           _scriptSummaryEvents.OnNext(new SummaryCallStartedEvent(
-            output.Sequence,
-            output.FunctionStarted.CallId,
-            output.FunctionStarted.ParentCallId,
-            output.FunctionStarted.Invocation));
+            functionStarted.Sequence,
+            functionStarted.CallId,
+            functionStarted.ParentCallId,
+            functionStarted.Invocation));
           continue;
         }
 
-        if(output.FunctionCompleted is not null)
+        if(output is ScriptFunctionCompletedEvent functionCompleted)
         {
           _scriptSummaryEvents.OnNext(new SummaryCallCompletedEvent(
-            output.FunctionCompleted.CallId,
-            output.FunctionCompleted.Result));
+            functionCompleted.CallId,
+            functionCompleted.Result));
           continue;
         }
 
-        if(output.FunctionFailed is not null)
+        if(output is ScriptFunctionFailedEvent functionFailed)
         {
           _scriptSummaryEvents.OnNext(new SummaryCallFailedEvent(
-            output.FunctionFailed.CallId,
-            output.FunctionFailed.Error));
+            functionFailed.CallId,
+            functionFailed.Error));
           continue;
         }
 
-        if(output.ConsoleOutput is not null && !string.IsNullOrEmpty(output.ConsoleOutput.Output))
+        if(output is ScriptConsoleOutputEvent consoleOutput && !string.IsNullOrEmpty(consoleOutput.Output))
         {
-          _scriptOutput.OnNext(output.ConsoleOutput.Output);
+          _scriptOutput.OnNext(consoleOutput.Output);
           continue;
         }
 
-        if(output.ExecutionFailed is not null && !string.IsNullOrEmpty(output.ExecutionFailed.Error))
+        if(output is ScriptExecutionFailedEvent executionFailed && !string.IsNullOrEmpty(executionFailed.Error))
         {
-          _scriptOutput.OnNext($"Run failed: {output.ExecutionFailed.Error}");
+          _scriptOutput.OnNext($"Run failed: {executionFailed.Error}");
         }
       }
     }
-    catch(RpcException)
+    catch(OperationCanceledException) when(token.IsCancellationRequested)
+    {
+    }
+    catch(Exception)
     {
     }
     finally
@@ -113,12 +115,12 @@ public partial class ScriptPlaygroundViewModel : ReactiveObject
 
   private async Task PublishSummaryAsync(string script, CancellationToken cancellationToken)
   {
-    var summary = await _scriptingClient.GetScriptSummaryAsync(new ScriptSummaryRequest
+    var summary = await _scriptingService.GetScriptSummary(new ScriptSummaryRequest
     {
       Script = script,
       IncludeUserFunctions = true,
       IncludeLambdas = true
-    }, cancellationToken: cancellationToken);
+    }, null!);
     _scriptSummaryEvents.OnNext(new SummaryInitializedEvent(summary.Steps));
 
     foreach(var diagnostic in summary.Diagnostics)

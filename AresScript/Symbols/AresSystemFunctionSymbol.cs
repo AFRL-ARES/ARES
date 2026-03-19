@@ -11,8 +11,8 @@ public record AresSystemFunctionSymbol(
   string Id,
   string Name,
   AresFunctionDelegate Body,
-  AresDataSchema InputSchema,
-  SchemaEntry OutputSchema,
+  AresStructSchema InputSchema,
+  AresValueSchema OutputSchema,
   string Namespace = "",
   bool IsExtension = false,
   string? ParentName = null) : IFunctionSymbol

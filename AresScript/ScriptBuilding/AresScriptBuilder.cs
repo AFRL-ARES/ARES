@@ -98,7 +98,7 @@ public sealed class AresScriptBuilder : AresScriptBlockBuilder
   public bool ReplaceFunction(
     string name,
     Action<AresScriptBlockBuilder> configureBody,
-    SchemaEntry? returnSchema,
+    AresValueSchema? returnSchema,
     params AresScriptParameter[] parameters)
   {
     ArgumentNullException.ThrowIfNull(configureBody);
@@ -127,7 +127,7 @@ public sealed class AresScriptBuilder : AresScriptBlockBuilder
   public bool AddOrReplaceFunction(
     string name,
     Action<AresScriptBlockBuilder> configureBody,
-    SchemaEntry? returnSchema,
+    AresValueSchema? returnSchema,
     params AresScriptParameter[] parameters)
   {
     ArgumentNullException.ThrowIfNull(configureBody);
@@ -156,7 +156,7 @@ public sealed class AresScriptBuilder : AresScriptBlockBuilder
   private BlockNode BuildFunctionNode(
     string functionName,
     Action<AresScriptBlockBuilder> configureBody,
-    SchemaEntry? returnSchema,
+    AresValueSchema? returnSchema,
     IReadOnlyCollection<AresScriptParameter> parameters)
   {
     var safeParameters = parameters.ToArray();

@@ -1,9 +1,9 @@
-﻿using DynamicData;
-using ReactiveUI;
-using System.Collections.ObjectModel;
+﻿using Ares.Core.Grpc.Services;
 using Ares.Datamodel.Templates;
 using Ares.Services;
-using Ares.Core.Grpc.Services;
+using DynamicData;
+using ReactiveUI;
+using System.Collections.ObjectModel;
 
 namespace UI.Features.CampaignEdit.ViewModels;
 
@@ -24,7 +24,7 @@ public class CampaignListViewModel : ReactiveObject
 
   public async Task<GetCopyOfCampaignResponse> GetCopyOfCampaignTemplate(string campaignId)
   {
-    return await _automationClient.GetCopyOfCampaignAsync(new CampaignRequest { UniqueId = campaignId })  ;
+    return await _automationClient.GetCopyOfCampaign(new CampaignRequest { UniqueId = campaignId }, null);
   }
 
   public async Task RefreshCampaigns()

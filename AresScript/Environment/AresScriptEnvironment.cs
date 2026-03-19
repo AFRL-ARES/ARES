@@ -19,7 +19,7 @@ public class AresScriptEnvironment
     _userScopes.Push(globalUser);
   }
 
-  public void AssignVariable(string id, AresValue value, SchemaEntry? declaredSchema = null)
+  public void AssignVariable(string id, AresValue value, AresValueSchema? declaredSchema = null)
   {
     if(SystemValueExists(id))
     {

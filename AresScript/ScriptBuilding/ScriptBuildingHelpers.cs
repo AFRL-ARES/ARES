@@ -12,7 +12,7 @@ internal static class ScriptBuildingHelpers
     return $"{parameter.Name}: {AresScriptSchemaFormatter.ToTypeHint(parameter.Schema)}";
   }
 
-  public static string BuildFunctionSignature(string functionName, IEnumerable<AresScriptParameter> parameters, SchemaEntry? returnSchema = null)
+  public static string BuildFunctionSignature(string functionName, IEnumerable<AresScriptParameter> parameters, AresValueSchema? returnSchema = null)
   {
     var normalizedParameters = parameters.ToArray();
     var signature = normalizedParameters.Length == 0

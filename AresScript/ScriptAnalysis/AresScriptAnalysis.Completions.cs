@@ -248,7 +248,7 @@ public static partial class AresScriptAnalysis
     return identifierPath.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
   }
 
-  private static string BuildSnippet(string funcName, AresDataSchema schema)
+  private static string BuildSnippet(string funcName, AresStructSchema schema)
   {
     var builder = new StringBuilder();
     builder.Append(funcName);
@@ -294,14 +294,14 @@ public static partial class AresScriptAnalysis
   }
 
   // First argument is always 'self' so we don't need that for validation
-  private static AresDataSchema TrimReceiverFromSchema(AresDataSchema schema)
+  private static AresStructSchema TrimReceiverFromSchema(AresStructSchema schema)
   {
     if(schema.Fields.Count <= 1)
     {
-      return new AresDataSchema();
+      return new AresStructSchema();
     }
 
-    var trimmed = new AresDataSchema();
+    var trimmed = new AresStructSchema();
     foreach(var (name, entry) in schema.Fields.Skip(1))
     {
       trimmed.Fields[name] = entry;

@@ -7,6 +7,7 @@ using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 
 namespace DemoRemoteDevice.Services;
+
 public class DemoDeviceService : AresRemoteDeviceService.AresRemoteDeviceServiceBase
 {
   private readonly ILogger<DemoDeviceService> _logger;
@@ -52,7 +53,7 @@ public class DemoDeviceService : AresRemoteDeviceService.AresRemoteDeviceService
       Name = Commands.ECHO_NUMBER.ToString(),
       Description = "Gives back the input number as the output",
       InputSchema = AresSchemaBuilder.Create(DemoDataTypes.InputNumber.Key, DemoDataTypes.InputNumber.Value.Type).Build(),
-      OutputSchema = AresSchemaBuilder.Create(DemoDataTypes.OutputNumber.Key, DemoDataTypes.OutputNumber.Value.Type).Build()
+      OutputSchema = AresSchemaBuilder.Entry(DemoDataTypes.OutputNumber.Value.Type).Build()
     };
     response.Commands.Add(echoCommand);
 
@@ -75,7 +76,7 @@ public class DemoDeviceService : AresRemoteDeviceService.AresRemoteDeviceService
         return Task.FromResult(new DeviceExecutionResult { Success = false, Error = $"Arg {DemoDataTypes.InputNumber.Key} was not a number." });
       }
 
-      return Task.FromResult(new DeviceExecutionResult { Success = true, Result = AresStructHelper.CreateNumberStruct(DemoDataTypes.OutputNumber.Key, arg.NumberValue) });
+      return Task.FromResult(new DeviceExecutionResult { Success = true, Result = AresValueHelper.CreateNumber(arg.NumberValue) });
     }
 
     return Task.FromResult(new DeviceExecutionResult
@@ -160,8 +161,8 @@ public class DemoDeviceService : AresRemoteDeviceService.AresRemoteDeviceService
       {
         await Task.Delay(TimeSpan.FromMilliseconds(request.PollingSettings.IntervalMs > 0 ? request.PollingSettings.IntervalMs : 1000), context.CancellationToken);
       }
-      catch (TaskCanceledException)
-      {}
+      catch(TaskCanceledException)
+      { }
     }
   }
 }
