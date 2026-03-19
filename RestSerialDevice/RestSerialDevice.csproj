@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <PackageReference Include="Ares.Device.Serial.dll" Version="0.0.1-beta.1" />
-    <PackageReference Include="Ares.Toolkit.Device" Version="0.0.1-beta.6" />
+    <PackageReference Include="Ares.Toolkit.Device" Version="0.1.0" />
     <PackageReference Include="Grpc.Tools" Version="2.76.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

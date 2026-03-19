@@ -17,8 +17,8 @@
 	</PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ARES.Datamodel" Version="0.17.0-beta.27" GeneratePathProperty="True" />
-    <PackageReference Include="Ares.Toolkit.Device" Version="0.0.1-beta.6" />
+    <PackageReference Include="ARES.Datamodel" Version="0.20.0" GeneratePathProperty="True" />
+    <PackageReference Include="Ares.Toolkit.Device" Version="0.1.0" />
     <PackageReference Include="Grpc.Tools" Version="2.76.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
