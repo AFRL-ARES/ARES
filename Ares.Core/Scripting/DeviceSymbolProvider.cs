@@ -43,8 +43,8 @@ public class DeviceSymbolProvider(IAresDeviceProvider deviceProvider) : ISymbolP
               throw new InvalidOperationException(
                 $"Function '{functionId}' expected at most {descriptor.InputSchema?.Fields.Count ?? 0} arguments but got {args.Count}.");
             }
-
-            var result = await device.ExecuteCommand(commandName, args.Select((arg, idx) => new Datamodel.Device.DeviceCommandArgument { ArgName = (inputSchema.Fields.ElementAtOrDefault(idx).Key ?? ""), ArgValue = arg }).ToList(), token.CancellationToken);
+            // Don't use the sanitized command name
+            var result = await device.ExecuteCommand(descriptor.Name, args.Select((arg, idx) => new Datamodel.Device.DeviceCommandArgument { ArgName = (inputSchema.Fields.ElementAtOrDefault(idx).Key ?? ""), ArgValue = arg }).ToList(), token.CancellationToken);
             if(!result.Success)
             {
               throw new InvalidOperationException(
