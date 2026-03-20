@@ -45,6 +45,8 @@ public static class QuantityUnitHelper
 
   public static bool TryParseUnit(QuantityType quantityType, string unitText, out Enum? unit, out string? error)
   {
+    UnitsNetAbbreviationExtensions.EnsureRegistered();
+
     unit = null;
     error = null;
 
@@ -67,7 +69,7 @@ public static class QuantityUnitHelper
         return true;
       }
 
-      if(UnitParser.Default.TryParse(unitText, quantityInfo.UnitType, out Enum? parsedUnit))
+      if(UnitsNetAbbreviationExtensions.Parser.TryParse(unitText, quantityInfo.UnitType, out Enum? parsedUnit))
       {
         unit = parsedUnit;
         return true;

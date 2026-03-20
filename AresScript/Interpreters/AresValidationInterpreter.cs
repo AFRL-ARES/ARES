@@ -1511,7 +1511,19 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
 
     if(_environment.TryGetSystemFunction(funcId, out var systemFunction))
     {
-      value = DummyValueFactory.CreateDummyValue(systemFunction.OutputSchema);
+      var outputVal = DummyValueFactory.CreateDummyValue(systemFunction.OutputSchema);
+      if(outputVal.QuantityValue is not null && IsQuantityFromFunction(funcId))
+      {
+        var (positionalArgs, keywordArgs) = ExtractFunctionCallArguments(functionCall);
+        var resolvedArgs = ResolveStaticValidatorArgs(systemFunction.InputSchema, positionalArgs, keywordArgs);
+        var unitArg = resolvedArgs.ElementAtOrDefault(1);
+        if(unitArg?.HasStringValue == true)
+        {
+          outputVal.QuantityValue.Unit = unitArg.StringValue;
+        }
+      }
+
+      value = outputVal;
       return true;
     }
 
@@ -1530,6 +1542,37 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     }
 
     return false;
+  }
+
+  private static bool IsQuantityFromFunction(string functionId)
+  {
+    return functionId.StartsWith("quantity::", StringComparison.OrdinalIgnoreCase)
+      && functionId.EndsWith("::from", StringComparison.OrdinalIgnoreCase);
+  }
+
+  private static (
+    IReadOnlyList<AresLangParser.ExpressionContext> PositionalArgs,
+    IReadOnlyDictionary<string, AresLangParser.ExpressionContext> KeywordArgs)
+    ExtractFunctionCallArguments(AresLangParser.FunctionCallContext ctx)
+  {
+    var positionalArgs = new List<AresLangParser.ExpressionContext>();
+    var keywordArgs = new Dictionary<string, AresLangParser.ExpressionContext>(StringComparer.Ordinal);
+
+    var argContexts = ctx.argList()?.argument() ?? Enumerable.Empty<AresLangParser.ArgumentContext>();
+    foreach(var argCtx in argContexts)
+    {
+      switch(argCtx)
+      {
+        case AresLangParser.PositionalArgContext positionalArg:
+          positionalArgs.Add(positionalArg.expression());
+          break;
+        case AresLangParser.KeywordArgContext keywordArg:
+          keywordArgs[keywordArg.ID().GetText()] = keywordArg.expression();
+          break;
+      }
+    }
+
+    return (positionalArgs, keywordArgs);
   }
 
   private AresValue? TryBuildAssignmentValue(AresLangParser.ExpressionContext expression)

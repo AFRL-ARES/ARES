@@ -267,14 +267,15 @@ internal static class AresScriptTypeHints
 
   private static bool TryConvertActualQuantityToBoundsScalar(IQuantity actualQuantity, string boundsUnit, out double scalar)
   {
+    UnitsNetAbbreviationExtensions.EnsureRegistered();
+
     scalar = 0;
     if(string.IsNullOrWhiteSpace(boundsUnit))
     {
       return false;
     }
 
-    if(!UnitParser.Default.TryParse(boundsUnit, actualQuantity.QuantityInfo.UnitType, out Enum? parsedUnit)
-      || parsedUnit is null)
+    if(!UnitsNetAbbreviationExtensions.Parser.TryParse(boundsUnit, actualQuantity.QuantityInfo.UnitType, out Enum? parsedUnit))
     {
       return false;
     }
@@ -339,6 +340,8 @@ internal static class AresScriptTypeHints
     double scalar,
     out IQuantity quantity)
   {
+    UnitsNetAbbreviationExtensions.EnsureRegistered();
+
     quantity = default!;
 
     if(string.IsNullOrWhiteSpace(schema.BoundsUnit))
@@ -365,7 +368,7 @@ internal static class AresScriptTypeHints
 
     // Try strict enum-name matching first, then fall back to UnitsNet parsing so
     // aliases/abbreviations (e.g. "s", "sec") can still resolve correctly.
-    if(enumUnit is null && !UnitParser.Default.TryParse(schema.BoundsUnit, quantityInfo.UnitType, out enumUnit))
+    if(enumUnit is null && !UnitsNetAbbreviationExtensions.Parser.TryParse(schema.BoundsUnit, quantityInfo.UnitType, out enumUnit))
     {
       return false;
     }
@@ -638,6 +641,8 @@ internal static class AresScriptTypeHints
 
   private static bool IsValidBoundsUnit(QuantityType quantityType, string boundsUnit, out string? error)
   {
+    UnitsNetAbbreviationExtensions.EnsureRegistered();
+
     error = null;
     try
     {
@@ -659,7 +664,7 @@ internal static class AresScriptTypeHints
         return true;
       }
 
-      if(UnitParser.Default.TryParse(boundsUnit, quantityInfo.UnitType, out Enum? parsedUnit) && parsedUnit is not null)
+      if(UnitsNetAbbreviationExtensions.Parser.TryParse(boundsUnit, quantityInfo.UnitType, out Enum? parsedUnit) && parsedUnit is not null)
       {
         return true;
       }

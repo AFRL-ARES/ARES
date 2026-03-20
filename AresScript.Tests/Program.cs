@@ -7,6 +7,7 @@ using AresScript.Environment;
 using AresScript.Generated;
 using AresScript.Interpreters;
 using AresScript.ScriptAnalysis;
+using AresScript.Symbols;
 using NUnit.Framework;
 using System.Diagnostics;
 using System.Reflection;
@@ -323,6 +324,24 @@ public class InterpreterTests
   }
 
   [Test]
+  public void Quantity_Temperature_Helper_Accepts_C_Alias()
+  {
+    var success = QuantityUnitHelper.TryCreateQuantity(
+      QuantityType.Temperature,
+      AresValueHelper.CreateNumber(25),
+      AresValueHelper.CreateString("c"),
+      out var result,
+      out var error);
+
+    Assert.That(success, Is.True, error);
+    Assert.That(result, Is.Not.Null);
+    Assert.That(result!.KindCase, Is.EqualTo(AresValue.KindOneofCase.QuantityValue));
+    var quantity = result.QuantityValue.ToUnitsNetQuantity();
+    Assert.That(quantity.QuantityInfo.Name, Is.EqualTo(nameof(UnitsNet.Temperature)));
+    Assert.That(quantity.As(UnitsNet.Units.TemperatureUnit.DegreeCelsius), Is.EqualTo(25).Within(0.0001));
+  }
+
+  [Test]
   public async Task Validation_Allows_Quantity_Arithmetic_Return_Type()
   {
     var script = """
@@ -506,6 +525,38 @@ public class InterpreterTests
     Assert.That(IsValueTypeHintCompatible(belowBounds, expected), Is.False);
     Assert.That(IsValueTypeHintCompatible(aboveBounds, expected), Is.False);
     Assert.That(IsValueTypeHintCompatible(wrongDimension, expected), Is.False);
+  }
+
+  [Test]
+  public void QuantityTypeHintCompatibility_Accepts_C_Alias_For_Temperature_Bounds()
+  {
+    var expected = AresSchemaBuilder.Entry(AresDataType.Quantity)
+      .WithQuantityRange(QuantityType.Temperature, "c", minScalarValue: 0, maxScalarValue: 30)
+      .Build();
+
+    var withinBounds = AresValueHelper.CreateQuantity(UnitsNet.Temperature.FromDegreesCelsius(25).ToQuantityValue());
+    var belowBounds = AresValueHelper.CreateQuantity(UnitsNet.Temperature.FromDegreesCelsius(-1).ToQuantityValue());
+    var aboveBounds = AresValueHelper.CreateQuantity(UnitsNet.Temperature.FromDegreesCelsius(31).ToQuantityValue());
+
+    Assert.That(IsValueTypeHintCompatible(withinBounds, expected), Is.True);
+    Assert.That(IsValueTypeHintCompatible(belowBounds, expected), Is.False);
+    Assert.That(IsValueTypeHintCompatible(aboveBounds, expected), Is.False);
+  }
+
+  [Test]
+  public void QuantityTypeHintCompatibility_Accepts_F_Alias_For_Temperature_Bounds()
+  {
+    var expected = AresSchemaBuilder.Entry(AresDataType.Quantity)
+      .WithQuantityRange(QuantityType.Temperature, "f", minScalarValue: 32, maxScalarValue: 86)
+      .Build();
+
+    var withinBounds = AresValueHelper.CreateQuantity(UnitsNet.Temperature.FromDegreesFahrenheit(77).ToQuantityValue());
+    var belowBounds = AresValueHelper.CreateQuantity(UnitsNet.Temperature.FromDegreesFahrenheit(31).ToQuantityValue());
+    var aboveBounds = AresValueHelper.CreateQuantity(UnitsNet.Temperature.FromDegreesFahrenheit(87).ToQuantityValue());
+
+    Assert.That(IsValueTypeHintCompatible(withinBounds, expected), Is.True);
+    Assert.That(IsValueTypeHintCompatible(belowBounds, expected), Is.False);
+    Assert.That(IsValueTypeHintCompatible(aboveBounds, expected), Is.False);
   }
 
   [Test]
@@ -1650,6 +1701,60 @@ public class InterpreterTests
       env => env.AssignVariable("length", length)));
 
     Assert.That(ex?.Message, Does.Contain("Sleep expects a Duration quantity or a plain number."));
+  }
+
+  [Test]
+  public async Task Validation_Allows_Sleep_With_Aliased_Quantity_From_Function()
+  {
+    var script = "sleep(make_duration(1, \"ms\"))";
+
+    await ValidateScriptAsync(
+      script,
+      env =>
+      {
+        var quantityFrom = new AresSystemFunctionSymbol(
+          "quantity::duration::from",
+          "from",
+          (_, _) => Task.FromResult(AresValueHelper.CreateQuantity(0, QuantityType.Duration, "ms")),
+          AresSchemaBuilder.Empty()
+            .AddEntry("value", AresSchemaBuilder.Entry(AresDataType.Number).Build())
+            .AddEntry("unit", AresSchemaBuilder.Entry(AresDataType.String).Build())
+            .Build(),
+          AresSchemaBuilder.Entry(AresDataType.Quantity).WithQuantity(QuantityType.Duration).Build(),
+          Namespace: string.Empty);
+
+        env.AssignSystemFunctions([quantityFrom]);
+        env.AssignSystemVariables([
+          new KeyValuePair<string, AresSystemValue>("make_duration", AresSystemValue.Function(quantityFrom))
+        ]);
+      });
+  }
+
+  [Test]
+  public async Task Validation_Allows_Sleep_With_Quantity_From_Single_Quoted_Unit_Arg()
+  {
+    var script = "sleep(make_duration(1, 'ms'))";
+
+    await ValidateScriptAsync(
+      script,
+      env =>
+      {
+        var quantityFrom = new AresSystemFunctionSymbol(
+          "quantity::duration::from",
+          "from",
+          (_, _) => Task.FromResult(AresValueHelper.CreateQuantity(0, QuantityType.Duration, "ms")),
+          AresSchemaBuilder.Empty()
+            .AddEntry("value", AresSchemaBuilder.Entry(AresDataType.Number).Build())
+            .AddEntry("unit", AresSchemaBuilder.Entry(AresDataType.String).Build())
+            .Build(),
+          AresSchemaBuilder.Entry(AresDataType.Quantity).WithQuantity(QuantityType.Duration).Build(),
+          Namespace: string.Empty);
+
+        env.AssignSystemFunctions([quantityFrom]);
+        env.AssignSystemVariables([
+          new KeyValuePair<string, AresSystemValue>("make_duration", AresSystemValue.Function(quantityFrom))
+        ]);
+      });
   }
 
   [Test]
