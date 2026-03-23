@@ -1,9 +1,8 @@
-name: ARES OS Visualization Build Test
+name: ARES OS Release Pipeline
 
 on:
-  push:
-    branches:
-      - Visualization # Triggers every time you push to this branch
+  release:
+    types: [released]
 
 env:
   UI_PROJECT_FILE: 'UI/UI.csproj'
@@ -27,28 +26,19 @@ jobs:
             
     runs-on: ${{ matrix.os }}
     env:
-      # Swapped the release tag for the run number so the zip always gets a unique name
-      ZIP_FILE_NAME: 'ARES-OS-Visualization-Build-${{ github.run_number }}-${{ matrix.os_name_tag }}.zip'
+      ZIP_FILE_NAME: 'ARES-OS-${{ github.event.release.tag_name }}-${{ matrix.os_name_tag }}.zip'
 
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
-      # Removed the 'ref' target so it just grabs the latest Visualization commit
+      with:
+        ref: ${{ github.event.release.tag_name }}
       
-    # Clone the drivers repo into 'DriversRepo'
     - name: Checkout Device Drivers
       uses: actions/checkout@v4
       with:
         repository: 'AFRL-ARES/Ares.Device.Drivers'
         path: 'DriversRepo'
-        
-    - name: Verify Drivers Repo Location
-      shell: bash
-      run: |
-        echo "The root workspace is: $GITHUB_WORKSPACE"
-        echo "The drivers repo was cloned to: $GITHUB_WORKSPACE/DriversRepo"
-        echo "--- Contents of DriversRepo ---"
-        ls -la DriversRepo
 
     - name: Set up .NET 10.x
       uses: actions/setup-dotnet@v4
@@ -64,14 +54,13 @@ jobs:
       run: npm ci
       working-directory: UI
       
-    # Build the drivers repo
     - name: Build Device Drivers
       working-directory: DriversRepo
       run: |
         echo "Building Device Drivers..."
         dotnet build Ares.Device.Drivers.slnx --configuration Release
 
-    - name: Restore Dependencies for UI and Service
+    - name: Restore Dependencies for UI
       run: |
         dotnet restore ${{ env.UI_PROJECT_FILE }}
 
@@ -80,7 +69,6 @@ jobs:
         echo "Publishing ARES Project for ${{ matrix.os_name_tag }}  (${{ matrix.runtime_id }})"
         dotnet publish ${{ env.UI_PROJECT_FILE }} --configuration Release --output ${{ env.OUTPUT_PATH }} /p:UseAppHost=true -r ${{ matrix.runtime_id }} --self-contained true
         
-    # Copy the plugins folder to the ARES publish directory
     - name: Copy Driver Plugins to ARES Output
       shell: bash
       run: |
@@ -97,10 +85,9 @@ jobs:
         cd ${{ env.OUTPUT_PATH }}
         zip -r ../${{ env.ZIP_FILE_NAME }} .
     
-    # Uploads the zip file as an artifact instead of publishing a release
-    - name: Upload Published Binaries as Artifacts
-      uses: actions/upload-artifact@v4
+    - name: Upload Published Binaries to Release
+      uses: softprops/action-gh-release@v2
       with:
-        name: ares-binaries-${{ matrix.os_name_tag }} # Creates a separate download link for each OS
-        path: ${{ env.ZIP_FILE_NAME }}
-        retention-days: 7 # Keeps your GitHub storage clean by deleting the zip after a week
+        files: ${{ env.ZIP_FILE_NAME }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
