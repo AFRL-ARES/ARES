@@ -63,6 +63,13 @@ jobs:
     - name: Install Node.js Dev Packages
       run: npm ci
       working-directory: UI
+      
+    # Build the drivers repo
+    - name: Build Device Drivers
+      working-directory: DriversRepo
+      run: |
+        echo "Building Device Drivers..."
+        dotnet build Ares.Device.Drivers.slnx --configuration Release
 
     - name: Restore Dependencies for UI and Service
       run: |
@@ -72,12 +79,6 @@ jobs:
       run: |
         echo "Publishing ARES Project for ${{ matrix.os_name_tag }}  (${{ matrix.runtime_id }})"
         dotnet publish ${{ env.UI_PROJECT_FILE }} --configuration Release --output ${{ env.OUTPUT_PATH }} /p:UseAppHost=true -r ${{ matrix.runtime_id }} --self-contained true
-        
-    # Build the drivers repo
-    - name: Build Device Drivers
-      run: |
-        echo "Building Device Drivers..."
-        dotnet build DriversRepo/Ares.Device.Drivers.slnx --configuration Release
         
     # Copy the plugins folder to the ARES publish directory
     - name: Copy Driver Plugins to ARES Output
