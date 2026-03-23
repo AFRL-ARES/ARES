@@ -1,13 +1,14 @@
-name: ARES OS Release Pipeline
+name: ARES OS Visualization Build Test
 
 on:
-  release:
-    types: [released]
+  push:
+    branches:
+      - Visualization # Triggers every time you push to this branch
 
 env:
   UI_PROJECT_FILE: 'UI/UI.csproj'
   SERVICE_PROJECT_FILE: 'AresService/AresService.csproj'
-  OUTPUT_PATH: 'publish' # Shared output directory for all artifacts
+  OUTPUT_PATH: 'publish' 
 
 jobs:
   build-and-deploy-prerelease:
@@ -27,21 +28,21 @@ jobs:
             
     runs-on: ${{ matrix.os }}
     env:
-      ZIP_FILE_NAME: 'ARES-OS-${{ github.event.release.tag_name }}-${{ matrix.os_name_tag }}.zip'
+      # Swapped the release tag for the run number so the zip always gets a unique name
+      ZIP_FILE_NAME: 'ARES-OS-Visualization-Build-${{ github.run_number }}-${{ matrix.os_name_tag }}.zip'
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v6
-      with:
-        ref: ${{ github.event.release.tag_name }}
+      uses: actions/checkout@v4
+      # Removed the 'ref' target so it just grabs the latest Visualization commit
 
     - name: Set up .NET 10.x
-      uses: actions/setup-dotnet@v5
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '10.x'
         
     - name: Setup Node.js Environment
-      uses: actions/setup-node@v6.2.0
+      uses: actions/setup-node@v4
       with:
         node-version: 24
 
@@ -72,13 +73,10 @@ jobs:
         cd ${{ env.OUTPUT_PATH }}
         zip -r ../${{ env.ZIP_FILE_NAME }} .
     
-    - name: Upload Published Binaries to Pre-release
-      uses: softprops/action-gh-release@v2
+    # NEW STEP: Uploads the zip file as an artifact instead of publishing a release
+    - name: Upload Published Binaries as Artifacts
+      uses: actions/upload-artifact@v4
       with:
-        files: ${{ env.ZIP_FILE_NAME }}
-        body: |
-          Pre-release assets for version ${{ github.event.release.tag_name }} have been automatically compiled and uploaded. Ready for QA validation.
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        
-        
+        name: ares-binaries-${{ matrix.os_name_tag }} # Creates a separate download link for each OS
+        path: ${{ env.ZIP_FILE_NAME }}
+        retention-days: 7 # Keeps your GitHub storage clean by deleting the zip after a week
