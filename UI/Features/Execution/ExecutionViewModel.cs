@@ -112,8 +112,8 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   public async Task SetReplanRate()
   {
     await _automationClient.SetReplanRate(new ReplanRate { ReplanRate_ = DesiredReplanRate }, null);
-    var blah = await GetCurrentReplanRate();
-    DesiredReplanRate = blah.ReplanRate;
+    var replanRateResponse = await GetCurrentReplanRate();
+    DesiredReplanRate = replanRateResponse.ReplanRate;
   }
 
   public Task StopCampaign()

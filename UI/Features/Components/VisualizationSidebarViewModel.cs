@@ -27,8 +27,8 @@ public partial class VisualizationSidebarViewModel : ReactiveObject
     //if(SelectedDevice is null)
     //  return;
 
-    //var blah = await _provider.GetDeviceStateOptions(SelectedDevice.UniqueId);
-    //AvailableDeviceStateItems = blah.Fields.Select(thing => thing.Key).ToArray();
+    //var state = await _provider.GetDeviceStateOptions(SelectedDevice.UniqueId);
+    //AvailableDeviceStateItems = state.Fields.Select(thing => thing.Key).ToArray();
 
     return;
   }
