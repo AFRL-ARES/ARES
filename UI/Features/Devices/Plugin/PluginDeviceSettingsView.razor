@@ -11,7 +11,6 @@
   RemoveCallback="RemoveCallback"
   SettingsCallback="SettingsCallback">
   <div style="display: flex; flex-direction: column">
-    <span>Description: @ViewModel.Description</span>
     <span>ID: @ViewModel.Id</span>
   </div>
 
@@ -25,11 +24,13 @@
 
   @if(ViewModel!.SettingsSchema.Fields.Any())
   {
-    <RadzenButton Text="Submit"
-                  ButtonType="ButtonType.Button"
-                  ButtonStyle="ButtonStyle.Primary"
-                  Click="@ViewModel!.PushSettingsAsync"
-                  Icon="save" />
+    <div style="margin-top: 1rem">
+      <RadzenButton Text="Submit"
+                    ButtonType="ButtonType.Button"
+                    ButtonStyle="ButtonStyle.Primary"
+                    Click="@ViewModel!.PushSettingsAsync"
+                    Icon="save" />
+    </div>
   }
 
 </DeviceSettingsContainer>
