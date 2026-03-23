@@ -27,7 +27,7 @@
 
   <ItemGroup>
     <PackageReference Include="ARES.Datamodel" Version="0.19.0" GeneratePathProperty="True" />
-    <PackageReference Include="Google.Protobuf" Version="3.33.3" />
+    <PackageReference Include="Google.Protobuf" Version="3.34.1" />
     <PackageReference Include="Grpc" Version="2.46.6" />
     <PackageReference Include="Grpc.Tools" Version="2.76.0">
       <PrivateAssets>all</PrivateAssets>
