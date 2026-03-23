@@ -38,6 +38,14 @@ jobs:
         repository: 'AFRL-ARES/Ares.Device.Drivers'
         path: 'DriversRepo'
         
+    - name: Verify Drivers Repo Location
+      shell: bash
+      run: |
+        echo "The root workspace is: $GITHUB_WORKSPACE"
+        echo "The drivers repo was cloned to: $GITHUB_WORKSPACE/DriversRepo"
+        echo "--- Contents of DriversRepo ---"
+        ls -la DriversRepo
+        
     - name: Checkout Code
       uses: actions/checkout@v4
       # Removed the 'ref' target so it just grabs the latest Visualization commit
