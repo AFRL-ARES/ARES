@@ -31,6 +31,10 @@ jobs:
       ZIP_FILE_NAME: 'ARES-OS-Visualization-Build-${{ github.run_number }}-${{ matrix.os_name_tag }}.zip'
 
     steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      # Removed the 'ref' target so it just grabs the latest Visualization commit
+      
     # Clone the drivers repo into 'DriversRepo'
     - name: Checkout Device Drivers
       uses: actions/checkout@v4
@@ -45,10 +49,6 @@ jobs:
         echo "The drivers repo was cloned to: $GITHUB_WORKSPACE/DriversRepo"
         echo "--- Contents of DriversRepo ---"
         ls -la DriversRepo
-        
-    - name: Checkout Code
-      uses: actions/checkout@v4
-      # Removed the 'ref' target so it just grabs the latest Visualization commit
 
     - name: Set up .NET 10.x
       uses: actions/setup-dotnet@v4
