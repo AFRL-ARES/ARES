@@ -7,7 +7,6 @@ on:
 
 env:
   UI_PROJECT_FILE: 'UI/UI.csproj'
-  SERVICE_PROJECT_FILE: 'AresService/AresService.csproj'
   OUTPUT_PATH: 'publish' 
 
 jobs:
@@ -53,15 +52,11 @@ jobs:
     - name: Restore Dependencies for UI and Service
       run: |
         dotnet restore ${{ env.UI_PROJECT_FILE }}
-        dotnet restore ${{ env.SERVICE_PROJECT_FILE }}
 
     - name: Build and Publish Self-Contained Release Artifacts
       run: |
-        echo "Publishing UI Project for ${{ matrix.os_name_tag }}  (${{ matrix.runtime_id }})"
+        echo "Publishing ARES Project for ${{ matrix.os_name_tag }}  (${{ matrix.runtime_id }})"
         dotnet publish ${{ env.UI_PROJECT_FILE }} --configuration Release --output ${{ env.OUTPUT_PATH }} /p:UseAppHost=true -r ${{ matrix.runtime_id }} --self-contained true
-
-        echo "Publishing Service Project for ${{ matrix.os_name_tag }}  (${{ matrix.runtime_id }})"
-        dotnet publish ${{ env.SERVICE_PROJECT_FILE }} --configuration Release --output ${{ env.OUTPUT_PATH }} /p:UseAppHost=true -r ${{ matrix.runtime_id }} --self-contained true
 
     - name: Create ZIP Archive (Windows)
       if: runner.os == 'Windows'
