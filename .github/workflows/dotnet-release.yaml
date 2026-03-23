@@ -31,6 +31,13 @@ jobs:
       ZIP_FILE_NAME: 'ARES-OS-Visualization-Build-${{ github.run_number }}-${{ matrix.os_name_tag }}.zip'
 
     steps:
+    Clone the drivers repo into 'DriversRepo'
+    - name: Checkout Device Drivers
+      uses: actions/checkout@v4
+      with:
+        repository: 'AFRL-ARES/Ares.Device.Drivers'
+        path: 'DriversRepo'
+        
     - name: Checkout Code
       uses: actions/checkout@v4
       # Removed the 'ref' target so it just grabs the latest Visualization commit
@@ -57,6 +64,19 @@ jobs:
       run: |
         echo "Publishing ARES Project for ${{ matrix.os_name_tag }}  (${{ matrix.runtime_id }})"
         dotnet publish ${{ env.UI_PROJECT_FILE }} --configuration Release --output ${{ env.OUTPUT_PATH }} /p:UseAppHost=true -r ${{ matrix.runtime_id }} --self-contained true
+        
+    # Build the drivers repo
+    - name: Build Device Drivers
+      run: |
+        echo "Building Device Drivers..."
+        dotnet build DriversRepo --configuration Release
+        
+    # Copy the plugins folder to the ARES publish directory
+    - name: Copy Driver Plugins to ARES Output
+      shell: bash
+      run: |
+        echo "Copying plugins to the publish directory..."
+        cp -r DriversRepo/plugins ${{ env.OUTPUT_PATH }}/plugins
 
     - name: Create ZIP Archive (Windows)
       if: runner.os == 'Windows'
@@ -68,7 +88,7 @@ jobs:
         cd ${{ env.OUTPUT_PATH }}
         zip -r ../${{ env.ZIP_FILE_NAME }} .
     
-    # NEW STEP: Uploads the zip file as an artifact instead of publishing a release
+    # Uploads the zip file as an artifact instead of publishing a release
     - name: Upload Published Binaries as Artifacts
       uses: actions/upload-artifact@v4
       with:
