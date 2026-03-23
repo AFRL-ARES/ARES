@@ -31,7 +31,7 @@ jobs:
       ZIP_FILE_NAME: 'ARES-OS-Visualization-Build-${{ github.run_number }}-${{ matrix.os_name_tag }}.zip'
 
     steps:
-    Clone the drivers repo into 'DriversRepo'
+    # Clone the drivers repo into 'DriversRepo'
     - name: Checkout Device Drivers
       uses: actions/checkout@v4
       with:
