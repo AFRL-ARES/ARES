@@ -1,5 +1,6 @@
 ﻿using Ares.Datamodel.Templates;
 using Ares.Services;
+using Ares.Core.Grpc.Services;
 using Radzen;
 using ExperimentDesignerViewModel=UI.Features.CampaignEdit.ViewModels.ExperimentDesignerViewModel;
 
@@ -7,14 +8,14 @@ namespace UI.Features.CampaignEdit.Factories;
 
 public class ExperimentDesignerFactory
 {
-  private readonly AresAutomation.AresAutomationClient _automationClient;
+  private readonly AutomationService _automationClient;
   private readonly StepDesignerFactory _stepDesignerFactory;
-  private readonly AresValidation.AresValidationClient _validationClient;
+  private readonly ValidationService _validationClient;
   private readonly NotificationService _notificationService;
 
   public ExperimentDesignerFactory(StepDesignerFactory stepDesignerFactory,
-    AresAutomation.AresAutomationClient automationClient,
-    AresValidation.AresValidationClient validationClient,
+    AutomationService automationClient,
+    ValidationService validationClient,
     NotificationService notificationService)
   {
     _stepDesignerFactory = stepDesignerFactory;

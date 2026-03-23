@@ -8,7 +8,8 @@ internal class DeviceCache(IDbContextFactory<CoreDatabaseContext> _dbContextFact
   public async Task CacheDeviceInfo(RemoteDevice device)
   {
     var ctx = _dbContextFactory.CreateDbContext();
-    var currentInfo = DeviceToDeviceInfo(device);
+    var descriptors = await device.GetCommandDescriptorsAsync();
+    var currentInfo = DeviceToDeviceInfo(device, descriptors);
     var existingInfoInDb = await ctx.DeviceInfos.FirstOrDefaultAsync(info => info.UniqueId == device.UniqueId);
 
     if(existingInfoInDb is not null)
@@ -20,7 +21,7 @@ internal class DeviceCache(IDbContextFactory<CoreDatabaseContext> _dbContextFact
       existingInfoInDb.Version = device.Version;
       existingInfoInDb.SettingsSchema = device.SettingSchema;
       existingInfoInDb.Commands.Clear();
-      existingInfoInDb.Commands.AddRange(device.CommandDescriptors);
+      existingInfoInDb.Commands.AddRange(await device.GetCommandDescriptorsAsync());
     }
     else
     {
@@ -65,7 +66,7 @@ internal class DeviceCache(IDbContextFactory<CoreDatabaseContext> _dbContextFact
     return settings?.Settings;
   }
 
-  private static DeviceInfo DeviceToDeviceInfo(RemoteDevice device)
+  private static DeviceInfo DeviceToDeviceInfo(RemoteDevice device, List<DeviceCommandDescriptor> descriptors)
   {
     var info = new DeviceInfo
     {
@@ -77,7 +78,7 @@ internal class DeviceCache(IDbContextFactory<CoreDatabaseContext> _dbContextFact
       Url = device.Address.ToString(),
       SettingsSchema = device.SettingSchema,
     };
-    info.Commands.AddRange(device.CommandDescriptors);
+    info.Commands.AddRange(descriptors);
 
     return info;
   }

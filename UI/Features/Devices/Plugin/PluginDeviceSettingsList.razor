@@ -1,0 +1,89 @@
+@page "/settings/device/{DriverId}"
+@layout DeviceSettingsLayout
+@using Ares.Services
+@using Google.Protobuf.WellKnownTypes
+@using Radzen.Blazor
+@using UI.Components
+@inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<PluginDeviceSettingsListViewModel>
+@inject IAresDeviceViewModelFactory ViewModelFactory
+
+@inject DialogService DialogService
+
+@if (ViewModel!.IsLoading)
+{
+  <LoadingSpinner />
+}
+else
+{
+  <div class="d-flex flex-column">
+    @foreach (var vm in ViewModel!.SettingsViewModels)
+    {
+      <div class="m-2">
+        <PluginDeviceSettingsView ViewModel="vm"/>
+      </div>
+    }
+
+    <button class="m-2 align-self-end btn btn-outline-light" disabled="@SavingInProgress" @onclick="AddDeviceClick">
+      @if(SavingInProgress)
+      {
+        <LoadingSpinner SpinnerSize="SpinnerSize.Small" />
+      }
+      else
+      {
+        <RadzenIcon Icon="add" />
+      }
+    </button>
+  </div>
+}
+
+@code {
+  private async Task AddDeviceClick()
+  {
+    var viewModel = ViewModel!.GetNewConfigEditViewModel();
+    var result = await DialogService.OpenAsync("New Device", ds =>
+      @<PluginDeviceConfigEditView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)" />);
+
+    var notification = new AresNotification();
+    if(result is true)
+    {
+      SavingInProgress = true;
+      StateHasChanged();
+      try
+      {
+        await ViewModel!.AddNewPluginDevice(viewModel.Save());
+      }
+      catch(Exception e)
+      {
+        notification.Title = $"Failed to add Device {viewModel.Name}";
+        notification.Message = $"ARES was unable to add {viewModel.Name} as an available device. {e.Message}";
+        notification.NotificationSeverity = Severity.Error;
+        notification.Timestamp = DateTime.UtcNow.ToTimestamp();
+        ViewModel!.PushNotification(notification);
+      }
+      finally
+      {
+        SavingInProgress = false;
+        StateHasChanged();
+      }
+    }
+  }
+
+  [Parameter]
+  public string DriverId { get; set; } = string.Empty;
+
+  private bool IsResolving { get; set; }
+  private bool SavingInProgress { get; set; } = false;
+
+  protected override async Task OnParametersSetAsync()
+  {
+    IsResolving = true;
+    try
+    {
+      ViewModel = await ViewModelFactory.CreateListViewModelAsync(DriverId);
+    }
+    finally
+    {
+      IsResolving = false;
+    }
+  }
+}

@@ -1,4 +1,5 @@
 ﻿using Ares.Services;
+using Ares.Core.Grpc.Services;
 using DynamicData;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
@@ -9,9 +10,9 @@ namespace UI.Features.ExecutionHistory;
 
 public partial class ExecutionHistoryViewModel : ReactiveObject
 {
-  private readonly AresAutomation.AresAutomationClient _automationClient;
+  private readonly AutomationService _automationClient;
 
-  public ExecutionHistoryViewModel(AresAutomation.AresAutomationClient automationClient)
+  public ExecutionHistoryViewModel(AutomationService automationClient)
   {
     _automationClient = automationClient;
     CampaignSummaries = [];
@@ -22,8 +23,7 @@ public partial class ExecutionHistoryViewModel : ReactiveObject
   {
     LoadingExecutionHistory = true;
     CampaignSummaries.Clear();
-    CampaignDisplaySummaries.Clear();
-    var response = await _automationClient.GetAvailableCampaignExecutionSummariesAsync(new Empty());
+    var response = await _automationClient.GetAvailableCampaignExecutionSummaries(new Empty(), null);
     CampaignSummaries.AddRange(response.AvailableCampaignSummaries);
     CampaignDisplaySummaries.AddRange(response.AvailableCampaignSummaries.Select(p => 
     new CampaignSummaryDisplay()

@@ -10,23 +10,23 @@ namespace AresScript.Interpreters;
 public sealed class VariableSchemaCollector : AresLangBaseVisitor<object?>
 {
   private readonly AresTypeInferenceInterpreter _typeInference;
-  private readonly Stack<Dictionary<string, SchemaEntry>> _scopes = new();
+  private readonly Stack<Dictionary<string, AresValueSchema>> _scopes = new();
   private readonly Stack<IReadOnlyList<string>> _pendingFunctionParameters = new();
   private readonly int _line;
   private readonly int _column;
   private readonly string _identifier;
 
-  public SchemaEntry? FoundSchema { get; private set; }
+  public AresValueSchema? FoundSchema { get; private set; }
 
   public VariableSchemaCollector(
     AresScriptEnvironment env,
-    IDictionary<string, SchemaEntry> globalSchemas,
+    IDictionary<string, AresValueSchema> globalSchemas,
     int line,
     int column,
     string identifier)
   {
     _typeInference = new AresTypeInferenceInterpreter(env);
-    _scopes.Push(new Dictionary<string, SchemaEntry>(globalSchemas, StringComparer.Ordinal));
+    _scopes.Push(new Dictionary<string, AresValueSchema>(globalSchemas, StringComparer.Ordinal));
     _line = line;
     _column = column;
     _identifier = identifier;
@@ -179,7 +179,7 @@ public sealed class VariableSchemaCollector : AresLangBaseVisitor<object?>
 
   private void PushScope()
   {
-    _scopes.Push(new Dictionary<string, SchemaEntry>(StringComparer.Ordinal));
+    _scopes.Push(new Dictionary<string, AresValueSchema>(StringComparer.Ordinal));
   }
 
   private void PopScope()
@@ -187,7 +187,7 @@ public sealed class VariableSchemaCollector : AresLangBaseVisitor<object?>
     _scopes.Pop();
   }
 
-  private SchemaEntry? ResolveSchema(string id)
+  private AresValueSchema? ResolveSchema(string id)
   {
     foreach(var scope in _scopes)
     {

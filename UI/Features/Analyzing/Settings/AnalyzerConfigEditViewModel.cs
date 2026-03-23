@@ -1,22 +1,23 @@
 using Ares.Datamodel.Analyzing;
 using Ares.Services;
+using Ares.Core.Grpc.Services;
 using ReactiveUI;
 
 namespace UI.Features.Analyzing.Settings;
 
 public class AnalyzerConfigEditViewModel : ReactiveObject
 {
-  private readonly AresAnalyzerManagementService.AresAnalyzerManagementServiceClient _client;
+  private readonly AnalyzerService _client;
   private readonly AnalyzerConfig _analyzerConfig;
 
-  public AnalyzerConfigEditViewModel(AresAnalyzerManagementService.AresAnalyzerManagementServiceClient client)
+  public AnalyzerConfigEditViewModel(AnalyzerService client)
   {
     _client = client;
     _analyzerConfig = new AnalyzerConfig();
     NewConfig = true;
   }
 
-  public AnalyzerConfigEditViewModel(AresAnalyzerManagementService.AresAnalyzerManagementServiceClient client, AnalyzerConfig analyzerConfig)
+  public AnalyzerConfigEditViewModel(AnalyzerService client, AnalyzerConfig analyzerConfig)
   {
     _client = client;
     _analyzerConfig = analyzerConfig;

@@ -71,7 +71,7 @@ public static partial class AresScriptAnalysis
 
     if(environment.TryGetUserLambda(identifier, out var lambda))
     {
-      var lambdaSchema = new AresDataSchema();
+      var lambdaSchema = new AresStructSchema();
       foreach(var parameter in lambda.Parameters)
       {
         lambdaSchema.Fields[parameter] = AresSchemaBuilder.Entry(AresDataType.Any).Build();
@@ -170,7 +170,7 @@ public static partial class AresScriptAnalysis
     return char.IsLetterOrDigit(c) || c == '_';
   }
 
-  private static SchemaEntry? TryInferSchema(
+  private static AresValueSchema? TryInferSchema(
     string script,
     int line,
     int column,
@@ -204,17 +204,17 @@ public static partial class AresScriptAnalysis
     }
   }
 
-  private static Dictionary<string, SchemaEntry> BuildGlobalSchemas(AresScriptEnvironment environment)
+  private static Dictionary<string, AresValueSchema> BuildGlobalSchemas(AresScriptEnvironment environment)
   {
-    var schemas = new Dictionary<string, SchemaEntry>(StringComparer.Ordinal);
+    var schemas = new Dictionary<string, AresValueSchema>(StringComparer.Ordinal);
     foreach(var (name, value) in environment.GetAllUserVariableSymbols())
     {
-      schemas[name] = value.DeclaredSchema ?? value.Value.ToSchemaEntry();
+      schemas[name] = value.DeclaredSchema ?? value.Value.ToAresValueSchema();
     }
 
     foreach(var (name, systemValue) in environment.GetAllSystemVariables())
     {
-      schemas[name] = systemValue.DeclaredSchema ?? systemValue.Value.ToSchemaEntry();
+      schemas[name] = systemValue.DeclaredSchema ?? systemValue.Value.ToAresValueSchema();
     }
 
     return schemas;
@@ -279,7 +279,7 @@ public static partial class AresScriptAnalysis
 
   private static ScriptSymbolMetadata BuildValueSymbolMetadata(string identifier, string parentIdentifier, AresValue value)
   {
-    var schema = value.ToSchemaEntry();
+    var schema = value.ToAresValueSchema();
     return BuildValueMetadataForSymbolMetadata(
       identifier,
       parentIdentifier,
@@ -295,8 +295,8 @@ public static partial class AresScriptAnalysis
     string parentIdentifier,
     string detail,
     string documentation,
-    AresDataSchema inputSchema,
-    SchemaEntry outputSchema,
+    AresStructSchema inputSchema,
+    AresValueSchema outputSchema,
     bool isExtension = false,
     bool isUserDefined = false,
     bool isLambda = false)
@@ -339,7 +339,7 @@ public static partial class AresScriptAnalysis
     string detail,
     string documentation,
     SymbolKind kind,
-    SchemaEntry schema,
+    AresValueSchema schema,
     AresValue? value = null)
   {
     var metadata = new ScriptSymbolMetadata
@@ -363,9 +363,9 @@ public static partial class AresScriptAnalysis
     return metadata;
   }
 
-  private static AresDataSchema BuildUserFunctionInputSchema(AresScriptFunction userFunction)
+  private static AresStructSchema BuildUserFunctionInputSchema(AresScriptFunction userFunction)
   {
-    var schema = new AresDataSchema();
+    var schema = new AresStructSchema();
     foreach(var parameter in userFunction.Parameters)
     {
       schema.Fields[parameter.Name] = parameter.Schema;

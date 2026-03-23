@@ -1,0 +1,89 @@
+﻿.vis-sidebar {
+  /* Layout & Positioning */
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 70px;
+  z-index: 1000;
+  /* Dimensions */
+  width: 250px; /* Fixed width, we use transform to hide it now */
+  /* Appearance */
+  background-color: #2b3e50;
+  color: white;
+  box-shadow: -2px 0 8px rgba(0,0,0,0.2);
+  /* Animation Logic: 
+               Instead of animating width, we translate it off-screen to the right.
+               100% means move it 100% of its own width to the right. 
+            */
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  /* Important: Visible overflow allows the button to hang "outside" the box */
+  overflow: visible;
+}
+
+  /* When extended, bring it back to position 0 */
+  .vis-sidebar.extended {
+    transform: translateX(0);
+  }
+
+/* Toggle Button Styling */
+.vis-toggle-btn {
+  position: absolute;
+  /* Position it to the left of the sidebar */
+  left: -40px;
+  width: 40px;
+  /* Center vertically relative to screen/sidebar */
+  top: 50%;
+  height: 40px;
+  transform: translateY(-50%);
+  /* Flex center for the arrow icon */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Appearance */
+  background-color: #2b3e50; /* Matches sidebar */
+  /* Add a curve to the left corners only for a tab look */
+  border-radius: 8px 0 0 8px;
+  cursor: pointer;
+  box-shadow: -2px 0 4px rgba(0,0,0,0.1); /* Subtle shadow for depth */
+  font-weight: bold;
+  user-select: none;
+  color: #ecf0f1;
+}
+
+  .vis-toggle-btn:hover {
+    background-color: #3e566d;
+  }
+
+/* Navigation Links */
+.vis-nav-list {
+  display: flex;
+  flex-direction: column;
+  padding-top: 60px; /* Add padding top so items aren't obscured if you have a top bar */
+  overflow-x: hidden;
+}
+
+.vis-nav-item {
+  display: flex;
+  align-items: center;
+  padding: 15px 25px;
+  color: #ecf0f1;
+  text-decoration: none;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+  .vis-nav-item:hover {
+    background-color: #3e566d;
+  }
+
+  .vis-nav-item .vis-icon {
+    width: 24px;
+    text-align: center;
+    margin-right: 15px;
+    font-size: 1.2rem;
+  }
+
+  .vis-nav-item .text {
+    font-size: 1rem;
+  }

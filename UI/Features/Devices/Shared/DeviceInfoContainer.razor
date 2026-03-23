@@ -61,22 +61,22 @@
         }
         else
         {
-          <!-- Iterate over the Map<string, SchemaEntry> -->
-          <RadzenDataGrid Data="@cmd.InputSchema.Fields" TItem="KeyValuePair<string, SchemaEntry>" Density="Density.Compact" GridLines="DataGridGridLines.Horizontal">
+          <!-- Iterate over the Map<string, AresValueSchema> -->
+          <RadzenDataGrid Data="@cmd.InputSchema.Fields" TItem="KeyValuePair<string, AresValueSchema>" Density="Density.Compact" GridLines="DataGridGridLines.Horizontal">
             <Columns>
-              <RadzenDataGridColumn TItem="KeyValuePair<string, SchemaEntry>" Title="Name" Width="200px">
+              <RadzenDataGridColumn TItem="KeyValuePair<string, AresValueSchema>" Title="Name" Width="200px">
                 <Template Context="kvp">
                   <span style="font-weight: 500;">@kvp.Key</span>
                 </Template>
               </RadzenDataGridColumn>
 
-              <RadzenDataGridColumn TItem="KeyValuePair<string, SchemaEntry>" Title="Type" Width="200px">
+              <RadzenDataGridColumn TItem="KeyValuePair<string, AresValueSchema>" Title="Type" Width="200px">
                 <Template Context="kvp">
                   <code style="color: var(--rz-secondary);">@FormatDataType(kvp.Value)</code>
                 </Template>
               </RadzenDataGridColumn>
 
-              <RadzenDataGridColumn TItem="KeyValuePair<string, SchemaEntry>" Title="Required" Width="100px">
+              <RadzenDataGridColumn TItem="KeyValuePair<string, AresValueSchema>" Title="Required" Width="100px">
                 <Template Context="kvp">
                   @if(!kvp.Value.Optional)
                   {
@@ -89,7 +89,7 @@
                 </Template>
               </RadzenDataGridColumn>
 
-              <RadzenDataGridColumn TItem="KeyValuePair<string, SchemaEntry>" Title="Description">
+              <RadzenDataGridColumn TItem="KeyValuePair<string, AresValueSchema>" Title="Description">
                 <Template Context="kvp">
                   @kvp.Value.Description
                 </Template>
@@ -120,23 +120,14 @@
 
   // --- Format Helpers ---
 
-  private string GetReturnTypeDisplay(AresDataSchema outputSchema)
+  private string GetReturnTypeDisplay(AresValueSchema outputSchema)
   {
-    if(outputSchema == null || outputSchema.Fields == null || !outputSchema.Fields.Any())
+    if(outputSchema == null)
       return "Void";
 
-    if(outputSchema.Fields.Count == 1)
-    {
-      // If it returns a single primitive, display that type
-      var firstEntry = outputSchema.Fields.First().Value;
-      return firstEntry.Type.ToString();
-    }
-
-    return "Struct"; // Returns a complex object
+    return outputSchema.Type.ToString();
   }
+    
 
-  private string FormatDataType(SchemaEntry entry)
-  {
-    return entry.Stringify();
-  }
+  private string FormatDataType(AresValueSchema entry) => entry.Stringify();
 }

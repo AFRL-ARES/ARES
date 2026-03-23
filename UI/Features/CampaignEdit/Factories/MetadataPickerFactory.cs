@@ -1,14 +1,15 @@
 ﻿using Ares.Datamodel.Templates;
 using Ares.Services.Device;
+using Ares.Core.Grpc.Services;
 using MetadataPickerViewModel=UI.Features.CampaignEdit.ViewModels.MetadataPickerViewModel;
 
 namespace UI.Features.CampaignEdit.Factories;
 
 public class MetadataPickerFactory
 {
-  private readonly AresDevices.AresDevicesClient _devicesClient;
+  private readonly DevicesService _devicesClient;
 
-  public MetadataPickerFactory(AresDevices.AresDevicesClient devicesClient)
+  public MetadataPickerFactory(DevicesService devicesClient)
   {
     _devicesClient = devicesClient;
   }

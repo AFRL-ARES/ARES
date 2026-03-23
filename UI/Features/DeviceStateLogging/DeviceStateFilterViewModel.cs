@@ -1,27 +1,27 @@
 ﻿using Ares.Datamodel;
 using Ares.Datamodel.Device;
-using Ares.Messages.DeviceStates;
 using Ares.Services;
+using Ares.Services.Device;
+using Ares.Core.Grpc.Services;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using UI.Application.DeviceStateLogging;
 
 namespace UI.Features.DeviceStateLogging;
 
 public partial class DeviceStateFilterViewModel : ReactiveObject
 {
-  readonly AresAutomation.AresAutomationClient _automationClient;
+  private readonly DevicesService _deviceClient;
+  readonly AutomationService _automationClient;
 
-  public DeviceStateFilterViewModel(
-    AresAutomation.AresAutomationClient automationClient,
-    ICombinedDeviceGetter deviceGetter)
+  public DeviceStateFilterViewModel(DevicesService devicesClient, AutomationService automationClient)
   {
     _automationClient = automationClient;
-    _automationClient.GetAvailableCampaignExecutionSummariesAsync(new Empty()).ResponseAsync
-      .ContinueWith(task => UpdateCampaigns(task.Result));
-    deviceGetter.GetAvailableDevices()
-      .ContinueWith(task => AvailableDevices = task.Result);
+    _deviceClient = devicesClient;
+    _ = _automationClient.GetAvailableCampaignExecutionSummaries(new Empty(), null)
+      .ContinueWith(task => { if(task.IsCompletedSuccessfully) UpdateCampaigns(task.Result); });
+    _ = _deviceClient.GetAllAvailableDevices(new Empty(), null)
+      .ContinueWith(task => { if(task.IsCompletedSuccessfully) UpdateDevices(task.Result); });
 
     var currentTime = DateTime.Now;
     // probably don't need millisecond precision
@@ -35,10 +35,15 @@ public partial class DeviceStateFilterViewModel : ReactiveObject
     Campaigns = response.AvailableCampaignSummaries.Select(result => new CampaignExecutionSummaryMetadata { SummaryId = result.SummaryId, CampaignName = $"result.CampaignName-{result.CompletionTime}", CompletionTime = result.CompletionTime });
   }
 
-  [Reactive]
-  public partial IEnumerable<DevicesDescription>? AvailableDevices { get; private set; }
+  private void UpdateDevices(AvailableDevicesResponse response)
+  {
+    AvailableDevices = response.Devices.ToList();
+  }
 
-  public IEnumerable<DevicesDescription>? SelectedDevices { get; set; }
+  [Reactive]
+  public partial IEnumerable<AresDeviceDescription>? AvailableDevices { get; private set; }
+
+  public IEnumerable<AresDeviceDescription>? SelectedDevices { get; set; }
 
   [Reactive]
   public partial IEnumerable<CampaignExecutionSummaryMetadata>? Campaigns { get; private set; }
@@ -46,8 +51,8 @@ public partial class DeviceStateFilterViewModel : ReactiveObject
   public async Task UpdateExperiments(string? campaignResultId)
   {
     Experiments = null;
-    var campaignResult = await _automationClient.GetCampaignSummaryAsync(
-      new CampaignExecutionSummaryRequest { SummaryId = campaignResultId });
+    var campaignResult = await _automationClient.GetCampaignSummary(
+      new CampaignExecutionSummaryRequest { SummaryId = campaignResultId }, null);
     Experiments = campaignResult.ExperimentSummaries;
   }
 

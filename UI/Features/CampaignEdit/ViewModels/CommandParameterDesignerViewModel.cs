@@ -55,7 +55,7 @@ public class CommandParameterDesignerViewModel : ReactiveObject
 
   public string Unit => Parameter.Metadata.Unit;
 
-  public SchemaEntry Schema => Parameter.Metadata.Schema;
+  public AresValueSchema Schema => Parameter.Metadata.Schema;
 
   public AresValue? Value
   {

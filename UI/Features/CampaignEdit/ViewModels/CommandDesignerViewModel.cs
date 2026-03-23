@@ -1,6 +1,7 @@
 ﻿using Ares.Datamodel;
 using Ares.Datamodel.Templates;
 using Ares.Services.Device;
+using Ares.Core.Grpc.Services;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using UI.Features.CampaignEdit.Factories;
@@ -11,7 +12,7 @@ public partial class CommandDesignerViewModel : ReactiveObject
 {
   private readonly CommandParameterDesignerFactory _commandParameterDesignerFactory;
   private readonly MetadataPickerFactory _metadataPickerFactory;
-  private readonly AresDevices.AresDevicesClient _devicesClient;
+  private readonly DevicesService _devicesClient;
   private CommandMetadata? _commandMetadata;
   private CommandTemplate _commandTemplate = null!;
 
@@ -19,7 +20,7 @@ public partial class CommandDesignerViewModel : ReactiveObject
     CommandTemplate existingTemplate,
     CommandParameterDesignerFactory commandParameterDesignerFactory,
     MetadataPickerFactory metadataPickerFactory,
-    AresDevices.AresDevicesClient devicesClient)
+    DevicesService devicesClient)
   {
     ArgumentDesigners = [];
     _commandParameterDesignerFactory = commandParameterDesignerFactory;
@@ -29,7 +30,7 @@ public partial class CommandDesignerViewModel : ReactiveObject
     CommandTemplate = existingTemplate;
   }
 
-  public CommandDesignerViewModel(CommandParameterDesignerFactory commandParameterDesignerFactory, MetadataPickerFactory metadataPickerFactory, AresDevices.AresDevicesClient devicesClient)
+  public CommandDesignerViewModel(CommandParameterDesignerFactory commandParameterDesignerFactory, MetadataPickerFactory metadataPickerFactory, DevicesService devicesClient)
   {
     ArgumentDesigners = [];
     _commandParameterDesignerFactory = commandParameterDesignerFactory;
@@ -137,30 +138,69 @@ public partial class CommandDesignerViewModel : ReactiveObject
     if(existingTemplate.Metadata?.DeviceId is not null)
     {
 
-      var deviceInfo = await _devicesClient.GetDeviceInfoAsync(new DeviceInfoRequest { DeviceId = existingTemplate.Metadata.DeviceId });
+      var deviceInfo = await _devicesClient.GetDeviceInfo(new DeviceInfoRequest { DeviceId = existingTemplate.Metadata.DeviceId }, null);
       TemplateDeviceName = string.IsNullOrEmpty(deviceInfo.Name) ? null : deviceInfo.Name;
     }
   }
 
   private async Task InitMetadata(CommandMetadata? existingMetadata)
   {
-    ArgumentDesigners = existingMetadata?.ParameterMetadatas.Select(_commandParameterDesignerFactory.Create).ToArray() ?? [];
+    ArgumentDesigners = existingMetadata?.ParameterMetadatas
+        ?.Select(_commandParameterDesignerFactory.Create)
+        .ToArray() ?? [];
 
-    var outputs = existingMetadata?.OutputMetadata?.DataSchema;
-    if(outputs is not null)
-    {
-      var newOutputs = outputs.Fields.Where(kvp => OutputKeyMap.All(uos => uos.DeviceOutputName != kvp.Key)).Select(newKvp => new UserOutputSelection(newKvp.Key, newKvp.Value.Type, newKvp.Key));
-      var removedOutputs = OutputKeyMap.Where(output => !outputs.Fields.ContainsKey(output.DeviceOutputName));
-      OutputKeyMap = [.. OutputKeyMap.Concat(newOutputs).Except(removedOutputs)];
-    }
-    else
+    var outputSchema = existingMetadata?.OutputMetadata?.DataSchema;
+
+    if(outputSchema is null)
     {
       OutputKeyMap = [];
     }
-
-    if(CommandMetadata?.DeviceId is not null)
+    else
     {
-      var deviceInfo = await _devicesClient.GetDeviceInfoAsync(new DeviceInfoRequest { DeviceId = CommandMetadata.DeviceId });
+      // Normalize the schema
+      var availableFields = new Dictionary<string, AresValueSchema>();
+
+      if(outputSchema.Type == AresDataType.Struct && outputSchema.StructSchema is not null)
+      {
+        foreach(var field in outputSchema.StructSchema.Fields)
+        {
+          availableFields[field.Key] = field.Value;
+        }
+      }
+      else
+      {
+        availableFields["Result"] = outputSchema;
+      }
+
+      // Reconcile keys
+      if(availableFields.Count > 0)
+      {
+        var existingKeys = OutputKeyMap.Select(o => o.DeviceOutputName).ToHashSet();
+
+        var keptOutputs = OutputKeyMap.Where(o => availableFields.ContainsKey(o.DeviceOutputName));
+
+        var newlyAddedOutputs = availableFields
+            .Where(kvp => !existingKeys.Contains(kvp.Key))
+            .Select(kvp =>
+            {
+
+              var defaultCustomName = kvp.Key == "Result" ? string.Empty : kvp.Key;
+              return new UserOutputSelection(kvp.Key, kvp.Value.Type, defaultCustomName);
+            });
+
+        OutputKeyMap = [.. keptOutputs, .. newlyAddedOutputs];
+      }
+      else
+      {
+        OutputKeyMap = [];
+      }
+    }
+
+    var deviceId = existingMetadata?.DeviceId;
+
+    if(deviceId is not null)
+    {
+      var deviceInfo = await _devicesClient.GetDeviceInfo(new DeviceInfoRequest { DeviceId = deviceId }, null);
       MetadataDeviceName = string.IsNullOrEmpty(deviceInfo.Name) ? null : deviceInfo.Name;
     }
   }

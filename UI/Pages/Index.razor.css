@@ -1,14 +1,20 @@
-﻿
+﻿.grid-stack {
+	opacity: 0;
+	transition: opacity 0.4s ease-in-out;
+}
+
+.grid-stack.dashboard-ready {
+	opacity: 1;
+}
 
 .grid-stack-item-content {
 	display: flex;
-	justify-content: center; /* Center horizontally */
-	align-items: center; /* Center vertically */
+	justify-content: center;
+	align-items: center; 
 }
 
-/* 2. Clamp your actual device component */
 .grid-stack-item-content > div {
 	width: 100%;
-	/* Optional: Maintain aspect ratio internally if needed */
-	aspect-ratio: 16 / 9;
+	height: max-content !important;
+	min-height: 250px;
 }

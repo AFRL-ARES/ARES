@@ -286,7 +286,7 @@ public static class StandardLibrary
       })
   ];
 
-  private static AresDataSchema BuildListAppendSchema()
+  private static AresStructSchema BuildListAppendSchema()
   {
     var listEntry = AresSchemaBuilder.Entry(AresDataType.List).Build();
     listEntry.ListElementSchema = AresSchemaBuilder.Entry(AresDataType.Any).Build();
@@ -297,7 +297,7 @@ public static class StandardLibrary
       .Build();
   }
 
-  private static AresDataSchema BuildNumberArrayAppendSchema()
+  private static AresStructSchema BuildNumberArrayAppendSchema()
   {
     return AresSchemaBuilder.Empty()
       .AddEntry("self", AresSchemaBuilder.Entry(AresDataType.NumberArray).Build())
@@ -305,7 +305,7 @@ public static class StandardLibrary
       .Build();
   }
 
-  private static AresDataSchema BuildStringArrayAppendSchema()
+  private static AresStructSchema BuildStringArrayAppendSchema()
   {
     return AresSchemaBuilder.Empty()
       .AddEntry("self", AresSchemaBuilder.Entry(AresDataType.StringArray).Build())

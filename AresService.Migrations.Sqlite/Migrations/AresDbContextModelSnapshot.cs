@@ -15,7 +15,7 @@ namespace AresService.Migrations.Sqlite.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.0");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.4");
 
             modelBuilder.Entity("Ares.Datamodel.AnalysisOverview", b =>
                 {
@@ -337,6 +337,9 @@ namespace AresService.Migrations.Sqlite.Migrations
                     b.Property<Guid?>("StepExecutionSummaryUniqueId")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("TemplateId")
+                        .HasColumnType("TEXT");
+
                     b.HasKey("UniqueId");
 
                     b.HasIndex("StepExecutionSummaryUniqueId");
@@ -432,18 +435,32 @@ namespace AresService.Migrations.Sqlite.Migrations
                         .HasColumnType("TEXT")
                         .HasDefaultValueSql("DATETIME('now')");
 
+                    b.Property<string>("DeviceId")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("DeviceName")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("DeviceType")
+                    b.Property<string>("DeviceSettings")
                         .HasColumnType("TEXT");
+
+                    b.Property<string>("DriverId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsSimulated")
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("TEXT")
                         .HasDefaultValueSql("DATETIME('now')");
 
+                    b.Property<Guid?>("SerialInfoUniqueId")
+                        .HasColumnType("TEXT");
+
                     b.HasKey("UniqueId");
+
+                    b.HasIndex("SerialInfoUniqueId");
 
                     b.ToTable("DeviceConfigs", (string)null);
                 });
@@ -604,6 +621,36 @@ namespace AresService.Migrations.Sqlite.Migrations
                     b.ToTable("RemoteDevices", (string)null);
                 });
 
+            modelBuilder.Entity("Ares.Datamodel.Device.SerialConnection", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("BaudRate")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
+
+                    b.Property<string>("PortName")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SerialId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("SerialConnection");
+                });
+
             modelBuilder.Entity("Ares.Datamodel.ExecutionInfo", b =>
                 {
                     b.Property<Guid>("UniqueId")
@@ -739,18 +786,15 @@ namespace AresService.Migrations.Sqlite.Migrations
                         .HasColumnType("TEXT")
                         .HasDefaultValueSql("DATETIME('now')");
 
-                    b.Property<long>("Index")
-                        .HasColumnType("INTEGER");
-
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("TEXT")
                         .HasDefaultValueSql("DATETIME('now')");
 
-                    b.Property<float>("Maximum")
+                    b.Property<double>("Maximum")
                         .HasColumnType("REAL");
 
-                    b.Property<float>("Minimum")
+                    b.Property<double>("Minimum")
                         .HasColumnType("REAL");
 
                     b.Property<Guid>("ParameterMetadataUniqueId")
@@ -1287,9 +1331,6 @@ namespace AresService.Migrations.Sqlite.Migrations
                         .HasColumnType("TEXT")
                         .HasDefaultValueSql("DATETIME('now')");
 
-                    b.Property<Guid?>("ExtraInfoUniqueId")
-                        .HasColumnType("TEXT");
-
                     b.Property<long>("Index")
                         .HasColumnType("INTEGER");
 
@@ -1334,8 +1375,6 @@ namespace AresService.Migrations.Sqlite.Migrations
 
                     b.HasIndex("CommandMetadataUniqueId");
 
-                    b.HasIndex("ExtraInfoUniqueId");
-
                     b.HasIndex("ParameterId")
                         .IsUnique();
 
@@ -1377,7 +1416,7 @@ namespace AresService.Migrations.Sqlite.Migrations
                     b.ToTable("StepTemplates", (string)null);
                 });
 
-            modelBuilder.Entity("Ares.Messages.DeviceStates.Chiller.ChillerState", b =>
+            modelBuilder.Entity("Ares.Services.DriverInfo", b =>
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
@@ -1388,333 +1427,26 @@ namespace AresService.Migrations.Sqlite.Migrations
                         .HasColumnType("TEXT")
                         .HasDefaultValueSql("DATETIME('now')");
 
-                    b.Property<string>("DeviceId")
+                    b.Property<string>("DisplayName")
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
-
-                    b.Property<double?>("ManifoldTemperature")
-                        .HasColumnType("REAL");
-
-                    b.Property<DateTime?>("Timestamp")
+                    b.Property<string>("DriverId")
                         .HasColumnType("TEXT");
 
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("ChillerStates", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messages.DeviceStates.Mfc.MfcState", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<double?>("AbsolutePressure")
-                        .HasColumnType("REAL");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
-
-                    b.Property<string>("DeviceId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Gas")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
-
-                    b.Property<double?>("MassFlow")
-                        .HasColumnType("REAL");
-
-                    b.Property<double?>("Setpoint")
-                        .HasColumnType("REAL");
-
-                    b.Property<string>("StatusCodes")
-                        .HasColumnType("TEXT");
-
-                    b.Property<double?>("Temperature")
-                        .HasColumnType("REAL");
-
-                    b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("TEXT");
-
-                    b.Property<double?>("VolumetricFlow")
-                        .HasColumnType("REAL");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("MfcStates", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messages.DeviceStates.RestDevice.RestDeviceStateEntity", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
-
-                    b.Property<string>("DeviceId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
-
-                    b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("RestDeviceStateEntities", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messages.DeviceStates.RestSerialDevice.RestSerialDeviceStateEntity", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
-
-                    b.Property<string>("DeviceId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
-
-                    b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("RestSerialDeviceStateEntities", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messages.DeviceStates.SyringePump.SyringePumpState", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Address")
+                    b.Property<long>("FileSizeBytes")
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
-
-                    b.Property<string>("DeviceId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<double?>("DispensedVolume")
-                        .HasColumnType("REAL");
-
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("TEXT")
                         .HasDefaultValueSql("DATETIME('now')");
 
-                    b.Property<string>("RateUnit")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("VolumeUnit")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<double?>("WithdrawnVolume")
-                        .HasColumnType("REAL");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("SyringePumpStates", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messages.DeviceStates.Tc0304.Tc0304State", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
-
-                    b.Property<string>("DeviceId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
-
-                    b.Property<double?>("Probe1Temperature")
-                        .HasColumnType("REAL");
-
-                    b.Property<double?>("Probe2Temperature")
-                        .HasColumnType("REAL");
-
-                    b.Property<double?>("Probe3Temperature")
-                        .HasColumnType("REAL");
-
-                    b.Property<double?>("Probe4Temperature")
-                        .HasColumnType("REAL");
-
-                    b.Property<DateTime?>("Timestamp")
+                    b.Property<string>("Version")
                         .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 
-                    b.ToTable("Tc0304States", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messages.DeviceStates.TicStepperController.TicStepperControllerState", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
-
-                    b.Property<int>("CurrentPosition")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<uint>("CustomStepSize")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("DeviceId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
-
-                    b.Property<uint>("MaxAcceleration")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<uint>("MaxDeceleration")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<uint>("MaxSpeed")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<uint>("StartingSpeed")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("StatusMessages")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("StepMode")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("TargetPosition")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("TicStepperControllerStates", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messages.DeviceStates.TubeFurnace.TubeFurnaceStateEntity", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
-
-                    b.Property<double>("CurrentTemp")
-                        .HasColumnType("REAL");
-
-                    b.Property<string>("DeviceId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
-
-                    b.Property<double>("SetPointTemp")
-                        .HasColumnType("REAL");
-
-                    b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("TubeFurnaceStateEntities", (string)null);
-                });
-
-            modelBuilder.Entity("Google.Protobuf.WellKnownTypes.Any", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
-
-                    b.Property<Guid?>("DeviceConfigId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("TEXT")
-                        .HasDefaultValueSql("DATETIME('now')");
-
-                    b.Property<string>("TypeUrl")
-                        .HasColumnType("TEXT");
-
-                    b.Property<byte[]>("Value")
-                        .HasColumnType("BLOB");
-
-                    b.HasKey("UniqueId");
-
-                    b.HasIndex("DeviceConfigId")
-                        .IsUnique();
-
-                    b.ToTable("Any");
+                    b.ToTable("DeviceDrivers");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.AnalysisOverview", b =>
@@ -1780,6 +1512,15 @@ namespace AresService.Migrations.Sqlite.Migrations
                         .HasForeignKey("DeviceInfoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Device.DeviceConfig", b =>
+                {
+                    b.HasOne("Ares.Datamodel.Device.SerialConnection", "SerialInfo")
+                        .WithMany()
+                        .HasForeignKey("SerialInfoUniqueId");
+
+                    b.Navigation("SerialInfo");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.ExecutionInfo", b =>
@@ -1957,16 +1698,10 @@ namespace AresService.Migrations.Sqlite.Migrations
                         .HasForeignKey("CommandMetadataUniqueId")
                         .OnDelete(DeleteBehavior.ClientCascade);
 
-                    b.HasOne("Google.Protobuf.WellKnownTypes.Any", "ExtraInfo")
-                        .WithMany()
-                        .HasForeignKey("ExtraInfoUniqueId");
-
                     b.HasOne("Ares.Datamodel.Templates.Parameter", null)
                         .WithOne("Metadata")
                         .HasForeignKey("Ares.Datamodel.Templates.ParameterMetadata", "ParameterId")
                         .OnDelete(DeleteBehavior.Cascade);
-
-                    b.Navigation("ExtraInfo");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Templates.StepTemplate", b =>
@@ -1975,14 +1710,6 @@ namespace AresService.Migrations.Sqlite.Migrations
                         .WithMany("StepTemplates")
                         .HasForeignKey("ExperimentTemplateUniqueId")
                         .OnDelete(DeleteBehavior.Cascade);
-                });
-
-            modelBuilder.Entity("Google.Protobuf.WellKnownTypes.Any", b =>
-                {
-                    b.HasOne("Ares.Datamodel.Device.DeviceConfig", null)
-                        .WithOne("ConfigData")
-                        .HasForeignKey("Google.Protobuf.WellKnownTypes.Any", "DeviceConfigId")
-                        .OnDelete(DeleteBehavior.ClientCascade);
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Analyzing.AnalyzerInfo", b =>
@@ -2002,11 +1729,6 @@ namespace AresService.Migrations.Sqlite.Migrations
                     b.Navigation("ExecutionInfo");
 
                     b.Navigation("Result");
-                });
-
-            modelBuilder.Entity("Ares.Datamodel.Device.DeviceConfig", b =>
-                {
-                    b.Navigation("ConfigData");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Device.DeviceInfo", b =>

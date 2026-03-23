@@ -28,10 +28,10 @@ public class TestReplyAnalyzer : AnalyzerBase
     return Task.FromResult(new AnalyzerCapabilities());
   }
 
-  public override Task<AresDataSchema> GetParameters(CancellationToken cancellationToken)
+  public override Task<AresStructSchema> GetParameters(CancellationToken cancellationToken)
   {
-    var schema = new AresDataSchema();
-    var testReplySchema = new SchemaEntry() { Optional = false, Type = AresDataType.Number };
+    var schema = new AresStructSchema();
+    var testReplySchema = new AresValueSchema() { Optional = false, Type = AresDataType.Number };
 
     schema.Fields["TestReply"] = testReplySchema;
 

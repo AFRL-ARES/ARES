@@ -1,6 +1,7 @@
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Connection;
 using Ares.Services;
+using Ares.Core.Grpc.Services;
 using Grpc.Core;
 using ReactiveUI;
 using UI.Application.Notifications;
@@ -9,11 +10,11 @@ namespace UI.Features.Analyzing.Settings;
 
 public class AnalyzerSettingsViewModel : ReactiveObject
 {
-  private readonly AresAnalyzerManagementService.AresAnalyzerManagementServiceClient _analyzerService;
+  private readonly AnalyzerService _analyzerService;
   private readonly INotificationReceivingService _notificationService;
   private AnalyzerInfo _analyzerInfo;
 
-  public AnalyzerSettingsViewModel(AresAnalyzerManagementService.AresAnalyzerManagementServiceClient analyzerService,
+  public AnalyzerSettingsViewModel(AnalyzerService analyzerService,
     INotificationReceivingService notificationService,
     AnalyzerInfo analyzerInfo,
     Func<Task> onRemoveCallback)
@@ -60,7 +61,7 @@ public class AnalyzerSettingsViewModel : ReactiveObject
       Name = analyzerConfig.Name,
       Url = analyzerConfig.Url
     };
-    var response = await _analyzerService.UpdateRemoteAnalyzerAsync(request);
+    var response = await _analyzerService.UpdateRemoteAnalyzer(request, null);
     if(response.Success)
     {
       Name = analyzerConfig.Name;
@@ -93,7 +94,7 @@ public class AnalyzerSettingsViewModel : ReactiveObject
       AnalyzerId = _analyzerInfo.UniqueId
     };
 
-    await _analyzerService.RemoveRemoteAnalyzerAsync(request);
+    await _analyzerService.RemoveRemoteAnalyzer(request, null);
     await OnRemoveCallback();
   }
 
@@ -102,11 +103,11 @@ public class AnalyzerSettingsViewModel : ReactiveObject
     var request = new StateRequest { Id = _analyzerInfo.UniqueId };
     try
     {
-      var stateResponse = await _analyzerService.GetStateAsync(request);
+      var stateResponse = await _analyzerService.GetState(request, null);
       StateMessage = stateResponse.StateMessage;
       AnalyzerState = stateResponse.State;
     }
-    catch(RpcException e)
+    catch(Exception e)
     {
       StateMessage = $"Can't reach ares service: {e.Message}";
       AnalyzerState = State.Error;
@@ -118,13 +119,13 @@ public class AnalyzerSettingsViewModel : ReactiveObject
     var request = new AnalyzerInfoRequest { AnalyzerId = _analyzerInfo.UniqueId };
     try
     {
-      var infoResponse = await _analyzerService.GetInfoAsync(request);
+      var infoResponse = await _analyzerService.GetInfo(request, null);
       Type = infoResponse.Info.Type;
       Name = infoResponse.Info.Name;
       Version = infoResponse.Info.Version;
       Description = infoResponse.Info.Description;
     }
-    catch(RpcException e)
+    catch(Exception e)
     {
       Type = "";
       Name = "";

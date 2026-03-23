@@ -1,28 +1,29 @@
 using Ares.Datamodel.Device;
 using Ares.Services.Device;
+using Ares.Core.Grpc.Services;
 using ReactiveUI;
-using System.Collections.ObjectModel;
 using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using UI.Application.Devices;
 using UI.Application.Devices.Repos;
+using Ares.Core.Device.Repos;
+using Ares.Core.Device.Providers;
+using Ares.Device;
 
 namespace UI.Infrastructure.Devices;
 
-public abstract class DeviceConnectorViewModelFactory<TDeviceUnitVm> : ReactiveObject, IAsyncDisposable where TDeviceUnitVm : DeviceUnitControlViewModel
+public class DeviceConnectorViewModelFactory : ReactiveObject, IAsyncDisposable
 {
-  private readonly AresDevices.AresDevicesClient _devicesClient;
-  private readonly IDeviceControlViewModelRepo _deviceControlViewModelRepo;
+  private readonly IAresDeviceProvider _deviceProvider;
+  protected readonly IDeviceControlViewModelRepo _deviceControlViewModelRepo;
   private IDisposable _deviceUpdater = Disposable.Empty;
 
-  public DeviceConnectorViewModelFactory(AresDevices.AresDevicesClient devicesClient, IDeviceControlViewModelRepo deviceControlViewModelRepo)
+  public DeviceConnectorViewModelFactory(IAresDeviceProvider deviceProvider, IDeviceControlViewModelRepo deviceControlViewModelRepo)
   {
-    _devicesClient = devicesClient;
+    _deviceProvider = deviceProvider;
     _deviceControlViewModelRepo = deviceControlViewModelRepo;
   }
-
-  protected abstract Task<IEnumerable<AresDeviceDescription>> GetAvailableDevices();
 
   public void Start(TimeSpan interval)
   {
@@ -45,35 +46,32 @@ public abstract class DeviceConnectorViewModelFactory<TDeviceUnitVm> : ReactiveO
 
   private async Task UpdateAvailableDevices()
   {
-    var deviceDescriptions = await GetAvailableDevices();
-    foreach(var description in deviceDescriptions)
+    var availableDevices = _deviceProvider.GetAllDevices();
+    foreach(var device in availableDevices)
     {
-      var deviceStatusRequest = new DeviceStatusRequest { DeviceId = description.Id };
-      var deviceStatusResponse = _devicesClient.GetDeviceStatus(deviceStatusRequest);
-
-      if(deviceStatusResponse.OperationalState == OperationalState.Active)
+      if(device is not null && device.Status.OperationalState == OperationalState.Active)
       {
-        if(_deviceControlViewModelRepo.Items.Any(vm => vm.DeviceId.Equals(description.Id)))
+        if(_deviceControlViewModelRepo.Items.Any(vm => vm.DeviceId.Equals(device.UniqueId)))
           continue;
 
-        CreateAndAddViewModel(description.Id, description.Name);
+        CreateAndAddViewModel(device.UniqueId, device.Name);
         continue;
       }
     }
   }
 
-  protected abstract void CreateAndAddViewModel(string deviceId, string deviceName);
+  protected void CreateAndAddViewModel(string deviceId, string deviceName)
+  {
+    throw new NotImplementedException();
+  }
 
   public async ValueTask DisposeAsync()
   {
     _deviceUpdater.Dispose();
-    var vms = ConnectedDeviceUnitControlVms.OfType<IAsyncDisposable>();
+    var vms = _deviceControlViewModelRepo.Items.OfType<IAsyncDisposable>();
     foreach(var vm in vms)
     {
       await vm.DisposeAsync();
     }
   }
-
-  public ReadOnlyObservableCollection<TDeviceUnitVm> ConnectedDeviceUnitControlVms { get; }
-
 }

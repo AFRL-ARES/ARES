@@ -2,6 +2,7 @@
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Planning;
 using Ares.Services;
+using Ares.Core.Grpc.Services;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.AspNetCore.Components.Forms;
 using ReactiveUI;
@@ -11,9 +12,9 @@ namespace UI.Features.Execution.Planning;
 
 public partial class ManualPlannerViewModel : ReactiveObject
 {
-  private readonly AresPlannerManagementService.AresPlannerManagementServiceClient _client;
+  private readonly PlannerService _client;
 
-  public ManualPlannerViewModel(AresPlannerManagementService.AresPlannerManagementServiceClient client)
+  public ManualPlannerViewModel(PlannerService client)
   {
     _client = client;
     ManualPlannerValues = [];
@@ -22,7 +23,7 @@ public partial class ManualPlannerViewModel : ReactiveObject
 
   public async Task UpdatePlannerValues()
   {
-    var collection = await _client.GetManualPlannerSeedAsync(new Empty());
+    var collection = await _client.GetManualPlannerSeed(new Empty(), null);
     ManualPlannerValues = collection.PlannedValues;
   }
 
@@ -61,7 +62,7 @@ public partial class ManualPlannerViewModel : ReactiveObject
     if(!collection.PlannedValues.Any())
       return true;
 
-    await _client.SeedManualPlannerAsync(new ManualPlannerSeed { PlannerValues = collection });
+    await _client.SeedManualPlanner(new ManualPlannerSeed { PlannerValues = collection }, null);
     await UpdatePlannerValues();
 
     return true;

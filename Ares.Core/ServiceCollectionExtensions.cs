@@ -1,9 +1,8 @@
-﻿using Ares.Core.Analyzing;
+using Ares.Core.Analyzing;
 using Ares.Core.AresEnvironment;
-using Ares.Core.Device;
-using Ares.Core.Device.Helpers;
+using Ares.Core.Device.Managers;
+using Ares.Core.Device.Repos;
 using Ares.Core.Device.Remote;
-using Ares.Core.Device.Remote.State;
 using Ares.Core.Device.State.Export;
 using Ares.Core.Device.State.Export.ExportStreamProviders;
 using Ares.Core.Device.State.Export.StateGetters;
@@ -20,6 +19,10 @@ using Ares.Core.Scripting;
 using Ares.Core.Validation.Campaign;
 using Ares.Datamodel.Templates;
 using Microsoft.Extensions.DependencyInjection;
+using Ares.Core.Device.Providers;
+using Ares.Core.Resources;
+using Ares.Core.Device.Plugins.Drivers.Loading;
+using Ares.Core.Device.Plugins.Drivers;
 
 namespace Ares.Core;
 
@@ -36,15 +39,14 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<IPlanningHelper, PlanningHelper>();
     services.AddSingleton<IExecutionReporter, ExecutionReporter>();
     services.AddSingleton<IExecutionReportStore, ExecutionReportStore>();
-    services.AddSingleton<IAnalyzerRepo, AnalyzerRepo>();
-    services.AddSingleton<IPlannerServiceRepo, PlannerServiceRepo>();
     services.AddTransient<INumExperimentsRunFactory, NumExperimentsRunFactory>();
     services.AddSingleton<IActiveCampaignTemplateStore, ActiveCampaignTemplateStore>();
     services.AddSingleton<ICampaignValidatorRepository, CampaignValidatorRepository>();
     services.AddTransient<ICampaignValidator, AllPlannersAssignedCampaignValidator>();
     services.AddTransient<ICampaignValidator, GoodAnalyzerCampaignValidator>();
     services.AddTransient<ICampaignValidator, RequiredDeviceInterpretersValidator>();
-    services.AddSingleton<IDeviceCommandInterpreterRepo, DeviceCommandInterpreterRepo>();
+    services.AddSingleton<IDeviceDriverLoader, DeviceDriverLoader>();
+    services.AddSingleton<IDeviceManager, DeviceManager>();
     services.AddSingleton<IRemoteAnalyzerManager, RemoteAnalyzerManager>();
     services.AddSingleton<IRemotePlannerManager, RemotePlannerManager>();
     services.AddSingleton<IAnalyzerCache, AnalyzerCache>();
@@ -52,32 +54,33 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<IDeviceCache, DeviceCache>();
     services.AddSingleton<IPlannerServiceCache, PlannerServiceCache>();
     services.AddSingleton<AresVariableManager>();
-    services.AddSingleton<AnalysisRepo>();
-    services.AddSingleton<PlannerServiceRepo>();
     services.AddSingleton<AnalysisHelper>();
     services.AddSingleton<IDesiredAnalysisResultFactory, DesiredAnalysisResultFactory>();
-    services.AddSingleton<DeviceIdHelper>();
     services.AddSingleton<INotifier, Notifier>();
+    services.AddSingleton<IDeviceConfigManager, DeviceConfigManager>();
+    services.AddSingleton<IDriverDatabaseManager, DriverDatabaseManager>();
+    services.AddSingleton<IResourceConnectionArbiter, ResourceConnectionArbiter>();
 
     services.AddSingleton<ISymbolProvider, DeviceSymbolProvider>();
     services.AddSingleton<ISymbolProvider, QuantitySymbolProvider>();
     services.AddSingleton<BaseEnvironmentBuilder>();
 
+    services.BindRepositories();
     services.BindComposers();
     services.BindStartConditions();
     services.BindStateLogging();
+    services.BindProviders();
   }
 
   private static void BindStateLogging(this IServiceCollection services)
   {
     services.AddSingleton<StateLoggerManager>();
     services.AddSingleton<IDeviceStateStreamProvider, DeviceStateStreamProvider>();
-    services.AddSingleton<IDeviceStateDataProvider, RemoteDeviceExportDataProvider>();
     services.AddSingleton<IDeviceStateExportStreamProvider, CombinedDeviceStateExportStreamProvider>();
     services.AddSingleton<IDeviceStateExportStreamProvider, ZippedStatesExportStreamProvider>();
     services.AddSingleton<IDeviceStateLoggerRepository, DeviceStateLoggerRepository>();
     services.AddSingleton<IDeviceStateGetter, DeviceStateGetter>();
-    services.AddSingleton<IDeviceStateLoggerFactory, RemoteDeviceStateLoggerFactory>();
+    services.AddSingleton<IDeviceStateLoggerFactory, AresDeviceStateLoggerFactory>();
   }
 
   private static void BindStartConditions(this IServiceCollection services)
@@ -96,4 +99,23 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<ICommandComposer<ExperimentTemplate, ExperimentExecutor>, ExperimentComposer>();
     services.AddSingleton<ICommandComposer<CampaignTemplate, ICampaignExecutor>, CampaignComposer>();
   }
+
+  private static void BindProviders(this IServiceCollection services)
+  {
+    services.AddTransient<IAresDeviceProvider, AresDeviceProvider>();
+    services.AddTransient<IDeviceDriverProvider, DeviceDriverProvider>();
+    services.AddTransient<IDeviceConfigProvider, DeviceConfigProvider>();
+  }
+
+  private static void BindRepositories(this IServiceCollection services)
+  {
+    services.AddSingleton<IAresDeviceRepo, AresDeviceRepo>();
+    services.AddSingleton<IDeviceDriverRepo, DeviceDriverRepo>();
+    services.AddSingleton<IDeviceConfigRepo, DeviceConfigRepo>();
+    services.AddSingleton<PlannerServiceRepo>();
+    services.AddSingleton<AnalysisRepo>();
+    services.AddSingleton<IAnalyzerRepo, AnalyzerRepo>();
+    services.AddSingleton<IPlannerServiceRepo, PlannerServiceRepo>();
+  }
+
 }

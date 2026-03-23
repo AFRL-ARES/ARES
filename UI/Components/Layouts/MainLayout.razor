@@ -1,103 +1,167 @@
+@using Ares.Core.Device.Providers
+@using Ares.Core.Execution.Safety
+@using Ares.Core.Device.Repos
 @using Ares.Services
 @using Google.Protobuf.WellKnownTypes
 @using UI.Application.Dialog
 @using UI.Application.Notifications
+@using UI.Infrastructure.Startup
 
 @inherits LayoutComponentBase
 
 @inject IUiDialogService dialogService
-@inject AresSafetyService.AresSafetyServiceClient safetyServiceClient
 @inject INotificationReceivingService notificationService
+@inject IExecutionSafetyManager executionSafetyManager 
+@inject IDeviceDriverProvider deviceDriverRepo
+@inject StartupStateTracker Tracker
 
 <HeadContent>
-    <link rel="icon" type="image/png" href="images/ARESLogo.png">
+  <link rel="icon" type="image/png" href="images/ARESLogo.png">
+  @foreach(var cssPath in GetPluginStylesheetPaths())
+  {
+    <link rel="stylesheet" href="@cssPath">
+  }
 </HeadContent>
 <PageTitle>ARES</PageTitle>
 
 <div class="page">
-    <RadzenDialog/>
-    <RadzenNotification/>
-    <RadzenContextMenu/>
-    <RadzenTooltip/>
+  <RadzenDialog />
+  <RadzenNotification />
+  <RadzenContextMenu />
+  <RadzenTooltip />
 
-    <main>
-        @* <AuthorizeView>
-            <Authorized> *@
-                <div class="main-layout-grid vh-100">
-                    <div class="p-0 ares-sidebar">
-                        <button @onclick="SidebarExpandClick" type="button" class="bg-dark btn hamburger-button">
-                            <RadzenIcon Icon="menu"></RadzenIcon>
-                        </button>
-                        <AresNavMenu ExpandedMainNav="@SidebarExpanded">
-                            <MainNavContent>
-                                <AresNavItem Text="Dashboard" Icon="dvr" Path="/"/>
-                                <AresNavItem Match="NavLinkMatch.Prefix" Expandable="true" Icon="science" Text="Automation" Path="automation">
-                                    <AresNavItem Icon="brush" Text="Campaign Designer" Path="automation/campaignlist"/>
-                                    <AresNavItem Icon="stairs" Text="Custom Step Builder" Path="automation/customstepbuilder"/>
-                                    <AresNavItem Icon="directions_run" Text="Execution" Path="automation/execution"/>
-                                    <AresNavItem Icon="history" Text="Execution History" Path="automation/executionhistory"/>
-                                </AresNavItem>
-                                <AresNavItem Icon="data_table" Text="Data Viewer" Path="dataviewer" Match="NavLinkMatch.Prefix"/>
-                                <AresNavItem Icon="assessment" Text="Device States" Path="device_states"/>
-                                @* Coming Soon *@
-                                <AresNavItem Icon="terminal" Text="Scripting" Path="scripting" />
-                                @* <AresNavItem Icon="detector" Text="Safety" Path="/safety"/> *@
-                            </MainNavContent>
+  <main>
+    @* <AuthorizeView>
+          <Authorized> *@
+    <div class="main-layout-grid vh-100">
+      <div class="p-0 ares-sidebar">
+        <button @onclick="SidebarExpandClick" type="button" class="bg-dark btn hamburger-button">
+          <RadzenIcon Icon="menu"></RadzenIcon>
+        </button>
+        <AresNavMenu ExpandedMainNav="@SidebarExpanded">
+          <MainNavContent>
+            <AresNavItem Text="Dashboard" Icon="dvr" Path="/" />
+            <AresNavItem Match="NavLinkMatch.Prefix" Expandable="true" Icon="science" Text="Automation" Path="automation">
+              <AresNavItem Icon="brush" Text="Campaign Designer" Path="automation/campaignlist" />
+              <AresNavItem Icon="stairs" Text="Step Designer" Path="automation/step_designer" />
+              <AresNavItem Icon="directions_run" Text="Execution" Path="automation/execution" />
+              <AresNavItem Icon="history" Text="Execution History" Path="automation/executionhistory" />
+            </AresNavItem>
+            <AresNavItem Icon="data_table" Text="Data Viewer" Path="dataviewer" Match="NavLinkMatch.Prefix" />
+            <AresNavItem Icon="assessment" Text="Device States" Path="device_states" />
+            @* Coming Soon *@
+            <AresNavItem Icon="terminal" Text="Scripting" Path="scripting" />
+            @* <AresNavItem Icon="detector" Text="Safety" Path="/safety"/> *@
+          </MainNavContent>
 
-                            <FooterContent>
-                                <AresNavFooterItem Path="notifications" Icon="notifications"/>
-                                <AresNavFooterItem Path="settings/device" Icon="settings"/>
-                                <AresNavFooterItem Path="profile" Icon="person"/>
-                            </FooterContent>
-                            
+          <FooterContent>
+            <AresNavFooterItem Path="notifications" Icon="notifications" />
+            <AresNavFooterItem Path="settings/device" Icon="settings" />
+            <AresNavFooterItem Path="profile" Icon="person" />
+          </FooterContent>
 
-                            <CollapsedNavContent>
-                                <div class="first-nav-item">
-                                    <AresNavItem Icon="dvr" Path="#"/>
-                                </div>
-                                <AresNavItem Icon="space_dashboard" Path="project"/>
-                                <AresNavItem Icon="science">
-                                    <AresNavItem Icon="brush" Path="automation/campaignlist"/>
-                                    <AresNavItem Icon="stairs" Path="automation/customstepbuilder"/>
-                                    <AresNavItem Icon="directions_run" Path="automation/execution"/>
-                                    <AresNavItem Icon="history" Path="automation/executionhistory"/>
-                                    @* Coming Soon *@
-                                    @* <AresNavItem Icon="detector" Text="Safety" Path="/safety" /> *@
-                                </AresNavItem>
-                                <AresNavItem Icon="assessment" Path="dataviewer"/>
-                            </CollapsedNavContent>
-                        </AresNavMenu>
 
-                    </div>
-                    <div class="ares-content m-2">
-                        @Body
-                    </div>
-                    <div class="ares-footer">
-                      <AresFooter>
-                      <div class="d-flex flex-row justify-content-end align-items-center">
-                          @* <div>
-                          <span>Logged in as @context.User.Identity?.Name</span>
-                          <a href="Identity/Account/Logout" class="mx-2">Logout</a>
-                        </div> *@
-                          <RadzenAppearanceToggle />
-                        <RadzenButton Click="@ShowEmergencyStopDialog" Text="Emergency Stop" Icon="report" ButtonStyle="ButtonStyle.Danger" />
-                      </div>
-                      </AresFooter>
-                    </div>
-                </div>
-        @*     </Authorized>
-            <NotAuthorized>
-                <article class="content px-4">
-                    <meta http-equiv="refresh" content="0.01; URL=Identity/Account/Login"/>
-                </article>
-            </NotAuthorized>
-        </AuthorizeView> *@
-    </main>
+          <CollapsedNavContent>
+            <div class="first-nav-item">
+              <AresNavItem Icon="dvr" Path="#" />
+            </div>
+            <AresNavItem Icon="space_dashboard" Path="project" />
+            <AresNavItem Icon="science">
+              <AresNavItem Icon="brush" Path="automation/campaignlist" />
+              <AresNavItem Icon="stairs" Path="automation/customstepbuilder" />
+              <AresNavItem Icon="directions_run" Path="automation/execution" />
+              <AresNavItem Icon="history" Path="automation/executionhistory" />
+              @* Coming Soon *@
+              @* <AresNavItem Icon="detector" Text="Safety" Path="/safety" /> *@
+            </AresNavItem>
+            <AresNavItem Icon="assessment" Path="dataviewer" />
+          </CollapsedNavContent>
+        </AresNavMenu>
+
+      </div>
+      <div class="ares-content m-2">
+        @Body
+      </div>
+      <div class="ares-footer">
+        <AresFooter>
+          <div class="d-flex flex-row justify-content-end align-items-center">
+            @* <div>
+                        <span>Logged in as @context.User.Identity?.Name</span>
+                        <a href="Identity/Account/Logout" class="mx-2">Logout</a>
+                      </div> *@
+            <RadzenAppearanceToggle />
+            <RadzenButton Click="@ShowEmergencyStopDialog" Text="Emergency Stop" Icon="report" ButtonStyle="ButtonStyle.Danger" />
+          </div>
+        </AresFooter>
+      </div>
+    </div>
+    @*     </Authorized>
+          <NotAuthorized>
+              <article class="content px-4">
+                  <meta http-equiv="refresh" content="0.01; URL=Identity/Account/Login"/>
+              </article>
+          </NotAuthorized>
+      </AuthorizeView> *@
+  </main>
+</div>
+
+<div class="ares-throbber-overlay @(Tracker.IsReady ? "fade-out" : "")">
+  <div class="throbber-content-wrapper">
+    <img src="/images/ARESLogo.png" class="ares-throbber-pulse" alt="ARES OS Booting..." />
+    <h5 class="text-light mt-4 throbber-text-nudge">@_loadingMessage</h5>
+  </div>
 </div>
 
 @code {
   public bool SidebarExpanded { get; set; } = true;
   public bool BodyExpanded { get; set; }
+  private CancellationTokenSource _cts = new();
+  private string _loadingMessage = "Initializing ARES OS...";
+
+  private readonly string[] _loadingMessageOptions = new[]
+  {
+    "Applying percussive maintenance to simulated hardware...",
+    "Negotiating peace treaties with the serial ports...",
+    "Convincing the lab equipment to cooperate...",
+    "Topping off the blinker fluid...",
+    "Herding the autonomous research agents...",
+    "Downloading more RAM...",
+    "Warming up the lasers...",
+    "Purging the digital fluid lines...",
+    "Waiting for the valves to make up their minds...",
+    "Dividing by zero... please wait...",
+    "Locating the missing 10mm socket...",
+    "Giving the planner a quick pep talk...",
+    "Sweeping up the broken simulated beakers...",
+    "Convincing the analyzer the sample isn't contaminated...",
+    "Checking the ceiling tiles for water spots...",
+    "Analyzing the files..."
+  };
+
+  protected override void OnInitialized()
+  {
+    Tracker.OnSystemReady += HandleSystemReady;
+
+    // Fire and forget the message cycler
+    _ = CycleLoadingMessagesAsync(_cts.Token);
+  }
+
+  private async Task CycleLoadingMessagesAsync(CancellationToken token)
+  {
+    var random = new Random();
+
+    while(!Tracker.IsReady && !token.IsCancellationRequested)
+    {
+      // Wait 4 seconds before swapping to a new message
+      await Task.Delay(2500, token);
+
+      if(!Tracker.IsReady)
+      {
+        _loadingMessage = _loadingMessageOptions[random.Next(_loadingMessageOptions.Length)];
+        await InvokeAsync(StateHasChanged);
+      }
+    }
+  }
 
   private void SidebarExpandClick()
   {
@@ -112,28 +176,29 @@
 
     if(result)
     {
-      var emergencyStopResponse = await safetyServiceClient.RequestEmergencyStopAsync(new EmergencyStopRequest());
+      var success = await executionSafetyManager.EnterSafeMode();
       AresNotification notification;
 
-      if(emergencyStopResponse.Status == EmergencyStopStatus.Success)
+      if(success)
       {
         notification = new AresNotification
         {
           Loiter = true,
-          Message = emergencyStopResponse.StatusMessage,
+          Message = "ARES has successfully processed an emergency shutdown request. All devices have entered safemode and any running campaigns have been completed.",
           Title = "Successfully Processed Emergency Shutdown Request",
           NotificationSeverity = Severity.Success,
           Timestamp = DateTime.UtcNow.ToTimestamp()
         };
       }
 
+
       else
       {
         notification = new AresNotification
         {
           Loiter = true,
-          Message = emergencyStopResponse.StatusMessage,
-          Title = "Failed to Process Emergency Shutdown Request!",
+          Message = "ARES HAS FAILED TO ENTER SAFE MODE. DEVICES MIGHT BE IN AN UNSTABLE STATE AND SHOULD BE POWERED OFF IMMEDIATELY IF IT IS SAFE TO DO SO.",
+          Title = "FAILED TO PROCESS EMERGENCY SHUTDOWN REQUEST!",
           NotificationSeverity = Severity.Danger,
           Timestamp = DateTime.UtcNow.ToTimestamp()
         };
@@ -144,4 +209,36 @@
 
   }
 
+  IEnumerable<string> GetPluginStylesheetPaths()
+  {
+    return deviceDriverRepo
+      .GetAllDeviceDrivers()
+      .Select(driver =>
+      {
+        var pluginFolder = Path.GetFileName(driver.ModulePath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+        var assemblyName = Path.GetFileNameWithoutExtension(driver.Manifest.AssemblyName);
+        if(string.IsNullOrWhiteSpace(pluginFolder) || string.IsNullOrWhiteSpace(assemblyName))
+        {
+          return null;
+        }
+
+        return $"/plugins/{Uri.EscapeDataString(pluginFolder)}/{Uri.EscapeDataString(assemblyName)}.styles.css";
+      })
+      .OfType<string>()
+      .Distinct(StringComparer.OrdinalIgnoreCase);
+  }
+
+  private void HandleSystemReady()
+  {
+    // Cancel the timer just to be safe
+    _cts.Cancel();
+    InvokeAsync(StateHasChanged);
+  }
+
+  public void Dispose()
+  {
+    Tracker.OnSystemReady -= HandleSystemReady;
+    _cts.Cancel();
+    _cts.Dispose();
+  }
 }

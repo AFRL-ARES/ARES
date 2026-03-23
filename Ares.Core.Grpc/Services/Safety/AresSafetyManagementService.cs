@@ -1,4 +1,4 @@
-﻿using Ares.Core.Device;
+using Ares.Core.Device.Repos;
 using Ares.Core.Execution;
 using Ares.Services;
 using Grpc.Core;
@@ -10,15 +10,15 @@ namespace Ares.Core.Grpc.Services.Safety;
 public class AresSafetyManagementService : AresSafetyService.AresSafetyServiceBase
 {
   private readonly IExecutionManager _executionManager;
-  private readonly IDeviceCommandInterpreterRepo _deviceInterpreterRepo;
+  private readonly IAresDeviceRepo _deviceRepo;
 
-  public AresSafetyManagementService(IExecutionManager executionManager, IDeviceCommandInterpreterRepo deviceInterpreterRepo)
+  public AresSafetyManagementService(IExecutionManager executionManager, IAresDeviceRepo deviceRepo)
   {
     _executionManager = executionManager;
-    _deviceInterpreterRepo = deviceInterpreterRepo;
+    _deviceRepo = deviceRepo;
   }
 
-  public override Task<EmergencyStopResponse> RequestEmergencyStop(EmergencyStopRequest request, ServerCallContext context)
+  public override Task<EmergencyStopResponse> RequestEmergencyStop(EmergencyStopRequest request, ServerCallContext? context)
   {
     EmergencyStopResponse response;
 
@@ -27,7 +27,7 @@ public class AresSafetyManagementService : AresSafetyService.AresSafetyServiceBa
       //Stop current campaign execution
       _executionManager.Stop();
 
-      foreach(var device in _deviceInterpreterRepo.GetAresDevices())
+      foreach(var device in _deviceRepo)
       {
         device.EnterSafeMode();
       }

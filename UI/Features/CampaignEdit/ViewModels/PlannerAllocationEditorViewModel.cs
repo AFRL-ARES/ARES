@@ -1,6 +1,7 @@
 using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
 using Ares.Services;
+using Ares.Core.Grpc.Services;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using UI.Application.Notifications;
@@ -9,14 +10,14 @@ namespace UI.Features.CampaignEdit.ViewModels;
 
 public partial class PlannerAllocationEditorViewModel : ReactiveObject
 {
-  private readonly AresPlannerManagementService.AresPlannerManagementServiceClient _plannerClient;
+  private readonly PlannerService _plannerClient;
   private readonly INotificationReceivingService _notificationService;
   private PlannerServiceInfo? _selectedAdapter;
 
   public PlannerAllocationEditorViewModel(ParameterMetadata metadata,
     PlannerServiceInfo? plannerInfo,
     IEnumerable<PlannerServiceInfo> plannerAdapters,
-    AresPlannerManagementService.AresPlannerManagementServiceClient plannerClient,
+    PlannerService plannerClient,
     INotificationReceivingService notificationService)
   {
     var plannerArray = plannerAdapters.ToArray();
@@ -58,7 +59,7 @@ public partial class PlannerAllocationEditorViewModel : ReactiveObject
     if(SelectedService is null)
       return;
 
-    var updatedInfo = await _plannerClient.GetInfoAsync(new PlannerInfoRequest { PlannerId = SelectedService.UniqueId });
+    var updatedInfo = await _plannerClient.GetInfo(new PlannerInfoRequest { PlannerId = SelectedService.UniqueId }, null);
 
     if(updatedInfo.Info.Name != string.Empty)
     {

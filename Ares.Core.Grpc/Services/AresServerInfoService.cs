@@ -1,4 +1,5 @@
-﻿using System;
+using System.Threading;
+using System;
 using System.Reactive.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -13,7 +14,7 @@ namespace Ares.Core.Grpc.Services;
 public class AresServerInfoService : AresServerInfo.AresServerInfoBase
 {
   [AllowAnonymous]
-  public override Task<ServerInfoResponse> GetServerInfo(Empty request, ServerCallContext context)
+  public override Task<ServerInfoResponse> GetServerInfo(Empty request, ServerCallContext? context)
   {
     var serverInfo = new ServerInfoResponse
     {
@@ -25,10 +26,11 @@ public class AresServerInfoService : AresServerInfo.AresServerInfoBase
   }
 
   [AuthorizeRoles(AresUserType.AresUser)]
-  public override async Task GetServerStatusStream(Empty request, IServerStreamWriter<ServerStatusResponse> responseStream, ServerCallContext context)
+  public override async Task GetServerStatusStream(Empty request, IServerStreamWriter<ServerStatusResponse> responseStream, ServerCallContext? context)
   {
+    var cancellationToken = context?.CancellationToken ?? CancellationToken.None;
     var observable = ServerStatusHelper.ServerStatusSubject.AsObservable();
-    observable.Subscribe(response => responseStream.WriteAsync(response), () => {}, context.CancellationToken);
+    observable.Subscribe(response => responseStream.WriteAsync(response), () => {}, cancellationToken);
     await observable;
   }
 }

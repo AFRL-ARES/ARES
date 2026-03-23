@@ -1,18 +1,19 @@
 ﻿using Ares.Services;
-using UI.Application.DeviceStateLogging;
+using Ares.Services.Device;
+using Ares.Core.Grpc.Services;
 
 namespace UI.Features.DeviceStateLogging;
 
 public class DeviceStateFilterViewModelFactory
 {
-  private readonly AresAutomation.AresAutomationClient _automationClient;
-  readonly ICombinedDeviceGetter _deviceGetter;
+  private readonly AutomationService _automationClient;
+  private readonly DevicesService _devicesClient;
 
-  public DeviceStateFilterViewModelFactory(AresAutomation.AresAutomationClient automationClient, ICombinedDeviceGetter deviceGetter)
+  public DeviceStateFilterViewModelFactory(AutomationService automationClient, DevicesService devicesClient)
   {
-    _deviceGetter = deviceGetter;
+    _devicesClient = devicesClient;
     _automationClient = automationClient;
   }
 
-  public DeviceStateFilterViewModel Create() => new DeviceStateFilterViewModel(_automationClient, _deviceGetter);
+  public DeviceStateFilterViewModel Create() => new DeviceStateFilterViewModel(_devicesClient, _automationClient);
 }

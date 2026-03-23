@@ -18,7 +18,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
   private readonly Action<AresFunctionInvocation>? _functionInvocationObserver;
   private readonly Action<AresFunctionExecutionEvent>? _functionExecutionEventObserver;
   private readonly AsyncLocal<Stack<string>> _callStack = new();
-  private readonly Stack<(string FunctionId, SchemaEntry ReturnSchema)> _activeFunctionReturnTypes = [];
+  private readonly Stack<(string FunctionId, AresValueSchema ReturnSchema)> _activeFunctionReturnTypes = [];
   private long _nextCallId;
   private int _lvalueResolutionDepth;
 
@@ -952,7 +952,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
       if(!AresScriptTypeHints.IsCompatibleWithTypeHint(result, declaredReturnSchema))
       {
-        var actualSchema = result.ToSchemaEntry();
+        var actualSchema = result.ToAresValueSchema();
         throw new AresInterpreterException(
           $"Function '{id}' return type mismatch. Expected {declaredReturnSchema.Stringify()}, received {actualSchema.Stringify()}.",
           ctx.Start.Line,
@@ -994,7 +994,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
       return;
     }
 
-    var actualSchema = value.ToSchemaEntry();
+    var actualSchema = value.ToAresValueSchema();
     throw new AresInterpreterException(
       $"Function '{functionId}' return type mismatch. Expected {declaredReturnSchema.Stringify()}, received {actualSchema.Stringify()}.",
       line,
@@ -1025,7 +1025,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
           continue;
         }
 
-        var actualSchema = argument.ToSchemaEntry();
+        var actualSchema = argument.ToAresValueSchema();
         var argumentExpression = positionalArgExpressions[i];
         throw new AresInterpreterException(
           $"Function '{functionId}' argument '{parameterName}' type mismatch. Expected {expectedSchema.Stringify()}, received {actualSchema.Stringify()}.",
@@ -1041,7 +1041,7 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
           continue;
         }
 
-        var actualSchema = argument.ToSchemaEntry();
+        var actualSchema = argument.ToAresValueSchema();
         var keywordArg = keywordArgContexts[parameterName];
         throw new AresInterpreterException(
           $"Function '{functionId}' argument '{parameterName}' type mismatch. Expected {expectedSchema.Stringify()}, received {actualSchema.Stringify()}.",

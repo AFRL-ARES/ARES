@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using Ares.Datamodel.Templates;
 using Ares.Services;
 using Ares.Datamodel.Planning;
+using Ares.Core.Grpc.Services;
 using UI.Application.Notifications;
 
 namespace UI.Features.CampaignEdit.ViewModels;
@@ -10,12 +11,12 @@ namespace UI.Features.CampaignEdit.ViewModels;
 public class PlanningViewModel : ReactiveObject
 {
   private readonly CampaignTemplate _template;
-  private readonly AresPlannerManagementService.AresPlannerManagementServiceClient _client;
+  private readonly PlannerService _client;
   private readonly INotificationReceivingService _notificationService;
 
   public PlanningViewModel(CampaignTemplate template, 
     IEnumerable<PlannerServiceInfo> plannerAdapters, 
-    AresPlannerManagementService.AresPlannerManagementServiceClient client,
+    PlannerService client,
     INotificationReceivingService notificationService)
   {
     _template = template;

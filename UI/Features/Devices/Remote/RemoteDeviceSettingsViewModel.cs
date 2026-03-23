@@ -2,36 +2,31 @@ using Ares.Datamodel;
 using Ares.Datamodel.Device;
 using Ares.Services;
 using Ares.Services.Device;
-using CommunityToolkit.Mvvm.Messaging;
+using Ares.Core.Grpc.Services;
 using Grpc.Core;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System.Reactive;
 using System.Reactive.Linq;
-using UI.Features.Devices.Shared;
 using UI.Application.Notifications;
-using UI.Application.Devices;
 
 namespace UI.Features.Devices.Remote;
 
 public partial class RemoteDeviceSettingsViewModel : ReactiveObject
 {
-  private readonly AresDevices.AresDevicesClient _devicesClient;
+  private readonly DevicesService _devicesClient;
   private readonly INotificationReceivingService _notificationService;
   private readonly DeviceInfo _deviceInfo;
   private readonly ObservableAsPropertyHelper<bool> _isBusy;
-  private readonly IMessenger _deviceDeletionMessenger;
 
-  public RemoteDeviceSettingsViewModel(AresDevices.AresDevicesClient devicesService,
+  public RemoteDeviceSettingsViewModel(DevicesService devicesService,
       INotificationReceivingService notificationService,
       DeviceInfo deviceInfo,
-      IMessenger deviceDeletionMessenger,
       Func<Task> onRemoveCallback)
   {
     _devicesClient = devicesService;
     _notificationService = notificationService;
     _deviceInfo = deviceInfo;
-    _deviceDeletionMessenger = deviceDeletionMessenger;
 
     Name = _deviceInfo.Name;
     Address = _deviceInfo.Url;
@@ -87,7 +82,7 @@ public partial class RemoteDeviceSettingsViewModel : ReactiveObject
   [Reactive]
   public partial string StateMessage { get; private set; }
   [Reactive]
-  public partial AresDataSchema SettingsSchema { get; private set; }
+  public partial AresStructSchema SettingsSchema { get; private set; }
   [Reactive]
   public partial AresStruct Settings { get; private set; }
   [Reactive]
@@ -113,7 +108,7 @@ public partial class RemoteDeviceSettingsViewModel : ReactiveObject
       Name = deviceConfig.Name,
       Url = deviceConfig.Url
     };
-    var response = await _devicesClient.UpdateRemoteDeviceAsync(request);
+    var response = await _devicesClient.UpdateRemoteDevice(request, null);
     if(response.Success)
     {
       PushNotification(new AresNotification
@@ -140,15 +135,14 @@ public partial class RemoteDeviceSettingsViewModel : ReactiveObject
   private async Task RemoveAsync(Func<Task> onRemoveCallback)
   {
     var request = new RemoveRemoteDeviceRequest() { DeviceId = _deviceInfo.UniqueId };
-    _deviceDeletionMessenger.Send(new DeviceDeletedMessage(_deviceInfo.UniqueId));
-    await _devicesClient.RemoveRemoteDeviceAsync(request);
+    await _devicesClient.RemoveRemoteDevice(request, null);
     await onRemoveCallback();
   }
 
   private async Task UpdateStateAsync()
   {
     var request = new DeviceStatusRequest() { DeviceId = _deviceInfo.UniqueId };
-    var stateResponse = await _devicesClient.GetDeviceStatusAsync(request);
+    var stateResponse = await _devicesClient.GetDeviceStatus(request, null);
     StateMessage = stateResponse.Message;
     OperationalState = stateResponse.OperationalState;
   }
@@ -156,7 +150,7 @@ public partial class RemoteDeviceSettingsViewModel : ReactiveObject
   private async Task FetchSettingsAsync()
   {
     var request = new DeviceSettingsRequest() { DeviceId = _deviceInfo.UniqueId };
-    var deviceSettings = await _devicesClient.GetDeviceSettingsAsync(request);
+    var deviceSettings = await _devicesClient.GetDeviceSettings(request, null);
     Settings = deviceSettings;
   }
 
@@ -165,7 +159,7 @@ public partial class RemoteDeviceSettingsViewModel : ReactiveObject
     var settings = new DeviceSettings() { DeviceId = _deviceInfo.UniqueId, Settings = Settings };
     try
     {
-      await _devicesClient.SetDeviceSettingsAsync(settings);
+      await _devicesClient.SetDeviceSettings(settings, null);
     }
     catch(Exception e)
     {
@@ -176,24 +170,24 @@ public partial class RemoteDeviceSettingsViewModel : ReactiveObject
   private async Task UpdateInfoAsync()
   {
     var request = new DeviceInfoRequest() { DeviceId = _deviceInfo.UniqueId };
-    var infoResponse = await _devicesClient.GetDeviceInfoAsync(request);
+    var infoResponse = await _devicesClient.GetDeviceInfo(request, null);
     Type = infoResponse.Type;
     Name = infoResponse.Name;
     Address = infoResponse.Url;
     Version = infoResponse.Version;
     Description = infoResponse.Description;
-    SettingsSchema = infoResponse.SettingsSchema ?? new AresDataSchema();
+    SettingsSchema = infoResponse.SettingsSchema ?? new AresStructSchema();
   }
 
   public async Task<DeviceOperationalStatus> GetOperationalStatus()
   {
     try
     {
-      var status = await _devicesClient.GetDeviceStatusAsync(new DeviceStatusRequest { DeviceId = _deviceInfo.UniqueId }).ResponseAsync;
+      var status = await _devicesClient.GetDeviceStatus(new DeviceStatusRequest { DeviceId = _deviceInfo.UniqueId }, null);
       DeviceActive = status.OperationalState is OperationalState.Active;
       return status;
     }
-    catch(RpcException)
+    catch(Exception)
     {
       return new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Unable to find a registered device with a name {_deviceInfo.Name}" };
     }

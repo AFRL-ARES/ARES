@@ -41,8 +41,8 @@ internal class NoneAnalyzer : AnalyzerBase
     return Task.FromResult(capability);
   }
 
-  public override Task<AresDataSchema> GetParameters(CancellationToken cancellationToken)
+  public override Task<AresStructSchema> GetParameters(CancellationToken cancellationToken)
   {
-    return Task.FromResult(new AresDataSchema());
+    return Task.FromResult(new AresStructSchema());
   }
 }

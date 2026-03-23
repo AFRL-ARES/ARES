@@ -6,7 +6,7 @@ using Grpc.Core;
 
 namespace Ares.Core.Grpc.Services;
 
-class AnalysisService : AresAnalysisService.AresAnalysisServiceBase
+public class AnalysisService : AresAnalysisService.AresAnalysisServiceBase
 {
   private readonly IAnalyzerRepo _analyzerRepo;
 
@@ -15,7 +15,7 @@ class AnalysisService : AresAnalysisService.AresAnalysisServiceBase
     _analyzerRepo = analyzerRepo;
   }
 
-  public override async Task<AnalyzerParametersResponse> GetAnalyzerParameters(AnalyzerParametersRequest request, ServerCallContext context)
+  public override async Task<AnalyzerParametersResponse> GetAnalyzerParameters(AnalyzerParametersRequest request, ServerCallContext? context)
   {
     var analyzer = _analyzerRepo.GetAnalyzerById(request.AnalyzerId) ?? _analyzerRepo.GetDefaultAnalyzer();
 
@@ -28,7 +28,7 @@ class AnalysisService : AresAnalysisService.AresAnalysisServiceBase
     return response;
   }
 
-  public override async Task<ValidationResult> ValidateInputs(InputValidationRequest request, ServerCallContext context)
+  public override async Task<ValidationResult> ValidateInputs(InputValidationRequest request, ServerCallContext? context)
   {
     var analyzer = _analyzerRepo.GetAnalyzerById(request.AnalyzerId) ?? _analyzerRepo.GetDefaultAnalyzer();
 

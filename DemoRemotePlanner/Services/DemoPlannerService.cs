@@ -103,7 +103,7 @@ public class DemoPlannerService : AresRemotePlannerService.AresRemotePlannerServ
     capabilitesResponse.TimeoutSeconds = 30;
     capabilitesResponse.AcceptedTypes.Add(AresDataType.Number);
 
-    capabilitesResponse.SettingsSchema = new AresDataSchema
+    capabilitesResponse.SettingsSchema = new AresStructSchema
     {
       Fields =
       {

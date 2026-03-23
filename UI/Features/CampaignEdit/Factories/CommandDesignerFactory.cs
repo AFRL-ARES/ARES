@@ -1,5 +1,6 @@
 ﻿using Ares.Datamodel.Templates;
 using Ares.Services.Device;
+using Ares.Core.Grpc.Services;
 using CommandDesignerViewModel=UI.Features.CampaignEdit.ViewModels.CommandDesignerViewModel;
 
 namespace UI.Features.CampaignEdit.Factories;
@@ -7,13 +8,13 @@ namespace UI.Features.CampaignEdit.Factories;
 public class CommandDesignerFactory
 {
   private readonly CommandParameterDesignerFactory _commandParameterDesignerFactory;
-  private readonly AresDevices.AresDevicesClient _devicesClient;
+  private readonly DevicesService _devicesClient;
   private readonly MetadataPickerFactory _metadataPickerFactory;
 
   public CommandDesignerFactory(
     MetadataPickerFactory metadataPickerFactory,
     CommandParameterDesignerFactory commandParameterDesignerFactory,
-    AresDevices.AresDevicesClient devicesClient)
+    DevicesService devicesClient)
   {
     _metadataPickerFactory = metadataPickerFactory;
     _commandParameterDesignerFactory = commandParameterDesignerFactory;

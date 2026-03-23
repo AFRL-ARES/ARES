@@ -146,13 +146,13 @@ public class AresScriptBlockBuilder
   public AresScriptBlockBuilder AddFunction(
     string name,
     Action<AresScriptBlockBuilder> configureBody,
-    SchemaEntry? returnSchema,
+    AresValueSchema? returnSchema,
     params AresScriptParameter[] parameters)
   {
     return AddFunction(name, parameters, configureBody, returnSchema);
   }
 
-  public AresScriptBlockBuilder AddFunction(string name, IEnumerable<AresScriptParameter> parameters, Action<AresScriptBlockBuilder> configureBody, SchemaEntry? returnSchema = null)
+  public AresScriptBlockBuilder AddFunction(string name, IEnumerable<AresScriptParameter> parameters, Action<AresScriptBlockBuilder> configureBody, AresValueSchema? returnSchema = null)
   {
     var safeName = ValidateIdentifier(name, nameof(name));
     ArgumentNullException.ThrowIfNull(parameters);

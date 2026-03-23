@@ -1,5 +1,6 @@
 using Ares.Datamodel.Planning;
 using Ares.Services;
+using Ares.Core.Grpc.Services;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
@@ -10,10 +11,10 @@ namespace UI.Features.Planning.Settings;
 
 public partial class PlannerSettingsListViewModel : ReactiveObject
 {
-  private readonly AresPlannerManagementService.AresPlannerManagementServiceClient _planningService;
+  private readonly PlannerService _planningService;
   private readonly INotificationReceivingService _notificationService;
 
-  public PlannerSettingsListViewModel(AresPlannerManagementService.AresPlannerManagementServiceClient planningService,
+  public PlannerSettingsListViewModel(PlannerService planningService,
     INotificationReceivingService notificationService)
   {
     _planningService = planningService;
@@ -27,8 +28,8 @@ public partial class PlannerSettingsListViewModel : ReactiveObject
   {
     SettingsViewModels = null;
     return _planningService
-      .GetAllPlannersAsync(new Empty())
-      .ResponseAsync.ContinueWith(task => UpdateViewModels(task.Result.Planners));
+      .GetAllPlanners(new Empty(), null)
+      .ContinueWith(task => { if(task.IsCompletedSuccessfully) UpdateViewModels(task.Result.Planners); });
   }
 
   private void UpdateViewModels(IEnumerable<PlannerServiceInfo> plannerAdapters)
@@ -41,7 +42,7 @@ public partial class PlannerSettingsListViewModel : ReactiveObject
   public async Task AddNewPlanner(PlannerServiceInfo plannerAdapter)
   {
     var request = new AddPlannerRequest() { Name = plannerAdapter.Name, Address = plannerAdapter.Address };
-    await _planningService.AddPlannerAsync(request);
+    await _planningService.AddPlanner(request, null);
     await UpdateAvailablePlanners();
   }
 

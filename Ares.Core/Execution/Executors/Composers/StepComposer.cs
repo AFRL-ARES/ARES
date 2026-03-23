@@ -1,19 +1,19 @@
-﻿using Ares.Core.Device;
+﻿using Ares.Core.Device.Repos;
 using Ares.Core.Notifications;
 using Ares.Datamodel;
+using Ares.Datamodel.Device;
 using Ares.Datamodel.Templates;
 
 namespace Ares.Core.Execution.Executors.Composers;
 
 public class StepComposer : ICommandComposer<StepTemplate, StepExecutor>
 {
-  private readonly IDeviceCommandInterpreterRepo _interpreterRepo;
   private readonly INotifier _notifier;
+  private readonly IAresDeviceRepo _deviceRepo;
 
-
-  public StepComposer(IDeviceCommandInterpreterRepo interpreterRepo, INotifier notifier)
+  public StepComposer(IAresDeviceRepo deviceRepo, INotifier notifier)
   {
-    _interpreterRepo = interpreterRepo;
+    _deviceRepo = deviceRepo;
     _notifier = notifier;
   }
 
@@ -29,16 +29,22 @@ public class StepComposer : ICommandComposer<StepTemplate, StepExecutor>
           {
             var deviceId = commandTemplate.Metadata?.DeviceId;
             if(deviceId is null)
-            {
               throw new InvalidOperationException("Device ID was null when attempting to retrieve the command interpreter");
-            }
-            var commandInterpreter =
-              _interpreterRepo
-                .GetCommandInterpreterByDeviceId(deviceId);
 
-            var command = commandInterpreter.TemplateToDeviceCommand(commandTemplate);
-            var executable = new CommandExecutor(command, commandTemplate, _notifier);
-            return executable;
+            var device = _deviceRepo.FirstOrDefault(d => d.UniqueId == deviceId);
+
+            if(device is not null && commandTemplate.Metadata is not null)
+            {
+              var commandArgs = new List<DeviceCommandArgument>();
+              commandArgs.AddRange(commandTemplate.Parameters.Select(p => new DeviceCommandArgument() { ArgName = p.Metadata.Name, ArgValue = p.Value }));
+
+              Func<CancellationToken, Task<CommandResult>> internalAction = async (ct)
+                => await device.ExecuteCommand(commandTemplate.Metadata.Name, commandArgs, ct);
+
+              return new CommandExecutor(internalAction, commandTemplate, _notifier);
+            }
+
+            throw new InvalidOperationException("I'm not certain what to do here yet :(");
           }
         )
         .ToArray();

@@ -9,7 +9,7 @@ public record AresScriptFunction(
   string Name,
   IReadOnlyList<AresScriptParameter> Parameters,
   AresLangParser.FuncBlockContext Body,
-  SchemaEntry ReturnSchema,
+  AresValueSchema ReturnSchema,
   string? Description = null,
   string? Documentation = null,
   string? ParentName = null) : IFunctionSymbol

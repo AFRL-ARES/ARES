@@ -2,6 +2,7 @@
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Templates;
 using Ares.Services;
+using Ares.Core.Grpc.Services;
 using Google.Protobuf.WellKnownTypes;
 using NuGet.Packaging;
 using ReactiveUI;
@@ -11,15 +12,15 @@ namespace UI.Features.CampaignEdit.ViewModels;
 
 public partial class AnalyzerDesignerViewModel : ReactiveObject
 {
-  private readonly AresAnalysisService.AresAnalysisServiceClient _analysisServiceClient;
+  private readonly AnalysisService _analysisService;
   private readonly ExperimentTemplate _experimentTemplate;
   readonly IEnumerable<CommandDesignerViewModel> _commandDesignerViewModels;
   readonly IEnumerable<CommandDesignerViewModel> _startupCommandDesignerViewModels;
-  readonly AresAnalyzerManagementService.AresAnalyzerManagementServiceClient _analyzerManagementClient;
+  readonly AnalyzerService _analyzerManagementClient;
   private string? _analyzerId = null;
 
-  public AnalyzerDesignerViewModel(AresAnalysisService.AresAnalysisServiceClient analysisServiceClient,
-    AresAnalyzerManagementService.AresAnalyzerManagementServiceClient analyzerManagementClient, 
+  public AnalyzerDesignerViewModel(AnalysisService analysisService,
+    AnalyzerService analyzerManagementClient, 
     ExperimentTemplate experimentTemplate, 
     IEnumerable<CommandDesignerViewModel> commandDesignerViewModels,
     IEnumerable<CommandDesignerViewModel> startupCommandDesignerViewModels)
@@ -27,7 +28,7 @@ public partial class AnalyzerDesignerViewModel : ReactiveObject
     _analyzerManagementClient = analyzerManagementClient;
     _commandDesignerViewModels = commandDesignerViewModels;
     _startupCommandDesignerViewModels = startupCommandDesignerViewModels;
-    _analysisServiceClient = analysisServiceClient;
+    _analysisService = analysisService;
     _experimentTemplate = experimentTemplate;
 
     AnalyzerId = string.IsNullOrEmpty(_experimentTemplate.AnalyzerId) ? "NONE-ANALYZER" : _experimentTemplate.AnalyzerId;
@@ -45,8 +46,8 @@ public partial class AnalyzerDesignerViewModel : ReactiveObject
       return;
     }
 
-    var parameters = await _analysisServiceClient.GetAnalyzerParametersAsync(
-      new AnalyzerParametersRequest { AnalyzerId = AnalyzerId });
+    var parameters = await _analysisService.GetAnalyzerParameters(
+      new AnalyzerParametersRequest { AnalyzerId = AnalyzerId }, null);
 
     var inputMappings = parameters.AnalysisSchema.Fields.Select(field => new ExperimentOutputAnalyzerInputMapping(field.Key, field.Value.Type, !field.Value.Optional)).ToArray();
 
@@ -68,7 +69,7 @@ public partial class AnalyzerDesignerViewModel : ReactiveObject
 
   public async Task UpdateAvailableAnalyzers()
   {
-    var analyzers = await _analyzerManagementClient.GetAllAnalyzersAsync(new Empty());
+    var analyzers = await _analyzerManagementClient.GetAllAnalyzers(new Empty(), null);
     AvailableAnalyzers = analyzers.Analyzers.ToList();
   }
 
@@ -81,7 +82,7 @@ public partial class AnalyzerDesignerViewModel : ReactiveObject
       await UpdateAvailableAnalyzers();
     
     var request = new AnalyzerInfoRequest() { AnalyzerId = AnalyzerId };
-    Analyzer = _analyzerManagementClient.GetInfo(request).Info;
+    Analyzer = (await _analyzerManagementClient.GetInfo(request, null)).Info;
   }
 
   private void CalculateAppropriateOutputs(IEnumerable<ExperimentOutputAnalyzerInputMapping> outputInputMappings)

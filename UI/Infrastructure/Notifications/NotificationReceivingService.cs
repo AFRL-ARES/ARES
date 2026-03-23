@@ -1,19 +1,21 @@
 using Ares.Services;
+using Ares.Core.Grpc.Services.Notifications;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using NuGet.Packaging;
 using UI.Application.Notifications;
+using UI.Infrastructure.Grpc;
 
 namespace UI.Infrastructure.Notifications;
 
 public class NotificationReceivingService : INotificationReceivingService
 {
-  private readonly AresNotificationRpc.AresNotificationRpcClient _notificationClient;
+  private readonly AresNotificationService _notificationClient;
   private readonly IUiNotificationService _uiNotificationService;
   private readonly INotificationRepository _notificationRepo;
 
   public NotificationReceivingService(
-    AresNotificationRpc.AresNotificationRpcClient notificationClient,
+    AresNotificationService notificationClient,
     IUiNotificationService uiNotificationService,
     INotificationRepository notificationRepo)
   {
@@ -29,11 +31,13 @@ public class NotificationReceivingService : INotificationReceivingService
 
     Task.Run(async () =>
     {
-      using var stream = _notificationClient.Subscribe(subscriptionRequest);
+      var stream = new LocalStream<AresNotification>();
+      _ = _notificationClient.Subscribe(subscriptionRequest, stream, null);
       try
       {
-        await foreach (var notification in stream.ResponseStream.ReadAllAsync())
+        while (await stream.MoveNext(default))
         {
+          var notification = stream.Current;
           var userNotification = new UiNotificationMessage
           {
             Summary = notification.Title,
@@ -47,9 +51,9 @@ public class NotificationReceivingService : INotificationReceivingService
           _notificationRepo.Add(notification);
         }
       }
-      catch(RpcException ex)
+      catch(Exception ex)
       {
-        Console.WriteLine($"Error receiving notifications: {ex.Status}");
+        Console.WriteLine($"Error receiving notifications: {ex.Message}");
       }
     });
   }
@@ -77,7 +81,7 @@ public class NotificationReceivingService : INotificationReceivingService
 
   public async Task GetLatestNotificationHistory()
   {
-    var history = await _notificationClient.GetUpdatedNotificationListAsync(new Empty());
+    var history = await _notificationClient.GetUpdatedNotificationList(new Empty(), null);
     _notificationRepo.AddRange(history.Notifications);
   }
 

@@ -2,12 +2,13 @@ using Ares.Services;
 using Microsoft.JSInterop;
 using UI.Application.Scripting;
 using MonacoCompletionItem = BlazorMonaco.Languages.CompletionItem;
+using ScriptingService = Ares.Core.Grpc.Services.AresScriptingService;
 
 namespace UI.Infrastructure.Monaco.Interops;
 
-public class MonacoCompletionProvider(AresScriptingService.AresScriptingServiceClient aresScriptingServiceClient) : IMonacoCompletionProvider
+public class MonacoCompletionProvider(ScriptingService scriptingService) : IMonacoCompletionProvider
 {
-  private readonly AresScriptingService.AresScriptingServiceClient _aresScriptingServiceClient = aresScriptingServiceClient;
+  private readonly ScriptingService _scriptingService = scriptingService;
 
   [JSInvokable]
   public async Task<MonacoCompletionItem[]> GetCompletionItems(string script, int line, int column)
@@ -19,7 +20,7 @@ public class MonacoCompletionProvider(AresScriptingService.AresScriptingServiceC
       Script = script
     };
 
-    var completions = await _aresScriptingServiceClient.GetCompletionsAsync(request);
+    var completions = await _scriptingService.GetCompletions(request, null!);
     return completions.Items.Select(item => item.ToMonacoCompletionItem()).ToArray();
   }
 }

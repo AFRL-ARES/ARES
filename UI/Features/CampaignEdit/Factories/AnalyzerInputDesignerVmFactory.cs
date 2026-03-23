@@ -1,19 +1,20 @@
 ﻿using Ares.Datamodel.Templates;
-using Ares.Services;
-using AnalyzerDesignerViewModel=UI.Features.CampaignEdit.ViewModels.AnalyzerDesignerViewModel;
+using Ares.Core.Grpc.Services;
+using AnalyzerDesignerViewModel =UI.Features.CampaignEdit.ViewModels.AnalyzerDesignerViewModel;
 using CommandDesignerViewModel=UI.Features.CampaignEdit.ViewModels.CommandDesignerViewModel;
 
 namespace UI.Features.CampaignEdit.Factories;
 
 public class AnalyzerInputDesignerVmFactory
 {
-  readonly AresAnalysisService.AresAnalysisServiceClient _analysisServiceClient;
-  readonly AresAnalyzerManagementService.AresAnalyzerManagementServiceClient _analyzerManagementClient;
-  public AnalyzerInputDesignerVmFactory(AresAnalysisService.AresAnalysisServiceClient analysisServiceClient, AresAnalyzerManagementService.AresAnalyzerManagementServiceClient analyzerManagementClient)
+  readonly AnalysisService _analysisService;
+  readonly AnalyzerService _analyzerManagementClient;
+
+  public AnalyzerInputDesignerVmFactory(AnalysisService analysisService, AnalyzerService analyzerManagementClient)
   {
     _analyzerManagementClient = analyzerManagementClient;
-    _analysisServiceClient = analysisServiceClient;
+    _analysisService = analysisService;
   }
 
-  public AnalyzerDesignerViewModel Create(ExperimentTemplate experimentTemplate, IEnumerable<CommandDesignerViewModel> commandDesignerViewModels, IEnumerable<CommandDesignerViewModel> startupCommandDesignerViewModels) => new(_analysisServiceClient, _analyzerManagementClient, experimentTemplate, commandDesignerViewModels, startupCommandDesignerViewModels);
+  public AnalyzerDesignerViewModel Create(ExperimentTemplate experimentTemplate, IEnumerable<CommandDesignerViewModel> commandDesignerViewModels, IEnumerable<CommandDesignerViewModel> startupCommandDesignerViewModels) => new(_analysisService, _analyzerManagementClient, experimentTemplate, commandDesignerViewModels, startupCommandDesignerViewModels);
 }

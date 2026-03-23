@@ -2,6 +2,7 @@
 using Ares.Datamodel.Device;
 using Ares.Services;
 using Ares.Services.Device;
+using Ares.Core.Grpc.Services;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using DeviceStateRequest = Ares.Services.DeviceStateRequest;
@@ -10,11 +11,11 @@ namespace UI.Features.DeviceStateLogging;
 
 public class ManualDeviceLoggerWidgetViewModel : ReactiveObject
 {
-  private readonly DeviceStateExportService.DeviceStateExportServiceClient _stateExportClient;
-  readonly AresDevices.AresDevicesClient _devicesClient;
+  private readonly Ares.Core.Grpc.Services.DeviceStateExportService _stateExportClient;
+  readonly DevicesService _devicesClient;
   private IEnumerable<string> _activeDevices = Array.Empty<string>();
 
-  public ManualDeviceLoggerWidgetViewModel(DeviceStateExportService.DeviceStateExportServiceClient stateExportClient, AresDevices.AresDevicesClient devicesClient)
+  public ManualDeviceLoggerWidgetViewModel(Ares.Core.Grpc.Services.DeviceStateExportService stateExportClient, DevicesService devicesClient)
   {
     _stateExportClient = stateExportClient;
     _devicesClient = devicesClient;
@@ -34,7 +35,7 @@ public class ManualDeviceLoggerWidgetViewModel : ReactiveObject
     HasData = false;
     IsCollecting = true;
     CollectionStarted = DateTime.UtcNow;
-    var devicesResponse = await _devicesClient.ListAresDevicesAsync(new Empty());
+    var devicesResponse = await _devicesClient.ListAresDevices(new Empty(), null);
     _activeDevices = devicesResponse.AresDevices.Select(dev => dev.UniqueId).ToList();
   }
 
@@ -56,7 +57,7 @@ public class ManualDeviceLoggerWidgetViewModel : ReactiveObject
     reqFilter.DeviceIds.AddRange(_activeDevices);
     var stateReq = new DeviceStateRequest { Filter = reqFilter, ExportType = ExportType.Combined };
 
-    var result = await _stateExportClient.GetStateExportAsync(stateReq);
+    var result = await _stateExportClient.GetStateExport(stateReq, null);
 
     return result.Data.ToArray();
   }

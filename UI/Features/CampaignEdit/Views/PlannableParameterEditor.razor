@@ -55,7 +55,7 @@
 
   @if(ViewModel!.HasInitialValue)
   {
-    <AresValueDesigner ValueEditCallback="ValueEditCallback" Schema="new SchemaEntry { Type = ViewModel!.DataType }" Value="@ViewModel!.InitialValue" Unit="" Name="Initial Value"/>
+    <AresValueDesigner ValueEditCallback="ValueEditCallback" Schema="new AresValueSchema { Type = ViewModel!.DataType }" Value="@ViewModel!.InitialValue" Unit="" Name="Initial Value"/>
   }
 
 

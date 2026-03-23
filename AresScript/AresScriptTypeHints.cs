@@ -14,10 +14,10 @@ internal static class AresScriptTypeHints
     .Select(type => type.ToString())
     .ToArray();
 
-  public static bool TryParseTypeHint(AresLangParser.TypeHintContext? typeHint, out SchemaEntry schema)
+  public static bool TryParseTypeHint(AresLangParser.TypeHintContext? typeHint, out AresValueSchema schema)
     => TryParseTypeHint(typeHint, out schema, out _);
 
-  public static bool TryParseTypeHint(AresLangParser.TypeHintContext? typeHint, out SchemaEntry schema, out string? error)
+  public static bool TryParseTypeHint(AresLangParser.TypeHintContext? typeHint, out AresValueSchema schema, out string? error)
   {
     error = null;
     schema = AresSchemaBuilder.Entry(AresDataType.Any).Build();
@@ -37,7 +37,7 @@ internal static class AresScriptTypeHints
 
       case AresLangParser.StructTypeRefContext structTypeHint:
         {
-          var structSchema = new AresDataSchema();
+          var structSchema = new AresStructSchema();
           foreach(var field in structTypeHint.structTypeHint().typeHintField())
           {
             if(!TryParseTypeHint(field.typeHint(), out var fieldSchema, out error))
@@ -68,14 +68,14 @@ internal static class AresScriptTypeHints
     }
   }
 
-  public static SchemaEntry SchemaFromTypeHint(AresLangParser.TypeHintContext? typeHint)
+  public static AresValueSchema SchemaFromTypeHint(AresLangParser.TypeHintContext? typeHint)
   {
     return TryParseTypeHint(typeHint, out var schema, out _)
       ? schema
       : AresSchemaBuilder.Entry(AresDataType.Any).Build();
   }
 
-  public static SchemaEntry SchemaFromTypeHint(string? typeHint)
+  public static AresValueSchema SchemaFromTypeHint(string? typeHint)
   {
     if(string.IsNullOrWhiteSpace(typeHint))
     {
@@ -97,14 +97,14 @@ internal static class AresScriptTypeHints
     return SchemaFromTypeHint(functionDecl.functionDeclaration().parameterList()?.parameter().FirstOrDefault()?.typeHint());
   }
 
-  public static bool IsCompatibleWithTypeHint(SchemaEntry actual, SchemaEntry expected)
+  public static bool IsCompatibleWithTypeHint(AresValueSchema actual, AresValueSchema expected)
   {
     return IsCompatible(expected, actual);
   }
 
-  public static bool IsCompatibleWithTypeHint(AresValue actual, SchemaEntry expected)
+  public static bool IsCompatibleWithTypeHint(AresValue actual, AresValueSchema expected)
   {
-    if(!IsCompatibleWithTypeHint(actual.ToSchemaEntry(), expected))
+    if(!IsCompatibleWithTypeHint(actual.ToAresValueSchema(), expected))
     {
       return false;
     }
@@ -122,17 +122,17 @@ internal static class AresScriptTypeHints
     return true;
   }
 
-  public static bool IsCompatibleWithTypeHint(SchemaEntry actual, AresDataType expectedType)
+  public static bool IsCompatibleWithTypeHint(AresValueSchema actual, AresDataType expectedType)
   {
     return IsCompatibleWithTypeHint(actual, AresSchemaBuilder.Entry(expectedType).Build());
   }
 
   public static bool IsCompatibleWithTypeHint(AresValue actual, AresDataType expectedType)
   {
-    return IsCompatibleWithTypeHint(actual.ToSchemaEntry(), expectedType);
+    return IsCompatibleWithTypeHint(actual.ToAresValueSchema(), expectedType);
   }
 
-  private static bool IsCompatible(SchemaEntry expected, SchemaEntry actual)
+  private static bool IsCompatible(AresValueSchema expected, AresValueSchema actual)
   {
     if(expected.Type == AresDataType.Any || expected.Type == AresDataType.UnspecifiedType)
     {
@@ -203,7 +203,7 @@ internal static class AresScriptTypeHints
     return true;
   }
 
-  private static bool IsCompatible(SchemaEntry expected, double actual)
+  private static bool IsCompatible(AresValueSchema expected, double actual)
   {
     if(expected.HasMinNumberValue && actual < expected.MinNumberValue)
     {
@@ -267,14 +267,15 @@ internal static class AresScriptTypeHints
 
   private static bool TryConvertActualQuantityToBoundsScalar(IQuantity actualQuantity, string boundsUnit, out double scalar)
   {
+    UnitsNetAbbreviationExtensions.EnsureRegistered();
+
     scalar = 0;
     if(string.IsNullOrWhiteSpace(boundsUnit))
     {
       return false;
     }
 
-    if(!UnitParser.Default.TryParse(boundsUnit, actualQuantity.QuantityInfo.UnitType, out Enum? parsedUnit)
-      || parsedUnit is null)
+    if(!UnitsNetAbbreviationExtensions.Parser.TryParse(boundsUnit, actualQuantity.QuantityInfo.UnitType, out Enum? parsedUnit))
     {
       return false;
     }
@@ -339,6 +340,8 @@ internal static class AresScriptTypeHints
     double scalar,
     out IQuantity quantity)
   {
+    UnitsNetAbbreviationExtensions.EnsureRegistered();
+
     quantity = default!;
 
     if(string.IsNullOrWhiteSpace(schema.BoundsUnit))
@@ -365,7 +368,7 @@ internal static class AresScriptTypeHints
 
     // Try strict enum-name matching first, then fall back to UnitsNet parsing so
     // aliases/abbreviations (e.g. "s", "sec") can still resolve correctly.
-    if(enumUnit is null && !UnitParser.Default.TryParse(schema.BoundsUnit, quantityInfo.UnitType, out enumUnit))
+    if(enumUnit is null && !UnitsNetAbbreviationExtensions.Parser.TryParse(schema.BoundsUnit, quantityInfo.UnitType, out enumUnit))
     {
       return false;
     }
@@ -394,7 +397,7 @@ internal static class AresScriptTypeHints
   private static bool TryParseNamedTypeHint(
     AresLangParser.NamedTypeHintContext namedTypeHint,
     AresLangParser.TypeHintConstraintsContext? constraints,
-    out SchemaEntry schema,
+    out AresValueSchema schema,
     out string? error)
   {
     error = null;
@@ -443,7 +446,7 @@ internal static class AresScriptTypeHints
     return ApplyConstraints(schema, constraints, out error);
   }
 
-  private static bool ApplyConstraints(SchemaEntry schema, AresLangParser.TypeHintConstraintsContext constraints, out string? error)
+  private static bool ApplyConstraints(AresValueSchema schema, AresLangParser.TypeHintConstraintsContext constraints, out string? error)
   {
     error = null;
     var seenKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -507,7 +510,7 @@ internal static class AresScriptTypeHints
   }
 
   private static bool ApplyConstraint(
-    SchemaEntry schema,
+    AresValueSchema schema,
     string key,
     AresLangParser.TypeHintConstraintValueContext valueContext,
     out string? error)
@@ -528,7 +531,7 @@ internal static class AresScriptTypeHints
   }
 
   private static bool ApplyNumberConstraint(
-    SchemaEntry schema,
+    AresValueSchema schema,
     string key,
     AresLangParser.TypeHintConstraintValueContext valueContext,
     out string? error)
@@ -557,7 +560,7 @@ internal static class AresScriptTypeHints
   }
 
   private static bool ApplyQuantityConstraint(
-    SchemaEntry schema,
+    AresValueSchema schema,
     string key,
     AresLangParser.TypeHintConstraintValueContext valueContext,
     out string? error)
@@ -638,6 +641,8 @@ internal static class AresScriptTypeHints
 
   private static bool IsValidBoundsUnit(QuantityType quantityType, string boundsUnit, out string? error)
   {
+    UnitsNetAbbreviationExtensions.EnsureRegistered();
+
     error = null;
     try
     {
@@ -659,7 +664,7 @@ internal static class AresScriptTypeHints
         return true;
       }
 
-      if(UnitParser.Default.TryParse(boundsUnit, quantityInfo.UnitType, out Enum? parsedUnit) && parsedUnit is not null)
+      if(UnitsNetAbbreviationExtensions.Parser.TryParse(boundsUnit, quantityInfo.UnitType, out Enum? parsedUnit) && parsedUnit is not null)
       {
         return true;
       }
@@ -674,7 +679,7 @@ internal static class AresScriptTypeHints
     }
   }
 
-  private static bool AreStructSchemasCompatible(AresDataSchema? expected, AresDataSchema? actual)
+  private static bool AreStructSchemasCompatible(AresStructSchema? expected, AresStructSchema? actual)
   {
     if(expected is null || expected.Fields.Count == 0)
     {

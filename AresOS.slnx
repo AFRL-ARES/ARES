@@ -1,36 +1,17 @@
 <Solution>
-  <Project Path="AlicatMFC/AlicatMFC.csproj" />
+  <Folder Name="/Migrations/">
+    <Project Path="AresService.Migrations.Postgres/AresService.Migrations.Postgres.csproj" />
+    <Project Path="AresService.Migrations.Sqlite/AresService.Migrations.Sqlite.csproj" />
+    <Project Path="AresService.Migrations.SqlServer/AresService.Migrations.SqlServer.csproj" />
+  </Folder>
   <Project Path="Ares.Core.Grpc/Ares.Core.Grpc.csproj" />
   <Project Path="Ares.Core.Tests/Ares.Core.Tests.csproj" />
   <Project Path="Ares.Core/Ares.Core.csproj" />
-  <Project Path="Ares.Device.Rest/Ares.Device.Rest.csproj" />
-  <Project Path="Ares.Device.Serial.Tests/Ares.Device.Serial.Tests.csproj" />
-  <Project Path="Ares.Device.Serial/AresSerial/Ares.Device.Serial.csproj" />
-  <Project Path="Ares.Device.Tests/Ares.Device.Tests.csproj" />
-  <Project Path="Ares.Device.USB/Ares.Device.USB.csproj" />
-  <Project Path="Ares.Device/AresDevicePluginBase/Ares.Device.csproj" />
-  <Project Path="AresMessaging/AresMessaging.csproj" />
   <Project Path="AresScript.Tests/AresScript.Tests.csproj" />
   <Project Path="AresScript/AresScript.csproj" />
   <Project Path="AresService.Data/AresService.Data.csproj" />
-  <Project Path="AresService.Migrations.Postgres/AresService.Migrations.Postgres.csproj" />
-  <Project Path="AresService.Migrations.Sqlite/AresService.Migrations.Sqlite.csproj" />
-  <Project Path="AresService.Migrations.SqlServer/AresService.Migrations.SqlServer.csproj" />
-  <Project Path="AresService/AresService.csproj" />
-  <Project Path="ChemyxPumpPlugin/ChemyxPumpPlugin.csproj" />
   <Project Path="DemoRemoteAnalyzer/DemoRemoteAnalyzer.csproj" />
   <Project Path="DemoRemoteDevice/DemoRemoteDevice.csproj" />
   <Project Path="DemoRemotePlanner/DemoRemotePlanner.csproj" />
-  <Project Path="FlirCM3/FlirCM3.csproj" />
-  <Project Path="HerkulexDRS/HerkulexDRS.csproj" />
-  <Project Path="LaserChiller/LaserChiller.csproj" />
-  <Project Path="LindbergFurnace/LindbergFurnace.csproj" />
-  <Project Path="RestDevice/RestDevice.csproj" />
-  <Project Path="RestSerialDevice/RestSerialDevice.csproj" />
-  <Project Path="SyringePumpNE1000/SyringePumpNE1000.csproj" />
-  <Project Path="TC0304/TC0304.csproj" />
-  <Project Path="TicStepperController/TicStepperController.csproj" />
   <Project Path="UI/UI.csproj" />
-  <Project Path="ValveController/ValveController.csproj" />
-  <Project Path="VerdiV6Laser/VerdiV6Laser.csproj" />
 </Solution>

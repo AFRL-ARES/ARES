@@ -38,4 +38,10 @@
     </Protobuf>
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="Ares.Toolkit.Device">
+      <HintPath>..\..\Ares.Toolkit.Device\Ares.Toolkit.Device\bin\net10.0\Ares.Toolkit.Device.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>

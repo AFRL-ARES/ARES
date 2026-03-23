@@ -5,7 +5,10 @@ using AresScript.ScriptAnalysis;
 using Grpc.Core;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Reactive.Disposables;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using CoreScriptExecutionEvent = Ares.Core.Scripting.ScriptExecutionEvent;
@@ -24,6 +27,62 @@ public partial class AresScriptingService : Ares.Services.AresScriptingService.A
     _environmentBuilder = environmentBuilder;
 
   }
+
+  public async IAsyncEnumerable<CoreScriptExecutionEvent> ExecuteScript(
+    ScriptExecutionRequest request,
+    [EnumeratorCancellation] CancellationToken cancellationToken = default)
+  {
+    var channel = Channel.CreateBounded<CoreScriptExecutionEvent>(new BoundedChannelOptions(100));
+    var env = _environmentBuilder.Build();
+    var runner = new ScriptRunner(env);
+    var subscriptions = new CompositeDisposable
+    {
+      runner.ScriptEvents.Subscribe(executionEvent =>
+      {
+        if(!channel.Writer.TryWrite(executionEvent))
+        {
+          _logger.LogWarning("Dropped script event because channel is full. {Sequence}", executionEvent.Sequence);
+        }
+      })
+    };
+
+    var executionTask = ExecuteScriptAsync();
+
+    try
+    {
+      await foreach(var executionEvent in channel.Reader.ReadAllAsync(cancellationToken))
+      {
+        yield return executionEvent;
+      }
+    }
+    finally
+    {
+      await executionTask;
+    }
+
+    async Task ExecuteScriptAsync()
+    {
+      try
+      {
+        await runner.RunScriptAsync(request.Script, cancellationToken);
+        channel.Writer.TryComplete();
+      }
+      catch(OperationCanceledException) when(cancellationToken.IsCancellationRequested)
+      {
+        channel.Writer.TryComplete();
+      }
+      catch(Exception e)
+      {
+        channel.Writer.TryComplete();
+        _logger.LogError("Script runner failed: {Exception}", e);
+      }
+      finally
+      {
+        subscriptions.Dispose();
+      }
+    }
+  }
+
   public override async Task ExecuteScript(ScriptExecutionRequest request, IServerStreamWriter<GrpcScriptExecutionEvent> responseStream, ServerCallContext context)
   {
     var channel = Channel.CreateBounded<GrpcScriptExecutionEvent>(new BoundedChannelOptions(100));

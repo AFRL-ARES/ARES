@@ -1,6 +1,4 @@
 ﻿let _componentInstance = null;
-let currentMode = 'desktop';
-
 
 function getGridOptions(columnCount) {
   return {
@@ -39,22 +37,31 @@ function attachEvents(grid) {
 // --- EXPORTED FUNCTIONS ---
 
 export function initDashboard(id, componentInstance) {
-  _componentInstance = componentInstance; // Save for later re-inits
+  _componentInstance = componentInstance;
 
-  var options = getGridOptions(100); // Default to 100
-  var grid = GridStack.init(options, document.getElementById(id));
+  const options = getGridOptions(100);
+  const grid = GridStack.init(options, document.getElementById(id));
 
   attachEvents(grid);
+
+  const el = document.getElementById(id);
+  if (el) {
+    const initialItems = el.querySelectorAll('.grid-stack-item[gs-size-to-content="true"]');
+    initialItems.forEach(item => {
+      observeWidget(grid, item);
+    });
+  }
+
+  resizeToContent(id);
 }
 
 export function refreshGrid(id) {
-  var el = document.getElementById(id);
+  const el = document.getElementById(id);
   if (el && el.gridstack) {
-    var grid = el.gridstack;
-    var allItems = el.querySelectorAll('.grid-stack-item');
+    const grid = el.gridstack;
+    const allItems = el.querySelectorAll('.grid-stack-item');
 
-    // Filter for new items only
-    var newItems = Array.from(allItems).filter(item => !item.gridstackNode);
+    const newItems = Array.from(allItems).filter(item => !item.gridstackNode);
 
     newItems.forEach(item => {
       grid.makeWidget(item);
@@ -66,41 +73,48 @@ export function refreshGrid(id) {
 }
 
 export function resizeToContent(id) {
-  setTimeout(() => {
-    var el = document.getElementById(id);
-    if (el && el.gridstack) {
-      var grid = el.gridstack;
-      var dynamicItems = el.querySelectorAll('.grid-stack-item[gs-size-to-content="true"]');
-      dynamicItems.forEach(function (item) {
-        grid.resizeToContent(item);
-      });
-    }
-  }, 50);
+  const el = document.getElementById(id);
+  if (el && el.gridstack) {
+    const grid = el.gridstack;
+    const dynamicItems = el.querySelectorAll('.grid-stack-item[gs-size-to-content="true"]');
+    dynamicItems.forEach(item => {
+      grid.resizeToContent(item);
+    });
+  }
 }
 
 // --- INTERNAL HELPERS ---
 
 function observeWidget(grid, item) {
-  const content = item.querySelector('.grid-stack-item-content div');
+  const content = item.querySelector('.grid-stack-item-content');
   if (!content) return;
-  const observer = new ResizeObserver(() => {
-    grid.resizeToContent(item);
-  });
-  observer.observe(content);
-}
 
+  const innerWidget = content.firstElementChild;
+  const targetToObserve = innerWidget ? innerWidget : content;
+
+  let timeoutId;
+  const observer = new ResizeObserver(() => {
+    clearTimeout(timeoutId);
+
+    timeoutId = setTimeout(() => {
+      grid.resizeToContent(item);
+    }, 50);
+  });
+
+  observer.observe(targetToObserve);
+}
 function handleResponsiveGrid(gridId) {
-  var width = document.body.clientWidth;
-  var el = document.getElementById(gridId);
+  const width = document.body.clientWidth;
+  const el = document.getElementById(gridId);
   if (!el || !el.gridstack) return;
 
-  var grid = el.gridstack;
-  var newColCount = 100; // Default Desktop
+  const grid = el.gridstack;
+  let newColCount = 100; // Default Desktop
 
   if (width < 900) {
     return;
   } else if (width < 1600) {
-    newColCount = 50; // Laptop/Tablet Zoom
+    newColCount = 50;
   }
 
   // Only update if changed
@@ -110,4 +124,4 @@ function handleResponsiveGrid(gridId) {
 }
 
 // Hook resize listener
- window.addEventListener('resize', () => handleResponsiveGrid('my-dashboard'));
+window.addEventListener('resize', () => handleResponsiveGrid('my-dashboard'));

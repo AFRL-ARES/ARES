@@ -67,7 +67,7 @@ public class QuantitySymbolProvider : ISymbolProvider
     return symbols.ToArray();
   }
 
-  private static AresDataSchema BuildFromInputSchema()
+  private static AresStructSchema BuildFromInputSchema()
   {
     return AresSchemaBuilder.Empty()
       .AddEntry("value", AresSchemaBuilder.Entry(AresDataType.Number).Build())

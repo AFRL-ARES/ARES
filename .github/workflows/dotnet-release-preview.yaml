@@ -6,7 +6,6 @@ on:
 
 env:
   UI_PROJECT_FILE: 'UI/UI.csproj'
-  SERVICE_PROJECT_FILE: 'AresService/AresService.csproj'
   OUTPUT_PATH: 'publish' # Shared output directory for all artifacts
 
 jobs:
@@ -31,17 +30,24 @@ jobs:
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v6
+      uses: actions/checkout@v4
       with:
         ref: ${{ github.event.release.tag_name }}
 
+    # Clone the drivers repo into 'DriversRepo'
+    - name: Checkout Device Drivers
+      uses: actions/checkout@v4
+      with:
+        repository: 'AFRL-ARES/Ares.Device.Drivers'
+        path: 'DriversRepo'
+
     - name: Set up .NET 10.x
-      uses: actions/setup-dotnet@v5
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '10.x'
         
     - name: Setup Node.js Environment
-      uses: actions/setup-node@v6.2.0
+      uses: actions/setup-node@v4
       with:
         node-version: 24
 
@@ -49,18 +55,28 @@ jobs:
       run: npm ci
       working-directory: UI
 
+    # Build the drivers repo
+    - name: Build Device Drivers
+      working-directory: DriversRepo
+      run: |
+        echo "Building Device Drivers..."
+        dotnet build Ares.Device.Drivers.slnx --configuration Release
+
     - name: Restore Dependencies for UI and Service
       run: |
         dotnet restore ${{ env.UI_PROJECT_FILE }}
-        dotnet restore ${{ env.SERVICE_PROJECT_FILE }}
 
     - name: Build and Publish Self-Contained Release Artifacts
       run: |
         echo "Publishing UI Project for ${{ matrix.os_name_tag }}  (${{ matrix.runtime_id }})"
         dotnet publish ${{ env.UI_PROJECT_FILE }} --configuration Release --output ${{ env.OUTPUT_PATH }} /p:UseAppHost=true -r ${{ matrix.runtime_id }} --self-contained true
 
-        echo "Publishing Service Project for ${{ matrix.os_name_tag }}  (${{ matrix.runtime_id }})"
-        dotnet publish ${{ env.SERVICE_PROJECT_FILE }} --configuration Release --output ${{ env.OUTPUT_PATH }} /p:UseAppHost=true -r ${{ matrix.runtime_id }} --self-contained true
+    # Copy the plugins folder to the ARES publish directory
+    - name: Copy Driver Plugins to ARES Output
+      shell: bash
+      run: |
+        echo "Copying plugins to the publish directory..."
+        cp -r DriversRepo/plugins ${{ env.OUTPUT_PATH }}/plugins
 
     - name: Create ZIP Archive (Windows)
       if: runner.os == 'Windows'

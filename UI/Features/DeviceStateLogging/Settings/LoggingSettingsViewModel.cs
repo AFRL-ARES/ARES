@@ -1,6 +1,7 @@
 using System.Reactive;
 using Ares.Datamodel.Device;
 using Ares.Services.Device;
+using Ares.Core.Grpc.Services;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 
@@ -9,10 +10,10 @@ namespace UI.Features.DeviceStateLogging.Settings;
 public partial class LoggingSettingsViewModel : ReactiveObject
 {
   private readonly string _deviceId;
-  private readonly AresDevices.AresDevicesClient _devicesClient;
+  private readonly DevicesService _devicesClient;
   private readonly ObservableAsPropertyHelper<bool> _updatedObservable;
 
-  public LoggingSettingsViewModel(string deviceId, string deviceName, AresDevices.AresDevicesClient devicesClient)
+  public LoggingSettingsViewModel(string deviceId, string deviceName, DevicesService devicesClient)
   {
     _deviceId = deviceId;
     DeviceName = deviceName;
@@ -82,13 +83,13 @@ public partial class LoggingSettingsViewModel : ReactiveObject
   public async Task Init()
   {
     Fetched = false;
-    var settings = await _devicesClient.GetDeviceLoggerSettingsAsync(new DeviceLoggerSettingsRequest { DeviceId = _deviceId });
+    var settings = await _devicesClient.GetDeviceLoggerSettings(new DeviceLoggerSettingsRequest { DeviceId = _deviceId }, null);
 
     CurrentSettings = settings;
     IntervalMs = settings.IntervalMs;
     LoggingType = settings.LoggingType;
 
-    var stateSchema = await _devicesClient.GetDeviceStateSchemaAsync(new DeviceStateSchemaRequest { DeviceId = _deviceId });
+    var stateSchema = await _devicesClient.GetDeviceStateSchema(new DeviceStateSchemaRequest { DeviceId = _deviceId }, null);
     var numericFields = stateSchema.Schema?.Fields.Where(f => f.Value.Type == Ares.Datamodel.AresDataType.Number).ToArray() ?? [];
 
     var deviceDefaultDeltas = numericFields.Select(nf => new KeyValuePair<string, double>(nf.Key, 0)).ToDictionary();
@@ -127,7 +128,7 @@ public partial class LoggingSettingsViewModel : ReactiveObject
       LoggingType = LoggingType,
     };
     settings.Deltas.Add(Deltas);
-    await _devicesClient.SetDeviceLoggerSettingsAsync(settings);
+    await _devicesClient.SetDeviceLoggerSettings(settings, null);
     await Init();
     return true;
   }

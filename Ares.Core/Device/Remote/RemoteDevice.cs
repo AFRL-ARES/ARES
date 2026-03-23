@@ -11,11 +11,12 @@ using Grpc.Core;
 using Grpc.Net.Client;
 
 namespace Ares.Core.Device.Remote;
+
 public sealed class RemoteDevice : AresDevice, IAsyncDisposable
 {
   private readonly GrpcChannel _channel;
   private DeviceCommandDescriptor[] _commands = [];
-  private readonly BehaviorSubject<AresStruct?> _stateSubject = new(new AresStruct());
+  private readonly BehaviorSubject<AresStruct> _stateSubject = new(new AresStruct());
   private CancellationTokenSource _stateStreamCts = new();
   private DevicePollingSettings _pollingSettings = new()
   {
@@ -23,24 +24,16 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     PollingType = PollingType.Interval
   };
 
-  public RemoteDevice(string name, Uri address) : base(name)
+  public RemoteDevice(RemoteConnectionInfo remoteInfo) : base(remoteInfo.ConnectionInfo)
   {
-    _channel = GrpcChannel.ForAddress(address);
-    Address = address;
-  }
-
-  public RemoteDevice(string name, Uri address, string id) : base(name)
-  {
-    _channel = GrpcChannel.ForAddress(address);
-    UniqueId = id;
-    Address = address;
+    _channel = GrpcChannel.ForAddress(remoteInfo.Address);
+    UniqueId = remoteInfo.ConnectionInfo.DeviceId;
+    Address = new Uri(remoteInfo.Address);
   }
 
   public Uri Address { get; }
 
   public ConcurrentDictionary<string, AresValue> Settings { get; } = new();
-
-  public AresDataSchema SettingSchema { get; private set; } = new();
 
   // sets the polling options with the option to restart/start the stream
   public void SetPollingSettings(DevicePollingSettings pollingSettings, bool restartStream = false)
@@ -53,9 +46,9 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     }
   }
 
-  public IObservable<AresStruct?> StateStream => _stateSubject.AsObservable();
+  public override IObservable<AresStruct> StateStream => _stateSubject.AsObservable();
   public AresStruct? CurrentState => _stateSubject.Value;
-  public AresDataSchema StateSchema { get; private set; } = new();
+  public AresStructSchema StateSchema { get; private set; } = new();
 
   public override async Task<bool> Activate(CancellationToken ct)
   {
@@ -109,6 +102,11 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
 
       Console.WriteLine($"Exception In State Stream {e.Message}");
     }
+  }
+
+  public override Task<AresStruct> GetState()
+  {
+    return Task.FromResult(_stateSubject.Value ?? new AresStruct());
   }
 
   internal async Task FetchOperationalStatus()
@@ -178,13 +176,13 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     return client.EnterSafeModeAsync(new Empty()).ResponseAsync;
   }
 
-  public async Task<CommandResult> ExecuteCommand(string command, AresStruct arguments, CancellationToken token)
+  public async override Task<CommandResult> ExecuteCommand(string command, List<DeviceCommandArgument> arguments, CancellationToken token)
   {
     var client = GetClient();
     var executionRequest = new ExecuteCommandRequest { CommandName = command, Arguments = new AresStruct() };
-    foreach(var argument in arguments.Fields)
+    foreach(var argument in arguments)
     {
-      executionRequest.Arguments.Fields[argument.Key] = argument.Value;
+      executionRequest.Arguments.Fields[argument.ArgName] = argument.ArgValue;
     }
 
     var executionResult = await client.ExecuteCommandAsync(executionRequest, cancellationToken: token);
@@ -262,7 +260,7 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     await FetchSettings();
   }
 
-  public async Task UpdateSettings(AresStruct settings)
+  public async override Task UpdateSettings(AresStruct settings)
   {
     foreach(var setting in Settings)
     {
@@ -282,8 +280,6 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     await client.SetSettingsAsync(new SetSettingsRequest { Settings = aresSettings });    
   }
 
-  public IReadOnlyList<DeviceCommandDescriptor> CommandDescriptors => _commands;
-
   private AresRemoteDeviceService.AresRemoteDeviceServiceClient GetClient()
   {
     return new AresRemoteDeviceService.AresRemoteDeviceServiceClient(_channel);
@@ -297,5 +293,29 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     _stateSubject.Dispose();
     await _channel.ShutdownAsync();
     _channel.Dispose();
+  }
+
+  public override async Task<AresStruct> GetSettings()
+  {
+    var client = GetClient();
+    var response = await client.GetCurrentSettingsAsync(new Empty());
+    return response.Settings;
+  }
+
+  protected override async Task<List<DeviceCommandDescriptor>> BuildCommandDescriptorsAsync()
+  {
+    var client = GetClient();
+    try
+    {
+      var callOpts = new CallOptions(deadline: DateTime.UtcNow.AddSeconds(5));
+      var cmdResponse = await client.GetCommandsAsync(new Empty(), callOpts);
+      _commands = [.. cmdResponse.Commands];
+      return _commands.ToList();
+    }
+    catch(RpcException)
+    {
+      Status = new DeviceOperationalStatus { OperationalState = OperationalState.Inactive, Message = $"Failed to fetch commands. Possible connection issue." };
+      return [];
+    }
   }
 }

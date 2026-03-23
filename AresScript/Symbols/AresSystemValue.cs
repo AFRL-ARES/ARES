@@ -10,7 +10,7 @@ public sealed record AresSystemValue : IValueSymbol
   public bool IsReadOnly { get; init; } = false;
   public bool IsUserDefined { get; init; } = false;
   public string? ParentName { get; init; }
-  public SchemaEntry? DeclaredSchema { get; init; }
+  public AresValueSchema? DeclaredSchema { get; init; }
   public AresSystemValueKind ValueKind { get; }
   internal AresValue? RawValue { get; }
   public IDictionary<string, AresSystemValue>? StructFields { get; }
