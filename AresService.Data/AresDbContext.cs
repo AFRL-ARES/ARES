@@ -1,7 +1,5 @@
-﻿using Ares.Core;
-using Ares.Core.EntityConfigurations.Helpers;
+using Ares.Core;
 using Ares.Datamodel;
-using Google.Protobuf.WellKnownTypes;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 
@@ -22,21 +20,5 @@ public class AresDbContext : CoreDatabaseContext
 
     modelBuilder.ApplyConfigurationsFromAssembly(assembly);
     base.OnModelCreating(modelBuilder);
-  }
-
-  protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
-  {
-    // Protobuf Data Types
-    configurationBuilder.Properties<AresStruct>().HaveConversion<AresValueConverters>();
-    configurationBuilder.Properties<AresValue>().HaveConversion<AresValueConverter>();
-    
-    // Protobuf Schemas
-    configurationBuilder.Properties<AresValueSchema>().HaveConversion<AresValueSchemaConverter>();
-    configurationBuilder.Properties<AresStructSchema>().HaveConversion<AresStructSchemaConverter>();
-
-    // Utilities
-    configurationBuilder.Properties<Timestamp>().HaveConversion<AresTimestampConverter>();
-
-    base.ConfigureConventions(configurationBuilder);
   }
 }

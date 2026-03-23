@@ -1,10 +1,12 @@
-﻿using System.Reflection;
+using System.Reflection;
+using Ares.Core.EntityConfigurations.Helpers;
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Device;
 using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
 using Ares.Services;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ares.Core;
@@ -24,8 +26,7 @@ public class CoreDatabaseContext : DbContext
   public DbSet<DeviceConfig> DeviceConfigs => Set<DeviceConfig>();
   public DbSet<RemoteDeviceConfig> RemoteDeviceConfigs => Set<RemoteDeviceConfig>();
   public DbSet<DeviceSettings> DeviceSettings => Set<DeviceSettings>();
-  public DbSet<DriverInfo> DeviceDrivers => Set<DriverInfo>(); 
-
+  public DbSet<DriverInfo> DeviceDrivers => Set<DriverInfo>();
   public DbSet<DeviceInfo> DeviceInfos => Set<DeviceInfo>();
   public DbSet<AnalyzerConfig> Analyzers => Set<AnalyzerConfig>();
   public DbSet<AnalyzerInfo> AnalyzerInfos => Set<AnalyzerInfo>();
@@ -38,7 +39,6 @@ public class CoreDatabaseContext : DbContext
   public DbSet<DeviceLoggingSettings> DeviceLoggingSettings => Set<DeviceLoggingSettings>();
   public DbSet<DeviceState> DeviceStates => Set<DeviceState>();
 
-
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
     var assembly = Assembly.GetAssembly(typeof(CoreDatabaseContext));
@@ -47,5 +47,21 @@ public class CoreDatabaseContext : DbContext
 
     modelBuilder.ApplyConfigurationsFromAssembly(assembly);
     base.OnModelCreating(modelBuilder);
+  }
+
+  protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+  {
+    // Protobuf Data Types
+    configurationBuilder.Properties<AresStruct>().HaveConversion<AresValueConverters>();
+    configurationBuilder.Properties<AresValue>().HaveConversion<AresValueConverter>();
+
+    // Protobuf Schemas
+    configurationBuilder.Properties<AresValueSchema>().HaveConversion<AresValueSchemaConverter>();
+    configurationBuilder.Properties<AresStructSchema>().HaveConversion<AresStructSchemaConverter>();
+
+    // Utilities
+    configurationBuilder.Properties<Timestamp>().HaveConversion<AresTimestampConverter>();
+
+    base.ConfigureConventions(configurationBuilder);
   }
 }
