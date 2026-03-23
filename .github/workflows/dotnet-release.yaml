@@ -69,7 +69,7 @@ jobs:
     - name: Build Device Drivers
       run: |
         echo "Building Device Drivers..."
-        dotnet build DriversRepo --configuration Release
+        dotnet build DriversRepo/Ares.Device.Drivers.slnx --configuration Release
         
     # Copy the plugins folder to the ARES publish directory
     - name: Copy Driver Plugins to ARES Output
