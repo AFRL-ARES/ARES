@@ -54,18 +54,23 @@ namespace AresService.Migrations.SqlServer.Migrations.AresDb
                 name: "Index",
                 table: "Limits");
 
-            migrationBuilder.RenameColumn(
+            migrationBuilder.DropColumn(
                 name: "DeviceType",
+                table: "DeviceConfigs");
+
+            migrationBuilder.AddColumn<string>(
+                name: "DriverId",
                 table: "DeviceConfigs",
-                newName: "DriverId");
+                type: "nvarchar(max)",
+                nullable: true);
 
             migrationBuilder.AlterColumn<double>(
-                name: "Minimum",
-                table: "Limits",
-                type: "float",
-                nullable: false,
-                oldClrType: typeof(float),
-                oldType: "real");
+                      name: "Minimum",
+                      table: "Limits",
+                      type: "float",
+                      nullable: false,
+                      oldClrType: typeof(float),
+                      oldType: "real");
 
             migrationBuilder.AlterColumn<double>(
                 name: "Maximum",
@@ -189,10 +194,15 @@ namespace AresService.Migrations.SqlServer.Migrations.AresDb
                 name: "TemplateId",
                 table: "CommandExecutionSummaries");
 
-            migrationBuilder.RenameColumn(
+            migrationBuilder.DropColumn(
                 name: "DriverId",
+                table: "DeviceConfigs");
+
+            migrationBuilder.AddColumn<string>(
+                name: "DeviceType",
                 table: "DeviceConfigs",
-                newName: "DeviceType");
+                type: "nvarchar(max)",
+                nullable: true);
 
             migrationBuilder.AddColumn<Guid>(
                 name: "ExtraInfoUniqueId",

@@ -54,16 +54,21 @@ namespace AresService.Migrations.Sqlite.Migrations.AresDb
                 name: "Index",
                 table: "Limits");
 
-            migrationBuilder.RenameColumn(
+            migrationBuilder.DropColumn(
                 name: "DeviceType",
+                table: "DeviceConfigs");
+
+            migrationBuilder.AddColumn<Guid>(
+                name: "SerialInfoUniqueId",
                 table: "DeviceConfigs",
-                newName: "SerialInfoUniqueId");
+                type: "TEXT", // Guids are stored as TEXT in SQLite
+                nullable: true);
 
             migrationBuilder.AddColumn<string>(
-                name: "DeviceId",
-                table: "DeviceConfigs",
-                type: "TEXT",
-                nullable: true);
+                      name: "DeviceId",
+                      table: "DeviceConfigs",
+                      type: "TEXT",
+                      nullable: true);
 
             migrationBuilder.AddColumn<string>(
                 name: "DeviceSettings",
@@ -173,16 +178,21 @@ namespace AresService.Migrations.Sqlite.Migrations.AresDb
                 name: "TemplateId",
                 table: "CommandExecutionSummaries");
 
-            migrationBuilder.RenameColumn(
+            migrationBuilder.DropColumn(
                 name: "SerialInfoUniqueId",
-                table: "DeviceConfigs",
-                newName: "DeviceType");
+                table: "DeviceConfigs");
 
-            migrationBuilder.AddColumn<Guid>(
-                name: "ExtraInfoUniqueId",
-                table: "ParameterMetadata",
+            migrationBuilder.AddColumn<string>(
+                name: "DeviceType",
+                table: "DeviceConfigs",
                 type: "TEXT",
                 nullable: true);
+
+            migrationBuilder.AddColumn<Guid>(
+                      name: "ExtraInfoUniqueId",
+                      table: "ParameterMetadata",
+                      type: "TEXT",
+                      nullable: true);
 
             migrationBuilder.AddColumn<long>(
                 name: "Index",
