@@ -298,6 +298,9 @@
     if(value.HasStringValue)
       return $"{value.StringValue}";
 
+    if(value.QuantityValue is not null)
+      return $"{value.QuantityValue.Scalar}{value.QuantityValue.Unit}";
+
     if(value.HasBytesValue)
       return "Byte Array";
 

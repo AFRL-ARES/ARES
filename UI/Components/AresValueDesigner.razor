@@ -1,4 +1,4 @@
-﻿@using Ares.Datamodel
+@using Ares.Datamodel
 @using Ares.Datamodel.Extensions
 
 @if(Schema?.Type is AresDataType.String)
@@ -15,19 +15,84 @@
     </RadzenFormField>
   }
 
-  else if(Schema?.Type is AresDataType.Number)
-  {
-    <RadzenFormField Text="@GetFormFieldName()" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%">
-      @if(HasNumberChoices)
+else if(Schema?.Type is AresDataType.Number)
+{
+  <RadzenFormField Text="@GetFormFieldName()" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%">
+    @if(HasNumberChoices)
+    {
+      <RadzenDropDown TValue="double" Data="@Schema.NumberChoices.Numbers" @bind-Value="_numberValue" Change="@OnNumberChanged" Style="width: 100%" />
+    }
+    else
+    {
+      <RadzenNumeric TValue="double" @bind-Value="_numberValue" Change="@OnNumericChanged" Style="width: 100%" Name="SchemaNumberInput" />
+
+      <RadzenNumericRangeValidator Component="SchemaNumberInput"
+        Min="@(Schema.HasMinNumberValue ? (decimal)Schema.MinNumberValue : decimal.MinValue)"
+        Max="@(Schema.HasMaxNumberValue ? (decimal)Schema.MaxNumberValue : decimal.MaxValue)"
+        Text="@GetNumberValidationMessage()"
+        Style="display: block; font-size: 12px;" />
+    }
+  </RadzenFormField>
+}
+
+else if(Schema?.Type is AresDataType.Quantity)
+{
+  <RadzenFormField Text="@GetFormFieldName()" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%">
+    <RadzenNumeric TValue="double" @bind-Value="_numberValue" Change="@OnNumericChanged" Style="width: 100%" Name="SchemaQuantityInput" />
+
+    <RadzenNumericRangeValidator Component="SchemaQuantityInput"
+      Min="@(Schema.QuantitySchema?.HasMinScalarValue == true ? (decimal)Schema.QuantitySchema.MinScalarValue : decimal.MinValue)"
+      Max="@(Schema.QuantitySchema?.HasMaxScalarValue == true ? (decimal)Schema.QuantitySchema.MaxScalarValue : decimal.MaxValue)"
+      Text="@GetQuantityValidationMessage()"
+      Style="display: block; font-size: 12px;" />
+  </RadzenFormField>
+}
+
+else if(Schema?.Type is AresDataType.NumberArray)
+{
+  <RadzenFieldset AllowCollapse="true" Collapsed="true">
+    <HeaderTemplate>
+      <RadzenStack Orientation="Orientation.Horizontal" Gap="0.25rem">
+        <RadzenIcon Icon="data_array" /><b>@Name</b>
+      </RadzenStack>
+    </HeaderTemplate>
+      
+    <ChildContent>
+      @for(var i = 0; i < _numberArray.Count; i++)
       {
-        <RadzenDropDown TValue="double" Data="@Schema.NumberChoices.Numbers" @bind-Value="_numberValue" Change="@OnNumberChanged" Style="width: 100%" />
+        var index = i;
+        var inputName = $"NumberArrayInput_{index}";
+
+        <div class="mb-2 flex items-center">
+          @if(HasNumberChoices)
+          {
+            <RadzenDropDown TValue="double" Data="@Schema.NumberChoices.Numbers" Value="@_numberArray[index]" Change="@(value => OnNumberArrayItemChanged(value, index))" Style="width: 90%" />
+          }
+          else
+          {
+            <div>
+              <RadzenNumeric TValue="double" Value="@_numberArray[index]" Change="@(value => OnNumberArrayItemChanged(value, index))" Style="width: 90%" Name="@inputName" />
+                
+              <RadzenNumericRangeValidator Component="@inputName"
+                Min="@(Schema.HasMinNumberValue ? (decimal)Schema.MinNumberValue : decimal.MinValue)"
+                Max="@(Schema.HasMaxNumberValue ? (decimal)Schema.MaxNumberValue : decimal.MaxValue)"
+                Text="@GetNumberValidationMessage()"
+                Style="display: block; font-size: 12px;" />
+            </div>
+          }
+          <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(() => RemoveNumberItem(index))" />
+        </div>
       }
-      else
-      {
-        <RadzenNumeric TValue="double" @bind-Value="_numberValue" Change="@OnNumericChanged" Style="width: 100%" />
-      }
-    </RadzenFormField>
-  }
+      <RadzenButton Icon="add" Click="AddNumberItem" ButtonStyle="ButtonStyle.Secondary" />
+    </ChildContent>
+
+    <SummaryTemplate>
+      <RadzenCard>
+        <b>@_numberArray.Count() Items</b>
+      </RadzenCard>
+    </SummaryTemplate>
+  </RadzenFieldset>
+}
 
   else if(Schema?.Type is AresDataType.Boolean)
   { 
@@ -94,7 +159,9 @@
             }
             else
             {
-              <RadzenNumeric TValue="double" Value="@_numberArray[index]" Change="@(value => OnNumberArrayItemChanged(value, index))" Style="width: 90%" />
+              <RadzenNumeric TValue="double" Value="@_numberArray[index]" Change="@(value => OnNumberArrayItemChanged(value, index))" Style="width: 90%" 
+                           Min="@(Schema.HasMinNumberValue ? (decimal?)Schema.MinNumberValue : null)"
+                           Max="@(Schema.HasMaxNumberValue ? (decimal?)Schema.MaxNumberValue : null)" />
             }
             <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(() => RemoveNumberItem(index))" />
           </div>
@@ -162,6 +229,9 @@
         break;
       case AresDataType.Number:
         _numberValue = Value!.NumberValue;
+        break;
+      case AresDataType.Quantity:
+        _numberValue = Value!.QuantityValue?.Scalar ?? 0.0;
         break;
       case AresDataType.Boolean:
         _boolValue = Value!.BoolValue;
@@ -246,6 +316,14 @@
       case AresDataType.Number:
         aresValue.NumberValue = _numberValue;
         break;
+      case AresDataType.Quantity:
+        aresValue.QuantityValue = new QuantityValue
+        {
+          Scalar = _numberValue,
+          Type = Schema?.QuantitySchema?.QuantityType ?? QuantityType.Unspecified,
+          Unit = Unit ?? Schema?.QuantitySchema?.BoundsUnit ?? string.Empty
+        };
+        break;
       case AresDataType.Boolean:
         aresValue.BoolValue = _boolValue;
         break;
@@ -309,5 +387,35 @@
       _boolArray.RemoveAt(index);
       UpdateAresValue();
     }
+  }
+
+  private string GetNumberValidationMessage()
+  {
+    if(Schema == null)
+      return "Invalid value.";
+
+    if(Schema.HasMinNumberValue && Schema.HasMaxNumberValue)
+      return $"Value must be between {Schema.MinNumberValue} and {Schema.MaxNumberValue}.";
+    if(Schema.HasMinNumberValue)
+      return $"Value must be at least {Schema.MinNumberValue}.";
+    if(Schema.HasMaxNumberValue)
+      return $"Value must be no more than {Schema.MaxNumberValue}.";
+          
+    return "Invalid value.";
+  }
+
+  private string GetQuantityValidationMessage()
+  {
+    if(Schema?.QuantitySchema == null)
+      return "Invalid value.";
+
+    if(Schema.QuantitySchema.HasMinScalarValue && Schema.QuantitySchema.HasMaxScalarValue)
+      return $"Value must be between {Schema.QuantitySchema.MinScalarValue} and {Schema.QuantitySchema.MaxScalarValue}.";
+    if(Schema.QuantitySchema.HasMinScalarValue)
+      return $"Value must be at least {Schema.QuantitySchema.MinScalarValue}.";
+    if(Schema.QuantitySchema.HasMaxScalarValue)
+      return $"Value must be no more than {Schema.QuantitySchema.MaxScalarValue}.";
+          
+    return "Invalid value.";
   }
 }
