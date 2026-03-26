@@ -1,47 +1,96 @@
-﻿using Ares.Datamodel;
-using Ares.Datamodel.Device;
+﻿using Ares.Core.Device.Providers;
+using Ares.Datamodel;
+using Ares.Device;
+using DynamicData;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
+using System.Collections.ObjectModel;
 using System.Reactive.Linq;
+using UI.Features.Visualization;
 
-namespace UI.Backend.ViewModels.Components;
+namespace UI.Features.Components;
+
 
 public partial class VisualizationSidebarViewModel : ReactiveObject
 {
-  //private readonly IVisualizationProvider _provider;
-  private readonly IDisposable _devicesSubscription;
+  private readonly ReadOnlyObservableCollection<IAresDevice> _devices;
+  private readonly IDisposable _cleanUp;
 
-  public VisualizationSidebarViewModel()
+  public VisualizationSidebarViewModel(IAresDeviceProvider deviceProvider)
   {
-    //_provider = provider;
-    //AvailableDevices = [];
-    //_devicesSubscription = provider.AvailableDevicesStream
-    //  .Subscribe(items =>
-    //  {
-    //    AvailableDevices = items;
-    //  });
+    _cleanUp = deviceProvider.Connect()
+        .Bind(out _devices)
+        .Subscribe();
+
+    AllPaths = [];
+    VisiblePaths = [];
+
+    this.WhenAnyValue(x => x.SelectedDevice, x => x.ShowAllValues)
+        .Subscribe(tuple =>
+        {
+          var (device, showAll) = tuple;
+
+          if(device is null)
+          {
+            AllPaths = [];
+            VisiblePaths = [];
+            return;
+          }
+
+          AllPaths = ExtractPaths(device.StateSchema).ToList();
+          VisiblePaths = AllPaths.Where(p => showAll || p.IsPlottable).ToList();
+        });
   }
 
-  public async Task UpdateSelectedDeviceStateInformation()
+  private IEnumerable<VisualizationPath> ExtractPaths(AresStructSchema schema, string prefix = "")
   {
-    //if(SelectedDevice is null)
-    //  return;
+    var paths = new List<VisualizationPath>();
 
-    //var state = await _provider.GetDeviceStateOptions(SelectedDevice.UniqueId);
-    //AvailableDeviceStateItems = state.Fields.Select(thing => thing.Key).ToArray();
+    foreach(var field in schema.Fields)
+    {
+      string currentPath = string.IsNullOrEmpty(prefix) ? field.Key : $"{prefix}.{field.Key}";
+      var type = field.Value.Type;
 
-    return;
+      if(type == AresDataType.Number || type == AresDataType.String || type == AresDataType.Boolean)
+      {
+        paths.Add(new VisualizationPath { Path = currentPath, DataType = type });
+      }
+
+      else if(type == AresDataType.Struct && field.Value.StructSchema != null)
+      {
+        paths.AddRange(ExtractPaths(field.Value.StructSchema, currentPath));
+      }
+
+      else if(type == AresDataType.List && field.Value.ListElementSchema?.Type == AresDataType.Struct)
+      {
+        paths.AddRange(ExtractPaths(field.Value.ListElementSchema.StructSchema!, $"{currentPath}[*]"));
+      }
+
+      else if(type == AresDataType.Quantity)
+      {
+        paths.Add(new VisualizationPath { Path = currentPath, DataType = type });
+      }
+    }
+
+    return paths;
+  }
+
+  public void Dispose()
+  {
+    _cleanUp.Dispose();
   }
 
   [Reactive]
-  public partial IEnumerable<DeviceInfo> AvailableDevices { get; set; }
+  public partial IAresDevice? SelectedDevice { get; set; }
 
   [Reactive]
-  public partial DeviceInfo? SelectedDevice { get; set; }
+  public partial bool ShowAllValues { get; set; }
 
   [Reactive]
-  public partial AresStructSchema? SelectedDeviceStateSchema { get; set; }
+  public partial List<VisualizationPath> AllPaths { get; set; }
 
   [Reactive]
-  public partial string[]? AvailableDeviceStateItems { get; set; }
+  public partial IEnumerable<VisualizationPath> VisiblePaths { get; set; }
+
+  public ReadOnlyObservableCollection<IAresDevice> AvailableDevices => _devices;
 }

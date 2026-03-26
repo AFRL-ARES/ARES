@@ -1,6 +1,6 @@
 ﻿@page "/visualization"
-@using UI.Backend.ViewModels
 @using UI.Components.Visualization
+@using UI.Features.Visualization.ViewModels
 
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<VisualizationViewModel>
 @inject IJSRuntime JS
@@ -24,7 +24,7 @@
     if(firstRender)
     {
       _objRef = DotNetObjectReference.Create(this);
-      _module = await JS.InvokeAsync<IJSObjectReference>("import", "./Pages/Visualization.razor.js");
+      _module = await JS.InvokeAsync<IJSObjectReference>("import", "./Features/Visualization/Views/Visualization.razor.js");
       await _module.InvokeVoidAsync("initDashboard", "visualization-board", _objRef);
     }
 

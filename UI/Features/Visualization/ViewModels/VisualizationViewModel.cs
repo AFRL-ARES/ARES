@@ -1,6 +1,6 @@
 ﻿using ReactiveUI;
 
-namespace UI.Backend.ViewModels;
+namespace UI.Features.Visualization.ViewModels;
 
 public partial class VisualizationViewModel : ReactiveObject
 {
