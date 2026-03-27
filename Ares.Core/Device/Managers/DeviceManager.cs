@@ -1,4 +1,4 @@
-using Ares.Core.Device.Plugins.Drivers;
+using Ares.Core.CoreDevice;
 using Ares.Core.Device.Providers;
 using Ares.Core.Device.Repos;
 using Ares.Core.Notifications;
@@ -6,7 +6,6 @@ using Ares.Core.Resources;
 using Ares.Datamodel.Device;
 using Ares.Device;
 using DynamicData;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Reactive;
@@ -49,6 +48,9 @@ public class DeviceManager : IDeviceManager
 
   public void Initialize()
   {
+    var coreDevice = new AresCoreDevice();
+    _deviceRepo.AddOrUpdate(coreDevice);
+
     _configProvider.Connect()
       .SelectMany(async changes =>
       {

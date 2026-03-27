@@ -5,22 +5,26 @@ using Ares.Core.Grpc.Services;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
+using Ares.Core.Device.Providers;
+using Ares.Device;
 
 namespace UI.Features.CampaignEdit.ViewModels;
 
 public partial class MetadataPickerViewModel : ReactiveObject
 {
   private readonly DevicesService _devicesClient;
+  private readonly IAresDeviceProvider _deviceProvider;
   private Task _deviceRefreshTask = Task.CompletedTask;
 
-  public MetadataPickerViewModel(DevicesService devicesClient)
+  public MetadataPickerViewModel(DevicesService devicesClient, IAresDeviceProvider deviceProvider)
   {
     _devicesClient = devicesClient;
+    _deviceProvider = deviceProvider;
     AvailableDevices = [];
     AvailableMetadata = [];
   }
 
-  public MetadataPickerViewModel(CommandMetadata existingMetadata, DevicesService devicesClient) : this(devicesClient)
+  public MetadataPickerViewModel(CommandMetadata existingMetadata, DevicesService devicesClient, IAresDeviceProvider deviceProvider) : this(devicesClient, deviceProvider)
   {
     SelectedCommandMetadata = existingMetadata;
     AvailableDevices = [];
@@ -28,7 +32,7 @@ public partial class MetadataPickerViewModel : ReactiveObject
   }
 
   [Reactive]
-  public partial IEnumerable<DeviceInfo> AvailableDevices { get; private set; }
+  public partial IEnumerable<IAresDevice> AvailableDevices { get; private set; }
 
   [Reactive]
   public partial IEnumerable<CommandMetadata> AvailableMetadata { get; private set; }
@@ -37,7 +41,7 @@ public partial class MetadataPickerViewModel : ReactiveObject
   public partial CommandMetadata? SelectedCommandMetadata { get; set; }
 
   [Reactive]
-  public partial DeviceInfo? SelectedDevice { get; set; }
+  public partial IAresDevice? SelectedDevice { get; set; }
 
   public CommandMetadata? Save()
     => SelectedCommandMetadata;
@@ -45,7 +49,7 @@ public partial class MetadataPickerViewModel : ReactiveObject
   public async Task Reset()
   {
     AvailableMetadata = Array.Empty<CommandMetadata>();
-    AvailableDevices = Array.Empty<DeviceInfo>();
+    AvailableDevices = Array.Empty<IAresDevice>();
     await RefreshDevices();
   }
 
@@ -64,8 +68,7 @@ public partial class MetadataPickerViewModel : ReactiveObject
 
   public async Task RefreshDevices()
   {
-    var devicesResponse = await _devicesClient.ListAresDevices(new Empty(), null);
-    AvailableDevices = devicesResponse.AresDevices.ToArray();
+    AvailableDevices = _deviceProvider.GetAllDevices();
     if (SelectedCommandMetadata is not null)
     {
       SelectedDevice = AvailableDevices.FirstOrDefault(d => d.UniqueId == SelectedCommandMetadata.DeviceId);
