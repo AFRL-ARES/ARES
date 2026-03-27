@@ -412,6 +412,8 @@
               existingCommand.State = newCommand?.State ?? ExecutionState.Undefined;
             }
           }
+
+          StateHasChanged();
         });
 
         await Task.Yield();
