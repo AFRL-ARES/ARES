@@ -1,3 +1,4 @@
+using Ares.Core.CoreDevice;
 using Ares.Core.Device.Providers;
 using Ares.Core.Device.Remote;
 using Ares.Toolkit.Device.UI;
@@ -33,7 +34,7 @@ namespace UI.Application.Devices.Repos
     public void Initialize()
     {
       _deviceProvider.Connect()
-        .Filter(d => d is not RemoteDevice)
+        .Filter(d => d is not RemoteDevice && d is not AresCoreDevice)
         .Transform(_factory.CreateUnitControlViewModel)
         .DisposeMany()
         .PopulateInto(_viewModelCache)
