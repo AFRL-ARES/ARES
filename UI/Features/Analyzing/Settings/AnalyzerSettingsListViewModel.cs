@@ -33,7 +33,7 @@ public partial class AnalyzerSettingsListViewModel : ReactiveObject
     {
       PushNotification(new AresNotification
       {
-        Title = "Error fetching planners",
+        Title = "Error fetching analyzers",
         Message = ex.Message,
         NotificationSeverity = Severity.Error
       });
