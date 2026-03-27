@@ -5,6 +5,8 @@ using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using UI.Application.Notifications;
+using System.Reactive.Linq;
+using System.Collections.ObjectModel;
 
 
 namespace UI.Features.Planning.Settings;
@@ -19,24 +21,42 @@ public partial class PlannerSettingsListViewModel : ReactiveObject
   {
     _planningService = planningService;
     _notificationService = notificationService;
-    UpdateAvailablePlanners();
+    SettingsViewModels = [];
   }
 
   public PlannerConfigEditViewModel GetNewConfigEditViewModel() => new(_planningService);
 
-  public Task UpdateAvailablePlanners()
+  public async Task UpdateAvailablePlanners()
   {
-    SettingsViewModels = null;
-    return _planningService
-      .GetAllPlanners(new Empty(), null)
-      .ContinueWith(task => { if(task.IsCompletedSuccessfully) UpdateViewModels(task.Result.Planners); });
+    IsLoading = true;
+
+    try 
+    {
+      var response = await _planningService.GetAllPlanners(new Empty(), null);
+      UpdateViewModels(response.Planners);
+    }
+    catch(Exception ex)
+    {
+      PushNotification(new AresNotification
+      {
+        Title = "Error fetching planners",
+        Message = ex.Message,
+        NotificationSeverity = Severity.Error
+      });
+    }
+    finally
+    {
+      IsLoading = false;
+    }
   }
 
   private void UpdateViewModels(IEnumerable<PlannerServiceInfo> plannerAdapters)
   {
-    plannerAdapters = plannerAdapters.Where(planner => planner.Name != "Manual Planner");
-    var viewModels = plannerAdapters.Select(info => new PlannerSettingsViewModel(_planningService, _notificationService, info, OnPlannerRemoved)).ToList();
-    SettingsViewModels = viewModels;
+    var filteredAdapters = plannerAdapters.Where(planner => planner.Name != "Manual Planner");
+
+    SettingsViewModels = filteredAdapters
+        .Select(info => new PlannerSettingsViewModel(_planningService, _notificationService, info, OnPlannerRemoved))
+        .ToList();
   }
 
   public async Task AddNewPlanner(PlannerServiceInfo plannerAdapter)
@@ -48,13 +68,16 @@ public partial class PlannerSettingsListViewModel : ReactiveObject
 
   private async Task OnPlannerRemoved()
   {
-    SettingsViewModels = null;
     await UpdateAvailablePlanners();
   }
+
   public void PushNotification(AresNotification notification) => _notificationService.PushNotification(notification);
 
   [Reactive]
-  public partial IEnumerable<PlannerSettingsViewModel>? SettingsViewModels { get; private set; }
+  public partial IEnumerable<PlannerSettingsViewModel> SettingsViewModels { get; private set; }
+
+  [Reactive]
+  public partial bool IsLoading { get; private set; }
 }
 
 

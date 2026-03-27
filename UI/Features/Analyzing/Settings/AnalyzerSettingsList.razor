@@ -64,6 +64,14 @@ else
       }
     }
   }
+  protected override async Task OnInitializedAsync()
+  {
+    await base.OnInitializedAsync();
+
+    if (ViewModel is not null)
+      await ViewModel.UpdateAvailableAnalyzers();
+  }
+
 
   private bool SavingInProgress { get; set; }
 }
