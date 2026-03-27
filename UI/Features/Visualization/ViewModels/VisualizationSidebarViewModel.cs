@@ -5,11 +5,10 @@ using DynamicData;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System.Collections.ObjectModel;
+using System.Reactive;
 using System.Reactive.Linq;
-using UI.Features.Visualization;
 
-namespace UI.Features.Components;
-
+namespace UI.Features.Visualization.ViewModels;
 
 public partial class VisualizationSidebarViewModel : ReactiveObject
 {
@@ -24,6 +23,7 @@ public partial class VisualizationSidebarViewModel : ReactiveObject
 
     AllPaths = [];
     VisiblePaths = [];
+    AvailableChartStyles = [];
 
     this.WhenAnyValue(x => x.SelectedDevice, x => x.ShowAllValues)
         .Subscribe(tuple =>
@@ -40,6 +40,36 @@ public partial class VisualizationSidebarViewModel : ReactiveObject
           AllPaths = ExtractPaths(device.StateSchema).ToList();
           VisiblePaths = AllPaths.Where(p => showAll || p.IsPlottable).ToList();
         });
+
+    this.WhenAnyValue(x => x.SelectedPath)
+        .Select(path =>
+        {
+          if(path == null) 
+            return Array.Empty<ChartStyle>();
+
+          return path.DataType switch
+          {
+            AresDataType.Number => new[] { ChartStyle.Line, ChartStyle.Spline, ChartStyle.Area, ChartStyle.Gauge },
+            AresDataType.Boolean => new[] { ChartStyle.TextIndicator, ChartStyle.Line },
+            AresDataType.String => new[] { ChartStyle.TextIndicator },
+            _ => new[] { ChartStyle.TextIndicator }
+          };
+        })
+        .ToProperty(this, x => x.AvailableChartStyles);
+
+    this.WhenAnyValue(x => x.AvailableChartStyles)
+        .Where(styles => styles != null && styles.Any())
+        .Subscribe(styles => SelectedChartStyle = styles.First());
+
+    var canAdd = this.WhenAnyValue(x => x.SelectedDevice, x => x.SelectedPath,
+        (dev, path) => dev != null && path != null);
+
+    AddToDashboardCommand = ReactiveCommand.Create(() => new ChartCreationRequest
+    {
+      Device = SelectedDevice!,
+      Path = SelectedPath!,
+      SelectedStyle = SelectedChartStyle
+    }, canAdd);
   }
 
   private IEnumerable<VisualizationPath> ExtractPaths(AresStructSchema schema, string prefix = "")
@@ -80,6 +110,8 @@ public partial class VisualizationSidebarViewModel : ReactiveObject
     _cleanUp.Dispose();
   }
 
+  public ReactiveCommand<Unit, ChartCreationRequest> AddToDashboardCommand { get; }
+
   [Reactive]
   public partial IAresDevice? SelectedDevice { get; set; }
 
@@ -91,6 +123,15 @@ public partial class VisualizationSidebarViewModel : ReactiveObject
 
   [Reactive]
   public partial IEnumerable<VisualizationPath> VisiblePaths { get; set; }
+
+  [Reactive]
+  public partial VisualizationPath? SelectedPath { get; set; }
+
+  [Reactive]
+  private ChartStyle _selectedChartStyle = ChartStyle.Line;
+
+  [Reactive]
+  public IEnumerable<ChartStyle> AvailableChartStyles { get; set; }
 
   public ReadOnlyObservableCollection<IAresDevice> AvailableDevices => _devices;
 }
