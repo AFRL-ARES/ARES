@@ -43,7 +43,7 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
     if(token.IsPaused)
       try
       {
-        token.WaitForResume();
+        await token.WaitForResumeAsync();
       }
       catch(OperationCanceledException)
       {
@@ -63,7 +63,7 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
     execInfo.TimeFinished = DateTime.UtcNow.ToTimestamp();
 
     if(result.AwaitUserInput)
-      AwaitUserInput(token);
+      await AwaitUserInput(token);
 
     else if(result.Success)
       Status.State = ExecutionState.Succeeded;
@@ -96,12 +96,12 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
     }
   }
 
-  private void AwaitUserInput(ExecutionControlToken executionToken)
+  private async Task AwaitUserInput(ExecutionControlToken executionToken)
   {
     executionToken.Pause();
     Status.State = ExecutionState.AwaitingUser;
     _stateSubject.OnNext(Status);
-    executionToken.WaitForResume();
+    await executionToken.WaitForResumeAsync();
     Status.State = ExecutionState.Succeeded;
   }
 }

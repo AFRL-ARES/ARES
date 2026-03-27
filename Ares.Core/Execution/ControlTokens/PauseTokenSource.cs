@@ -2,9 +2,23 @@
 
 internal class PauseTokenSource : IDisposable
 {
-  private readonly ManualResetEventSlim _mre = new(true);
+  private TaskCompletionSource<bool> _tcs;
+  private readonly object _syncLock = new();
   private bool _disposed;
-  public bool IsPaused => !_mre.IsSet;
+
+  public PauseTokenSource()
+  {
+    _tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+    _tcs.SetResult(true);
+  }
+
+  public bool IsPaused
+  {
+    get
+    {
+      lock(_syncLock) return !_tcs.Task.IsCompleted;
+    }
+  }
 
   public PauseToken Token
   {
@@ -17,20 +31,28 @@ internal class PauseTokenSource : IDisposable
 
   public void Dispose()
   {
-    _mre.Dispose();
     _disposed = true;
   }
 
   public void Pause()
   {
     ThrowIfDisposed();
-    _mre.Reset();
+    lock(_syncLock)
+    {
+      if(_tcs.Task.IsCompleted)
+      {
+        _tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+      }
+    }
   }
 
   public void Resume()
   {
     ThrowIfDisposed();
-    _mre.Set();
+    lock(_syncLock)
+    {
+      _tcs.TrySetResult(true);
+    }
   }
 
   public void Wait(CancellationToken token)
@@ -38,7 +60,18 @@ internal class PauseTokenSource : IDisposable
     ThrowIfDisposed();
     try
     {
-      _mre.Wait(token);
+      _tcs.Task.Wait(token);
+    }
+    catch(OperationCanceledException) { }
+    catch(AggregateException ex) when(ex.InnerException is OperationCanceledException) { }
+  }
+
+  public async Task WaitAsync(CancellationToken token)
+  {
+    ThrowIfDisposed();
+    try
+    {
+      await _tcs.Task.WaitAsync(token);
     }
     catch(OperationCanceledException)
     {

@@ -2,46 +2,46 @@
 @using UI.Features.CampaignEdit.ViewModels
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Features.CampaignEdit.ViewModels.CommandDesignerViewModel>
 
-<MetadataPicker ViewModel="@ViewModel!.MetadataPickerViewModel" CommandMetadataChanged="CommandMetadataChanged"  />
+<RadzenTemplateForm TItem="CommandDesignerViewModel" Data="@ViewModel" Submit="@OnCommandSubmit">
+  <MetadataPicker ViewModel="@ViewModel!.MetadataPickerViewModel" CommandMetadataChanged="CommandMetadataChanged"  />
 
-@foreach (var argumentDesigner in ViewModel!.ArgumentDesigners)
-{
-  <CommandParameterDesigner DisablePlanning=@DisablePlanningAndOutputCheck ViewModel="@argumentDesigner" />
-}
+  @foreach (var argumentDesigner in ViewModel!.ArgumentDesigners)
+  {
+    <CommandParameterDesigner DisablePlanning=@DisablePlanningAndOutputCheck ViewModel="@argumentDesigner" />
+  }
 
-@if(!DisablePlanningAndOutputCheck)
-{
-  <div class="mb-2">
-	  <RadzenCheckBox @bind-Value="ViewModel!.OutputProvider" id="output-check"/>
-	  <label for="output-check">Provides Output</label>
-  </div>  
-}
+  @if(!DisablePlanningAndOutputCheck)
+  {
+    <div class="mb-2">
+	    <RadzenCheckBox @bind-Value="ViewModel!.OutputProvider" id="output-check"/>
+	    <label for="output-check">Provides Output</label>
+    </div>  
+  }
 
 
-<div hidden="@(!ViewModel!.OutputProvider)">
-  <RadzenDataGrid TItem="UserOutputSelection"
-                  Data="@ViewModel.OutputKeyMap"
-                  Editable="true"
-                  EditMode="DataGridEditMode.Single"
-                  ColumnWidth="200px">
-    <Columns>
-      <!-- Dynamically hide the Device column if it's a single primitive output -->
-      <RadzenDataGridColumn Property="@(nameof(UserOutputSelection.DeviceOutputName))"
-                            Title="Device Output Name"
-                            Visible="@ShowDeviceOutputColumn" />
+  <div hidden="@(!ViewModel!.OutputProvider)">
+    <RadzenDataGrid TItem="UserOutputSelection"
+                    Data="@ViewModel.OutputKeyMap"
+                    Editable="true"
+                    EditMode="DataGridEditMode.Single"
+                    ColumnWidth="200px">
+      <Columns>
+        <RadzenDataGridColumn Property="@(nameof(UserOutputSelection.DeviceOutputName))"
+                              Title="Device Output Name"
+                              Visible="@ShowDeviceOutputColumn" />
 
-      <RadzenDataGridColumn Property="@(nameof(UserOutputSelection.CustomName))"
-                            Title="Experiment Output Name">
-        <Template Context="item">
-          <!-- Added a Placeholder for better UX when the left column is hidden -->
-          <RadzenTextBox Style="width:100%"
-                         @bind-Value="item.CustomName"
-                         Placeholder="e.g., Input_Temperature" />
-        </Template>
-      </RadzenDataGridColumn>
-    </Columns>
-  </RadzenDataGrid>
-</div>
+        <RadzenDataGridColumn Property="@(nameof(UserOutputSelection.CustomName))"
+                              Title="Experiment Output Name">
+          <Template Context="item">
+            <RadzenTextBox Style="width:100%"
+                           @bind-Value="item.CustomName"
+                           Placeholder="e.g., Input_Temperature" />
+          </Template>
+        </RadzenDataGridColumn>
+      </Columns>
+    </RadzenDataGrid>
+  </div>
+</RadzenTemplateForm>
 
 @code {
   [Parameter]
@@ -49,10 +49,19 @@
 
   private void CommandMetadataChanged(CommandMetadata? metadata)
   {
-      ViewModel!.CommandMetadata = metadata;
+    ViewModel!.CommandMetadata = metadata;
   }
 
   private bool ShowDeviceOutputColumn =>
         ViewModel!.OutputKeyMap.Count() > 1 ||
         (ViewModel.OutputKeyMap.Count() == 1 && ViewModel.OutputKeyMap.First().DeviceOutputName != "Result");
+
+  private void OnCommandSubmit(CommandDesignerViewModel model)
+  {
+    // This will ONLY fire if every single RadzenNumericRangeValidator
+    // down inside your AresValueDesigners comes back valid!
+
+    // Execute your save logic or close the dialog here
+    model.Save();
+  }
 }

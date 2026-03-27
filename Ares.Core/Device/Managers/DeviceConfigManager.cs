@@ -100,6 +100,14 @@ public class DeviceConfigManager : IDeviceConfigManager
 
     foreach(var config in configs)
     {
+      // Potentially artifact of DB migration, remove and ignore.
+      if(config.DriverId is null)
+      {
+        _logger.LogWarning($"ARES detected a device with a null driver ID. If you recently migrated to a new database this may be normal. {config.DeviceName}");
+        await Remove(config.UniqueId);
+        continue;
+      }
+
       // Driver found, no action needed
       if(currentDriverIds.Contains(config.DriverId))
         continue;

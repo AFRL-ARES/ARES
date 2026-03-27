@@ -347,26 +347,37 @@
   {
     return Task.Run(async () =>
     {
-      Thread.CurrentThread.Name = "Campaign State Watch Thread";
       var stream = new LocalStream<CampaignExecutionState>();
       _ = AutomationClient.GetCampaignExecutionStateStream(new Empty(), stream, null);
+
       while (await stream.MoveNext(token) && !token.IsCancellationRequested)
       {
         var state = stream.Current;
 
-        ViewModel!.CampaignActive = state.IsActive();
-        ViewModel!.CampaignPaused = state.IsPaused();
-        ViewModel!.CampaignExecutionState = state.State;
-        ViewModel!.AnalysisState = state.AnalysisState;
-        ViewModel!.PlannerState = state.PlannerState;
-
-        if(ViewModel!.CampaignExecutionState == ExecutionState.AwaitingUser)
+        await InvokeAsync(() =>
         {
-          await ViewModel!.ReqeustUserConfirmation();
-        }
-          
+          var previousState = ViewModel!.CampaignExecutionState;
+          bool changed = ViewModel!.CampaignActive != state.IsActive() ||
+                         ViewModel!.CampaignPaused != state.IsPaused() ||
+                         ViewModel!.CampaignExecutionState != state.State ||
+                         ViewModel!.AnalysisState != state.AnalysisState ||
+                         ViewModel!.PlannerState != state.PlannerState;
 
-        await InvokeAsync(() => StateHasChanged());
+          if (changed)
+          {
+            ViewModel!.CampaignActive = state.IsActive();
+            ViewModel!.CampaignPaused = state.IsPaused();
+            ViewModel!.CampaignExecutionState = state.State;
+            ViewModel!.AnalysisState = state.AnalysisState;
+            ViewModel!.PlannerState = state.PlannerState;
+
+            if (ViewModel!.CampaignExecutionState == ExecutionState.AwaitingUser && previousState != ExecutionState.AwaitingUser)
+            {
+              ViewModel!.RequestUserConfirmation();
+            }
+          }
+        });
+        await Task.Yield();
       }
     }, token);
   }
@@ -375,30 +386,35 @@
   {
     return Task.Run(async () =>
     {
-      Thread.CurrentThread.Name = "Experiment State Watch Thread";
       var stream = new LocalStream<ExperimentExecutionStatus>();
       _ = AutomationClient.GetExecutionStatusStream(new Empty(), stream, null);
+
       while (await stream.MoveNext(token) && !token.IsCancellationRequested)
       {
         var status = stream.Current;
-        var existingStatus = ExperimentExecutionStatuses.FirstOrDefault(s => s.ExperimentId == status.ExperimentId);
-        if (existingStatus is null)
+
+        await InvokeAsync(() =>
         {
-          ExperimentExecutionStatuses.Add(status);
-          existingStatus = status;
-          continue;
-        }
+          var existingStatus = ExperimentExecutionStatuses.FirstOrDefault(s => s.ExperimentId == status.ExperimentId);
 
-        var incomingCommands = status.GetCommandExecutionStatuses();
-        var existingCommands = existingStatus.GetCommandExecutionStatuses();
+          if (existingStatus is null)
+          {
+            ExperimentExecutionStatuses.Add(status);
+          }
+          else
+          {
+            var incomingCommands = status.GetCommandExecutionStatuses();
+            var existingCommands = existingStatus.GetCommandExecutionStatuses();
 
-        foreach (var existingCommand in existingCommands)
-        {
-          var newCommand = incomingCommands.FirstOrDefault(c => c.CommandId == existingCommand.CommandId);
-          existingCommand.State = newCommand?.State ?? ExecutionState.Undefined;
-        }
+            foreach (var existingCommand in existingCommands)
+            {
+              var newCommand = incomingCommands.FirstOrDefault(c => c.CommandId == existingCommand.CommandId);
+              existingCommand.State = newCommand?.State ?? ExecutionState.Undefined;
+            }
+          }
+        });
 
-        await InvokeAsync(() => StateHasChanged());
+        await Task.Yield();
       }
     }, token);
   }

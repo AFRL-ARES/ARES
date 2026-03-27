@@ -77,6 +77,9 @@
     else if(aresValue.HasStringValue)
       return $"{argument.Metadata.Name}: {aresValue.StringValue} {argument.Metadata.Unit}";
 
+    else if(aresValue.QuantityValue is not null)
+      return $"{argument.Metadata.Name}: {aresValue.QuantityValue.Scalar} {argument.Metadata.Schema.QuantitySchema.BoundsUnit}";
+
     else
       return $"{argument.Metadata.Name}: Custom Data";
   }
