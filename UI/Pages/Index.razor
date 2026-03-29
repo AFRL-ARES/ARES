@@ -43,7 +43,6 @@
   private bool _isReady = false;
   private Dictionary<string, Dictionary<string, object>> _cachedViewArgs = new();
 
-  // Prevents Blazor from destroying the DOM by recycling the dictionary references
   private Dictionary<string, object> GetOrCreateArgs(IDeviceUnitControlViewModel vm)
   {
     if(!_cachedViewArgs.TryGetValue(vm.DeviceId, out var args))
@@ -62,7 +61,6 @@
       _module = await JS.InvokeAsync<IJSObjectReference>("import", "./Pages/Index.razor.js");
     }
 
-    // Wait until the JS module is loaded AND we have devices to render
     if(_module is not null && ViewModelRepo.Items.Any())
     {
       if(!_isReady)
@@ -74,7 +72,6 @@
       }
       else
       {
-        // Subsequent updates: Gridstack handles the new items
         await _module.InvokeVoidAsync("refreshGrid", "my-dashboard");
       }
     }

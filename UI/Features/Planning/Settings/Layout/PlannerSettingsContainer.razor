@@ -92,6 +92,7 @@
 
     _plannerStatus = null;
     _plannerStatus = await PlannerStatusGetter();
+    StateHasChanged();
   }
 
   private async Task ActivateClicked()
