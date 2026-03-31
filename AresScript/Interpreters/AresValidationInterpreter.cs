@@ -617,6 +617,14 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       }
     }
 
+    if(value.KindCase == AresValue.KindOneofCase.QuantityValue)
+    {
+      if(nameof(value.QuantityValue.Scalar).Equals(id, StringComparison.OrdinalIgnoreCase))
+      {
+        return Task.CompletedTask;
+      }
+    }
+
     if(_environment.TryGetExtensionFunction(value, id, out _))
     {
       return Task.CompletedTask;

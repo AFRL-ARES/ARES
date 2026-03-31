@@ -689,22 +689,27 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 
   public override async Task<AresValue> VisitMemberAccess([NotNull] AresLangParser.MemberAccessContext context)
   {
-    var structVal = await Visit(context.expression());
-    if(structVal.KindCase != AresValue.KindOneofCase.StructValue)
-    {
-      throw new AresInterpreterException(
-        $"Trying to access a member of a value that is not a struct. Value type: {structVal.KindCase}.",
-        context.Start.Line,
-        context.Start.Column
-      );
-    }
-
-    if(structVal.StructValue.Fields.TryGetValue(context.ID().GetText(), out var aresValue))
+    var varWithMember = await Visit(context.expression());
+    var id = context.ID().GetText();
+    if(varWithMember.KindCase == AresValue.KindOneofCase.StructValue
+       && varWithMember.StructValue.Fields.TryGetValue(id, out var aresValue))
     {
       return aresValue;
     }
 
-    return AresValueHelper.CreateNull();
+    if(varWithMember.KindCase == AresValue.KindOneofCase.QuantityValue)
+    {
+      if(nameof(varWithMember.QuantityValue.Scalar).Equals(id, StringComparison.OrdinalIgnoreCase))
+      {
+        return AresValueHelper.CreateNumber(varWithMember.QuantityValue.Scalar);
+      }
+    }
+    
+    throw new AresInterpreterException(
+      $"Trying to access a member of a value that has no members. Value type: {varWithMember.KindCase}.",
+      context.Start.Line,
+      context.Start.Column
+    );
   }
 
   public override async Task<AresValue> VisitIndexAccess([NotNull] AresLangParser.IndexAccessContext context)
