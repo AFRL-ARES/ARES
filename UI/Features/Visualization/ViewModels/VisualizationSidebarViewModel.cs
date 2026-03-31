@@ -1,26 +1,30 @@
 ﻿using Ares.Core.Device.Providers;
+using Ares.Core.Visualization.Managers;
 using Ares.Datamodel;
+using Ares.Datamodel.Visualizing;
+using Ares.Datamodel.Visualizing.Local;
 using Ares.Device;
 using DynamicData;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System.Collections.ObjectModel;
-using System.Reactive;
 using System.Reactive.Linq;
 
 namespace UI.Features.Visualization.ViewModels;
 
 public partial class VisualizationSidebarViewModel : ReactiveObject
 {
+  private readonly IVisualizationConfigManager _visualizationConfigManager;
   private readonly ReadOnlyObservableCollection<IAresDevice> _devices;
   private readonly IDisposable _cleanUp;
 
-  public VisualizationSidebarViewModel(IAresDeviceProvider deviceProvider)
+  public VisualizationSidebarViewModel(IAresDeviceProvider deviceProvider, IVisualizationConfigManager visualizationConfigManager)
   {
     _cleanUp = deviceProvider.Connect()
         .Bind(out _devices)
         .Subscribe();
 
+    _visualizationConfigManager = visualizationConfigManager;
     AllPaths = [];
     VisiblePaths = [];
     AvailableChartStyles = [];
@@ -41,35 +45,33 @@ public partial class VisualizationSidebarViewModel : ReactiveObject
           VisiblePaths = AllPaths.Where(p => showAll || p.IsPlottable).ToList();
         });
 
-    this.WhenAnyValue(x => x.SelectedPath)
-        .Select(path =>
-        {
-          if(path == null) 
-            return Array.Empty<ChartStyle>();
-
-          return path.DataType switch
-          {
-            AresDataType.Number => new[] { ChartStyle.Line, ChartStyle.Spline, ChartStyle.Area, ChartStyle.Gauge },
-            AresDataType.Boolean => new[] { ChartStyle.TextIndicator, ChartStyle.Line },
-            AresDataType.String => new[] { ChartStyle.TextIndicator },
-            _ => new[] { ChartStyle.TextIndicator }
-          };
-        })
-        .ToProperty(this, x => x.AvailableChartStyles);
-
     this.WhenAnyValue(x => x.AvailableChartStyles)
         .Where(styles => styles != null && styles.Any())
         .Subscribe(styles => SelectedChartStyle = styles.First());
+  }
 
-    var canAdd = this.WhenAnyValue(x => x.SelectedDevice, x => x.SelectedPath,
-        (dev, path) => dev != null && path != null);
+  public void UpdateAvailableChartStyles()
+  {
+    if(SelectedPath is null)
+      return;
 
-    AddToDashboardCommand = ReactiveCommand.Create(() => new ChartCreationRequest
+    switch(SelectedPath.DataType)
     {
-      Device = SelectedDevice!,
-      Path = SelectedPath!,
-      SelectedStyle = SelectedChartStyle
-    }, canAdd);
+      case AresDataType.Boolean:
+        AvailableChartStyles = [ChartStyle.TextIndicator, ChartStyle.Line];
+        break;
+      case AresDataType.String:
+        AvailableChartStyles = [ChartStyle.TextIndicator, ChartStyle.Line];
+        break;
+      case AresDataType.Number:
+        AvailableChartStyles = [ChartStyle.Line, ChartStyle.Spline, ChartStyle.Area, ChartStyle.Gauge];
+        break;
+      case AresDataType.Quantity:
+        AvailableChartStyles = [ChartStyle.Line, ChartStyle.Spline, ChartStyle.Area, ChartStyle.Gauge];
+        break;
+      default:
+        break;
+    }
   }
 
   private IEnumerable<VisualizationPath> ExtractPaths(AresStructSchema schema, string prefix = "")
@@ -81,9 +83,9 @@ public partial class VisualizationSidebarViewModel : ReactiveObject
       string currentPath = string.IsNullOrEmpty(prefix) ? field.Key : $"{prefix}.{field.Key}";
       var type = field.Value.Type;
 
-      if(type == AresDataType.Number || type == AresDataType.String || type == AresDataType.Boolean)
+      if(type == AresDataType.Number || type == AresDataType.Quantity || type == AresDataType.Boolean)
       {
-        paths.Add(new VisualizationPath { Path = currentPath, DataType = type });
+        paths.Add(new VisualizationPath { Path = currentPath, DataType = type, IsPlottable = true });
       }
 
       else if(type == AresDataType.Struct && field.Value.StructSchema != null)
@@ -96,21 +98,33 @@ public partial class VisualizationSidebarViewModel : ReactiveObject
         paths.AddRange(ExtractPaths(field.Value.ListElementSchema.StructSchema!, $"{currentPath}[*]"));
       }
 
-      else if(type == AresDataType.Quantity)
+      else if(type == AresDataType.String)
       {
-        paths.Add(new VisualizationPath { Path = currentPath, DataType = type });
+        paths.Add(new VisualizationPath { Path = currentPath, DataType = type, IsPlottable = false });
       }
     }
 
     return paths;
   }
 
+  public async Task CreateVisualization()
+  {
+    try
+    {
+      if(SelectedDevice is not null && SelectedPath is not null)
+        await _visualizationConfigManager.AddDeviceVisualization(SelectedDevice.UniqueId, SelectedPath, SelectedChartStyle);
+    }
+
+    catch(Exception e)
+    {
+      //TODO: Log and notify
+    }
+  }
+
   public void Dispose()
   {
     _cleanUp.Dispose();
   }
-
-  public ReactiveCommand<Unit, ChartCreationRequest> AddToDashboardCommand { get; }
 
   [Reactive]
   public partial IAresDevice? SelectedDevice { get; set; }
