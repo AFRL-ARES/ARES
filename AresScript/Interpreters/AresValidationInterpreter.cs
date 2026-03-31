@@ -742,7 +742,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       var receiverSchema = _typeInference.Visit(memberCtx.expression());
       if(_environment.TryGetExtensionFunction(receiverSchema.Type, memberName, out var extensionFunc))
       {
-        ValidateExtensionFunctionArgs(extensionFunc, receiverSchema, positionalArgs, keywordArgs, ctx);
+        ValidateExtensionFunctionArgs(extensionFunc, memberCtx.expression(), receiverSchema, positionalArgs, keywordArgs, ctx);
         RecordFunctionInvocation(extensionFunc.Id, extensionFunc.Name, ctx, AresFunctionInvocationKind.Extension);
         return;
       }
@@ -1069,6 +1069,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
 
   private void ValidateExtensionFunctionArgs(
     AresSystemFunctionSymbol function,
+    AresLangParser.ExpressionContext receiverExpression,
     AresValueSchema receiverSchema,
     IReadOnlyList<AresLangParser.ExpressionContext> positionalArgs,
     IReadOnlyDictionary<string, AresLangParser.ExpressionContext> keywordArgs,
@@ -1101,6 +1102,31 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
 
     var trimmedSchema = TrimReceiverFromSchema(function.InputSchema);
     ValidateArgsAgainstSchema(function.Id, trimmedSchema, positionalArgs, keywordArgs, ctx);
+
+    if(function.StaticArgumentValidator is not null)
+    {
+      var validatorArgs = new List<AresLangParser.ExpressionContext>(positionalArgs.Count + 1) { receiverExpression };
+      validatorArgs.AddRange(positionalArgs);
+
+      var resolvedArgs = ResolveStaticValidatorArgs(function.InputSchema, validatorArgs, keywordArgs);
+      if(resolvedArgs.Length > 0 && resolvedArgs[0] is null)
+      {
+        resolvedArgs[0] = TryBuildAssignmentValue(receiverExpression) ?? DummyValueFactory.CreateDummyValue(receiverSchema);
+      }
+
+      var validation = function.StaticArgumentValidator(resolvedArgs);
+      if(!validation.Success)
+      {
+        var arg = validation.Index == 0
+          ? receiverExpression
+          : ResolveStaticValidatorErrorExpression(function.InputSchema, validatorArgs, keywordArgs, validation.Index);
+        throw new AresInterpreterException(
+          validation.Error ?? "",
+          arg?.Start.Line ?? ctx.Start.Line,
+          arg?.Start.Column ?? ctx.Start.Column
+        );
+      }
+    }
   }
 
   private void ValidateArgsAgainstSchema(

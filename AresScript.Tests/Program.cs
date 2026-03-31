@@ -1549,6 +1549,34 @@ public class InterpreterTests
   }
 
   [Test]
+  public async Task Quantity_As_Extension_Works()
+  {
+    var script = """
+      converted = duration.as("ms")
+      assert converted.scalar == 1500
+      """;
+
+    await RunScriptWithEnvironmentAsync(
+      script,
+      env => env.AssignVariable("duration", AresValueHelper.CreateQuantity(UnitsNet.Duration.FromSeconds(1.5).ToQuantityValue())));
+  }
+
+  [Test]
+  public Task Validator_Rejects_Quantity_As_With_Incompatible_Unit()
+  {
+    var script = """duration.as("cm")""";
+
+    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(
+      script,
+      env => env.AssignVariable(
+        "duration",
+        AresValueHelper.CreateQuantity(UnitsNet.Duration.FromSeconds(1).ToQuantityValue()),
+        AresSchemaBuilder.Entry(AresDataType.Quantity).WithQuantity(QuantityType.Duration).Build())));
+    Assert.That(ex?.Message, Does.Contain("Unit 'cm' is not valid for quantity type 'Duration'."));
+    return Task.CompletedTask;
+  }
+
+  [Test]
   public async Task Empty_Array_Literal_Does_Not_Throw()
   {
     var script = """
