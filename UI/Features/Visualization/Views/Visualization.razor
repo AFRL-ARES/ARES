@@ -1,19 +1,26 @@
 ﻿@page "/visualization"
+@using Ares.Core.Visualization.ViewModels
 @using UI.Components.Visualization
 @using UI.Features.Visualization.ViewModels
 
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<VisualizationViewModel>
 @inject IJSRuntime JS
+
 <div class="grid-stack" id="visualization-board">
-  <div class="grid-stack-item" gs-w="25" gs-size-to-content="true">
-    <div class="grid-stack-item-content">
-      <RadzenButton Variant="Variant.Outlined" Text="Add Chart" ButtonStyle="ButtonStyle.Primary"/>
-    </div>
-  </div>
+  @if(ViewModel?.VisualizationItems != null)
+  {
+    @foreach(var itemViewModel in ViewModel.VisualizationItems)
+    {
+      <div @key="itemViewModel.UniqueId" class="grid-stack-item" gs-w="25" gs-size-to-content="true">
+        <div class="grid-stack-item-content">
+          <VisualizationItem ViewModel="itemViewModel" />
+        </div>
+      </div>
+    }
+  }
 </div>
 
 <VisualizationSidebar />
-
 
 @code {
   private IJSObjectReference? _module;
@@ -27,11 +34,13 @@
       _module = await JS.InvokeAsync<IJSObjectReference>("import", "./Features/Visualization/Views/Visualization.razor.js");
       await _module.InvokeVoidAsync("initDashboard", "visualization-board", _objRef);
     }
-
     else
     {
       if(_module is not null)
       {
+        // Note: Depending on how GridStack is configured, calling refreshGrid on every Blazor
+        // re-render might cause jitter if charts are updating 4 times a second.
+        // You may want to decouple GridStack layout refreshes from data refreshes in the future!
         await _module.InvokeVoidAsync("refreshGrid", "visualization-board");
         await _module.InvokeVoidAsync("resizeToContent", "visualization-board");
       }

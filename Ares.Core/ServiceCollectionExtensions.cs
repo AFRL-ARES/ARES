@@ -23,6 +23,9 @@ using Ares.Core.Device.Providers;
 using Ares.Core.Resources;
 using Ares.Core.Device.Plugins.Drivers.Loading;
 using Ares.Core.Device.Plugins.Drivers;
+using Ares.Core.Visualization.Repos;
+using Ares.Core.Visualization.Providers;
+using Ares.Core.Visualization.Managers;
 
 namespace Ares.Core;
 
@@ -49,6 +52,7 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<IDeviceManager, DeviceManager>();
     services.AddSingleton<IRemoteAnalyzerManager, RemoteAnalyzerManager>();
     services.AddSingleton<IRemotePlannerManager, RemotePlannerManager>();
+    services.AddSingleton<IVisualizationConfigManager, VisualizationConfigManager>();
     services.AddSingleton<IAnalyzerCache, AnalyzerCache>();
     services.AddSingleton<IRemoteDeviceManager, RemoteDeviceManager>();
     services.AddSingleton<IDeviceCache, DeviceCache>();
@@ -105,6 +109,7 @@ public static class ServiceCollectionExtensions
     services.AddTransient<IAresDeviceProvider, AresDeviceProvider>();
     services.AddTransient<IDeviceDriverProvider, DeviceDriverProvider>();
     services.AddTransient<IDeviceConfigProvider, DeviceConfigProvider>();
+    services.AddTransient<IDeviceVisualizationConfigProvider, DeviceVisualizationConfigProvider>();
   }
 
   private static void BindRepositories(this IServiceCollection services)
@@ -116,6 +121,7 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<AnalysisRepo>();
     services.AddSingleton<IAnalyzerRepo, AnalyzerRepo>();
     services.AddSingleton<IPlannerServiceRepo, PlannerServiceRepo>();
+    services.AddSingleton<IDeviceVisualizationConfigRepo, DeviceVisualizationConfigRepo>();
   }
 
 }

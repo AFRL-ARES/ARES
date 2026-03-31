@@ -5,6 +5,7 @@ using Ares.Core.Grpc;
 using Ares.Core.Grpc.Services;
 using Ares.Core.Grpc.Services.Notifications;
 using Ares.Core.Grpc.Services.Safety;
+using Ares.Core.Visualization.ViewModels;
 using AresService.Data;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.EntityFrameworkCore;
