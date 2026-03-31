@@ -1532,6 +1532,32 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
   {
     value = null;
 
+    if(functionCall.expression() is AresLangParser.MemberAccessContext memberAccess)
+    {
+      var receiverSchema = _typeInference.Visit(memberAccess.expression());
+      if(_environment.TryGetExtensionFunction(receiverSchema.Type, memberAccess.ID().GetText(), out var extensionFunction))
+      {
+        var outputVal = DummyValueFactory.CreateDummyValue(extensionFunction.OutputSchema);
+
+        if(outputVal.QuantityValue is not null)
+        {
+          var (positionalArgs, keywordArgs) = ExtractFunctionCallArguments(functionCall);
+          var validatorArgs = new List<AresLangParser.ExpressionContext>(positionalArgs.Count + 1) { memberAccess.expression() };
+          validatorArgs.AddRange(positionalArgs);
+          var resolvedArgs = ResolveStaticValidatorArgs(extensionFunction.InputSchema, validatorArgs, keywordArgs);
+
+          var unitArg = resolvedArgs.ElementAtOrDefault(1);
+          if(unitArg?.HasStringValue == true)
+          {
+            outputVal.QuantityValue.Unit = unitArg.StringValue;
+          }
+        }
+
+        value = outputVal;
+        return true;
+      }
+    }
+
     var funcId = TryResolveFunctionId(functionCall.expression());
     if(funcId is null)
     {

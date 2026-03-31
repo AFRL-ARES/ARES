@@ -1577,6 +1577,19 @@ public class InterpreterTests
   }
 
   [Test]
+  public async Task Validation_Allows_Quantity_As_Chained_To_Scalar()
+  {
+    var script = """shmepis = bepis.as("f").scalar""";
+
+    await ValidateScriptAsync(
+      script,
+      env => env.AssignVariable(
+        "bepis",
+        AresValueHelper.CreateQuantity(UnitsNet.Temperature.FromDegreesCelsius(0).ToQuantityValue()),
+        AresSchemaBuilder.Entry(AresDataType.Quantity).WithQuantity(QuantityType.Temperature).Build()));
+  }
+
+  [Test]
   public async Task Empty_Array_Literal_Does_Not_Throw()
   {
     var script = """
