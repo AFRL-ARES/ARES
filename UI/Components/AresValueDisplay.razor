@@ -17,7 +17,18 @@
             break;
 
         case AresValue.KindOneofCase.NumberValue:
-            <RadzenNumeric ShowUpDown="false" Value="Value.NumberValue" ReadOnly="true" />
+            <RadzenNumeric ShowUpDown="false" Value="Value.NumberValue" ReadOnly="true"
+                     Min="@(Schema?.HasMinNumberValue == true ? (decimal?)Schema.MinNumberValue : null)"
+                     Max="@(Schema?.HasMaxNumberValue == true ? (decimal?)Schema.MaxNumberValue : null)" />
+            break;
+
+        case AresValue.KindOneofCase.QuantityValue:
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                <RadzenNumeric ShowUpDown="false" Value="Value.QuantityValue.Scalar" ReadOnly="true"
+                     Min="@(Schema?.QuantitySchema?.HasMinScalarValue == true ? (decimal?)Schema.QuantitySchema.MinScalarValue : null)"
+                     Max="@(Schema?.QuantitySchema?.HasMaxScalarValue == true ? (decimal?)Schema.QuantitySchema.MaxScalarValue : null)" />
+                <RadzenText>@Value.QuantityValue.Unit</RadzenText>
+            </RadzenStack>
             break;
 
         case AresValue.KindOneofCase.StringArrayValue:
@@ -50,4 +61,7 @@
 @code {
     [Parameter]
     public AresValue? Value { get; set; }
+
+    [Parameter]
+    public AresValueSchema? Schema { get; set; }
 }

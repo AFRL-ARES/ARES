@@ -113,7 +113,7 @@
   </div>
 </div>
 
-@code {
+  @code {
   public bool SidebarExpanded { get; set; } = true;
   public bool BodyExpanded { get; set; }
   private CancellationTokenSource _cts = new();
@@ -231,7 +231,6 @@
 
   private void HandleSystemReady()
   {
-    // Cancel the timer just to be safe
     _cts.Cancel();
     InvokeAsync(StateHasChanged);
   }

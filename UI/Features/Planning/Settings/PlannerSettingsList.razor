@@ -7,7 +7,7 @@
 
 @inject DialogService DialogService
 
-@if (ViewModel!.SettingsViewModels is null)
+@if (ViewModel!.IsLoading)
 {
   <LoadingSpinner />
 }
@@ -69,6 +69,14 @@ else
         StateHasChanged();
       }
     }
+  }
+
+  protected override async Task OnInitializedAsync()
+  {
+    await base.OnInitializedAsync();
+
+    if(ViewModel is not null)
+      await ViewModel.UpdateAvailablePlanners();  
   }
 
   private bool SavingInProgress { get; set; }

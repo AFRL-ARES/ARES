@@ -39,4 +39,9 @@ public class ExecutionControlTokenSource : IDisposable
   {
     _pauseTokenSource.Wait(CancellationToken);
   }
+
+  public Task WaitForResumeAsync()
+  {
+    return _pauseTokenSource.WaitAsync(CancellationToken);
+  }
 }

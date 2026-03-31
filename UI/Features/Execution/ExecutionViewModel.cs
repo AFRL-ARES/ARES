@@ -146,7 +146,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     }
   }
 
-  public Task ReqeustUserConfirmation()
+  public Task RequestUserConfirmation()
   {
     var notification = new AresNotification();
     notification.NotificationSeverity = Severity.Info;

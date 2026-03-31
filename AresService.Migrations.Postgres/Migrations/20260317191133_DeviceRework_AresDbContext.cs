@@ -54,10 +54,15 @@ namespace AresService.Migrations.Postgres.Migrations.AresDb
                 name: "Index",
                 table: "Limits");
 
-            migrationBuilder.RenameColumn(
+            migrationBuilder.DropColumn(
                 name: "DeviceType",
+                table: "DeviceConfigs");
+
+            migrationBuilder.AddColumn<string>(
+                name: "DriverId",
                 table: "DeviceConfigs",
-                newName: "DriverId");
+                type: "text",
+                nullable: true);
 
             migrationBuilder.AlterColumn<string>(
                 name: "Settings",
@@ -324,10 +329,15 @@ namespace AresService.Migrations.Postgres.Migrations.AresDb
                 name: "TemplateId",
                 table: "CommandExecutionSummaries");
 
-            migrationBuilder.RenameColumn(
+            migrationBuilder.DropColumn(
                 name: "DriverId",
+                table: "DeviceConfigs");
+
+            migrationBuilder.AddColumn<string>(
+                name: "DeviceType",
                 table: "DeviceConfigs",
-                newName: "DeviceType");
+                type: "text",
+                nullable: true);
 
             migrationBuilder.AlterColumn<string>(
                 name: "Settings",

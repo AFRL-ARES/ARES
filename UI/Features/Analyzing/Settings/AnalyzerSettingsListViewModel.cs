@@ -16,17 +16,32 @@ public partial class AnalyzerSettingsListViewModel : ReactiveObject
   {
     _analyzerManagerService = analyzerManagerService;
     _notificationService = notificationService;
-    UpdateAvailableAnalyzers();
   }
 
   public AnalyzerConfigEditViewModel GetNewConfigEditViewModel() => new(_analyzerManagerService);
 
-  private Task UpdateAvailableAnalyzers()
+  public async Task UpdateAvailableAnalyzers()
   {
-    SettingsViewModels = null;
-    return _analyzerManagerService
-      .GetAllAnalyzers(new Empty(), null)
-      .ContinueWith(task => { if(task.IsCompletedSuccessfully) UpdateViewModels(task.Result.Analyzers); });
+    IsLoading = true;
+
+    try
+    {
+      var response = await _analyzerManagerService.GetAllAnalyzers(new Empty(), null);
+      UpdateViewModels(response.Analyzers);
+    }
+    catch(Exception ex)
+    {
+      PushNotification(new AresNotification
+      {
+        Title = "Error fetching analyzers",
+        Message = ex.Message,
+        NotificationSeverity = Severity.Error
+      });
+    }
+    finally
+    {
+      IsLoading = false;
+    }
   }
 
   private void UpdateViewModels(IEnumerable<AnalyzerInfo> analyzers)
@@ -62,6 +77,9 @@ public partial class AnalyzerSettingsListViewModel : ReactiveObject
 
   [Reactive]
   public partial IEnumerable<AnalyzerSettingsViewModel>? SettingsViewModels { get; private set; }
+
+  [Reactive]
+  public partial bool IsLoading { get; private set; }
 }
 
 
