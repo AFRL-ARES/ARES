@@ -1,0 +1,52 @@
+﻿.ares-vis-wrapper ::deep .ares-vis-body {
+	/* ... */
+}
+
+::deep .ares-vis-card {
+	background-color: var(--rz-base-background-color);
+	display: flex;
+	flex-direction: column;
+	min-height: 300px;
+}
+
+::deep .ares-vis-header {
+	margin-bottom: 12px;
+}
+
+::deep .ares-vis-body {
+	flex-grow: 1;
+	width: 100%;
+	display: block;
+	overflow: hidden;
+	position: relative;
+}
+
+::deep .text-indicator-container {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	width: 100%;
+}
+
+::deep .text-indicator-value {
+	font-weight: bold;
+	font-family: monospace;
+}
+
+::deep .ares-settings-panel {
+	background-color: rgba(0, 0, 0, 0.2);
+	border-radius: 4px;
+	padding: 8px;
+	animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+
+	to {
+		opacity: 1;
+	}
+}

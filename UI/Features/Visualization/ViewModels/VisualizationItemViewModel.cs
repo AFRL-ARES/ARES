@@ -4,38 +4,60 @@ using Ares.Datamodel.Visualizing.Local;
 using Ares.Device;
 using DynamicData;
 using ReactiveUI;
+using ReactiveUI.SourceGenerators;
 using System.Collections.ObjectModel;
 using System.Reactive.Linq;
 using Ares.Datamodel.Visualizing;
+using System.Reactive;
 
 namespace UI.Features.Visualization.ViewModels;
 
 public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
 {
-  private readonly IDisposable _streamSubscription;
+  private IDisposable? _streamSubscription;
   private readonly SourceList<ChartDataPoint> _dataPointsSource = new();
-  private readonly ReadOnlyObservableCollection<ChartDataPoint> _dataPoints;
-  private string _latestDisplayValue = "Waiting for data...";
-  private double _latestNumericValue;
+  private readonly IAresDevice _device;
+  private readonly DeviceVisualizationConfig _config;
+  private readonly Action<string> _onDeleteRequested;
+  private int _pollingFrequencyMs = 250;
 
-  public VisualizationItemViewModel(DeviceVisualizationConfig config, IAresDevice device)
+  public VisualizationItemViewModel(DeviceVisualizationConfig config, IAresDevice device, Action<string> onDeleteRequested)
   {
+    _config = config;
+    _device = device;
+    _onDeleteRequested = onDeleteRequested;
+    LatestDisplayValue = "Waiting for data... ";
+
+    UniqueId = config.UniqueId ?? Guid.NewGuid().ToString();
+    Title = config.Path.Path;
     Style = config.Style;
-    Title = $"{device.Name} : {config.Path.Path}";
 
     _dataPointsSource.Connect()
-        .Bind(out _dataPoints)
+        .Bind(out var dataPoints)
+        .Sample(TimeSpan.FromMilliseconds(500))
         .Subscribe(_ => this.RaisePropertyChanged(nameof(DataPoints)));
+    DataPoints = dataPoints;
 
-    _streamSubscription = device.StateStream
-        .Sample(TimeSpan.FromMilliseconds(1000))
-        .Subscribe(state =>
-        {
-          ProcessNewState(state, config.Path);
-        });
+    ToggleEditCommand = ReactiveCommand.Create(() => { IsEditing = !IsEditing; });
+    DeleteCommand = ReactiveCommand.Create(() => { _onDeleteRequested?.Invoke(UniqueId); });
+    SaveSettingsCommand = ReactiveCommand.Create(() =>
+    {
+      IsEditing = false;
+      // TODO: Dispatch an RPC call to update the DeviceVisualizationConfig on the ARES backend
+    });
 
-    UniqueId = Guid.NewGuid().ToString();
+    StartStreamSubscription();
   }
+
+  private void StartStreamSubscription()
+  {
+    _streamSubscription?.Dispose();
+
+    _streamSubscription = _device.StateStream
+        .Sample(TimeSpan.FromMilliseconds(PollingFrequencyMs))
+        .Subscribe(state => ProcessNewState(state, _config.Path));
+  }
+
 
   private void ProcessNewState(AresStruct state, VisualizationPath path)
   {
@@ -76,10 +98,10 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
 
         if(currentStruct.Fields.TryGetValue(segment, out AresValue nextValue) && nextValue.KindCase == AresValue.KindOneofCase.StructValue)
           currentStruct = nextValue.StructValue;
-        
+
         else
           return false;
-        
+
       }
 
       string leafSegment = segments[^1];
@@ -125,21 +147,32 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
     GC.SuppressFinalize(this);
   }
 
-  public ReadOnlyObservableCollection<ChartDataPoint> DataPoints => _dataPoints;
-  public ChartStyle Style { get; }
+  public ReactiveCommand<Unit, Unit> ToggleEditCommand { get; }
+  public ReactiveCommand<Unit, Unit> DeleteCommand { get; }
+  public ReactiveCommand<Unit, Unit> SaveSettingsCommand { get; }
+  public string UniqueId { get; }
   public string Title { get; }
+  public ReadOnlyObservableCollection<ChartDataPoint> DataPoints { get; }
 
-  public string LatestDisplayValue
+  [Reactive]
+  public partial bool IsEditing { get; set; }
+  [Reactive]
+  public partial ChartStyle Style { get; set; }
+  [Reactive]
+  public string LatestDisplayValue { get; set; }
+  [Reactive]
+  public double LatestNumericValue { get; set; }
+
+  public int PollingFrequencyMs
   {
-    get => _latestDisplayValue;
-    set => this.RaiseAndSetIfChanged(ref _latestDisplayValue, value);
+    get => _pollingFrequencyMs;
+    set
+    {
+      if(value != _pollingFrequencyMs)
+      {
+        this.RaiseAndSetIfChanged(ref _pollingFrequencyMs, value);
+        StartStreamSubscription();
+      }
+    }
   }
-
-  public double LatestNumericValue
-  {
-    get => _latestNumericValue;
-    set => this.RaiseAndSetIfChanged(ref _latestNumericValue, value);
-  }
-
-  public string UniqueId { get; set;  }
 }

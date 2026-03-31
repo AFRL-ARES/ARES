@@ -4,104 +4,108 @@
 @using UI.Features.Visualization.ViewModels
 @inherits ReactiveComponentBase<VisualizationItemViewModel>
 
-<RadzenCard Class="rz-p-4 rz-h-100 ares-vis-card">
-    <div class="ares-vis-header">
-        <RadzenText TextStyle="TextStyle.H6" Style="color: #88B04B;">@ViewModel!.Title</RadzenText>
-    </div>
-
-    <div class="ares-vis-body">
-        @switch (ViewModel!.Style)
-        {
-            case ChartStyle.Line:
-            case ChartStyle.Spline:
-            case ChartStyle.Area:
-            case ChartStyle.Column:
-                <RadzenChart Style="width: 100%; height: 100%;">
-                    @if(ViewModel.Style == ChartStyle.Line)
-                    {
-                        <RadzenLineSeries Data="@ViewModel.DataPoints" CategoryProperty="Timestamp" ValueProperty="Value" />
-                    }
-                    else if(ViewModel.Style == ChartStyle.Spline)
-                    {
-                      <RadzenLineSeries Data="@ViewModel.DataPoints" CategoryProperty="Timestamp" ValueProperty="Value" Smooth="true"/>
-                    }
-                    else if (ViewModel.Style == ChartStyle.Area)
-                    {
-                        <RadzenAreaSeries Data="@ViewModel.DataPoints" CategoryProperty="Timestamp" ValueProperty="Value" />
-                    }
-                    else if (ViewModel.Style == ChartStyle.Column)
-                    {
-                        <RadzenColumnSeries Data="@ViewModel.DataPoints" CategoryProperty="Timestamp" ValueProperty="Value" />
-                    }
-
-                    <RadzenCategoryAxis FormatString="{0:HH:mm:ss}">
-                        <RadzenGridLines Visible="true" />
-                    </RadzenCategoryAxis>
-                    
-                    <RadzenValueAxis>
-                        <RadzenGridLines Visible="true" />
-                    </RadzenValueAxis>
-                    
-                    <RadzenLegend Visible="false" />
-                </RadzenChart>
-                break;
-
-            case ChartStyle.Gauge:
-                <RadzenRadialGauge Style="width: 100%; height: 100%;">
-                    <RadzenRadialGaugeScale StartAngle="0" EndAngle="100" Step="20">
-                        <RadzenRadialGaugeScalePointer Value="@ViewModel.LatestNumericValue" />
-                    </RadzenRadialGaugeScale>
-                </RadzenRadialGauge>
-                break;
-
-            case ChartStyle.TextIndicator:
-                <div class="text-indicator-container">
-                    <RadzenText TextStyle="TextStyle.DisplayH3" Class="text-indicator-value">
-                        @ViewModel.LatestDisplayValue
-                    </RadzenText>
-                </div>
-                break;
-
-            case ChartStyle.UnspecifiedChart:
-            default:
-                <RadzenAlert AlertStyle="AlertStyle.Warning" ShowIcon="true" Variant="Variant.Flat">
-                    Unsupported chart style or no style specified.
-                </RadzenAlert>
-                break;
-        }
-    </div>
-</RadzenCard>
-
-<style>
-    .ares-vis-card {
-        background-color: var(--rz-base-background-color);
-        display: flex;
-        flex-direction: column;
-        min-height: 300px; /* Give the charts enough room to render axes */
-    }
+<div class="ares-vis-wrapper">
+  <RadzenCard Class="rz-p-4 rz-h-100 ares-vis-card">
     
-    .ares-vis-header {
-        margin-bottom: 12px;
-    }
-    
-    .ares-vis-body {
-        flex-grow: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden; /* Prevents the chart from breaking out of the card during resize */
-    }
-    
-    .text-indicator-container {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        width: 100%;
-    }
-    
-    .text-indicator-value {
-        font-weight: bold;
-        font-family: monospace;
-    }
-</style>
+      <div class="ares-vis-header rz-display-flex rz-justify-content-between rz-align-items-center">
+          <RadzenText TextStyle="TextStyle.H6" Style="color: #88B04B; margin: 0;">@ViewModel!.Title</RadzenText>
+        
+          <div class="ares-header-actions">
+              <RadzenButton Icon="settings" 
+                            Variant="Variant.Text" 
+                            Size="ButtonSize.Small" 
+                            Click="@(async () => ViewModel!.ToggleEditCommand.Execute().Subscribe())" />
+                          
+              @if (ViewModel!.IsEditing)
+              {
+                  <RadzenButton Icon="delete" 
+                                Variant="Variant.Text" 
+                                ButtonStyle="ButtonStyle.Danger" 
+                                Size="ButtonSize.Small" 
+                                Click="@(async () => ViewModel.DeleteCommand.Execute().Subscribe())" />
+              }
+          </div>
+      </div>
+
+      <div class="ares-vis-body">
+        
+          @if (ViewModel.IsEditing)
+          {
+            <div class="ares-settings-panel rz-w-100">
+              <div class="rz-p-2">
+                <RadzenLabel Text="Chart Style" Component="StyleDropdown" />
+                <RadzenDropDown @bind-Value="ViewModel.Style" 
+                                Data="@(Enum.GetValues(typeof(ChartStyle)).Cast<ChartStyle>())" 
+                                Name="StyleDropdown" 
+                                Class="rz-w-100 rz-mb-3" />
+
+                <RadzenLabel Text="Polling Rate (ms)" Component="PollingInput" />
+                <RadzenNumeric @bind-Value="ViewModel.PollingFrequencyMs" 
+                                Min="50" Max="10000" Step="50"
+                                Name="PollingInput" 
+                                Class="rz-w-100 rz-mb-3" />
+
+                <RadzenButton Text="Done" 
+                              ButtonStyle="ButtonStyle.Success" 
+                              Class="rz-w-100" 
+                              Click="@(async () => ViewModel!.SaveSettingsCommand.Execute().Subscribe())" />
+              </div>
+          </div>
+          }
+          else
+          {
+              @switch (ViewModel.Style)
+              {
+                  case ChartStyle.Line:
+                  case ChartStyle.Spline:
+                  case ChartStyle.Area:
+                  case ChartStyle.Column:
+                      <RadzenChart Style="width: 100%; height: 100%;">
+                          @if (ViewModel.Style == ChartStyle.Line) {
+                              <RadzenLineSeries Data="@ViewModel.DataPoints" CategoryProperty="Timestamp" ValueProperty="Value" />
+                          }
+                          else if (ViewModel.Style == ChartStyle.Spline) {
+                              <RadzenLineSeries Data="@ViewModel.DataPoints" CategoryProperty="Timestamp" ValueProperty="Value" Smooth="true" />
+                          }
+                          else if (ViewModel.Style == ChartStyle.Area) {
+                              <RadzenAreaSeries Data="@ViewModel.DataPoints" CategoryProperty="Timestamp" ValueProperty="Value" />
+                          }
+                          else if (ViewModel.Style == ChartStyle.Column) {
+                              <RadzenColumnSeries Data="@ViewModel.DataPoints" CategoryProperty="Timestamp" ValueProperty="Value" />
+                          }
+                          <RadzenCategoryAxis FormatString="{0:HH:mm:ss}">
+                              <RadzenGridLines Visible="true" />
+                          </RadzenCategoryAxis>
+                          <RadzenValueAxis>
+                              <RadzenGridLines Visible="true" />
+                          </RadzenValueAxis>
+                          <RadzenLegend Visible="false" />
+                      </RadzenChart>
+                      break;
+
+                  case ChartStyle.Gauge:
+                      <RadzenRadialGauge Style="width: 100%; height: 100%;">
+                          <RadzenRadialGaugeScale StartAngle="0" EndAngle="100" Step="20">
+                              <RadzenRadialGaugeScalePointer Value="@ViewModel.LatestNumericValue" />
+                          </RadzenRadialGaugeScale>
+                      </RadzenRadialGauge>
+                      break;
+
+                  case ChartStyle.TextIndicator:
+                      <div class="text-indicator-container">
+                          <RadzenText TextStyle="TextStyle.DisplayH3" Class="text-indicator-value">
+                              @ViewModel.LatestDisplayValue
+                          </RadzenText>
+                      </div>
+                      break;
+
+                  default:
+                      <RadzenAlert AlertStyle="AlertStyle.Warning" ShowIcon="true" Variant="Variant.Flat">
+                          Unsupported chart style.
+                      </RadzenAlert>
+                      break;
+              }
+          }
+      </div>
+  </RadzenCard>
+</div>
