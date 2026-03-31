@@ -3,6 +3,7 @@ using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
 using AresScript.Symbols;
 using System.Text;
+using UnitsNet;
 using UnitsNet.Units;
 
 namespace AresScript;
@@ -182,6 +183,80 @@ public static class StandardLibrary
   public static AresExtensionFunction[] ExtensionFunctions { get; } =
   [
     new(
+      AresValue.KindOneofCase.QuantityValue,
+      "as",
+      new AresSystemFunctionSymbol(
+        "quantity::as",
+        "as",
+        (args, _) =>
+        {
+          if(args.Count != 2)
+          {
+            throw new ArgumentException("Expected exactly 1 argument to as.", nameof(args));
+          }
+
+          var quantityValue = args[0];
+          if(quantityValue.KindCase != AresValue.KindOneofCase.QuantityValue
+            || !quantityValue.QuantityValue.TryToUnitsNetQuantity(out var quantity)
+            || quantity is null)
+          {
+            throw new InvalidOperationException("as can only be called on quantity values.");
+          }
+
+          if(args[1] is not { HasStringValue: true } unitArg || string.IsNullOrWhiteSpace(unitArg.StringValue))
+          {
+            throw new InvalidOperationException("as requires a non-empty unit string.");
+          }
+
+          if(!TryResolveQuantityType(quantity, out var quantityType, out var quantityTypeError))
+          {
+            throw new InvalidOperationException(quantityTypeError);
+          }
+
+          if(!QuantityUnitHelper.TryParseUnit(quantityType, unitArg.StringValue, out var unit, out var error))
+          {
+            throw new InvalidOperationException(error);
+          }
+
+          return Task.FromResult(AresValueHelper.CreateQuantity(Quantity.From(quantity.As(unit), unit).ToQuantityValue()));
+        },
+        BuildQuantityAsSchema(),
+        AresSchemaBuilder.Entry(AresDataType.Quantity).Build(),
+        Namespace: "",
+        IsExtension: true
+      )
+      {
+        Detail = "Convert a quantity to a different compatible unit.",
+        Documentation = "Converts a quantity to another compatible unit string, for example duration.as(\"ms\").",
+        StaticArgumentValidator = args =>
+        {
+          if(args.Count != 2 || args[0] is null || args[1] is not { HasStringValue: true } unitArg || string.IsNullOrWhiteSpace(unitArg.StringValue))
+          {
+            return new StaticArgValidation(true);
+          }
+
+          var receiver = args[0]!;
+          if(receiver.KindCase != AresValue.KindOneofCase.QuantityValue
+            || !receiver.QuantityValue.TryToUnitsNetQuantity(out var quantity)
+            || quantity is null)
+          {
+            return new StaticArgValidation(false, "as can only be called on quantity values.", 0);
+          }
+
+          if(!TryResolveQuantityType(quantity, out var quantityType, out var quantityTypeError))
+          {
+            return new StaticArgValidation(false, quantityTypeError, 0);
+          }
+
+          if(!QuantityUnitHelper.TryParseUnit(quantityType, unitArg.StringValue, out _, out var error))
+          {
+            return new StaticArgValidation(false, error, 1);
+          }
+
+          return new StaticArgValidation(true);
+        }
+      }),
+    new(
       AresValue.KindOneofCase.ListValue,
       "append",
       new AresSystemFunctionSymbol(
@@ -297,6 +372,14 @@ public static class StandardLibrary
       .Build();
   }
 
+  private static AresStructSchema BuildQuantityAsSchema()
+  {
+    return AresSchemaBuilder.Empty()
+      .AddEntry("self", AresSchemaBuilder.Entry(AresDataType.Quantity).Build())
+      .AddEntry("unit", AresSchemaBuilder.Entry(AresDataType.String).Build())
+      .Build();
+  }
+
   private static AresStructSchema BuildNumberArrayAppendSchema()
   {
     return AresSchemaBuilder.Empty()
@@ -333,5 +416,19 @@ public static class StandardLibrary
     }
 
     return quantity.As(DurationUnit.Millisecond);
+  }
+
+  private static bool TryResolveQuantityType(IQuantity quantity, out QuantityType quantityType, out string? error)
+  {
+    error = null;
+    if(Enum.TryParse<QuantityType>(quantity.QuantityInfo.Name, true, out quantityType)
+      && quantityType != QuantityType.Unspecified)
+    {
+      return true;
+    }
+
+    quantityType = QuantityType.Unspecified;
+    error = $"Unsupported quantity type '{quantity.QuantityInfo.Name}'.";
+    return false;
   }
 }

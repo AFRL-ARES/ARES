@@ -506,6 +506,9 @@ public class AresScriptEnvironment
       case AresDataType.Function:
         kind = AresValue.KindOneofCase.FunctionValue;
         return true;
+      case AresDataType.Quantity:
+        kind = AresValue.KindOneofCase.QuantityValue;
+        return true;
       default:
         kind = default;
         return false;
