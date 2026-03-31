@@ -21,14 +21,14 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
   public VisualizationItemViewModel(DeviceVisualizationConfig config, IAresDevice device)
   {
     Style = config.Style;
-    Title = config.Path.ToString();
+    Title = $"{device.Name} : {config.Path.Path}";
 
     _dataPointsSource.Connect()
         .Bind(out _dataPoints)
         .Subscribe(_ => this.RaisePropertyChanged(nameof(DataPoints)));
 
     _streamSubscription = device.StateStream
-        .Sample(TimeSpan.FromMilliseconds(250))
+        .Sample(TimeSpan.FromMilliseconds(1000))
         .Subscribe(state =>
         {
           ProcessNewState(state, config.Path);
