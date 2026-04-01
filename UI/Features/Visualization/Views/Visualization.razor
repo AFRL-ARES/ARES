@@ -11,7 +11,13 @@
   {
     @foreach(var itemViewModel in ViewModel.VisualizationItems)
     {
-      <div @key="itemViewModel.UniqueId" class="grid-stack-item" gs-w="25" gs-size-to-content="true">
+      <div @key="itemViewModel.UniqueId" 
+      class="grid-stack-item" 
+      gs-w="@itemViewModel.GridW"
+      gs-h="@itemViewModel.GridH"
+      gs-x="@itemViewModel.GridX"
+      gs-y="@itemViewModel.GridY"
+      data-id="@itemViewModel.UniqueId">
         <div class="grid-stack-item-content">
           <VisualizationItem ViewModel="itemViewModel" />
         </div>
@@ -25,6 +31,7 @@
 @code {
   private IJSObjectReference? _module;
   private DotNetObjectReference<Visualization>? _objRef;
+  public record GridStackLayoutChange(string UniqueId, int X, int Y, int W, int H);
 
   protected override async Task OnAfterRenderAsync(bool firstRender)
   {
@@ -44,9 +51,23 @@
     }
   }
 
-  [JSInvokable]
-  public void OnDashboardUpdate(object updates)
+  [JSInvokable("OnDashboardUpdate")]
+  public void OnDashboardUpdate(GridStackLayoutChange[] changes)
   {
-    //TODO: Save dashboard changes
+    foreach(var change in changes)
+    {
+      var item = ViewModel!.VisualizationItems.FirstOrDefault(v => v.UniqueId == change.UniqueId);
+      if(item != null)
+      {
+        item.GridX = change.X;
+        item.GridY = change.Y;
+        item.GridW = change.W;
+        item.GridH = change.H;
+            
+        // 3. TODO: Fire off an RPC call to update this specific DeviceVisualizationConfig
+        // in your backend database or config file so it survives a hard refresh!
+        // e.g., _configProvider.UpdateLayout(change.UniqueId, change.X, change.Y, change.W, change.H);
+      }
+    }
   }
 }

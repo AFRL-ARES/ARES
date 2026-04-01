@@ -4,7 +4,6 @@ using Ares.Datamodel.Visualizing.Local;
 using Ares.Device;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using System.Reactive;
 using System.Reactive.Linq;
 using UI.Features.Visualization.Models;
 
@@ -26,16 +25,21 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
     _device = device;
     _onDeleteRequested = onDeleteRequested;
     _onUpdateRequested = onUpdateRequested;
+
     PollingFrequencyMs = config.PollingRate;
     LatestDisplayValue = "Waiting for data... ";
     NumberOfDisplayPoints = config.NumberDisplayPoints;
     DisplayLabels = config.ShowDataLabels;
     DisplayMarkers = config.ShowMarkers;
     DataPoints = [];
-
     UniqueId = config.UniqueId;
     Title = $"{device.Name} : {config.Path.Path}";
     Style = config.Style;
+
+    GridX = config.GridX;
+    GridY = config.GridY;
+    GridW = config.GridW > 0 ? config.GridW : 4;
+    GridH = config.GridH > 0 ? config.GridH : 4;
 
     StartStreamSubscription();
   }
@@ -163,6 +167,11 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
 
   public string UniqueId { get; }
   public string Title { get; }
+  public int GridX { get; set; }
+  public int GridY { get; set; }
+  public int GridW { get; set; }
+  public int GridH { get; set; }
+
   [Reactive]
   public partial ChartStyle Style { get; set; }
   [Reactive]

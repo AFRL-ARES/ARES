@@ -37,14 +37,27 @@ function attachEvents(grid) {
 }
 
 // --- EXPORTED FUNCTIONS ---
+export function initDashboard(containerId, dotNetRef) {
+  let grid = GridStack.init({
+    cellHeight: '80px',
+    margin: 10,
+    minRow: 15,
+    float: true
+  }, `#${containerId}`);
 
-export function initDashboard(id, componentInstance) {
-  _componentInstance = componentInstance; // Save for later re-inits
+  grid.on('change', function (event, items) {
+    if (!items) return;
 
-  var options = getGridOptions(100); // Default to 100
-  var grid = GridStack.init(options, document.getElementById(id));
+    const layoutChanges = items.map(item => ({
+      UniqueId: item.el.getAttribute('data-id'),
+      X: item.x,
+      Y: item.y,
+      W: item.w,
+      H: item.h
+    }));
 
-  attachEvents(grid);
+    dotNetRef.invokeMethodAsync('OnDashboardUpdate', layoutChanges);
+  });
 }
 
 export function refreshGrid(id) {
