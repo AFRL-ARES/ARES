@@ -27,7 +27,16 @@ public class VisualizationConfigManager : IVisualizationConfigManager
 
   public async Task AddDeviceVisualization(string deviceId, VisualizationPath path, ChartStyle style)
   {
-    var newConfig = new DeviceVisualizationConfig { UniqueId = Guid.NewGuid().ToString(), DeviceId = deviceId, Path = path, Style = style };
+    var newConfig = new DeviceVisualizationConfig
+    {
+      UniqueId = Guid.NewGuid().ToString(),
+      DeviceId = deviceId,
+      Path = path,
+      Style = style,
+      NumberDisplayPoints = 20,
+      PollingRate = 3000,
+      ShowDataLabels = false
+    };
 
     try
     {
@@ -74,6 +83,8 @@ public class VisualizationConfigManager : IVisualizationConfigManager
     existingConfig.Style = config.Style;
     existingConfig.Path = config.Path;
     existingConfig.PollingRate = config.PollingRate;
+    existingConfig.ShowDataLabels = config.ShowDataLabels;
+    existingConfig.NumberDisplayPoints = config.NumberDisplayPoints;
 
     await context.SaveChangesAsync();
     _deviceVisualizationConfigRepo.AddOrUpdate(existingConfig);

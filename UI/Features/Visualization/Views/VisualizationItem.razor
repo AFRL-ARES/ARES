@@ -22,7 +22,7 @@
     </div>
 
     <div class="ares-vis-body">
-      @switch(ViewModel.Style)
+      @switch(ViewModel!.Style)
       {
         case ChartStyle.Line:
         case ChartStyle.Spline:
@@ -32,20 +32,27 @@
           @if(ViewModel.Style == ChartStyle.Line)
           {
             <RadzenLineSeries Data="@ViewModel.DataPoints" CategoryProperty="Timestamp" ValueProperty="Value">
-              <RadzenSeriesDataLabels Visible="true" />
+              <RadzenSeriesDataLabels Visible="@ViewModel!.DisplayLabels" />
+              <RadzenMarkers Visible="true" MarkerType="MarkerType.Circle"/>
             </RadzenLineSeries>
           }
           else if(ViewModel.Style == ChartStyle.Spline)
           {
-            <RadzenLineSeries Data="@ViewModel.DataPoints" CategoryProperty="Timestamp" ValueProperty="Value" Smooth="true" />
+            <RadzenLineSeries Data="@ViewModel.DataPoints" CategoryProperty="Timestamp" ValueProperty="Value" Smooth="true">
+              <RadzenSeriesDataLabels Visible="@ViewModel!.DisplayLabels" />
+            </RadzenLineSeries>
           }
           else if(ViewModel.Style == ChartStyle.Area)
           {
-            <RadzenAreaSeries Data="@ViewModel.DataPoints" CategoryProperty="Timestamp" ValueProperty="Value" />
+            <RadzenAreaSeries Data="@ViewModel.DataPoints" CategoryProperty="Timestamp" ValueProperty="Value">
+              <RadzenSeriesDataLabels Visible="@ViewModel!.DisplayLabels" />
+            </RadzenAreaSeries>
           }
           else if(ViewModel.Style == ChartStyle.Column)
           {
-            <RadzenColumnSeries Data="@ViewModel.DataPoints" CategoryProperty="Timestamp" ValueProperty="Value" />
+            <RadzenColumnSeries Data="@ViewModel.DataPoints" CategoryProperty="Timestamp" ValueProperty="Value">
+              <RadzenSeriesDataLabels Visible="@ViewModel!.DisplayLabels" />
+            </RadzenColumnSeries>
           }
           <RadzenCategoryAxis Formatter="@(value => "")" Padding="20">
             <RadzenGridLines Visible="true" />
@@ -86,7 +93,6 @@
 @code {
   private async Task OpenSettingsDialog()
   {
-    // Opens the new dialog component and passes the ViewModel to it
     await DialogService.OpenAsync<VisualizationSettingsDialog>(
         $"Settings: {ViewModel!.Title}",
         new Dictionary<string, object>() { { "ViewModel", ViewModel } },

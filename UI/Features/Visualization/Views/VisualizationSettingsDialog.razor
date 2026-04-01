@@ -12,9 +12,11 @@
                   Class="rz-w-100 rz-mb-4" />
 
   <RadzenLabel Text="Polling Rate (ms)" Component="PollingInput" />
-  <RadzenNumeric @bind-Value="ViewModel.PollingFrequencyMs"
+  <RadzenNumeric @bind-Value="ViewModel!.PollingFrequencyMs"
+                 TValue="int"
                  Min="250" Max="10000" Step="50"
                  Name="PollingInput"
+                 Change="@OnPollingUpdated"
                  Class="rz-w-100 rz-mb-4" />
 
   <RadzenLabel Text="Display Point Count" Component="DisplayPointCount"/>
@@ -56,6 +58,13 @@
   {
     ViewModel.SaveSettingsCommand.Execute();
     DialogService.Close();
+    return Task.CompletedTask;
+  }
+
+  private Task OnPollingUpdated(int newValue)
+  {
+    ViewModel!.PollingFrequencyMs = newValue;
+    ViewModel!.StartStreamSubscription();
     return Task.CompletedTask;
   }
 }

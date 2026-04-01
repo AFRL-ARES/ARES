@@ -27,6 +27,8 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
     _onDeleteRequested = onDeleteRequested;
     PollingFrequencyMs = config.PollingRate;
     LatestDisplayValue = "Waiting for data... ";
+    NumberOfDisplayPoints = config.NumberDisplayPoints;
+    DisplayLabels = config.ShowDataLabels;
     DataPoints = [];
 
     UniqueId = config.UniqueId ?? Guid.NewGuid().ToString();
@@ -40,6 +42,8 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
       IsEditing = false;
       config.Style = Style;
       config.PollingRate = PollingFrequencyMs;
+      config.ShowDataLabels = DisplayLabels;
+      config.NumberDisplayPoints = NumberOfDisplayPoints;
       onUpdateRequested?.Invoke(UniqueId, config);
     });
 
@@ -84,7 +88,7 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
         {
           _internalBuffer.Add(new ChartDataPoint(now, numericValue));
 
-          while(_internalBuffer.Count > 50)
+          while(_internalBuffer.Count > NumberOfDisplayPoints)
           {
             _internalBuffer.RemoveAt(0);
           }
