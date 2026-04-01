@@ -73,6 +73,7 @@ public class VisualizationConfigManager : IVisualizationConfigManager
     existingConfig.DeviceId = config.DeviceId;
     existingConfig.Style = config.Style;
     existingConfig.Path = config.Path;
+    existingConfig.PollingRate = config.PollingRate;
 
     await context.SaveChangesAsync();
     _deviceVisualizationConfigRepo.AddOrUpdate(existingConfig);

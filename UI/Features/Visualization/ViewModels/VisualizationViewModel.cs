@@ -1,11 +1,9 @@
 ﻿using Ares.Core.Device.Providers;
 using Ares.Core.Visualization.Managers;
 using Ares.Core.Visualization.Providers;
-using Ares.Core.Visualization.Repos;
 using Ares.Datamodel.Visualizing.Local;
 using DynamicData;
 using ReactiveUI;
-using System;
 using System.Collections.ObjectModel;
 using System.Reactive.Linq;
 using UI.Features.Visualization.ViewModels;
@@ -27,11 +25,10 @@ public partial class VisualizationViewModel : ReactiveObject, IDisposable
     _visualizationConfigManager = visualizationConfigManager;
 
     _subscription = _configProvider.Connect()
-        // Transform the raw config into our rich, reactive Item ViewModel
         .Transform(config =>
         {
           var device = _deviceProvider.GetDevice(config.DeviceId);
-          return new VisualizationItemViewModel(config, device, OnChartDeleteRequested);
+          return new VisualizationItemViewModel(config, device, OnChartDeleteRequested, OnChartUpdated);
         })
         .DisposeMany()
         .Bind(out _visualizationItems)
@@ -47,5 +44,8 @@ public partial class VisualizationViewModel : ReactiveObject, IDisposable
   private void OnChartDeleteRequested(string uniqueId)
     => _visualizationConfigManager.Remove(uniqueId);
 
+  private void OnChartUpdated(string uniqueId, DeviceVisualizationConfig config)
+    => _visualizationConfigManager.UpdateDeviceVisualization(uniqueId, config);
+  
   public ReadOnlyObservableCollection<VisualizationItemViewModel> VisualizationItems => _visualizationItems;
 }

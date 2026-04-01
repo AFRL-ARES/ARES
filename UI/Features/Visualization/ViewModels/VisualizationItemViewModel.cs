@@ -2,7 +2,6 @@
 using Ares.Datamodel.Visualizing;
 using Ares.Datamodel.Visualizing.Local;
 using Ares.Device;
-using DynamicData;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System.Reactive;
@@ -14,50 +13,46 @@ namespace UI.Features.Visualization.ViewModels;
 public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
 {
   private IDisposable? _streamSubscription;
-  private readonly SourceList<ChartDataPoint> _dataPointsSource = new();
   private readonly IAresDevice _device;
   private readonly DeviceVisualizationConfig _config;
   private readonly Action<string> _onDeleteRequested;
-  private int _pollingFrequencyMs = 250;
   private readonly object _bufferLock = new object();
   private readonly List<ChartDataPoint> _internalBuffer = new(50);
   private DateTime _lastTimestamp = DateTime.MinValue;
 
-  public VisualizationItemViewModel(DeviceVisualizationConfig config, IAresDevice device, Action<string> onDeleteRequested)
+  public VisualizationItemViewModel(DeviceVisualizationConfig config, IAresDevice device, Action<string> onDeleteRequested, Action<string, DeviceVisualizationConfig> onUpdateRequested)
   {
     _config = config;
     _device = device;
     _onDeleteRequested = onDeleteRequested;
+    PollingFrequencyMs = config.PollingRate;
     LatestDisplayValue = "Waiting for data... ";
+    DataPoints = [];
 
     UniqueId = config.UniqueId ?? Guid.NewGuid().ToString();
     Title = $"{device.Name} : {config.Path.Path}";
     Style = config.Style;
-
-    _dataPointsSource.Connect()
-        .Bind(out var dataPoints)
-        .Sample(TimeSpan.FromMilliseconds(500))
-        .Subscribe(_ => this.RaisePropertyChanged(nameof(DataPoints)));
-    DataPoints = dataPoints;
 
     ToggleEditCommand = ReactiveCommand.Create(() => { IsEditing = !IsEditing; });
     DeleteCommand = ReactiveCommand.Create(() => { _onDeleteRequested?.Invoke(UniqueId); });
     SaveSettingsCommand = ReactiveCommand.Create(() =>
     {
       IsEditing = false;
-      // TODO: Dispatch an RPC call to update the DeviceVisualizationConfig on the ARES backend
+      config.Style = Style;
+      config.PollingRate = PollingFrequencyMs;
+      onUpdateRequested?.Invoke(UniqueId, config);
     });
 
     StartStreamSubscription();
   }
 
-  private void StartStreamSubscription()
+  public void StartStreamSubscription()
   {
     _streamSubscription?.Dispose();
-
+    Console.WriteLine($"Disposing the old stream, creating a new one with polling frequency of {PollingFrequencyMs}");
     _streamSubscription = _device.StateStream
+        .Sample(TimeSpan.FromMilliseconds(PollingFrequencyMs))
         .Do(state => ProcessNewState(state, _config.Path))
-        .Sample(TimeSpan.FromMilliseconds(500))
         .Subscribe(
             onNext: _ =>
             {
@@ -76,7 +71,8 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
     if(TryExtractValue(state, path, out double numericValue))
     {
       var now = DateTime.UtcNow;
-      if(now <= _lastTimestamp) now = _lastTimestamp.AddMilliseconds(1);
+      if(now <= _lastTimestamp) 
+        now = _lastTimestamp.AddMilliseconds(1);
       _lastTimestamp = now;
 
       LatestNumericValue = numericValue;
@@ -160,7 +156,6 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
   public void Dispose()
   {
     _streamSubscription?.Dispose();
-    _dataPointsSource?.Dispose();
     GC.SuppressFinalize(this);
   }
 
@@ -180,17 +175,10 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
   public partial double LatestNumericValue { get; set; }
   [Reactive]
   public partial IList<ChartDataPoint> DataPoints { get; set; }
-
-  public int PollingFrequencyMs
-  {
-    get => _pollingFrequencyMs;
-    set
-    {
-      if(value != _pollingFrequencyMs)
-      {
-        this.RaiseAndSetIfChanged(ref _pollingFrequencyMs, value);
-        StartStreamSubscription();
-      }
-    }
-  }
+  [Reactive]
+  public partial int NumberOfDisplayPoints { get; set; }
+  [Reactive]
+  public partial bool DisplayLabels { get; set; }
+  [Reactive]
+  public partial int PollingFrequencyMs { get; set; }
 }
