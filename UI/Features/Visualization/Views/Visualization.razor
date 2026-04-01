@@ -38,9 +38,6 @@
     {
       if(_module is not null)
       {
-        // Note: Depending on how GridStack is configured, calling refreshGrid on every Blazor
-        // re-render might cause jitter if charts are updating 4 times a second.
-        // You may want to decouple GridStack layout refreshes from data refreshes in the future!
         await _module.InvokeVoidAsync("refreshGrid", "visualization-board");
         await _module.InvokeVoidAsync("resizeToContent", "visualization-board");
       }

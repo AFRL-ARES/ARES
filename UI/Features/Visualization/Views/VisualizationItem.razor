@@ -73,7 +73,7 @@
                           else if (ViewModel.Style == ChartStyle.Column) {
                               <RadzenColumnSeries Data="@ViewModel.DataPoints" CategoryProperty="Timestamp" ValueProperty="Value" />
                           }
-                          <RadzenCategoryAxis FormatString="{0:HH:mm:ss}">
+                          <RadzenCategoryAxis Formatter="@(value => "")">
                               <RadzenGridLines Visible="true" />
                           </RadzenCategoryAxis>
                           <RadzenValueAxis>

@@ -1,14 +1,13 @@
-﻿using UI.Features.Visualization.Models;
-using Ares.Datamodel;
+﻿using Ares.Datamodel;
+using Ares.Datamodel.Visualizing;
 using Ares.Datamodel.Visualizing.Local;
 using Ares.Device;
 using DynamicData;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using System.Collections.ObjectModel;
-using System.Reactive.Linq;
-using Ares.Datamodel.Visualizing;
 using System.Reactive;
+using System.Reactive.Linq;
+using UI.Features.Visualization.Models;
 
 namespace UI.Features.Visualization.ViewModels;
 
@@ -20,6 +19,9 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
   private readonly DeviceVisualizationConfig _config;
   private readonly Action<string> _onDeleteRequested;
   private int _pollingFrequencyMs = 250;
+  private readonly object _bufferLock = new object();
+  private readonly List<ChartDataPoint> _internalBuffer = new(50);
+  private DateTime _lastTimestamp = DateTime.MinValue;
 
   public VisualizationItemViewModel(DeviceVisualizationConfig config, IAresDevice device, Action<string> onDeleteRequested)
   {
@@ -29,7 +31,7 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
     LatestDisplayValue = "Waiting for data... ";
 
     UniqueId = config.UniqueId ?? Guid.NewGuid().ToString();
-    Title = config.Path.Path;
+    Title = $"{device.Name} : {config.Path.Path}";
     Style = config.Style;
 
     _dataPointsSource.Connect()
@@ -54,8 +56,18 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
     _streamSubscription?.Dispose();
 
     _streamSubscription = _device.StateStream
-        .Sample(TimeSpan.FromMilliseconds(PollingFrequencyMs))
-        .Subscribe(state => ProcessNewState(state, _config.Path));
+        .Do(state => ProcessNewState(state, _config.Path))
+        .Sample(TimeSpan.FromMilliseconds(500))
+        .Subscribe(
+            onNext: _ =>
+            {
+              lock(_bufferLock)
+              {
+                DataPoints = _internalBuffer.ToList();
+              }
+            },
+            onError: ex => Console.WriteLine($"[{Title}] Stream error: {ex.Message}")
+        );
   }
 
 
@@ -64,17 +76,22 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
     if(TryExtractValue(state, path, out double numericValue))
     {
       var now = DateTime.UtcNow;
+      if(now <= _lastTimestamp) now = _lastTimestamp.AddMilliseconds(1);
+      _lastTimestamp = now;
 
       LatestNumericValue = numericValue;
       LatestDisplayValue = numericValue.ToString("0.##");
 
       if(Style is ChartStyle.Line or ChartStyle.Spline or ChartStyle.Area or ChartStyle.Column)
       {
-        _dataPointsSource.Add(new ChartDataPoint(now, numericValue));
-
-        if(_dataPointsSource.Count > 50)
+        lock(_bufferLock)
         {
-          _dataPointsSource.RemoveAt(0);
+          _internalBuffer.Add(new ChartDataPoint(now, numericValue));
+
+          while(_internalBuffer.Count > 50)
+          {
+            _internalBuffer.RemoveAt(0);
+          }
         }
       }
     }
@@ -152,16 +169,17 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
   public ReactiveCommand<Unit, Unit> SaveSettingsCommand { get; }
   public string UniqueId { get; }
   public string Title { get; }
-  public ReadOnlyObservableCollection<ChartDataPoint> DataPoints { get; }
 
   [Reactive]
   public partial bool IsEditing { get; set; }
   [Reactive]
   public partial ChartStyle Style { get; set; }
   [Reactive]
-  public string LatestDisplayValue { get; set; }
+  public partial string LatestDisplayValue { get; set; }
   [Reactive]
-  public double LatestNumericValue { get; set; }
+  public partial double LatestNumericValue { get; set; }
+  [Reactive]
+  public partial IList<ChartDataPoint> DataPoints { get; set; }
 
   public int PollingFrequencyMs
   {
