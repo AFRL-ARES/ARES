@@ -3,8 +3,6 @@
 @using ReactiveUI.Blazor
 @using UI.Features.Visualization.ViewModels
 @inherits ReactiveComponentBase<VisualizationItemViewModel>
-
-@* Ensure the DialogService is injected! *@
 @inject Radzen.DialogService DialogService
 
 <div class="ares-vis-wrapper">
@@ -33,19 +31,21 @@
           {
             <RadzenLineSeries Data="@ViewModel.DataPoints" CategoryProperty="Timestamp" ValueProperty="Value">
               <RadzenSeriesDataLabels Visible="@ViewModel!.DisplayLabels" />
-              <RadzenMarkers Visible="true" MarkerType="MarkerType.Circle"/>
+              <RadzenMarkers Visible="@ViewModel!.DisplayMarkers" MarkerType="MarkerType.Circle"/>
             </RadzenLineSeries>
           }
           else if(ViewModel.Style == ChartStyle.Spline)
           {
             <RadzenLineSeries Data="@ViewModel.DataPoints" CategoryProperty="Timestamp" ValueProperty="Value" Smooth="true">
               <RadzenSeriesDataLabels Visible="@ViewModel!.DisplayLabels" />
+              <RadzenMarkers Visible="@ViewModel!.DisplayMarkers" MarkerType="MarkerType.Circle" />
             </RadzenLineSeries>
           }
           else if(ViewModel.Style == ChartStyle.Area)
           {
             <RadzenAreaSeries Data="@ViewModel.DataPoints" CategoryProperty="Timestamp" ValueProperty="Value">
               <RadzenSeriesDataLabels Visible="@ViewModel!.DisplayLabels" />
+              <RadzenMarkers Visible="@ViewModel!.DisplayMarkers" MarkerType="MarkerType.Circle" />
             </RadzenAreaSeries>
           }
           else if(ViewModel.Style == ChartStyle.Column)

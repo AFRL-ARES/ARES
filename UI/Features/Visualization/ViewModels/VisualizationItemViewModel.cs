@@ -29,6 +29,7 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
     LatestDisplayValue = "Waiting for data... ";
     NumberOfDisplayPoints = config.NumberDisplayPoints;
     DisplayLabels = config.ShowDataLabels;
+    DisplayMarkers = config.ShowMarkers;
     DataPoints = [];
 
     UniqueId = config.UniqueId ?? Guid.NewGuid().ToString();
@@ -44,6 +45,7 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
       config.PollingRate = PollingFrequencyMs;
       config.ShowDataLabels = DisplayLabels;
       config.NumberDisplayPoints = NumberOfDisplayPoints;
+      config.ShowMarkers = DisplayMarkers;
       onUpdateRequested?.Invoke(UniqueId, config);
     });
 
@@ -185,4 +187,6 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
   public partial bool DisplayLabels { get; set; }
   [Reactive]
   public partial int PollingFrequencyMs { get; set; }
+  [Reactive]
+  public partial bool DisplayMarkers { get; set; }
 }
