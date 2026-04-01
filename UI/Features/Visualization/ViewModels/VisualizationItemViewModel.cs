@@ -18,13 +18,14 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
   private readonly Action<string> _onDeleteRequested;
   private readonly object _bufferLock = new object();
   private readonly List<ChartDataPoint> _internalBuffer = new(50);
-  private DateTime _lastTimestamp = DateTime.MinValue;
+  private readonly Action<string, DeviceVisualizationConfig> _onUpdateRequested;
 
   public VisualizationItemViewModel(DeviceVisualizationConfig config, IAresDevice device, Action<string> onDeleteRequested, Action<string, DeviceVisualizationConfig> onUpdateRequested)
   {
     _config = config;
     _device = device;
     _onDeleteRequested = onDeleteRequested;
+    _onUpdateRequested = onUpdateRequested;
     PollingFrequencyMs = config.PollingRate;
     LatestDisplayValue = "Waiting for data... ";
     NumberOfDisplayPoints = config.NumberDisplayPoints;
@@ -32,22 +33,9 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
     DisplayMarkers = config.ShowMarkers;
     DataPoints = [];
 
-    UniqueId = config.UniqueId ?? Guid.NewGuid().ToString();
+    UniqueId = config.UniqueId;
     Title = $"{device.Name} : {config.Path.Path}";
     Style = config.Style;
-
-    ToggleEditCommand = ReactiveCommand.Create(() => { IsEditing = !IsEditing; });
-    DeleteCommand = ReactiveCommand.Create(() => { _onDeleteRequested?.Invoke(UniqueId); });
-    SaveSettingsCommand = ReactiveCommand.Create(() =>
-    {
-      IsEditing = false;
-      config.Style = Style;
-      config.PollingRate = PollingFrequencyMs;
-      config.ShowDataLabels = DisplayLabels;
-      config.NumberDisplayPoints = NumberOfDisplayPoints;
-      config.ShowMarkers = DisplayMarkers;
-      onUpdateRequested?.Invoke(UniqueId, config);
-    });
 
     StartStreamSubscription();
   }
@@ -76,11 +64,6 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
   {
     if(TryExtractValue(state, path, out double numericValue))
     {
-      var now = DateTime.UtcNow;
-      if(now <= _lastTimestamp) 
-        now = _lastTimestamp.AddMilliseconds(1);
-      _lastTimestamp = now;
-
       LatestNumericValue = numericValue;
       LatestDisplayValue = numericValue.ToString("0.##");
 
@@ -88,7 +71,7 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
       {
         lock(_bufferLock)
         {
-          _internalBuffer.Add(new ChartDataPoint(now, numericValue));
+          _internalBuffer.Add(new ChartDataPoint(DateTime.UtcNow, numericValue));
 
           while(_internalBuffer.Count > NumberOfDisplayPoints)
           {
@@ -159,20 +142,27 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
     return false;
   }
 
+  public void SaveSettings()
+  {
+    _config.Style = Style;
+    _config.PollingRate = PollingFrequencyMs;
+    _config.ShowDataLabels = DisplayLabels;
+    _config.NumberDisplayPoints = NumberOfDisplayPoints;
+    _config.ShowMarkers = DisplayMarkers;
+    _onUpdateRequested?.Invoke(UniqueId, _config);
+  }
+
+  public void OnDelete()
+    => _onDeleteRequested?.Invoke(UniqueId);
+
   public void Dispose()
   {
     _streamSubscription?.Dispose();
     GC.SuppressFinalize(this);
   }
 
-  public ReactiveCommand<Unit, Unit> ToggleEditCommand { get; }
-  public ReactiveCommand<Unit, Unit> DeleteCommand { get; }
-  public ReactiveCommand<Unit, Unit> SaveSettingsCommand { get; }
   public string UniqueId { get; }
   public string Title { get; }
-
-  [Reactive]
-  public partial bool IsEditing { get; set; }
   [Reactive]
   public partial ChartStyle Style { get; set; }
   [Reactive]

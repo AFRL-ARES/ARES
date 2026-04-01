@@ -35,7 +35,8 @@ public class VisualizationConfigManager : IVisualizationConfigManager
       Style = style,
       NumberDisplayPoints = 20,
       PollingRate = 3000,
-      ShowDataLabels = false
+      ShowDataLabels = false,
+      ShowMarkers = false
     };
 
     try
@@ -85,6 +86,7 @@ public class VisualizationConfigManager : IVisualizationConfigManager
     existingConfig.PollingRate = config.PollingRate;
     existingConfig.ShowDataLabels = config.ShowDataLabels;
     existingConfig.NumberDisplayPoints = config.NumberDisplayPoints;
+    existingConfig.ShowMarkers = config.ShowMarkers;
 
     await context.SaveChangesAsync();
     _deviceVisualizationConfigRepo.AddOrUpdate(existingConfig);

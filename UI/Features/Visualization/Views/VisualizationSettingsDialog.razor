@@ -51,15 +51,14 @@
 
   private Task OnDeleteClicked()
   {
-    // Close the dialog first so it doesn't try to render a dead viewmodel
-    DialogService.Close();        
-    ViewModel.DeleteCommand.Execute();
+    DialogService.Close();
+    ViewModel.OnDelete();
     return Task.CompletedTask;
   }
 
   private Task OnDoneClicked()
   {
-    ViewModel.SaveSettingsCommand.Execute();
+    ViewModel.SaveSettings();
     DialogService.Close();
     return Task.CompletedTask;
   }
