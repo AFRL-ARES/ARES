@@ -25,14 +25,20 @@ public partial class VisualizationViewModel : ReactiveObject, IDisposable
     _visualizationConfigManager = visualizationConfigManager;
 
     _subscription = _configProvider.Connect()
-        .Transform(config =>
+      .TransformWithInlineUpdate(
+        config =>
         {
           var device = _deviceProvider.GetDevice(config.DeviceId);
           return new VisualizationItemViewModel(config, device, OnChartDeleteRequested, OnChartUpdated);
+        },
+
+        (existingViewModel, updatedConfig) =>
+        {
+          existingViewModel.UpdateFromConfig(updatedConfig);
         })
-        .DisposeMany()
-        .Bind(out _visualizationItems)
-        .Subscribe(_ => this.RaisePropertyChanged(nameof(VisualizationItems)));
+    .DisposeMany()
+    .Bind(out _visualizationItems)
+    .Subscribe(_ => this.RaisePropertyChanged(nameof(VisualizationItems)));
   }
 
   public void Dispose()
@@ -46,6 +52,21 @@ public partial class VisualizationViewModel : ReactiveObject, IDisposable
 
   private void OnChartUpdated(string uniqueId, DeviceVisualizationConfig config)
     => _visualizationConfigManager.UpdateDeviceVisualization(uniqueId, config);
+
+  public void UpdateChartPosition(string id, int x, int y, int w, int h)
+  {
+    var matchingChart = _configProvider.GetConfig(id);
+
+    if(matchingChart is not null)
+    {
+      matchingChart.GridX = x;
+      matchingChart.GridY = y;
+      matchingChart.GridW = w;
+      matchingChart.GridH = h;
+
+      _visualizationConfigManager.UpdateDeviceVisualization(id, matchingChart);
+    }
+  }
   
   public ReadOnlyObservableCollection<VisualizationItemViewModel> VisualizationItems => _visualizationItems;
 }

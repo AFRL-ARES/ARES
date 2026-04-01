@@ -13,7 +13,7 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
 {
   private IDisposable? _streamSubscription;
   private readonly IAresDevice _device;
-  private readonly DeviceVisualizationConfig _config;
+  private DeviceVisualizationConfig _config;
   private readonly Action<string> _onDeleteRequested;
   private readonly object _bufferLock = new object();
   private readonly List<ChartDataPoint> _internalBuffer = new(50);
@@ -144,6 +144,17 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
     }
 
     return false;
+  }
+
+  public void UpdateFromConfig(DeviceVisualizationConfig newConfig)
+  {
+    _config = newConfig;
+
+    //Update Gridstack Position
+    GridX = _config.GridX;
+    GridY = _config.GridY;
+    GridW = _config.GridW;
+    GridH = _config.GridH;
   }
 
   public void SaveSettings()

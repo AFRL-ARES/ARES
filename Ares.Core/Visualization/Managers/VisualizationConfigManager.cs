@@ -80,6 +80,7 @@ public class VisualizationConfigManager : IVisualizationConfigManager
     if(existingConfig is null)
       return;
 
+    //Chart Settings
     existingConfig.DeviceId = config.DeviceId;
     existingConfig.Style = config.Style;
     existingConfig.Path = config.Path;
@@ -87,6 +88,12 @@ public class VisualizationConfigManager : IVisualizationConfigManager
     existingConfig.ShowDataLabels = config.ShowDataLabels;
     existingConfig.NumberDisplayPoints = config.NumberDisplayPoints;
     existingConfig.ShowMarkers = config.ShowMarkers;
+
+    //Gridstack Location Info
+    existingConfig.GridX = config.GridX;
+    existingConfig.GridY = config.GridY;
+    existingConfig.GridW = config.GridW;
+    existingConfig.GridH = config.GridH;
 
     await context.SaveChangesAsync();
     _deviceVisualizationConfigRepo.AddOrUpdate(existingConfig);

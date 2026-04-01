@@ -55,19 +55,7 @@
   public void OnDashboardUpdate(GridStackLayoutChange[] changes)
   {
     foreach(var change in changes)
-    {
-      var item = ViewModel!.VisualizationItems.FirstOrDefault(v => v.UniqueId == change.UniqueId);
-      if(item != null)
-      {
-        item.GridX = change.X;
-        item.GridY = change.Y;
-        item.GridW = change.W;
-        item.GridH = change.H;
-            
-        // 3. TODO: Fire off an RPC call to update this specific DeviceVisualizationConfig
-        // in your backend database or config file so it survives a hard refresh!
-        // e.g., _configProvider.UpdateLayout(change.UniqueId, change.X, change.Y, change.W, change.H);
-      }
-    }
+      ViewModel!.UpdateChartPosition(change.UniqueId, change.X, change.Y, change.W, change.H);
+    
   }
 }
