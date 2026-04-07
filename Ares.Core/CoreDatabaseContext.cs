@@ -40,6 +40,8 @@ public class CoreDatabaseContext : DbContext
   public DbSet<DeviceLoggingSettings> DeviceLoggingSettings => Set<DeviceLoggingSettings>();
   public DbSet<DeviceState> DeviceStates => Set<DeviceState>();
   public DbSet<DeviceVisualizationConfig> DeviceVisualizationConfigs => Set<DeviceVisualizationConfig>();
+  public DbSet<PlannerTransaction> PlannerTransactions => Set<PlannerTransaction>();
+  public DbSet<AnalyzerTransaction> AnalyzerTransactions => Set<AnalyzerTransaction>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {

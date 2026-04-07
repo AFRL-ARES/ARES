@@ -1,7 +1,6 @@
 ﻿let _componentInstance = null;
 let currentMode = 'desktop';
 
-
 function getGridOptions(columnCount) {
   return {
     column: columnCount,

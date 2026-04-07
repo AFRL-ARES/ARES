@@ -55,9 +55,9 @@
     @foreach (var prop in ViewModel!.DriverSettingsSchema.Fields)
     {
       <AresValueDesigner Name="@prop.Key"
-      Value="@ViewModel!.GetMatchingSettingValue(prop.Key)"
-      Schema="prop.Value"
-      ValueEditCallback="@(value => ValueEditCallback(prop.Key, value))"/>
+        Value="@ViewModel!.GetMatchingSettingValue(prop.Key)"
+        Schema="prop.Value"
+        ValueEditCallback="@(value => ValueEditCallback(prop.Key, value))"/>
     }
 
     <RadzenRow Gap="1rem" AlignItems="AlignItems.Center" Style="padding-top: 0.5rem; padding-bottom: 0.5rem;">

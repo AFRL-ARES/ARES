@@ -29,6 +29,7 @@ public partial class VisualizationViewModel : ReactiveObject, IDisposable
         config =>
         {
           var device = _deviceProvider.GetDevice(config.DeviceId);
+
           return new VisualizationItemViewModel(config, device, OnChartDeleteRequested, OnChartUpdated);
         },
 

@@ -59,18 +59,9 @@ public abstract class PlannerServiceBase : IPlannerService
     }
   }
 
-  public abstract Task<PlanResponse> Plan(IEnumerable<ParameterMetadata> plannableParameters,
-    RequestMetadata metadata,
-    IEnumerable<ExperimentOverview> previousExperiments,
-    IEnumerable<Analysis> analysisHistory, 
-    CancellationToken cancellationToken = default);
+  public abstract Task<PlanningResponse> Plan(PlanningRequest request, CancellationToken cancellationToken = default);
 
-  public abstract Task<PlanResponse> Plan(IEnumerable<ParameterMetadata> plannableParameters,
-    RequestMetadata metadata,
-    IEnumerable<ExperimentOverview> previousExperiments,
-    IEnumerable<Analysis> analysisHistory,
-    AresStruct settings,
-    CancellationToken cancellationToken = default);
+  public abstract Task<PlanningResponse> Plan(PlanningRequest request, AresStruct settings, CancellationToken cancellationToken = default);
 
   public abstract Task<PlannerServiceCapabilities> GetCapabilities(CancellationToken cancellationToken);
 

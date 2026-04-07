@@ -1,8 +1,11 @@
+using Ares.Core.Execution.Extensions;
 using Ares.Core.Notifications;
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 
 namespace Ares.Core.Planning;
@@ -29,6 +32,7 @@ public class PlanningHelper : IPlanningHelper
   {
     var parameterArray = parameters.ToArray();
     var plannerToMetadataMaps = new List<(IPlannerService Planner, ParameterMetadata Metadata)>();
+
     foreach(var plannerAllocation in plannerAllocations)
     {
       var planner = _plannerManager.GetPlannerById(plannerAllocation.Planner.UniqueId);
@@ -43,13 +47,24 @@ public class PlanningHelper : IPlanningHelper
     foreach(var grouping in planGroup)
     {
       var planner = grouping.Key;
+      var planTransaction = new PlannerTransaction() { PlannerName = planner.Name, PlannerType = planner.Type, PlannerVersion = planner.Version };
       try
       {
         var plannableParameters = grouping.Select(pair => pair.Metadata).ToArray();
         //make metadata thx
-        var planResponse = await planner.Plan(plannableParameters, metadata, seedExperiments, seedAnalysesArr, cancellationToken);
+        planTransaction.TimeRequestSent = DateTime.UtcNow.ToTimestamp();
+        
+        //Create the plan request. Store it in the transaction.
+        var planRequest = new PlanningRequest();
+        planRequest.PlanningParameters.AddRange(plannableParameters.Select(parameter => ConvertToPlanningParameter(parameter, seedExperiments)));
+        planRequest.AnalysisResults.AddRange(seedAnalysesArr.Select(a => (double)a.Result));
+        planTransaction.PlanningRequest = planRequest;
 
-        if(planResponse.Outcome == Outcome.Failure)
+        var planResponse = await planner.Plan(planRequest, cancellationToken);
+        planTransaction.TimeResponseReceived = DateTime.UtcNow.ToTimestamp();
+        planTransaction.PlanningResponse = planResponse;
+
+        if(planResponse.PlanningOutcome == Outcome.Failure)
         {
           if(string.IsNullOrWhiteSpace(planResponse.ErrorString))
             await _notifier.Notify("Planner Error!", "Planner reported that planning failed, but did not provide any specific error as to why.", NotificationSeverityEnum.Error);
@@ -60,7 +75,7 @@ public class PlanningHelper : IPlanningHelper
           return false;
         }
 
-        if(planResponse.Outcome == Outcome.Warning)
+        if(planResponse.PlanningOutcome == Outcome.Warning)
         {
           if(string.IsNullOrWhiteSpace(planResponse.ErrorString))
             await _notifier.Notify("Planner Warning", "Planner reported a warning, but did not provide specific context for that warning.", NotificationSeverityEnum.Warning);
@@ -69,23 +84,23 @@ public class PlanningHelper : IPlanningHelper
             await _notifier.Notify("Planner Warning", $"Planner successfully planned, but reported a warning: {planResponse.ErrorString}", NotificationSeverityEnum.Warning);
         }
         
-        if(planResponse.Outcome == Outcome.Canceled)
+        if(planResponse.PlanningOutcome == Outcome.Canceled)
           await _notifier.Notify("Planning was canceled.", "Planning was canceled.", NotificationSeverityEnum.Info);
 
-        if(!planResponse.Results.Any())
+        if(!planResponse.PlannedParameters.Any())
         {
           await _notifier.Notify("Planning Error!", "Tried to plan for experiment, but planning returned no plan results! Campaign will stop.", NotificationSeverityEnum.Error);
           return false;
         }
 
-        foreach(var result in planResponse.Results)
+        foreach(var result in planResponse.PlannedParameters)
         {
-          var parameterPlanTarget = parameterArray.FirstOrDefault(parameter => parameter.PlanningMetadata.UniqueId == result.Metadata.UniqueId);
+          var parameterPlanTarget = parameterArray.FirstOrDefault(parameter => parameter.PlanningMetadata.Name == result.Metadata.MetadataName);
 
           if(parameterPlanTarget is null)
             continue;
 
-          parameterPlanTarget.Value = result.Value;
+          parameterPlanTarget.Value = result.ParameterValue;
         }
       }
       catch(Exception e)
@@ -96,5 +111,46 @@ public class PlanningHelper : IPlanningHelper
     }
 
     return true;
+  }
+
+  private static PlanningParameter ConvertToPlanningParameter(ParameterMetadata metadata, IEnumerable<ExperimentOverview> experimentHistory)
+  {
+    var parameter = new PlanningParameter
+    {
+      ParameterName = metadata.Name,
+      IsPlanned = true,
+      DataType = metadata.Schema.Type,
+      InitialValue = metadata.InitialValue
+    };
+
+    var paramHistory = experimentHistory.Select(exp =>
+    {
+      var plannedParameters = exp.Template.GetAllPlannedParameters();
+      var plannedValue = plannedParameters.FirstOrDefault(param => param.PlanningMetadata.Name == metadata.Name)?.Value;
+
+      var actualValue = string.IsNullOrEmpty(metadata.OutputName) ? null : exp.Result.Fields.FirstOrDefault(f => f.Key == metadata.OutputName).Value;
+
+      if(plannedValue is null)
+        return new ParameterHistoryInfo();
+
+      else
+        return new ParameterHistoryInfo
+        {
+          PlannedValue = plannedValue,
+          AchievedValue = actualValue ?? AresValueHelper.CreateNull()
+        };
+    });
+
+    parameter.ParameterHistory.AddRange(paramHistory);
+
+    if(metadata.Constraints.Any())
+    {
+      var constraint = metadata.Constraints.First();
+      parameter.MinimumValue = constraint.Minimum;
+      parameter.MaximumValue = constraint.Maximum;
+    }
+
+    parameter.PlannerName = metadata.PlannerName;
+    return parameter;
   }
 }
