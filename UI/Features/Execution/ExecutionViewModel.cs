@@ -260,6 +260,17 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     }
   }
 
+  private async Task UpdatePlannerTransactions()
+  {
+    if(CampaignTemplate is not null)
+    {
+      try
+      {
+        var bleh = new PlannerTransactionRequestFilter { PlannerId = }
+      }
+    }
+  }
+
   [Reactive]
   public partial ExperimentStopConditionResponse? CurrentStopCondition { get; set; }
   public double DesiredResult { get; set; }

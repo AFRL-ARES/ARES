@@ -44,6 +44,7 @@ public class AnalysisHelper
 
       //Populate Transaction Info
       transaction.UniqueId = Guid.NewGuid().ToString();
+      transaction.AnalyzerId = analyzer.UniqueId;
       transaction.AnalyzerName = analyzer.Name;
       transaction.AnalyzerType = analyzer.Type;
       transaction.AnalysisRequest = analysisRequest;

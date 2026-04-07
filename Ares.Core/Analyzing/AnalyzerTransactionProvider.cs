@@ -6,12 +6,10 @@ namespace Ares.Core.Analyzing;
 public class AnalyzerTransactionProvider : IAnalyzerTransactionProvider
 {
   private readonly IDbContextFactory<CoreDatabaseContext> _dbContextFactory;
-  private readonly IAnalyzerRepo _analyzerRepo;
 
-  public AnalyzerTransactionProvider(IDbContextFactory<CoreDatabaseContext> dbContextFactory, IAnalyzerRepo analyzerRepo)
+  public AnalyzerTransactionProvider(IDbContextFactory<CoreDatabaseContext> dbContextFactory)
   {
     _dbContextFactory = dbContextFactory;
-    _analyzerRepo = analyzerRepo;
   }
 
   public async Task<IEnumerable<AnalyzerTransaction>> GetAnalyzerTransactionsAsync(AnalyzerTransactionRequestFilter filter)

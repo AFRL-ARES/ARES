@@ -53,7 +53,15 @@ public class PlanningHelper : IPlanningHelper
     foreach(var grouping in planGroup)
     {
       var planner = grouping.Key;
-      var planTransaction = new PlannerTransaction() { PlannerName = planner.Name, PlannerType = planner.Type, PlannerVersion = planner.Version, UniqueId = Guid.NewGuid().ToString() };
+      var planTransaction = new PlannerTransaction() 
+      {
+        UniqueId = Guid.NewGuid().ToString(),
+        PlannerName = planner.Name, 
+        PlannerType = planner.Type, 
+        PlannerVersion = planner.Version,
+        PlannerId = planner.UniqueId
+      };
+
       try
       {
         var plannableParameters = grouping.Select(pair => pair.Metadata).ToArray();
