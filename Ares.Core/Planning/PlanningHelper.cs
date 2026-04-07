@@ -6,6 +6,7 @@ using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
 using Google.Protobuf.WellKnownTypes;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Ares.Core.Planning;
@@ -15,12 +16,17 @@ public class PlanningHelper : IPlanningHelper
   private readonly IPlannerServiceRepo _plannerManager;
   private readonly ILogger<PlanningHelper> _logger;
   private readonly INotifier _notifier;
+  private readonly IDbContextFactory<CoreDatabaseContext> _dbContextFactory;
 
-  public PlanningHelper(IPlannerServiceRepo plannerManager, ILogger<PlanningHelper> logger, INotifier notifier)
+  public PlanningHelper(IPlannerServiceRepo plannerManager, 
+    ILogger<PlanningHelper> logger, 
+    INotifier notifier, 
+    IDbContextFactory<CoreDatabaseContext> dbContextFactory)
   {
     _plannerManager = plannerManager;
     _logger = logger;
     _notifier = notifier;
+    _dbContextFactory = dbContextFactory;
   }
 
   public async Task<bool> TryResolveParameters(IEnumerable<PlannerAllocation> plannerAllocations,
@@ -47,7 +53,7 @@ public class PlanningHelper : IPlanningHelper
     foreach(var grouping in planGroup)
     {
       var planner = grouping.Key;
-      var planTransaction = new PlannerTransaction() { PlannerName = planner.Name, PlannerType = planner.Type, PlannerVersion = planner.Version };
+      var planTransaction = new PlannerTransaction() { PlannerName = planner.Name, PlannerType = planner.Type, PlannerVersion = planner.Version, UniqueId = Guid.NewGuid().ToString() };
       try
       {
         var plannableParameters = grouping.Select(pair => pair.Metadata).ToArray();
@@ -95,7 +101,7 @@ public class PlanningHelper : IPlanningHelper
 
         foreach(var result in planResponse.PlannedParameters)
         {
-          var parameterPlanTarget = parameterArray.FirstOrDefault(parameter => parameter.PlanningMetadata.Name == result.Metadata.MetadataName);
+          var parameterPlanTarget = parameterArray.FirstOrDefault(parameter => parameter.PlanningMetadata.Name == result.ParameterName);
 
           if(parameterPlanTarget is null)
             continue;
@@ -108,6 +114,8 @@ public class PlanningHelper : IPlanningHelper
         _logger.LogError("Failed to plan. {}", e);
         return false;
       }
+
+      await LogPlannerTransaction(planTransaction);
     }
 
     return true;
@@ -152,5 +160,12 @@ public class PlanningHelper : IPlanningHelper
 
     parameter.PlannerName = metadata.PlannerName;
     return parameter;
+  }
+
+  private async Task LogPlannerTransaction(PlannerTransaction transaction)
+  {
+    var context = _dbContextFactory.CreateDbContext();
+    await context.PlannerTransactions.AddAsync(transaction);
+    await context.SaveChangesAsync();
   }
 }

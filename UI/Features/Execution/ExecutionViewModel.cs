@@ -12,6 +12,8 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using UI.Application.Notifications;
 using UI.Domain.Experiments;
+using Ares.Core.Analyzing;
+using System.Reactive.Linq;
 
 namespace UI.Features.Execution;
 
@@ -19,18 +21,33 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 {
   private readonly AutomationService _automationClient;
   private readonly AnalyzerService _analyzerService;
+  private readonly IAnalyzerTransactionProvider _analyzerTransactionProvider;
   public readonly ObservableCollection<CampaignTemplateSummary> CampaignTemplateSummaries = [];
   private readonly INotificationReceivingService _notificationService;
 
   public ExecutionViewModel(AutomationService automationClient,
     IConfiguration configuration,
     INotificationReceivingService notificationService,
-    AnalyzerService analyzerService)
+    AnalyzerService analyzerService,
+    IAnalyzerTransactionProvider analysisTransactionProvider)
   {
     _automationClient = automationClient;
     _notificationService = notificationService;
     _analyzerService = analyzerService;
+    _analyzerTransactionProvider = analysisTransactionProvider;
     PlannerAdapterInfos = [];
+
+    this.WhenAnyValue(x => x.CurrentPlannerState)
+      .Subscribe(newState =>
+      {
+        Console.WriteLine($"Planning state has changed to: {newState}");
+      });
+
+    this.WhenAnyValue(x => x.CurrentAnalysisState)
+      .Subscribe(newState =>
+      {
+        _ = UpdateAnalysisTransactions();
+      });
   }
 
   public async Task<bool> EnsureStopConditionSet()
@@ -226,6 +243,23 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     AvailableTags = tags.AvailableTags.ToList();
   }
 
+  private async Task UpdateAnalysisTransactions()
+  {
+    if(CampaignTemplate is not null)
+    {
+      try
+      {
+        var bleh = new AnalyzerTransactionRequestFilter { AnalyzerId = CampaignTemplate.ExperimentTemplate.AnalyzerId, Start = CurrentCampaignStartTime?.ToTimestamp(), End = DateTime.UtcNow.ToTimestamp() };
+        var blah = await _analyzerTransactionProvider.GetAnalyzerTransactionsAsync(bleh);
+      }
+
+      catch(Exception e)
+      {
+        Console.WriteLine("lol oops");
+      }
+    }
+  }
+
   [Reactive]
   public partial ExperimentStopConditionResponse? CurrentStopCondition { get; set; }
   public double DesiredResult { get; set; }
@@ -242,9 +276,9 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   [Reactive]
   public partial ExecutionState? CampaignExecutionState { get; set; }
   [Reactive]
-  public partial AnalysisState? AnalysisState { get; set; }
+  public partial AnalysisState? CurrentAnalysisState { get; set; }
   [Reactive]
-  public partial PlannerState? PlannerState { get; set; }
+  public partial PlannerState? CurrentPlannerState { get; set; }
   [Reactive]
   public partial ExperimentExecutionStatus? ExperimentStatus { get; private set; }
   [Reactive]
@@ -259,6 +293,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   public List<AresCampaignTag> AvailableTags { get; set; } = [];
   public List<AresCampaignTag> SelectedTags { get; set; } = [];
   public string? NewTagName { get; set; }
+  public DateTime? CurrentCampaignStartTime { get; set; }
 }
 
 

@@ -1,5 +1,4 @@
-﻿using Ares.Core.Device.Helpers;
-using Ares.Core.Device.Repos;
+﻿using Ares.Core.Device.Repos;
 using Ares.Core.Device.State.Logging;
 using Ares.Datamodel.Device;
 using Microsoft.EntityFrameworkCore;

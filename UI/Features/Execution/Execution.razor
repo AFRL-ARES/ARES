@@ -42,15 +42,15 @@
                 {
                   <div class="d-flex flex-row">
                     <h4 class="me-5">@planner!.Name</h4>                    
-                    @if(ViewModel!.PlannerState == PlannerState.PlanningComplete)
+                    @if(ViewModel!.CurrentPlannerState == PlannerState.PlanningComplete)
                     {
                       <RadzenIcon Icon="done" IconColor="@Colors.Success"/>
                     }
-                    else if(ViewModel!.PlannerState == PlannerState.PlanningInProgress)
+                    else if(ViewModel!.CurrentPlannerState == PlannerState.PlanningInProgress)
                     {
                       <LoadingSpinner SpinnerSize="SpinnerSize.Small"/>  
                     }
-                    else if(ViewModel!.PlannerState == PlannerState.PlanningError)
+                    else if(ViewModel!.CurrentPlannerState == PlannerState.PlanningError)
                     {
                       <RadzenIcon class="filled-icon" Icon="dangerous" IconColor="@Colors.Danger" />
                     }
@@ -67,15 +67,15 @@
               <div class="d-flex flex-row">
                 <h4 class="me-5">@ViewModel!.AnalyzerInfo.Name </h4>
 
-                @if(ViewModel!.AnalysisState == AnalysisState.AnalysisComplete)
+                @if(ViewModel!.CurrentAnalysisState == AnalysisState.AnalysisComplete)
                 {
                   <RadzenIcon Icon="done" IconColor="@Colors.Success"/>
                 }
-                else if(ViewModel!.AnalysisState == AnalysisState.AnalysisInProgress)
+                else if(ViewModel!.CurrentAnalysisState == AnalysisState.AnalysisInProgress)
                 {
                   <LoadingSpinner SpinnerSize="SpinnerSize.Small"/>  
                 }
-                else if(ViewModel!.AnalysisState == AnalysisState.AnalysisError)
+                else if(ViewModel!.CurrentAnalysisState == AnalysisState.AnalysisError)
                 {
                   <RadzenIcon class="filled-icon" Icon="dangerous" IconColor="@Colors.Danger" />
                 }
@@ -360,16 +360,16 @@
           bool changed = ViewModel!.CampaignActive != state.IsActive() ||
                          ViewModel!.CampaignPaused != state.IsPaused() ||
                          ViewModel!.CampaignExecutionState != state.State ||
-                         ViewModel!.AnalysisState != state.AnalysisState ||
-                         ViewModel!.PlannerState != state.PlannerState;
+                         ViewModel!.CurrentAnalysisState != state.AnalysisState ||
+                         ViewModel!.CurrentPlannerState != state.PlannerState;
 
           if (changed)
           {
             ViewModel!.CampaignActive = state.IsActive();
             ViewModel!.CampaignPaused = state.IsPaused();
             ViewModel!.CampaignExecutionState = state.State;
-            ViewModel!.AnalysisState = state.AnalysisState;
-            ViewModel!.PlannerState = state.PlannerState;
+            ViewModel!.CurrentAnalysisState = state.AnalysisState;
+            ViewModel!.CurrentPlannerState = state.PlannerState;
 
             if (ViewModel!.CampaignExecutionState == ExecutionState.AwaitingUser && previousState != ExecutionState.AwaitingUser)
             {
@@ -432,6 +432,7 @@
     }
 
     ExperimentExecutionStatuses.Clear();
+    ViewModel!.CurrentCampaignStartTime = DateTime.UtcNow;
     var request = new StartCampaignRequest() { UserNotes = ViewModel!.ExecutionNotes};
     if(ViewModel!.SelectedTags is not null)
       request.CampaignTags.AddRange(ViewModel!.SelectedTags);
