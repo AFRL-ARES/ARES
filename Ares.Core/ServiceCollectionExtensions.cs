@@ -86,6 +86,7 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<IDeviceStateGetter, DeviceStateGetter>();
     services.AddSingleton<IDeviceStateLoggerFactory, AresDeviceStateLoggerFactory>();
     services.AddSingleton<IAnalyzerTransactionProvider, AnalyzerTransactionProvider>();
+    services.AddSingleton<IPlannerTransactionProvider, PlannerTransactionProvider>();
   }
 
   private static void BindStartConditions(this IServiceCollection services)

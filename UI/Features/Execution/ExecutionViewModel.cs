@@ -14,6 +14,7 @@ using UI.Application.Notifications;
 using UI.Domain.Experiments;
 using Ares.Core.Analyzing;
 using System.Reactive.Linq;
+using Ares.Core.Planning;
 
 namespace UI.Features.Execution;
 
@@ -24,23 +25,31 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   private readonly IAnalyzerTransactionProvider _analyzerTransactionProvider;
   public readonly ObservableCollection<CampaignTemplateSummary> CampaignTemplateSummaries = [];
   private readonly INotificationReceivingService _notificationService;
+  private readonly IPlannerServiceRepo _plannerServiceRepo;
+  private readonly IPlannerTransactionProvider _plannerTransactionProvider;
 
   public ExecutionViewModel(AutomationService automationClient,
     IConfiguration configuration,
     INotificationReceivingService notificationService,
     AnalyzerService analyzerService,
-    IAnalyzerTransactionProvider analysisTransactionProvider)
+    IAnalyzerTransactionProvider analysisTransactionProvider,
+    IPlannerServiceRepo plannerServiceRepo,
+    IPlannerTransactionProvider plannerTransactionProvider)
   {
     _automationClient = automationClient;
     _notificationService = notificationService;
     _analyzerService = analyzerService;
     _analyzerTransactionProvider = analysisTransactionProvider;
+    _plannerServiceRepo = plannerServiceRepo;
+    _plannerTransactionProvider = plannerTransactionProvider;
     PlannerAdapterInfos = [];
+    AnalyzerMetrics = [];
+    PlannerMetricsMap = [];
 
     this.WhenAnyValue(x => x.CurrentPlannerState)
       .Subscribe(newState =>
       {
-        Console.WriteLine($"Planning state has changed to: {newState}");
+        _ = UpdatePlannerTransactions();
       });
 
     this.WhenAnyValue(x => x.CurrentAnalysisState)
@@ -245,29 +254,113 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
   private async Task UpdateAnalysisTransactions()
   {
-    if(CampaignTemplate is not null)
-    {
-      try
-      {
-        var bleh = new AnalyzerTransactionRequestFilter { AnalyzerId = CampaignTemplate.ExperimentTemplate.AnalyzerId, Start = CurrentCampaignStartTime?.ToTimestamp(), End = DateTime.UtcNow.ToTimestamp() };
-        var blah = await _analyzerTransactionProvider.GetAnalyzerTransactionsAsync(bleh);
-      }
+    if(CampaignTemplate is null || CurrentAnalysisState != AnalysisState.AnalysisComplete)
+      return;
 
-      catch(Exception e)
-      {
-        Console.WriteLine("lol oops");
-      }
-    }
+    var filter = new AnalyzerTransactionRequestFilter 
+    { 
+      AnalyzerId = CampaignTemplate.ExperimentTemplate.AnalyzerId, 
+      Start = CurrentCampaignStartTime.ToTimestamp(), 
+      End = DateTime.UtcNow.ToTimestamp() 
+    };
+
+    var analyzerTransactions = await _analyzerTransactionProvider.GetAnalyzerTransactionsAsync(filter);
+    var newestTransaction = analyzerTransactions.LastOrDefault();
+
+    if(newestTransaction is null)
+      return;
+
+    OnAnalyzerTransactionReceived(newestTransaction, analyzerTransactions.Count());
   }
 
   private async Task UpdatePlannerTransactions()
   {
-    if(CampaignTemplate is not null)
+    if(CampaignTemplate is null || CurrentPlannerState != PlannerState.PlanningComplete)
+      return;
+    
+    var usedPlanners = CampaignTemplate.ExperimentTemplate.GetAllPlannedParameters()
+      .Select(p => p.PlanningMetadata.PlannerName)
+      .Select(_plannerServiceRepo.GetPlannerByName)
+      .Where(p => p is not null)
+      .Distinct()
+      .ToList();
+
+    foreach(var planner in usedPlanners)
     {
-      try
+      var transactionRequest = new PlannerTransactionRequestFilter 
+      { 
+        PlannerId = planner?.UniqueId, 
+        Start = CurrentCampaignStartTime.ToTimestamp(), 
+        End = DateTime.UtcNow.ToTimestamp() 
+      };
+
+      var transactions = await _plannerTransactionProvider.GetPlanningTransactionsAsync(transactionRequest);
+      var newestTransaction = transactions.LastOrDefault();
+
+      if(newestTransaction is null)
+        continue;
+
+      OnPlannerTransactionReceived(newestTransaction, transactions.Count()); 
+    }
+  }
+
+  public void OnPlannerTransactionReceived(PlannerTransaction transaction, int currentTurn)
+  {
+    foreach(var field in transaction.PlanningResponse.PlannedParameters)
+    {
+      var metricName = field.ParameterName;
+      var metricData = field.ParameterValue;
+
+      if(TryGetChartableValue(metricData, out double numericValue))
       {
-        var bleh = new PlannerTransactionRequestFilter { PlannerId = }
+        if(!PlannerMetricsMap.ContainsKey(metricName))
+          PlannerMetricsMap[metricName] = new List<ChartMetricPoint>();
+
+        PlannerMetricsMap[metricName].Add(new ChartMetricPoint
+        {
+          ExecutionIndex = currentTurn,
+          Value = numericValue
+        });
       }
+    }
+  }
+
+  public void OnAnalyzerTransactionReceived(AnalyzerTransaction transaction, int currentTurn)
+  {
+    AnalyzerMetrics.Add(new ChartMetricPoint
+    {
+      ExecutionIndex = currentTurn,
+      Value = transaction.AnalysisResponse.Result
+    }); 
+  }
+
+  public bool TryGetChartableValue(AresValue aresValue, out double result)
+  {
+    result = 0;
+    if(aresValue == null || aresValue.KindCase == AresValue.KindOneofCase.None)
+      return false;
+
+    switch(aresValue.KindCase)
+    {
+      case AresValue.KindOneofCase.NumberValue:
+        result = aresValue.NumberValue;
+        return true;
+
+      case AresValue.KindOneofCase.QuantityValue:
+        result = aresValue.QuantityValue.Scalar;
+        return true;
+
+      case AresValue.KindOneofCase.BoolValue:
+        result = aresValue.BoolValue ? 1.0 : 0.0;
+        return true;
+
+      case AresValue.KindOneofCase.StringValue:
+        // Try to parse it just in case someone sent "42.5" as a string
+        return double.TryParse(aresValue.StringValue, out result);
+
+      // The un-chartable :(
+      default:
+        return false;
     }
   }
 
@@ -296,6 +389,10 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   public partial HashSet<PlannerServiceInfo?> PlannerAdapterInfos { get; set; }
   [Reactive]
   public partial AnalyzerInfo? AnalyzerInfo { get; set; }
+  [Reactive]
+  public Dictionary<string, List<ChartMetricPoint>> PlannerMetricsMap { get; private set; }
+  [Reactive]
+  public partial List<ChartMetricPoint> AnalyzerMetrics { get; private set; }
   public uint ExperimentsToRun { get; set; }
   public string ExecutionNotes { get; set; } = string.Empty;
   public CampaignExecutionSummary? TestCampaignExecutionSummary { get; private set; }
@@ -304,7 +401,12 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   public List<AresCampaignTag> AvailableTags { get; set; } = [];
   public List<AresCampaignTag> SelectedTags { get; set; } = [];
   public string? NewTagName { get; set; }
-  public DateTime? CurrentCampaignStartTime { get; set; }
+  public DateTime CurrentCampaignStartTime { get; set; }
 }
 
+public class ChartMetricPoint
+{
+  public int ExecutionIndex { get; set; }
 
+  public double Value { get; set; }
+}

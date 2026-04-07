@@ -250,6 +250,30 @@
           Click="@ViewModel!.AddTag" />
         </div>
       </div>
+
+      <RadzenChart>   
+        @foreach(var plannerSeries in ViewModel.PlannerMetricsMap)
+        {
+          <RadzenLineSeries Data="@plannerSeries.Value"
+                            CategoryProperty="ExecutionIndex"
+                            ValueProperty="Value"
+                            Title="@($"Planner: {plannerSeries.Key}")">
+            <RadzenMarkers MarkerType="MarkerType.Circle" />
+          </RadzenLineSeries>
+        }
+
+        <RadzenLineSeries Data="@ViewModel.AnalyzerMetrics"
+                          CategoryProperty="ExecutionIndex"
+                          ValueProperty="Value"
+                          Title="Analyzer Output">
+          <RadzenMarkers MarkerType="MarkerType.Square" />
+        </RadzenLineSeries>
+    
+        <RadzenCategoryAxis>
+          <RadzenAxisTitle Text="Execution Turn" />
+        </RadzenCategoryAxis>
+
+      </RadzenChart>
     </div>
 
     <div class="side-drawer @(ViewModel!.CampaignExecutionState == ExecutionState.AwaitingUser ? "drawer-open" : "")">
