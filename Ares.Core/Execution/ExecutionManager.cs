@@ -17,7 +17,7 @@ namespace Ares.Core.Execution;
 public class ExecutionManager : IExecutionManager
 {
   private readonly IActiveCampaignTemplateStore _activeCampaignTemplateStore;
-  private readonly ICommandComposer<CampaignTemplate, ICampaignExecutor> _campaignComposer;
+  private readonly ICampaignComposer _campaignComposer;
   private readonly IDbContextFactory<CoreDatabaseContext> _dbContextFactory;
   private readonly IEnumerable<IStartCondition> _startConditions;
   private readonly IExecutionSafetyManager _safetyManager;
@@ -29,7 +29,7 @@ public class ExecutionManager : IExecutionManager
     IDbContextFactory<CoreDatabaseContext> dbContextFactory,
     IActiveCampaignTemplateStore activeCampaignTemplateStore,
     IExecutionSafetyManager safetyManager,
-    ICommandComposer<CampaignTemplate, ICampaignExecutor> campaignComposer,
+    ICampaignComposer campaignComposer,
     ILogger<ExecutionManager> logger,
     INotifier notifier)
   {

@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Ares.Core.Execution.Executors.Composers;
 
-public class CampaignComposer : ICommandComposer<CampaignTemplate, ICampaignExecutor>
+public class CampaignComposer : ICampaignComposer
 {
   private readonly IExecutionReporter _executionReporter;
   private readonly ICommandComposer<ExperimentTemplate, ExperimentExecutor> _experimentComposer;

@@ -19,7 +19,6 @@ public class CoreDatabaseContext : DbContext
 
   public DbSet<CampaignTemplate> CampaignTemplates => Set<CampaignTemplate>();
   public DbSet<Project> Projects => Set<Project>();
-  public DbSet<StepTemplate> StepTemplates => Set<StepTemplate>();
   public DbSet<ExperimentTemplate> ExperimentTemplates => Set<ExperimentTemplate>();
   public DbSet<CommandTemplate> CommandTemplates => Set<CommandTemplate>();
   public DbSet<CampaignExecutionSummary> CampaignExecutionSummaries => Set<CampaignExecutionSummary>();

@@ -95,9 +95,7 @@ public static class ServiceCollectionExtensions
 
   private static void BindComposers(this IServiceCollection services)
   {
-    services.AddSingleton<ICommandComposer<StepTemplate, StepExecutor>, StepComposer>();
-    services.AddSingleton<ICommandComposer<ExperimentTemplate, ExperimentExecutor>, ExperimentComposer>();
-    services.AddSingleton<ICommandComposer<CampaignTemplate, ICampaignExecutor>, CampaignComposer>();
+    services.AddSingleton<ICampaignComposer, CampaignComposer>();
   }
 
   private static void BindProviders(this IServiceCollection services)

@@ -67,8 +67,8 @@ internal class CampaignExecutorTests
 
     var deviceRepo = new AresDeviceRepo();
     deviceRepo.AddOrUpdate(new TestDevice());
-    var stepComposer = new StepComposer(deviceRepo, _notifier);
-    var experimentComposer = new ExperimentComposer(stepComposer, _analyzerRepo);
+    ICommandComposer<StepTemplate, StepExecutor> stepComposer = new StepComposer(deviceRepo, _notifier);
+    ICommandComposer<ExperimentTemplate, ExperimentExecutor> experimentComposer = new ExperimentComposer(stepComposer, _analyzerRepo);
 
     var stateLoggerRepository = new DeviceStateLoggerRepository();
     var factory = Mock.Of<IDeviceStateLoggerFactory>();

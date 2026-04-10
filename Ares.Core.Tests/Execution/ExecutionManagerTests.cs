@@ -17,7 +17,7 @@ namespace Ares.Core.Tests.Execution;
 
 internal class ExecutionManagerTests
 {
-  private ICommandComposer<CampaignTemplate, ICampaignExecutor> _campaignComposer;
+  private ICampaignComposer _campaignComposer;
   private IDbContextFactory<CoreDatabaseContext> _contextFactory;
   private IExecutionReportStore _executionReportStore;
   private IExecutionSafetyManager _safetyManager;
@@ -33,7 +33,7 @@ internal class ExecutionManagerTests
     mockDbContextFactory.Setup(factory => factory.CreateDbContextAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(mockDbContextFactory.Object.CreateDbContext()));
     _contextFactory = mockDbContextFactory.Object;
 
-    var mockCampaignComposer = new Mock<ICommandComposer<CampaignTemplate, ICampaignExecutor>>();
+    var mockCampaignComposer = new Mock<ICampaignComposer>();
     var mockCampaignExecutor = new Mock<ICampaignExecutor>();
     mockCampaignExecutor.SetupGet(executor => executor.StopConditions).Returns([]);
     mockCampaignExecutor.Setup(executor => executor.Execute(It.IsAny<ExecutionControlToken>())).ReturnsAsync(new CampaignExecutionSummary
