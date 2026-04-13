@@ -67,6 +67,8 @@
     await ViewModel!.UpdateCurrentTemplate();
     await ViewModel!.GetAllTags();
     ViewModel!.StartWatchingTelemetry();
+    await ViewModel!.UpdatePlannerTransactions();
+    await ViewModel!.UpdateAnalysisTransactions();
   }
 
   private void InvokeStateHasChanged()

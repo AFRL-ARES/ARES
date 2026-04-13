@@ -27,11 +27,8 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 {
   private readonly AutomationService _automationClient;
   private readonly AnalyzerService _analyzerService;
-  private readonly IAnalyzerTransactionProvider _analyzerTransactionProvider;
   public readonly ObservableCollection<CampaignTemplateSummary> CampaignTemplateSummaries = [];
   private readonly INotificationReceivingService _notificationService;
-  private readonly IPlannerServiceRepo _plannerServiceRepo;
-  private readonly IPlannerTransactionProvider _plannerTransactionProvider;
   private readonly IExecutionReportStore _executionReportStore;
   private readonly IAresDeviceProvider _deviceProvider;
   public event Action? StateChanged;
@@ -43,18 +40,12 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     IConfiguration configuration,
     INotificationReceivingService notificationService,
     AnalyzerService analyzerService,
-    IAnalyzerTransactionProvider analysisTransactionProvider,
-    IPlannerServiceRepo plannerServiceRepo,
-    IPlannerTransactionProvider plannerTransactionProvider,
     IExecutionReportStore executionReportStore,
     IAresDeviceProvider deviceProvider)
   {
     _automationClient = automationClient;
     _notificationService = notificationService;
     _analyzerService = analyzerService;
-    _analyzerTransactionProvider = analysisTransactionProvider;
-    _plannerServiceRepo = plannerServiceRepo;
-    _plannerTransactionProvider = plannerTransactionProvider;
     _executionReportStore = executionReportStore;
     _deviceProvider = deviceProvider;
 
@@ -186,7 +177,6 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     await _automationClient.StartExecution(request, null);
     PlannerMetricsMap.Clear();
     AnalyzerMetrics.Clear();
-    CurrentCampaignStartTime = DateTime.UtcNow;
     DisplayExecutionSummary = true;
   }
 
@@ -300,19 +290,12 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     AvailableTags = tags.AvailableTags.ToList();
   }
 
-  private async Task UpdateAnalysisTransactions()
+  public async Task UpdateAnalysisTransactions()
   {
     if(CampaignTemplate is null || CurrentAnalysisState != AnalysisState.AnalysisComplete)
       return;
 
-    var filter = new AnalyzerTransactionRequestFilter 
-    { 
-      AnalyzerId = CampaignTemplate.ExperimentTemplate.AnalyzerId, 
-      Start = CurrentCampaignStartTime.ToTimestamp(), 
-      End = DateTime.UtcNow.ToTimestamp() 
-    };
-
-    var analyzerTransactions = await _analyzerTransactionProvider.GetAnalyzerTransactionsAsync(filter);
+    var analyzerTransactions = await _automationClient.GetLatestAnalyzerTransactions();
     var newestTransaction = analyzerTransactions.LastOrDefault();
 
     if(newestTransaction is null)
@@ -321,43 +304,24 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     OnAnalyzerTransactionReceived(newestTransaction, analyzerTransactions.Count());
   }
 
-  private async Task UpdatePlannerTransactions()
+  public async Task UpdatePlannerTransactions()
   {
-    try
+    if(CurrentPlannerState != PlannerState.PlanningComplete)
+      return;
+
+    var plannerTransactions = await _automationClient.GetLatestPlanningTransactions();
+
+    foreach(var transactionList in plannerTransactions)
     {
-      if(CampaignTemplate is null || CurrentPlannerState != PlannerState.PlanningComplete)
-        return;
-
-      var usedPlanners = CampaignTemplate.ExperimentTemplate.GetAllPlannedParameters()
-        .Select(p => p.PlanningMetadata.PlannerName)
-        .Select(_plannerServiceRepo.GetPlannerByName)
-        .Where(p => p is not null)
-        .Distinct()
-        .ToList();
-
-      foreach(var planner in usedPlanners)
+      if(transactionList is not null)
       {
-
-        var transactionRequest = new PlannerTransactionRequestFilter
-        {
-          PlannerId = planner?.UniqueId,
-          Start = CurrentCampaignStartTime.ToTimestamp(),
-          End = DateTime.UtcNow.ToTimestamp()
-        };
-
-        var transactions = await _plannerTransactionProvider.GetPlanningTransactionsAsync(transactionRequest);
-        var newestTransaction = transactions.LastOrDefault();
+        var newestTransaction = transactionList.LastOrDefault();
 
         if(newestTransaction is null)
           continue;
 
-        OnPlannerTransactionReceived(newestTransaction, transactions.Count());
+        OnPlannerTransactionReceived(newestTransaction, transactionList.Count());
       }
-    }
-
-    catch(Exception ex)
-    {
-      Console.WriteLine("Dangit man");
     }
   }
 
@@ -590,7 +554,6 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   public List<AresCampaignTag> AvailableTags { get; set; } = [];
   public List<AresCampaignTag> SelectedTags { get; set; } = [];
   public string? NewTagName { get; set; }
-  public DateTime CurrentCampaignStartTime { get; set; }
 }
 
 public class ChartMetricPoint

@@ -7,10 +7,10 @@
 
 <RadzenStack Orientation="Orientation.Vertical" Gap="1rem" Style="width: 100%; height: 100%;">
     
-  <RadzenCard Variant="Variant.Outlined" Style="height: 50%">
+  <RadzenCard Variant="Variant.Outlined" Style="height: 100%">
     <RadzenText TextStyle="TextStyle.H6" Class="rz-mb-4">Planner + Analyzer Data</RadzenText>
         
-    <RadzenChart Style="height: 92%">
+    <RadzenChart Style="height: 90%">
       @if(ViewModel?.PlannerMetricsMap != null)
       {
         @foreach(var plannerSeries in ViewModel.PlannerMetricsMap)
@@ -40,7 +40,7 @@
     </RadzenChart>
   </RadzenCard>
 
-  <RadzenCard Variant="Variant.Outlined" Style="height: 45%">
+  <RadzenCard Variant="Variant.Outlined" Style="height: 55%">
         
     <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Class="rz-mb-4">
       <RadzenText TextStyle="TextStyle.H6" Style="margin: 0;">Device Monitoring</RadzenText>
@@ -53,15 +53,15 @@
       </RadzenSelectBar>
     </RadzenStack>
 
-    <RadzenRow Gap="1rem" Style="align-content: center">
-      <RadzenColumn Size="12" SizeMD="@(ViewMode == 1 ? 12 : 6)" Style="min-height: 300px;">
+    <RadzenRow Gap="1rem">
+      <RadzenColumn Size="12" SizeMD="@(ViewMode == 1 ? 12 : 6)">
         @if(ViewModel!.ChartA is not null)
         {
           <VisualizationItem ViewModel="ViewModel!.ChartA" />
         }
         else
         {
-          <RadzenCard Variant="Variant.Outlined" Style="height: 300px; display: flex; align-items: center; justify-content: center; border-style: dashed;">
+          <RadzenCard Variant="Variant.Outlined" Style="display: flex; align-items: center; justify-content: center; border-style: dashed;">
             <RadzenStack AlignItems="AlignItems.Center" Gap="1rem">
               <RadzenText TextStyle="TextStyle.Body1" Style="color: var(--rz-text-disabled-color);">Empty Chart Slot</RadzenText>
               <RadzenButton Icon="add" Text="Add Chart" ButtonStyle="ButtonStyle.Light" Click="@(() => OpenChartSelector("A"))" />
@@ -72,14 +72,14 @@
 
       @if(ViewMode == 2)
       {
-        <RadzenColumn Size="12" SizeMD="6" Style="min-height: 300px;">
+        <RadzenColumn Size="12" SizeMD="6">
           @if(ViewModel!.ChartB is not null)
           {
             <VisualizationItem ViewModel="ViewModel!.ChartB" />
           }
           else
           {
-            <RadzenCard Variant="Variant.Outlined" Style="height: 300px; display: flex; align-items: center; justify-content: center; border-style: dashed;">
+            <RadzenCard Variant="Variant.Outlined" Style="display: flex; align-items: center; justify-content: center; border-style: dashed;">
               <RadzenStack AlignItems="AlignItems.Center" Gap="1rem">
                 <RadzenText TextStyle="TextStyle.Body1" Style="color: var(--rz-text-disabled-color);">Empty Chart Slot</RadzenText>
                 <RadzenButton Icon="add" Text="Add Chart" ButtonStyle="ButtonStyle.Light" Click="@(() => OpenChartSelector("B"))" />
