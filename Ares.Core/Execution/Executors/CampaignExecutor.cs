@@ -4,8 +4,6 @@ using Ares.Core.Analyzing;
 using Ares.Core.AresEnvironment;
 using Ares.Core.Device.State.Logging;
 using Ares.Core.Exceptions;
-using Ares.Core.Execution.ControlTokens;
-using Ares.Core.Execution.Executors.Composers;
 using Ares.Core.Execution.Extensions;
 using Ares.Core.Execution.StopConditions;
 using Ares.Core.Notifications;
@@ -14,6 +12,7 @@ using Ares.Core.Planning;
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Templates;
+using AresScript;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
 
@@ -23,7 +22,6 @@ public class CampaignExecutor : ICampaignExecutor
 {
   private readonly IExecutionReporter _executionReporter;
   private readonly ISubject<CampaignExecutionStatus> _executionStatusSubject;
-  private readonly ICommandComposer<ExperimentTemplate, ExperimentExecutor> _experimentComposer;
   private readonly IPlanningHelper _planningHelper;
   private readonly IEnumerable<IExecutionSummaryHandler> _summaryHandlers;
   private readonly INotifier _notifier;
@@ -34,7 +32,7 @@ public class CampaignExecutor : ICampaignExecutor
   readonly AnalysisRepo _analysisRepo;
   readonly IAnalyzerRepo _analyzerRepo;
 
-  internal CampaignExecutor(ICommandComposer<ExperimentTemplate, ExperimentExecutor> experimentComposer,
+  internal CampaignExecutor(
     IPlanningHelper planningHelper,
     IExecutionReporter executionReporter,
     AnalysisHelper analysisHelper,
@@ -52,7 +50,6 @@ public class CampaignExecutor : ICampaignExecutor
     _analysisHelper = analysisHelper;
     _variableManager = variableManager;
     _stateLoggerManager = stateLoggerManager;
-    _experimentComposer = experimentComposer;
     _planningHelper = planningHelper;
     _executionReporter = executionReporter;
     _summaryHandlers = resultHandlers;
@@ -70,7 +67,7 @@ public class CampaignExecutor : ICampaignExecutor
     ExperimentStatusObservable = _executionStatusSubject.AsObservable();
   }
 
-  public async Task<CampaignExecutionSummary> Execute(ExecutionControlToken token)
+  public async Task<CampaignExecutionSummary> Execute(ScriptExecutionControlToken token)
   {
     // Make sure we log all the device state changes during execution.
     await _stateLoggerManager.EnableOverrideAsync(new Datamodel.Device.DeviceLoggingSettings
@@ -151,7 +148,7 @@ public class CampaignExecutor : ICampaignExecutor
     return campaignPath;
   }
 
-  private void ResetStatus(ExecutionControlToken token)
+  private void ResetStatus(ScriptExecutionControlToken token)
   {
     Status = new CampaignExecutionStatus
     {
@@ -170,7 +167,7 @@ public class CampaignExecutor : ICampaignExecutor
     _logger.LogInformation("Campaign started named {CampaignName}", Template.Name);
   }
 
-  private async Task<(bool Success, ExperimentExecutionSummary Summary)> ExecuteStartup(List<Analysis> analyses, List<ExperimentExecutionSummary> experimentSummaries, ExecutionControlToken token)
+  private async Task<(bool Success, ExperimentExecutionSummary Summary)> ExecuteStartup(List<Analysis> analyses, List<ExperimentExecutionSummary> experimentSummaries, ScriptExecutionControlToken token)
   {
     _logger.LogDebug("Startup template not null, will run startup script");
     var startupExecutorResult = await GenerateExperimentExecutor(Template.StartupTemplate, analyses, experimentSummaries.Select(es => es.ExperimentOverview), token.CancellationToken);
@@ -183,17 +180,17 @@ public class CampaignExecutor : ICampaignExecutor
 
     var startupSummary = await ExecuteTemplate(startupExecutorResult.ExperimentExecutor, token);
     startupSummary.ResultOutputPath = AresEnvironment.AresEnvironment.GetEnvironmentVariable(VariableType.CampaignStartupFolder);
-    if(Template.StartupTemplate.StepTemplates.Any())
+    if(!string.IsNullOrEmpty(Template.StartupTemplate.Script))
       await PostExperimentExecution(startupSummary);
 
     _logger.LogDebug("Ran campaign startup template");
     return (true, startupSummary);
   }
 
-  private async Task<bool> ExecuteExperimentLoop(string campaignPath, List<Analysis> analyses, List<ExperimentExecutionSummary> experimentSummaries, ExecutionControlToken token, bool executionSuccess, ExperimentExecutionSummary startupSummary)
+  private async Task<bool> ExecuteExperimentLoop(string campaignPath, List<Analysis> analyses, List<ExperimentExecutionSummary> experimentSummaries, ScriptExecutionControlToken token, bool executionSuccess, ExperimentExecutionSummary startupSummary)
   {
     var experimentCount = 0;
-    while(!ShouldStop() && !token.IsCancelled && executionSuccess == true)
+    while(!ShouldStop() && !token.IsCancellationRequested && executionSuccess == true)
     {
       var experimentFolder = $"Experiment_{++experimentCount}";
       var experimentPath = CampaignOutputHelper.CreateExperimentSubFolder(campaignPath, experimentFolder);
@@ -235,7 +232,7 @@ public class CampaignExecutor : ICampaignExecutor
 
       // if the execution was canceled, the experiment may not have executed the command to provide the output
       // and thus sending a null result to the analyzer might break it depending on the analyzer
-      if(!token.IsCancelled)
+      if(!token.IsCancellationRequested)
       {
         var result = await AnalyzeResult(experimentExecutor, experimentSummary, startupSummary, analyses, token);
         if (!result.Success) executionSuccess = false;
@@ -252,7 +249,7 @@ public class CampaignExecutor : ICampaignExecutor
     return executionSuccess;
   }
 
-  private async Task<(bool Success, bool Continue)> AnalyzeResult(ExperimentExecutor experimentExecutor, ExperimentExecutionSummary experimentSummary, ExperimentExecutionSummary startupSummary, List<Analysis> analyses, ExecutionControlToken token)
+  private async Task<(bool Success, bool Continue)> AnalyzeResult(ExperimentExecutor experimentExecutor, ExperimentExecutionSummary experimentSummary, ExperimentExecutionSummary startupSummary, List<Analysis> analyses, ScriptExecutionControlToken token)
   {
     var metadata = new RequestMetadata 
     { 
@@ -323,7 +320,7 @@ public class CampaignExecutor : ICampaignExecutor
     return (true, true);
   }
 
-  private async Task<(bool Success, ExperimentExecutionSummary Summary)> ExecuteCloseout(List<Analysis> analyses, List<ExperimentExecutionSummary> experimentSummaries, ExecutionControlToken token, bool executionSuccess)
+  private async Task<(bool Success, ExperimentExecutionSummary Summary)> ExecuteCloseout(List<Analysis> analyses, List<ExperimentExecutionSummary> experimentSummaries, ScriptExecutionControlToken token, bool executionSuccess)
   {
     _logger.LogInformation("Closeout template is set. Running the closeout script.");
     var closeoutExecutorResult = await GenerateExperimentExecutor(Template.CloseoutTemplate, analyses, experimentSummaries.Select(es => es.ExperimentOverview), token.CancellationToken);
@@ -336,7 +333,7 @@ public class CampaignExecutor : ICampaignExecutor
 
     var closeoutSummary = await ExecuteTemplate(closeoutExecutorResult.ExperimentExecutor, token);
     closeoutSummary.ResultOutputPath = AresEnvironment.AresEnvironment.GetEnvironmentVariable(VariableType.CampaignMiscFolder);
-    if(Template.CloseoutTemplate.StepTemplates.Any())
+    if(!string.IsNullOrEmpty(Template.CloseoutTemplate.Script))
       await PostExperimentExecution(closeoutSummary);
     _logger.LogDebug("Closeout template finished running");
     return (executionSuccess, closeoutSummary);
@@ -467,7 +464,7 @@ public class CampaignExecutor : ICampaignExecutor
     return result;
   }
 
-  private async Task<ExperimentExecutionSummary> ExecuteTemplate(ExperimentExecutor experimentExecutor, ExecutionControlToken token)
+  private async Task<ExperimentExecutionSummary> ExecuteTemplate(ExperimentExecutor experimentExecutor, ScriptExecutionControlToken token)
   {
     Status.ExperimentExecutionStatuses.Add(experimentExecutor.Status);
     experimentExecutor.ExperimentStatusObservable.Subscribe(experimentStatus =>

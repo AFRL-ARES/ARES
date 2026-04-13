@@ -3,6 +3,7 @@ using Ares.Core.Execution.ControlTokens;
 using Ares.Core.Execution.Extensions;
 using Ares.Datamodel;
 using Ares.Datamodel.Templates;
+using AresScript;
 
 namespace Ares.Core.Execution.Executors;
 
@@ -35,13 +36,13 @@ public class ExperimentExecutor : IExecutor<ExperimentExecutionSummary, Experime
     ExperimentStatusObservable = experimentStepExecutionObservation;
   }
 
-  public async Task<ExperimentExecutionSummary> Execute(ExecutionControlToken token)
+  public async Task<ExperimentExecutionSummary> Execute(ScriptExecutionControlToken token)
   {
     var startTime = DateTime.UtcNow;
     var stepSummaries = new List<StepExecutionSummary>();
     foreach(var executableStep in ExperimentStepExecutors)
     {
-      if(token.IsCancelled)
+      if(token.IsCancellationRequested)
         break;
 
       var stepResult = await executableStep.Execute(token);

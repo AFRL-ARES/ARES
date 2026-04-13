@@ -3,7 +3,7 @@ using Ares.Datamodel;
 
 namespace Ares.Core.Execution.Executors;
 
-public interface ICampaignExecutor : IExecutor<CampaignExecutionSummary, CampaignExecutionStatus>
+public interface ICampaignExecutor
 {
   IList<IStopCondition> StopConditions { get; }
   double ReplanRate { get; set; }

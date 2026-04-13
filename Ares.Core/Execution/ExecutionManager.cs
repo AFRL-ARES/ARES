@@ -8,6 +8,7 @@ using Ares.Core.Execution.StopConditions;
 using Ares.Core.Notifications;
 using Ares.Datamodel;
 using Ares.Datamodel.Templates;
+using AresScript;
 using DynamicData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -23,7 +24,7 @@ public class ExecutionManager : IExecutionManager
   private readonly IExecutionSafetyManager _safetyManager;
   private readonly INotifier _notifier;
   private readonly ILogger _logger;
-  private ExecutionControlTokenSource? _executionControlTokenSource;
+  private ScriptExecutionControlTokenSource? _executionControlTokenSource;
 
   public ExecutionManager(IEnumerable<IStartCondition> startConditions,
     IDbContextFactory<CoreDatabaseContext> dbContextFactory,
@@ -71,7 +72,7 @@ public class ExecutionManager : IExecutionManager
 
     executor.StopConditions.AddRange(CampaignStopConditions);
     executor.ReplanRate = ReplanRate;
-    _executionControlTokenSource = new ExecutionControlTokenSource();
+    _executionControlTokenSource = new ScriptExecutionControlTokenSource();
     CampaignExecutionSummary campaignExecutionSummary;
 
     try
@@ -126,9 +127,8 @@ public class ExecutionManager : IExecutionManager
 
   public bool EnsureParameterAssignment()
   {
-    var experimentCommandsInvalid = _activeCampaignTemplateStore.CampaignTemplate!.ExperimentTemplate.StepTemplates
-    .SelectMany(step => step.CommandTemplates)
-    .Any(cmd => cmd.Parameters.Any(param => param.Planned && param.PlanningMetadata is null));
+    var experimentCommandsInvalid = _activeCampaignTemplateStore.CampaignTemplate!.ExperimentTemplate.Parameters
+    .Any(param => param.Planned && param.PlanningMetadata is null);
 
     if(experimentCommandsInvalid)
       return false;
