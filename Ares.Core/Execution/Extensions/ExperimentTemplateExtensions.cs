@@ -4,15 +4,8 @@ namespace Ares.Core.Execution.Extensions;
 
 public static class ExperimentTemplateExtensions
 {
-  /// <summary>
-  /// Gets all the <see cref="Parameter" />s from an <see cref="ExperimentTemplate" />
-  /// </summary>
-  /// <param name="template"></param>
-  /// <returns></returns>
   public static IEnumerable<Parameter> GetAllParameters(this ExperimentTemplate template)
-    => template.StepTemplates
-      .SelectMany(stepTemplate => stepTemplate.CommandTemplates)
-      .SelectMany(commandTemplate => commandTemplate.Parameters);
+    => template.Parameters;
 
   /// <summary>
   /// Gets all the <see cref="CommandTemplate"/>s that are mapped to provide output />
@@ -20,9 +13,7 @@ public static class ExperimentTemplateExtensions
   /// <param name="template"></param>
   /// <returns></returns>
   public static CommandTemplate[] GetAllOutputCommands(this ExperimentTemplate template)
-    => template.StepTemplates
-    .SelectMany(step => step.CommandTemplates)
-    .Where(command => command.UserOutputKeyMap.Any()).ToArray();
+    => [];
 
   /// <summary>
   /// Gets all the parameters that need to be planned from a given <see cref="ExperimentTemplate" />
@@ -39,7 +30,7 @@ public static class ExperimentTemplateExtensions
   /// <param name="template">The template to check if resolved</param>
   /// <returns>True if resolved, false otherwise</returns>
   public static bool IsResolved(this ExperimentTemplate template)
-    => template.GetAllParameters().All(parameter => parameter.Value is not null);
+    => template.Parameters.All(parameter => parameter.Value is not null);
 
   /// <summary>
   /// Checks whether or not every <see cref="Parameter" /> within an experiment has a value. If so then
@@ -67,33 +58,10 @@ public static class ExperimentTemplateExtensions
   /// </summary>
   /// <param name="template">The <see cref="ExperimentTemplate" /> to clone</param>
   /// <returns>A new instance of experiment template</returns>
-  public static ExperimentTemplate CloneWithNewIds(this ExperimentTemplate template)
+  public static ExperimentTemplate CloneWithNewId(this ExperimentTemplate template)
   {
     var newTemplate = template.Clone();
     newTemplate.UniqueId = Guid.NewGuid().ToString();
-    foreach(var stepTemplate in newTemplate.StepTemplates)
-    {
-      stepTemplate.UniqueId = Guid.NewGuid().ToString();
-      foreach(var commandTemplate in stepTemplate.CommandTemplates)
-      {
-        var cmdTemplateId = Guid.NewGuid().ToString();
-        var outputCmd = template.GetAllOutputCommands().FirstOrDefault(oc => oc.UniqueId == commandTemplate.UniqueId);
-
-        commandTemplate.Metadata.UniqueId = Guid.NewGuid().ToString();
-        commandTemplate.UniqueId = cmdTemplateId;
-
-        foreach(var metadataParameterMetadata in commandTemplate.Metadata.ParameterMetadatas)
-          metadataParameterMetadata.UniqueId = Guid.NewGuid().ToString();
-        
-
-        foreach(var argument in commandTemplate.Parameters)
-        {
-          argument.UniqueId = Guid.NewGuid().ToString();
-          argument.Metadata.UniqueId = Guid.NewGuid().ToString();
-        }
-      }
-    }
-
     return newTemplate;
   }
 
@@ -104,16 +72,10 @@ public static class ExperimentTemplateExtensions
   /// <returns></returns>
   public static ExperimentTemplate AssignNewUniquePlanningIds(this ExperimentTemplate template)
   {
-    foreach(var step in template.StepTemplates)
+    foreach(var parameter in template.GetAllParameters())
     {
-      foreach(var cmd in step.CommandTemplates)
-      {
-        foreach(var param in cmd.Parameters)
-        {
-          if(param.PlanningMetadata is not null)
-            param.PlanningMetadata.UniqueId = Guid.NewGuid().ToString();
-        }
-      }
+      if(parameter.PlanningMetadata is not null)
+        parameter.PlanningMetadata.UniqueId = Guid.NewGuid().ToString();
     }
 
     return template;

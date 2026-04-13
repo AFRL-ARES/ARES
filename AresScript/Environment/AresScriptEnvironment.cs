@@ -12,10 +12,10 @@ public class AresScriptEnvironment
 
   public AresScriptEnvironment()
   {
-    var globalSystem = new SystemScope("global");
+    var globalSystem = new SystemScope(PredefinedScope.Global.ToString());
     _systemScopes.Push(globalSystem);
 
-    var globalUser = new UserScope("global");
+    var globalUser = new UserScope(PredefinedScope.Global.ToString());
     _userScopes.Push(globalUser);
   }
 
@@ -60,24 +60,8 @@ public class AresScriptEnvironment
 
   public bool TryGetValueSymbol(string id, [NotNullWhen(true)] out AresSystemValue? symbol)
   {
-    foreach(var scope in _userScopes)
-    {
-      if(scope.Variables.TryGetValue(id, out symbol))
-      {
-        return true;
-      }
-    }
-
-    foreach(var scope in _systemScopes)
-    {
-      if(scope.Variables.TryGetValue(id, out symbol))
-      {
-        return true;
-      }
-    }
-
-    symbol = null;
-    return false;
+    return TryGetFromScopes(_userScopes, scope => scope.Variables, id, out symbol)
+      || TryGetFromScopes(_systemScopes, scope => scope.Variables, id, out symbol);
   }
 
   public bool TryGetValue(string id, [NotNullWhen(true)] out AresValue? value)
@@ -94,12 +78,14 @@ public class AresScriptEnvironment
 
   public bool TryGetUserValueSymbol(string id, [NotNullWhen(true)] out AresSystemValue? symbol)
   {
-    foreach(var scope in _userScopes)
+    return TryGetFromScopes(_userScopes, scope => scope.Variables, id, out symbol);
+  }
+
+  public bool TryGetUserValueSymbol(string id, string scopeName, [NotNullWhen(true)] out AresSystemValue? symbol)
+  {
+    if(TryGetUserScope(scopeName, out var scope) && scope.Variables.TryGetValue(id, out symbol))
     {
-      if(scope.Variables.TryGetValue(id, out symbol))
-      {
-        return true;
-      }
+      return true;
     }
 
     symbol = null;
@@ -140,37 +126,24 @@ public class AresScriptEnvironment
 
   public bool TryGetSystemValueSymbol(string id, [NotNullWhen(true)] out AresSystemValue? symbol)
   {
-    foreach(var scope in _systemScopes)
-    {
-      var symbolExists = scope.Variables.TryGetValue(id, out symbol);
-      if(symbolExists && symbol is not null)
-        return true;
-    }
-
-    symbol = null;
-    return false;
+    return TryGetFromScopes(_systemScopes, scope => scope.Variables, id, out symbol);
   }
 
   public bool SystemValueExists(string id)
   {
-    foreach(var scope in _systemScopes)
-    {
-      if(scope.Variables.ContainsKey(id))
-      {
-        return true;
-      }
-    }
-
-    return false;
+    return TryGetSystemValueSymbol(id, out _);
   }
 
   public bool TryGetUserFunction(string id, [NotNullWhen(true)] out AresScriptFunction? func)
   {
-    foreach(var scope in _userScopes)
+    return TryGetFromScopes(_userScopes, scope => scope.Functions, id, out func);
+  }
+
+  public bool TryGetUserFunction(string id, string scopeName, [NotNullWhen(true)] out AresScriptFunction? func)
+  {
+    if(TryGetUserScope(scopeName, out var scope) && scope.Functions.TryGetValue(id, out func) && func is not null)
     {
-      var funcExists = scope.Functions.TryGetValue(id, out func);
-      if(funcExists && func is not null)
-        return true;
+      return true;
     }
 
     func = null;
@@ -179,157 +152,80 @@ public class AresScriptEnvironment
 
   public bool TryGetUserLambda(string id, [NotNullWhen(true)] out AresScriptLambda? lambda)
   {
-    foreach(var scope in _userScopes)
-    {
-      var lambdaExists = scope.Lambdas.TryGetValue(id, out lambda);
-      if(lambdaExists && lambda is not null)
-      {
-        return true;
-      }
-    }
-
-    lambda = null;
-    return false;
+    return TryGetFromScopes(_userScopes, scope => scope.Lambdas, id, out lambda);
   }
 
   public bool TryGetSystemFunction(string id, [NotNullWhen(true)] out AresSystemFunctionSymbol? func)
   {
-    foreach(var scope in _systemScopes)
-    {
-      if(scope.Functions.TryGetValue(id, out func))
-      {
-        return true;
-      }
-    }
-
-    func = null;
-    return false;
+    return TryGetFromScopes(_systemScopes, scope => scope.Functions, id, out func);
   }
 
   public bool SystemFunctionExists(string id)
   {
-    foreach(var scope in _systemScopes)
-    {
-      if(scope.Functions.ContainsKey(id))
-      {
-        return true;
-      }
-    }
-
-    return false;
+    return TryGetSystemFunction(id, out _);
   }
 
   public AresSystemFunctionSymbol[] GetAllSystemFunctions()
   {
-    return _systemScopes.SelectMany(scope => scope.Functions.Values).ToArray();
+    return [.. CollectDistinctByName(_systemScopes, scope => scope.Functions.Values, function => function.Name)];
   }
 
   public IReadOnlyList<KeyValuePair<string, AresSystemValue>> GetAllSystemVariables()
   {
-    var seen = new HashSet<string>(StringComparer.Ordinal);
-    var results = new List<KeyValuePair<string, AresSystemValue>>();
-    foreach(var scope in _systemScopes)
-    {
-      foreach(var (key, symbol) in scope.Variables)
-      {
-        if(seen.Add(key))
-        {
-          results.Add(new KeyValuePair<string, AresSystemValue>(key, symbol));
-        }
-      }
-    }
-
-    return results;
+    return CollectDistinctByName(_systemScopes, scope => scope.Variables, variable => variable.Key);
   }
 
   public KeyValuePair<string, AresSystemValue>[] GetAllUserVariableSymbols()
   {
-    var seen = new HashSet<string>(StringComparer.Ordinal);
-    var results = new List<KeyValuePair<string, AresSystemValue>>();
-    foreach(var scope in _userScopes)
-    {
-      foreach(var (key, symbol) in scope.Variables)
-      {
-        if(seen.Add(key))
-        {
-          results.Add(new KeyValuePair<string, AresSystemValue>(key, symbol));
-        }
-      }
-    }
+    return [.. CollectDistinctByName(_userScopes, scope => scope.Variables, variable => variable.Key)];
+  }
 
-    return results.ToArray();
+  public KeyValuePair<string, AresSystemValue>[] GetAllUserVariableSymbols(string scopeName)
+  {
+    return TryGetUserScope(scopeName, out var scope)
+      ? [.. scope.Variables]
+      : [];
   }
 
   public IReadOnlyList<string> GetAllUserVariableNames()
   {
-    var seen = new HashSet<string>(StringComparer.Ordinal);
-    var results = new List<string>();
-    foreach(var scope in _userScopes)
-    {
-      foreach(var key in scope.Variables.Keys)
-      {
-        if(seen.Add(key))
-        {
-          results.Add(key);
-        }
-      }
-    }
+    return CollectDistinctByName(_userScopes, scope => scope.Variables.Keys, name => name);
+  }
 
-    return results;
+  public IReadOnlyList<string> GetAllUserVariableNames(string scopeName)
+  {
+    return TryGetUserScope(scopeName, out var scope)
+      ? [.. scope.Variables.Keys]
+      : [];
   }
 
   public IReadOnlyList<AresScriptFunction> GetAllUserFunctions()
   {
-    var seen = new HashSet<string>(StringComparer.Ordinal);
-    var results = new List<AresScriptFunction>();
-    foreach(var scope in _userScopes)
-    {
-      foreach(var func in scope.Functions.Values)
-      {
-        if(seen.Add(func.Name))
-        {
-          results.Add(func);
-        }
-      }
-    }
+    return CollectDistinctByName(_userScopes, scope => scope.Functions.Values, function => function.Name);
+  }
 
-    return results;
+  public IReadOnlyList<AresScriptFunction> GetAllUserFunctions(string scopeName)
+  {
+    return TryGetUserScope(scopeName, out var scope)
+      ? [.. scope.Functions.Values]
+      : [];
   }
 
   public IReadOnlyList<IScriptSymbol> GetAllUserSymbols()
   {
-    var seen = new HashSet<string>(StringComparer.Ordinal);
-    var results = new List<IScriptSymbol>();
-    foreach(var scope in _userScopes)
-    {
-      foreach(var symbol in scope.GetSymbols())
-      {
-        if(seen.Add(symbol.Name))
-        {
-          results.Add(symbol);
-        }
-      }
-    }
+    return CollectDistinctByName(_userScopes, scope => scope.GetSymbols(), symbol => symbol.Name);
+  }
 
-    return results;
+  public IReadOnlyList<IScriptSymbol> GetAllUserSymbols(string scopeName)
+  {
+    return TryGetUserScope(scopeName, out var scope)
+      ? [.. scope.GetSymbols()]
+      : [];
   }
 
   public IReadOnlyList<IScriptSymbol> GetAllSystemSymbols()
   {
-    var seen = new HashSet<string>(StringComparer.Ordinal);
-    var results = new List<IScriptSymbol>();
-    foreach(var scope in _systemScopes)
-    {
-      foreach(var symbol in scope.GetSymbols())
-      {
-        if(seen.Add(symbol.Name))
-        {
-          results.Add(symbol);
-        }
-      }
-    }
-
-    return results;
+    return CollectDistinctByName(_systemScopes, scope => scope.GetSymbols(), symbol => symbol.Name);
   }
 
   public IReadOnlyList<IScriptSymbol> GetAllSymbols()
@@ -337,21 +233,8 @@ public class AresScriptEnvironment
     var seen = new HashSet<string>(StringComparer.Ordinal);
     var results = new List<IScriptSymbol>();
 
-    foreach(var symbol in GetAllUserSymbols())
-    {
-      if(seen.Add(symbol.Name))
-      {
-        results.Add(symbol);
-      }
-    }
-
-    foreach(var symbol in GetAllSystemSymbols())
-    {
-      if(seen.Add(symbol.Name))
-      {
-        results.Add(symbol);
-      }
-    }
+    AppendDistinctByName(results, seen, _userScopes.SelectMany(scope => scope.GetSymbols()), symbol => symbol.Name);
+    AppendDistinctByName(results, seen, _systemScopes.SelectMany(scope => scope.GetSymbols()), symbol => symbol.Name);
 
     return results;
   }
@@ -470,6 +353,71 @@ public class AresScriptEnvironment
     return _extensionFunctions.TryGetValue(receiver.KindCase, out var map)
       ? map.Values.ToArray()
       : [];
+  }
+
+  private bool TryGetUserScope(string scopeName, [NotNullWhen(true)] out UserScope? scope)
+  {
+    foreach(var candidate in _userScopes)
+    {
+      if(string.Equals(candidate.Name, scopeName, StringComparison.Ordinal))
+      {
+        scope = candidate;
+        return true;
+      }
+    }
+
+    scope = null;
+    return false;
+  }
+
+  private static bool TryGetFromScopes<TScope, TValue>(
+    IEnumerable<TScope> scopes,
+    Func<TScope, IReadOnlyDictionary<string, TValue>> selector,
+    string id,
+    [NotNullWhen(true)] out TValue? value)
+    where TValue : class
+  {
+    foreach(var scope in scopes)
+    {
+      if(selector(scope).TryGetValue(id, out var candidate) && candidate is not null)
+      {
+        value = candidate;
+        return true;
+      }
+    }
+
+    value = null;
+    return false;
+  }
+
+  private static IReadOnlyList<TItem> CollectDistinctByName<TScope, TItem>(
+    IEnumerable<TScope> scopes,
+    Func<TScope, IEnumerable<TItem>> selector,
+    Func<TItem, string> nameSelector)
+  {
+    var seen = new HashSet<string>(StringComparer.Ordinal);
+    var results = new List<TItem>();
+    foreach(var scope in scopes)
+    {
+      AppendDistinctByName(results, seen, selector(scope), nameSelector);
+    }
+
+    return results;
+  }
+
+  private static void AppendDistinctByName<TItem>(
+    ICollection<TItem> results,
+    ISet<string> seen,
+    IEnumerable<TItem> items,
+    Func<TItem, string> nameSelector)
+  {
+    foreach(var item in items)
+    {
+      if(seen.Add(nameSelector(item)))
+      {
+        results.Add(item);
+      }
+    }
   }
 
   private static bool TryMapDataTypeToKind(AresDataType type, out AresValue.KindOneofCase kind)

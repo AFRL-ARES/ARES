@@ -1,6 +1,6 @@
+using Ares.Core.Grpc.Services;
 using Ares.Datamodel;
 using Ares.Services;
-using Ares.Core.Grpc.Services;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
@@ -94,12 +94,6 @@ public partial class DataViewerViewModel : ReactiveObject
 
   [Reactive]
   public partial ExperimentExecutionSummary? SelectedExperimentSummary { get; set; }
-
-  [Reactive]
-  public partial StepExecutionSummary? SelectedStepSummary { get; set; }
-
-  [Reactive]
-  public partial CommandExecutionSummary? SelectedCommandSummary { get; set; }
 
   [Reactive]
   public partial IEnumerable<CampaignExecutionSummaryMetadata> AvailableSummaries { get; set; }

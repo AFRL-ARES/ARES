@@ -28,7 +28,6 @@ public partial class ScriptPlaygroundViewModel : ReactiveObject
   private readonly ScriptingService _scriptingService;
   private CancellationTokenSource _cancellationTokenSource = new();
   private readonly Subject<string> _scriptOutput = new();
-  private readonly Subject<ScriptFunctionInvocation> _scriptInvocations = new();
   private readonly Subject<ScriptSummaryEvent> _scriptSummaryEvents = new();
 
   public ScriptPlaygroundViewModel(
@@ -36,7 +35,6 @@ public partial class ScriptPlaygroundViewModel : ReactiveObject
   {
     _scriptingService = scriptingService;
     ScriptOutput = _scriptOutput.AsObservable();
-    ScriptInvocations = _scriptInvocations.AsObservable();
     ScriptSummaryEvents = _scriptSummaryEvents.AsObservable();
   }
 
@@ -54,7 +52,6 @@ public partial class ScriptPlaygroundViewModel : ReactiveObject
       {
         if(output is ScriptFunctionStartedEvent functionStarted)
         {
-          _scriptInvocations.OnNext(functionStarted.Invocation);
           _scriptSummaryEvents.OnNext(new SummaryCallStartedEvent(
             functionStarted.Sequence,
             functionStarted.CallId,
@@ -133,6 +130,5 @@ public partial class ScriptPlaygroundViewModel : ReactiveObject
   public partial bool ScriptRunning { get; private set; }
 
   public IObservable<string> ScriptOutput { get; }
-  public IObservable<ScriptFunctionInvocation> ScriptInvocations { get; }
   public IObservable<ScriptSummaryEvent> ScriptSummaryEvents { get; }
 }

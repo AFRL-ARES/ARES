@@ -17,8 +17,7 @@ namespace Ares.Core.Scripting;
 public class ScriptRunner
 {
   private readonly Subject<string> _outputSubject = new();
-  private readonly ISubject<AresFunctionInvocation> _invocationSubject = Subject.Synchronize(new Subject<AresFunctionInvocation>());
-  private readonly ISubject<ScriptExecutionEvent> _eventSubject = Subject.Synchronize(new Subject<ScriptExecutionEvent>());
+  private readonly ISubject<ScriptExecutionEvent> _scriptEventSubject = Subject.Synchronize(new Subject<ScriptExecutionEvent>());
   private readonly AresScriptEnvironment _initialEnvironment;
   private readonly bool _captureExecutionEventsWithoutSubscribers;
   private int _scriptEventSubscriberCount;
@@ -30,11 +29,10 @@ public class ScriptRunner
   {
     _captureExecutionEventsWithoutSubscribers = captureExecutionEventsWithoutSubscribers;
     ScriptOutput = _outputSubject.AsObservable();
-    ScriptInvocations = _invocationSubject.AsObservable();
     ScriptEvents = Observable.Create<ScriptExecutionEvent>(observer =>
     {
       Interlocked.Increment(ref _scriptEventSubscriberCount);
-      var subscription = _eventSubject.Subscribe(observer);
+      var subscription = _scriptEventSubject.Subscribe(observer);
       return Disposable.Create(() =>
       {
         subscription.Dispose();
@@ -84,12 +82,11 @@ public class ScriptRunner
     env.EnterSystemScope("SandboxRunner");
     env.AssignSystemFunctions(Print);
     env.AssignExtensionFunctions(StandardLibrary.ExtensionFunctions);
-    var emitScriptEvents = ShouldEmitScriptEvents();
+    var emitExecutionEvents = ShouldEmitExecutionEvents();
     var visitor = new AresBaseInterpreter(
       env,
       executionControlToken,
-      invocation => _invocationSubject.OnNext(invocation),
-      emitScriptEvents
+      emitExecutionEvents
         ? executionEvent =>
         {
           switch(executionEvent.Kind)
@@ -117,21 +114,21 @@ public class ScriptRunner
         }
     : null);
 
-    if(emitScriptEvents)
+    if(emitExecutionEvents)
     {
       PublishEvent(sequence => new ScriptExecutionStartedEvent(sequence));
     }
     try
     {
       await visitor.Visit(programCtx);
-      if(emitScriptEvents)
+      if(emitExecutionEvents)
       {
         PublishEvent(sequence => new ScriptExecutionCompletedEvent(sequence));
       }
     }
     catch(Exception e)
     {
-      if(emitScriptEvents)
+      if(emitExecutionEvents)
       {
         PublishEvent(sequence => new ScriptExecutionFailedEvent(sequence, e.ToString()));
       }
@@ -142,17 +139,17 @@ public class ScriptRunner
   private AresSystemFunctionSymbol Print { get; }
 
   public IObservable<string> ScriptOutput { get; }
-  public IObservable<AresFunctionInvocation> ScriptInvocations { get; }
   public IObservable<ScriptExecutionEvent> ScriptEvents { get; }
 
   private void PublishEvent(Func<long, ScriptExecutionEvent> eventFactory)
   {
     var sequence = Interlocked.Increment(ref _eventSequence);
-    _eventSubject.OnNext(eventFactory(sequence));
+    _scriptEventSubject.OnNext(eventFactory(sequence));
   }
 
-  private bool ShouldEmitScriptEvents()
+  private bool ShouldEmitExecutionEvents()
   {
-    return _captureExecutionEventsWithoutSubscribers || Volatile.Read(ref _scriptEventSubscriberCount) > 0;
+    return _captureExecutionEventsWithoutSubscribers
+      || Volatile.Read(ref _scriptEventSubscriberCount) > 0;
   }
 }

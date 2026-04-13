@@ -1,6 +1,4 @@
-﻿using System.Reactive.Linq;
-using System.Reactive.Subjects;
-using Ares.Core.Analyzing;
+﻿using Ares.Core.Analyzing;
 using Ares.Core.AresEnvironment;
 using Ares.Core.Device.State.Logging;
 using Ares.Core.Exceptions;
@@ -9,12 +7,15 @@ using Ares.Core.Execution.StopConditions;
 using Ares.Core.Notifications;
 using Ares.Core.Output;
 using Ares.Core.Planning;
+using Ares.Core.Scripting;
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Templates;
 using AresScript;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 
 namespace Ares.Core.Execution.Executors;
 
@@ -28,6 +29,7 @@ public class CampaignExecutor : ICampaignExecutor
   private readonly ILogger _logger;
   private readonly AresVariableManager _variableManager;
   private readonly StateLoggerManager _stateLoggerManager;
+  private readonly BaseEnvironmentBuilder _environmentBuilder;
   readonly AnalysisHelper _analysisHelper;
   readonly AnalysisRepo _analysisRepo;
   readonly IAnalyzerRepo _analyzerRepo;
@@ -43,13 +45,15 @@ public class CampaignExecutor : ICampaignExecutor
     IAnalyzerRepo analyzerRepo,
     ILogger<CampaignExecutor> logger,
     AresVariableManager variableManager,
-    StateLoggerManager stateLoggerManager)
+    StateLoggerManager stateLoggerManager,
+    BaseEnvironmentBuilder environmentBuilder)
   {
     _analyzerRepo = analyzerRepo;
     _analysisRepo = analysisRepo;
     _analysisHelper = analysisHelper;
     _variableManager = variableManager;
     _stateLoggerManager = stateLoggerManager;
+    _environmentBuilder = environmentBuilder;
     _planningHelper = planningHelper;
     _executionReporter = executionReporter;
     _summaryHandlers = resultHandlers;
@@ -79,13 +83,13 @@ public class CampaignExecutor : ICampaignExecutor
     var experimentSummaries = new List<ExperimentExecutionSummary>();
     ExperimentExecutionSummary startupSummary = new();
     ExperimentExecutionSummary closeoutSummary = new();
-    
+
     try
     {
       var campaignPath = await InitializeCampaign(campaignStartTime);
-      
+
       var analyses = new List<Analysis>();
-      
+
       ResetStatus(token);
       await NotifyCampaignStart();
 
@@ -100,7 +104,7 @@ public class CampaignExecutor : ICampaignExecutor
         return new CampaignExecutionSummary();
       }
       startupSummary = startupResult.Summary;
-      
+
 
       executionSuccess = await ExecuteExperimentLoop(campaignPath, analyses, experimentSummaries, token, executionSuccess, startupResult.Summary);
 
@@ -122,7 +126,7 @@ public class CampaignExecutor : ICampaignExecutor
     {
       await _stateLoggerManager.DisableOverrideAsync();
     }
-    
+
     return CreateCampaignSummary(campaignStartTime, experimentSummaries, startupSummary, closeoutSummary);
   }
 
@@ -138,9 +142,9 @@ public class CampaignExecutor : ICampaignExecutor
       await CampaignOutputHelper.WriteExperimentTags(campaignPath, CampaignTags);
 
     var analyzerId = string.IsNullOrEmpty(Template.ExperimentTemplate.AnalyzerId) ? NoneAnalyzer.Id : Template.ExperimentTemplate.AnalyzerId;
-    if (analyzerId is null) 
+    if(analyzerId is null)
       return campaignPath;
-      
+
     var analyzer = _analyzerRepo.GetAnalyzerById(analyzerId);
     _logger.LogInformation("Analyzer selected {AnalyzerName}", analyzer?.Name ?? "NO ANALYZER");
     await CampaignOutputHelper.OutputVersionFile(campaignPath, Template, analyzer);
@@ -235,8 +239,8 @@ public class CampaignExecutor : ICampaignExecutor
       if(!token.IsCancellationRequested)
       {
         var result = await AnalyzeResult(experimentExecutor, experimentSummary, startupSummary, analyses, token);
-        if (!result.Success) executionSuccess = false;
-        if (!result.Continue) break;
+        if(!result.Success) executionSuccess = false;
+        if(!result.Continue) break;
       }
       else
       {
@@ -251,11 +255,11 @@ public class CampaignExecutor : ICampaignExecutor
 
   private async Task<(bool Success, bool Continue)> AnalyzeResult(ExperimentExecutor experimentExecutor, ExperimentExecutionSummary experimentSummary, ExperimentExecutionSummary startupSummary, List<Analysis> analyses, ScriptExecutionControlToken token)
   {
-    var metadata = new RequestMetadata 
-    { 
-      CampaignId = Template.UniqueId, 
-      CampaignName = Template.Name, 
-      ExperimentId = experimentExecutor.Template.UniqueId, 
+    var metadata = new RequestMetadata
+    {
+      CampaignId = Template.UniqueId,
+      CampaignName = Template.Name,
+      ExperimentId = experimentExecutor.Template.UniqueId,
       SystemName = "ARES OS",
       ExperimentStartTime = experimentSummary.ExecutionInfo.TimeStarted
     };
@@ -273,7 +277,7 @@ public class CampaignExecutor : ICampaignExecutor
     // The following are top level checks for analysis failure in case the
     // failure is not properly handled on the Analysis itself
     // which also has support for "success" and "error" message
-    if (analysis is null || analysis.Result == float.NaN)
+    if(analysis is null || analysis.Result == float.NaN)
     {
       Status.AnalysisState = AnalysisState.AnalysisError;
       await _notifier.Notify("Analysis Failure", $"Analysis was reported as successful, but no actual analysis was provided. {analysis?.ErrorString ?? "No error string provided"}", NotificationSeverityEnum.Error);
@@ -286,7 +290,7 @@ public class CampaignExecutor : ICampaignExecutor
       Status.AnalysisState = AnalysisState.AnalysisError;
       await _notifier.Notify("Analysis Failure", $"Failed to analyze experiment result: {analysis.ErrorString}", NotificationSeverityEnum.Error);
       _logger.LogError("Failed to analyze. Reason {Error}", analysis.ErrorString);
-      return (false, false);         
+      return (false, false);
     }
 
     else if(analysis.AnalysisOutcome == Outcome.Canceled)
@@ -297,8 +301,8 @@ public class CampaignExecutor : ICampaignExecutor
       return (true, false);
     }
 
-    else if(analysis.AnalysisOutcome == Outcome.Warning) 
-    { 
+    else if(analysis.AnalysisOutcome == Outcome.Warning)
+    {
       await _notifier.Notify("Warning From Analyzer!", $"Analysis completed successfully, but the analyzer emitted a warning! {analysis.ErrorString}", NotificationSeverityEnum.Warning);
       _logger.LogWarning("Analysis completed successfully, but the analyzer emitted a warning! {Warning}", analysis.ErrorString);
     }
@@ -354,7 +358,7 @@ public class CampaignExecutor : ICampaignExecutor
       _logger.LogWarning("Campaign {Name} has failed to execute properly.", Template.Name);
       await _notifier.Notify("Campaign Failed", $"ARES failed to execute {Template.Name} successfully, check the event history page for errors.", NotificationSeverityEnum.Error);
     }
-      
+
 
     _executionReporter.Report(Status);
   }
@@ -399,7 +403,7 @@ public class CampaignExecutor : ICampaignExecutor
   private async Task<ExperimentExecutorResult> GenerateExperimentExecutor(ExperimentTemplate template, IEnumerable<Analysis> analyses, IEnumerable<ExperimentOverview> previousExperiments, CancellationToken cancellationToken)
   {
     var result = new ExperimentExecutorResult();
-    var experimentTemplate = template.CloneWithNewIds();
+    var experimentTemplate = template;
 
     _logger.LogDebug("Going to try and generate an experiment executor for {TemplateName}.", template.Name);
     if(!experimentTemplate.IsResolved())
@@ -411,11 +415,11 @@ public class CampaignExecutor : ICampaignExecutor
         _executionStatusSubject.OnNext(Status);
         _executionReporter.Report(Status);
         _logger.LogTrace("Analyses count is {count} and replan rate {rate}", analyses.Count(), ReplanRate);
-        var metadata = new RequestMetadata 
-        { 
-          CampaignId = Template.UniqueId, 
-          CampaignName = Template.Name, 
-          ExperimentId = template.UniqueId, 
+        var metadata = new RequestMetadata
+        {
+          CampaignId = Template.UniqueId,
+          CampaignName = Template.Name,
+          ExperimentId = template.UniqueId,
           SystemName = "ARES OS",
           ExperimentStartTime = DateTime.UtcNow.ToUniversalTime().ToTimestamp()
         };
@@ -431,7 +435,7 @@ public class CampaignExecutor : ICampaignExecutor
 
       else
       {
-        experimentTemplate = previousExperiments.Last().Template.CloneWithNewIds();
+        experimentTemplate = previousExperiments.Last().Template.CloneWithNewId();
 
         _logger.LogDebug("Experiment was cloned with new UUID's");
       }
@@ -458,7 +462,7 @@ public class CampaignExecutor : ICampaignExecutor
     //Passing the campaigns name into the experiment template for file creation purposes post experiment
     experimentTemplate.Name = Template.Name;
 
-    result.ExperimentExecutor = _experimentComposer.Compose(experimentTemplate);
+    result.ExperimentExecutor = new ExperimentExecutor(experimentTemplate, _environmentBuilder);
     _logger.LogTrace("Composed experiment template, {TemplateName}", experimentTemplate.Name);
 
     return result;

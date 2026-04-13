@@ -8,6 +8,10 @@ public enum AresFunctionInvocationKind
   Lambda
 }
 
+/// <summary>
+/// This describes the function that is being invoked. So stuff like id, name, kind, etc.
+/// Nothing yet about the result.
+/// </summary>
 public sealed record AresFunctionInvocation(
   string FunctionId,
   string FunctionName,

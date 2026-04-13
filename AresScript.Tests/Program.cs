@@ -50,16 +50,14 @@ public class InterpreterTests
   private static Task RunScriptAsync(
     string script,
     CancellationToken cancellationToken = default,
-    Action<AresFunctionInvocation>? invocationObserver = null,
     Action<AresFunctionExecutionEvent>? executionEventObserver = null)
   {
-    return RunScriptAsync(script, new ScriptExecutionControlToken(cancellationToken), invocationObserver, executionEventObserver);
+    return RunScriptAsync(script, new ScriptExecutionControlToken(cancellationToken), executionEventObserver);
   }
 
   private static async Task RunScriptAsync(
     string script,
     ScriptExecutionControlToken executionControlToken,
-    Action<AresFunctionInvocation>? invocationObserver = null,
     Action<AresFunctionExecutionEvent>? executionEventObserver = null)
   {
     var stream = new AntlrInputStream(script);
@@ -74,7 +72,7 @@ public class InterpreterTests
     var env = new AresScriptEnvironment();
     env.AssignSystemFunctions(StandardLibrary.Functions);
     env.AssignExtensionFunctions(StandardLibrary.ExtensionFunctions);
-    var visitor = new AresBaseInterpreter(env, executionControlToken, invocationObserver, executionEventObserver);
+    var visitor = new AresBaseInterpreter(env, executionControlToken, executionEventObserver);
 
     await visitor.Visit(programCtx);
   }
@@ -141,7 +139,13 @@ public class InterpreterTests
   private static async Task<AresFunctionInvocation[]> RunAndCollectRuntimeInvocationsAsync(string script)
   {
     var invocations = new List<AresFunctionInvocation>();
-    await RunScriptAsync(script, invocationObserver: invocations.Add);
+    await RunScriptAsync(script, executionEventObserver: executionEvent =>
+    {
+      if(executionEvent.Kind == AresFunctionExecutionEventKind.Started)
+      {
+        invocations.Add(executionEvent.Invocation);
+      }
+    });
     return invocations.ToArray();
   }
 

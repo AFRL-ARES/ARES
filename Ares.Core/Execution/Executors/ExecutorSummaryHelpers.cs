@@ -8,8 +8,7 @@ internal static class ExecutorSummaryHelpers
 {
   public static ExperimentExecutionSummary CreateExperimentExecutionSummary(ExperimentOverview experimentOverview,
     DateTime startTime,
-    DateTime endTime,
-    IEnumerable<StepExecutionSummary> StepSummaries)
+    DateTime endTime)
   {
     var experimentSummary = new ExperimentExecutionSummary
     {
@@ -19,47 +18,7 @@ internal static class ExecutorSummaryHelpers
       ExperimentOverview = experimentOverview,
     };
 
-    experimentSummary.StepSummaries.AddRange(StepSummaries);
     return experimentSummary;
-  }
-
-  public static StepExecutionSummary CreateStepExecutionSummary(DateTime startTime,
-    DateTime endTime,
-    IEnumerable<CommandExecutionSummary> CommandSummaries)
-  {
-    var stepResult = new StepExecutionSummary
-    {
-      UniqueId = Guid.NewGuid().ToString(),
-      ExecutionInfo = MakeExecutionInfo(startTime, endTime),
-      StepId = Guid.NewGuid().ToString()
-    };
-
-    stepResult.CommandSummaries.AddRange(CommandSummaries);
-
-    return stepResult;
-  }
-
-  public static StepExecutionSummary CreateEmptyStepExecutionSummary(DateTime startTime, DateTime endTime)
-  {
-    return new StepExecutionSummary { UniqueId = Guid.NewGuid().ToString(), ExecutionInfo = MakeExecutionInfo(startTime, endTime) };
-  }
-  public static CommandExecutionSummary CreateCommandExecutionSummary(CommandTemplate template,
-    CommandResult? deviceResult,
-    DateTime startTime,
-    DateTime endTime)
-  {
-    var commandExecutionSummary = new CommandExecutionSummary
-    {
-      UniqueId = Guid.NewGuid().ToString(),
-      ExecutionInfo = MakeExecutionInfo(startTime, endTime),
-      CommandId = Guid.NewGuid().ToString(),
-      Result = deviceResult,
-      TemplateId = template.UniqueId,
-      CommandDescription = template.Metadata.Description,
-      CommandName = template.Metadata.Name
-    };
-
-    return commandExecutionSummary;
   }
 
   private static ExecutionInfo MakeExecutionInfo(DateTime startTime, DateTime endTime)

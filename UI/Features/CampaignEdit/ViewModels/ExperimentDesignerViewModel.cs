@@ -1,10 +1,8 @@
-﻿using Ares.Datamodel.Templates;
-using Ares.Services;
-using Ares.Core.Grpc.Services;
+﻿using Ares.Core.Grpc.Services;
+using Ares.Datamodel.Templates;
 using Radzen;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
-using UI.Features.CampaignEdit.Factories;
 
 namespace UI.Features.CampaignEdit.ViewModels;
 
@@ -132,8 +130,6 @@ public partial class ExperimentDesignerViewModel : ReactiveObject
 
   [Reactive]
   public partial string Name { get; set; }
-
-  public IList<StepDesignerViewModel> StepDesigners { get; private set; } = [];
 
   public IEnumerable<CommandTemplate>? ExperimentOutputProviderCommand { get; set; }
 }

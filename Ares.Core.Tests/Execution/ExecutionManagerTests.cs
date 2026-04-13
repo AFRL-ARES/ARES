@@ -1,5 +1,4 @@
 ﻿using Ares.Core.Execution;
-using Ares.Core.Execution.ControlTokens;
 using Ares.Core.Execution.Executors;
 using Ares.Core.Execution.Executors.Composers;
 using Ares.Core.Execution.Safety;
@@ -8,6 +7,7 @@ using Ares.Core.Execution.StopConditions;
 using Ares.Core.Notifications;
 using Ares.Datamodel;
 using Ares.Datamodel.Templates;
+using AresScript;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -36,7 +36,7 @@ internal class ExecutionManagerTests
     var mockCampaignComposer = new Mock<ICampaignComposer>();
     var mockCampaignExecutor = new Mock<ICampaignExecutor>();
     mockCampaignExecutor.SetupGet(executor => executor.StopConditions).Returns([]);
-    mockCampaignExecutor.Setup(executor => executor.Execute(It.IsAny<ExecutionControlToken>())).ReturnsAsync(new CampaignExecutionSummary
+    mockCampaignExecutor.Setup(executor => executor.Execute(It.IsAny<ScriptExecutionControlToken>())).ReturnsAsync(new CampaignExecutionSummary
     {
       UniqueId = Guid.NewGuid().ToString(),
       CampaignId = Guid.NewGuid().ToString(),

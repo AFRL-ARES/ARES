@@ -15,7 +15,6 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
 {
   protected readonly AresScriptEnvironment Environment;
   private readonly ScriptExecutionControlToken _executionControlToken;
-  private readonly Action<AresFunctionInvocation>? _functionInvocationObserver;
   private readonly Action<AresFunctionExecutionEvent>? _functionExecutionEventObserver;
   private readonly AsyncLocal<Stack<string>> _callStack = new();
   private readonly Stack<(string FunctionId, AresValueSchema ReturnSchema)> _activeFunctionReturnTypes = [];
@@ -47,20 +46,10 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
   public AresBaseInterpreter(
     AresScriptEnvironment aresScriptEnvironment,
     ScriptExecutionControlToken executionControlToken,
-    Action<AresFunctionInvocation>? functionInvocationObserver)
-    : this(aresScriptEnvironment, executionControlToken, functionInvocationObserver, null)
-  {
-  }
-
-  public AresBaseInterpreter(
-    AresScriptEnvironment aresScriptEnvironment,
-    ScriptExecutionControlToken executionControlToken,
-    Action<AresFunctionInvocation>? functionInvocationObserver,
     Action<AresFunctionExecutionEvent>? functionExecutionEventObserver)
   {
     Environment = aresScriptEnvironment ?? throw new ArgumentNullException(nameof(aresScriptEnvironment));
     _executionControlToken = executionControlToken;
-    _functionInvocationObserver = functionInvocationObserver;
     _functionExecutionEventObserver = functionExecutionEventObserver;
   }
 
@@ -1127,7 +1116,6 @@ public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
     var parentCallId = callStack.Count > 0 ? callStack.Peek() : string.Empty;
     callStack.Push(callId);
 
-    _functionInvocationObserver?.Invoke(invocation);
     _functionExecutionEventObserver?.Invoke(new AresFunctionExecutionEvent(
       AresFunctionExecutionEventKind.Started,
       callId,
