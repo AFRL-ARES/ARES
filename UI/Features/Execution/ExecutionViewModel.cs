@@ -331,16 +331,25 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     {
       var metricName = field.ParameterName;
       var metricData = field.ParameterValue;
+      var matchingParam = transaction.PlanningRequest.PlanningParameters.FirstOrDefault(p => p.ParameterName == field.ParameterName);
 
-      if(TryGetChartableValue(metricData, out double numericValue))
+      if(TryGetChartableValue(metricData, out double numericValue) && matchingParam is not null)
       {
+        var minBound = matchingParam.MinimumValue;
+        var maxBound = matchingParam.MaximumValue;
+        var normalizedValue = 0.0;
+
+        if(maxBound > minBound)
+          normalizedValue = ((numericValue - minBound) / (maxBound - minBound)) * 100;
+
         if(!PlannerMetricsMap.ContainsKey(metricName))
           PlannerMetricsMap[metricName] = new List<ChartMetricPoint>();
 
         PlannerMetricsMap[metricName].Add(new ChartMetricPoint
         {
           ExecutionIndex = currentTurn,
-          Value = numericValue
+          PlotValue = normalizedValue,  // Charting Value
+          RawValue = numericValue       // Tooltip Display Value
         });
       }
     }
@@ -351,7 +360,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     AnalyzerMetrics.Add(new ChartMetricPoint
     {
       ExecutionIndex = currentTurn,
-      Value = transaction.AnalysisResponse.Result
+      RawValue = transaction.AnalysisResponse.Result
     }); 
   }
 
@@ -507,6 +516,48 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     _campaignStateSubscription?.Dispose();
   }
 
+  /// <summary>
+  /// When the page is refreshed it wipes the information we have regarding on-going campaigns being executed. 
+  /// This method recalls that information so the user picks up where they left off.
+  /// </summary>
+  /// <returns>A <see cref="Task"/></returns>
+  public async Task RefreshExecutionContext()
+  {
+    await RefreshPlannerTransactionData();
+    await RefreshAnalyzerTransactionData();
+  }
+
+  public async Task RefreshPlannerTransactionData()
+  {
+    var plannerTransactions = await _automationClient.GetLatestPlanningTransactions();
+
+    foreach(var transactionList in plannerTransactions)
+    {
+      if(transactionList is null)
+        continue;
+
+      foreach(var (index, item) in transactionList.Index())
+      {
+        OnPlannerTransactionReceived(item, index);
+      }
+    }
+  }
+
+  public async Task RefreshAnalyzerTransactionData()
+  {
+    var analyzerTransactions = await _automationClient.GetLatestAnalyzerTransactions();
+
+    foreach(var (index, item) in analyzerTransactions.Index())
+    {
+      OnAnalyzerTransactionReceived(item, index);
+    }
+  }
+
+  public async Task RefreshCampaignSetup()
+  {
+    var stopConditionResponse = await _automationClient.GetActiveStopCondition(new Empty(), null);
+  }
+
   [Reactive]
   public partial ExperimentStopConditionResponse? CurrentStopCondition { get; set; }
   public double DesiredResult { get; set; }
@@ -559,6 +610,6 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 public class ChartMetricPoint
 {
   public int ExecutionIndex { get; set; }
-
-  public double Value { get; set; }
+  public double RawValue { get; set; }
+  public double PlotValue { get; set; }
 }

@@ -8,36 +8,61 @@
 <RadzenStack Orientation="Orientation.Vertical" Gap="1rem" Style="width: 100%; height: 100%;">
     
   <RadzenCard Variant="Variant.Outlined" Style="height: 100%">
-    <RadzenText TextStyle="TextStyle.H6" Class="rz-mb-4">Planner + Analyzer Data</RadzenText>
-        
-    <RadzenChart Style="height: 90%">
-      @if(ViewModel?.PlannerMetricsMap != null)
-      {
-        @foreach(var plannerSeries in ViewModel.PlannerMetricsMap)
+    <RadzenColumn>
+      <RadzenText TextStyle="TextStyle.H6" Class="rz-mb-4">Planner Data</RadzenText> 
+      <RadzenChart Style="height: 90%">
+        <RadzenChartTooltipOptions Shared="false"/>
+        @if(ViewModel?.PlannerMetricsMap != null)
         {
-          <RadzenLineSeries Data="@plannerSeries.Value"
+          @foreach(var plannerSeries in ViewModel.PlannerMetricsMap)
+          {
+            var currentSeries = plannerSeries;
+            <RadzenLineSeries Data="@currentSeries.Value"
+                              TItem="ChartMetricPoint"
+                              CategoryProperty="ExecutionIndex"
+                              ValueProperty="PlotValue"
+                              Title="@($"Planner: {currentSeries.Key}")">
+              <ChildContent>
+                <RadzenMarkers Visible="true" MarkerType="MarkerType.Circle" Size="6" />
+              </ChildContent>
+
+              <TooltipTemplate Context="data">
+                <div style="background-color: #333; border: 1px solid #555; padding: 8px; border-radius: 4px;">
+                  <span style="color: #aaa;">@currentSeries.Key: </span>
+                  <strong style="color: #fff;">@data.RawValue</strong>
+                </div>
+              </TooltipTemplate>
+            </RadzenLineSeries>
+          }
+        }
+
+        <RadzenCategoryAxis Step="1">
+        </RadzenCategoryAxis>
+
+        <RadzenValueAxis Min="0" Max="100" Step="25">
+          <RadzenGridLines Visible="false" />
+        </RadzenValueAxis>
+      </RadzenChart>
+
+
+      <RadzenText TextStyle="TextStyle.H6" class="rz-mb-4">Objective Score</RadzenText>
+      <RadzenChart>
+        @if(ViewModel?.AnalyzerMetrics != null)
+        {
+          <RadzenLineSeries Data="@ViewModel.AnalyzerMetrics"
                             CategoryProperty="ExecutionIndex"
-                            ValueProperty="Value"
-                            Title="@($"Planner: {plannerSeries.Key}")">
-            <RadzenMarkers MarkerType="MarkerType.Circle" />
+                            ValueProperty="RawValue"
+                            Title="Analyzer Output">
+            <RadzenMarkers MarkerType="MarkerType.Square" />
           </RadzenLineSeries>
         }
-      }
 
-      @if(ViewModel?.AnalyzerMetrics != null)
-      {
-        <RadzenLineSeries Data="@ViewModel.AnalyzerMetrics"
-                          CategoryProperty="ExecutionIndex"
-                          ValueProperty="Value"
-                          Title="Analyzer Output">
-          <RadzenMarkers MarkerType="MarkerType.Square" />
-        </RadzenLineSeries>
-      }
+        <RadzenCategoryAxis Step="1">
+        </RadzenCategoryAxis>
+      </RadzenChart>
+
             
-      <RadzenCategoryAxis Step="1">
-        <RadzenAxisTitle Text="Experiment Number" />
-      </RadzenCategoryAxis>
-    </RadzenChart>
+    </RadzenColumn>
   </RadzenCard>
 
   <RadzenCard Variant="Variant.Outlined" Style="height: 55%">

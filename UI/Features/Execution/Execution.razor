@@ -24,7 +24,7 @@
         <RadzenSplitter Orientation="Orientation.Vertical">
             <div class="rounded-2 p-2 padded-item">
               <div class="d-flex flex-row">
-                <RadzenLabel Text="@(ViewModel!.DisplayExecutionSummary ? "Experiment Status" : "Campaign Preview")" Component="PreviewDisplayToggle" Style="font-size: larger;" />
+                <RadzenLabel Text="@(ViewModel!.DisplayExecutionSummary ? "Experiment Status" : "Campaign Setup")" Component="PreviewDisplayToggle" Style="font-size: larger;" />
                 <RadzenSwitch @bind-Value="ViewModel!.DisplayExecutionSummary" Name="PreviewDisplayToggle" Style="margin-left: 1rem; align-items: center" />
               </div>
             </div>
@@ -67,8 +67,7 @@
     await ViewModel!.UpdateCurrentTemplate();
     await ViewModel!.GetAllTags();
     ViewModel!.StartWatchingTelemetry();
-    await ViewModel!.UpdatePlannerTransactions();
-    await ViewModel!.UpdateAnalysisTransactions();
+    await ViewModel!.RefreshExecutionContext();
   }
 
   private void InvokeStateHasChanged()
