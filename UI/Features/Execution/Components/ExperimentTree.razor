@@ -1,0 +1,75 @@
+﻿@rendermode InteractiveServer
+
+<div class="rounded-2 p-2 padded-item scrollable-summary">
+  @if(ViewModel!.ExperimentExecutionStatuses.Any())
+  {
+    <div>
+      @for(var i = 0; i < ViewModel!.ExperimentExecutionStatuses.Count; i++)
+      {
+        var experimentStatus = ViewModel!.ExperimentExecutionStatuses[i];
+        var latestExperiment = i == ViewModel!.ExperimentExecutionStatuses.Count - 1;
+        var hasStartup = ViewModel!.CampaignTemplate?.StartupTemplate.StepTemplates.Count != 0;
+        var hasCloseout = ViewModel!.CampaignTemplate?.CloseoutTemplate.StepTemplates.Count != 0;
+        var expDisplayString = hasStartup ? $"Experiment {i}" : $"Experiment {i + 1}";
+        <ul class="tree">
+          <li>
+            @if(i == 0 && hasStartup)
+            {
+              <h6>Startup Script</h6>
+            }
+
+            else if(hasStartup && hasCloseout && i == ViewModel!.ExperimentsToRun + 1)
+            {
+              <h6>Closeout Script</h6>
+            }
+
+            else if(!hasStartup && hasCloseout && i == ViewModel!.ExperimentsToRun)
+            {
+              <h6>Closeout Script</h6>
+            }
+
+            else
+            {
+              <h6>@expDisplayString</h6>
+            }
+
+            <ul>
+              @foreach(var stepStatus in experimentStatus.StepExecutionStatuses)
+              {
+                <li>
+                  <details open="@ShouldDisplayExperimentSteps(i)">
+                    <summary>@stepStatus.StepName</summary>
+                    <ul>
+                      @foreach(var commandStatus in stepStatus.CommandExecutionStatuses)
+                      {
+                        <li>
+                          <div>@commandStatus.DeviceName: @commandStatus.CommandName -- @commandStatus.State</div>
+                        </li>
+                      }
+                    </ul>
+                  </details>
+                </li>
+              }
+            </ul>
+          </li>
+        </ul>
+      }
+    </div>
+    }
+</div>
+
+
+@code {
+  [Parameter]
+  public ExecutionViewModel? ViewModel { get; set; } 
+
+  private bool ShouldDisplayExperimentSteps(int currentStatusIndex)
+  {
+    return currentStatusIndex == ViewModel!.ExperimentExecutionStatuses.Count - 1;
+
+    // if(!CampaignCloseoutStatuses.Any())
+    //   return isCurrentExperiment;
+
+    // return CampaignCloseoutStatuses.Count != CampaignStartupStatuses.Count && currentStatusIndex == ExperimentExecutionStatuses.Count - 1;
+  }
+}

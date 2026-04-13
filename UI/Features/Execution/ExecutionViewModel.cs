@@ -1,20 +1,25 @@
+using Ares.Core.Analyzing;
+using Ares.Core.Device.Providers;
+using Ares.Core.Execution;
+using Ares.Core.Grpc.Services;
+using Ares.Core.Planning;
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
+using Ares.Datamodel.Visualizing.Local;
 using Ares.Services;
-using Ares.Core.Grpc.Services;
 using DynamicData;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using UI.Application.Notifications;
-using UI.Domain.Experiments;
-using Ares.Core.Analyzing;
 using System.Reactive.Linq;
-using Ares.Core.Planning;
+using UI.Application.Notifications;
+using UI.Domain.Execution;
+using UI.Domain.Experiments;
+using UI.Features.Visualization.ViewModels;
 
 namespace UI.Features.Execution;
 
@@ -27,6 +32,12 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   private readonly INotificationReceivingService _notificationService;
   private readonly IPlannerServiceRepo _plannerServiceRepo;
   private readonly IPlannerTransactionProvider _plannerTransactionProvider;
+  private readonly IExecutionReportStore _executionReportStore;
+  private readonly IAresDeviceProvider _deviceProvider;
+  public event Action? StateChanged;
+
+  private IDisposable? _experimentSubscription;
+  private IDisposable? _campaignStateSubscription;
 
   public ExecutionViewModel(AutomationService automationClient,
     IConfiguration configuration,
@@ -34,7 +45,9 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     AnalyzerService analyzerService,
     IAnalyzerTransactionProvider analysisTransactionProvider,
     IPlannerServiceRepo plannerServiceRepo,
-    IPlannerTransactionProvider plannerTransactionProvider)
+    IPlannerTransactionProvider plannerTransactionProvider,
+    IExecutionReportStore executionReportStore,
+    IAresDeviceProvider deviceProvider)
   {
     _automationClient = automationClient;
     _notificationService = notificationService;
@@ -42,9 +55,13 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     _analyzerTransactionProvider = analysisTransactionProvider;
     _plannerServiceRepo = plannerServiceRepo;
     _plannerTransactionProvider = plannerTransactionProvider;
+    _executionReportStore = executionReportStore;
+    _deviceProvider = deviceProvider;
+
     PlannerAdapterInfos = [];
     AnalyzerMetrics = [];
     PlannerMetricsMap = [];
+    ExperimentExecutionStatuses = [];
 
     this.WhenAnyValue(x => x.CurrentPlannerState)
       .Subscribe(newState =>
@@ -140,6 +157,37 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     await _automationClient.SetReplanRate(new ReplanRate { ReplanRate_ = DesiredReplanRate }, null);
     var replanRateResponse = await GetCurrentReplanRate();
     DesiredReplanRate = replanRateResponse.ReplanRate;
+  }
+
+  public async Task StartCampaign()
+  {
+    var executionEligibility = await _automationClient.CheckExecutionEligibility(new Empty(), null);
+
+    if(!executionEligibility.IsEligible)
+    {
+      var notification = new AresNotification
+      {
+        NotificationSeverity = Severity.Error,
+        Title = "Campaign Could Not Be Started!",
+        Message = $"ARES failed to start the requested campaign: {executionEligibility.Error}",
+        Timestamp = DateTime.UtcNow.ToTimestamp()
+      };
+
+      _notificationService.PushNotification(notification);
+      return;
+    }
+
+    ExperimentExecutionStatuses.Clear();
+    var request = new StartCampaignRequest() { UserNotes = ExecutionNotes };
+
+    if(SelectedTags is not null)
+      request.CampaignTags.AddRange(SelectedTags);
+
+    await _automationClient.StartExecution(request, null);
+    PlannerMetricsMap.Clear();
+    AnalyzerMetrics.Clear();
+    CurrentCampaignStartTime = DateTime.UtcNow;
+    DisplayExecutionSummary = true;
   }
 
   public Task StopCampaign()
@@ -275,32 +323,41 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
   private async Task UpdatePlannerTransactions()
   {
-    if(CampaignTemplate is null || CurrentPlannerState != PlannerState.PlanningComplete)
-      return;
-    
-    var usedPlanners = CampaignTemplate.ExperimentTemplate.GetAllPlannedParameters()
-      .Select(p => p.PlanningMetadata.PlannerName)
-      .Select(_plannerServiceRepo.GetPlannerByName)
-      .Where(p => p is not null)
-      .Distinct()
-      .ToList();
-
-    foreach(var planner in usedPlanners)
+    try
     {
-      var transactionRequest = new PlannerTransactionRequestFilter 
-      { 
-        PlannerId = planner?.UniqueId, 
-        Start = CurrentCampaignStartTime.ToTimestamp(), 
-        End = DateTime.UtcNow.ToTimestamp() 
-      };
+      if(CampaignTemplate is null || CurrentPlannerState != PlannerState.PlanningComplete)
+        return;
 
-      var transactions = await _plannerTransactionProvider.GetPlanningTransactionsAsync(transactionRequest);
-      var newestTransaction = transactions.LastOrDefault();
+      var usedPlanners = CampaignTemplate.ExperimentTemplate.GetAllPlannedParameters()
+        .Select(p => p.PlanningMetadata.PlannerName)
+        .Select(_plannerServiceRepo.GetPlannerByName)
+        .Where(p => p is not null)
+        .Distinct()
+        .ToList();
 
-      if(newestTransaction is null)
-        continue;
+      foreach(var planner in usedPlanners)
+      {
 
-      OnPlannerTransactionReceived(newestTransaction, transactions.Count()); 
+        var transactionRequest = new PlannerTransactionRequestFilter
+        {
+          PlannerId = planner?.UniqueId,
+          Start = CurrentCampaignStartTime.ToTimestamp(),
+          End = DateTime.UtcNow.ToTimestamp()
+        };
+
+        var transactions = await _plannerTransactionProvider.GetPlanningTransactionsAsync(transactionRequest);
+        var newestTransaction = transactions.LastOrDefault();
+
+        if(newestTransaction is null)
+          continue;
+
+        OnPlannerTransactionReceived(newestTransaction, transactions.Count());
+      }
+    }
+
+    catch(Exception ex)
+    {
+      Console.WriteLine("Dangit man");
     }
   }
 
@@ -364,6 +421,128 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     }
   }
 
+  public void StartWatchingTelemetry()
+  {
+    _experimentSubscription = _executionReportStore.ExperimentStatusObservable
+        .Where(status => status is not null)
+        .Subscribe(
+            onNext: status => UpdateExperimentStatus(status!),
+            onError: ex => Console.WriteLine($"Telemetry Error: {ex.Message}")
+        );
+
+    _campaignStateSubscription = _executionReportStore.CampaignStatusObservable
+      .Where(status => status is not null)
+      .Select(status => new CampaignExecutionState
+      {
+        CampaignId = status!.CampaignId,
+        State = status.State,
+        AnalysisState = status.AnalysisState,
+        PlannerState = status.PlannerState
+      })
+      .Subscribe(
+        onNext: state => UpdateCampaignStatus(state!), 
+        onError: ex => Console.WriteLine($"Error Updating Campaign State: {ex.Message}"));
+
+  }
+
+  private void UpdateExperimentStatus(ExperimentExecutionStatus status)
+  {
+    var existingStatus = ExperimentExecutionStatuses.FirstOrDefault(s => s.ExperimentId == status.ExperimentId);
+
+    if(existingStatus is null)
+    {
+      ExperimentExecutionStatuses.Add(status);
+    }
+    else
+    {
+      var incomingCommands = status.GetCommandExecutionStatuses();
+      var existingCommands = existingStatus.GetCommandExecutionStatuses();
+
+      foreach(var existingCommand in existingCommands)
+      {
+        var newCommand = incomingCommands.FirstOrDefault(c => c.CommandId == existingCommand.CommandId);
+        existingCommand.State = newCommand?.State ?? ExecutionState.Undefined;
+      }
+    }
+
+    StateChanged?.Invoke();
+  }
+
+  private void UpdateCampaignStatus(CampaignExecutionState state)
+  {
+    CampaignActive = state.IsActive();
+    CampaignPaused = state.IsPaused();
+    CampaignExecutionState = state.State;
+    CurrentAnalysisState = state.AnalysisState;
+    CurrentPlannerState = state.PlannerState;
+
+    //TODO: FIX THIS!!!
+    if(CampaignExecutionState == ExecutionState.AwaitingUser)
+      _ = RequestUserConfirmation();
+  }
+
+  public Task UpdateDeviceChartA()
+  {
+    if(ChartConfigA is null)
+    {
+      ChartA = null;
+      return Task.CompletedTask;
+    }
+
+    var device = _deviceProvider.GetDevice(ChartConfigA.DeviceId);
+
+    if(device is not null)
+      ChartA = new VisualizationItemViewModel(ChartConfigA, device, OnChartOneDeleteRequested, OnChartOneUpdated);
+    
+    return Task.CompletedTask;
+  }
+
+  public Task UpdateDeviceChartB()
+  {
+    if(ChartConfigB is null)
+    {
+      ChartB = null;
+      return Task.CompletedTask;
+    }
+
+    var device = _deviceProvider.GetDevice(ChartConfigB.DeviceId);
+
+    if(device is not null)
+      ChartB = new VisualizationItemViewModel(ChartConfigB, device, OnChartTwoDeleteRequested, OnChartTwoUpdated);
+
+    return Task.CompletedTask;
+  }
+
+  private void OnChartOneDeleteRequested(string uniqueId)
+  {
+    ChartA = null;
+    ChartConfigA = null;
+  }
+
+  private void OnChartOneUpdated(string uniqueId, DeviceVisualizationConfig config)
+  {
+    ChartConfigA = config;
+    UpdateDeviceChartA();
+  }
+
+  private void OnChartTwoDeleteRequested(string uniqueId)
+  {
+    ChartB = null;
+    ChartConfigB = null;
+  }
+
+  private void OnChartTwoUpdated(string uniqueId, DeviceVisualizationConfig config)
+  {
+    ChartConfigB = config;
+    UpdateDeviceChartB();
+  }
+
+  public void Dispose()
+  {
+    _experimentSubscription?.Dispose();
+    _campaignStateSubscription?.Dispose();
+  }
+
   [Reactive]
   public partial ExperimentStopConditionResponse? CurrentStopCondition { get; set; }
   public double DesiredResult { get; set; }
@@ -393,6 +572,16 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   public Dictionary<string, List<ChartMetricPoint>> PlannerMetricsMap { get; private set; }
   [Reactive]
   public partial List<ChartMetricPoint> AnalyzerMetrics { get; private set; }
+  [Reactive]
+  public partial IList<ExperimentExecutionStatus> ExperimentExecutionStatuses { get; private set; }
+  [Reactive]
+  public partial VisualizationItemViewModel? ChartA { get; private set; }
+  [Reactive]
+  public partial DeviceVisualizationConfig? ChartConfigA { get; set; }
+  [Reactive]
+  public partial DeviceVisualizationConfig? ChartConfigB { get; set; }
+  [Reactive]
+  public partial VisualizationItemViewModel? ChartB { get; private set; }
   public uint ExperimentsToRun { get; set; }
   public string ExecutionNotes { get; set; } = string.Empty;
   public CampaignExecutionSummary? TestCampaignExecutionSummary { get; private set; }

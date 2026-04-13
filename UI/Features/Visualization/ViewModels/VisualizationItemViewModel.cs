@@ -19,7 +19,10 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
   private readonly List<ChartDataPoint> _internalBuffer = new(50);
   private readonly Action<string, DeviceVisualizationConfig> _onUpdateRequested;
 
-  public VisualizationItemViewModel(DeviceVisualizationConfig config, IAresDevice device, Action<string> onDeleteRequested, Action<string, DeviceVisualizationConfig> onUpdateRequested)
+  public VisualizationItemViewModel(DeviceVisualizationConfig config, 
+    IAresDevice device, 
+    Action<string> onDeleteRequested, 
+    Action<string, DeviceVisualizationConfig> onUpdateRequested)
   {
     _config = config;
     _device = device;

@@ -6,6 +6,7 @@
 @using Google.Protobuf.WellKnownTypes
 @using UI.Domain.Execution
 @using UI.Application.Notifications
+@using UI.Features.Execution.Components
 @using UI.Features.Execution.Planning
 @using UI.Infrastructure.Grpc
 @inject ContextMenuService ContextMenuService
@@ -14,470 +15,63 @@
 @inject Radzen.DialogService DialogService
 @implements IDisposable
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<ExecutionViewModel>
+@rendermode InteractiveServer
 
 <PageTitle>Execution</PageTitle>
 
-<div class="container gap-2 w-100 m-0" style="max-width: none; min-height: 100%">
-  <div class="row">
-    <div class="col gap-2">
-      <div>
-        <RadzenDropDown AllowClear="true" TValue="CampaignTemplateSummary" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Class="w-100"
-        Placeholder="Select..." Data="campaigns" TextProperty="CampaignName" @bind-Value=ViewModel!.SelectedTemplateSummary Change="args => ViewModel!.SelectCampaignTemplate(args)"/>
-      </div>
-
-      <div class="flex-column">
-        <div class="d-flex">
-          @if (ViewModel!.PlannerAdapterInfos.Any(p => p is not null))
-          {
-            <div class="border border-1 rounded-2 p-2 planner-display">
-              <div>Planners</div>
-              @foreach (var planner in ViewModel!.PlannerAdapterInfos.Where(info => info is not null))
-              {
-                @if(planner!.Name == "Manual Planner")
-                {
-                  <ManualPlanner />  
-                }
-
-                else
-                {
-                  <div class="d-flex flex-row">
-                    <h4 class="me-5">@planner!.Name</h4>                    
-                    @if(ViewModel!.CurrentPlannerState == PlannerState.PlanningComplete)
-                    {
-                      <RadzenIcon Icon="done" IconColor="@Colors.Success"/>
-                    }
-                    else if(ViewModel!.CurrentPlannerState == PlannerState.PlanningInProgress)
-                    {
-                      <LoadingSpinner SpinnerSize="SpinnerSize.Small"/>  
-                    }
-                    else if(ViewModel!.CurrentPlannerState == PlannerState.PlanningError)
-                    {
-                      <RadzenIcon class="filled-icon" Icon="dangerous" IconColor="@Colors.Danger" />
-                    }
-                  </div>
-                }
-              }
-            </div>
-          } 
-
-          @if(ViewModel!.AnalyzerInfo is not null && ViewModel!.AnalyzerInfo.Name != "NONE")
-          {
-            <div class="border border-1 rounded-2 p-2 analyzer-display">
-              <div>Analyzer</div>
+<RadzenSplitter Orientation="Orientation.Horizontal" style="height: 100%; border: 1px solid #444;"> 
+    <RadzenSplitterPane Size="30%" Min="20%" Max="50%">
+        <RadzenSplitter Orientation="Orientation.Vertical">
+            <div class="rounded-2 p-2 padded-item">
               <div class="d-flex flex-row">
-                <h4 class="me-5">@ViewModel!.AnalyzerInfo.Name </h4>
-
-                @if(ViewModel!.CurrentAnalysisState == AnalysisState.AnalysisComplete)
-                {
-                  <RadzenIcon Icon="done" IconColor="@Colors.Success"/>
-                }
-                else if(ViewModel!.CurrentAnalysisState == AnalysisState.AnalysisInProgress)
-                {
-                  <LoadingSpinner SpinnerSize="SpinnerSize.Small"/>  
-                }
-                else if(ViewModel!.CurrentAnalysisState == AnalysisState.AnalysisError)
-                {
-                  <RadzenIcon class="filled-icon" Icon="dangerous" IconColor="@Colors.Danger" />
-                }
+                <RadzenLabel Text="@(ViewModel!.DisplayExecutionSummary ? "Experiment Status" : "Campaign Preview")" Component="PreviewDisplayToggle" Style="font-size: larger;" />
+                <RadzenSwitch @bind-Value="ViewModel!.DisplayExecutionSummary" Name="PreviewDisplayToggle" Style="margin-left: 1rem; align-items: center" />
               </div>
             </div>
-          }
-        </div>
-      </div>
 
-      <div class="d-flex flex-column">
-        <div class="border border-1 rounded-2 p-2 padded-item">
-          <div class="d-flex flex-row">
-            <RadzenLabel Text="@(ViewModel!.DisplayExecutionSummary ? "Experiment Status" : "Campaign Preview")" Component="PreviewDisplayToggle" Style="font-size: larger;"/>
-            <RadzenSwitch @bind-Value="ViewModel!.DisplayExecutionSummary" Name="PreviewDisplayToggle" Style="margin-left: 1rem; align-items: center"/>
-          </div>
-        </div>
-
-        <!-- Campaign Execution Summary -->
-        @if (ViewModel!.DisplayExecutionSummary && (CampaignStartupStatuses.Any() || ExperimentExecutionStatuses.Any()))
-        {
-          <div class="border border-1 rounded-2 p-2 padded-item scrollable-summary">
-            @if(ExperimentExecutionStatuses.Any())
+            @if(ViewModel!.DisplayExecutionSummary)
             {
-              @for(var i = 0; i < ExperimentExecutionStatuses.Count; i++)
-              {
-                var experimentStatus = ExperimentExecutionStatuses[i];
-                var latestExperiment = i == ExperimentExecutionStatuses.Count - 1;
-                var hasStartup = ViewModel!.CampaignTemplate?.StartupTemplate.StepTemplates.Count != 0;
-                var hasCloseout = ViewModel!.CampaignTemplate?.CloseoutTemplate.StepTemplates.Count != 0;
-                var expDisplayString = hasStartup ? $"Experiment {i}" : $"Experiment {i + 1}";
-                <ul class="tree">
-                  <li>
-                    @if(i == 0 && hasStartup)
-                    {
-                      <h6>Startup Script</h6>
-                    }
-
-                    else if(hasStartup && hasCloseout && i == ViewModel!.ExperimentsToRun + 1)
-                    {
-                      <h6>Closeout Script</h6>
-                    }
-
-                    else if(!hasStartup && hasCloseout && i == ViewModel!.ExperimentsToRun)
-                    {
-                      <h6>Closeout Script</h6>
-                    }
-
-                    else
-                    {
-                      <h6>@expDisplayString</h6>
-                    }
-
-                    <ul>
-                      @foreach(var stepStatus in experimentStatus.StepExecutionStatuses)
-                      {
-                        <li>
-                          <details open="@ShouldDisplayExperimentSteps(i)">
-                            <summary>@stepStatus.StepName</summary>
-                            <ul>
-                              @foreach(var commandStatus in stepStatus.CommandExecutionStatuses)
-                              {
-                                <li>
-                                  <div>@commandStatus.DeviceName: @commandStatus.CommandName -- @commandStatus.State</div>
-                                </li>
-                              }
-                            </ul>
-                          </details>
-                        </li>
-                      }
-                    </ul>
-                  </li>
-                </ul>
-              }
+              <div class="p-3" style="overflow-y: auto; height: 100%;">
+                <ExperimentTree ViewModel="@ViewModel" />
+              </div>
             }
-          </div>
-        }
 
-        <!-- Campaign Preview -->
-        @if (!ViewModel!.DisplayExecutionSummary)
-        {
-          @if (ViewModel!.CampaignTemplate is not null)
-          {
-            <div class="d-flex flex-column">
-                <ExperimentViewer CampaignTemplate="@ViewModel!.CampaignTemplate" />
+            else
+            {
+              <div class="p-3">
+                <ExecutionControls ViewModel="@ViewModel" />
+                <hr />
+                <CampaignConfig ViewModel="@ViewModel" />
+              </div>
+            }
+        </RadzenSplitter>
+    </RadzenSplitterPane>
+
+    <RadzenSplitterPane Size="70%">
+        <div class="p-3 d-flex flex-column" style="height: 100%;">
+            <h3>Live Execution Data</h3>
+            <div style="flex-grow: 1;">
+                <ExecutionChart ViewModel="@ViewModel" />
             </div>
-          }
-        }
-
-      </div>
-    </div>
-    <div class="col-sm-4 gap-2">
-      <div class="d-flex">
-        <button class="btn btn-outline-info execution-button" disabled="@(ViewModel!.CampaignActive || ViewModel!.CampaignTemplate is null)" @onclick="StartCampaign">
-          <RadzenIcon Icon="play_arrow" />
-        </button>
-        <button class="btn btn-outline-info execution-button" disabled="@(ViewModel!.CampaignPaused || !ViewModel!.CampaignActive)" @onclick="ViewModel!.PauseCampaign">
-          <RadzenIcon Icon="pause" />
-        </button>
-        <button class="btn btn-outline-info execution-button" disabled="@(!ViewModel.CampaignPaused)" @onclick="ViewModel!.ResumeCampaign">
-          <RadzenIcon Icon="resume" />
-        </button>
-        <button class="btn btn-outline-info execution-button" disabled="@(!ViewModel!.CampaignActive)" @onclick="ViewModel!.StopCampaign">
-          <RadzenIcon Icon="stop" />
-        </button>
-      </div>
-
-      @if (ViewModel!.CurrentStopCondition is not null)
-      {
-        <div class="border border-1 rounded-2 p-2">
-          <div class="d-flex flex-column">
-            <div>
-              Condition: @GenerateStopConditionDisplayName()
-            </div>
-            <div>@ViewModel!.CurrentStopCondition.Description</div>
-            <div>Campaign will re-plan every @ViewModel!.DesiredReplanRate.ToString() experiment(s)</div>
-          </div>
         </div>
-      }
+    </RadzenSplitterPane>
 
-      <div class="d-flex flex-column padded-item">
-        <h6>Desired number of experiments</h6>
-        <input type="number" class="form-control" @bind="ViewModel!.ExperimentsToRun" />
-        <button class="btn btn-outline-info" @onclick="ViewModel!.SetExperimentsToRun">SET</button>
-      </div>
-
-      <div class="d-flex flex-column padded-item">
-        <h6>Re-Planning Rate</h6>
-        <input type="number" class="form-control" @bind="ViewModel!.DesiredReplanRate" />
-        <button class="btn btn-outline-info" @onclick="ViewModel!.SetReplanRate">SET</button>
-      </div>
-
-      <div class="d-flex flex-column padded-item">
-        <h6>Desired experiment result</h6>
-        <div class="d-flex gap-2">
-          <input type="number" class="form-control" @bind="ViewModel!.DesiredResult" />
-          <span>�</span>
-          <input type="number" class="form-control" @bind="ViewModel!.DesiredLeeway" />
-        </div>
-        <button class="btn btn-outline-info" @onclick="ViewModel!.SetDesiredAnalysis">SET</button>
-      </div>
-
-      <div class="d-flex flex-column padded-item">
-        <h6>Experiment Notes</h6>
-        <div class="d-flex gap-2">
-          <RadzenTextArea @bind-Value="ViewModel!.ExecutionNotes" Style="width: 100%" aria-label="TextArea" />  
-        </div>
-        <RadzenUpload id="executionNotesUpload" Change="@ExecutionNotesUploaded" Accept=".txt" ChooseText="Upload Notes" Style="--rz-upload-button-bar-background-color: transparent; --rz-upload-button-bar-padding: 0;"/>
-      </div>
-
-      <div class="d-flex flex-column padded-item">
-        <h6>Experiment Tags</h6>
-        <RadzenDropDown Data="ViewModel!.AvailableTags" @bind-Value="ViewModel!.SelectedTags" 
-          Multiple=true Placeholder="Select Experiment Tags" AllowClear=true Style="width: 100%;" Chips=true AllowSelectAll=false>
-          <ValueTemplate>
-            @((context.TagName as string))
-          </ValueTemplate>
-          <Template>
-            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-              @((context.TagName as string))
-              <RadzenButton Click="@(() => ViewModel!.RemoveTag((context as AresCampaignTag)))" Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" @onclick:stopPropagation=true/>
-            </div>
-          </Template>
-        </RadzenDropDown>
-
-        @* --- Section for Adding New Tags --- *@
-        <div class="d-flex align-items-center mt-2" style="width: 100%;">
-          <RadzenTextBox @bind-Value="ViewModel.NewTagName"
-          Placeholder="Add new tag"
-          Style="flex-grow: 1; margin-right: 8px;"/>
-
-          <RadzenButton Icon="add" Text="Add" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small"
-          Click="@ViewModel!.AddTag" />
-        </div>
-      </div>
-
-      <RadzenChart>   
-        @foreach(var plannerSeries in ViewModel.PlannerMetricsMap)
-        {
-          <RadzenLineSeries Data="@plannerSeries.Value"
-                            CategoryProperty="ExecutionIndex"
-                            ValueProperty="Value"
-                            Title="@($"Planner: {plannerSeries.Key}")">
-            <RadzenMarkers MarkerType="MarkerType.Circle" />
-          </RadzenLineSeries>
-        }
-
-        <RadzenLineSeries Data="@ViewModel.AnalyzerMetrics"
-                          CategoryProperty="ExecutionIndex"
-                          ValueProperty="Value"
-                          Title="Analyzer Output">
-          <RadzenMarkers MarkerType="MarkerType.Square" />
-        </RadzenLineSeries>
-    
-        <RadzenCategoryAxis>
-          <RadzenAxisTitle Text="Execution Turn" />
-        </RadzenCategoryAxis>
-
-      </RadzenChart>
-    </div>
-
-    <div class="side-drawer @(ViewModel!.CampaignExecutionState == ExecutionState.AwaitingUser ? "drawer-open" : "")">
-      <!-- Inner wrapper with fixed width prevents text wrapping during animation -->
-      <div class="drawer-content col-lg">
-        <RadzenCard Class="drawer-inner-card" Style="height: inherit">
-          <RadzenStack Gap="1rem">
-            <RadzenText TextStyle="TextStyle.H5">User Confirmation Required</RadzenText>
-
-            <RadzenAlert Severity="Severity.Info" ShowIcon="true" Variant="Variant.Flat">
-              ARES requires user approval to continue experimenting. Continue by hitting "Confirm" or play. You can also stop your experiment by hitting the stop button.
-            </RadzenAlert>
-
-            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem" Class="mt-4">
-              <RadzenButton Text="Confirm" ButtonStyle="ButtonStyle.Success" Click="@ViewModel.ResumeCampaign" />
-            </RadzenStack>
-          </RadzenStack>
-        </RadzenCard>
-      </div>
-    </div>
-  </div>
-</div>
+</RadzenSplitter>
 
 @code {
-  List<CampaignTemplateSummary> campaigns = new();
-  Task? _experimentStatusWatcher;
-  Task? _campaignStateWatcher;
-  CancellationTokenSource? _experimentStatusWatcherCancellationTokenSource;
-  CancellationTokenSource? _campaignStateWatcherCancellationTokenSource;
-  ObservableCollection<ExperimentExecutionStatus> ExperimentExecutionStatuses { get; } = new ObservableCollection<ExperimentExecutionStatus>();
-  ObservableCollection<CampaignStartupStatus> CampaignStartupStatuses { get; } = new ObservableCollection<CampaignStartupStatus>();
-  ObservableCollection<CampaignCloseoutStatus> CampaignCloseoutStatuses { get; } = new ObservableCollection<CampaignCloseoutStatus>();
-
-  private async Task CampaignSelected()
-  {
-    await ViewModel!.UpdateCurrentTemplate();
-  }
-
   protected override async Task OnInitializedAsync()
   {
+    ViewModel!.StateChanged += InvokeStateHasChanged;
     await ViewModel!.RefreshCampaigns();
     await ViewModel!.SelectCampaignTemplate(ViewModel!.CampaignTemplate);
     await ViewModel!.UpdateCurrentTemplate();
     await ViewModel!.GetAllTags();
-    campaigns = ViewModel!.CampaignTemplateSummaries.ToList();
-
-    var currentStatus = await ViewModel!.GetCampaignExecutionStatus();
-    if (currentStatus is not null)
-    {
-      foreach (var experimentStatus in currentStatus.ExperimentExecutionStatuses)
-      {
-        ExperimentExecutionStatuses.Add(experimentStatus);
-      }
-    }
-    _experimentStatusWatcherCancellationTokenSource = new CancellationTokenSource();
-    _experimentStatusWatcher = SetupExperimentWatch(_experimentStatusWatcherCancellationTokenSource.Token);
-
-    _campaignStateWatcherCancellationTokenSource = new CancellationTokenSource();
-    _campaignStateWatcher = SetupCampaignStateWatch(_campaignStateWatcherCancellationTokenSource.Token);
+    ViewModel!.StartWatchingTelemetry();
   }
 
-  protected override void Dispose(bool disposing)
+  private void InvokeStateHasChanged()
   {
-    _experimentStatusWatcherCancellationTokenSource?.Cancel();
-    _campaignStateWatcherCancellationTokenSource?.Cancel();
-    base.Dispose(disposing);
-  }
-
-  private bool ShouldDisplayExperimentSteps(int currentStatusIndex)
-  {
-    var isCurrentExperiment = currentStatusIndex == ExperimentExecutionStatuses.Count - 1;
-
-    if (!CampaignCloseoutStatuses.Any())
-      return isCurrentExperiment;
-
-    return CampaignCloseoutStatuses.Count != CampaignStartupStatuses.Count && currentStatusIndex == ExperimentExecutionStatuses.Count - 1;
-  }
-
-  private string GenerateStopConditionDisplayName()
-  {
-    if (ViewModel!.CurrentStopCondition is null)
-      return "";
-
-    if (ViewModel!.CurrentStopCondition.ActiveCondition == "NumExperimentsRun")
-      return "Number of Experiments";
-
-    else if (ViewModel!.CurrentStopCondition.ActiveCondition == "DesiredAnalysisResult")
-      return "Desired Analysis Result";
-
-    else
-      return "";
-  }
-
-  protected Task SetupCampaignStateWatch(CancellationToken token)
-  {
-    return Task.Run(async () =>
-    {
-      var stream = new LocalStream<CampaignExecutionState>();
-      _ = AutomationClient.GetCampaignExecutionStateStream(new Empty(), stream, null);
-
-      while (await stream.MoveNext(token) && !token.IsCancellationRequested)
-      {
-        var state = stream.Current;
-
-        await InvokeAsync(() =>
-        {
-          var previousState = ViewModel!.CampaignExecutionState;
-          bool changed = ViewModel!.CampaignActive != state.IsActive() ||
-                         ViewModel!.CampaignPaused != state.IsPaused() ||
-                         ViewModel!.CampaignExecutionState != state.State ||
-                         ViewModel!.CurrentAnalysisState != state.AnalysisState ||
-                         ViewModel!.CurrentPlannerState != state.PlannerState;
-
-          if (changed)
-          {
-            ViewModel!.CampaignActive = state.IsActive();
-            ViewModel!.CampaignPaused = state.IsPaused();
-            ViewModel!.CampaignExecutionState = state.State;
-            ViewModel!.CurrentAnalysisState = state.AnalysisState;
-            ViewModel!.CurrentPlannerState = state.PlannerState;
-
-            if (ViewModel!.CampaignExecutionState == ExecutionState.AwaitingUser && previousState != ExecutionState.AwaitingUser)
-            {
-              ViewModel!.RequestUserConfirmation();
-            }
-          }
-        });
-        await Task.Yield();
-      }
-    }, token);
-  }
-
-  protected Task SetupExperimentWatch(CancellationToken token)
-  {
-    return Task.Run(async () =>
-    {
-      var stream = new LocalStream<ExperimentExecutionStatus>();
-      _ = AutomationClient.GetExecutionStatusStream(new Empty(), stream, null);
-
-      while (await stream.MoveNext(token) && !token.IsCancellationRequested)
-      {
-        var status = stream.Current;
-
-        await InvokeAsync(() =>
-        {
-          var existingStatus = ExperimentExecutionStatuses.FirstOrDefault(s => s.ExperimentId == status.ExperimentId);
-
-          if (existingStatus is null)
-          {
-            ExperimentExecutionStatuses.Add(status);
-          }
-          else
-          {
-            var incomingCommands = status.GetCommandExecutionStatuses();
-            var existingCommands = existingStatus.GetCommandExecutionStatuses();
-
-            foreach (var existingCommand in existingCommands)
-            {
-              var newCommand = incomingCommands.FirstOrDefault(c => c.CommandId == existingCommand.CommandId);
-              existingCommand.State = newCommand?.State ?? ExecutionState.Undefined;
-            }
-          }
-
-          StateHasChanged();
-        });
-
-        await Task.Yield();
-      }
-    }, token);
-  }
-
-  protected async void StartCampaign()
-  {
-    var executionEligibility = await AutomationClient.CheckExecutionEligibility(new Empty(), null);
-
-    if (!executionEligibility.IsEligible)
-    {
-      NotificationService.Error(executionEligibility.Error);
-      return;
-    }
-
-    ExperimentExecutionStatuses.Clear();
-    ViewModel!.CurrentCampaignStartTime = DateTime.UtcNow;
-    var request = new StartCampaignRequest() { UserNotes = ViewModel!.ExecutionNotes};
-    if(ViewModel!.SelectedTags is not null)
-      request.CampaignTags.AddRange(ViewModel!.SelectedTags);
-    await AutomationClient.StartExecution(request, null);
-    ViewModel!.DisplayExecutionSummary = true;
-  }
-
-  System.Type? GetTypeFromString(string? type)
-  {
-    return type is null ? null : System.Type.GetType($"UI.Features.Execution.Planning.{type}");
-  }
-
-  private async Task ExecutionNotesUploaded(UploadChangeEventArgs args)
-  {
-    FileInfo? file = args.Files?.FirstOrDefault();
-    if(file is null)
-      return;
-
-    const long maxFileSize = 100;
-    using var stream = file.OpenReadStream(maxFileSize);
-    await ViewModel!.ExecutionNotesUploaded(stream);
+    InvokeAsync(StateHasChanged);
   }
 }
 

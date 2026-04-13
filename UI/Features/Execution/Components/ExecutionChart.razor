@@ -1,0 +1,129 @@
+﻿@using Ares.Datamodel.Visualizing.Local
+@using UI.Features.Visualization.ViewModels
+@using UI.Features.Visualization.Views
+@rendermode InteractiveServer
+
+@inject DialogService DialogService
+
+<RadzenStack Orientation="Orientation.Vertical" Gap="1rem" Style="width: 100%; height: 100%;">
+    
+  <RadzenCard Variant="Variant.Outlined" Style="height: 50%">
+    <RadzenText TextStyle="TextStyle.H6" Class="rz-mb-4">Planner + Analyzer Data</RadzenText>
+        
+    <RadzenChart Style="height: 92%">
+      @if(ViewModel?.PlannerMetricsMap != null)
+      {
+        @foreach(var plannerSeries in ViewModel.PlannerMetricsMap)
+        {
+          <RadzenLineSeries Data="@plannerSeries.Value"
+                            CategoryProperty="ExecutionIndex"
+                            ValueProperty="Value"
+                            Title="@($"Planner: {plannerSeries.Key}")">
+            <RadzenMarkers MarkerType="MarkerType.Circle" />
+          </RadzenLineSeries>
+        }
+      }
+
+      @if(ViewModel?.AnalyzerMetrics != null)
+      {
+        <RadzenLineSeries Data="@ViewModel.AnalyzerMetrics"
+                          CategoryProperty="ExecutionIndex"
+                          ValueProperty="Value"
+                          Title="Analyzer Output">
+          <RadzenMarkers MarkerType="MarkerType.Square" />
+        </RadzenLineSeries>
+      }
+            
+      <RadzenCategoryAxis Step="1">
+        <RadzenAxisTitle Text="Experiment Number" />
+      </RadzenCategoryAxis>
+    </RadzenChart>
+  </RadzenCard>
+
+  <RadzenCard Variant="Variant.Outlined" Style="height: 45%">
+        
+    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Class="rz-mb-4">
+      <RadzenText TextStyle="TextStyle.H6" Style="margin: 0;">Device Monitoring</RadzenText>
+            
+      <RadzenSelectBar @bind-Value="ViewMode" Size="ButtonSize.Small">
+        <Items>
+          <RadzenSelectBarItem Value="1" Text="Single View" Icon="crop_square" />
+          <RadzenSelectBarItem Value="2" Text="Dual View" Icon="view_column" />
+        </Items>
+      </RadzenSelectBar>
+    </RadzenStack>
+
+    <RadzenRow Gap="1rem" Style="align-content: center">
+      <RadzenColumn Size="12" SizeMD="@(ViewMode == 1 ? 12 : 6)" Style="min-height: 300px;">
+        @if(ViewModel!.ChartA is not null)
+        {
+          <VisualizationItem ViewModel="ViewModel!.ChartA" />
+        }
+        else
+        {
+          <RadzenCard Variant="Variant.Outlined" Style="height: 300px; display: flex; align-items: center; justify-content: center; border-style: dashed;">
+            <RadzenStack AlignItems="AlignItems.Center" Gap="1rem">
+              <RadzenText TextStyle="TextStyle.Body1" Style="color: var(--rz-text-disabled-color);">Empty Chart Slot</RadzenText>
+              <RadzenButton Icon="add" Text="Add Chart" ButtonStyle="ButtonStyle.Light" Click="@(() => OpenChartSelector("A"))" />
+            </RadzenStack>
+          </RadzenCard>
+        }
+      </RadzenColumn>
+
+      @if(ViewMode == 2)
+      {
+        <RadzenColumn Size="12" SizeMD="6" Style="min-height: 300px;">
+          @if(ViewModel!.ChartB is not null)
+          {
+            <VisualizationItem ViewModel="ViewModel!.ChartB" />
+          }
+          else
+          {
+            <RadzenCard Variant="Variant.Outlined" Style="height: 300px; display: flex; align-items: center; justify-content: center; border-style: dashed;">
+              <RadzenStack AlignItems="AlignItems.Center" Gap="1rem">
+                <RadzenText TextStyle="TextStyle.Body1" Style="color: var(--rz-text-disabled-color);">Empty Chart Slot</RadzenText>
+                <RadzenButton Icon="add" Text="Add Chart" ButtonStyle="ButtonStyle.Light" Click="@(() => OpenChartSelector("B"))" />
+              </RadzenStack>
+            </RadzenCard>
+          }
+        </RadzenColumn>
+      }
+
+    </RadzenRow>
+  </RadzenCard>
+
+</RadzenStack>
+
+@code {
+  [Parameter]
+  public ExecutionViewModel? ViewModel { get; set; }
+  public int ViewMode { get; set; } = 1;
+
+  private async Task OpenChartSelector(string slotId)
+  {
+    var result = await DialogService.OpenAsync<AddChartDialog>("Configure Visualization", new Dictionary<string, object?>(), new DialogOptions()
+      {
+        Width = "900px",
+        Height = "850px",
+        Resizable = true,
+        Draggable = true
+      });
+
+    if(result is not null && result is DeviceVisualizationConfig dvc)
+    {
+      if(slotId == "A")
+      {
+        ViewModel!.ChartConfigA = dvc;
+        await ViewModel!.UpdateDeviceChartA();
+      }
+
+      if(slotId == "B")
+      {
+        ViewModel!.ChartConfigB = dvc;
+        await ViewModel!.UpdateDeviceChartB();
+      }
+    }
+
+    StateHasChanged();
+  }
+}
