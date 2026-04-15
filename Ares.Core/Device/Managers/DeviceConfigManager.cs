@@ -42,11 +42,17 @@ public class DeviceConfigManager : IDeviceConfigManager
 
   public async Task Add(DeviceConfig config)
   {
-    //Initialize important ID's
+    //Ensure No Serial ID Conflicts First
+    if(config.SerialInfo.HasSerialId)
+    {
+      var matchingDeviceTypes = _configRepo.Where(c => c.DriverId == config.DriverId);
+      if(matchingDeviceTypes.Any(c => c.SerialInfo.SerialId == config.SerialInfo.SerialId))
+        throw new InvalidOperationException("Tried to create a new device, but the device was requested with a Serial ID already assigned to another device of the same type."); 
+    }
+
     config.UniqueId = Guid.NewGuid().ToString();
     config.DeviceId = Guid.NewGuid().ToString();
 
-    //Add to storage mechanisms
     await using var context = _dbContextFactory.CreateDbContext();
     var existingDeviceConfig = await context.DeviceConfigs.FirstOrDefaultAsync(existingConfig => existingConfig.UniqueId == config.UniqueId);
     if(existingDeviceConfig is not null)

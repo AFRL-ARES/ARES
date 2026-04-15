@@ -61,13 +61,12 @@ public partial class PluginDeviceConfigEditViewModel : ReactiveObject
         SelectedBaudRate = serialSettings.DefaultBaudRate;
       }
 
+      RequiresId = serialSettings.RequiresUnitId;
+      UnitIdHint = serialSettings.UnitIdValidationHint;
+      IdRegex = serialSettings.UnitIdRegex ?? "[\\s\\S]";
+
       if(serialSettings.RequiresUnitId && _originalConfig.SerialInfo is not null)
-      {
-        RequiresId = true;
-        UnitIdHint = serialSettings.UnitIdValidationHint;
-        IdRegex = serialSettings.UnitIdRegex ?? "[\\s\\S]";
         SerialUnitId = _originalConfig.SerialInfo.HasSerialId ? _originalConfig.SerialInfo.SerialId : string.Empty;
-      }
     }  
   }
 
