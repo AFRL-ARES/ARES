@@ -42,12 +42,24 @@ public class DeviceConfigManager : IDeviceConfigManager
 
   public async Task Add(DeviceConfig config)
   {
-    //Ensure No Serial ID Conflicts First
-    if(config.SerialInfo.HasSerialId)
+    if(config.SerialInfo is not null)
     {
-      var matchingDeviceTypes = _configRepo.Where(c => c.DriverId == config.DriverId);
-      if(matchingDeviceTypes.Any(c => c.SerialInfo.SerialId == config.SerialInfo.SerialId))
-        throw new InvalidOperationException("Tried to create a new device, but the device was requested with a Serial ID already assigned to another device of the same type."); 
+      //Check for other devices using this serial port. If there are any, they should use a matching driver
+      var otherDevicesUsingSerialPorts = _configRepo.Where(c => c.SerialInfo is not null && c.SerialInfo.PortName == config.SerialInfo.PortName && c.DriverId != config.DriverId);
+
+      if(otherDevicesUsingSerialPorts.Any())
+      {
+        var device = otherDevicesUsingSerialPorts.First();
+        throw new InvalidOperationException($"Tried to create a new device, but the serial port {config.SerialInfo.PortName} is already in use by another device, specifically {device.DeviceName}.");
+      }
+
+      //Ensure No Serial ID Conflicts First
+      if(config.SerialInfo.HasSerialId)
+      {
+        var matchingDeviceTypes = _configRepo.Where(c => c.DriverId == config.DriverId);
+        if(matchingDeviceTypes.Any(c => c.SerialInfo.SerialId == config.SerialInfo.SerialId))
+          throw new InvalidOperationException("Tried to create a new device, but the device was requested with a Serial ID already assigned to another device of the same type.");
+      }
     }
 
     config.UniqueId = Guid.NewGuid().ToString();
