@@ -108,7 +108,7 @@ public class DeviceManager : IDeviceManager
         SerialConnectionInfo = config.SerialInfo
       };
 
-      var device = (IAresDevice)ActivatorUtilities.CreateInstance(_serviceProvider, driver.DriverType, [connectionInfo]);
+      var device = (IAresDevice)ActivatorUtilities.CreateInstance(_serviceProvider, driver.DriverType, [connectionInfo, logger]);
 
       if(config.SerialInfo is not null)
       {
