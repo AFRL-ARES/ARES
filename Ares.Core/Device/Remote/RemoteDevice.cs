@@ -9,6 +9,7 @@ using Ares.Device;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Grpc.Net.Client;
+using Microsoft.Extensions.Logging;
 
 namespace Ares.Core.Device.Remote;
 
@@ -18,17 +19,19 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
   private DeviceCommandDescriptor[] _commands = [];
   private readonly BehaviorSubject<AresStruct> _stateSubject = new(new AresStruct());
   private CancellationTokenSource _stateStreamCts = new();
+  private readonly ILogger<RemoteDevice> _logger;
   private DevicePollingSettings _pollingSettings = new()
   {
     IntervalMs = 1000,
     PollingType = PollingType.Interval
   };
 
-  public RemoteDevice(RemoteConnectionInfo remoteInfo) : base(remoteInfo.ConnectionInfo)
+  public RemoteDevice(RemoteConnectionInfo remoteInfo, ILogger<RemoteDevice> logger) : base(remoteInfo.ConnectionInfo)
   {
     _channel = GrpcChannel.ForAddress(remoteInfo.Address);
     UniqueId = remoteInfo.ConnectionInfo.DeviceId;
     Address = new Uri(remoteInfo.Address);
+    _logger = logger;
   }
 
   public Uri Address { get; }
@@ -86,21 +89,33 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     }
     catch(RpcException e) when(e.StatusCode == StatusCode.Cancelled)
     {
-      Console.WriteLine($"Exception In State Stream {e.Message}");
+      var message = $"Exception In State Stream for Remote Device {Name}: {e.Message}";
+      Console.WriteLine(message);
+      _logger.LogError(message);
     }
     catch(RpcException e)
     {
       Status = new DeviceOperationalStatus
-      { OperationalState = OperationalState.Inactive, Message = $"State stream disconnected: {e.Message}" };
+      { 
+        OperationalState = OperationalState.Inactive, 
+        Message = $"State stream disconnected: {e.Message}" 
+      };
 
-      Console.WriteLine($"Exception In State Stream {e.Message}");
+      var rpcMessage = $"Exception In State Stream for Remote Device {Name}: {e.Message}";
+      Console.WriteLine(rpcMessage);
+      _logger.LogError(rpcMessage);
     }
     catch(Exception e)
     {
       Status = new DeviceOperationalStatus
-      { OperationalState = OperationalState.Error, Message = $"Unspecified error occurred while fetching device state: {e.Message}" };
+      { 
+        OperationalState = OperationalState.Error, 
+        Message = $"Unspecified error occurred while fetching device state: {e.Message}" 
+      };
 
-      Console.WriteLine($"Exception In State Stream {e.Message}");
+      var exception = $"Exception In State Stream for Remote Device {Name}: {e.Message}";
+      Console.WriteLine(exception);
+      _logger.LogError(exception);
     }
   }
 
@@ -120,7 +135,13 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     }
     catch(RpcException e)
     {
-      Status = new DeviceOperationalStatus { OperationalState = OperationalState.Inactive, Message = $"Unable to connect to remote device: {e.Message}" };
+      Status = new DeviceOperationalStatus 
+      { 
+        OperationalState = OperationalState.Inactive, 
+        Message = $"Unable to connect to remote device: {e.Message}" 
+      };
+
+      _logger.LogWarning("Unable to connect to remote device {device_name}: {error}", Name, e.Message);
     }
   }
 
@@ -133,9 +154,15 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
       var cmdResponse = await client.GetCommandsAsync(new Empty(), callOpts);
       _commands = [.. cmdResponse.Commands];
     }
-    catch(RpcException)
+    catch(RpcException ex)
     {
-      Status = new DeviceOperationalStatus { OperationalState = OperationalState.Inactive, Message = $"Failed to fetch commands. Possible connection issue." };
+      Status = new DeviceOperationalStatus 
+      { 
+        OperationalState = OperationalState.Inactive, 
+        Message = $"Failed to fetch commands. Possible connection issue." 
+      };
+
+      _logger.LogWarning("Unable to fetch commands. Possible connection issues with remote device {device_name}: {error}", Name, ex.Message);
     }
   }
 
@@ -147,9 +174,15 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
       var response = await client.GetStateSchemaAsync(new Empty());
       StateSchema = response.Schema;
     }
-    catch(RpcException)
+    catch(RpcException ex)
     {
-      Status = new DeviceOperationalStatus { OperationalState = OperationalState.Inactive, Message = $"Failed to fetch state schema. Possible connection issue." };
+      Status = new DeviceOperationalStatus 
+      { 
+        OperationalState = OperationalState.Inactive, 
+        Message = $"Failed to fetch state schema. Possible connection issue." 
+      };
+
+      _logger.LogWarning("Failed to fetch state schema. Possible connection issues with remote device {device_name}: {error}", Name, ex.Message);
     }
   }
 
@@ -164,15 +197,22 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
       Version = info.Version;
       Description = info.Description;
     }
-    catch(RpcException)
+    catch(RpcException ex)
     {
-      Status = new DeviceOperationalStatus { OperationalState = OperationalState.Inactive, Message = $"Failed to fetch info. Possible connection issue." };
+      Status = new DeviceOperationalStatus 
+      { 
+        OperationalState = OperationalState.Inactive, 
+        Message = $"Failed to fetch info. Possible connection issue." 
+      };
+
+      _logger.LogWarning("Failed to fetch device info. Possible connection issues with remote device {device_name}: {exception}", Name, ex.Message);
     }
   }
 
   public override Task EnterSafeMode(CancellationToken ct)
   {
     var client = GetClient();
+    _logger.LogCritical("Remote Device {device_name} is entering safe mode!", Name);
     return client.EnterSafeModeAsync(new Empty()).ResponseAsync;
   }
 
@@ -209,7 +249,11 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     }
     catch(RpcException)
     {
-      Status = new DeviceOperationalStatus { OperationalState = OperationalState.Inactive, Message = $"Failed to fetch settings. Possible connection issue." };
+      Status = new DeviceOperationalStatus 
+      { 
+        OperationalState = OperationalState.Inactive, 
+        Message = $"Failed to fetch settings. Possible connection issue." 
+      };
     }
 
     try
@@ -219,30 +263,29 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
       if(response.Settings is not null)
         await UpdateSettings(response.Settings);
     }
-    catch(RpcException)
+    catch(RpcException ex)
     {
+      _logger.LogWarning("Failed to fetch current settings for remote device {device_name}: {error}", Name, ex.Message);
     }
 
     var newSettings = SettingSchema.Fields.Where(entry => !Settings.ContainsKey(entry.Key)).ToArray();
     var removedSettings = Settings.Where(entry => !SettingSchema.Fields.ContainsKey(entry.Key)).ToArray();
 
     foreach(var removedSetting in removedSettings)
-    {
       Settings.Remove(removedSetting.Key, out _);
-    }
 
     foreach(var newSetting in newSettings)
     {
       if(newSetting.Value.Type == AresDataType.String)
-      {
         Settings[newSetting.Key] = AresValueHelper.CreateDefault(newSetting.Value.Type, newSetting.Value.StringChoices?.Strings);
-      }
+
       else if(newSetting.Value.Type == AresDataType.Number)
       {
         Settings[newSetting.Key] = AresValueHelper.CreateDefault(
           newSetting.Value.Type,
           newSetting.Value.NumberChoices?.Numbers);
       }
+
       else
       {
         Settings[newSetting.Key] = AresValueHelper.CreateDefault(newSetting.Value.Type);
@@ -266,9 +309,7 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     {
       var newValue = settings.Fields.GetValueOrDefault(setting.Key);
       if(newValue is null)
-      {
         continue;
-      }
 
       Settings[setting.Key] = newValue;
     }
@@ -312,9 +353,15 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
       _commands = [.. cmdResponse.Commands];
       return _commands.ToList();
     }
-    catch(RpcException)
+    catch(RpcException ex)
     {
-      Status = new DeviceOperationalStatus { OperationalState = OperationalState.Inactive, Message = $"Failed to fetch commands. Possible connection issue." };
+      Status = new DeviceOperationalStatus
+      {
+        OperationalState = OperationalState.Inactive,
+        Message = $"Failed to fetch commands. Possible connection issue."
+      };
+
+      _logger.LogWarning("Failed to fetch commands for remote device {device_name}: {error}", Name, ex.Message);
       return [];
     }
   }
