@@ -422,7 +422,14 @@ public class CampaignExecutor : ICampaignExecutor
           SystemName = "ARES OS",
           ExperimentStartTime = DateTime.UtcNow.ToUniversalTime().ToTimestamp()
         };
-        var resolveSuccess = await _planningHelper.TryResolveParameters(Template.PlannerAllocations, metadata, experimentTemplate.GetAllPlannedParameters(), analyses, previousExperiments, cancellationToken);
+
+        var resolveSuccess = await _planningHelper.TryResolveParameters(Template.PlannerAllocations, 
+          metadata, 
+          experimentTemplate.GetAllPlannedParameters(), 
+          analyses, 
+          previousExperiments, 
+          cancellationToken);
+
         if(!resolveSuccess)
         {
           Status.PlannerState = PlannerState.PlanningError;

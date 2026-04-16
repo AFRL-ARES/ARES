@@ -1,6 +1,8 @@
 using Ares.Core.CoreDevice;
 using Ares.Core.Device.Providers;
 using Ares.Core.Device.Remote;
+using Ares.Core.Device.Sila;
+using Ares.Device;
 using Ares.Toolkit.Device.UI;
 using DynamicData;
 using DynamicData.PLinq;
@@ -34,7 +36,7 @@ namespace UI.Application.Devices.Repos
     public void Initialize()
     {
       _deviceProvider.Connect()
-        .Filter(d => d is not RemoteDevice && d is not AresCoreDevice)
+        .Filter(IsPluginDevice)
         .Transform(_factory.CreateUnitControlViewModel)
         .DisposeMany()
         .PopulateInto(_viewModelCache)
@@ -46,6 +48,9 @@ namespace UI.Application.Devices.Repos
         .PopulateInto (_viewModelCache)
         .DisposeWith(_cleanup);
     }
+
+    private bool IsPluginDevice(IAresDevice device)
+      => device is not RemoteDevice && device is not AresCoreDevice && device is not SilaDevice;
 
     public IObservable<IChangeSet<IDeviceUnitControlViewModel>> Connect(Func<IDeviceUnitControlViewModel, bool>? predicate = null)
         => _viewModelCache.Connect().Filter(predicate ?? (_ => true)).RemoveKey();

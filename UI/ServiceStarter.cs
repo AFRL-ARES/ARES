@@ -3,6 +3,7 @@ using Ares.Core.Device.Managers;
 using Ares.Core.Device.Plugins.Drivers;
 using Ares.Core.Device.Plugins.Drivers.Loading;
 using Ares.Core.Device.Remote;
+using Ares.Core.Device.Sila;
 using Ares.Core.Device.State.Logging;
 using Ares.Core.Planning;
 using UI.Application.Devices.Repos;
@@ -28,6 +29,7 @@ public class ServiceStarter : BackgroundService
   private readonly StateLoggerManager _stateLoggerManager;
   private readonly IConfiguration _configuration;
   private readonly StartupStateTracker _tracker;
+  private readonly SilaClient _silaClient;
 
   private readonly string _dataPath;
   private readonly string _resultsPath;
@@ -49,7 +51,8 @@ public class ServiceStarter : BackgroundService
     IDeviceControlViewModelRepo deviceControlViewModelRepo,
     DeviceAdapterManager deviceAdapterManager,
     StateLoggerManager stateLoggerManager,
-    StartupStateTracker tracker)
+    StartupStateTracker tracker,
+    SilaClient silaClient)
   {
     _notificationReceivingService = notificationReceivingService;
     _deviceControlViewModelRepo = deviceControlViewModelRepo;
@@ -65,6 +68,7 @@ public class ServiceStarter : BackgroundService
     _deviceConfigManager = deviceConfigManager;
     _driverDbManager = driverDbManager;
     _tracker = tracker;
+    _silaClient = silaClient;
 
     _dataPath = _configuration.Get<AppSettings>()?.AresDataPath ?? "";
     _resultsPath = Path.Combine(_dataPath, AppSettings.ResultsFolder);
@@ -85,6 +89,7 @@ public class ServiceStarter : BackgroundService
       _deviceManager.Initialize();
       _deviceAdapterManager.Activate();
       await _deviceConfigManager.LoadConfigs();
+      _silaClient.Init();
       //It's important that we run this last. The archive serves as our bridge to update replaced drivers.
       //If we overwrite it too early, our archive wipes out the references to the deleted drivers making
       //it impossible to migrate devices to updated drivers.

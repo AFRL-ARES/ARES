@@ -32,7 +32,7 @@ public partial class AresScriptingService : Ares.Services.AresScriptingService.A
     ScriptExecutionRequest request,
     [EnumeratorCancellation] CancellationToken cancellationToken = default)
   {
-    var channel = Channel.CreateBounded<CoreScriptExecutionEvent>(new BoundedChannelOptions(100));
+    var channel = System.Threading.Channels.Channel.CreateBounded<CoreScriptExecutionEvent>(new BoundedChannelOptions(100));
     var env = _environmentBuilder.Build();
     var runner = new ScriptRunner(env);
     var subscriptions = new CompositeDisposable
@@ -85,7 +85,7 @@ public partial class AresScriptingService : Ares.Services.AresScriptingService.A
 
   public override async Task ExecuteScript(ScriptExecutionRequest request, IServerStreamWriter<GrpcScriptExecutionEvent> responseStream, ServerCallContext context)
   {
-    var channel = Channel.CreateBounded<GrpcScriptExecutionEvent>(new BoundedChannelOptions(100));
+    var channel = System.Threading.Channels.Channel.CreateBounded<GrpcScriptExecutionEvent>(new BoundedChannelOptions(100));
     var env = _environmentBuilder.Build();
     var runner = new ScriptRunner(env);
     var subscriptions = new CompositeDisposable

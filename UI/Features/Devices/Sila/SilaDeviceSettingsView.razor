@@ -1,0 +1,22 @@
+﻿@using System.Reactive.Linq
+@using System.Reactive.Threading.Tasks
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<SilaDeviceSettingsViewModel>
+@inject DialogService DialogService
+
+<DeviceSettingsContainer 
+  EditCallback="null"
+  SettingsCallback="null"
+  RemoveCallback="null"
+  ShowDeviceInfoCallback="null"
+  Name="@ViewModel!.Name" 
+  DeviceOperationalStatusGetter="@ViewModel!.GetOperationalStatus">
+  <div style="display: flex; flex-direction: column">
+    <span>Address: Who Knows</span>
+    <span>Type: @(ViewModel.Device?.Type ?? string.Empty)</span>
+    <span>Version: @(ViewModel.Device?.Version ?? string.Empty)</span>
+    <span>@ViewModel.Description</span>
+  </div>
+</DeviceSettingsContainer>
+
+@code {
+}

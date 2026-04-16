@@ -7,6 +7,7 @@
 <div class="d-flex" style="min-width: 15%"> 
   <div class="overflow-auto">
     <nav class="nav nav-pills d-flex flex-column flex-sm-column">
+      <NavLink Match="NavLinkMatch.All" class="nav-link flex-sm-fill mt-2" href="settings/device/sila">Sila</NavLink>
       <NavLink Match="NavLinkMatch.All" class="nav-link flex-sm-fill mt-2" href="settings/device/remote">Remote</NavLink>
       <hr />
       @foreach (var driver in DriverRepository.GetAllDeviceDrivers())

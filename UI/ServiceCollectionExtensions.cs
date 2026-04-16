@@ -25,6 +25,7 @@ using UI.Features.CampaignEdit.ViewModels;
 using UI.Features.Devices;
 using UI.Features.Devices.Plugin;
 using UI.Features.Devices.Remote.Factory;
+using UI.Features.Devices.Sila;
 using UI.Features.DeviceStateExport;
 using UI.Features.DeviceStateLogging;
 using UI.Features.DeviceStateLogging.Settings;
@@ -119,6 +120,7 @@ internal static class ServiceCollectionExtensions
     services.AddTransient<PlannerSettingsListViewModel>();
     services.AddTransient<RemoteDeviceSettingsListViewModel>();
     services.AddTransient<PluginDeviceSettingsListViewModel>();
+    services.AddTransient<SilaDeviceSettingsListViewModel>();
 
     //Other View Models
     services.AddTransient<DeviceStatesViewModel>();

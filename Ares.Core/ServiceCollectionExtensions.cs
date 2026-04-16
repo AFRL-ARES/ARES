@@ -23,6 +23,7 @@ using Ares.Core.Device.Providers;
 using Ares.Core.Resources;
 using Ares.Core.Device.Plugins.Drivers.Loading;
 using Ares.Core.Device.Plugins.Drivers;
+using Ares.Core.Device.Sila;
 
 namespace Ares.Core;
 
@@ -70,6 +71,7 @@ public static class ServiceCollectionExtensions
     services.BindStartConditions();
     services.BindStateLogging();
     services.BindProviders();
+    services.BindSilaComponents();
   }
 
   private static void BindStateLogging(this IServiceCollection services)
@@ -91,6 +93,12 @@ public static class ServiceCollectionExtensions
     services.AddTransient<IStartCondition, GoodAnalyzerForExperimentOutputCondition>();
     services.AddTransient<IStartCondition, RequiredDeviceInterpretersStartCondition>();
     services.AddTransient<IStartCondition, AssignedPlannersActiveStartCondition>();
+  }
+
+  private static void BindSilaComponents(this IServiceCollection services)
+  {
+    services.AddSingleton<SilaClient>();
+    services.AddSingleton<ISilaDeviceManager, SilaDeviceManager>();
   }
 
   private static void BindComposers(this IServiceCollection services)

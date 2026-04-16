@@ -23,7 +23,7 @@
   </ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="ARES.Datamodel" Version="0.20.1" />
+		<PackageReference Include="ARES.Datamodel" Version="0.20.3-beta.2" />
 		<PackageReference Include="Ares.Toolkit.Device" Version="0.1.0" />
 	  <PackageReference Include="CsvHelper" Version="33.1.0" />
 	  <PackageReference Include="DynamicData" Version="9.4.31" />
@@ -33,6 +33,9 @@
 	  <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.4" />
 	  <PackageReference Include="Protobuf.System.Text.Json" Version="1.4.1" />
 	  <PackageReference Include="System.ServiceModel.Primitives" Version="10.0.652802" />
+	  <PackageReference Include="Tecan.Sila2" Version="4.4.3" />
+	  <PackageReference Include="Tecan.Sila2.Client" Version="4.4.3" />
+	  <PackageReference Include="Tecan.Sila2.DynamicClient" Version="4.4.3" />
 	  <PackageReference Include="UnitsNet" Version="5.75.0" />
 	  <PackageReference Include="YamlDotNet" Version="16.3.0" />
 	</ItemGroup>

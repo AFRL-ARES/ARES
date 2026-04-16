@@ -1,0 +1,39 @@
+﻿@page "/settings/device/sila"
+@layout DeviceSettingsLayout
+@inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<SilaDeviceSettingsListViewModel>
+
+@inject DialogService DialogService
+
+@if(ViewModel!.IsLoading)
+{
+  <LoadingSpinner />
+}
+
+else
+{
+  <div class="d-flex flex-column">
+    @foreach (var vm in ViewModel!.SettingsViewModels)
+    {
+      <div class="m-2">
+        <SilaDeviceSettingsView ViewModel="vm"/>
+      </div>
+    }
+
+    <button class="m-2 align-self-end btn btn-outline-light" disabled="@ViewModel!.IsLoading" @onclick="RefreshDeviceClick">
+      <RadzenIcon Icon="refresh" />
+    </button>
+  </div>
+}
+
+@code {
+	private async Task RefreshDeviceClick()
+	{
+		await ViewModel!.SearchForSilaDevices();
+	}
+
+	protected override async Task OnInitializedAsync()
+	{
+    await ViewModel!.UpdateAvailableDevices();
+		await base.OnInitializedAsync();
+	}
+}

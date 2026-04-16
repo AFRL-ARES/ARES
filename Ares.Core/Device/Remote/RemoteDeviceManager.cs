@@ -20,7 +20,13 @@ internal class RemoteDeviceManager(
 
   public async Task<RemoteDevice> CreateDevice(string name, string url)
   {
-    var config = new RemoteDeviceConfig { UniqueId = Guid.NewGuid().ToString(), Name = name, Url = url };
+    var config = new RemoteDeviceConfig 
+    { 
+      UniqueId = Guid.NewGuid().ToString(), 
+      Name = name, 
+      Url = url 
+    };
+
     var device = ConfigToDevice(config);
     _deviceRepo.AddOrUpdate(device);
 

@@ -38,6 +38,7 @@ public class CoreDatabaseContext : DbContext
   public DbSet<Parameter> Parameters => Set<Parameter>();
   public DbSet<DeviceLoggingSettings> DeviceLoggingSettings => Set<DeviceLoggingSettings>();
   public DbSet<DeviceState> DeviceStates => Set<DeviceState>();
+  public DbSet<SilaDeviceConfig> SilaConfigs => Set<SilaDeviceConfig>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
