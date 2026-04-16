@@ -5,9 +5,6 @@ using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Templates;
 using AresScript;
 using AresScript.Environment;
-using AresScript.ScriptAnalysis;
-using AresScript.Symbols;
-using Google.Protobuf.WellKnownTypes;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 
@@ -59,8 +56,7 @@ public class ExperimentExecutor
 
       var completedExperiment = await PopulateExperimentSummary(environment);
       var endTime = DateTime.UtcNow;
-      var stepSummaries = new[] { CreateScriptStepSummary(startTime, endTime, true, null) };
-      return ExecutorSummaryHelpers.CreateExperimentExecutionSummary(completedExperiment, startTime, endTime, stepSummaries);
+      return ExecutorSummaryHelpers.CreateExperimentExecutionSummary(completedExperiment, startTime, endTime);
     }
     catch(Exception ex)
     {
@@ -68,8 +64,7 @@ public class ExperimentExecutor
 
       var completedExperiment = await PopulateExperimentSummary(environment, ex);
       var endTime = DateTime.UtcNow;
-      var stepSummaries = new[] { CreateScriptStepSummary(startTime, endTime, false, ex) };
-      return ExecutorSummaryHelpers.CreateExperimentExecutionSummary(completedExperiment, startTime, endTime, stepSummaries);
+      return ExecutorSummaryHelpers.CreateExperimentExecutionSummary(completedExperiment, startTime, endTime);
     }
   }
 
@@ -113,44 +108,6 @@ public class ExperimentExecutor
     environment.AddSystemFunction(ExperimentSymbolCreator.CreateStop(tokenSource));
 
     return environment;
-  }
-
-  private StepExecutionSummary CreateScriptStepSummary(DateTime startTime, DateTime endTime, bool success, Exception? error)
-  {
-    var commandSummary = new CommandExecutionSummary
-    {
-      UniqueId = Guid.NewGuid().ToString(),
-      CommandId = Template.UniqueId,
-      CommandName = string.IsNullOrWhiteSpace(Template.Name) ? "experiment_script" : Template.Name,
-      CommandDescription = "ARES experiment script execution",
-      ExecutionInfo = CreateExecutionInfo(startTime, endTime),
-      Result = new CommandResult
-      {
-        UniqueId = Guid.NewGuid().ToString(),
-        Success = success,
-        Error = error?.Message ?? string.Empty
-      }
-    };
-
-    return new StepExecutionSummary
-    {
-      UniqueId = Guid.NewGuid().ToString(),
-      StepId = Template.UniqueId,
-      ExecutionInfo = CreateExecutionInfo(startTime, endTime),
-      CommandSummaries = { commandSummary }
-    };
-  }
-
-  private static ExecutionInfo CreateExecutionInfo(DateTime startTime, DateTime endTime)
-  {
-    return new ExecutionInfo
-    {
-      UniqueId = Guid.NewGuid().ToString(),
-      TimeStarted = Timestamp.FromDateTime(startTime.ToUniversalTime()),
-      TimeFinished = Timestamp.FromDateTime(endTime.ToUniversalTime()),
-      Timezone = TimeZoneInfo.Local.DisplayName,
-      LocaltimeOffset = DateTimeOffset.Now.Offset.ToString()
-    };
   }
 
   private void UpdateStatus(ScriptExecutionEvent scriptEvent)
