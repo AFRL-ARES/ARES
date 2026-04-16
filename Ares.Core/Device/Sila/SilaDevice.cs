@@ -1,5 +1,6 @@
-﻿using Ares.Datamodel;
+using Ares.Datamodel;
 using Ares.Datamodel.Device;
+using Ares.Datamodel.Factories;
 using Ares.Device;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -32,6 +33,7 @@ public sealed class SilaDevice : AresDevice, IAsyncDisposable
 
   public override Task<bool> Activate(CancellationToken ct)
   {
+    DeviceFeatures = _serverData.Features.ToArray();
     //TEMPORARY TESTING CODE
     var feature = _serverData.Features.FirstOrDefault(f => f.Identifier == "GreetingProvider");
     var command = feature?.Items.OfType<FeatureCommand>().First();
@@ -94,12 +96,60 @@ public sealed class SilaDevice : AresDevice, IAsyncDisposable
 
   protected override Task<List<DeviceCommandDescriptor>> BuildCommandDescriptorsAsync()
   {
-    return Task.FromResult(Array.Empty<DeviceCommandDescriptor>().ToList());
+    _commands =
+    [
+      .. DeviceFeatures
+        .SelectMany(feature => (feature.Items ?? []).OfType<FeatureCommand>()
+          .Select(command => BuildCommandDescriptor(feature, command)))
+    ];
+
+    return Task.FromResult(_commands.ToList());
   }
 
   public ValueTask DisposeAsync()
   {
     return new ValueTask();
+  }
+
+  private static DeviceCommandDescriptor BuildCommandDescriptor(Feature feature, FeatureCommand command)
+  {
+    return new DeviceCommandDescriptor
+    {
+      Name = $"{feature.Identifier}.{command.Identifier}",
+      Description = command.Description ?? string.Empty,
+      InputSchema = BuildStructSchema(command.Parameter),
+      OutputSchema = BuildOutputSchema(command.Response)
+    };
+  }
+
+  private static AresStructSchema BuildStructSchema(IEnumerable<SiLAElement>? elements)
+  {
+    var schema = new AresStructSchema();
+
+    foreach(var element in elements ?? [])
+    {
+      var fieldSchema = element.DataType is not null
+        ? SilaDataConverter.ToAresValueSchema(element.DataType)
+        : AresSchemaBuilder.Entry(AresDataType.Any).Build();
+
+      if(!string.IsNullOrWhiteSpace(element.Description))
+        fieldSchema.Description = element.Description;
+
+      schema.Fields[element.Identifier] = fieldSchema;
+    }
+
+    return schema;
+  }
+
+  private static AresValueSchema? BuildOutputSchema(IEnumerable<SiLAElement>? responses)
+  {
+    var responseSchema = BuildStructSchema(responses);
+    if(responseSchema.Fields.Count == 0)
+      return null;
+
+    return AresSchemaBuilder.Entry(AresDataType.Struct)
+      .WithStructSchema(responseSchema)
+      .Build();
   }
 
   private IEnumerable<Feature> DeviceFeatures { get; set; } = [];
