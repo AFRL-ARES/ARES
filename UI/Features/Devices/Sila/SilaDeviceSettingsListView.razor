@@ -1,7 +1,6 @@
 ﻿@page "/settings/device/sila"
 @layout DeviceSettingsLayout
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<SilaDeviceSettingsListViewModel>
-
 @inject DialogService DialogService
 
 @if(ViewModel!.IsLoading)
@@ -29,6 +28,9 @@ else
 	private async Task RefreshDeviceClick()
 	{
 		await ViewModel!.SearchForSilaDevices();
+    await DialogService.OpenAsync("Search for SiLA Servers", ds =>
+      @<SilaDeviceSearchEditView ViewModel="ViewModel" OnValidSubmit="() => ds.Close(true)" />);
+    
 	}
 
 	protected override async Task OnInitializedAsync()

@@ -1,0 +1,61 @@
+﻿@inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<SilaDeviceSettingsListViewModel>
+
+@page "/discovered-sila-servers"
+@using Radzen
+@using Radzen.Blazor
+
+<RadzenText TextStyle="TextStyle.H4" TagName="TagName.H1" class="rz-mb-4">
+  Discovered SiLA Servers
+</RadzenText>
+
+<RadzenDataGrid Data="@discoveredServers" TItem="SilaServer" AllowSorting="true" AllowPaging="true" PageSize="10">
+  <Columns>
+    <RadzenDataGridColumn TItem="SilaServer" Property="Name" Title="Server Name" Width="200px" />
+        
+    <RadzenDataGridColumn TItem="SilaServer" Property="Description" Title="Description" />
+        
+    <RadzenDataGridColumn TItem="SilaServer" Title="Action" Sortable="false" Filterable="false" Width="120px" TextAlign="TextAlign.Center">
+      <Template Context="server">
+        <RadzenButton Icon="add_circle_outline" Text="Add" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.Small"
+                      Click="@(() => AddToAres(server))" title="Add this server to ARES" />
+      </Template>
+    </RadzenDataGridColumn>
+  </Columns>
+</RadzenDataGrid>
+
+@code {
+  // 1. Define your data model
+  public class SilaServer
+  {
+    public string ServerId { get; set; }
+    public string Name { get; set; }
+    public string Description { get; set; }
+  }
+
+  // 2. Hold the state for your view
+  private List<SilaServer> discoveredServers;
+
+  protected override void OnInitialized()
+  {
+    // 3. Mock data - Replace this with your actual SiLA discovery service call
+    discoveredServers = new List<SilaServer>
+        {
+            new SilaServer { ServerId = "sila.1", Name = "Incubator_A", Description = "CO2 Incubator on Bench 1" },
+            new SilaServer { ServerId = "sila.2", Name = "LiquidHandler_01", Description = "Primary 96-well liquid handler" },
+            new SilaServer { ServerId = "sila.3", Name = "PlateReader_Fluo", Description = "Fluorescence microplate reader" }
+        };
+  }
+
+  // 4. Handle the button click
+  private void AddToAres(SilaServer server)
+  {
+    // TODO: Call your ARES backend service here.
+    // Example: await AresService.RegisterServerAsync(server.ServerId);
+        
+    Console.WriteLine($"Triggered add to ARES for: {server.Name}");
+        
+    // Optional: Remove the server from the discovered list once added
+    // discoveredServers.Remove(server);
+    // StateHasChanged();
+  }
+}
