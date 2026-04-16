@@ -23,7 +23,6 @@
   </ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="ARES.Datamodel" Version="0.20.3-beta.2" />
 		<PackageReference Include="Ares.Toolkit.Device" Version="0.1.0" />
 	  <PackageReference Include="CsvHelper" Version="33.1.0" />
 	  <PackageReference Include="DynamicData" Version="9.4.31" />
@@ -41,6 +40,7 @@
 	</ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\ARES-datamodel\dotnet\ARES.Datamodel\ARES.Datamodel.csproj" />
     <ProjectReference Include="..\AresScript\AresScript.csproj" />
 	</ItemGroup>
 

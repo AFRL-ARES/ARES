@@ -26,7 +26,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="ARES.Datamodel" Version="0.19.0" GeneratePathProperty="True" />
     <PackageReference Include="Google.Protobuf" Version="3.33.3" />
     <PackageReference Include="Grpc" Version="2.46.6" />
     <PackageReference Include="Grpc.Tools" Version="2.76.0">
@@ -36,8 +35,12 @@
   </ItemGroup>
 
 	<PropertyGroup>
-		<DataModelProtoPath>$(PkgARES_Datamodel)\Proto\datamodel\</DataModelProtoPath>
+		<DataModelProtoPath>..\..\ARES-datamodel\protos\datamodel\</DataModelProtoPath>
 	</PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\ARES-datamodel\dotnet\ARES.Datamodel\ARES.Datamodel.csproj" />
+  </ItemGroup>
 
 	<ItemGroup>
     <Protobuf Include="DeviceStateLogging\LaserChiller\ChillerState.proto" GrpcServices="None" />

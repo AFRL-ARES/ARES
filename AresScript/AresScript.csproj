@@ -10,12 +10,15 @@
     <PackageReference Include="Antlr4.Runtime.Standard" Version="4.13.1" />
     <PackageReference Include="Antlr4BuildTasks" Version="12.14.0" />
     <PackageReference Include="System.Reactive" Version="6.1.0" />
-    <PackageReference Include="ARES.Datamodel" Version="0.20.3-beta.2" /> 
   </ItemGroup>
 
   <ItemGroup>
     <Antlr4 Include="AresLang.g4">
       <Package>AresScript.Generated</Package>
     </Antlr4>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\ARES-datamodel\dotnet\ARES.Datamodel\ARES.Datamodel.csproj" />
   </ItemGroup>
 </Project>
