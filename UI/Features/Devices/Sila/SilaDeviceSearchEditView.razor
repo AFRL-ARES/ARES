@@ -1,0 +1,117 @@
+﻿@page "/discovered-sila-servers"
+@using Radzen
+@using Radzen.Blazor
+@using Tecan.Sila2
+
+<RadzenText TextStyle="TextStyle.H4" TagName="TagName.H1" class="rz-mb-4">
+  Discover SiLA Servers
+</RadzenText>
+
+@if(!IsLoading)
+{
+  <RadzenDataGrid Data="@DiscoveredServerDisplayObjects" TItem="SilaServer" AllowSorting="true" AllowPaging="true" PageSize="10">
+    <Columns>
+      <RadzenDataGridColumn TItem="SilaServer" Property="Name" Title="Server Name" Width="200px" />
+        
+      <RadzenDataGridColumn TItem="SilaServer" Property="Description" Title="Description" />
+        
+      <RadzenDataGridColumn TItem="SilaServer" Title="Action" Sortable="false" Filterable="false" Width="120px" TextAlign="TextAlign.Center">
+        <Template Context="server">
+          @if(server.Status == Status.Available)
+          {
+            <RadzenButton Icon="add_circle_outline" Text="Add" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.Small"
+                          Click="@(() => AddToAres(server))" title="Add this server to ARES" />
+          }
+
+          @if(server.Status == Status.Adding)
+          {
+            <LoadingSpinner SpinnerSize="SpinnerSize.Small" />
+          }
+
+          @if(server.Status == Status.Added)
+          {
+            <RadzenIcon Icon="check" IconColor="#4BB543" /> 
+          }
+        </Template>
+      </RadzenDataGridColumn>
+    </Columns>
+  </RadzenDataGrid>
+}
+
+else
+{
+  <LoadingSpinner SpinnerSize="SpinnerSize.Large"/>
+}
+
+
+@code {
+  [Parameter]
+  public SilaDeviceSettingsListViewModel? ViewModel { get; set; }
+
+  public bool IsLoading { get; set; }
+
+  public class SilaServer
+  {
+    public string ServerId { get; set; } = "Unknown";
+    public string Name { get; set; } = "Unknown";
+    public string Description { get; set; } = "Failed to fetch info from server";
+    public Status Status { get; set; } = Status.Available;
+  }
+
+  public enum Status
+  {
+    Unknown = 1,
+    Available = 2,
+    Adding = 3,
+    Added = 4
+  }
+
+  private List<SilaServer> DiscoveredServerDisplayObjects = new List<SilaServer>();
+  private List<ServerData> DiscoveredServerData = new List<ServerData>();
+  private Task _serverSearchTask = Task.CompletedTask;
+
+  protected override void OnInitialized()
+  {
+    _serverSearchTask = UpdateServers();
+    base.OnInitialized();
+  }
+
+  private async Task UpdateServers()
+  {
+    IsLoading = true;
+    var newServers = await ViewModel!.SearchForSilaServers();
+    DiscoveredServerData = newServers.ToList();
+    DiscoveredServerDisplayObjects = newServers.Select(s => new SilaServer
+    {
+      Name = s.Config.Name,
+      ServerId = s.Config.Uuid.ToString(),
+      Description = s.Info.Description
+    }).ToList();
+
+    IsLoading = false;
+    StateHasChanged();
+  }
+
+
+  private async Task AddToAres(SilaServer server)
+  {
+    var correspondingData = DiscoveredServerData.FirstOrDefault(d => d.Config.Uuid.ToString() == server.ServerId);
+
+    if(correspondingData is not null)
+    {
+      server.Status = Status.Adding;
+      await ViewModel!.AddNewSilaDevice(correspondingData);
+      Console.WriteLine($"Triggered add to ARES for: {server.Name}");
+      server.Status = Status.Added;
+      // DiscoveredServerDisplayObjects.Remove(server);
+      DiscoveredServerData.Remove(correspondingData);
+    }
+
+    StateHasChanged();
+  }
+
+  public void Dispose()
+  {
+    _serverSearchTask.Dispose();
+  }
+}

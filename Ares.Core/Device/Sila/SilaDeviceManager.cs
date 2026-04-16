@@ -46,23 +46,9 @@ public class SilaDeviceManager : ISilaDeviceManager
     return newSilaDevice;
   }
 
-  public async Task UpdateAvailableSilaDevices()
-  {
-    var available_servers = _silaClient.DiscoverServers();
-    var existingSilaDevices = _deviceRepo.GetAll<SilaDevice>();
-
-    var unregistered_servers = available_servers.Where(s => !existingSilaDevices.Any(d => d.Name == s.Config.Name));
-    var missing_servers = existingSilaDevices.Where(d => !available_servers.Any(s => s.Config.Name == d.Name));
-
-    foreach(var server in unregistered_servers)
-    {
-      //Already exists, no action needed
-      if(existingSilaDevices.Any(d => d.UniqueId == server.Config.Uuid.ToString()))
-        continue;
-
-      await Create(server);
-    }
-  }
+  public Task<IEnumerable<ServerData>> UpdateAvailableSilaDevices()
+    => Task.Run(_silaClient.DiscoverServers);
+  
 
   private SilaDevice ConfigToDevice(SilaDeviceConfig config, ServerData data)
   {
