@@ -4,6 +4,7 @@ using Ares.Services;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System.Collections.ObjectModel;
+using Tecan.Sila2;
 using UI.Application.Notifications;
 
 namespace UI.Features.Devices.Sila;
@@ -55,6 +56,13 @@ public partial class SilaDeviceSettingsListViewModel : ReactiveObject
     await UpdateAvailableDevices();
   }
 
+  public async Task AddNewSilaDevice(ServerData data)
+    => await _silaDeviceManager.Create(data);
+  
+
+  public async Task<IEnumerable<ServerData>> SearchForSilaServers()
+    => await _silaDeviceManager.UpdateAvailableSilaDevices();
+
   private void UpdateViewModels(IEnumerable<SilaDevice> silaDevices)
   {
     SettingsViewModels.Clear();
@@ -68,7 +76,7 @@ public partial class SilaDeviceSettingsListViewModel : ReactiveObject
   public void PushNotification(AresNotification notification) => _notificationService.PushNotification(notification);
 
   [Reactive]
-  public partial bool IsLoading { get; private set; }
+  public partial bool IsLoading { get; set; }
 
   public ObservableCollection<SilaDeviceSettingsViewModel> SettingsViewModels { get; }
 }

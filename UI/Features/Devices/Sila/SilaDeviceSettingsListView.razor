@@ -18,20 +18,19 @@ else
       </div>
     }
 
-    <button class="m-2 align-self-end btn btn-outline-light" disabled="@ViewModel!.IsLoading" @onclick="RefreshDeviceClick">
-      <RadzenIcon Icon="refresh" />
+    <button class="m-2 align-self-end btn btn-outline-light" disabled="@ViewModel!.IsLoading" @onclick="AddNewSilaServerClicked">
+      <RadzenIcon Icon="add" />
     </button>
   </div>
 }
 
 @code {
-	private async Task RefreshDeviceClick()
+	private async Task AddNewSilaServerClicked()
 	{
-		await ViewModel!.SearchForSilaDevices();
-    await DialogService.OpenAsync("Search for SiLA Servers", ds =>
-      @<SilaDeviceSearchEditView ViewModel="ViewModel" OnValidSubmit="() => ds.Close(true)" />);
-    
-	}
+    var task = await DialogService.OpenAsync("Search for SiLA Servers", ds => @<SilaDeviceSearchEditView ViewModel="ViewModel" />);
+    await ViewModel!.UpdateAvailableDevices();
+    StateHasChanged();
+  }
 
 	protected override async Task OnInitializedAsync()
 	{

@@ -7,5 +7,5 @@ namespace Ares.Core.Device.Sila;
 public interface ISilaDeviceManager
 {
   Task<SilaDevice?> Create(ServerData data);
-  Task UpdateAvailableSilaDevices();
+  Task<IEnumerable<ServerData>> UpdateAvailableSilaDevices();
 }

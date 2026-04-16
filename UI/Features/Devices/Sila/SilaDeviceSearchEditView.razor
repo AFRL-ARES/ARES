@@ -1,61 +1,117 @@
-﻿@inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<SilaDeviceSettingsListViewModel>
-
-@page "/discovered-sila-servers"
+﻿@page "/discovered-sila-servers"
 @using Radzen
 @using Radzen.Blazor
+@using Tecan.Sila2
 
 <RadzenText TextStyle="TextStyle.H4" TagName="TagName.H1" class="rz-mb-4">
-  Discovered SiLA Servers
+  Discover SiLA Servers
 </RadzenText>
 
-<RadzenDataGrid Data="@discoveredServers" TItem="SilaServer" AllowSorting="true" AllowPaging="true" PageSize="10">
-  <Columns>
-    <RadzenDataGridColumn TItem="SilaServer" Property="Name" Title="Server Name" Width="200px" />
+@if(!IsLoading)
+{
+  <RadzenDataGrid Data="@DiscoveredServerDisplayObjects" TItem="SilaServer" AllowSorting="true" AllowPaging="true" PageSize="10">
+    <Columns>
+      <RadzenDataGridColumn TItem="SilaServer" Property="Name" Title="Server Name" Width="200px" />
         
-    <RadzenDataGridColumn TItem="SilaServer" Property="Description" Title="Description" />
+      <RadzenDataGridColumn TItem="SilaServer" Property="Description" Title="Description" />
         
-    <RadzenDataGridColumn TItem="SilaServer" Title="Action" Sortable="false" Filterable="false" Width="120px" TextAlign="TextAlign.Center">
-      <Template Context="server">
-        <RadzenButton Icon="add_circle_outline" Text="Add" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.Small"
-                      Click="@(() => AddToAres(server))" title="Add this server to ARES" />
-      </Template>
-    </RadzenDataGridColumn>
-  </Columns>
-</RadzenDataGrid>
+      <RadzenDataGridColumn TItem="SilaServer" Title="Action" Sortable="false" Filterable="false" Width="120px" TextAlign="TextAlign.Center">
+        <Template Context="server">
+          @if(server.Status == Status.Available)
+          {
+            <RadzenButton Icon="add_circle_outline" Text="Add" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.Small"
+                          Click="@(() => AddToAres(server))" title="Add this server to ARES" />
+          }
+
+          @if(server.Status == Status.Adding)
+          {
+            <LoadingSpinner SpinnerSize="SpinnerSize.Small" />
+          }
+
+          @if(server.Status == Status.Added)
+          {
+            <RadzenIcon Icon="check" IconColor="#4BB543" /> 
+          }
+        </Template>
+      </RadzenDataGridColumn>
+    </Columns>
+  </RadzenDataGrid>
+}
+
+else
+{
+  <LoadingSpinner SpinnerSize="SpinnerSize.Large"/>
+}
+
 
 @code {
-  // 1. Define your data model
+  [Parameter]
+  public SilaDeviceSettingsListViewModel? ViewModel { get; set; }
+
+  public bool IsLoading { get; set; }
+
   public class SilaServer
   {
-    public string ServerId { get; set; }
-    public string Name { get; set; }
-    public string Description { get; set; }
+    public string ServerId { get; set; } = "Unknown";
+    public string Name { get; set; } = "Unknown";
+    public string Description { get; set; } = "Failed to fetch info from server";
+    public Status Status { get; set; } = Status.Available;
   }
 
-  // 2. Hold the state for your view
-  private List<SilaServer> discoveredServers;
+  public enum Status
+  {
+    Unknown = 1,
+    Available = 2,
+    Adding = 3,
+    Added = 4
+  }
+
+  private List<SilaServer> DiscoveredServerDisplayObjects = new List<SilaServer>();
+  private List<ServerData> DiscoveredServerData = new List<ServerData>();
+  private Task _serverSearchTask = Task.CompletedTask;
 
   protected override void OnInitialized()
   {
-    // 3. Mock data - Replace this with your actual SiLA discovery service call
-    discoveredServers = new List<SilaServer>
-        {
-            new SilaServer { ServerId = "sila.1", Name = "Incubator_A", Description = "CO2 Incubator on Bench 1" },
-            new SilaServer { ServerId = "sila.2", Name = "LiquidHandler_01", Description = "Primary 96-well liquid handler" },
-            new SilaServer { ServerId = "sila.3", Name = "PlateReader_Fluo", Description = "Fluorescence microplate reader" }
-        };
+    _serverSearchTask = UpdateServers();
+    base.OnInitialized();
   }
 
-  // 4. Handle the button click
-  private void AddToAres(SilaServer server)
+  private async Task UpdateServers()
   {
-    // TODO: Call your ARES backend service here.
-    // Example: await AresService.RegisterServerAsync(server.ServerId);
-        
-    Console.WriteLine($"Triggered add to ARES for: {server.Name}");
-        
-    // Optional: Remove the server from the discovered list once added
-    // discoveredServers.Remove(server);
-    // StateHasChanged();
+    IsLoading = true;
+    var newServers = await ViewModel!.SearchForSilaServers();
+    DiscoveredServerData = newServers.ToList();
+    DiscoveredServerDisplayObjects = newServers.Select(s => new SilaServer
+    {
+      Name = s.Config.Name,
+      ServerId = s.Config.Uuid.ToString(),
+      Description = s.Info.Description
+    }).ToList();
+
+    IsLoading = false;
+    StateHasChanged();
+  }
+
+
+  private async Task AddToAres(SilaServer server)
+  {
+    var correspondingData = DiscoveredServerData.FirstOrDefault(d => d.Config.Uuid.ToString() == server.ServerId);
+
+    if(correspondingData is not null)
+    {
+      server.Status = Status.Adding;
+      await ViewModel!.AddNewSilaDevice(correspondingData);
+      Console.WriteLine($"Triggered add to ARES for: {server.Name}");
+      server.Status = Status.Added;
+      // DiscoveredServerDisplayObjects.Remove(server);
+      DiscoveredServerData.Remove(correspondingData);
+    }
+
+    StateHasChanged();
+  }
+
+  public void Dispose()
+  {
+    _serverSearchTask.Dispose();
   }
 }
