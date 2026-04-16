@@ -1,10 +1,14 @@
 using Ares.Core.Device.Sila;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
+using Ares.Datamodel.Extensions;
 using Ares.Device;
 using Moq;
+using System.Threading.Channels;
 using Tecan.Sila2;
 using Tecan.Sila2.Client;
+using Tecan.Sila2.Discovery;
+using Tecan.Sila2.DynamicClient;
 
 namespace Ares.Core.Tests;
 
@@ -188,7 +192,281 @@ public class SilaDeviceTests
     Assert.That(descriptors.Select(d => d.Name), Is.EqualTo(new[] { "PumpControl.Start" }));
   }
 
-  private static SilaDevice CreateDevice(ServerData serverData)
+  [Test]
+  public async Task ExecuteCommand_UsesExactFeatureQualifiedCommandName()
+  {
+    var featureA = CreateFeature(
+      "PumpA",
+      CreateCommand("Start", responses: [], observable: FeatureCommandObservable.No));
+    var featureB = CreateFeature(
+      "PumpB",
+      CreateCommand("Start", responses: [], observable: FeatureCommandObservable.No));
+
+    var channelMock = CreateChannelMock();
+    channelMock
+      .Setup(c => c.ExecuteUnobservableCommandAsync(
+        It.Is<string>(serviceName => serviceName == $"{featureB.Namespace}.{featureB.Identifier}"),
+        It.Is<string>(commandName => commandName == "Start"),
+        It.IsAny<DynamicRequest>(),
+        It.IsAny<IClientCallInfo>(),
+        It.IsAny<ByteSerializer<DynamicRequest>>(),
+        It.IsAny<ByteSerializer<DynamicObjectProperty>>()))
+      .ReturnsAsync(CreateResponseProperty((FeatureCommand)featureB.Items[0]));
+
+    var device = CreateDevice(CreateServerData([featureA, featureB], channelMock.Object), CreateConfiguredClient());
+
+    var result = await device.ExecuteCommand("PumpB.Start", [], CancellationToken.None);
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(result.Success, Is.True);
+      Assert.That(result.Result.KindCase, Is.EqualTo(AresValue.KindOneofCase.UnitValue));
+    }
+  }
+
+  [Test]
+  public async Task ExecuteCommand_UnobservableCommand_MapsRequestAndResponse()
+  {
+    var command = CreateCommand(
+      "Dispense",
+      parameters:
+      [
+        CreateElement("Rate", BasicType.Real)
+      ],
+      responses:
+      [
+        CreateElement("Status", BasicType.String)
+      ],
+      observable: FeatureCommandObservable.No);
+
+    var channelMock = CreateChannelMock();
+    channelMock
+      .Setup(c => c.ExecuteUnobservableCommandAsync(
+        It.IsAny<string>(),
+        It.IsAny<string>(),
+        It.Is<DynamicRequest>(request => RequestContains(request, "Rate", value => value != null && value.GetType() == typeof(double) && (double)value == 12.5)),
+        It.IsAny<IClientCallInfo>(),
+        It.IsAny<ByteSerializer<DynamicRequest>>(),
+        It.IsAny<ByteSerializer<DynamicObjectProperty>>()))
+      .ReturnsAsync(CreateResponseProperty(command, (command.Response[0], "Ready")));
+
+    var device = CreateDevice(
+      CreateServerData([CreateFeature("PumpControl", command)], channelMock.Object),
+      CreateConfiguredClient());
+
+    var result = await device.ExecuteCommand(
+      "PumpControl.Dispense",
+      [
+        new DeviceCommandArgument
+        {
+          ArgName = "Rate",
+          ArgValue = AresValueHelper.CreateNumber(12.5)
+        }
+      ],
+      CancellationToken.None);
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(result.Success, Is.True);
+      Assert.That(result.Result.KindCase, Is.EqualTo(AresValue.KindOneofCase.StructValue));
+      Assert.That(result.Result.StructValue.Fields["Status"].StringValue, Is.EqualTo("Ready"));
+    }
+  }
+
+  [Test]
+  public async Task ExecuteCommand_NoFinalResponse_ReturnsUnit()
+  {
+    var command = CreateCommand("Start", observable: FeatureCommandObservable.No);
+    var channelMock = CreateChannelMock();
+    channelMock
+      .Setup(c => c.ExecuteUnobservableCommandAsync(
+        It.IsAny<string>(),
+        It.IsAny<string>(),
+        It.IsAny<DynamicRequest>(),
+        It.IsAny<IClientCallInfo>(),
+        It.IsAny<ByteSerializer<DynamicRequest>>(),
+        It.IsAny<ByteSerializer<DynamicObjectProperty>>()))
+      .ReturnsAsync(CreateResponseProperty(command));
+
+    var device = CreateDevice(
+      CreateServerData([CreateFeature("PumpControl", command)], channelMock.Object),
+      CreateConfiguredClient());
+
+    var result = await device.ExecuteCommand("PumpControl.Start", [], CancellationToken.None);
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(result.Success, Is.True);
+      Assert.That(result.Result.KindCase, Is.EqualTo(AresValue.KindOneofCase.UnitValue));
+    }
+  }
+
+  [Test]
+  public async Task ExecuteCommand_ObservableCommandWithoutIntermediates_ReturnsFinalResponse()
+  {
+    var command = CreateCommand(
+      "Run",
+      responses:
+      [
+        CreateElement("Outcome", BasicType.String)
+      ],
+      observable: FeatureCommandObservable.Yes);
+
+    var channelMock = CreateChannelMock();
+    channelMock
+      .Setup(c => c.ExecuteObservableCommand<DynamicRequest, DynamicObjectProperty, DynamicObjectProperty>(
+        It.IsAny<string>(),
+        It.IsAny<string>(),
+        It.IsAny<DynamicRequest>(),
+        It.IsAny<Func<DynamicObjectProperty, DynamicObjectProperty>>(),
+        It.IsAny<Func<string, string, Exception>>(),
+        It.IsAny<IClientCallInfo>(),
+        It.IsAny<ByteSerializer<DynamicRequest>>(),
+        It.IsAny<ByteSerializer<DynamicObjectProperty>>()))
+      .Returns(CreateObservableCommand(CreateResponseProperty(command, (command.Response[0], "Finished"))));
+
+    var device = CreateDevice(
+      CreateServerData([CreateFeature("PumpControl", command)], channelMock.Object),
+      CreateConfiguredClient());
+
+    var result = await device.ExecuteCommand("PumpControl.Run", [], CancellationToken.None);
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(result.Success, Is.True);
+      Assert.That(result.Result.StructValue.Fields["Outcome"].StringValue, Is.EqualTo("Finished"));
+    }
+  }
+
+  [Test]
+  public async Task ExecuteCommand_ObservableCommandWithIntermediates_ReturnsFinalResponse()
+  {
+    var command = CreateCommand(
+      "RunTracked",
+      responses:
+      [
+        CreateElement("Outcome", BasicType.String)
+      ],
+      intermediates:
+      [
+        CreateElement("Progress", BasicType.Real)
+      ],
+      observable: FeatureCommandObservable.Yes);
+
+    var channelMock = CreateChannelMock();
+    channelMock
+      .Setup(c => c.ExecuteIntermediatesCommand<DynamicRequest, DynamicObjectProperty, DynamicObjectProperty, DynamicObjectProperty, DynamicObjectProperty>(
+        It.IsAny<string>(),
+        It.IsAny<string>(),
+        It.IsAny<DynamicRequest>(),
+        It.IsAny<Func<DynamicObjectProperty, DynamicObjectProperty>>(),
+        It.IsAny<Func<DynamicObjectProperty, DynamicObjectProperty>>(),
+        It.IsAny<Func<string, string, Exception>>(),
+        It.IsAny<IClientCallInfo>(),
+        It.IsAny<ByteSerializer<DynamicRequest>>(),
+        It.IsAny<ByteSerializer<DynamicObjectProperty>>(),
+        It.IsAny<ByteSerializer<DynamicObjectProperty>>()))
+      .Returns(CreateIntermediateObservableCommand(CreateResponseProperty(command, (command.Response[0], "Finished"))));
+
+    var device = CreateDevice(
+      CreateServerData([CreateFeature("PumpControl", command)], channelMock.Object),
+      CreateConfiguredClient());
+
+    var result = await device.ExecuteCommand("PumpControl.RunTracked", [], CancellationToken.None);
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(result.Success, Is.True);
+      Assert.That(result.Result.StructValue.Fields["Outcome"].StringValue, Is.EqualTo("Finished"));
+    }
+  }
+
+  [Test]
+  public async Task ExecuteCommand_UnknownDescriptor_ReturnsFailedResult()
+  {
+    var device = CreateDevice(
+      CreateServerData([CreateFeature("PumpControl", CreateCommand("Start", observable: FeatureCommandObservable.No))]),
+      CreateConfiguredClient());
+
+    var result = await device.ExecuteCommand("PumpControl.Missing", [], CancellationToken.None);
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(result.Success, Is.False);
+      Assert.That(result.Error, Does.Contain("Unknown SiLA command"));
+    }
+  }
+
+  [Test]
+  public async Task ExecuteCommand_MissingExecutionManager_ReturnsFailedResult()
+  {
+    var device = CreateDevice(
+      CreateServerData([CreateFeature("PumpControl", CreateCommand("Start", observable: FeatureCommandObservable.No))]));
+
+    var result = await device.ExecuteCommand("PumpControl.Start", [], CancellationToken.None);
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(result.Success, Is.False);
+      Assert.That(result.Error, Does.Contain("not initialized"));
+    }
+  }
+
+  [Test]
+  public async Task ExecuteCommand_DefinedError_IsReturnedAsFailedResult()
+  {
+    var command = CreateCommand("Start", observable: FeatureCommandObservable.No);
+    var channelMock = CreateChannelMock();
+    channelMock
+      .Setup(c => c.ExecuteUnobservableCommandAsync(
+        It.IsAny<string>(),
+        It.IsAny<string>(),
+        It.IsAny<DynamicRequest>(),
+        It.IsAny<IClientCallInfo>(),
+        It.IsAny<ByteSerializer<DynamicRequest>>(),
+        It.IsAny<ByteSerializer<DynamicObjectProperty>>()))
+      .ThrowsAsync(new InvalidOperationException("Server-side failure"));
+    channelMock
+      .Setup(c => c.ConvertException(It.IsAny<Exception>(), It.IsAny<Func<string, string, Exception>>()))
+      .Returns(new DefinedErrorException("test/error", "Defined failure"));
+
+    var device = CreateDevice(
+      CreateServerData([CreateFeature("PumpControl", command)], channelMock.Object),
+      CreateConfiguredClient());
+
+    var result = await device.ExecuteCommand("PumpControl.Start", [], CancellationToken.None);
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(result.Success, Is.False);
+      Assert.That(result.Error, Is.EqualTo("Defined failure"));
+    }
+  }
+
+  [Test]
+  public void ExecuteCommand_CancellationPropagates()
+  {
+    var command = CreateCommand("Start", observable: FeatureCommandObservable.No);
+    var channelMock = CreateChannelMock();
+    channelMock
+      .Setup(c => c.ExecuteUnobservableCommandAsync(
+        It.IsAny<string>(),
+        It.IsAny<string>(),
+        It.IsAny<DynamicRequest>(),
+        It.IsAny<IClientCallInfo>(),
+        It.IsAny<ByteSerializer<DynamicRequest>>(),
+        It.IsAny<ByteSerializer<DynamicObjectProperty>>()))
+      .Returns(Task.FromCanceled<DynamicObjectProperty>(new CancellationToken(canceled: true)));
+
+    var device = CreateDevice(
+      CreateServerData([CreateFeature("PumpControl", command)], channelMock.Object),
+      CreateConfiguredClient());
+
+    Assert.That(async () => await device.ExecuteCommand("PumpControl.Start", [], CancellationToken.None),
+      Throws.InstanceOf<OperationCanceledException>());
+  }
+
+  private static SilaDevice CreateDevice(ServerData serverData, SilaClient client = null)
   {
     return new SilaDevice(
       serverData,
@@ -197,16 +475,41 @@ public class SilaDeviceTests
         DeviceId = "sila-device",
         DeviceName = "SiLA Device"
       },
-      new SilaClient());
+      client ?? new SilaClient());
   }
 
   private static ServerData CreateServerData(IEnumerable<Feature> features)
+  {
+    return CreateServerData(features, CreateChannelMock().Object);
+  }
+
+  private static ServerData CreateServerData(IEnumerable<Feature> features, IClientChannel channel)
   {
     return new ServerData(
       new ServerConfig("Test Server", Guid.NewGuid()),
       new ServerInformation("Test Type", "Test Description", "https://example.com", "1.0.0"),
       features,
-      new Mock<IClientChannel>().Object);
+      channel);
+  }
+
+  private static Mock<IClientChannel> CreateChannelMock()
+  {
+    var channelMock = new Mock<IClientChannel>();
+    channelMock.SetupGet(c => c.State).Returns(ChannelState.Ready);
+    channelMock.SetupGet(c => c.IsServerInitiated).Returns(false);
+    channelMock
+      .Setup(c => c.ConvertException(It.IsAny<Exception>(), It.IsAny<Func<string, string, Exception>>()))
+      .Returns<Exception, Func<string, string, Exception>>((exception, _) => exception);
+
+    return channelMock;
+  }
+
+  private static SilaClient CreateConfiguredClient()
+  {
+    return new SilaClient
+    {
+      ExecutionManager = new DiscoveryExecutionManager()
+    };
   }
 
   private static Feature CreateFeature(string identifier, params object[] items)
@@ -224,13 +527,17 @@ public class SilaDeviceTests
   private static FeatureCommand CreateCommand(
     string identifier,
     SiLAElement[] parameters = null,
-    SiLAElement[] responses = null)
+    SiLAElement[] responses = null,
+    SiLAElement[] intermediates = null,
+    FeatureCommandObservable observable = FeatureCommandObservable.No)
   {
     return new FeatureCommand
     {
       Identifier = identifier,
+      Observable = observable,
       Parameter = parameters ?? [],
-      Response = responses ?? []
+      Response = responses ?? [],
+      IntermediateResponse = intermediates ?? []
     };
   }
 
@@ -247,5 +554,71 @@ public class SilaDeviceTests
       Description = description,
       DataType = dataType
     };
+  }
+
+  private static bool RequestContains(DynamicRequest request, string identifier, Func<object, bool> predicate)
+  {
+    if(request.Value is not DynamicObject dynamicObject)
+      return false;
+
+    var property = dynamicObject.Elements.FirstOrDefault(element => element.Identifier == identifier);
+    return property is not null && predicate(property.Value);
+  }
+
+  private static DynamicObjectProperty CreateResponseProperty(
+    FeatureCommand command,
+    params (SiLAElement element, object value)[] values)
+  {
+    var property = new DynamicObjectProperty(
+      command.Identifier,
+      command.DisplayName,
+      command.Description,
+      new DataTypeType
+      {
+        Item = new StructureType
+        {
+          Element = command.Response ?? []
+        }
+      });
+
+    var responseObject = new DynamicObject();
+    foreach(var (element, value) in values)
+    {
+      responseObject.Elements.Add(new DynamicObjectProperty(element)
+      {
+        Value = value
+      });
+    }
+
+    property.Value = responseObject;
+    return property;
+  }
+
+  private static IObservableCommand<DynamicObjectProperty> CreateObservableCommand(DynamicObjectProperty response)
+  {
+    var commandMock = new Mock<IObservableCommand<DynamicObjectProperty>>();
+    commandMock.SetupGet(command => command.State).Returns(default(StateUpdate));
+    commandMock.SetupGet(command => command.StateUpdates).Returns(Channel.CreateUnbounded<StateUpdate>().Reader);
+    commandMock.SetupGet(command => command.IsStarted).Returns(true);
+    commandMock.SetupGet(command => command.CancellationToken).Returns(CancellationToken.None);
+    commandMock.SetupGet(command => command.IsCancellationSupported).Returns(true);
+    commandMock.SetupGet(command => command.Response).Returns(Task.FromResult(response));
+    commandMock.Setup(command => command.Cancel());
+    return commandMock.Object;
+  }
+
+  private static IIntermediateObservableCommand<DynamicObjectProperty, DynamicObjectProperty> CreateIntermediateObservableCommand(
+    DynamicObjectProperty response)
+  {
+    var commandMock = new Mock<IIntermediateObservableCommand<DynamicObjectProperty, DynamicObjectProperty>>();
+    commandMock.SetupGet(command => command.State).Returns(default(StateUpdate));
+    commandMock.SetupGet(command => command.StateUpdates).Returns(Channel.CreateUnbounded<StateUpdate>().Reader);
+    commandMock.SetupGet(command => command.IsStarted).Returns(true);
+    commandMock.SetupGet(command => command.CancellationToken).Returns(CancellationToken.None);
+    commandMock.SetupGet(command => command.IsCancellationSupported).Returns(true);
+    commandMock.SetupGet(command => command.Response).Returns(Task.FromResult(response));
+    commandMock.SetupGet(command => command.IntermediateValues).Returns(Channel.CreateUnbounded<DynamicObjectProperty>().Reader);
+    commandMock.Setup(command => command.Cancel());
+    return commandMock.Object;
   }
 }
