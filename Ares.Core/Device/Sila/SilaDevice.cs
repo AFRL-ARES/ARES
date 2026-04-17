@@ -35,39 +35,15 @@ public sealed class SilaDevice : AresDevice, IAsyncDisposable
   public override Task<bool> Activate(CancellationToken ct)
   {
     DeviceFeatures = _serverData.Features.ToArray();
-    //TEMPORARY TESTING CODE
-    var feature = _serverData.Features.FirstOrDefault(f => f.Identifier == "GreetingProvider");
-    var command = feature?.Items.OfType<FeatureCommand>().First();
 
-    var context = new FeatureContext(feature, _serverData, _silaClient.ExecutionManager);
-    var commandClient = new NonObservableCommandClient(command, context);
-    var request = commandClient.CreateRequest();
-
-    request.Value = new DynamicObject()
-    {
-      Elements =
-      {
-        new DynamicObjectProperty(command?.Parameter[0])
-        {
-          Value = "Arnas"
-        }
-      }
-    };
-
-    var response = commandClient.Invoke(request);
-
-    if(response is not null)
-    {
-      Status = new DeviceOperationalStatus() { OperationalState = OperationalState.Active, Message = $"Connected to SiLA Device {Name}!" };
-      return Task.FromResult(true);
-    }
-
-
-    else
-    {
-      Status = new DeviceOperationalStatus() { OperationalState = OperationalState.Error, Message = $"Could not connect to SiLA Device" };
-      return Task.FromResult(false);
-    }
+    Status = new DeviceOperationalStatus() { OperationalState = OperationalState.Active, Message = $"Connected to SiLA Device {Name}!" };
+    return Task.FromResult(true);
+    
+    //else
+    //{
+    //  Status = new DeviceOperationalStatus() { OperationalState = OperationalState.Error, Message = $"Could not connect to SiLA Device" };
+    //  return Task.FromResult(false);
+    //}
   }
 
   public override Task EnterSafeMode(CancellationToken ct)

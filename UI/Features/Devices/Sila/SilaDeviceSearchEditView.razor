@@ -9,6 +9,10 @@
 
 @if(!IsLoading)
 {
+  <RadzenTextBox @bind-Value="Address" />
+  <RadzenNumeric @bind-Value="Port" />
+  <RadzenButton Click="AddManually" />
+
   <RadzenDataGrid Data="@DiscoveredServerDisplayObjects" TItem="SilaServer" AllowSorting="true" AllowPaging="true" PageSize="10">
     <Columns>
       <RadzenDataGridColumn TItem="SilaServer" Property="Name" Title="Server Name" Width="200px" />
@@ -70,6 +74,9 @@ else
   private List<ServerData> DiscoveredServerData = new List<ServerData>();
   private Task _serverSearchTask = Task.CompletedTask;
 
+  private string Address { get; set; } = "";
+  private int Port {get; set; }
+
   protected override void OnInitialized()
   {
     _serverSearchTask = UpdateServers();
@@ -90,6 +97,11 @@ else
 
     IsLoading = false;
     StateHasChanged();
+  }
+
+  private async Task AddManually()
+  {
+    await ViewModel!.AddManualSilaDevice(Address, Port);
   }
 
 
