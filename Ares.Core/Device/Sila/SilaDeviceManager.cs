@@ -5,6 +5,7 @@ using Ares.Datamodel.Device;
 using Microsoft.EntityFrameworkCore;
 using Tecan.Sila2;
 using Tecan.Sila2.DynamicClient;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Ares.Core.Device.Sila;
 
@@ -45,6 +46,30 @@ public class SilaDeviceManager : ISilaDeviceManager
     //await context.SaveChangesAsync();
     return newSilaDevice;
   }
+
+  public async Task<SilaDevice?> Create(string address, int port)
+  {
+    var server = _silaClient.TryConnectToServer(address, port);
+
+    if(server is null)
+      return null;
+
+    var newConfig = new SilaDeviceConfig()
+    {
+      UniqueId = server.Config.Uuid.ToString(),
+      ServerName = server.Config.Name,
+      Description = server.Info.Description,
+      Type = server.Info.Type,
+      VendorUri = server.Info.VendorUri,
+      Version = server.Info.Version
+    };
+
+    var newSilaDevice = ConfigToDevice(newConfig, server);
+    _deviceRepo.AddOrUpdate(newSilaDevice);
+    await newSilaDevice.Activate(CancellationToken.None);
+    return newSilaDevice;
+  }
+
 
   public Task<IEnumerable<ServerData>> UpdateAvailableSilaDevices()
     => Task.Run(_silaClient.DiscoverServers);

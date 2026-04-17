@@ -58,7 +58,9 @@ public partial class SilaDeviceSettingsListViewModel : ReactiveObject
 
   public async Task AddNewSilaDevice(ServerData data)
     => await _silaDeviceManager.Create(data);
-  
+
+  public async Task AddManualSilaDevice(string address, int port)
+    => await _silaDeviceManager.Create(address, port);
 
   public async Task<IEnumerable<ServerData>> SearchForSilaServers()
     => await _silaDeviceManager.UpdateAvailableSilaDevices();
@@ -77,6 +79,12 @@ public partial class SilaDeviceSettingsListViewModel : ReactiveObject
 
   [Reactive]
   public partial bool IsLoading { get; set; }
+
+  [Reactive]
+  public partial string Address { get; set; }
+
+  [Reactive]
+  public partial int Port { get; set; }
 
   public ObservableCollection<SilaDeviceSettingsViewModel> SettingsViewModels { get; }
 }

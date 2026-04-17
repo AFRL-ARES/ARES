@@ -35,6 +35,8 @@ public sealed class SilaDevice : AresDevice, IAsyncDisposable
   public override Task<bool> Activate(CancellationToken ct)
   {
     DeviceFeatures = _serverData.Features.ToArray();
+
+    Status = new DeviceOperationalStatus() { OperationalState = OperationalState.Active, Message = $"Connected to SiLA Device {Name}!" };
     return Task.FromResult(true);
   }
 

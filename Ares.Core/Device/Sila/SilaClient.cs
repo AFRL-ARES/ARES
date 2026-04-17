@@ -12,9 +12,9 @@ public class SilaClient
 
   public void Init()
   {
-    var executionManager = new DiscoveryExecutionManager();
-    ServerFinder = new ServerDiscovery(new ServerConnector(executionManager));
-    ExecutionManager = executionManager;
+    ExecutionManager = new DiscoveryExecutionManager();
+    Connector = new ServerConnector(ExecutionManager);
+    ServerFinder = new ServerDiscovery(Connector);
   }
 
   public IEnumerable<ServerData> DiscoverServers()
@@ -25,7 +25,23 @@ public class SilaClient
     return ServerFinder.GetServers(TimeSpan.FromSeconds(5));
   }
 
+  public ServerData? TryConnectToServer(string address, int port)
+  {
+    try
+    {
+      var server = Connector.Connect(address, port);
+      return server;
+    }
+
+    catch(Exception)
+    {
+      return null;
+    }
+  }
+
   private ServerDiscovery? ServerFinder { get; set; }
 
   public DiscoveryExecutionManager? ExecutionManager { get; set; }
+  
+  public ServerConnector Connector { get; set; }
 }
