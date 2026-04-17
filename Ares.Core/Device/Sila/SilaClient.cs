@@ -5,9 +5,9 @@ namespace Ares.Core.Device.Sila;
 
 public class SilaClient
 {
-  public SilaClient() 
-  { 
-    
+  public SilaClient()
+  {
+
   }
 
   public void Init()
@@ -20,12 +20,12 @@ public class SilaClient
   public IEnumerable<ServerData> DiscoverServers()
   {
     if(ServerFinder is null)
-      return Array.Empty<ServerData>();
+      return [];
 
     return ServerFinder.GetServers(TimeSpan.FromSeconds(5));
   }
 
   private ServerDiscovery? ServerFinder { get; set; }
 
-  public DiscoveryExecutionManager? ExecutionManager { get; set; }  
+  public DiscoveryExecutionManager? ExecutionManager { get; set; }
 }

@@ -81,12 +81,14 @@ else
     IsLoading = true;
     var newServers = await ViewModel!.SearchForSilaServers();
     DiscoveredServerData = newServers.ToList();
-    DiscoveredServerDisplayObjects = newServers.Select(s => new SilaServer
-    {
-      Name = s.Config.Name,
-      ServerId = s.Config.Uuid.ToString(),
-      Description = s.Info.Description
-    }).ToList();
+    DiscoveredServerDisplayObjects = newServers
+      .OfType<ServerData>() // In case we get "null" servers for some reason
+      .Select(s => new SilaServer
+      {
+        Name = s.Config.Name,
+        ServerId = s.Config.Uuid.ToString(),
+        Description = s.Info.Description
+      }).ToList();
 
     IsLoading = false;
     StateHasChanged();
