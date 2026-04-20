@@ -160,7 +160,7 @@ public partial class ParameterEditorViewModel : ReactiveObject
 
     ParameterMetadata.Schema = AresSchemaBuilder.Entry(DataType).Build();
     ParameterMetadata.Name = Name;
-    ParameterMetadata.InitialValue ??= InitialValue;
+    ParameterMetadata.InitialValue = InitialValue;
 
     if(DataType == AresDataType.Number)
     {
