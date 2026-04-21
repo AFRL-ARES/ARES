@@ -53,6 +53,11 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
   public AresStruct? CurrentState => _stateSubject.Value;
   public AresStructSchema StateSchema { get; private set; } = new();
 
+  public override async Task<List<DeviceCommandDescriptor>> GetCommandDescriptorsAsync()
+  {
+    return await BuildCommandDescriptorsAsync();
+  }
+
   public override async Task<bool> Activate(CancellationToken ct)
   {
     await FetchOperationalStatus();
@@ -150,9 +155,10 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     var client = GetClient();
     try
     {
-      var callOpts = new CallOptions(deadline: DateTime.UtcNow.AddSeconds(5));
-      var cmdResponse = await client.GetCommandsAsync(new Empty(), callOpts);
-      _commands = [.. cmdResponse.Commands];
+      //var callOpts = new CallOptions(deadline: DateTime.UtcNow.AddSeconds(5));
+      //var cmdResponse = await client.GetCommandsAsync(new Empty(), callOpts);
+      //_commands = [.. cmdResponse.Commands];
+      await BuildCommandDescriptorsAsync();
     }
     catch(RpcException ex)
     {

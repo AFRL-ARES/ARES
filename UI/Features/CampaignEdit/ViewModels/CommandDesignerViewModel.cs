@@ -143,12 +143,19 @@ public partial class CommandDesignerViewModel : ReactiveObject
     }
   }
 
+  public async Task MetadataUpdated(CommandMetadata? metadata)
+  {
+    CommandTemplate.Metadata = metadata;
+    CommandMetadata = metadata;
+  }
+
   private async Task InitMetadata(CommandMetadata? existingMetadata)
   {
-    ArgumentDesigners = existingMetadata?.ParameterMetadatas
+    var newArgumentDesigners = existingMetadata?.ParameterMetadatas
         ?.Select(_commandParameterDesignerFactory.Create)
         .ToArray() ?? [];
 
+    ArgumentDesigners = newArgumentDesigners;
     var outputSchema = existingMetadata?.OutputMetadata?.DataSchema;
 
     if(outputSchema is null)
