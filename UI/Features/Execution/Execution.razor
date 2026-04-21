@@ -10,7 +10,6 @@
 @using UI.Infrastructure.Grpc
 @inject ContextMenuService ContextMenuService
 @inject AutomationService AutomationClient
-@inject IUiNotificationService NotificationService
 @inject Radzen.DialogService DialogService
 @implements IDisposable
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<ExecutionViewModel>
@@ -427,7 +426,7 @@
 
     if (!executionEligibility.IsEligible)
     {
-      NotificationService.Error(executionEligibility.Error);
+      ViewModel!.PushNotification("Campaign Illegible To Start!", executionEligibility.Error, Severity.Error);
       return;
     }
 
@@ -437,11 +436,6 @@
       request.CampaignTags.AddRange(ViewModel!.SelectedTags);
     await AutomationClient.StartExecution(request, null);
     ViewModel!.DisplayExecutionSummary = true;
-  }
-
-  System.Type? GetTypeFromString(string? type)
-  {
-    return type is null ? null : System.Type.GetType($"UI.Features.Execution.Planning.{type}");
   }
 
   private async Task ExecutionNotesUploaded(UploadChangeEventArgs args)

@@ -226,6 +226,9 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     AvailableTags = tags.AvailableTags.ToList();
   }
 
+  public void PushNotification(string title, string message, Severity severity)
+  => _notificationService.PushNotification(new AresNotification() { Title = title, Message = message, NotificationSeverity = severity });
+
   [Reactive]
   public partial ExperimentStopConditionResponse? CurrentStopCondition { get; set; }
   public double DesiredResult { get; set; }
