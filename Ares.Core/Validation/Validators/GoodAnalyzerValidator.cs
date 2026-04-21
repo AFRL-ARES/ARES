@@ -43,6 +43,7 @@ public static class GoodAnalyzerValidator
 
     var inputSchema = new AresStructSchema();
 
+    //TODO: This should be more robust. Even slightly improved like this we're still not going to process nested structs very well, but that's an unlikely scenario for now.
     foreach(var map in experimentTemplate.AnalyzerMaps)
     {
       var matchingCommand = outputCommands.FirstOrDefault(cmd => cmd.UserOutputKeyMap.Values.Contains(map.Value));
@@ -51,8 +52,24 @@ public static class GoodAnalyzerValidator
         continue;
 
       var matchingMap = matchingCommand.UserOutputKeyMap.FirstOrDefault(userMap => userMap.Value == map.Value);
-      var outputAresValueSchema = matchingCommand.Metadata.OutputMetadata.DataSchema;
-      inputSchema.AddEntry(map.Key, outputAresValueSchema.Type);
+      //var outputAresValueSchema = matchingCommand.Metadata.OutputMetadata.DataSchema;
+      var matchingOutputSchema = matchingCommand.Metadata.OutputMetadata;
+
+      if(matchingOutputSchema.DataSchema.Type == AresDataType.Struct)
+      {
+        //Look for matching values internal to the struct
+        var matched = matchingOutputSchema.DataSchema.StructSchema.Fields.TryGetValue(map.Value, out var matchingValue);
+        
+        if(matched)
+          inputSchema.AddEntry(map.Key, matchingValue.Type);
+
+        //If we don't find a match inside the struct assume the type requested was a struct
+        else
+          inputSchema.AddEntry(map.Key, AresDataType.Struct);
+      }
+
+      else
+        inputSchema.AddEntry(map.Key, matchingOutputSchema.DataSchema.Type);
     }
 
     var result = await analyzer.ValidateInputs(inputSchema);
