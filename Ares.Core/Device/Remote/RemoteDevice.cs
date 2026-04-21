@@ -171,7 +171,7 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     var client = GetClient();
     try
     {
-      var response = await client.GetStateSchemaAsync(new Empty());
+      var response = await client.GetStateSchemaAsync(new Empty(), deadline: DateTime.UtcNow.AddSeconds(5));
       StateSchema = response.Schema;
     }
     catch(RpcException ex)
@@ -241,24 +241,26 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
   {
     var client = GetClient();
     try
-    {
-      var response = await client.GetSettingsSchemaAsync(new Empty());
+    {;
+      var response = await client.GetSettingsSchemaAsync(new Empty(), deadline: DateTime.UtcNow.AddSeconds(5));
 
       if(response.Schema is not null)
         SettingSchema = response.Schema;
     }
-    catch(RpcException)
+    catch(RpcException ex)
     {
       Status = new DeviceOperationalStatus 
       { 
         OperationalState = OperationalState.Inactive, 
         Message = $"Failed to fetch settings. Possible connection issue." 
       };
+
+      _logger.LogError("Caught an RPC Exception Fetching Operational Status for {Name}: {ex.Message}", Name, ex.Message);
     }
 
     try
     {
-      var response = await client.GetCurrentSettingsAsync(new Empty());
+      var response = await client.GetCurrentSettingsAsync(new Empty(), deadline: DateTime.UtcNow.AddSeconds(5));
 
       if(response.Settings is not null)
         await UpdateSettings(response.Settings);
@@ -318,7 +320,7 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     aresSettings.Fields.Add(Settings);
 
     var client = GetClient();
-    await client.SetSettingsAsync(new SetSettingsRequest { Settings = aresSettings });    
+    await client.SetSettingsAsync(new SetSettingsRequest { Settings = aresSettings }, deadline: DateTime.UtcNow.AddSeconds(5));    
   }
 
   private AresRemoteDeviceService.AresRemoteDeviceServiceClient GetClient()
@@ -339,7 +341,7 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
   public override async Task<AresStruct> GetSettings()
   {
     var client = GetClient();
-    var response = await client.GetCurrentSettingsAsync(new Empty());
+    var response = await client.GetCurrentSettingsAsync(new Empty(), deadline: DateTime.UtcNow.AddSeconds(5));
     return response.Settings;
   }
 
