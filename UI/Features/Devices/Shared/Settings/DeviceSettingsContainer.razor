@@ -16,9 +16,20 @@
           </div>
           @if(_deviceOperationalStatus.OperationalState == OperationalState.Active)
           {
-            <div>
-              @_deviceOperationalStatus.Message
-            </div>
+            if(_deviceOperationalStatus.Message == string.Empty)
+            {
+              <div>
+                Remote Device is Active!
+              </div>
+            }
+
+            else
+            {
+              <div>
+                @_deviceOperationalStatus.Message
+              </div> 
+            }
+            
           }
           else if(_deviceOperationalStatus.OperationalState == OperationalState.Inactive)
           {
