@@ -4,6 +4,8 @@ using Ares.Datamodel.Visualizing.Local;
 using Ares.Device;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
+using System.Reactive.Disposables;
+using System.Reactive.Disposables.Fluent;
 using System.Reactive.Linq;
 using UI.Features.Visualization.Models;
 
@@ -11,21 +13,24 @@ namespace UI.Features.Visualization.ViewModels;
 
 public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
 {
-  private IDisposable? _streamSubscription;
-  private readonly IAresDevice _device;
+  private readonly CompositeDisposable _streamSubscription = new();
+  private readonly IEnumerable<IAresDevice> _devices;
   private DeviceVisualizationConfig _config;
   private readonly Action<string> _onDeleteRequested;
   private readonly object _bufferLock = new object();
-  private readonly List<ChartDataPoint> _internalBuffer = new(50);
+
+  // NEW: Changed from a single list to a Dictionary mapped by "DeviceName - Path"
+  private readonly Dictionary<string, List<ChartDataPoint>> _internalBuffers = new();
+
   private readonly Action<string, DeviceVisualizationConfig> _onUpdateRequested;
 
-  public VisualizationItemViewModel(DeviceVisualizationConfig config, 
-    IAresDevice device, 
-    Action<string> onDeleteRequested, 
+  public VisualizationItemViewModel(DeviceVisualizationConfig config,
+    IEnumerable<IAresDevice> devices,
+    Action<string> onDeleteRequested,
     Action<string, DeviceVisualizationConfig> onUpdateRequested)
   {
     _config = config;
-    _device = device;
+    _devices = devices;
     _onDeleteRequested = onDeleteRequested;
     _onUpdateRequested = onUpdateRequested;
 
@@ -34,9 +39,16 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
     NumberOfDisplayPoints = config.NumberDisplayPoints;
     DisplayLabels = config.ShowDataLabels;
     DisplayMarkers = config.ShowMarkers;
-    DataPoints = [];
+
+    // Initialize the new dictionary
+    DataPoints = new Dictionary<string, IList<ChartDataPoint>>();
+
     UniqueId = config.UniqueId;
-    Title = $"{device.Name} : {config.Path.Path}";
+    if(config.Paths.Count == 1 && devices.Count() == 1)
+      Title = $"{devices.First().Name} : {config.Paths.First().Path}";
+    else
+      Title = $"Multi-Data Display Chart";
+
     Style = config.Style;
 
     GridX = config.GridX;
@@ -49,40 +61,68 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
 
   public void StartStreamSubscription()
   {
-    _streamSubscription?.Dispose();
-    Console.WriteLine($"Disposing the old stream, creating a new one with polling frequency of {PollingFrequencyMs}");
-    _streamSubscription = _device.StateStream
+    _streamSubscription.Clear();
+
+    lock(_bufferLock)
+    {
+      _internalBuffers.Clear();
+    }
+
+    foreach(var device in _devices)
+    {
+      if(device is null)
+        continue;
+
+      var matchingPaths = _config.Paths.Where(p => p.AssociatedDeviceName == device.UniqueId).ToList();
+      if(!matchingPaths.Any()) continue;
+
+      device.StateStream
         .Sample(TimeSpan.FromMilliseconds(PollingFrequencyMs))
-        .Do(state => ProcessNewState(state, _config.Path))
+        .Do(state => ProcessNewState(state, matchingPaths, device.Name))
         .Subscribe(
             onNext: _ =>
             {
               lock(_bufferLock)
               {
-                DataPoints = _internalBuffer.ToList();
+                DataPoints = _internalBuffers.ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => (IList<ChartDataPoint>)kvp.Value.ToList()
+                );
               }
             },
             onError: ex => Console.WriteLine($"[{Title}] Stream error: {ex.Message}")
-        );
+        ).DisposeWith(_streamSubscription);
+    }
   }
 
-
-  private void ProcessNewState(AresStruct state, VisualizationPath path)
+  private void ProcessNewState(AresStruct state, IEnumerable<VisualizationPath> paths, string deviceName)
   {
-    if(TryExtractValue(state, path, out double numericValue))
+    foreach(var path in paths)
     {
-      LatestNumericValue = numericValue;
-      LatestDisplayValue = numericValue.ToString("0.##");
-
-      if(Style is ChartStyle.Line or ChartStyle.Spline or ChartStyle.Area or ChartStyle.Column)
+      if(TryExtractValue(state, path, out double numericValue))
       {
-        lock(_bufferLock)
-        {
-          _internalBuffer.Add(new ChartDataPoint(DateTime.UtcNow, numericValue));
+        // Note: For Text/Gauge displays, this will just hold the most recently processed value.
+        LatestNumericValue = numericValue;
+        LatestDisplayValue = numericValue.ToString("0.##");
 
-          while(_internalBuffer.Count > NumberOfDisplayPoints)
+        if(Style is ChartStyle.Line or ChartStyle.Spline or ChartStyle.Area or ChartStyle.Column)
+        {
+          // NEW: Create a unique key for each line on the chart
+          string seriesKey = $"{deviceName}: {path.Path}";
+
+          lock(_bufferLock)
           {
-            _internalBuffer.RemoveAt(0);
+            if(!_internalBuffers.ContainsKey(seriesKey))
+            {
+              _internalBuffers[seriesKey] = new List<ChartDataPoint>(NumberOfDisplayPoints + 10);
+            }
+
+            _internalBuffers[seriesKey].Add(new ChartDataPoint(DateTime.UtcNow, numericValue));
+
+            while(_internalBuffers[seriesKey].Count > NumberOfDisplayPoints)
+            {
+              _internalBuffers[seriesKey].RemoveAt(0);
+            }
           }
         }
       }
@@ -107,10 +147,8 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
 
         if(currentStruct.Fields.TryGetValue(segment, out AresValue nextValue) && nextValue.KindCase == AresValue.KindOneofCase.StructValue)
           currentStruct = nextValue.StructValue;
-
         else
           return false;
-
       }
 
       string leafSegment = segments[^1];
@@ -153,7 +191,6 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
   {
     _config = newConfig;
 
-    //Update Gridstack Position
     GridX = _config.GridX;
     GridY = _config.GridY;
     GridW = _config.GridW;
@@ -175,7 +212,7 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
 
   public void Dispose()
   {
-    _streamSubscription?.Dispose();
+    _streamSubscription.Dispose();
     GC.SuppressFinalize(this);
   }
 
@@ -192,8 +229,10 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
   public partial string LatestDisplayValue { get; set; }
   [Reactive]
   public partial double LatestNumericValue { get; set; }
+
   [Reactive]
-  public partial IList<ChartDataPoint> DataPoints { get; set; }
+  public partial IDictionary<string, IList<ChartDataPoint>> DataPoints { get; set; }
+
   [Reactive]
   public partial int NumberOfDisplayPoints { get; set; }
   [Reactive]

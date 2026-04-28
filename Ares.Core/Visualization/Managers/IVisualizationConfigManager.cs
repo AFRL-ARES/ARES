@@ -6,7 +6,7 @@ namespace Ares.Core.Visualization.Managers;
 public interface IVisualizationConfigManager
 {
   Task LoadConfigs();
-  Task AddDeviceVisualization(string deviceId, VisualizationPath path, ChartStyle style);
+  Task AddDeviceVisualization(List<VisualizationPath> paths, ChartStyle style);
   Task Remove(string configId);
   Task UpdateDeviceVisualization(string configId, DeviceVisualizationConfig config);
 }

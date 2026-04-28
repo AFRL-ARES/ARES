@@ -9,6 +9,7 @@ public class DeviceVisualizationConfigEntityConfiguration : AresEntityTypeBaseCo
   public override void Configure(EntityTypeBuilder<DeviceVisualizationConfig> builder)
   {
     base.Configure(builder);
-    builder.Property(b => b.Path).HasVisualizationPath();
+    builder.Property(b => b.Paths).HasVisualizationPath();
+    builder.Property(b => b.DeviceIds).HasDeviceIds();
   }
 }

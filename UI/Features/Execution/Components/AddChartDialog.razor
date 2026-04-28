@@ -16,7 +16,7 @@
     <RadzenColumn Size="12" SizeMD="5" style="display: flex; flex-direction: column;">
       <RadzenText TextStyle="TextStyle.Subtitle2">1. Select Device</RadzenText>
             
-      <RadzenListBox @bind-Value="ViewModel.SelectedDevice"
+      <RadzenListBox @bind-Value="ViewModel.BrowsingDevice"
                      Data="@ViewModel!.AvailableDevices"
                      TextProperty="Name"
                      Style="flex: 1; width: 100%; height: 100%; min-height: 400px;"
@@ -42,7 +42,7 @@
         </div>
       </div>
 
-      @if(ViewModel.SelectedDevice == null)
+      @if(ViewModel.BrowsingDevice == null)
       {
         <RadzenAlert AlertStyle="AlertStyle.Info" ShowIcon="true" Variant="Variant.Flat" Shade="Shade.Lighter">
           Please select a device from the list to view its available telemetry.
@@ -58,7 +58,7 @@
       {
         <RadzenListBox TValue="VisualizationPath"
                        Data="@ViewModel.VisiblePaths"
-                       @bind-Value="ViewModel!.SelectedPath"
+                       @bind-Value="ViewModel!.CurrentlySelectedPath"
                        Change="ViewModel!.UpdateAvailableChartStyles"
                        Style="flex: 1; width: 100%; height: 100%; min-height: 400px;"
                        class="rz-shadow-1">
@@ -79,7 +79,7 @@
         </RadzenListBox>
       }
 
-      @if(ViewModel.SelectedPath != null)
+      @if(ViewModel.CurrentlySelectedPath != null)
       {
         <div class="rz-mt-4 rz-p-3 rz-border-radius-1" style="background-color: var(--rz-secondary-lighter);">
           <RadzenText TextStyle="TextStyle.Subtitle2" class="rz-mb-2">3. Visualization Style</RadzenText>
@@ -143,14 +143,15 @@
     var selectedConfig = new DeviceVisualizationConfig
     {
       UniqueId = Guid.NewGuid().ToString(),
-      DeviceId = ViewModel!.SelectedDevice?.UniqueId ?? "",
-      Path = ViewModel!.SelectedPath,
       Style = ViewModel!.SelectedChartStyle,
       NumberDisplayPoints = 10,
       PollingRate = 2000,
       ShowDataLabels = true,
       ShowMarkers = true
     };
+
+    selectedConfig.DeviceIds.Add(ViewModel!.BrowsingDevice?.UniqueId ?? "");
+    selectedConfig.Paths.Add(ViewModel!.CurrentlySelectedPath);
 
     DialogService.Close(selectedConfig);
   }

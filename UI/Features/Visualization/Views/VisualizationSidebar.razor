@@ -23,7 +23,7 @@
           <RadzenColumn Size="12" SizeMD="5" style="display: flex; flex-direction: column;">
               <RadzenText TextStyle="TextStyle.Subtitle2">1. Select Device</RadzenText>
             
-              <RadzenListBox @bind-Value="ViewModel.SelectedDevice"
+              <RadzenListBox @bind-Value="ViewModel.BrowsingDevice"
                              Data="@ViewModel!.AvailableDevices"
                              TextProperty="Name"
                              Style="flex: 1; width: 100%; height: 100%; min-height: 400px;"
@@ -49,7 +49,7 @@
                   </div>
               </div>
 
-              @if (ViewModel.SelectedDevice == null)
+              @if (ViewModel.BrowsingDevice == null)
               {
                   <RadzenAlert AlertStyle="AlertStyle.Info" ShowIcon="true" Variant="Variant.Flat" Shade="Shade.Lighter">
                       Please select a device from the list to view its available telemetry.
@@ -63,30 +63,40 @@
               }
               else
               {
-                  <RadzenListBox TValue="VisualizationPath" 
-                                 Data="@ViewModel.VisiblePaths"
-                                 @bind-Value="ViewModel!.SelectedPath"
-                                 Change="ViewModel!.UpdateAvailableChartStyles"
-                                 Style="flex: 1; width: 100%; height: 100%; min-height: 400px;"
-                                 class="rz-shadow-1">
-                      <Template Context="path">
-                          @{
-                              var vPath = (VisualizationPath)path;
-                              var badgeStyle = vPath.IsPlottable ? BadgeStyle.Success : BadgeStyle.Light;
-                              var icon = vPath.IsPlottable ? "timeline" : "text_snippet";
-                          }
-                          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                              <div style="display: flex; align-items: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                                  <RadzenIcon Icon="@icon" class="rz-mr-2 rz-color-text-disabled" Style="font-size: 1.2rem;" />
-                                  <span title="@vPath.Path">@vPath.Path</span>
-                              </div>
-                              <RadzenBadge BadgeStyle="@badgeStyle" Text="@vPath.DataType.ToString()" IsPill="true" class="rz-ml-2" />
-                          </div>
-                      </Template>
-                  </RadzenListBox>
+              <RadzenListBox TValue="VisualizationPath"
+                              Data="@ViewModel.VisiblePaths"
+                              @bind-Value="ViewModel!.CurrentlySelectedPath"
+                              Style="flex: 1; width: 100%; height: 100%; min-height: 400px;"
+                              class="rz-shadow-1">
+                <Template Context="path">
+                  @{
+                    var vPath = (VisualizationPath)path;
+                    var badgeStyle = vPath.IsPlottable ? BadgeStyle.Success : BadgeStyle.Light;
+                    var icon = vPath.IsPlottable ? "timeline" : "text_snippet";
+                  }
+                  <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <div style="display: flex; align-items: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                      <RadzenIcon Icon="@icon" class="rz-mr-2 rz-color-text-disabled" Style="font-size: 1.2rem;" />
+                      <span title="@vPath.Path">@vPath.Path</span>
+                    </div>
+                    <RadzenBadge BadgeStyle="@badgeStyle" Text="@vPath.DataType.ToString()" IsPill="true" class="rz-ml-2" />
+                  </div>
+                </Template>
+              </RadzenListBox>
               }
 
-              @if (ViewModel.SelectedPath != null)
+              @if(ViewModel!.CurrentlySelectedPath is not null)
+              {
+                  <RadzenButton Text="Add Data Source"
+                        Icon="add"
+                        ButtonStyle="ButtonStyle.Primary"
+                        class="rz-w-100"
+                        IsAsync="true"
+                        Click="ViewModel!.AddPath" />
+              }
+
+
+              @if(ViewModel.SelectedPaths.Any())
               {
                 <div class="rz-mt-4 rz-p-3 rz-border-radius-1" style="background-color: var(--rz-secondary-lighter);">
                     <RadzenText TextStyle="TextStyle.Subtitle2" class="rz-mb-2">3. Visualization Style</RadzenText>

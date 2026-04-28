@@ -25,19 +25,20 @@ public class VisualizationConfigManager : IVisualizationConfigManager
     _notificationHandler = notificationHandler;
   }
 
-  public async Task AddDeviceVisualization(string deviceId, VisualizationPath path, ChartStyle style)
+  public async Task AddDeviceVisualization(List<VisualizationPath> paths, ChartStyle style)
   {
     var newConfig = new DeviceVisualizationConfig
     {
       UniqueId = Guid.NewGuid().ToString(),
-      DeviceId = deviceId,
-      Path = path,
       Style = style,
       NumberDisplayPoints = 20,
       PollingRate = 3000,
-      ShowDataLabels = false,
-      ShowMarkers = false
+      ShowDataLabels = true,
+      ShowMarkers = true
     };
+
+    newConfig.DeviceIds.AddRange(paths.Select(p => p.AssociatedDeviceName));
+    newConfig.Paths.AddRange(paths);
 
     try
     {
@@ -81,9 +82,11 @@ public class VisualizationConfigManager : IVisualizationConfigManager
       return;
 
     //Chart Settings
-    existingConfig.DeviceId = config.DeviceId;
+    existingConfig.DeviceIds.Clear();
+    existingConfig.DeviceIds.AddRange(config.DeviceIds);
     existingConfig.Style = config.Style;
-    existingConfig.Path = config.Path;
+    existingConfig.Paths.Clear();
+    existingConfig.Paths.AddRange(config.Paths);
     existingConfig.PollingRate = config.PollingRate;
     existingConfig.ShowDataLabels = config.ShowDataLabels;
     existingConfig.NumberDisplayPoints = config.NumberDisplayPoints;

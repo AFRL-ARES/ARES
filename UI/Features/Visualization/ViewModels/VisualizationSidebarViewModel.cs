@@ -27,9 +27,10 @@ public partial class VisualizationSidebarViewModel : ReactiveObject
     _visualizationConfigManager = visualizationConfigManager;
     AllPaths = [];
     VisiblePaths = [];
+    SelectedPaths = [];
     AvailableChartStyles = [];
 
-    this.WhenAnyValue(x => x.SelectedDevice, x => x.ShowAllValues)
+    this.WhenAnyValue(x => x.BrowsingDevice, x => x.ShowAllValues)
         .Subscribe(tuple =>
         {
           var (device, showAll) = tuple;
@@ -41,7 +42,7 @@ public partial class VisualizationSidebarViewModel : ReactiveObject
             return;
           }
 
-          AllPaths = ExtractPaths(device.StateSchema).ToList();
+          AllPaths = ExtractPaths(device, device.StateSchema).ToList();
           VisiblePaths = AllPaths.Where(p => showAll || p.IsPlottable).ToList();
         });
 
@@ -52,10 +53,10 @@ public partial class VisualizationSidebarViewModel : ReactiveObject
 
   public void UpdateAvailableChartStyles()
   {
-    if(SelectedPath is null)
+    if(!SelectedPaths.Any())
       return;
 
-    switch(SelectedPath.DataType)
+    switch(SelectedPaths.First().DataType)
     {
       case AresDataType.Boolean:
         AvailableChartStyles = [ChartStyle.TextIndicator, ChartStyle.Line];
@@ -74,33 +75,33 @@ public partial class VisualizationSidebarViewModel : ReactiveObject
     }
   }
 
-  private IEnumerable<VisualizationPath> ExtractPaths(AresStructSchema schema, string prefix = "")
+  private IEnumerable<VisualizationPath> ExtractPaths(IAresDevice device, AresStructSchema stateSchema, string prefix = "")
   {
     var paths = new List<VisualizationPath>();
 
-    foreach(var field in schema.Fields)
+    foreach(var field in stateSchema.Fields)
     {
       string currentPath = string.IsNullOrEmpty(prefix) ? field.Key : $"{prefix}.{field.Key}";
       var type = field.Value.Type;
 
       if(type == AresDataType.Number || type == AresDataType.Quantity || type == AresDataType.Boolean)
       {
-        paths.Add(new VisualizationPath { Path = currentPath, DataType = type, IsPlottable = true });
+        paths.Add(new VisualizationPath { Path = currentPath, DataType = type, IsPlottable = true, AssociatedDeviceName = device.UniqueId });
       }
 
       else if(type == AresDataType.Struct && field.Value.StructSchema != null)
       {
-        paths.AddRange(ExtractPaths(field.Value.StructSchema, currentPath));
+        paths.AddRange(ExtractPaths(device, field.Value.StructSchema, currentPath));
       }
 
       else if(type == AresDataType.List && field.Value.ListElementSchema?.Type == AresDataType.Struct)
       {
-        paths.AddRange(ExtractPaths(field.Value.ListElementSchema.StructSchema!, $"{currentPath}[*]"));
+        paths.AddRange(ExtractPaths(device, field.Value.ListElementSchema.StructSchema!, $"{currentPath}[*]"));
       }
 
       else if(type == AresDataType.String)
       {
-        paths.Add(new VisualizationPath { Path = currentPath, DataType = type, IsPlottable = false });
+        paths.Add(new VisualizationPath { Path = currentPath, DataType = type, IsPlottable = false, AssociatedDeviceName = device.UniqueId });
       }
     }
 
@@ -111,8 +112,8 @@ public partial class VisualizationSidebarViewModel : ReactiveObject
   {
     try
     {
-      if(SelectedDevice is not null && SelectedPath is not null)
-        await _visualizationConfigManager.AddDeviceVisualization(SelectedDevice.UniqueId, SelectedPath, SelectedChartStyle);
+      if(SelectedPaths.Any())
+        await _visualizationConfigManager.AddDeviceVisualization(SelectedPaths, SelectedChartStyle);
     }
 
     catch(Exception e)
@@ -121,13 +122,28 @@ public partial class VisualizationSidebarViewModel : ReactiveObject
     }
   }
 
+  public void AddPath()
+  {
+    if(SelectedPaths.Any() && SelectedPaths.First().DataType != CurrentlySelectedPath.DataType)
+      return;
+
+    else
+      SelectedPaths.Add(CurrentlySelectedPath);
+
+    if(SelectedPaths.Count == 1)
+      UpdateAvailableChartStyles();
+  }
+
+  public void RemovePath(VisualizationPath path)
+    => SelectedPaths.Remove(path);
+
   public void Dispose()
   {
     _cleanUp.Dispose();
   }
 
   [Reactive]
-  public partial IAresDevice? SelectedDevice { get; set; }
+  public partial IAresDevice? BrowsingDevice { get; set; }
 
   [Reactive]
   public partial bool ShowAllValues { get; set; }
@@ -139,13 +155,19 @@ public partial class VisualizationSidebarViewModel : ReactiveObject
   public partial IEnumerable<VisualizationPath> VisiblePaths { get; set; }
 
   [Reactive]
-  public partial VisualizationPath? SelectedPath { get; set; }
+  public partial List<VisualizationPath> SelectedPaths { get; set; }
 
   [Reactive]
   private ChartStyle _selectedChartStyle = ChartStyle.Line;
 
   [Reactive]
+  private partial AresDataType SelectedDataType { get; set; }
+
+  [Reactive]
   public IEnumerable<ChartStyle> AvailableChartStyles { get; set; }
+
+  [Reactive]
+  public partial VisualizationPath CurrentlySelectedPath { get; set; }
 
   public ReadOnlyObservableCollection<IAresDevice> AvailableDevices => _devices;
 }

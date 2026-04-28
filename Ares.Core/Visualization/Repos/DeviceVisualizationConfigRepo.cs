@@ -16,7 +16,7 @@ public class DeviceVisualizationConfigRepo : IDeviceVisualizationConfigRepo
   }
 
   public IEnumerable<DeviceVisualizationConfig> GetConfigsByDeviceId(string deviceId) 
-    => _configCache.Items.Where(c => c.DeviceId == deviceId);
+    => _configCache.Items.Where(c => c.DeviceIds.Any(id => id == deviceId));
 
   public IEnumerator<DeviceVisualizationConfig> GetEnumerator() => _configCache.Items.GetEnumerator();
   IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

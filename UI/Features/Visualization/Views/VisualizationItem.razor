@@ -6,7 +6,6 @@
 @inject Radzen.DialogService DialogService
 
 <div class="ares-vis-wrapper">
-  <!-- Removed inline flex styles, relying on .ares-vis-card -->
   <RadzenCard Class="rz-p-4 ares-vis-card">
     
     <div class="ares-vis-header rz-display-flex rz-justify-content-between rz-align-items-center">
@@ -20,7 +19,6 @@
       </div>
     </div>
 
-    <!-- Removed inline flex styles, relying on .ares-vis-body -->
     <div class="ares-vis-body">
       @switch (ViewModel!.Style)
       {
@@ -29,40 +27,46 @@
         case ChartStyle.Area:
         case ChartStyle.Column:
           <RadzenChart Style="flex: 1; width: 100%; height: 100%;">
-            @if (ViewModel.Style == ChartStyle.Line)
+            
+            @foreach (var series in ViewModel.DataPoints)
             {
-              <RadzenLineSeries Data="@ViewModel.DataPoints" CategoryProperty="Timestamp" ValueProperty="Value">
-                <RadzenSeriesDataLabels Visible="@ViewModel!.DisplayLabels" />
-                <RadzenMarkers Visible="@ViewModel!.DisplayMarkers" MarkerType="MarkerType.Circle" />
-              </RadzenLineSeries>
+              @if (ViewModel.Style == ChartStyle.Line)
+              {
+                <RadzenLineSeries Data="@series.Value" Title="@series.Key" CategoryProperty="Timestamp" ValueProperty="Value">
+                  <RadzenSeriesDataLabels Visible="@ViewModel!.DisplayLabels" />
+                  <RadzenMarkers Visible="@ViewModel!.DisplayMarkers" MarkerType="MarkerType.Circle" />
+                </RadzenLineSeries>
+              }
+              else if (ViewModel.Style == ChartStyle.Spline)
+              {
+                <RadzenLineSeries Data="@series.Value" Title="@series.Key" CategoryProperty="Timestamp" ValueProperty="Value" Smooth="true">
+                  <RadzenSeriesDataLabels Visible="@ViewModel!.DisplayLabels" />
+                  <RadzenMarkers Visible="@ViewModel!.DisplayMarkers" MarkerType="MarkerType.Circle" />
+                </RadzenLineSeries>
+              }
+              else if (ViewModel.Style == ChartStyle.Area)
+              {
+                <RadzenAreaSeries Data="@series.Value" Title="@series.Key" CategoryProperty="Timestamp" ValueProperty="Value">
+                  <RadzenSeriesDataLabels Visible="@ViewModel!.DisplayLabels" />
+                  <RadzenMarkers Visible="@ViewModel!.DisplayMarkers" MarkerType="MarkerType.Circle" />
+                </RadzenAreaSeries>
+              }
+              else if (ViewModel.Style == ChartStyle.Column)
+              {
+                <RadzenColumnSeries Data="@series.Value" Title="@series.Key" CategoryProperty="Timestamp" ValueProperty="Value">
+                  <RadzenSeriesDataLabels Visible="@ViewModel!.DisplayLabels" />
+                </RadzenColumnSeries>
+              }
             }
-            else if (ViewModel.Style == ChartStyle.Spline)
-            {
-              <RadzenLineSeries Data="@ViewModel.DataPoints" CategoryProperty="Timestamp" ValueProperty="Value" Smooth="true">
-                <RadzenSeriesDataLabels Visible="@ViewModel!.DisplayLabels" />
-                <RadzenMarkers Visible="@ViewModel!.DisplayMarkers" MarkerType="MarkerType.Circle" />
-              </RadzenLineSeries>
-            }
-            else if (ViewModel.Style == ChartStyle.Area)
-            {
-              <RadzenAreaSeries Data="@ViewModel.DataPoints" CategoryProperty="Timestamp" ValueProperty="Value">
-                <RadzenSeriesDataLabels Visible="@ViewModel!.DisplayLabels" />
-                <RadzenMarkers Visible="@ViewModel!.DisplayMarkers" MarkerType="MarkerType.Circle" />
-              </RadzenAreaSeries>
-            }
-            else if (ViewModel.Style == ChartStyle.Column)
-            {
-              <RadzenColumnSeries Data="@ViewModel.DataPoints" CategoryProperty="Timestamp" ValueProperty="Value">
-                <RadzenSeriesDataLabels Visible="@ViewModel!.DisplayLabels" />
-              </RadzenColumnSeries>
-            }
+
             <RadzenCategoryAxis Formatter="@(value => "")" Padding="20">
               <RadzenGridLines Visible="true" />
             </RadzenCategoryAxis>
             <RadzenValueAxis>
               <RadzenGridLines Visible="true" />
             </RadzenValueAxis>
-            <RadzenLegend Visible="false" />
+            
+            <RadzenLegend Visible="@(ViewModel.DataPoints.Count > 1)" Position="LegendPosition.Bottom" />
           </RadzenChart>
           break;
 
@@ -75,7 +79,6 @@
           break;
 
         case ChartStyle.TextIndicator:
-          <!-- Removed inline alignment, relying on .text-indicator-container -->
           <div class="text-indicator-container">
             <RadzenText TextStyle="TextStyle.DisplayH3" Class="text-indicator-value">
               @ViewModel.LatestDisplayValue

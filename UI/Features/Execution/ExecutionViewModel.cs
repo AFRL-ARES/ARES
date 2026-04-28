@@ -462,10 +462,15 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
       return Task.CompletedTask;
     }
 
-    var device = _deviceProvider.GetDevice(ChartConfigA.DeviceId);
+    var id = ChartConfigA.DeviceIds.FirstOrDefault();
+
+    if(id is null)
+      return Task.CompletedTask;
+
+    var device = _deviceProvider.GetDevice(id);
 
     if(device is not null)
-      ChartA = new VisualizationItemViewModel(ChartConfigA, device, OnChartOneDeleteRequested, OnChartOneUpdated);
+      ChartA = new VisualizationItemViewModel(ChartConfigA, [device], OnChartOneDeleteRequested, OnChartOneUpdated);
     
     return Task.CompletedTask;
   }
@@ -478,10 +483,15 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
       return Task.CompletedTask;
     }
 
-    var device = _deviceProvider.GetDevice(ChartConfigB.DeviceId);
+    var id = ChartConfigB.DeviceIds.FirstOrDefault();
+
+    if(id is null)
+      return Task.CompletedTask;
+
+    var device = _deviceProvider.GetDevice(id);
 
     if(device is not null)
-      ChartB = new VisualizationItemViewModel(ChartConfigB, device, OnChartTwoDeleteRequested, OnChartTwoUpdated);
+      ChartB = new VisualizationItemViewModel(ChartConfigB, [device], OnChartTwoDeleteRequested, OnChartTwoUpdated);
 
     return Task.CompletedTask;
   }
