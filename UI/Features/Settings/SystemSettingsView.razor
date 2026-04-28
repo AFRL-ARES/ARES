@@ -1,0 +1,129 @@
+﻿@page "/settings/system"
+@using Ares.Datamodel
+@using Radzen
+@using Radzen.Blazor
+@inherits LayoutComponentBase
+@layout SettingsLayout
+
+<div class="card flex-fill d-flex flex-column">
+
+  <RadzenStack Gap="1.5rem" Class="rz-p-6">
+    <div class="rz-display-flex rz-justify-content-between rz-align-items-center">
+@*       <RadzenText TextStyle="TextStyle.H4" TagName="TagName.H1" class="rz-m-0">
+        Application Settings
+      </RadzenText> *@
+    </div>
+
+    <RadzenTabs RenderMode="TabRenderMode.Client">
+      <Tabs>
+        <RadzenTabsItem Text="General" Icon="settings">
+          <RadzenCard Variant="Variant.Flat">
+            <RadzenStack Gap="1rem">
+              <RadzenFieldset Text="Core Configuration">
+                <RadzenStack Gap="1rem">
+                  <RadzenFormField Text="Application Name" Variant="Variant.Outlined" Style="width: 100%;">
+                    <RadzenTextBox @bind-Value="@appName" />
+                  </RadzenFormField>
+
+                  <div class="rz-display-flex rz-align-items-center rz-gap-2">
+                    <RadzenSwitch @bind-Value="@autoStart" />
+                    <RadzenText TextStyle="TextStyle.Body1" class="rz-m-0">Launch on system startup</RadzenText>
+                  </div>
+                </RadzenStack>
+              </RadzenFieldset>
+            </RadzenStack>
+          </RadzenCard>
+        </RadzenTabsItem>
+
+        <RadzenTabsItem Text="Error Handling" Icon="error_outline">
+          <RadzenCard Variant="Variant.Flat">
+            <RadzenStack Gap="1rem">
+              <RadzenFieldset Text="Configure Error Handling">
+                <RadzenStack Gap="1rem">
+                  @foreach(var error in Enum.GetValues<CommandStatusCode>())
+                  {
+                    <RadzenFormField Text="@(error.ToString())" Variant="Variant.Outlined" Style="width: 100%;">
+                      <RadzenDropDown @bind-Value="SelectedErrorHandlers[error]"
+                                      Data="@(Enum.GetValues<ErrorHandling>().Where(v => v != ErrorHandling.UnknownHandling))"
+                                      Style="width: 100%;" />
+                    </RadzenFormField>
+                  }
+                </RadzenStack>
+              </RadzenFieldset>
+            </RadzenStack>
+          </RadzenCard>
+        </RadzenTabsItem>
+
+        <RadzenTabsItem Text="Appearance" Icon="palette">
+          <RadzenCard Variant="Variant.Flat">
+            <RadzenStack Gap="1rem">
+              <RadzenFieldset Text="UI Preferences">
+                <RadzenStack Gap="1rem">
+                  <RadzenFormField Text="Visual Theme" Variant="Variant.Outlined" Style="width: 100%;">
+                    <RadzenDropDown @bind-Value="@selectedTheme" Data="@themes" />
+                  </RadzenFormField>
+
+                  <RadzenFormField Text="Refresh Rate (ms)" Variant="Variant.Outlined">
+                    <RadzenNumeric @bind-Value="@refreshRate" Min="100" Max="5000" />
+                  </RadzenFormField>
+                </RadzenStack>
+              </RadzenFieldset>
+            </RadzenStack>
+          </RadzenCard>
+        </RadzenTabsItem>
+
+        <RadzenTabsItem Text="System" Icon="memory">
+          <RadzenCard Variant="Variant.Flat">
+            <RadzenStack Gap="1rem">
+              <RadzenFieldset Text="Resource Management">
+                <RadzenStack Gap="1rem">
+                  <div class="rz-display-flex rz-align-items-center rz-justify-content-between">
+                    <RadzenText TextStyle="TextStyle.Body1">High Performance Mode</RadzenText>
+                    <RadzenSwitch @bind-Value="@highPerf" />
+                  </div>
+                  <RadzenText TextStyle="TextStyle.Caption">
+                    Enabling this allows the system to prioritize modular device drivers and decentralized command processing.
+                  </RadzenText>
+                </RadzenStack>
+              </RadzenFieldset>
+            </RadzenStack>
+          </RadzenCard>
+        </RadzenTabsItem>
+
+        <RadzenTabsItem Text="Marketplace" Icon="extension">
+          <RadzenCard Variant="Variant.Flat">
+            <RadzenAlert AlertStyle="AlertStyle.Info" Variant="Variant.Flat" Shade="Shade.Lighter" AllowClose="false">
+              Connect to the external marketplace to download new device implementations.
+            </RadzenAlert>
+            <RadzenButton Text="Check for Updates" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" class="rz-mt-4" />
+          </RadzenCard>
+        </RadzenTabsItem>
+      </Tabs>
+    </RadzenTabs>
+
+  </RadzenStack>
+
+  <RadzenButton Click=@SaveChanges Text="Save All Changes" Icon="save" ButtonStyle="ButtonStyle.Primary" Style="max-width: 175px; margin-left: 10px; margin-top: 10px"/>
+</div>
+
+
+
+@code {
+  // State logic
+  private string appName = "ARES System";
+  private bool autoStart = true;
+  private string selectedTheme = "Dark";
+  private int refreshRate = 500;
+  private bool highPerf = false;
+
+  private List<string> themes = new() { "Light", "Dark", "Software", "Humanistic" };
+
+  private Dictionary<CommandStatusCode, ErrorHandling> SelectedErrorHandlers = 
+    Enum.GetValues<CommandStatusCode>().ToDictionary(e => e, e => ErrorHandling.PromptUser);
+
+  private void SaveChanges()
+  {
+    // Notification logic would go here
+    Console.WriteLine("Settings synchronized.");
+  }
+}
