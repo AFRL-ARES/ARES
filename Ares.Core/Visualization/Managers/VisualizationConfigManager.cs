@@ -91,6 +91,7 @@ public class VisualizationConfigManager : IVisualizationConfigManager
     existingConfig.ShowDataLabels = config.ShowDataLabels;
     existingConfig.NumberDisplayPoints = config.NumberDisplayPoints;
     existingConfig.ShowMarkers = config.ShowMarkers;
+    existingConfig.ChartTitle = config.ChartTitle;
 
     //Gridstack Location Info
     existingConfig.GridX = config.GridX;

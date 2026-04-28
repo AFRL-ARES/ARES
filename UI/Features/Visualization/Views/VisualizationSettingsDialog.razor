@@ -5,6 +5,11 @@
 @inject Radzen.DialogService DialogService
 
 <div class="rz-p-2">
+  <RadzenLabel Text="Chart Title" Component="ChartTitle" />
+  <RadzenTextBox @bind-Value="ViewModel!.Title"
+                 Name="ChartTitle"
+                 Class="rz-w-100 rz-mb-4" />
+
   <RadzenLabel Text="Chart Style" Component="StyleDropdown" />
   <RadzenDropDown @bind-Value="ViewModel.Style"
                   Data="@(Enum.GetValues(typeof(ChartStyle)).Cast<ChartStyle>())"

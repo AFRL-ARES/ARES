@@ -114,6 +114,8 @@ public partial class VisualizationSidebarViewModel : ReactiveObject
     {
       if(SelectedPaths.Any())
         await _visualizationConfigManager.AddDeviceVisualization(SelectedPaths, SelectedChartStyle);
+
+      SelectedPaths.Clear();
     }
 
     catch(Exception e)

@@ -19,9 +19,7 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
   private readonly Action<string> _onDeleteRequested;
   private readonly object _bufferLock = new object();
 
-  // NEW: Changed from a single list to a Dictionary mapped by "DeviceName - Path"
   private readonly Dictionary<string, List<ChartDataPoint>> _internalBuffers = new();
-
   private readonly Action<string, DeviceVisualizationConfig> _onUpdateRequested;
 
   public VisualizationItemViewModel(DeviceVisualizationConfig config,
@@ -34,6 +32,7 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
     _onDeleteRequested = onDeleteRequested;
     _onUpdateRequested = onUpdateRequested;
 
+    Title = _config.ChartTitle;
     PollingFrequencyMs = config.PollingRate;
     LatestDisplayValue = "Waiting for data... ";
     NumberOfDisplayPoints = config.NumberDisplayPoints;
@@ -44,13 +43,10 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
     DataPoints = new Dictionary<string, IList<ChartDataPoint>>();
 
     UniqueId = config.UniqueId;
-    if(config.Paths.Count == 1 && devices.Count() == 1)
+    if(Title == string.Empty)
       Title = $"{devices.First().Name} : {config.Paths.First().Path}";
-    else
-      Title = $"Multi-Data Display Chart";
 
     Style = config.Style;
-
     GridX = config.GridX;
     GridY = config.GridY;
     GridW = config.GridW > 0 ? config.GridW : 4;
@@ -107,7 +103,6 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
 
         if(Style is ChartStyle.Line or ChartStyle.Spline or ChartStyle.Area or ChartStyle.Column)
         {
-          // NEW: Create a unique key for each line on the chart
           string seriesKey = $"{deviceName}: {path.Path}";
 
           lock(_bufferLock)
@@ -204,6 +199,7 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
     _config.ShowDataLabels = DisplayLabels;
     _config.NumberDisplayPoints = NumberOfDisplayPoints;
     _config.ShowMarkers = DisplayMarkers;
+    _config.ChartTitle = Title;
     _onUpdateRequested?.Invoke(UniqueId, _config);
   }
 
@@ -217,12 +213,13 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
   }
 
   public string UniqueId { get; }
-  public string Title { get; }
   public int GridX { get; set; }
   public int GridY { get; set; }
   public int GridW { get; set; }
   public int GridH { get; set; }
 
+  [Reactive]
+  public partial string Title { get; set; }
   [Reactive]
   public partial ChartStyle Style { get; set; }
   [Reactive]
