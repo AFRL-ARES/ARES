@@ -86,7 +86,7 @@ public partial class VisualizationSidebarViewModel : ReactiveObject
 
       if(type == AresDataType.Number || type == AresDataType.Quantity || type == AresDataType.Boolean)
       {
-        paths.Add(new VisualizationPath { Path = currentPath, DataType = type, IsPlottable = true, AssociatedDeviceName = device.UniqueId });
+        paths.Add(new VisualizationPath { Path = currentPath, DataType = type, IsPlottable = true, AssociatedDeviceId = device.UniqueId });
       }
 
       else if(type == AresDataType.Struct && field.Value.StructSchema != null)
@@ -101,7 +101,7 @@ public partial class VisualizationSidebarViewModel : ReactiveObject
 
       else if(type == AresDataType.String)
       {
-        paths.Add(new VisualizationPath { Path = currentPath, DataType = type, IsPlottable = false, AssociatedDeviceName = device.UniqueId });
+        paths.Add(new VisualizationPath { Path = currentPath, DataType = type, IsPlottable = false, AssociatedDeviceId = device.UniqueId });
       }
     }
 

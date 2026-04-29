@@ -85,7 +85,7 @@ public class VisualizationConfigManager : IVisualizationConfigManager
         config.DeviceIds.Remove(deviceId);
         var pathsCopy = config.Paths.ToList();
         config.Paths.Clear();
-        config.Paths.AddRange(pathsCopy.Where(p => p.AssociatedDeviceName !=  deviceId));
+        config.Paths.AddRange(pathsCopy.Where(p => p.AssociatedDeviceId !=  deviceId));
 
         await Remove(config.UniqueId);
         await AddDeviceVisualization(config.Paths.ToList(), config.Style);
@@ -105,7 +105,7 @@ public class VisualizationConfigManager : IVisualizationConfigManager
       ShowMarkers = true
     };
 
-    newConfig.DeviceIds.AddRange(paths.Select(p => p.AssociatedDeviceName));
+    newConfig.DeviceIds.AddRange(paths.Select(p => p.AssociatedDeviceId));
     newConfig.Paths.AddRange(paths);
 
     try

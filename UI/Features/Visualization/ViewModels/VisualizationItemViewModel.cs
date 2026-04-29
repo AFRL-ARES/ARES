@@ -69,7 +69,7 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
       if(device is null)
         continue;
 
-      var matchingPaths = _config.Paths.Where(p => p.AssociatedDeviceName == device.UniqueId).ToList();
+      var matchingPaths = _config.Paths.Where(p => p.AssociatedDeviceId == device.UniqueId).ToList();
       if(!matchingPaths.Any()) continue;
 
       device.StateStream
