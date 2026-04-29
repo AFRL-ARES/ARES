@@ -1,5 +1,4 @@
-﻿using Ares.Core.CoreDevice;
-using Ares.Core.Device.Providers;
+﻿using Ares.Core.Device.Providers;
 using Ares.Core.Notifications;
 using Ares.Core.Visualization.Repos;
 using Ares.Datamodel.Device;

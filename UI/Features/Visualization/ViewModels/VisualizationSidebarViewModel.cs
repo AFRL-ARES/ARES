@@ -136,6 +136,9 @@ public partial class VisualizationSidebarViewModel : ReactiveObject
       UpdateAvailableChartStyles();
   }
 
+  public void ClearPaths()
+    => SelectedPaths.Clear();
+
   public void RemovePath(VisualizationPath path)
     => SelectedPaths.Remove(path);
 

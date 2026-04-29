@@ -85,15 +85,26 @@
               </RadzenListBox>
               }
 
-              @if(ViewModel!.CurrentlySelectedPath is not null)
-              {
-                  <RadzenButton Text="Add Data Source"
-                        Icon="add"
-                        ButtonStyle="ButtonStyle.Primary"
-                        class="rz-w-100"
-                        IsAsync="true"
-                        Click="ViewModel!.AddPath" />
-              }
+              <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" class="rz-w-100" Style="padding-top: 1rem;">
+                  @if(ViewModel!.CurrentlySelectedPath is not null)
+                  {
+                      <RadzenButton Text="Add Data Source"
+                                    Icon="add"
+                                    ButtonStyle="ButtonStyle.Primary"
+                                    Click="ViewModel!.AddPath"
+                                    class="rz-flex-1" />
+                  }
+
+                  @if(ViewModel!.SelectedPaths.Count != 0)
+                  {
+                      <RadzenButton Text="Clear Sources"
+                                    Icon="clear_all"
+                                    ButtonStyle="ButtonStyle.Primary"
+                                    Click="ViewModel!.ClearPaths" 
+                                    class="rz-flex-1" />
+                  }
+              </RadzenStack>
+ 
 
 
               @if(ViewModel.SelectedPaths.Any())
