@@ -1,9 +1,17 @@
-﻿using Ares.Core.Notifications;
+﻿using Ares.Core.CoreDevice;
+using Ares.Core.Device.Providers;
+using Ares.Core.Notifications;
 using Ares.Core.Visualization.Repos;
+using Ares.Datamodel.Device;
 using Ares.Datamodel.Visualizing;
 using Ares.Datamodel.Visualizing.Local;
+using DynamicData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Reactive;
+using System.Reactive.Disposables;
+using System.Reactive.Disposables.Fluent;
+using System.Reactive.Linq;
 
 namespace Ares.Core.Visualization.Managers;
 
@@ -11,11 +19,14 @@ public class VisualizationConfigManager : IVisualizationConfigManager
 {
   private readonly IDbContextFactory<CoreDatabaseContext> _dbContextFactory;
   private IDeviceVisualizationConfigRepo _deviceVisualizationConfigRepo;
+  private IDeviceConfigProvider _deviceConfigProvider;
   private readonly ILogger<VisualizationConfigManager> _logger;
   private INotificationHandler _notificationHandler;
+  private readonly CompositeDisposable _cleanup = new();
 
   public VisualizationConfigManager(IDbContextFactory<CoreDatabaseContext> dbContextFactory,
     IDeviceVisualizationConfigRepo deviceVisualizationConfigRepo,
+    IDeviceConfigProvider deviceConfigProvider,
     ILogger<VisualizationConfigManager> logger,
     INotificationHandler notificationHandler)
   {
@@ -23,6 +34,63 @@ public class VisualizationConfigManager : IVisualizationConfigManager
     _deviceVisualizationConfigRepo = deviceVisualizationConfigRepo;
     _logger = logger;
     _notificationHandler = notificationHandler;
+    _deviceConfigProvider = deviceConfigProvider;
+  }
+
+  public async Task Initialize()
+  {
+    await using var context = _dbContextFactory.CreateDbContext();
+    var existingConfigs = await context.DeviceVisualizationConfigs.ToListAsync();
+    existingConfigs.ForEach(_deviceVisualizationConfigRepo.AddOrUpdate);
+
+    _deviceConfigProvider.Connect()
+      .SelectMany(async changes =>
+      {
+        foreach(var change in changes)
+        {
+          await HandleChangeAsync(change);
+        }
+        return Unit.Default;
+      })
+      .Subscribe()
+      .DisposeWith(_cleanup);
+  }
+
+  private async Task HandleChangeAsync(Change<DeviceConfig, string> change)
+  {
+    switch(change.Reason)
+    {
+      case ChangeReason.Remove:
+        await HandleDeviceRemoved(change.Current.DeviceId);
+        break;
+    }
+  }
+
+  private async Task HandleDeviceRemoved(string deviceId)
+  {
+    var matchingVisualizations = _deviceVisualizationConfigRepo.Where(d => d.DeviceIds.Contains(deviceId)).ToList();
+
+    if(!matchingVisualizations.Any())
+      return;
+      
+    foreach(var config in matchingVisualizations)
+    {
+      //Single device display, simply remove
+      if(config.DeviceIds.Count == 1)
+        await Remove(config.UniqueId);
+
+      //Multi-device Visualization, auto update with device removed
+      else
+      {
+        config.DeviceIds.Remove(deviceId);
+        var pathsCopy = config.Paths.ToList();
+        config.Paths.Clear();
+        config.Paths.AddRange(pathsCopy.Where(p => p.AssociatedDeviceName !=  deviceId));
+
+        await Remove(config.UniqueId);
+        await AddDeviceVisualization(config.Paths.ToList(), config.Style);
+      }
+    }
   }
 
   public async Task AddDeviceVisualization(List<VisualizationPath> paths, ChartStyle style)
@@ -53,13 +121,6 @@ public class VisualizationConfigManager : IVisualizationConfigManager
       _logger.LogError($"Error occured when trying to add a new device visualization chart: {ex.Message}");
       await _notificationHandler.HandleNotification("Failed to Add Visualization", "Device visualization could not be created, check logs for additional details.", NotificationSeverityEnum.Error);
     }
-  }
-
-  public async Task LoadConfigs()
-  {
-    await using var context = _dbContextFactory.CreateDbContext();
-    var existingConfigs = await context.DeviceVisualizationConfigs.ToListAsync();
-    existingConfigs.ForEach(_deviceVisualizationConfigRepo.AddOrUpdate);
   }
 
   public async Task Remove(string configId)

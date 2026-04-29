@@ -2,11 +2,9 @@
 using Ares.Core.Visualization.Managers;
 using Ares.Core.Visualization.Providers;
 using Ares.Datamodel.Visualizing.Local;
-using Ares.Device;
 using DynamicData;
 using ReactiveUI;
 using System.Collections.ObjectModel;
-using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using UI.Features.Visualization.ViewModels;
 

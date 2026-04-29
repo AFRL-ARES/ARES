@@ -6,6 +6,7 @@ using Ares.Core.Device.Remote;
 using Ares.Core.Device.State.Logging;
 using Ares.Core.Planning;
 using Ares.Core.Visualization.Managers;
+using Ares.Core.Visualization.Providers;
 using UI.Application.Devices.Repos;
 using UI.Application.Notifications;
 using UI.Application.Settings;
@@ -103,7 +104,7 @@ public class ServiceStarter : BackgroundService
       _remoteDeviceManager.LoadDevices()
     );
 
-    await _visualizationConfigManager.LoadConfigs();
+    await _visualizationConfigManager.Initialize();
     await Task.WhenAll(localTrack, infraTrack, remoteTrack);
     await Task.Delay(TimeSpan.FromSeconds(6));
     _tracker.MarkAsReady();
