@@ -103,8 +103,12 @@ public class DeviceConfigManager : IDeviceConfigManager
       // Potentially artifact of DB migration, remove and ignore.
       if(config.DriverId is null)
       {
-        _logger.LogWarning($"ARES detected a device with a null driver ID. If you recently migrated to a new database this may be normal. {config.DeviceName}");
-        await Remove(config.UniqueId);
+        _logger.LogWarning("ARES detected a device with a null driver ID. If you recently migrated to a new database this may be normal. {DeviceName}", config.DeviceName);
+        var genericConfig = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.UniqueId == config.UniqueId);
+        if(genericConfig is null)
+          return;
+
+        context.DeviceConfigs.Remove(genericConfig);
         continue;
       }
 
@@ -115,10 +119,12 @@ public class DeviceConfigManager : IDeviceConfigManager
       // Driver missing. Check the archive for a migration path.
       if(archivedDriverMap.TryGetValue(config.DriverId, out var archivedDriver))
       {
+        _logger.LogInformation("ARES detected a missing driver for the device {DeviceName}. Failed to find a matching driver the the Driver ID of {driver_id}", config.DeviceName, config.DriverId);
         var currentMatch = currentDrivers.FirstOrDefault(cd => cd.Manifest.DeviceTypeName == archivedDriver.DisplayName);
 
         if(currentMatch is not null)
         {
+          _logger.LogInformation("ARES found a replacement driver for the device {DeviceName} and will update that device to use this new driver. New driver ID: {DriverID}", config.DeviceName, config.DriverId);
           // Migration successful: map to the new driver and skip deletion
           config.DriverId = currentMatch.UniqueId;
           hasUpdates = true;
@@ -131,7 +137,11 @@ public class DeviceConfigManager : IDeviceConfigManager
 
         _logger.LogWarning(noNewDriverMessage);
         await _notificationHandler.HandleNotification("Device Automatically Deleted", noNewDriverMessage, NotificationSeverityEnum.Warning);
-        await Remove(config.UniqueId);
+        var genericConfig = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.UniqueId == config.UniqueId);
+        if(genericConfig is null)
+          return;
+
+        context.DeviceConfigs.Remove(genericConfig);
         continue;
       }
 
@@ -146,8 +156,6 @@ public class DeviceConfigManager : IDeviceConfigManager
 
     // Persist any driver ID updates to the database
     if(hasUpdates)
-    {
       await context.SaveChangesAsync();
-    }
   }
 }

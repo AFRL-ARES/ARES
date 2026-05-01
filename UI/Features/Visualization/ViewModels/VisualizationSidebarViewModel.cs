@@ -116,6 +116,7 @@ public partial class VisualizationSidebarViewModel : ReactiveObject
         await _visualizationConfigManager.AddDeviceVisualization(SelectedPaths, SelectedChartStyle);
 
       SelectedPaths.Clear();
+      BrowsingDevice = null;
     }
 
     catch(Exception e)
