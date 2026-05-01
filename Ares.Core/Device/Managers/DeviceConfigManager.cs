@@ -119,11 +119,7 @@ public class DeviceConfigManager : IDeviceConfigManager
       if(config.DriverId is null)
       {
         _logger.LogWarning("ARES detected a device with a null driver ID. If you recently migrated to a new database this may be normal. {DeviceName}", config.DeviceName);
-        var genericConfig = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.UniqueId == config.UniqueId);
-        if(genericConfig is null)
-          return;
-
-        context.DeviceConfigs.Remove(genericConfig);
+        context.DeviceConfigs.Remove(config);
         continue;
       }
 
@@ -148,11 +144,7 @@ public class DeviceConfigManager : IDeviceConfigManager
 
         _logger.LogWarning(noNewDriverMessage);
         await _notificationHandler.HandleNotification("Device Automatically Deleted", noNewDriverMessage, NotificationSeverityEnum.Warning);
-        var genericConfig = await context.DeviceConfigs.FirstOrDefaultAsync(config => config.UniqueId == config.UniqueId);
-        if(genericConfig is null)
-          return;
-
-        context.DeviceConfigs.Remove(genericConfig);
+        context.DeviceConfigs.Remove(config);
         continue;
       }
 
