@@ -4,16 +4,19 @@ using AresService.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace AresService.Migrations.SqlServer.Migrations
+namespace AresService.Migrations.SqlServer.Migrations.AresIdentity
 {
     [DbContext(typeof(AresIdentityContext))]
-    partial class AresIdentityContextModelSnapshot : ModelSnapshot
+    [Migration("20260505160542_visualization_AresIdentityContext")]
+    partial class visualization_AresIdentityContext
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
