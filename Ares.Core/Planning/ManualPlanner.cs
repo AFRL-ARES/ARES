@@ -33,11 +33,14 @@ public class ManualPlanner : IPlannerService
       var currentParameterSet = _planResultsQueue.Dequeue().ToList();
       var returnList = request.PlanningParameters.Select(param => currentParameterSet.First(result => result.Name == param.ParameterName).ToPlannedParameter(param)).ToList();
       var response = new PlanningResponse();
+      
+      response.PlannedParameters.AddRange(returnList);
+      response.PlanningOutcome = Outcome.Success;
       return Task.FromResult(response);
     }
     catch(InvalidOperationException e)
     {
-      return Task.FromResult(new PlanningResponse() { ErrorString = $"Exception Occured in Manual Planner: {e.Message}"});
+      return Task.FromResult(new PlanningResponse() { ErrorString = $"Exception Occured in Manual Planner: {e.Message}", PlanningOutcome = Outcome.Failure});
     }
   }
 

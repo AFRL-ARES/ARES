@@ -11,7 +11,7 @@
     <RadzenColumn Style="flex: 1; display: flex; flex-direction: column;">
       <RadzenText TextStyle="TextStyle.H6" Class="rz-mb-4">Planner Data</RadzenText>
       
-      @if (ViewModel!.PlannerAdapterInfos.Any(p => p.Name == "Manual Planner"))
+      @if(ViewModel!.PlannerAdapterInfos.Any(p => p.Name == "Manual Planner"))
       {
         <ManualPlanner />
       }
@@ -49,7 +49,7 @@
         </RadzenChart>
       }
 
-      <RadzenText TextStyle="TextStyle.H6" class="rz-mb-4">Objective Score</RadzenText>
+      <RadzenText TextStyle="TextStyle.H6" class="rz-mb-4" Style="padding-top: 1rem">Objective Score</RadzenText>
       <RadzenChart Style="height: 200px; width: 100%;">
         @if (ViewModel?.AnalyzerMetrics != null)
         {
