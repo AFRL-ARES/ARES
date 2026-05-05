@@ -1,5 +1,6 @@
 ﻿using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Analyzing.Remote;
 using Ares.Datamodel.Connection;
 
 namespace Ares.Core.Analyzing;
@@ -18,7 +19,7 @@ internal class NoneAnalyzer : AnalyzerBase
     AnalyzerState = State.Active;
   }
 
-  public override Task<Analysis> Analyze(AresStruct inputs, RequestMetadata metadata, CancellationToken cancellationToken)
+  public override Task<Analysis> Analyze(AnalysisRequest request, CancellationToken cancellationToken)
   {
     var analysis = new Analysis
     {
@@ -29,9 +30,9 @@ internal class NoneAnalyzer : AnalyzerBase
     return Task.FromResult(analysis);
   }
 
-  public override Task<Analysis> Analyze(AresStruct inputs, AresStruct _settings, RequestMetadata metadata, CancellationToken cancellationToken)
+  public override Task<Analysis> Analyze(AnalysisRequest request, AresStruct _settings, CancellationToken cancellationToken)
   {
-    return Analyze(inputs, metadata, cancellationToken);
+    return Analyze(request, cancellationToken);
   }
 
   public override Task<AnalyzerCapabilities> GetCapabilities(CancellationToken cancellationToken)

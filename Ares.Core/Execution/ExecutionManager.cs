@@ -73,6 +73,7 @@ public class ExecutionManager : IExecutionManager
     executor.ReplanRate = ReplanRate;
     _executionControlTokenSource = new ExecutionControlTokenSource();
     CampaignExecutionSummary campaignExecutionSummary;
+    ExecutionStartTime = DateTime.UtcNow;
 
     try
     {
@@ -163,4 +164,6 @@ public class ExecutionManager : IExecutionManager
     }
 
   }
+
+  public DateTime? ExecutionStartTime { get; set; }
 }

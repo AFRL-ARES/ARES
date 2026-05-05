@@ -5,6 +5,7 @@ using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Device;
 using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
+using Ares.Datamodel.Visualizing.Local;
 using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.EntityFrameworkCore;
@@ -38,6 +39,9 @@ public class CoreDatabaseContext : DbContext
   public DbSet<Parameter> Parameters => Set<Parameter>();
   public DbSet<DeviceLoggingSettings> DeviceLoggingSettings => Set<DeviceLoggingSettings>();
   public DbSet<DeviceState> DeviceStates => Set<DeviceState>();
+  public DbSet<DeviceVisualizationConfig> DeviceVisualizationConfigs => Set<DeviceVisualizationConfig>();
+  public DbSet<PlannerTransaction> PlannerTransactions => Set<PlannerTransaction>();
+  public DbSet<AnalyzerTransaction> AnalyzerTransactions => Set<AnalyzerTransaction>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {

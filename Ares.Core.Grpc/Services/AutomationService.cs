@@ -19,6 +19,10 @@ using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.EntityFrameworkCore;
+using Ares.Datamodel.Planning;
+using Ares.Core.Execution.Extensions;
+using Ares.Core.Planning;
+using Ares.Datamodel.Analyzing;
 
 namespace Ares.Core.Grpc.Services;
 
@@ -32,18 +36,21 @@ public class AutomationService : AresAutomation.AresAutomationBase
   private readonly IEnumerable<INotificationHandler> _notificationHandlers;
   readonly IDesiredAnalysisResultFactory _desiredAnalysisResultFactory;
   private JsonSerializerOptions _serializerSettings;
-  readonly IAnalyzerRepo _analyzerRepo;
+  private readonly IPlannerServiceRepo _plannerServiceRepo;
+  private readonly IPlannerTransactionProvider _plannerTransactionProvider;
+  private readonly IAnalyzerTransactionProvider _analyzerTransactionProvider;
 
   public AutomationService(IDbContextFactory<CoreDatabaseContext> coreContextFactory,
     IExecutionManager executionManager,
     IExecutionReportStore executionReportStore,
     IActiveCampaignTemplateStore activeCampaignTemplateStore,
     IEnumerable<IStartCondition> startConditions,
-    IAnalyzerRepo analyzerRepo,
     IEnumerable<INotificationHandler> notificationHandlers,
-    IDesiredAnalysisResultFactory desiredAnalysisResultFactory)
+    IDesiredAnalysisResultFactory desiredAnalysisResultFactory,
+    IPlannerServiceRepo plannerServiceRepo,
+    IPlannerTransactionProvider plannerTransactionProvider,
+    IAnalyzerTransactionProvider analyzerTransactionProvider)
   {
-    _analyzerRepo = analyzerRepo;
     _desiredAnalysisResultFactory = desiredAnalysisResultFactory;
     _coreContextFactory = coreContextFactory;
     _executionManager = executionManager;
@@ -52,6 +59,9 @@ public class AutomationService : AresAutomation.AresAutomationBase
     _startConditions = startConditions;
     _serializerSettings = SerializerSettingsHelper.CreateCustomSerializationSettings();
     _notificationHandlers = notificationHandlers;
+    _plannerServiceRepo = plannerServiceRepo;
+    _plannerTransactionProvider = plannerTransactionProvider;
+    _analyzerTransactionProvider = analyzerTransactionProvider;
   }
 
   public override async Task<ProjectsResponse> GetAllProjects(Empty request, ServerCallContext? context)
@@ -536,5 +546,61 @@ public class AutomationService : AresAutomation.AresAutomationBase
     {
       handler.HandleNotification(title, message, severity);
     }
+  }
+
+  /// <summary>
+  /// Returns a nested list of planner transactions, where each internal list represents the transactions with individual planners. 
+  /// A response may for example be a list that contains two additional lists, where the first entry is a list of transactions with 
+  /// planner A and the second a list of transactions with planner B.
+  /// </summary>
+  /// <returns>An enumerable of enumerables of <see cref="PlannerTransaction"/> from the start of the experiment to when this method is called. />
+  public async Task<IEnumerable<IEnumerable<PlannerTransaction>?>> GetLatestPlanningTransactions()
+  {
+    if(_activeCampaignTemplateStore is null || _activeCampaignTemplateStore.CampaignTemplate is null || _executionManager.ExecutionStartTime is null)
+      return [];
+
+    var usedPlanners = _activeCampaignTemplateStore.CampaignTemplate.ExperimentTemplate.GetAllPlannedParameters()
+      .Select(p => p.PlanningMetadata.PlannerName)
+      .Select(_plannerServiceRepo.GetPlannerByName)
+      .Where(p => p is not null)
+      .Distinct()
+      .ToList();
+
+    var listOfTransactions = new List<IEnumerable<PlannerTransaction>?>();
+
+    foreach(var planner in usedPlanners)
+    {
+
+      var transactionRequest = new PlannerTransactionRequestFilter
+      {
+        PlannerId = planner?.UniqueId,
+        Start = _executionManager.ExecutionStartTime?.ToTimestamp(),
+        End = DateTime.UtcNow.ToTimestamp()
+      };
+
+      var transactions = await _plannerTransactionProvider.GetPlanningTransactionsAsync(transactionRequest);
+      listOfTransactions.Add(transactions);
+    }
+
+    return listOfTransactions; 
+  }
+
+  /// <summary>
+  /// Get's the latest list of analyzer transactions since the start of execution and the time this method is called.
+  /// </summary>
+  /// <returns>An enumerable of <see cref="AnalyzerTransaction"</see> logged between the start of execution and when this method was called./>
+  public async Task<IEnumerable<AnalyzerTransaction>> GetLatestAnalyzerTransactions()
+  {
+    if(_activeCampaignTemplateStore is null || _activeCampaignTemplateStore.CampaignTemplate is null || _executionManager.ExecutionStartTime is null)
+      return [];
+
+    var filter = new AnalyzerTransactionRequestFilter
+    {
+      AnalyzerId = _activeCampaignTemplateStore.CampaignTemplate.ExperimentTemplate.AnalyzerId,
+      Start = _executionManager.ExecutionStartTime?.ToTimestamp(),
+      End = DateTime.UtcNow.ToTimestamp()
+    };
+
+    return await _analyzerTransactionProvider.GetAnalyzerTransactionsAsync(filter);
   }
 }

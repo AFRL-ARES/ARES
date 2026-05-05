@@ -5,6 +5,7 @@ using Ares.Core.Device.Plugins.Drivers.Loading;
 using Ares.Core.Device.Remote;
 using Ares.Core.Device.State.Logging;
 using Ares.Core.Planning;
+using Ares.Core.Visualization.Managers;
 using UI.Application.Devices.Repos;
 using UI.Application.Notifications;
 using UI.Application.Settings;
@@ -22,6 +23,7 @@ public class ServiceStarter : BackgroundService
   private readonly IRemotePlannerManager _plannerManager;
   private readonly IRemoteDeviceManager _remoteDeviceManager;
   private readonly IDeviceConfigManager _deviceConfigManager;
+  private readonly IVisualizationConfigManager _visualizationConfigManager;
   private readonly IDeviceDriverLoader _deviceDriverLoader;
   private readonly IDeviceManager _deviceManager;
   private readonly IDriverDatabaseManager _driverDbManager;
@@ -41,6 +43,7 @@ public class ServiceStarter : BackgroundService
     IDeviceDriverLoader deviceDriverLoader,
     IRemoteAnalyzerManager analyzerManager,
     IDeviceConfigManager deviceConfigManager,
+    IVisualizationConfigManager visualizationConfigManager,
     IConfiguration configuration,
     IRemoteDeviceManager remoteDeviceManager,
     IDriverDatabaseManager driverDbManager,
@@ -62,6 +65,7 @@ public class ServiceStarter : BackgroundService
     _analyzerManager = analyzerManager;
     _plannerManager = plannerManager;
     _remoteDeviceManager = remoteDeviceManager;
+    _visualizationConfigManager = visualizationConfigManager;
     _configuration = configuration;
     _deviceManager = deviceManager;
     _deviceConfigManager = deviceConfigManager;
@@ -102,6 +106,7 @@ public class ServiceStarter : BackgroundService
       _analyzerManager.LoadAnalyzers(),
       _remoteDeviceManager.LoadDevices());
 
+    await _visualizationConfigManager.Initialize();
     await Task.WhenAll(localTrack, infraTrack, remoteTrack);
     await Task.Delay(TimeSpan.FromSeconds(6));
     _logger.LogInformation("Successfully Finished the Loading Sequences");

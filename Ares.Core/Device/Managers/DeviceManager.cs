@@ -109,7 +109,6 @@ public class DeviceManager : IDeviceManager
       };
 
       var device = (IAresDevice)ActivatorUtilities.CreateInstance(_serviceProvider, driver.DriverType, [connectionInfo, logger]);
-      
       if(config.SerialInfo is not null)
       {
         var requestedPort = config.SerialInfo.PortName;

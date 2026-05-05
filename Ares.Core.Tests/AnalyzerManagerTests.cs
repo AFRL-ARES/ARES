@@ -1,6 +1,7 @@
 ﻿using Ares.Core.Analyzing;
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Analyzing.Remote;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 
@@ -24,12 +25,12 @@ internal class AnalyzerManagerTests
     {
     }
 
-    public override Task<Analysis> Analyze(AresStruct inputs, RequestMetadata metadata, CancellationToken cancellationToken)
+    public override Task<Analysis> Analyze(AnalysisRequest request, CancellationToken cancellationToken)
     {
       throw new NotImplementedException();
     }
 
-    public override Task<Analysis> Analyze(AresStruct inputs, AresStruct settings, RequestMetadata metadata, CancellationToken cancellationToken)
+    public override Task<Analysis> Analyze(AnalysisRequest request, AresStruct settings, CancellationToken cancellationToken)
     {
       throw new NotImplementedException();
     }

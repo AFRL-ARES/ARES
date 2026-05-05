@@ -1,6 +1,7 @@
 ﻿using Ares.Core.Analyzing;
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Analyzing.Remote;
 
 namespace Ares.Core.Tests.Data.Analyzer;
 
@@ -10,17 +11,17 @@ public class TestReplyAnalyzer : AnalyzerBase
   {
   }
 
-  public override Task<Analysis> Analyze(AresStruct inputs, RequestMetadata metadata, CancellationToken cancellationToken)
+  public override Task<Analysis> Analyze(AnalysisRequest request, CancellationToken cancellationToken)
   {
-    var firstData = inputs.Fields["TestAnalyzerInput"];
+    var firstData = request.Inputs.Fields["TestAnalyzerInput"];
     var analysis = new Analysis() { Result = (float)firstData.NumberValue, AnalysisOutcome = Outcome.Success };
 
     return Task.FromResult(analysis);
   }
 
-  public override Task<Analysis> Analyze(AresStruct inputs, AresStruct settings, RequestMetadata metadata, CancellationToken cancellationToken)
+  public override Task<Analysis> Analyze(AnalysisRequest request, AresStruct settings, CancellationToken cancellationToken)
   {
-    return Analyze(inputs, metadata, cancellationToken);
+    return Analyze(request, cancellationToken);
   }
 
   public override Task<AnalyzerCapabilities> GetCapabilities(CancellationToken cancellationToken)

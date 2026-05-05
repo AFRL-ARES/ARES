@@ -6,7 +6,7 @@
   bottom: 70px;
   z-index: 1000;
   /* Dimensions */
-  width: 250px; /* Fixed width, we use transform to hide it now */
+  width: 700px; /* Fixed width, we use transform to hide it now */
   /* Appearance */
   background-color: #2b3e50;
   color: white;
