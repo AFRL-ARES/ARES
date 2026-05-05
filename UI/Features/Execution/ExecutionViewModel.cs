@@ -3,6 +3,7 @@ using Ares.Core.Device.Providers;
 using Ares.Core.Execution;
 using Ares.Core.Grpc.Services;
 using Ares.Core.Planning;
+using Ares.Core.Visualization.Helpers;
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Planning;
@@ -462,7 +463,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
       return Task.CompletedTask;
     }
 
-    var id = ChartConfigA.DeviceIds.FirstOrDefault();
+    var id = ChartConfigA.GetAssociatedDeviceIds().FirstOrDefault();
 
     if(id is null)
       return Task.CompletedTask;
@@ -483,7 +484,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
       return Task.CompletedTask;
     }
 
-    var id = ChartConfigB.DeviceIds.FirstOrDefault();
+    var id = ChartConfigB.GetAssociatedDeviceIds().FirstOrDefault();
 
     if(id is null)
       return Task.CompletedTask;

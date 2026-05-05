@@ -1,5 +1,6 @@
 ﻿using Ares.Core.Device.Providers;
 using Ares.Core.Notifications;
+using Ares.Core.Visualization.Helpers;
 using Ares.Core.Visualization.Repos;
 using Ares.Datamodel.Device;
 using Ares.Datamodel.Visualizing;
@@ -67,21 +68,21 @@ public class VisualizationConfigManager : IVisualizationConfigManager
 
   private async Task HandleDeviceRemoved(string deviceId)
   {
-    var matchingVisualizations = _deviceVisualizationConfigRepo.Where(d => d.DeviceIds.Contains(deviceId)).ToList();
+    var matchingVisualizations = _deviceVisualizationConfigRepo.Where(d => d.GetAssociatedDeviceIds().Contains(deviceId)).ToList();
 
     if(!matchingVisualizations.Any())
       return;
       
     foreach(var config in matchingVisualizations)
     {
+      var associatedDeviceIds = config.GetAssociatedDeviceIds();
       //Single device display, simply remove
-      if(config.DeviceIds.Count == 1)
+      if(associatedDeviceIds.Count() == 1)
         await Remove(config.UniqueId);
 
       //Multi-device Visualization, auto update with device removed
       else
       {
-        config.DeviceIds.Remove(deviceId);
         var pathsCopy = config.Paths.ToList();
         config.Paths.Clear();
         config.Paths.AddRange(pathsCopy.Where(p => p.AssociatedDeviceId !=  deviceId));
@@ -104,7 +105,6 @@ public class VisualizationConfigManager : IVisualizationConfigManager
       ShowMarkers = true
     };
 
-    newConfig.DeviceIds.AddRange(paths.Select(p => p.AssociatedDeviceId));
     newConfig.Paths.AddRange(paths);
 
     try
@@ -142,8 +142,6 @@ public class VisualizationConfigManager : IVisualizationConfigManager
       return;
 
     //Chart Settings
-    existingConfig.DeviceIds.Clear();
-    existingConfig.DeviceIds.AddRange(config.DeviceIds);
     existingConfig.Style = config.Style;
     existingConfig.Paths.Clear();
     existingConfig.Paths.AddRange(config.Paths);

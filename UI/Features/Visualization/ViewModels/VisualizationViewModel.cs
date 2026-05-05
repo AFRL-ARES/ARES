@@ -1,4 +1,5 @@
 ﻿using Ares.Core.Device.Providers;
+using Ares.Core.Visualization.Helpers;
 using Ares.Core.Visualization.Managers;
 using Ares.Core.Visualization.Providers;
 using Ares.Datamodel.Visualizing.Local;
@@ -28,7 +29,7 @@ public partial class VisualizationViewModel : ReactiveObject, IDisposable
       .TransformWithInlineUpdate(
         config =>
         {
-          var devices = config.DeviceIds.Select(_deviceProvider.GetDevice).Where(d => d is not null);
+          var devices = config.GetAssociatedDeviceIds().Select(_deviceProvider.GetDevice).Where(d => d is not null);
 
           if(devices is null)
             return new VisualizationItemViewModel(config, [], OnChartDeleteRequested, OnChartUpdated);

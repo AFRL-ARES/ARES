@@ -6,7 +6,6 @@ using Ares.Core.Device.Remote;
 using Ares.Core.Device.State.Logging;
 using Ares.Core.Planning;
 using Ares.Core.Visualization.Managers;
-using Ares.Core.Visualization.Providers;
 using UI.Application.Devices.Repos;
 using UI.Application.Notifications;
 using UI.Application.Settings;

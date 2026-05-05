@@ -1,4 +1,5 @@
-﻿using Ares.Datamodel.Visualizing.Local;
+﻿using Ares.Core.Visualization.Helpers;
+using Ares.Datamodel.Visualizing.Local;
 using DynamicData;
 using System.Collections;
 
@@ -16,7 +17,7 @@ public class DeviceVisualizationConfigRepo : IDeviceVisualizationConfigRepo
   }
 
   public IEnumerable<DeviceVisualizationConfig> GetConfigsByDeviceId(string deviceId) 
-    => _configCache.Items.Where(c => c.DeviceIds.Any(id => id == deviceId));
+    => _configCache.Items.Where(c => c.GetAssociatedDeviceIds().Any(id => id == deviceId));
 
   public IEnumerator<DeviceVisualizationConfig> GetEnumerator() => _configCache.Items.GetEnumerator();
   IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

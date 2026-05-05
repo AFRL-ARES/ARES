@@ -150,9 +150,7 @@
       ShowMarkers = true
     };
 
-    selectedConfig.DeviceIds.Add(ViewModel!.BrowsingDevice?.UniqueId ?? "");
     selectedConfig.Paths.Add(ViewModel!.CurrentlySelectedPath);
-
     DialogService.Close(selectedConfig);
   }
 }

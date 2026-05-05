@@ -10,6 +10,5 @@ public class DeviceVisualizationConfigEntityConfiguration : AresEntityTypeBaseCo
   {
     base.Configure(builder);
     builder.Property(b => b.Paths).HasVisualizationPath();
-    builder.Property(b => b.DeviceIds).HasDeviceIds();
   }
 }
