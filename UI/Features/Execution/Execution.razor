@@ -11,7 +11,6 @@
 @using UI.Infrastructure.Grpc
 @inject ContextMenuService ContextMenuService
 @inject AutomationService AutomationClient
-@inject IUiNotificationService NotificationService
 @inject Radzen.DialogService DialogService
 @implements IDisposable
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<ExecutionViewModel>
@@ -75,6 +74,7 @@
     InvokeAsync(StateHasChanged);
   }
 }
+
 
 
 

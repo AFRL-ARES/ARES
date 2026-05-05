@@ -1,5 +1,6 @@
 using Antlr4.Runtime;
 using Ares.Datamodel;
+using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Scripting;
 using AresScript.Environment;
 using AresScript.Generated;
@@ -70,10 +71,12 @@ public static partial class AresScriptAnalysis
           AddCompletionForAresValue(items, environment, field.Key, field.Value, parentIdentifier);
         }
 
+        AddQuantityCompletions(items, parentValue, parentIdentifier);
         AddExtensionCompletions(items, environment, parentValue, parentIdentifier);
       }
       else if(TryResolveValue(environment, parentIdentifier, out var plainValue))
       {
+        AddQuantityCompletions(items, plainValue, parentIdentifier);
         AddExtensionCompletions(items, environment, plainValue, parentIdentifier);
       }
     }
@@ -291,6 +294,34 @@ public static partial class AresScriptAnalysis
           parentIdentifier: parentIdentifier)
       });
     }
+  }
+
+  private static void AddQuantityCompletions(
+    ICollection<CompletionItem> items,
+    AresValue parentValue,
+    string parentIdentifier)
+  {
+    if(parentValue.KindCase != AresValue.KindOneofCase.QuantityValue)
+    {
+      return;
+    }
+
+    items.Add(new CompletionItem
+    {
+      Label = nameof(parentValue.QuantityValue.Scalar).ToLowerInvariant(),
+      InsertText = nameof(parentValue.QuantityValue.Scalar).ToLowerInvariant(),
+      Metadata = ScriptSymbolMetadataMapper.ToMetadata(
+        new AresScriptValueSymbol(
+          Name: nameof(parentValue.QuantityValue.Scalar).ToLowerInvariant(),
+          Value: AresValueHelper.CreateNumber(parentValue.QuantityValue.Scalar),
+          IsReadOnly: true,
+          SymbolKind: SymbolKind.Variable,
+          Detail: "Quantity scalar",
+          Documentation: "Returns the numeric scalar component of the quantity.",
+          ParentName: parentIdentifier),
+        parentIdentifier: parentIdentifier,
+        valueSchema: new AresValueSchema { Type = AresDataType.Number })
+    });
   }
 
   // First argument is always 'self' so we don't need that for validation

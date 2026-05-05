@@ -64,7 +64,7 @@ For the easiest local deployment, use the ARES Launcher desktop application. Dow
   ```
 4. **Initialize Database**
   ```Bash
-  dotnet run --project .\AresService\AresService.csproj --migrate
+  dotnet run --project .\UI\UI.csproj --migrate
   ```
 5. **Start ARES**
 ```Bash

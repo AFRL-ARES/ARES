@@ -36,19 +36,17 @@
       }
 
       if(ViewModel!.RequiresId)
-      {
-        <div class="rz-p-sm-4">
-            <RadzenLabel Text="Unit ID" Component="UnitIdInput" Style="display: block; margin-bottom: 4px;" />
+      {        
+        <RadzenLabel Text="Unit ID" Component="UnitIdInput" Style="display: block; margin-bottom: 4px;" />
     
-            <RadzenTextBox @bind-Value="ViewModel!.SerialUnitId" 
-                           Name="UnitIdInput" 
-                           Style="width: 100%; max-width: 200px;" />
+        <RadzenTextBox @bind-Value="ViewModel!.SerialUnitId" 
+                        Name="UnitIdInput" 
+                        Style="width: 100%; max-width: 200px;" />
 
-            <RadzenRegexValidator Component="UnitIdInput" 
-                                  Text="@ViewModel!.UnitIdHint" 
-                                  Pattern="@ViewModel!.IdRegex" 
-                                  Style="display: block; margin-top: 4px; font-size: 0.8em;" />
-        </div>
+        <RadzenRegexValidator Component="UnitIdInput" 
+                              Text="@ViewModel!.UnitIdHint" 
+                              Pattern="@ViewModel!.IdRegex" 
+                              Style="display: block; margin-top: 4px; font-size: 0.8em;" />
       }
     }
 

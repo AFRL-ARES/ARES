@@ -32,7 +32,7 @@ internal class RemoteDeviceMonitor : IDisposable
 
   private Task Monitor(CancellationToken token)
   {
-    _logger.LogInformation("Started monitoring device {}", _device.Name);
+    _logger.LogInformation("Started monitoring device {DeviceName}", _device.Name);
     return Task.Run(async () =>
     {
       while(!token.IsCancellationRequested)
@@ -41,12 +41,12 @@ internal class RemoteDeviceMonitor : IDisposable
 
         if(_lastState == OperationalState.Active && _device.Status.OperationalState != OperationalState.Active)
         {
-          _logger.LogWarning("Lost connection with device {}", _device.Name);
+          _logger.LogWarning("Lost connection with device {DeviceName}", _device.Name);
         }
 
         if(_lastState != OperationalState.Active && _device.Status.OperationalState == OperationalState.Active)
         {
-          _logger.LogInformation("Device {} reconnected, fetching details", _device.Name);
+          _logger.LogInformation("Device {DeviceName} reconnected, fetching details", _device.Name);
           await _device.FetchInfo();
           await _device.FetchSettings();
           await _device.FetchCommands();
@@ -70,8 +70,9 @@ internal class RemoteDeviceMonitor : IDisposable
           _ = await Task.WhenAny(statusTask, delayTask);
           tempSource.Cancel();
         }
-        catch(OperationCanceledException)
+        catch(OperationCanceledException ex)
         {
+          _logger.LogWarning("gRPC Operation was cancelled for device {DeviceName}. Error Message: {exMessage}", _device.Name, ex.Message);
         }
       }
     }, token);

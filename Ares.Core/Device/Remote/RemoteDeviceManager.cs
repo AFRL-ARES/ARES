@@ -62,7 +62,8 @@ internal class RemoteDeviceManager(
       }
     };
 
-    var device = new RemoteDevice(remoteInfo);
+    var logger = _loggerFactory.CreateLogger<RemoteDevice>();
+    var device = new RemoteDevice(remoteInfo, logger);
     return device;
   }
 

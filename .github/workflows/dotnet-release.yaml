@@ -64,7 +64,12 @@ jobs:
       run: |
         dotnet restore ${{ env.UI_PROJECT_FILE }}
 
-    - name: Build and Publish Self-Contained Release Artifacts
+    - name: Build ARES
+      run: |
+        echo "Building ARES to make sure the js artifacts are properly created."
+        dotnet build ${{ env.UI_PROJECT_FILE }} --configuration Release
+
+    - name: Publish Self-Contained Release Artifacts
       run: |
         echo "Publishing ARES Project for ${{ matrix.os_name_tag }}  (${{ matrix.runtime_id }})"
         dotnet publish ${{ env.UI_PROJECT_FILE }} --configuration Release --output ${{ env.OUTPUT_PATH }} /p:UseAppHost=true -r ${{ matrix.runtime_id }} --self-contained true

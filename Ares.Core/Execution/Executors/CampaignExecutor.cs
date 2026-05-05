@@ -413,16 +413,24 @@ public class CampaignExecutor : ICampaignExecutor
         Status.PlannerState = PlannerState.PlanningInProgress;
         _executionStatusSubject.OnNext(Status);
         _executionReporter.Report(Status);
-        _logger.LogTrace($"Analyses count is {analyses.Count()} and replan rate {ReplanRate}");
+        _logger.LogTrace("Analyses count is {count} and replan rate {rate}", analyses.Count(), ReplanRate);
+        
         var metadata = new RequestMetadata 
         { 
           CampaignId = Template.UniqueId, 
           CampaignName = Template.Name, 
-          ExperimentId = template.UniqueId, 
+          ExperimentId = experimentTemplate.UniqueId, 
           SystemName = "ARES OS",
           ExperimentStartTime = DateTime.UtcNow.ToUniversalTime().ToTimestamp()
         };
-        var resolveSuccess = await _planningHelper.TryResolveParameters(Template.PlannerAllocations, metadata, experimentTemplate.GetAllPlannedParameters(), analyses, previousExperiments, cancellationToken);
+
+        var resolveSuccess = await _planningHelper.TryResolveParameters(Template.PlannerAllocations, 
+          metadata, 
+          experimentTemplate.GetAllPlannedParameters(), 
+          analyses, 
+          previousExperiments, 
+          cancellationToken);
+
         if(!resolveSuccess)
         {
           Status.PlannerState = PlannerState.PlanningError;

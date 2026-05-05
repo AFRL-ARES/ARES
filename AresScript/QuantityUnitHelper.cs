@@ -43,7 +43,11 @@ public static class QuantityUnitHelper
     return true;
   }
 
-  public static bool TryParseUnit(QuantityType quantityType, string unitText, out Enum? unit, out string? error)
+  public static bool TryParseUnit(
+    QuantityType quantityType,
+    string unitText,
+    [NotNullWhen(true)] out Enum? unit,
+    out string? error)
   {
     UnitsNetAbbreviationExtensions.EnsureRegistered();
 
@@ -115,13 +119,14 @@ public static class QuantityUnitHelper
       return false;
     }
 
-    scalar = valueArg.NumberValue;
-    if(!TryParseUnit(quantityType, unitArg.StringValue, out unit, out var parseError))
+    if(!TryParseUnit(quantityType, unitArg.StringValue, out var parsedUnit, out var parseError))
     {
       error = parseError;
       return false;
     }
 
+    scalar = valueArg.NumberValue;
+    unit = parsedUnit;
     return true;
   }
 

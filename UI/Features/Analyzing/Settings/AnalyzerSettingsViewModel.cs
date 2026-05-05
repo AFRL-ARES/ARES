@@ -104,7 +104,11 @@ public class AnalyzerSettingsViewModel : ReactiveObject
     try
     {
       var stateResponse = await _analyzerService.GetState(request, null);
-      StateMessage = stateResponse.StateMessage;
+      if(stateResponse.StateMessage == string.Empty && stateResponse.State == State.Active)
+        StateMessage = "Analyzer is Active!";
+
+      else
+        StateMessage = stateResponse.StateMessage;
       AnalyzerState = stateResponse.State;
     }
     catch(Exception e)
