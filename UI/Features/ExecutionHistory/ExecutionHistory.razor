@@ -18,35 +18,29 @@
   {
     @if(ViewModel!.CampaignSummaries.Any())
     {
-      <RadzenSplitter Orientation="Orientation.Vertical" class="history-splitter">
-        <RadzenSplitterPane Style="overflow: auto;" Size="45%" Min="20%" Max="70%">
+      <div class="history-content">
+        <section class="history-list-pane">
           <RadzenDataGrid TItem="CampaignSummaryDisplay" AllowFiltering="true" AllowColumnResize="false"
-                          FilterMode="FilterMode.Simple" PageSize="18" AllowPaging="true" AllowSorting="true" Data="@ViewModel!.CampaignDisplaySummaries" ColumnWidth="300px"
+                          FilterMode="FilterMode.Simple" PageSize="24" AllowPaging="true" AllowSorting="true" Data="@ViewModel!.CampaignDisplaySummaries"
                           FilterCaseSensitivity="@filterCaseSensitivity" LogicalFilterOperator="@logicalFilterOperator" RowSelect="@ViewModel!.SelectCampaign">
             <Columns>
-                <RadzenDataGridColumn Property="@nameof(CampaignSummaryDisplay.SummaryId)" Filterable="false" Title="ID" Width="225px">
-                <Template Context="id">
-                  @id.SummaryId
-                </Template>
-              </RadzenDataGridColumn>
-                <RadzenDataGridColumn Property="@nameof(CampaignSummaryDisplay.CampaignName)" Filterable="false" Title="Campaign Name" Width="200px" />
+                <RadzenDataGridColumn Property="@nameof(CampaignSummaryDisplay.CampaignName)" Filterable="false" Title="Campaign" />
                 <RadzenDataGridColumn Property="@nameof(CampaignSummaryDisplay.CompletionTimeDateTime)"
                                       Filterable="false"
-                                      Title="Completion Time"
-                                      Width="200px">
+                                      Title="Completed"
+                                      Width="175px">
                   <Template Context="data">
                     @data.OriginalTimestamp?.ToReadableTimestamp()
                   </Template>
                 </RadzenDataGridColumn>
-                <RadzenDataGridColumn Property="@nameof(CampaignSummaryDisplay.NumExperiments)" Filterable="false" Title="Number of Experiments" />
             </Columns>
           </RadzenDataGrid>
-        </RadzenSplitterPane>
+        </section>
 
-        <RadzenSplitterPane Style="overflow: auto;" Size="55%" Min="25%">
+        <section class="history-details-pane">
           <ExperimentExecutionDetails SelectedSummaryMetadata="@ViewModel!.SelectedSummaryMetadata" />
-        </RadzenSplitterPane>
-      </RadzenSplitter>
+        </section>
+      </div>
     }
 
     else
