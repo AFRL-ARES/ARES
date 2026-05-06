@@ -6,51 +6,55 @@
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<ExecutionHistoryViewModel>
 
 <PageTitle>Execution History</PageTitle>
+<div class="history-container">
+  <h2>Execution History</h2>
 
-<h2>Execution History</h2>
-
-<RadzenStack Gap="1rem">
-
-@if(ViewModel!.LoadingExecutionHistory)
-{
-  <LoadingSpinner SpinnerSize="SpinnerSize.Large"/>   
-}
-
-else
-{
-  @if(ViewModel!.CampaignSummaries.Any())
+  @if(ViewModel!.LoadingExecutionHistory)
   {
-    <RadzenDataGrid AllowFiltering="true" AllowColumnResize="false"
-                    FilterMode="FilterMode.Simple" PageSize="18" AllowPaging="true" AllowSorting="true" Data="@ViewModel!.CampaignDisplaySummaries" ColumnWidth="300px"
-                    FilterCaseSensitivity="@filterCaseSensitivity" LogicalFilterOperator="@logicalFilterOperator">
-      <Columns>
-          <RadzenDataGridColumn Property="@nameof(CampaignSummaryDisplay.SummaryId)" Filterable="false" Title="ID" Width="225px">
-          <Template Context="id">
-            <a href="/dataviewer?id=@id.SummaryId">@id.SummaryId</a>
-          </Template>
-        </RadzenDataGridColumn>
-          <RadzenDataGridColumn Property="@nameof(CampaignSummaryDisplay.CampaignName)" Filterable="false" Title="Campaign Name" Width="200px" />
-          <RadzenDataGridColumn Property="@nameof(CampaignSummaryDisplay.CompletionTimeDateTime)"
-                                Filterable="false"
-                                Title="Completion Time"
-                                Width="200px">
-            <Template Context="data">
-              @data.OriginalTimestamp?.ToReadableTimestamp()
-            </Template>
-          </RadzenDataGridColumn>
-          <RadzenDataGridColumn Property="@nameof(CampaignSummaryDisplay.NumExperiments)" Filterable="false" Title="Number of Experiments" />
-      </Columns>
-    </RadzenDataGrid>
+    <LoadingSpinner SpinnerSize="SpinnerSize.Large"/>   
   }
 
   else
   {
-    <h2> No Execution History to Display </h2>
-  }   
-}
+    @if(ViewModel!.CampaignSummaries.Any())
+    {
+      <RadzenSplitter Orientation="Orientation.Vertical" class="history-splitter">
+        <RadzenSplitterPane Style="overflow: auto;" Size="45%" Min="20%" Max="70%">
+          <RadzenDataGrid TItem="CampaignSummaryDisplay" AllowFiltering="true" AllowColumnResize="false"
+                          FilterMode="FilterMode.Simple" PageSize="18" AllowPaging="true" AllowSorting="true" Data="@ViewModel!.CampaignDisplaySummaries" ColumnWidth="300px"
+                          FilterCaseSensitivity="@filterCaseSensitivity" LogicalFilterOperator="@logicalFilterOperator" RowSelect="@ViewModel!.SelectCampaign">
+            <Columns>
+                <RadzenDataGridColumn Property="@nameof(CampaignSummaryDisplay.SummaryId)" Filterable="false" Title="ID" Width="225px">
+                <Template Context="id">
+                  @id.SummaryId
+                </Template>
+              </RadzenDataGridColumn>
+                <RadzenDataGridColumn Property="@nameof(CampaignSummaryDisplay.CampaignName)" Filterable="false" Title="Campaign Name" Width="200px" />
+                <RadzenDataGridColumn Property="@nameof(CampaignSummaryDisplay.CompletionTimeDateTime)"
+                                      Filterable="false"
+                                      Title="Completion Time"
+                                      Width="200px">
+                  <Template Context="data">
+                    @data.OriginalTimestamp?.ToReadableTimestamp()
+                  </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn Property="@nameof(CampaignSummaryDisplay.NumExperiments)" Filterable="false" Title="Number of Experiments" />
+            </Columns>
+          </RadzenDataGrid>
+        </RadzenSplitterPane>
 
-</RadzenStack>
+        <RadzenSplitterPane Style="overflow: auto;" Size="55%" Min="25%">
+          <ExperimentExecutionDetails SelectedSummaryMetadata="@ViewModel!.SelectedSummaryMetadata" />
+        </RadzenSplitterPane>
+      </RadzenSplitter>
+    }
 
+    else
+    {
+      <h2> No Execution History to Display </h2>
+    }   
+  }
+</div>
 
 @code {
   LogicalFilterOperator logicalFilterOperator = LogicalFilterOperator.And;

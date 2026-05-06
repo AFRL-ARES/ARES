@@ -1,38 +1,19 @@
-@page "/dataviewer"
-@using System.Web
 @using Ares.Datamodel
 @using Ares.Datamodel.Extensions
 @using Ares.Services
 @using UI.Components.Formatting
 @inject ContextMenuService ContextMenuService
-@inject NavigationManager NavigationManager
-@inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<DataViewerViewModel>
+@inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<ExperimentExecutionDetailsViewModel>
 
-
-<PageTitle>Data Viewer</PageTitle>
-
-<div class="container gap-2 w-100 m-0" style="max-width: none">
+<div class="container gap-2 w-100 m-0 p-0">
   <div class="row">
     <div class="col-8 gap-2">
-      <div>
-        @if(ViewModel!.LoadingAvailableSumarries)
+      <div class="flex-column">
+        @if(ViewModel!.LoadingSelectedSummary)
         {
           <LoadingSpinner SpinnerSize="SpinnerSize.Large"/>
         }
-
-        else
-        {
-          <RadzenDropDown TValue="CampaignExecutionSummaryMetadata" Class="w-100" Placeholder="Select..." Data="ViewModel!.AvailableSummaries" @bind-Value=ViewModel!.SelectedSummaryMetadata Change="ViewModel!.GetSelectedSummary">
-            <Template>
-              @($"{(context as CampaignExecutionSummaryMetadata)!.CampaignName} - {(context as CampaignExecutionSummaryMetadata)!.CompletionTime.ToReadableTimestamp()}")
-            </Template>
-          </RadzenDropDown>
-        }
-
-      </div>
-
-      <div class="flex-column">
-        @if(ViewModel!.FullSelectedSummary is not null)
+        else if(ViewModel!.FullSelectedSummary is not null)
         {
           <div class="border border-1 rounded-2 p-2">
             <div class="d-flex">
@@ -184,6 +165,12 @@
             </div>
           </div>
         }
+        else
+        {
+          <div class="border border-1 rounded-2 p-2">
+            <p class="m-0">No Campaign Selected</p>
+          </div>
+        }
       </div>
      </div>
      <div class="col-sm gap-2">
@@ -256,24 +243,18 @@
 </div>
 
 @code {
-  protected override void OnInitialized()
+  private string? _selectedSummaryId;
+
+  [Parameter]
+  public CampaignExecutionSummaryMetadata? SelectedSummaryMetadata { get; set; }
+
+  protected override async Task OnParametersSetAsync()
   {
-    var parsedQueryString = HttpUtility.ParseQueryString(NavigationManager.Uri);
+    if(SelectedSummaryMetadata?.SummaryId == _selectedSummaryId)
+      return;
 
-    if(parsedQueryString.HasKeys())
-    {
-      var idKey = parsedQueryString.AllKeys.First();
-      var idValue = parsedQueryString.Get(idKey);
-
-      if(idValue is null || idValue == string.Empty)
-        return;
-
-      _ = ViewModel!.GetSummaryFromLinkId(idValue);
-    }
-
-    else
-      _ = ViewModel!.UpdateAvailableSummaries();
-
+    _selectedSummaryId = SelectedSummaryMetadata?.SummaryId;
+    await ViewModel!.GetSelectedSummary(SelectedSummaryMetadata);
   }
 
   private string CreateDeviceCommandResultDisplayString(CommandResult commandResult)
