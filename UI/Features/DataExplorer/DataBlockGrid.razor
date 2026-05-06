@@ -1,0 +1,159 @@
+@using Ares.Datamodel
+@using Ares.Datamodel.Extensions
+
+@namespace UI.Features.DataExplorer
+
+@if(DisplayBlock is null)
+{
+  <p>No data selected.</p>
+}
+else
+{
+  <RadzenDataGrid TItem="MutableDataRow"
+                  Data="@DisplayBlock.Rows"
+                  AllowColumnResize="true"
+                  AllowFiltering="true"
+                  AllowPaging="true"
+                  AllowSorting="false"
+                  Density="Density.Compact"
+                  GridLines="DataGridGridLines.Both"
+                  PageSize="@PageSize">
+    <Columns>
+      @foreach(var column in DisplayBlock.Columns)
+      {
+        <RadzenDataGridColumn TItem="MutableDataRow" Title="@column.Header" Filterable="false">
+          <Template Context="row">
+            @if(IsEditable(column))
+            {
+              @switch(column.Type)
+              {
+                case AresDataType.Boolean:
+                  <RadzenCheckBox TValue="bool" Value="@GetBooleanValue(row, column.Key)" Change="@(value => SetBooleanValue(row, column.Key, value))" />
+                  break;
+                case AresDataType.Number:
+                  <RadzenNumeric TValue="double" Value="@GetNumberValue(row, column.Key)" Change="@(value => SetNumberValue(row, column.Key, value))" />
+                  break;
+                case AresDataType.Quantity:
+                  <div class="d-flex align-items-center gap-1">
+                    <RadzenNumeric TValue="double" Value="@GetQuantityScalar(row, column.Key)" Change="@(value => SetQuantityScalar(row, column.Key, value))" />
+                    @if(!string.IsNullOrWhiteSpace(GetQuantityUnit(row, column)))
+                    {
+                      <span>@GetQuantityUnit(row, column)</span>
+                    }
+                  </div>
+                  break;
+                case AresDataType.String:
+                  <RadzenTextBox Value="@GetStringValue(row, column.Key)" Change="@(value => SetStringValue(row, column.Key, value))" />
+                  break;
+                default:
+                  <span>@FormatValue(GetValue(row, column.Key))</span>
+                  break;
+              }
+            }
+            else
+            {
+              <span>@FormatValue(GetValue(row, column.Key))</span>
+            }
+          </Template>
+        </RadzenDataGridColumn>
+      }
+    </Columns>
+  </RadzenDataGrid>
+}
+
+@code {
+  private MutableDataBlock? _editableCopy;
+
+  [Parameter]
+  public DataBlock? Block { get; set; }
+
+  [Parameter]
+  public MutableDataBlock? MutableBlock { get; set; }
+
+  [Parameter]
+  public bool Mutable { get; set; }
+
+  [Parameter]
+  public int PageSize { get; set; } = 20;
+
+  private MutableDataBlock? DisplayBlock => MutableBlock ?? _editableCopy;
+
+  protected override void OnParametersSet()
+  {
+    if(MutableBlock is not null)
+    {
+      _editableCopy = null;
+      return;
+    }
+
+    _editableCopy = Block?.ToMutable();
+  }
+
+  private bool IsEditable(DataColumn column)
+  {
+    return Mutable && MutableBlock is not null && column.Type is AresDataType.Boolean or AresDataType.Number or AresDataType.Quantity or AresDataType.String;
+  }
+
+  private AresValue? GetValue(MutableDataRow row, string columnKey)
+  {
+    return row.Values.GetValueOrDefault(columnKey);
+  }
+
+  private static string FormatValue(AresValue? value)
+  {
+    return value?.Stringify() ?? string.Empty;
+  }
+
+  private string GetStringValue(MutableDataRow row, string columnKey)
+  {
+    return GetValue(row, columnKey)?.StringValue ?? string.Empty;
+  }
+
+  private void SetStringValue(MutableDataRow row, string columnKey, string value)
+  {
+    MutableBlock?.SetValue(row, columnKey, AresValueHelper.CreateString(value));
+  }
+
+  private bool GetBooleanValue(MutableDataRow row, string columnKey)
+  {
+    return GetValue(row, columnKey)?.BoolValue ?? false;
+  }
+
+  private void SetBooleanValue(MutableDataRow row, string columnKey, bool value)
+  {
+    MutableBlock?.SetValue(row, columnKey, AresValueHelper.CreateBool(value));
+  }
+
+  private double GetNumberValue(MutableDataRow row, string columnKey)
+  {
+    return GetValue(row, columnKey)?.NumberValue ?? 0;
+  }
+
+  private void SetNumberValue(MutableDataRow row, string columnKey, double value)
+  {
+    MutableBlock?.SetValue(row, columnKey, AresValueHelper.CreateNumber(value));
+  }
+
+  private double GetQuantityScalar(MutableDataRow row, string columnKey)
+  {
+    return GetValue(row, columnKey)?.QuantityValue?.Scalar ?? 0;
+  }
+
+  private string? GetQuantityUnit(MutableDataRow row, DataColumn column)
+  {
+    return GetValue(row, column.Key)?.QuantityValue?.Unit ?? column.Unit;
+  }
+
+  private void SetQuantityScalar(MutableDataRow row, string columnKey, double value)
+  {
+    var existingValue = GetValue(row, columnKey)?.QuantityValue;
+    var quantity = new QuantityValue
+    {
+      Scalar = value,
+      Type = existingValue?.Type ?? QuantityType.Unspecified,
+      Unit = existingValue?.Unit ?? string.Empty
+    };
+
+    MutableBlock?.SetValue(row, columnKey, AresValueHelper.CreateQuantity(quantity));
+  }
+}
