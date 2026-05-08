@@ -12,12 +12,12 @@ namespace Ares.Core.Tests;
 public class QuantitySymbolProviderTests
 {
   [Test]
-  public void GetSymbols_Includes_Duration_From_Function()
+  public async Task GetSymbols_Includes_Duration_From_Function()
   {
     var provider = new QuantitySymbolProvider();
+    var symbols = await provider.GetSymbols();
 
-    var function = provider
-      .GetSymbols()
+    var function = symbols
       .OfType<AresSystemFunctionSymbol>()
       .FirstOrDefault(symbol => symbol.ParentName == "Quantity.Duration" && symbol.Name == "from");
 
@@ -28,8 +28,9 @@ public class QuantitySymbolProviderTests
   public async Task Duration_From_Creates_Quantity_Value()
   {
     var provider = new QuantitySymbolProvider();
-    var function = provider
-      .GetSymbols()
+    var symbols = await provider.GetSymbols();
+
+    var function = symbols
       .OfType<AresSystemFunctionSymbol>()
       .First(symbol => symbol.ParentName == "Quantity.Duration" && symbol.Name == "from");
 
@@ -44,33 +45,35 @@ public class QuantitySymbolProviderTests
   }
 
   [Test]
-  public void Duration_From_Rejects_Invalid_Unit_At_Runtime()
+  public async Task Duration_From_Rejects_Invalid_Unit_At_Runtime()
   {
     var provider = new QuantitySymbolProvider();
-    var function = provider
-      .GetSymbols()
+    var symbols = await provider.GetSymbols();
+
+    var function = symbols
       .OfType<AresSystemFunctionSymbol>()
       .First(symbol => symbol.ParentName == "Quantity.Duration" && symbol.Name == "from");
 
     var ex = Assert.ThrowsAsync<InvalidOperationException>(() => function.Body(
       [AresValueHelper.CreateNumber(1), AresValueHelper.CreateString("kg")],
       new ScriptExecutionControlToken(CancellationToken.None)));
-    
+
     Assert.That(ex?.Message, Does.Contain("not valid for quantity type 'Duration'"));
   }
 
   [Test]
-  public void Duration_From_StaticArgumentValidator_Rejects_Invalid_Unit()
+  public async Task Duration_From_StaticArgumentValidator_Rejects_Invalid_Unit()
   {
     var provider = new QuantitySymbolProvider();
-    var function = provider
-      .GetSymbols()
+    var symbols = await provider.GetSymbols();
+
+    var function = symbols
       .OfType<AresSystemFunctionSymbol>()
       .First(symbol => symbol.ParentName == "Quantity.Duration" && symbol.Name == "from");
 
     var error = function.StaticArgumentValidator?.Invoke(
       [AresValueHelper.CreateNumber(1), AresValueHelper.CreateString("kg")]);
-    
+
     Assert.That(error?.Error, Does.Contain("not valid for quantity type 'Duration'"));
   }
 }
