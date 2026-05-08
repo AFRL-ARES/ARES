@@ -96,19 +96,19 @@ public interface IAnalyzer
   /// <summary>
   /// Does the actual analysis work.
   /// </summary>
-  /// <param name="inputs">The experiment outputs to analyze in the form of the <see cref="AnalysisInput" /> proto message</param>
+  /// <param name="request">The analysis request to be sent to the analyzer <see cref="AnalysisRequest" /> proto message</param>
   /// <param name="cancellationToken"></param>
   /// <param name="settings">Optional list of settings to influence the analysis</param>
   /// <returns><see cref="Analysis" /> which is the outcome of the analysis performed.</returns>
-  Task<Analysis> Analyze(AresStruct inputs, AresStruct settings, RequestMetadata metadata, CancellationToken cancellationToken = default);
+  Task<Analysis> Analyze(AnalysisRequest request, AresStruct settings, CancellationToken cancellationToken = default);
 
   /// <summary>
   /// Does the actual analysis work.
   /// </summary>
-  /// <param name="inputs">The experiment outputs to analyze in the form of the <see cref="AnalysisInput" /> proto message</param>
+  /// <param name="request">The analysis request to be sent to the analyzer <see cref="AnalysisRequest" /> proto message</param>
   /// <param name="cancellationToken"></param>
   /// <returns><see cref="Analysis" /> which is the outcome of the analysis performed.</returns>
-  Task<Analysis> Analyze(AresStruct inputs, RequestMetadata metadata, CancellationToken cancellationToken);
+  Task<Analysis> Analyze(AnalysisRequest request, CancellationToken cancellationToken);
 
   /// <summary>
   /// How long do we expect the analyzer to do its analysis before ARES decides that analyzing has failed.

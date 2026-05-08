@@ -1,5 +1,4 @@
 ﻿using Ares.Datamodel.Device;
-using Ares.Device;
 using DynamicData;
 
 namespace Ares.Core.Device.Providers;

@@ -59,4 +59,9 @@ public interface IExecutionManager
   /// </summary>
   /// <returns> An error string if the campaign is not executable, an empty string otherwise </returns>
   Task<string> CheckCampaignStartPrerequisites();
+
+  /// <summary>
+  /// The time the most recent execution was started.
+  /// </summary>
+  DateTime? ExecutionStartTime { get; set; }
 }

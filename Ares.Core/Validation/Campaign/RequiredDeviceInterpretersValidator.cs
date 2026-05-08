@@ -32,7 +32,7 @@ internal class RequiredDeviceInterpretersValidator : ICampaignValidator
     if(!success)
     {
       errorMessages.AddRange(missingDeviceIds.Select(deviceId => $"Device with Id {deviceId} is not present in the core"));
-      errorMessages.AddRange(offlineDevices.Select(device => $"Device {device.Name} is not active"));
+      errorMessages.AddRange(offlineDevices.Select(device => $"Device {device?.Name ?? "UNKNOWN DEVICE"} is not active"));
     }
 
     var validationResult = new ValidationResult(success, errorMessages);

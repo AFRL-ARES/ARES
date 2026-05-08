@@ -1,0 +1,77 @@
+﻿@using Ares.Datamodel.Visualizing
+@using Ares.Datamodel.Visualizing.Local
+@using UI.Features.Visualization.ViewModels
+
+@inject Radzen.DialogService DialogService
+
+<div class="rz-p-2">
+  <RadzenLabel Text="Chart Title" Component="ChartTitle" />
+  <RadzenTextBox @bind-Value="ViewModel!.Title"
+                 Name="ChartTitle"
+                 Class="rz-w-100 rz-mb-4" />
+
+  <RadzenLabel Text="Chart Style" Component="StyleDropdown" />
+  <RadzenDropDown @bind-Value="ViewModel.Style"
+                  Data="@(Enum.GetValues(typeof(ChartStyle)).Cast<ChartStyle>())"
+                  Name="StyleDropdown"
+                  Class="rz-w-100 rz-mb-4" />
+
+  <RadzenLabel Text="Polling Rate (ms)" Component="PollingInput" />
+  <RadzenNumeric @bind-Value="ViewModel!.PollingFrequencyMs"
+                 TValue="int"
+                 Min="250" Max="10000" Step="50"
+                 Name="PollingInput"
+                 Change="@OnPollingUpdated"
+                 Class="rz-w-100 rz-mb-4" />
+
+  <RadzenLabel Text="Display Point Count" Component="DisplayPointCount"/>
+  <RadzenNumeric @bind-Value="ViewModel!.NumberOfDisplayPoints"
+                 Min="1"
+                 Name="DisplayPointCount"
+                 Class="rz-w-100 rz-mb-4" />
+
+  <RadzenLabel Text="Display Value Labels" Component="DisplayLabels" />
+  <RadzenSwitch @bind-Value="ViewModel!.DisplayLabels" Name="DisplayLabels" />
+
+  <RadzenLabel Text="Display Value Markers" Component="DisplayMarkers" />
+  <RadzenSwitch @bind-Value="ViewModel!.DisplayMarkers" Name="DisplayMarkers" />
+
+  <div class="rz-mt-4 rz-display-flex rz-justify-content-between rz-align-items-center">
+    <RadzenButton Icon="delete"
+                  Text="Delete"
+                  ButtonStyle="ButtonStyle.Danger"
+                  Variant="Variant.Flat"
+                  Size="ButtonSize.Medium"
+                  Click="@OnDeleteClicked" />
+
+    <RadzenButton Text="Done"
+                  ButtonStyle="ButtonStyle.Success"
+                  Click="@OnDoneClicked" />
+  </div>
+</div>
+
+@code {
+  [Parameter]
+  public VisualizationItemViewModel ViewModel { get; set; } = null!;
+
+  private Task OnDeleteClicked()
+  {
+    DialogService.Close();
+    ViewModel.OnDelete();
+    return Task.CompletedTask;
+  }
+
+  private Task OnDoneClicked()
+  {
+    ViewModel.SaveSettings();
+    DialogService.Close();
+    return Task.CompletedTask;
+  }
+
+  private Task OnPollingUpdated(int newValue)
+  {
+    ViewModel!.PollingFrequencyMs = newValue;
+    ViewModel!.StartStreamSubscription();
+    return Task.CompletedTask;
+  }
+}

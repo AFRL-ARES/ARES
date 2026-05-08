@@ -1,17 +1,26 @@
+using Ares.Core.Analyzing;
+using Ares.Core.Device.Providers;
+using Ares.Core.Execution;
+using Ares.Core.Grpc.Services;
+using Ares.Core.Planning;
+using Ares.Core.Visualization.Helpers;
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
+using Ares.Datamodel.Visualizing.Local;
 using Ares.Services;
-using Ares.Core.Grpc.Services;
 using DynamicData;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Reactive.Linq;
 using UI.Application.Notifications;
+using UI.Domain.Execution;
 using UI.Domain.Experiments;
+using UI.Features.Visualization.ViewModels;
 
 namespace UI.Features.Execution;
 
@@ -21,16 +30,42 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   private readonly AnalyzerService _analyzerService;
   public readonly ObservableCollection<CampaignTemplateSummary> CampaignTemplateSummaries = [];
   private readonly INotificationReceivingService _notificationService;
+  private readonly IExecutionReportStore _executionReportStore;
+  private readonly IAresDeviceProvider _deviceProvider;
+  public event Action? StateChanged;
+
+  private IDisposable? _experimentSubscription;
+  private IDisposable? _campaignStateSubscription;
 
   public ExecutionViewModel(AutomationService automationClient,
     IConfiguration configuration,
     INotificationReceivingService notificationService,
-    AnalyzerService analyzerService)
+    AnalyzerService analyzerService,
+    IExecutionReportStore executionReportStore,
+    IAresDeviceProvider deviceProvider)
   {
     _automationClient = automationClient;
     _notificationService = notificationService;
     _analyzerService = analyzerService;
+    _executionReportStore = executionReportStore;
+    _deviceProvider = deviceProvider;
+
     PlannerAdapterInfos = [];
+    AnalyzerMetrics = [];
+    PlannerMetricsMap = [];
+    ExperimentExecutionStatuses = [];
+
+    this.WhenAnyValue(x => x.CurrentPlannerState)
+      .Subscribe(newState =>
+      {
+        _ = UpdatePlannerTransactions();
+      });
+
+    this.WhenAnyValue(x => x.CurrentAnalysisState)
+      .Subscribe(newState =>
+      {
+        _ = UpdateAnalysisTransactions();
+      });
   }
 
   public async Task<bool> EnsureStopConditionSet()
@@ -114,6 +149,36 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     await _automationClient.SetReplanRate(new ReplanRate { ReplanRate_ = DesiredReplanRate }, null);
     var replanRateResponse = await GetCurrentReplanRate();
     DesiredReplanRate = replanRateResponse.ReplanRate;
+  }
+
+  public async Task StartCampaign()
+  {
+    var executionEligibility = await _automationClient.CheckExecutionEligibility(new Empty(), null);
+
+    if(!executionEligibility.IsEligible)
+    {
+      var notification = new AresNotification
+      {
+        NotificationSeverity = Severity.Error,
+        Title = "Campaign Could Not Be Started!",
+        Message = $"ARES failed to start the requested campaign: {executionEligibility.Error}",
+        Timestamp = DateTime.UtcNow.ToTimestamp()
+      };
+
+      _notificationService.PushNotification(notification);
+      return;
+    }
+
+    ExperimentExecutionStatuses.Clear();
+    var request = new StartCampaignRequest() { UserNotes = ExecutionNotes };
+
+    if(SelectedTags is not null)
+      request.CampaignTags.AddRange(SelectedTags);
+
+    await _automationClient.StartExecution(request, null);
+    PlannerMetricsMap.Clear();
+    AnalyzerMetrics.Clear();
+    DisplayExecutionSummary = true;
   }
 
   public Task StopCampaign()
@@ -226,8 +291,283 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     AvailableTags = tags.AvailableTags.ToList();
   }
 
-  public void PushNotification(string title, string message, Severity severity)
-  => _notificationService.PushNotification(new AresNotification() { Title = title, Message = message, NotificationSeverity = severity });
+  public async Task UpdateAnalysisTransactions()
+  {
+    if(CampaignTemplate is null || CurrentAnalysisState != AnalysisState.AnalysisComplete)
+      return;
+
+    var analyzerTransactions = await _automationClient.GetLatestAnalyzerTransactions();
+    var newestTransaction = analyzerTransactions.LastOrDefault();
+
+    if(newestTransaction is null)
+      return;
+
+    OnAnalyzerTransactionReceived(newestTransaction, analyzerTransactions.Count());
+  }
+
+  public async Task UpdatePlannerTransactions()
+  {
+    if(CurrentPlannerState != PlannerState.PlanningComplete)
+      return;
+
+    var plannerTransactions = await _automationClient.GetLatestPlanningTransactions();
+
+    foreach(var transactionList in plannerTransactions)
+    {
+      if(transactionList is not null)
+      {
+        var newestTransaction = transactionList.LastOrDefault();
+
+        if(newestTransaction is null)
+          continue;
+
+        OnPlannerTransactionReceived(newestTransaction, transactionList.Count());
+      }
+    }
+  }
+
+  public void OnPlannerTransactionReceived(PlannerTransaction transaction, int currentTurn)
+  {
+    foreach(var field in transaction.PlanningResponse.PlannedParameters)
+    {
+      var metricName = field.ParameterName;
+      var metricData = field.ParameterValue;
+      var matchingParam = transaction.PlanningRequest.PlanningParameters.FirstOrDefault(p => p.ParameterName == field.ParameterName);
+
+      if(TryGetChartableValue(metricData, out double numericValue) && matchingParam is not null)
+      {
+        var minBound = matchingParam.MinimumValue;
+        var maxBound = matchingParam.MaximumValue;
+        var normalizedValue = 0.0;
+
+        if(maxBound > minBound)
+          normalizedValue = ((numericValue - minBound) / (maxBound - minBound)) * 100;
+
+        if(!PlannerMetricsMap.ContainsKey(metricName))
+          PlannerMetricsMap[metricName] = new List<ChartMetricPoint>();
+
+        PlannerMetricsMap[metricName].Add(new ChartMetricPoint
+        {
+          ExecutionIndex = currentTurn,
+          PlotValue = normalizedValue,  // Charting Value
+          RawValue = numericValue       // Tooltip Display Value
+        });
+      }
+    }
+  }
+
+  public void OnAnalyzerTransactionReceived(AnalyzerTransaction transaction, int currentTurn)
+  {
+    AnalyzerMetrics.Add(new ChartMetricPoint
+    {
+      ExecutionIndex = currentTurn,
+      RawValue = transaction.AnalysisResponse.Result
+    }); 
+  }
+
+  public bool TryGetChartableValue(AresValue aresValue, out double result)
+  {
+    result = 0;
+    if(aresValue == null || aresValue.KindCase == AresValue.KindOneofCase.None)
+      return false;
+
+    switch(aresValue.KindCase)
+    {
+      case AresValue.KindOneofCase.NumberValue:
+        result = aresValue.NumberValue;
+        return true;
+
+      case AresValue.KindOneofCase.QuantityValue:
+        result = aresValue.QuantityValue.Scalar;
+        return true;
+
+      case AresValue.KindOneofCase.BoolValue:
+        result = aresValue.BoolValue ? 1.0 : 0.0;
+        return true;
+
+      case AresValue.KindOneofCase.StringValue:
+        // Try to parse it just in case someone sent "42.5" as a string
+        return double.TryParse(aresValue.StringValue, out result);
+
+      // The un-chartable :(
+      default:
+        return false;
+    }
+  }
+
+  public void StartWatchingTelemetry()
+  {
+    _experimentSubscription = _executionReportStore.ExperimentStatusObservable
+        .Where(status => status is not null)
+        .Subscribe(
+            onNext: status => UpdateExperimentStatus(status!),
+            onError: ex => Console.WriteLine($"Telemetry Error: {ex.Message}")
+        );
+
+    _campaignStateSubscription = _executionReportStore.CampaignStatusObservable
+      .Where(status => status is not null)
+      .Select(status => new CampaignExecutionState
+      {
+        CampaignId = status!.CampaignId,
+        State = status.State,
+        AnalysisState = status.AnalysisState,
+        PlannerState = status.PlannerState
+      })
+      .Subscribe(
+        onNext: state => UpdateCampaignStatus(state!), 
+        onError: ex => Console.WriteLine($"Error Updating Campaign State: {ex.Message}"));
+
+  }
+
+  private void UpdateExperimentStatus(ExperimentExecutionStatus status)
+  {
+    var existingStatus = ExperimentExecutionStatuses.FirstOrDefault(s => s.ExperimentId == status.ExperimentId);
+
+    if(existingStatus is null)
+    {
+      ExperimentExecutionStatuses.Add(status);
+    }
+    else
+    {
+      var incomingCommands = status.GetCommandExecutionStatuses();
+      var existingCommands = existingStatus.GetCommandExecutionStatuses();
+
+      foreach(var existingCommand in existingCommands)
+      {
+        var newCommand = incomingCommands.FirstOrDefault(c => c.CommandId == existingCommand.CommandId);
+        existingCommand.State = newCommand?.State ?? ExecutionState.Undefined;
+      }
+    }
+
+    StateChanged?.Invoke();
+  }
+
+  private void UpdateCampaignStatus(CampaignExecutionState state)
+  {
+    CampaignActive = state.IsActive();
+    CampaignPaused = state.IsPaused();
+    CampaignExecutionState = state.State;
+    CurrentAnalysisState = state.AnalysisState;
+    CurrentPlannerState = state.PlannerState;
+
+    //TODO: FIX THIS!!!
+    if(CampaignExecutionState == ExecutionState.AwaitingUser)
+      _ = RequestUserConfirmation();
+  }
+
+  public Task UpdateDeviceChartA()
+  {
+    if(ChartConfigA is null)
+    {
+      ChartA = null;
+      return Task.CompletedTask;
+    }
+
+    var id = ChartConfigA.GetAssociatedDeviceIds().FirstOrDefault();
+
+    if(id is null)
+      return Task.CompletedTask;
+
+    var device = _deviceProvider.GetDevice(id);
+
+    if(device is not null)
+      ChartA = new VisualizationItemViewModel(ChartConfigA, [device], OnChartOneDeleteRequested, OnChartOneUpdated);
+    
+    return Task.CompletedTask;
+  }
+
+  public Task UpdateDeviceChartB()
+  {
+    if(ChartConfigB is null)
+    {
+      ChartB = null;
+      return Task.CompletedTask;
+    }
+
+    var id = ChartConfigB.GetAssociatedDeviceIds().FirstOrDefault();
+
+    if(id is null)
+      return Task.CompletedTask;
+
+    var device = _deviceProvider.GetDevice(id);
+
+    if(device is not null)
+      ChartB = new VisualizationItemViewModel(ChartConfigB, [device], OnChartTwoDeleteRequested, OnChartTwoUpdated);
+
+    return Task.CompletedTask;
+  }
+
+  private void OnChartOneDeleteRequested(string uniqueId)
+  {
+    ChartA = null;
+    ChartConfigA = null;
+  }
+
+  private void OnChartOneUpdated(string uniqueId, DeviceVisualizationConfig config)
+  {
+    ChartConfigA = config;
+    UpdateDeviceChartA();
+  }
+
+  private void OnChartTwoDeleteRequested(string uniqueId)
+  {
+    ChartB = null;
+    ChartConfigB = null;
+  }
+
+  private void OnChartTwoUpdated(string uniqueId, DeviceVisualizationConfig config)
+  {
+    ChartConfigB = config;
+    UpdateDeviceChartB();
+  }
+
+  public void Dispose()
+  {
+    _experimentSubscription?.Dispose();
+    _campaignStateSubscription?.Dispose();
+  }
+
+  /// <summary>
+  /// When the page is refreshed it wipes the information we have regarding on-going campaigns being executed. 
+  /// This method recalls that information so the user picks up where they left off.
+  /// </summary>
+  /// <returns>A <see cref="Task"/></returns>
+  public async Task RefreshExecutionContext()
+  {
+    await RefreshPlannerTransactionData();
+    await RefreshAnalyzerTransactionData();
+  }
+
+  public async Task RefreshPlannerTransactionData()
+  {
+    var plannerTransactions = await _automationClient.GetLatestPlanningTransactions();
+
+    foreach(var transactionList in plannerTransactions)
+    {
+      if(transactionList is null)
+        continue;
+
+      foreach(var (index, item) in transactionList.Index())
+      {
+        OnPlannerTransactionReceived(item, index);
+      }
+    }
+  }
+
+  public async Task RefreshAnalyzerTransactionData()
+  {
+    var analyzerTransactions = await _automationClient.GetLatestAnalyzerTransactions();
+
+    foreach(var (index, item) in analyzerTransactions.Index())
+    {
+      OnAnalyzerTransactionReceived(item, index);
+    }
+  }
+
+  public async Task RefreshCampaignSetup()
+  {
+    var stopConditionResponse = await _automationClient.GetActiveStopCondition(new Empty(), null);
+  }
 
   [Reactive]
   public partial ExperimentStopConditionResponse? CurrentStopCondition { get; set; }
@@ -245,15 +585,29 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   [Reactive]
   public partial ExecutionState? CampaignExecutionState { get; set; }
   [Reactive]
-  public partial AnalysisState? AnalysisState { get; set; }
+  public partial AnalysisState? CurrentAnalysisState { get; set; }
   [Reactive]
-  public partial PlannerState? PlannerState { get; set; }
+  public partial PlannerState? CurrentPlannerState { get; set; }
   [Reactive]
   public partial ExperimentExecutionStatus? ExperimentStatus { get; private set; }
   [Reactive]
   public partial HashSet<PlannerServiceInfo?> PlannerAdapterInfos { get; set; }
   [Reactive]
   public partial AnalyzerInfo? AnalyzerInfo { get; set; }
+  [Reactive]
+  public Dictionary<string, List<ChartMetricPoint>> PlannerMetricsMap { get; private set; }
+  [Reactive]
+  public partial List<ChartMetricPoint> AnalyzerMetrics { get; private set; }
+  [Reactive]
+  public partial IList<ExperimentExecutionStatus> ExperimentExecutionStatuses { get; private set; }
+  [Reactive]
+  public partial VisualizationItemViewModel? ChartA { get; private set; }
+  [Reactive]
+  public partial DeviceVisualizationConfig? ChartConfigA { get; set; }
+  [Reactive]
+  public partial DeviceVisualizationConfig? ChartConfigB { get; set; }
+  [Reactive]
+  public partial VisualizationItemViewModel? ChartB { get; private set; }
   public uint ExperimentsToRun { get; set; }
   public string ExecutionNotes { get; set; } = string.Empty;
   public CampaignExecutionSummary? TestCampaignExecutionSummary { get; private set; }
@@ -264,4 +618,9 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   public string? NewTagName { get; set; }
 }
 
-
+public class ChartMetricPoint
+{
+  public int ExecutionIndex { get; set; }
+  public double RawValue { get; set; }
+  public double PlotValue { get; set; }
+}

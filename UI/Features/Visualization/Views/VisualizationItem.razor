@@ -1,0 +1,113 @@
+﻿@using Ares.Datamodel.Visualizing
+@using Ares.Datamodel.Visualizing.Local
+@using ReactiveUI.Blazor
+@using UI.Features.Visualization.ViewModels
+@inherits ReactiveComponentBase<VisualizationItemViewModel>
+@inject Radzen.DialogService DialogService
+
+<div class="ares-vis-wrapper">
+  <RadzenCard Class="rz-p-4 ares-vis-card">
+    
+    <div class="ares-vis-header rz-display-flex rz-justify-content-between rz-align-items-center">
+      <RadzenText TextStyle="TextStyle.H6" Style="color: #88B04B; margin: 0;">@ViewModel!.Title</RadzenText>
+        
+      <div class="ares-header-actions">
+        <RadzenButton Icon="settings"
+                      Variant="Variant.Text"
+                      Size="ButtonSize.Small"
+                      Click="@OpenSettingsDialog" />
+      </div>
+    </div>
+
+    <div class="ares-vis-body">
+      @switch (ViewModel!.Style)
+      {
+        case ChartStyle.Line:
+        case ChartStyle.Spline:
+        case ChartStyle.Area:
+        case ChartStyle.Column:
+          <RadzenChart Style="flex: 1; width: 100%; height: 100%;">
+            
+            @foreach (var series in ViewModel.DataPoints)
+            {
+              @if (ViewModel.Style == ChartStyle.Line)
+              {
+                <RadzenLineSeries Data="@series.Value" Title="@series.Key" CategoryProperty="Timestamp" ValueProperty="Value">
+                  <RadzenSeriesDataLabels Visible="@ViewModel!.DisplayLabels" />
+                  <RadzenMarkers Visible="@ViewModel!.DisplayMarkers" MarkerType="MarkerType.Circle" />
+                </RadzenLineSeries>
+              }
+              else if (ViewModel.Style == ChartStyle.Spline)
+              {
+                <RadzenLineSeries Data="@series.Value" Title="@series.Key" CategoryProperty="Timestamp" ValueProperty="Value" Smooth="true">
+                  <RadzenSeriesDataLabels Visible="@ViewModel!.DisplayLabels" />
+                  <RadzenMarkers Visible="@ViewModel!.DisplayMarkers" MarkerType="MarkerType.Circle" />
+                </RadzenLineSeries>
+              }
+              else if (ViewModel.Style == ChartStyle.Area)
+              {
+                <RadzenAreaSeries Data="@series.Value" Title="@series.Key" CategoryProperty="Timestamp" ValueProperty="Value">
+                  <RadzenSeriesDataLabels Visible="@ViewModel!.DisplayLabels" />
+                  <RadzenMarkers Visible="@ViewModel!.DisplayMarkers" MarkerType="MarkerType.Circle" />
+                </RadzenAreaSeries>
+              }
+              else if (ViewModel.Style == ChartStyle.Column)
+              {
+                <RadzenColumnSeries Data="@series.Value" Title="@series.Key" CategoryProperty="Timestamp" ValueProperty="Value">
+                  <RadzenSeriesDataLabels Visible="@ViewModel!.DisplayLabels" />
+                </RadzenColumnSeries>
+              }
+            }
+
+            <RadzenCategoryAxis Formatter="@(value => "")" Padding="20">
+              <RadzenGridLines Visible="true" />
+            </RadzenCategoryAxis>
+            <RadzenValueAxis>
+              <RadzenGridLines Visible="true" />
+            </RadzenValueAxis>
+            
+            <RadzenLegend Visible="@(ViewModel.DataPoints.Count > 1)" Position="LegendPosition.Bottom" />
+          </RadzenChart>
+          break;
+
+        case ChartStyle.Gauge:
+          <RadzenRadialGauge Style="flex: 1; width: 100%; height: 100%;">
+            <RadzenRadialGaugeScale StartAngle="0" EndAngle="100" Step="20">
+              <RadzenRadialGaugeScalePointer Value="@ViewModel.LatestNumericValue" />
+            </RadzenRadialGaugeScale>
+          </RadzenRadialGauge>
+          break;
+
+        case ChartStyle.TextIndicator:
+          <div class="text-indicator-container">
+            <RadzenText TextStyle="TextStyle.DisplayH3" Class="text-indicator-value">
+              @ViewModel.LatestDisplayValue
+            </RadzenText>
+          </div>
+          break;
+
+        default:
+          <RadzenAlert AlertStyle="AlertStyle.Warning" ShowIcon="true" Variant="Variant.Flat">
+            Unsupported chart style.
+          </RadzenAlert>
+          break;
+      }
+    </div>
+  </RadzenCard>
+</div>
+
+@code {
+  private async Task OpenSettingsDialog()
+  {
+    await DialogService.OpenAsync<VisualizationSettingsDialog>(
+        $"Settings: {ViewModel!.Title}",
+        new Dictionary<string, object>() { { "ViewModel", ViewModel } },
+        new DialogOptions()
+        {
+          Width = "400px",
+          Resizable = true,
+          Draggable = true
+        }
+    );
+  }
+}

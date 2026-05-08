@@ -112,48 +112,42 @@ public class DeviceConfigManager : IDeviceConfigManager
 
     var currentDriverIds = currentDrivers.Select(d => d.UniqueId).ToHashSet();
     var archivedDriverMap = archivedDrivers.ToDictionary(d => d.DriverId);
-
-    // Track if we made any migrations so we can save the DB context once at the end
     bool hasUpdates = false;
 
     foreach(var config in configs)
     {
-      // Potentially artifact of DB migration, remove and ignore.
       if(config.DriverId is null)
       {
-        _logger.LogWarning($"ARES detected a device with a null driver ID. If you recently migrated to a new database this may be normal. {config.DeviceName}");
-        await Remove(config.UniqueId);
+        _logger.LogWarning("ARES detected a device with a null driver ID. If you recently migrated to a new database this may be normal. {DeviceName}", config.DeviceName);
+        context.DeviceConfigs.Remove(config);
         continue;
       }
 
-      // Driver found, no action needed
       if(currentDriverIds.Contains(config.DriverId))
         continue;
 
-      // Driver missing. Check the archive for a migration path.
       if(archivedDriverMap.TryGetValue(config.DriverId, out var archivedDriver))
       {
+        _logger.LogInformation("ARES detected a missing driver for the device {DeviceName}. Failed to find a matching driver the the Driver ID of {driver_id}", config.DeviceName, config.DriverId);
         var currentMatch = currentDrivers.FirstOrDefault(cd => cd.Manifest.DeviceTypeName == archivedDriver.DisplayName);
 
         if(currentMatch is not null)
         {
-          // Migration successful: map to the new driver and skip deletion
+          _logger.LogInformation("ARES found a replacement driver for the device {DeviceName} and will update that device to use this new driver. New driver ID: {DriverID}", config.DeviceName, config.DriverId);
           config.DriverId = currentMatch.UniqueId;
           hasUpdates = true;
           continue;
         }
 
-        // Migration failed: Archive exists, but no replacement driver found
         var noNewDriverMessage = $"ARES detected the driver for '{config.DeviceName}' was deleted. An archived driver was found, but a replacement could not be located. " +
                                  "To avoid the presence of ghost devices, ARES has deleted this device from your system.";
 
         _logger.LogWarning(noNewDriverMessage);
         await _notificationHandler.HandleNotification("Device Automatically Deleted", noNewDriverMessage, NotificationSeverityEnum.Warning);
-        await Remove(config.UniqueId);
+        context.DeviceConfigs.Remove(config);
         continue;
       }
 
-      // Driver missing AND no archive record exists
       var message = $"ARES detected the driver for '{config.DeviceName}' was deleted, and no reference of this device's driver was found in the driver archive. " +
                     "To avoid the presence of ghost devices, ARES has deleted this device from your system.";
 
@@ -162,10 +156,7 @@ public class DeviceConfigManager : IDeviceConfigManager
       await Remove(config.UniqueId);
     }
 
-    // Persist any driver ID updates to the database
     if(hasUpdates)
-    {
       await context.SaveChangesAsync();
-    }
   }
 }

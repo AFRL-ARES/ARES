@@ -8,10 +8,11 @@ public class BaseEnvironmentBuilder(IEnumerable<ISymbolProvider> symbolProviders
 {
   private readonly IEnumerable<ISymbolProvider> _symbolProviders = symbolProviders;
 
-  public AresScriptEnvironment Build()
+  public async Task<AresScriptEnvironment> Build()
   {
     var env = new AresScriptEnvironment();
-    var providedSymbols = _symbolProviders.SelectMany(provider => provider.GetSymbols()).ToArray();
+    var providedSymbolTasks = await Task.WhenAll(_symbolProviders.Select(provider => provider.GetSymbols()));
+    var providedSymbols = providedSymbolTasks.SelectMany(x => x).ToArray();
     var allSystemFunctions = StandardLibrary.Functions
       .Concat(providedSymbols.OfType<AresSystemFunctionSymbol>())
       .ToArray();

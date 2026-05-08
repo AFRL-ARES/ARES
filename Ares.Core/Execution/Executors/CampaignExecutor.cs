@@ -206,7 +206,7 @@ public class CampaignExecutor : ICampaignExecutor
 
       if(experimentExecutorResult.ErrorString is not null)
       {
-        _logger.LogError("Experiment Executor Generation Failed! Reason: {error-message}", experimentExecutorResult.ErrorString);
+        _logger.LogError($"Experiment Executor Generation Failed! Reason: {experimentExecutorResult.ErrorString}");
         await _notifier.Notify("Experiment Executor Generation Failure", experimentExecutorResult.ErrorString, NotificationSeverityEnum.Error);
         executionSuccess = false;
         break;
@@ -404,7 +404,7 @@ public class CampaignExecutor : ICampaignExecutor
     var result = new ExperimentExecutorResult();
     var experimentTemplate = template.CloneWithNewIds();
 
-    _logger.LogDebug("Going to try and generate an experiment executor for {TemplateName}.", template.Name);
+    _logger.LogDebug($"Going to try and generate an experiment executor for {template.Name}.");
     if(!experimentTemplate.IsResolved())
     {
       _logger.LogTrace("Experiment was not resolved");

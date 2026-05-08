@@ -11,8 +11,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Automation\**" />
     <Compile Remove="Device\Remote\State\**" />
+    <EmbeddedResource Remove="Automation\**" />
     <EmbeddedResource Remove="Device\Remote\State\**" />
+    <None Remove="Automation\**" />
     <None Remove="Device\Remote\State\**" />
   </ItemGroup>
 
@@ -23,14 +26,13 @@
   </ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="ARES.Datamodel" Version="0.21.1-beta.4" />
-		<PackageReference Include="Ares.Toolkit.Device" Version="1.1.0" />
+		<PackageReference Include="ARES.Datamodel" Version="0.22.0-beta.1" />
+		<PackageReference Include="Ares.Toolkit.Device" Version="1.3.0" />
 	  <PackageReference Include="CsvHelper" Version="33.1.0" />
 	  <PackageReference Include="DynamicData" Version="9.4.31" />
 	  <PackageReference Include="Grpc.Net.Client" Version="2.76.0" />
 	  <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.7" />
 	  <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.7" />
-	  <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.7" />
 	  <PackageReference Include="Protobuf.System.Text.Json" Version="1.4.1" />
 	  <PackageReference Include="System.ServiceModel.Primitives" Version="10.0.652802" />
 	  <PackageReference Include="UnitsNet" Version="5.75.0" />
@@ -40,10 +42,5 @@
   <ItemGroup>
     <ProjectReference Include="..\AresScript\AresScript.csproj" />
 	</ItemGroup>
-
-
-  <ItemGroup>
-    <Folder Include="Automation\" />
-  </ItemGroup>
 
 </Project>

@@ -38,18 +38,20 @@ internal class CampaignExecutorTests
   private ILogger<AnalysisHelper> _analysisHelperLogger;
   private ILoggerFactory _loggerFactory;
   private IAresDeviceProvider _deviceProvider;
+  private IDbContextFactory<CoreDatabaseContext> _dbContextFactory;
 
   private IAnalyzer _replyAnalyzer;
 
   [OneTimeSetUp]
   public void OneTimeSetUp()
   {
+    _dbContextFactory = new Mock<IDbContextFactory<CoreDatabaseContext>>().Object;
     _analyzerRepo = new AnalyzerRepo();
     _replyAnalyzer = new TestReplyAnalyzer();
     _analyzerRepo.AddAnalyzer(_replyAnalyzer);
     _analysisRepo = [];
     _analysisHelperLogger = new Mock<ILogger<AnalysisHelper>>().Object;
-    _analysisHelper = new AnalysisHelper(_analyzerRepo, _analysisHelperLogger);
+    _analysisHelper = new AnalysisHelper(_analyzerRepo, _analysisHelperLogger, _dbContextFactory);
     _executionReportStore = new ExecutionReportStore();
     _executionReporter = new ExecutionReporter(_executionReportStore);
     _planningHelper = new Mock<IPlanningHelper>().Object;

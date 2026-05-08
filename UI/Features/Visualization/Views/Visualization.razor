@@ -1,0 +1,61 @@
+﻿@page "/visualization"
+@using Ares.Core.Visualization.ViewModels
+@using UI.Components.Visualization
+@using UI.Features.Visualization.ViewModels
+
+@inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<VisualizationViewModel>
+@inject IJSRuntime JS
+
+<div class="grid-stack" id="visualization-board">
+  @if(ViewModel?.VisualizationItems != null)
+  {
+    @foreach(var itemViewModel in ViewModel.VisualizationItems)
+    {
+      <div @key="itemViewModel.UniqueId" 
+      class="grid-stack-item" 
+      gs-w="@itemViewModel.GridW"
+      gs-h="@itemViewModel.GridH"
+      gs-x="@itemViewModel.GridX"
+      gs-y="@itemViewModel.GridY"
+      data-id="@itemViewModel.UniqueId">
+        <div class="grid-stack-item-content">
+          <VisualizationItem ViewModel="itemViewModel" />
+        </div>
+      </div>
+    }
+  }
+</div>
+
+<VisualizationSidebar />
+
+@code {
+  private IJSObjectReference? _module;
+  private DotNetObjectReference<Visualization>? _objRef;
+  public record GridStackLayoutChange(string UniqueId, int X, int Y, int W, int H);
+
+  protected override async Task OnAfterRenderAsync(bool firstRender)
+  {
+    if(firstRender)
+    {
+      _objRef = DotNetObjectReference.Create(this);
+      _module = await JS.InvokeAsync<IJSObjectReference>("import", "./Features/Visualization/Views/Visualization.razor.js");
+      await _module.InvokeVoidAsync("initDashboard", "visualization-board", _objRef);
+    }
+    else
+    {
+      if(_module is not null)
+      {
+        await _module.InvokeVoidAsync("refreshGrid", "visualization-board");
+        await _module.InvokeVoidAsync("resizeToContent", "visualization-board");
+      }
+    }
+  }
+
+  [JSInvokable("OnDashboardUpdate")]
+  public void OnDashboardUpdate(GridStackLayoutChange[] changes)
+  {
+    foreach(var change in changes)
+      ViewModel!.UpdateChartPosition(change.UniqueId, change.X, change.Y, change.W, change.H);
+    
+  }
+}
