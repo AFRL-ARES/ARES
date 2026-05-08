@@ -14,7 +14,7 @@ public class DeviceSymbolProvider(IAresDeviceProvider deviceProvider) : ISymbolP
   private readonly IAresDeviceProvider _deviceProvider = deviceProvider;
 
 
-  public IScriptSymbol[] GetSymbols()
+  public async Task<IScriptSymbol[]> GetSymbols()
   {
     var devices = _deviceProvider.GetAllDevices();
     var symbols = new List<IScriptSymbol>();
@@ -22,7 +22,7 @@ public class DeviceSymbolProvider(IAresDeviceProvider deviceProvider) : ISymbolP
     foreach(var device in devices)
     {
       var devicePrefix = SanitizeIdentifier(string.IsNullOrWhiteSpace(device.Name) ? device.UniqueId : device.Name);
-      var descriptors = device.GetCommandDescriptorsAsync().GetAwaiter().GetResult();
+      var descriptors = await device.GetCommandDescriptorsAsync();
       var deviceFunctionFields = new Dictionary<string, AresSystemFunctionSymbol>(StringComparer.Ordinal);
 
       foreach(var descriptor in descriptors)

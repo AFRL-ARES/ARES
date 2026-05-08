@@ -1,15 +1,13 @@
 using Ares.Datamodel;
-using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
 using AresScript;
 using AresScript.Symbols;
-using UnitsNet;
 
 namespace Ares.Core.Scripting;
 
 public class QuantitySymbolProvider : ISymbolProvider
 {
-  public IScriptSymbol[] GetSymbols()
+  public Task<IScriptSymbol[]> GetSymbols()
   {
     var symbols = new List<IScriptSymbol>();
 
@@ -56,7 +54,7 @@ public class QuantitySymbolProvider : ISymbolProvider
             if(!QuantityUnitHelper.TryValidateConstructionArgs(quantityType, args.ElementAtOrDefault(0), unitArg, out _, out _, out var error))
             {
               return new StaticArgValidation(false, $"Function '{functionId}' {error}", 1);
-              
+
             }
 
             return new StaticArgValidation(true);
@@ -64,7 +62,7 @@ public class QuantitySymbolProvider : ISymbolProvider
         });
     }
 
-    return symbols.ToArray();
+    return Task.FromResult(symbols.ToArray());
   }
 
   private static AresStructSchema BuildFromInputSchema()
