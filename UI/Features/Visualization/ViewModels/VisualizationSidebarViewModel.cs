@@ -65,6 +65,8 @@ public partial class VisualizationSidebarViewModel : ReactiveObject
         AvailableChartStyles = [ChartStyle.TextIndicator, ChartStyle.Line];
         break;
       case AresDataType.Number:
+      case AresDataType.Float:
+      case AresDataType.Int:
         AvailableChartStyles = [ChartStyle.Line, ChartStyle.Spline, ChartStyle.Area, ChartStyle.Gauge];
         break;
       case AresDataType.Quantity:
@@ -84,7 +86,7 @@ public partial class VisualizationSidebarViewModel : ReactiveObject
       string currentPath = string.IsNullOrEmpty(prefix) ? field.Key : $"{prefix}.{field.Key}";
       var type = field.Value.Type;
 
-      if(type == AresDataType.Number || type == AresDataType.Quantity || type == AresDataType.Boolean)
+      if(type == AresDataType.Number || type == AresDataType.Float || type == AresDataType.Int || type == AresDataType.Quantity || type == AresDataType.Boolean)
       {
         paths.Add(new VisualizationPath { Path = currentPath, DataType = type, IsPlottable = true, AssociatedDeviceId = device.UniqueId });
       }
