@@ -16,6 +16,7 @@ public partial class ExecutionHistoryViewModel : ReactiveObject
   {
     _automationClient = automationClient;
     CampaignSummaries = [];
+    CampaignDisplaySummaries = [];
     LoadingExecutionHistory = false;
   }
 
@@ -23,6 +24,7 @@ public partial class ExecutionHistoryViewModel : ReactiveObject
   {
     LoadingExecutionHistory = true;
     CampaignSummaries.Clear();
+    CampaignDisplaySummaries.Clear();
     var response = await _automationClient.GetAvailableCampaignExecutionSummaries(new Empty(), null);
     CampaignSummaries.AddRange(response.AvailableCampaignSummaries);
     CampaignDisplaySummaries.AddRange(response.AvailableCampaignSummaries.Select(p => 
@@ -37,12 +39,20 @@ public partial class ExecutionHistoryViewModel : ReactiveObject
     LoadingExecutionHistory = false;
   }
 
+  public void SelectCampaign(CampaignSummaryDisplay? campaignSummary)
+  {
+    SelectedSummaryMetadata = CampaignSummaries.FirstOrDefault(summary => summary.SummaryId == campaignSummary?.SummaryId);
+  }
+
   [Reactive]
   public partial IList<CampaignExecutionSummaryMetadata> CampaignSummaries { get; set; }
 
   [Reactive]
-  public IList<CampaignSummaryDisplay> CampaignDisplaySummaries { get; set; } = [];
+  public partial IList<CampaignSummaryDisplay> CampaignDisplaySummaries { get; set; }
 
   [Reactive]
   public partial bool LoadingExecutionHistory { get; set; }
+
+  [Reactive]
+  public partial CampaignExecutionSummaryMetadata? SelectedSummaryMetadata { get; set; }
 }

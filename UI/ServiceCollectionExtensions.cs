@@ -41,8 +41,8 @@ using UI.Infrastructure.Monaco.Interops;
 using UI.Infrastructure.Notifications;
 using UI.Infrastructure.Startup;
 using CampaignDesignerViewModel = UI.Features.CampaignEdit.ViewModels.CampaignDesignerViewModel;
-using DataViewerViewModel = UI.Features.DataViewer.DataViewerViewModel;
 using DeviceStatesViewModel = UI.Features.DeviceStateExport.DeviceStatesViewModel;
+using ExperimentExecutionDetailsViewModel = UI.Features.ExecutionHistory.ExperimentExecutionDetailsViewModel;
 using ExecutionHistoryViewModel = UI.Features.ExecutionHistory.ExecutionHistoryViewModel;
 using ExecutionViewModel = UI.Features.Execution.ExecutionViewModel;
 using ManualPlannerViewModel = UI.Features.Execution.Planning.ManualPlannerViewModel;
@@ -105,7 +105,7 @@ internal static class ServiceCollectionExtensions
 
   private static void BindViewModels(this IServiceCollection services)
   {
-    services.AddScoped<DataViewerViewModel>();
+    services.AddScoped<ExperimentExecutionDetailsViewModel>();
     services.AddScoped<NotificationHistoryViewModel>();
     services.AddScoped<ProfileViewModel>();
     services.AddTransient<CampaignDesignerViewModel>();

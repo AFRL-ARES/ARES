@@ -4,5 +4,5 @@ namespace Ares.Core.Scripting;
 
 public interface ISymbolProvider
 {
-  IScriptSymbol[] GetSymbols();
+  Task<IScriptSymbol[]> GetSymbols();
 }
