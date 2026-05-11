@@ -14,7 +14,7 @@ internal class DeviceStateDatasetGeneratorTests
   public async Task GenerateAsync_CreatesOneDatasetPerDevice()
   {
     var filter = new DeviceStateRequestFilter();
-    var stateGetter = CreateStateGetter(filter, new Dictionary<string, IEnumerable<DeviceState>>
+    var stateGetter = CreateStateGetter(filter, new Dictionary<string, DeviceState[]>
     {
       ["Device A"] = [CreateState(DateTime.UnixEpoch, ("Temperature", AresValueHelper.CreateNumber(1)))],
       ["Device B"] = [CreateState(DateTime.UnixEpoch.AddSeconds(1), ("Enabled", AresValueHelper.CreateBool(true)))]
@@ -32,7 +32,7 @@ internal class DeviceStateDatasetGeneratorTests
     var filter = new DeviceStateRequestFilter();
     var firstTimestamp = DateTime.UnixEpoch.AddSeconds(1);
     var secondTimestamp = DateTime.UnixEpoch.AddSeconds(2);
-    var stateGetter = CreateStateGetter(filter, new Dictionary<string, IEnumerable<DeviceState>>
+    var stateGetter = CreateStateGetter(filter, new Dictionary<string, DeviceState[]>
     {
       ["Device A"] =
       [
@@ -59,7 +59,7 @@ internal class DeviceStateDatasetGeneratorTests
   {
     var filter = new DeviceStateRequestFilter();
     var measuredAt = Timestamp.FromDateTime(DateTime.UnixEpoch.AddSeconds(10));
-    var stateGetter = CreateStateGetter(filter, new Dictionary<string, IEnumerable<DeviceState>>
+    var stateGetter = CreateStateGetter(filter, new Dictionary<string, DeviceState[]>
     {
       ["Device A"] =
       [
@@ -104,7 +104,7 @@ internal class DeviceStateDatasetGeneratorTests
   {
     var filter = new DeviceStateRequestFilter();
     var dynamicTimestamp = Timestamp.FromDateTime(DateTime.UnixEpoch.AddSeconds(10));
-    var stateGetter = CreateStateGetter(filter, new Dictionary<string, IEnumerable<DeviceState>>
+    var stateGetter = CreateStateGetter(filter, new Dictionary<string, DeviceState[]>
     {
       ["Device A"] =
       [
@@ -130,7 +130,7 @@ internal class DeviceStateDatasetGeneratorTests
   {
     var filter = new DeviceStateRequestFilter();
     var original = AresValueHelper.CreateString("before");
-    var stateGetter = CreateStateGetter(filter, new Dictionary<string, IEnumerable<DeviceState>>
+    var stateGetter = CreateStateGetter(filter, new Dictionary<string, DeviceState[]>
     {
       ["Device A"] = [CreateState(DateTime.UnixEpoch, ("Name", original))]
     });
@@ -164,7 +164,7 @@ internal class DeviceStateDatasetGeneratorTests
 
   private static Mock<IDeviceStateGetter> CreateStateGetter(
     DeviceStateRequestFilter filter,
-    IDictionary<string, IEnumerable<DeviceState>> states)
+    IDictionary<string, DeviceState[]> states)
   {
     var stateGetter = new Mock<IDeviceStateGetter>();
     stateGetter

@@ -14,7 +14,7 @@ public class DeviceStateDatasetGenerator(IDeviceStateGetter _deviceStateGetter)
   public async ValueTask<AresDataset[]> GenerateAsync(DeviceStateRequestFilter filter, CancellationToken cancellationToken = default)
   {
     cancellationToken.ThrowIfCancellationRequested();
-    var stateMaps = await _deviceStateGetter.GetStates<DeviceState>(filter);
+    var stateMaps = await _deviceStateGetter.GetStates<DeviceState>(filter, cancellationToken);
     var datasets = new List<AresDataset>();
 
     foreach(var stateMap in stateMaps)
@@ -38,7 +38,7 @@ public class DeviceStateDatasetGenerator(IDeviceStateGetter _deviceStateGetter)
   private static IEnumerable<AresDataColumn> CreateColumns(IEnumerable<DeviceState> states)
   {
     var columns = states
-      .SelectMany<DeviceState, KeyValuePair<string, AresValue>>(state => state.Data?.Fields ?? [])
+      .SelectMany(state => state.Data?.Fields ?? [])
       .Select(field => KeyValuePair.Create(GetColumnName(field.Key), field.Value))
       .GroupBy(field => field.Key)
       .OrderBy(group => group.Key)
