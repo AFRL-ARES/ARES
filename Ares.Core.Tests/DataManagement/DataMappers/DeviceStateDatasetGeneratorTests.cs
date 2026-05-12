@@ -126,6 +126,87 @@ internal class DeviceStateDatasetGeneratorTests
   }
 
   [Test]
+  public async Task GenerateAsync_ExpandsTopLevelStructFields()
+  {
+    var filter = new DeviceStateRequestFilter();
+    var position = CreateStruct(
+      ("X", AresValueHelper.CreateNumber(1.2)),
+      ("Y", AresValueHelper.CreateNumber(3.4)));
+    var stateGetter = CreateStateGetter(filter, new Dictionary<string, DeviceState[]>
+    {
+      ["Device A"] = [CreateState(DateTime.UnixEpoch, ("Position", AresValueHelper.CreateStruct(position)))]
+    });
+
+    var generator = new DeviceStateDatasetGenerator(stateGetter.Object);
+    var dataset = (await generator.GenerateAsync(filter)).Single();
+    var row = dataset.Rows.Single();
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(dataset.Columns.Select(column => column.Name), Is.EqualTo([
+        "Timestamp",
+        "Position.X",
+        "Position.Y"
+      ]));
+      Assert.That(dataset.Columns.Any(column => column.Name == "Position"), Is.False);
+      Assert.That(ColumnSchema(dataset, "Position.X").Type, Is.EqualTo(AresDataType.Number));
+      Assert.That(row.Data.Fields["Position.X"].NumberValue, Is.EqualTo(1.2));
+      Assert.That(row.Data.Fields["Position.Y"].NumberValue, Is.EqualTo(3.4));
+      Assert.That(row.Data.Fields.ContainsKey("Position"), Is.False);
+    }
+  }
+
+  [Test]
+  public async Task GenerateAsync_ExpandsNestedStructFieldsRecursively()
+  {
+    var filter = new DeviceStateRequestFilter();
+    var offset = CreateStruct(("X", AresValueHelper.CreateNumber(5.6)));
+    var position = CreateStruct(
+      ("Offset", AresValueHelper.CreateStruct(offset)),
+      ("Y", AresValueHelper.CreateNumber(7.8)));
+    var stateGetter = CreateStateGetter(filter, new Dictionary<string, DeviceState[]>
+    {
+      ["Device A"] = [CreateState(DateTime.UnixEpoch, ("Position", AresValueHelper.CreateStruct(position)))]
+    });
+
+    var generator = new DeviceStateDatasetGenerator(stateGetter.Object);
+    var dataset = (await generator.GenerateAsync(filter)).Single();
+    var row = dataset.Rows.Single();
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(dataset.Columns.Select(column => column.Name), Is.EqualTo([
+        "Timestamp",
+        "Position.Offset.X",
+        "Position.Y"
+      ]));
+      Assert.That(dataset.Columns.Any(column => column.Name is "Position" or "Position.Offset"), Is.False);
+      Assert.That(row.Data.Fields["Position.Offset.X"].NumberValue, Is.EqualTo(5.6));
+      Assert.That(row.Data.Fields["Position.Y"].NumberValue, Is.EqualTo(7.8));
+      Assert.That(row.Data.Fields.ContainsKey("Position.Offset"), Is.False);
+    }
+  }
+
+  [Test]
+  public async Task GenerateAsync_ClonesExpandedStructFieldValues()
+  {
+    var filter = new DeviceStateRequestFilter();
+    var original = AresValueHelper.CreateString("before");
+    var metadata = CreateStruct(("Name", original));
+    var stateGetter = CreateStateGetter(filter, new Dictionary<string, DeviceState[]>
+    {
+      ["Device A"] = [CreateState(DateTime.UnixEpoch, ("Metadata", AresValueHelper.CreateStruct(metadata)))]
+    });
+
+    var generator = new DeviceStateDatasetGenerator(stateGetter.Object);
+    var dataset = (await generator.GenerateAsync(filter)).Single();
+
+    original.StringValue = "after";
+
+    Assert.That(dataset.Rows.Single().Data.Fields["Metadata.Name"].StringValue, Is.EqualTo("before"));
+  }
+
+  [Test]
   public async Task GenerateAsync_ClonesSourceStateValues()
   {
     var filter = new DeviceStateRequestFilter();
@@ -259,5 +340,16 @@ internal class DeviceStateDatasetGeneratorTests
     }
 
     return state;
+  }
+
+  private static AresStruct CreateStruct(params (string Name, AresValue Value)[] values)
+  {
+    var aresStruct = new AresStruct();
+    foreach(var value in values)
+    {
+      aresStruct.Fields[value.Name] = value.Value;
+    }
+
+    return aresStruct;
   }
 }
