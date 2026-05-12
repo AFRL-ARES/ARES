@@ -90,6 +90,7 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
       var result = await _command(token);
       return result;
     }
+
     catch(Exception e)
     {
       var result = new CommandResult() { Success = false, Error = e.Message };
