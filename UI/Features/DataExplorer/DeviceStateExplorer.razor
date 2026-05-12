@@ -1,0 +1,569 @@
+﻿@using System.Linq
+@using Ares.Core
+@using Ares.Core.DataManagement.DataMappers
+@using Ares.Core.Device.Repos
+@using Ares.Core.Grpc.Services
+@using Ares.Datamodel
+@using Ares.Datamodel.Device
+@using Ares.Services
+@using Google.Protobuf.WellKnownTypes
+@using Microsoft.EntityFrameworkCore
+@using UI.Components.Formatting
+@implements IDisposable
+@inject IDbContextFactory<CoreDatabaseContext> DbContextFactory
+@inject IAresDeviceRepo DeviceRepo
+@inject AutomationService AutomationClient
+@inject DeviceStateDatasetGenerator DatasetGenerator
+
+<section class="device-state-explorer">
+  <div class="explorer-header">
+    <div>
+      <h3>Device State Explorer</h3>
+      <p>Select devices with logged state data to inspect their captured values.</p>
+    </div>
+
+    <div class="state-summary" aria-label="Device state summary">
+      <div>
+        <span class="summary-value">@DeviceCount</span>
+        <span class="summary-label">Devices</span>
+      </div>
+      <div>
+        <span class="summary-value">@_selectedDeviceIds.Count</span>
+        <span class="summary-label">Selected</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="device-state-grid">
+    <aside class="device-panel" aria-label="Devices with state data">
+      <div class="panel-toolbar">
+        <div>
+          <h4>Devices</h4>
+          <span>@FilteredDeviceCount shown</span>
+        </div>
+
+        <button type="button" class="clear-button" @onclick="ClearSelection" disabled="@(!_selectedDeviceIds.Any())">
+          Clear
+        </button>
+      </div>
+
+      <label class="search-field">
+        <RadzenIcon Icon="search" />
+        <input type="search" placeholder="Filter devices" @bind="_filterText" @bind:event="oninput" />
+      </label>
+
+      @if (_devices == null)
+      {
+        <div class="empty-state compact">
+          <RadzenIcon Icon="hourglass_empty" />
+          <span>Loading devices...</span>
+        </div>
+      }
+      else if (!_devices.Any())
+      {
+        <div class="empty-state compact">
+          <RadzenIcon Icon="devices" />
+          <span>No device state data found.</span>
+        </div>
+      }
+      else if (!FilteredDevices.Any())
+      {
+        <div class="empty-state compact">
+          <RadzenIcon Icon="search_off" />
+          <span>No devices match this filter.</span>
+        </div>
+      }
+      else
+      {
+        <ul class="device-list">
+          @foreach (var device in FilteredDevices)
+          {
+            var isSelected = _selectedDeviceIds.Contains(device.Id);
+
+            <li class="@(isSelected ? "selected" : null)">
+              <label>
+                <input type="checkbox" checked="@isSelected" @onchange="args => ToggleDevice(device.Id, args)" />
+                <span class="device-marker" aria-hidden="true"></span>
+                <span class="device-text">
+                  <span class="device-name">@device.Name</span>
+                  <span class="device-id">@device.Id</span>
+                </span>
+              </label>
+            </li>
+          }
+        </ul>
+      }
+
+      <section class="filter-panel" aria-label="Device state filters">
+        <div class="filter-panel-header">
+          <h4>Filters</h4>
+          <button type="button" class="clear-button" @onclick="ClearFilters" disabled="@(!HasActiveFilters)">
+            Reset
+          </button>
+        </div>
+
+        <div class="filter-stack">
+          <div class="filter-row">
+            <label class="filter-toggle">
+              <input type="checkbox" @bind="_useStartTime" />
+              <span>Start</span>
+            </label>
+            <RadzenDatePicker @bind-Value="_startTime" TValue="DateTime" ShowTime="true" HourFormat="24"
+                              DateFormat="MM/dd/yyyy HH:mm" Disabled="@(!_useStartTime)" Style="width: 100%;" />
+          </div>
+
+          <div class="filter-row">
+            <label class="filter-toggle">
+              <input type="checkbox" @bind="_useEndTime" />
+              <span>End</span>
+            </label>
+            <RadzenDatePicker @bind-Value="_endTime" TValue="DateTime" ShowTime="true" HourFormat="24"
+                              DateFormat="MM/dd/yyyy HH:mm" Disabled="@(!_useEndTime)" Style="width: 100%;" />
+          </div>
+
+          <label class="filter-field">
+            <span>Interval</span>
+            <RadzenNumeric @bind-Value="_intervalMs" TValue="double" Min="0" ShowUpDown="false"
+                           Placeholder="Milliseconds" Style="width: 100%;" />
+          </label>
+
+          <label class="filter-toggle">
+            <input type="checkbox" @bind="_useCampaign" />
+            <span>Campaign</span>
+          </label>
+
+          @if (_campaigns == null)
+          {
+            <div class="filter-loading">Loading campaigns...</div>
+          }
+          else
+          {
+            <RadzenDropDown Data="@_campaigns" TValue="string"
+                            TextProperty="@nameof(CampaignDisplayItem.CampaignName)"
+                            ValueProperty="@nameof(CampaignDisplayItem.SummaryId)" @bind-Value="_selectedCampaignId"
+                            Change="@OnCampaignChanged" Disabled="@(!_useCampaign)" AllowClear="true" Placeholder="Select campaign"
+                            Style="width: 100%;">
+              <Template Context="campaign">
+                <div class="campaign-option">
+                  <span class="campaign-option-name">@campaign.CampaignName</span>
+                  <span class="campaign-option-meta">@campaign.TimeStartedDisplay</span>
+                  <span class="campaign-option-meta">@campaign.Timezone</span>
+                </div>
+              </Template>
+              <ValueTemplate Context="campaign">
+                <div class="campaign-option selected-value">
+                  <span class="campaign-option-name">@campaign.CampaignName</span>
+                  <span class="campaign-option-meta">@campaign.TimeStartedDisplay · @campaign.Timezone</span>
+                </div>
+              </ValueTemplate>
+            </RadzenDropDown>
+          }
+
+          <RadzenDropDown Data="@_experiments" TValue="string" TextProperty="@nameof(ExperimentDisplayItem.Name)"
+                          ValueProperty="@nameof(ExperimentDisplayItem.Id)" @bind-Value="_selectedExperimentId"
+                          Disabled="@(!_useCampaign || _experiments.Count == 0)" AllowClear="true"
+                          Placeholder="@ExperimentPlaceholder" Style="width: 100%;" />
+
+          <button type="button" class="apply-button" @onclick="ApplyFiltersAsync" disabled="@(!CanApply)">
+            @(_loadingDatasets ? "Loading..." : "Apply")
+          </button>
+        </div>
+      </section>
+    </aside>
+
+    <div class="state-workspace">
+      <section class="display-mode-panel" aria-label="Device state display mode">
+        <label class="display-mode-field">
+          <span>Display Mode</span>
+          <RadzenDropDown Data="@_displayModes"
+                          TValue="string"
+                          @bind-Value="_selectedDisplayMode"
+                          Change="@OnDisplayModeChanged"
+                          Style="width: 12rem;" />
+        </label>
+      </section>
+
+      <section class="state-panel" aria-label="Selected device state details">
+        @if (!_selectedDeviceIds.Any())
+        {
+          <div class="empty-state">
+            <RadzenIcon Icon="query_stats" />
+            <h4>No devices selected</h4>
+            <p>Choose one or more devices.</p>
+          </div>
+        }
+        else if (_loadingDatasets)
+        {
+          <div class="empty-state">
+            <RadzenIcon Icon="hourglass_empty" />
+            <h4>Loading device state data</h4>
+            <p>Generating datasets for the selected devices and filters.</p>
+          </div>
+        }
+        else if (!string.IsNullOrWhiteSpace(_datasetError))
+        {
+          <div class="empty-state error">
+            <RadzenIcon Icon="error" />
+            <h4>Unable to load data</h4>
+            <p>@_datasetError</p>
+          </div>
+        }
+        else if (!_hasApplied)
+        {
+          <div class="empty-state">
+            <RadzenIcon Icon="table_view" />
+            <h4>Apply filters to load data</h4>
+            <p>Use Apply to generate tables for the selected devices.</p>
+          </div>
+        }
+        else if (_appliedDisplayMode != "Separate")
+        {
+          <div class="empty-state">
+            <RadzenIcon Icon="view_column" />
+            <h4>@_appliedDisplayMode mode is not implemented yet</h4>
+            <p>Use Separate mode to view device state tables for now.</p>
+          </div>
+        }
+        else if (_datasets is null || _datasets.Length == 0)
+        {
+          <div class="empty-state">
+            <RadzenIcon Icon="filter_alt_off" />
+            <h4>No state data matched</h4>
+            <p>No state data matched the selected devices and filters.</p>
+          </div>
+        }
+        else
+        {
+          <div class="state-panel-header">
+            <div>
+              <h4>Device State Tables</h4>
+              <span>@_datasets.Length device dataset@(_datasets.Length == 1 ? string.Empty : "s") loaded</span>
+            </div>
+          </div>
+
+          <RadzenTabs Class="dataset-tabs">
+            <Tabs>
+              @foreach (var dataset in _datasets)
+              {
+                <RadzenTabsItem Text="@dataset.Name">
+                  <AresDatasetTable Dataset="@dataset" />
+                </RadzenTabsItem>
+              }
+            </Tabs>
+          </RadzenTabs>
+        }
+      </section>
+    </div>
+    </div>
+  </section>
+
+@code {
+  private static readonly string[] _displayModes = ["Separate", "Wide", "Long"];
+  private List<DeviceDisplayItem>? _devices;
+  private List<CampaignDisplayItem>? _campaigns;
+  private List<ExperimentDisplayItem> _experiments = new();
+  private AresDataset[]? _datasets;
+  private CancellationTokenSource? _datasetLoadCancellation;
+  private readonly HashSet<string> _selectedDeviceIds = new();
+  private string? _filterText;
+  private string _selectedDisplayMode = _displayModes[0];
+  private string _appliedDisplayMode = _displayModes[0];
+  private string? _datasetError;
+  private string? _selectedCampaignId;
+  private string? _selectedExperimentId;
+  private DateTime _startTime;
+  private DateTime _endTime;
+  private double _intervalMs;
+  private bool _useStartTime;
+  private bool _useEndTime;
+  private bool _useCampaign;
+  private bool _loadingDatasets;
+  private bool _hasApplied;
+
+  private int DeviceCount => _devices?.Count ?? 0;
+
+  private bool CanApply => _selectedDeviceIds.Any() && !_loadingDatasets;
+
+  private bool HasActiveFilters =>
+      _useStartTime ||
+      _useEndTime ||
+      _useCampaign ||
+      _intervalMs > 0 ||
+      !string.IsNullOrWhiteSpace(_selectedCampaignId) ||
+      !string.IsNullOrWhiteSpace(_selectedExperimentId);
+
+  private string ExperimentPlaceholder =>
+      string.IsNullOrWhiteSpace(_selectedCampaignId) ? "Select campaign first" : "Select experiment";
+
+  private IEnumerable<DeviceDisplayItem> FilteredDevices
+  {
+    get
+    {
+      if (_devices is null)
+      {
+        return Enumerable.Empty<DeviceDisplayItem>();
+      }
+
+      if (string.IsNullOrWhiteSpace(_filterText))
+      {
+        return _devices;
+      }
+
+      return _devices.Where(device =>
+          device.Name.Contains(_filterText, StringComparison.OrdinalIgnoreCase) ||
+          device.Id.Contains(_filterText, StringComparison.OrdinalIgnoreCase));
+    }
+  }
+
+  private int FilteredDeviceCount => FilteredDevices.Count();
+
+  private IEnumerable<DeviceDisplayItem> SelectedDevices =>
+      _devices?.Where(device => _selectedDeviceIds.Contains(device.Id)) ?? Enumerable.Empty<DeviceDisplayItem>();
+
+  protected override async Task OnInitializedAsync()
+  {
+    SetDefaultFilterTimes();
+
+    using var context = await DbContextFactory.CreateDbContextAsync();
+
+    var deviceIds = await context.Set<DeviceState>()
+        .Select(s => s.DeviceId)
+        .Distinct()
+        .ToListAsync();
+
+    _devices = deviceIds
+        .Select(id =>
+        {
+          var device = DeviceRepo.FirstOrDefault(d => d.UniqueId == id);
+          return new DeviceDisplayItem(id, device?.Name ?? id);
+        })
+        .OrderBy(device => device.Name)
+        .ThenBy(device => device.Id)
+        .ToList();
+
+    var campaignResponse = await AutomationClient.GetAvailableCampaignExecutionSummaries(new Empty(), null);
+    var campaigns = await Task.WhenAll(campaignResponse.AvailableCampaignSummaries
+        .Select(async campaignMetadata =>
+        {
+          var campaign = await AutomationClient.GetCampaignSummary(
+              new CampaignExecutionSummaryRequest { SummaryId = campaignMetadata.SummaryId },
+              null);
+
+          return new CampaignDisplayItem(
+              campaignMetadata.SummaryId,
+              campaign.CampaignName,
+              GetCampaignStartTime(campaign),
+              GetCampaignTimezone(campaign),
+              GetCampaignStartSortTime(campaign));
+        }));
+
+    _campaigns = campaigns
+        .OrderByDescending(campaign => campaign.TimeStarted)
+        .ToList();
+  }
+
+  private void ToggleDevice(string deviceId, ChangeEventArgs args)
+  {
+    if (args.Value is true)
+    {
+      _selectedDeviceIds.Add(deviceId);
+      return;
+    }
+
+    _selectedDeviceIds.Remove(deviceId);
+  }
+
+  private void ClearSelection()
+  {
+    _selectedDeviceIds.Clear();
+  }
+
+  private async Task ApplyFiltersAsync()
+  {
+    if (!CanApply)
+    {
+      return;
+    }
+
+    _datasetLoadCancellation?.Cancel();
+    _datasetLoadCancellation?.Dispose();
+    _datasetLoadCancellation = new CancellationTokenSource();
+
+    _loadingDatasets = true;
+    _datasetError = null;
+    _datasets = null;
+    _appliedDisplayMode = _selectedDisplayMode;
+    _hasApplied = true;
+
+    if (_appliedDisplayMode != "Separate")
+    {
+      _loadingDatasets = false;
+      return;
+    }
+
+    try
+    {
+      var filter = CreateStateRequestFilter();
+      _datasets = await DatasetGenerator.GenerateAsync(filter, _datasetLoadCancellation.Token);
+    }
+    catch (OperationCanceledException)
+    {
+      _hasApplied = false;
+    }
+    catch (Exception ex)
+    {
+      _datasetError = ex.Message;
+    }
+    finally
+    {
+      _loadingDatasets = false;
+    }
+  }
+
+  private async Task OnDisplayModeChanged(object? value)
+  {
+    if (value is string displayMode)
+    {
+      _selectedDisplayMode = displayMode;
+    }
+
+    if (CanApply)
+    {
+      await ApplyFiltersAsync();
+    }
+  }
+
+  private DeviceStateRequestFilter CreateStateRequestFilter()
+  {
+    var filter = new DeviceStateRequestFilter();
+    filter.DeviceIds.AddRange(_selectedDeviceIds);
+
+    if (_useStartTime)
+    {
+      filter.Start = Timestamp.FromDateTime(_startTime.ToUniversalTime());
+    }
+
+    if (_useEndTime)
+    {
+      filter.End = Timestamp.FromDateTime(_endTime.ToUniversalTime());
+    }
+
+    if (_intervalMs > 0)
+    {
+      filter.Interval = Duration.FromTimeSpan(TimeSpan.FromMilliseconds(_intervalMs));
+    }
+
+    if (_useCampaign && !string.IsNullOrWhiteSpace(_selectedCampaignId))
+    {
+      filter.CompletedCampaignId = _selectedCampaignId;
+    }
+
+    if (_useCampaign && !string.IsNullOrWhiteSpace(_selectedExperimentId))
+    {
+      filter.CompletedExperimentId = _selectedExperimentId;
+    }
+
+    return filter;
+  }
+
+  private async Task OnCampaignChanged(object? value)
+  {
+    _selectedExperimentId = null;
+    _experiments = new List<ExperimentDisplayItem>();
+
+    var campaignId = value?.ToString();
+    if (string.IsNullOrWhiteSpace(campaignId))
+    {
+      return;
+    }
+
+    var campaign = await AutomationClient.GetCampaignSummary(new CampaignExecutionSummaryRequest { SummaryId = campaignId },
+null);
+    _experiments = campaign.ExperimentSummaries
+        .Select((experiment, index) => new ExperimentDisplayItem(
+            GetExperimentId(experiment, index),
+            GetExperimentName(experiment, index)))
+        .ToList();
+  }
+
+  private void ClearFilters()
+  {
+    _useStartTime = false;
+    _useEndTime = false;
+    _useCampaign = false;
+    _intervalMs = 0;
+    _selectedCampaignId = null;
+    _selectedExperimentId = null;
+    _experiments.Clear();
+    SetDefaultFilterTimes();
+  }
+
+  private void SetDefaultFilterTimes()
+  {
+    var currentTime = DateTime.Now;
+    var truncatedTime = new DateTime(currentTime.Ticks - currentTime.Ticks % TimeSpan.TicksPerMinute);
+    _startTime = truncatedTime - TimeSpan.FromHours(1);
+    _endTime = truncatedTime;
+  }
+
+  private static string GetExperimentId(ExperimentExecutionSummary experiment, int index)
+  {
+    if (experiment.ExperimentOverview?.HasUniqueId == true)
+    {
+      return experiment.ExperimentOverview.UniqueId;
+    }
+
+    if (experiment.HasUniqueId)
+    {
+      return experiment.UniqueId;
+    }
+
+    return !string.IsNullOrWhiteSpace(experiment.ExperimentId)
+        ? experiment.ExperimentId
+        : index.ToString();
+  }
+
+  private static string GetExperimentName(ExperimentExecutionSummary experiment, int index)
+  {
+    var templateName = experiment.ExperimentOverview?.Template?.Name;
+    return !string.IsNullOrWhiteSpace(templateName)
+        ? templateName
+        : $"Experiment {index + 1}";
+  }
+
+  private static string GetCampaignStartTime(CampaignExecutionSummary campaign)
+  {
+    return campaign.ExecutionInfo?.TimeStarted is { } timeStarted
+        ? timeStarted.ToReadableTimestamp()
+        : "Unknown start";
+  }
+
+  private static string GetCampaignTimezone(CampaignExecutionSummary campaign)
+  {
+    return !string.IsNullOrWhiteSpace(campaign.ExecutionInfo?.Timezone)
+        ? campaign.ExecutionInfo.Timezone
+        : "Unknown timezone";
+  }
+
+  private static DateTime GetCampaignStartSortTime(CampaignExecutionSummary campaign)
+  {
+    return campaign.ExecutionInfo?.TimeStarted?.ToDateTime() ?? DateTime.MinValue;
+  }
+
+  public void Dispose()
+  {
+    _datasetLoadCancellation?.Cancel();
+    _datasetLoadCancellation?.Dispose();
+  }
+
+  private record DeviceDisplayItem(string Id, string Name);
+
+  private record CampaignDisplayItem(
+      string SummaryId,
+      string CampaignName,
+      string TimeStartedDisplay,
+      string Timezone,
+      DateTime TimeStarted);
+
+  private record ExperimentDisplayItem(string Id, string Name);
+}

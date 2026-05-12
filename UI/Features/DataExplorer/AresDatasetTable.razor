@@ -1,0 +1,71 @@
+@using Ares.Datamodel
+@using Ares.Datamodel.Extensions
+
+@if (Dataset is null)
+{
+    <RadzenText TextStyle="TextStyle.Body2" Class="rz-color-secondary">No dataset selected.</RadzenText>
+}
+else if (Dataset.Columns.Count == 0)
+{
+    <RadzenText TextStyle="TextStyle.Body2" Class="rz-color-secondary">Dataset has no columns.</RadzenText>
+}
+else
+{
+    <RadzenDataGrid TItem="AresDataRow"
+                    Data="@Rows"
+                    AllowPaging="true"
+                    AllowColumnResize="true"
+                    PageSize="@PageSize"
+                    Density="Density.Compact"
+                    GridLines="DataGridGridLines.Horizontal">
+        <Columns>
+            @if (ShowRowIds && Rows.Any(row => row.HasUniqueId))
+            {
+                <RadzenDataGridColumn TItem="AresDataRow" Title="Row ID" Width="180px" Sortable="false" Filterable="false">
+                    <Template Context="row">
+                        @row.UniqueId
+                    </Template>
+                </RadzenDataGridColumn>
+            }
+
+            @foreach (var column in Dataset.Columns)
+            {
+                <RadzenDataGridColumn TItem="AresDataRow" Title="@GetColumnTitle(column)" Sortable="false" Filterable="false">
+                    <Template Context="row">
+                        @GetCellDisplayValue(row, column)
+                    </Template>
+                </RadzenDataGridColumn>
+            }
+        </Columns>
+    </RadzenDataGrid>
+}
+
+@code {
+    [Parameter]
+    public AresDataset? Dataset { get; set; }
+
+    [Parameter]
+    public int PageSize { get; set; } = 20;
+
+    [Parameter]
+    public bool ShowRowIds { get; set; } = true;
+
+    private IEnumerable<AresDataRow> Rows => Dataset?.Rows ?? Enumerable.Empty<AresDataRow>();
+
+    private static string GetColumnTitle(AresDataColumn column)
+    {
+        return column.HasDisplayName && !string.IsNullOrWhiteSpace(column.DisplayName)
+            ? column.DisplayName
+            : column.Name;
+    }
+
+    private static string GetCellDisplayValue(AresDataRow row, AresDataColumn column)
+    {
+        if (row.Data?.Fields.TryGetValue(column.Name, out var value) != true)
+        {
+            return string.Empty;
+        }
+
+        return value.Stringify();
+    }
+}

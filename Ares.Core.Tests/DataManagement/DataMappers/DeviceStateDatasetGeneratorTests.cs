@@ -144,6 +144,78 @@ internal class DeviceStateDatasetGeneratorTests
   }
 
   [Test]
+  public async Task GenerateAsync_WithIntervalCreatesFixedTimestampRows()
+  {
+    var filter = new DeviceStateRequestFilter
+    {
+      Start = Timestamp.FromDateTime(DateTime.UnixEpoch),
+      End = Timestamp.FromDateTime(DateTime.UnixEpoch.AddSeconds(4)),
+      Interval = Duration.FromTimeSpan(TimeSpan.FromSeconds(2))
+    };
+    var stateGetter = CreateStateGetter(filter, new Dictionary<string, DeviceState[]>
+    {
+      ["Device A"] =
+      [
+        CreateState(DateTime.UnixEpoch, ("Temperature", AresValueHelper.CreateNumber(1))),
+        CreateState(DateTime.UnixEpoch.AddSeconds(3), ("Temperature", AresValueHelper.CreateNumber(2)))
+      ]
+    });
+
+    var generator = new DeviceStateDatasetGenerator(stateGetter.Object);
+    var dataset = (await generator.GenerateAsync(filter)).Single();
+
+    Assert.That(dataset.Rows.Select(row => row.Data.Fields["Timestamp"].TimestampValue), Is.EqualTo([
+      Timestamp.FromDateTime(DateTime.UnixEpoch),
+      Timestamp.FromDateTime(DateTime.UnixEpoch.AddSeconds(2)),
+      Timestamp.FromDateTime(DateTime.UnixEpoch.AddSeconds(4))
+    ]));
+  }
+
+  [Test]
+  public async Task GenerateAsync_WithIntervalUsesLatestStateAtOrBeforeTimestamp()
+  {
+    var filter = new DeviceStateRequestFilter
+    {
+      Start = Timestamp.FromDateTime(DateTime.UnixEpoch),
+      End = Timestamp.FromDateTime(DateTime.UnixEpoch.AddSeconds(4)),
+      Interval = Duration.FromTimeSpan(TimeSpan.FromSeconds(2))
+    };
+    var stateGetter = CreateStateGetter(filter, new Dictionary<string, DeviceState[]>
+    {
+      ["Device A"] =
+      [
+        CreateState(DateTime.UnixEpoch, ("Temperature", AresValueHelper.CreateNumber(1))),
+        CreateState(DateTime.UnixEpoch.AddSeconds(3), ("Temperature", AresValueHelper.CreateNumber(2)))
+      ]
+    });
+
+    var generator = new DeviceStateDatasetGenerator(stateGetter.Object);
+    var dataset = (await generator.GenerateAsync(filter)).Single();
+
+    Assert.That(dataset.Rows.Select(row => row.Data.Fields["Temperature"].NumberValue), Is.EqualTo([1, 1, 2]));
+  }
+
+  [Test]
+  public async Task GenerateAsync_WithEmptyDeviceStateCollectionReturnsDatasetWithNoRows()
+  {
+    var filter = new DeviceStateRequestFilter();
+    var stateGetter = CreateStateGetter(filter, new Dictionary<string, DeviceState[]>
+    {
+      ["Device A"] = []
+    });
+
+    var generator = new DeviceStateDatasetGenerator(stateGetter.Object);
+    var dataset = (await generator.GenerateAsync(filter)).Single();
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(dataset.Name, Is.EqualTo("Device A"));
+      Assert.That(dataset.Columns.Select(column => column.Name), Is.EqualTo(["Timestamp"]));
+      Assert.That(dataset.Rows, Is.Empty);
+    }
+  }
+
+  [Test]
   public void GenerateAsync_ThrowsWhenAlreadyCanceled()
   {
     var filter = new DeviceStateRequestFilter();

@@ -28,7 +28,7 @@ public class DeviceStateDatasetGenerator(IDeviceStateGetter _deviceStateGetter)
         Name = stateMap.Key
       };
       dataset.Columns.AddRange(columns);
-      dataset.Rows.AddRange(states.Select(state => CreateRow(state, cancellationToken)));
+      dataset.Rows.AddRange(CreateRows(states, filter, cancellationToken));
       datasets.Add(dataset);
     }
 
@@ -65,12 +65,47 @@ public class DeviceStateDatasetGenerator(IDeviceStateGetter _deviceStateGetter)
     ];
   }
 
-  private static AresDataRow CreateRow(DeviceState state, CancellationToken cancellationToken)
+  private static IEnumerable<AresDataRow> CreateRows(DeviceState[] states, DeviceStateRequestFilter filter, CancellationToken cancellationToken)
+  {
+    var interval = filter.Interval?.ToTimeSpan() ?? default;
+    if(interval.TotalMilliseconds < 1)
+    {
+      return states.Select(state => CreateRow(state, state.Timestamp, cancellationToken)).ToArray();
+    }
+
+    if(states.Length == 0)
+    {
+      return [];
+    }
+
+    var startTime = filter.Start ?? states.First().Timestamp;
+    var endTime = filter.End ?? states.Last().Timestamp;
+    if(startTime > endTime)
+    {
+      return [];
+    }
+
+    var rows = new List<AresDataRow>();
+    for(var timestamp = startTime.ToDateTime(); timestamp <= endTime.ToDateTime(); timestamp += interval)
+    {
+      cancellationToken.ThrowIfCancellationRequested();
+      var rowTimestamp = Timestamp.FromDateTime(timestamp);
+      var state = states.LastOrDefault(state => state.Timestamp <= rowTimestamp);
+      if(state is not null)
+      {
+        rows.Add(CreateRow(state, rowTimestamp, cancellationToken));
+      }
+    }
+
+    return rows;
+  }
+
+  private static AresDataRow CreateRow(DeviceState state, Timestamp timestamp, CancellationToken cancellationToken)
   {
     cancellationToken.ThrowIfCancellationRequested();
 
     var data = new AresStruct();
-    data.Fields[TimestampColumnName] = AresValueHelper.CreateTimestamp((Timestamp)state.Timestamp);
+    data.Fields[TimestampColumnName] = AresValueHelper.CreateTimestamp(timestamp);
 
     foreach(var field in state.Data?.Fields ?? [])
     {

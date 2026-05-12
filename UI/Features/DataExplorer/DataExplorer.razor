@@ -1,4 +1,17 @@
-﻿<h3>DataExplorer</h3>
+﻿@page "/data-explorer"
+
+<section class="data-explorer-page">
+    <RadzenTabs Class="data-explorer-tabs">
+        <Tabs>
+            <RadzenTabsItem Text="Device State">
+                <DeviceStateExplorer />
+            </RadzenTabsItem>
+            <RadzenTabsItem Text="Campaign Data">
+                <CampaignDataExplorer />
+            </RadzenTabsItem>
+        </Tabs>
+    </RadzenTabs>
+</section>
 
 @code {
 
