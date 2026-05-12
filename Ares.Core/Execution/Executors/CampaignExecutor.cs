@@ -206,7 +206,7 @@ public class CampaignExecutor : ICampaignExecutor
 
       if(experimentExecutorResult.ErrorString is not null)
       {
-        _logger.LogError($"Experiment Executor Generation Failed! Reason: {experimentExecutorResult.ErrorString}");
+        _logger.LogError("Experiment Executor Generation Failed! Reason: {errorString}", experimentExecutorResult.ErrorString);
         await _notifier.Notify("Experiment Executor Generation Failure", experimentExecutorResult.ErrorString, NotificationSeverityEnum.Error);
         executionSuccess = false;
         break;
@@ -484,6 +484,7 @@ public class CampaignExecutor : ICampaignExecutor
 
       if(IsAwaitingResponse(experimentStatus))
         Status.State = ExecutionState.AwaitingUser;
+
       else
         Status.State = token.IsPaused ? ExecutionState.Paused : ExecutionState.Running;
 

@@ -29,6 +29,26 @@ public class SystemSettingsManager : ISystemSettingsManager
     await context.SaveChangesAsync();
   }
 
+  /// <summary>
+  /// Based on the provided status code, returns the current setting for that codes error handling procedure.
+  /// </summary>
+  /// <param name="code">The status code the handling protocol is being requested for.</param>
+  /// <returns>The error handling protocol assigned to that error code.</returns>
+  public async Task<ErrorHandling> GetErrorHandlingByStatusCode(CommandStatusCode code)
+  {
+    try
+    {
+      using var context = _dbContextFactory.CreateDbContext();
+      var matchingSetting = await context.DeviceErrorHandlingConfigs.FirstAsync(c => c.Code == code);
+      return matchingSetting.Handling;
+    }
+
+    catch(Exception)
+    {
+      return ErrorHandling.UnknownHandling;
+    }
+  }
+
   public async Task<IEnumerable<DeviceErrorHandlingConfig>> GetCurrentErrorHandlingSettings()
   {
     using var context = _dbContextFactory.CreateDbContext();

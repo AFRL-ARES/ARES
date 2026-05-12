@@ -16,6 +16,7 @@ using Moq;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Ares.Core.Device.Providers;
+using Ares.Core.Settings;
 
 namespace Ares.Core.Tests.Execution;
 
@@ -39,6 +40,7 @@ internal class CampaignExecutorTests
   private ILoggerFactory _loggerFactory;
   private IAresDeviceProvider _deviceProvider;
   private IDbContextFactory<CoreDatabaseContext> _dbContextFactory;
+  private ISystemSettingsManager _settingsManager;
 
   private IAnalyzer _replyAnalyzer;
 
@@ -61,6 +63,7 @@ internal class CampaignExecutorTests
     _stateLoggerManagerLogger = new Mock<ILogger<StateLoggerManager>>().Object;
     _campaignExecutorLogger = new Mock<ILogger<CampaignExecutor>>().Object;
     _deviceProvider = new Mock<IAresDeviceProvider>().Object;
+    _settingsManager = new Mock<ISystemSettingsManager>().Object;
     
     var loggerFactoryMock = new Mock<ILoggerFactory>();
     loggerFactoryMock.Setup(f => f.CreateLogger(typeof(CampaignExecutor).FullName))
@@ -69,7 +72,7 @@ internal class CampaignExecutorTests
 
     var deviceRepo = new AresDeviceRepo();
     deviceRepo.AddOrUpdate(new TestDevice());
-    var stepComposer = new StepComposer(deviceRepo, _notifier);
+    var stepComposer = new StepComposer(deviceRepo, _notifier, _settingsManager);
     var experimentComposer = new ExperimentComposer(stepComposer, _analyzerRepo);
 
     var stateLoggerRepository = new DeviceStateLoggerRepository();

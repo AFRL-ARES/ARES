@@ -17,7 +17,12 @@ public class SystemSettingsViewModel : ReactiveObject
 
   public async Task PushUpdatedSettings()
   {
-    var configs = CurrentErrorHandlingSettings.Select(kvp => new DeviceErrorHandlingConfig() { Code = kvp.Key, Handling = kvp.Value }).ToList();
+    var configs = CurrentErrorHandlingSettings.Select(kvp => new DeviceErrorHandlingConfig() 
+    { 
+      Code = kvp.Key, 
+      Handling = kvp.Value }
+    ).ToList();
+
     await _settingsManager.UpdateErrorHandlingSettings(configs);
   }
 

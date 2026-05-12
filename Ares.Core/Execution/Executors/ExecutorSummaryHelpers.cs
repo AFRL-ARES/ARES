@@ -56,8 +56,9 @@ internal static class ExecutorSummaryHelpers
       Result = deviceResult,
       TemplateId = template.UniqueId,
       CommandDescription = template.Metadata.Description,
-      CommandName = template.Metadata.Name
-    };
+      CommandName = template.Metadata.Name,
+      StatusCode = deviceResult?.StatusCode ?? CommandStatusCode.StatusUnspecified
+     };
 
     return commandExecutionSummary;
   }
