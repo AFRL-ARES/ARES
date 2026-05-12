@@ -26,6 +26,7 @@ using Ares.Core.Device.Plugins.Drivers;
 using Ares.Core.Visualization.Repos;
 using Ares.Core.Visualization.Providers;
 using Ares.Core.Visualization.Managers;
+using Ares.Core.Settings;
 
 namespace Ares.Core;
 
@@ -63,6 +64,7 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<INotifier, Notifier>();
     services.AddSingleton<IDeviceConfigManager, DeviceConfigManager>();
     services.AddSingleton<IDriverDatabaseManager, DriverDatabaseManager>();
+    services.AddSingleton<ISystemSettingsManager, SystemSettingsManager>();
     services.AddSingleton<IResourceConnectionArbiter, ResourceConnectionArbiter>();
 
     services.AddSingleton<ISymbolProvider, DeviceSymbolProvider>();

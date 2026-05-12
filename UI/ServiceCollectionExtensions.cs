@@ -48,6 +48,7 @@ using ExecutionViewModel = UI.Features.Execution.ExecutionViewModel;
 using ManualPlannerViewModel = UI.Features.Execution.Planning.ManualPlannerViewModel;
 using RemoteDeviceSettingsListViewModel = UI.Features.Devices.Remote.RemoteDeviceSettingsListViewModel;
 using ScriptPlaygroundViewModel = UI.Features.ScriptPlayground.ScriptPlaygroundViewModel;
+using UI.Features.Settings;
 
 namespace UI;
 
@@ -116,13 +117,14 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<VisualizationViewModel>();
     services.AddScoped<VisualizationSidebarViewModel>();
 
-    //Device Settings List View Models
+    //Settings List View Models
     services.AddTransient<DeviceStatesViewModel>();
     services.AddTransient<DeviceStateExporterViewModel>();
     services.AddTransient<AnalyzerSettingsListViewModel>();
     services.AddTransient<PlannerSettingsListViewModel>();
     services.AddTransient<RemoteDeviceSettingsListViewModel>();
     services.AddTransient<PluginDeviceSettingsListViewModel>();
+    services.AddTransient<SystemSettingsViewModel>();
 
     //Other View Models
     services.AddTransient<DeviceStatesViewModel>();
