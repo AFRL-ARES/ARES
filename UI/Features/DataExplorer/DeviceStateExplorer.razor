@@ -1,4 +1,5 @@
 ﻿@using System.Linq
+@using System.Globalization
 @using Ares.Core
 @using Ares.Core.DataManagement.DataMappers
 @using Ares.Core.Device.Repos
@@ -86,7 +87,7 @@
                 <span class="device-marker" aria-hidden="true"></span>
                 <span class="device-text">
                   <span class="device-name">@device.Name</span>
-                  <span class="device-id">@device.Id</span>
+                  <span class="device-id">@device.Type</span>
                 </span>
               </label>
             </li>
@@ -216,15 +217,36 @@
             <p>Use Apply to generate tables for the selected devices.</p>
           </div>
         }
-        else if (_appliedDisplayMode != "Separate")
+        else if (_appliedDisplayMode == "Wide")
         {
           <div class="empty-state">
             <RadzenIcon Icon="view_column" />
             <h4>@_appliedDisplayMode mode is not implemented yet</h4>
-            <p>Use Separate mode to view device state tables for now.</p>
+            <p>Use Separate or Long mode to view device state tables for now.</p>
           </div>
         }
-        else if (_datasets is null || _datasets.Length == 0)
+        else if (_appliedDisplayMode == "Long" && (_longDataset is null || _longDataset.Rows.Count == 0))
+        {
+          <div class="empty-state">
+            <RadzenIcon Icon="filter_alt_off" />
+            <h4>No state data matched</h4>
+            <p>No state data matched the selected devices and filters.</p>
+          </div>
+        }
+        else if (_appliedDisplayMode == "Long" && _longDataset is not null)
+        {
+          <div class="state-panel-header">
+            <div>
+              <h4>Long Device State Table</h4>
+              <span>@_longDataset.Rows.Count state value@(_longDataset.Rows.Count == 1 ? string.Empty : "s") loaded</span>
+            </div>
+          </div>
+
+          <div class="long-dataset-table">
+            <AresDatasetTable Dataset="@_longDataset" />
+          </div>
+        }
+        else if (_deviceDatasets is null || _deviceDatasets.Length == 0)
         {
           <div class="empty-state">
             <RadzenIcon Icon="filter_alt_off" />
@@ -237,13 +259,13 @@
           <div class="state-panel-header">
             <div>
               <h4>Device State Tables</h4>
-              <span>@_datasets.Length device dataset@(_datasets.Length == 1 ? string.Empty : "s") loaded</span>
+              <span>@_deviceDatasets.Length device dataset@(_deviceDatasets.Length == 1 ? string.Empty : "s") loaded</span>
             </div>
           </div>
 
           <RadzenTabs Class="dataset-tabs">
             <Tabs>
-              @foreach (var dataset in _datasets)
+              @foreach (var dataset in _deviceDatasets)
               {
                 <RadzenTabsItem Text="@dataset.Name">
                   <AresDatasetTable Dataset="@dataset" />
@@ -262,12 +284,14 @@
   private List<DeviceDisplayItem>? _devices;
   private List<CampaignDisplayItem>? _campaigns;
   private List<ExperimentDisplayItem> _experiments = new();
-  private AresDataset[]? _datasets;
+  private AresDataset[]? _deviceDatasets;
+  private AresDataset? _longDataset;
   private CancellationTokenSource? _datasetLoadCancellation;
   private readonly HashSet<string> _selectedDeviceIds = new();
   private string? _filterText;
   private string _selectedDisplayMode = _displayModes[0];
   private string _appliedDisplayMode = _displayModes[0];
+  private string? _appliedFilterSignature;
   private string? _datasetError;
   private string? _selectedCampaignId;
   private string? _selectedExperimentId;
@@ -335,7 +359,7 @@
         .Select(id =>
         {
           var device = DeviceRepo.FirstOrDefault(d => d.UniqueId == id);
-          return new DeviceDisplayItem(id, device?.Name ?? id);
+          return new DeviceDisplayItem(id, device?.Name ?? id, device?.Type ?? "Unknown");
         })
         .OrderBy(device => device.Name)
         .ThenBy(device => device.Id)
@@ -391,20 +415,17 @@
 
     _loadingDatasets = true;
     _datasetError = null;
-    _datasets = null;
+    _deviceDatasets = null;
+    _longDataset = null;
     _appliedDisplayMode = _selectedDisplayMode;
+    _appliedFilterSignature = CreateFilterSignature();
     _hasApplied = true;
-
-    if (_appliedDisplayMode != "Separate")
-    {
-      _loadingDatasets = false;
-      return;
-    }
 
     try
     {
       var filter = CreateStateRequestFilter();
-      _datasets = await DatasetGenerator.GenerateAsync(filter, _datasetLoadCancellation.Token);
+      _deviceDatasets = await DatasetGenerator.GenerateAsync(filter, _datasetLoadCancellation.Token);
+      EnsureSelectedDisplayDataset();
     }
     catch (OperationCanceledException)
     {
@@ -425,6 +446,13 @@
     if (value is string displayMode)
     {
       _selectedDisplayMode = displayMode;
+    }
+
+    if (_hasApplied && _deviceDatasets is not null && _appliedFilterSignature == CreateFilterSignature())
+    {
+      _appliedDisplayMode = _selectedDisplayMode;
+      EnsureSelectedDisplayDataset();
+      return;
     }
 
     if (CanApply)
@@ -464,6 +492,31 @@
     }
 
     return filter;
+  }
+
+  private string CreateFilterSignature()
+  {
+    var signatureParts = new List<string>
+    {
+      string.Join(',', _selectedDeviceIds.OrderBy(id => id)),
+      _useStartTime ? _startTime.ToUniversalTime().Ticks.ToString(CultureInfo.InvariantCulture) : string.Empty,
+      _useEndTime ? _endTime.ToUniversalTime().Ticks.ToString(CultureInfo.InvariantCulture) : string.Empty,
+      _intervalMs > 0 ? _intervalMs.ToString("R", CultureInfo.InvariantCulture) : string.Empty,
+      _useCampaign ? _selectedCampaignId ?? string.Empty : string.Empty,
+      _useCampaign ? _selectedExperimentId ?? string.Empty : string.Empty
+    };
+
+    return string.Join('|', signatureParts);
+  }
+
+  private void EnsureSelectedDisplayDataset()
+  {
+    if (_appliedDisplayMode != "Long" || _longDataset is not null || _deviceDatasets is null)
+    {
+      return;
+    }
+
+    _longDataset = DeviceStateLongDatasetProjector.Project(_deviceDatasets);
   }
 
   private async Task OnCampaignChanged(object? value)
@@ -556,7 +609,7 @@ null);
     _datasetLoadCancellation?.Dispose();
   }
 
-  private record DeviceDisplayItem(string Id, string Name);
+  private record DeviceDisplayItem(string Id, string Name, string Type);
 
   private record CampaignDisplayItem(
       string SummaryId,

@@ -405,6 +405,17 @@
   min-height: 0;
 }
 
+.long-dataset-table {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+::deep .long-dataset-table .rz-data-grid {
+  min-height: 0;
+}
+
 .selected-device-grid {
   display: grid;
   flex: 1;
