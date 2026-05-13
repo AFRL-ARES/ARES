@@ -11,36 +11,54 @@ else if (Dataset.Columns.Count == 0)
 }
 else
 {
-    <RadzenDataGrid TItem="AresDataRow"
-                    Data="@Rows"
-                    AllowPaging="true"
-                    AllowColumnResize="true"
-                    PageSize="@PageSize"
-                    Density="Density.Compact"
-                    GridLines="DataGridGridLines.Horizontal">
-        <Columns>
-            @if (ShowRowIds && Rows.Any(row => row.HasUniqueId))
-            {
-                <RadzenDataGridColumn TItem="AresDataRow" Title="Row ID" Width="180px" Sortable="false" Filterable="false">
-                    <Template Context="row">
-                        @row.UniqueId
-                    </Template>
-                </RadzenDataGridColumn>
-            }
+    <div class="dataset-table">
+        <div class="dataset-table-toolbar">
+            <span>@Dataset.Rows.Count row@(Dataset.Rows.Count == 1 ? string.Empty : "s")</span>
+            <label>
+                <span>Page size</span>
+                <RadzenDropDown Data="@_pageSizeOptions"
+                                TValue="int"
+                                @bind-Value="_selectedPageSize"
+                                Style="width: 6rem;" />
+            </label>
+        </div>
 
-            @foreach (var column in Dataset.Columns)
-            {
-                <RadzenDataGridColumn TItem="AresDataRow" Title="@GetColumnTitle(column)" Sortable="false" Filterable="false">
-                    <Template Context="row">
-                        @GetCellDisplayValue(row, column)
-                    </Template>
-                </RadzenDataGridColumn>
-            }
-        </Columns>
-    </RadzenDataGrid>
+        <RadzenDataGrid TItem="AresDataRow"
+                        Data="@Rows"
+                        AllowPaging="true"
+                        AllowColumnResize="true"
+                        PageSize="@_selectedPageSize"
+                        Density="Density.Compact"
+                        GridLines="DataGridGridLines.Horizontal">
+            <Columns>
+                @if (ShowRowIds && Rows.Any(row => row.HasUniqueId))
+                {
+                    <RadzenDataGridColumn TItem="AresDataRow" Title="Row ID" Width="180px" Sortable="false" Filterable="false">
+                        <Template Context="row">
+                            @row.UniqueId
+                        </Template>
+                    </RadzenDataGridColumn>
+                }
+
+                @foreach (var column in Dataset.Columns)
+                {
+                    <RadzenDataGridColumn TItem="AresDataRow" Title="@GetColumnTitle(column)" Sortable="false" Filterable="false">
+                        <Template Context="row">
+                            @GetCellDisplayValue(row, column)
+                        </Template>
+                    </RadzenDataGridColumn>
+                }
+            </Columns>
+        </RadzenDataGrid>
+    </div>
 }
 
 @code {
+    private static readonly int[] _pageSizeOptions = [10, 20, 50, 100, 250];
+
+    private int _configuredPageSize;
+    private int _selectedPageSize = 20;
+
     [Parameter]
     public AresDataset? Dataset { get; set; }
 
@@ -51,6 +69,17 @@ else
     public bool ShowRowIds { get; set; } = true;
 
     private IEnumerable<AresDataRow> Rows => Dataset?.Rows ?? Enumerable.Empty<AresDataRow>();
+
+    protected override void OnParametersSet()
+    {
+        if (_configuredPageSize == PageSize)
+        {
+            return;
+        }
+
+        _configuredPageSize = PageSize;
+        _selectedPageSize = _pageSizeOptions.Contains(PageSize) ? PageSize : _pageSizeOptions[1];
+    }
 
     private static string GetColumnTitle(AresDataColumn column)
     {
