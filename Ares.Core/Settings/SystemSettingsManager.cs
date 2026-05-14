@@ -27,21 +27,31 @@ public class SystemSettingsManager : ISystemSettingsManager
         RetryCooldown = 0
       };
 
-      await context.GeneralSettingsConfigs.AddAsync(newGeneralSettingsConfig);
+      context.GeneralSettingsConfigs.Add(newGeneralSettingsConfig);
     }
 
     var existingErrorHandling = await context.DeviceErrorHandlingConfigs.ToListAsync();
-    var expectedEntries = Enum.GetValues<CommandStatusCode>().Length;
+    var allEnumValues = Enum.GetValues<CommandStatusCode>();
 
-    if(existingErrorHandling.Count != expectedEntries)
+    if(existingErrorHandling.Count != allEnumValues.Length)
     {
-      foreach(var code in Enum.GetValues<CommandStatusCode>())
-      {
-        var match = context.DeviceErrorHandlingConfigs.FirstOrDefault(c => c.Code == code);
+      var existingCodes = existingErrorHandling.Select(c => c.Code).ToHashSet();
+      var missingConfigs = new List<DeviceErrorHandlingConfig>();
 
-        if(match is null)
-          context.DeviceErrorHandlingConfigs.Add(new DeviceErrorHandlingConfig { Code = code, Handling = ErrorHandling.StopAndCloseout });
+      foreach(var code in allEnumValues)
+      {
+        if(!existingCodes.Contains(code))
+        {
+          missingConfigs.Add(new DeviceErrorHandlingConfig
+          {
+            Code = code,
+            Handling = ErrorHandling.StopAndCloseout
+          });
+        }
       }
+
+      if(missingConfigs.Any())
+        context.DeviceErrorHandlingConfigs.AddRange(missingConfigs);
     }
 
     await context.SaveChangesAsync();

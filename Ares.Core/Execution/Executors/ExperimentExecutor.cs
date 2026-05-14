@@ -1,7 +1,6 @@
 ﻿using System.Reactive.Linq;
 using Ares.Core.Execution.ControlTokens;
 using Ares.Core.Execution.Extensions;
-using Ares.Core.Settings;
 using Ares.Datamodel;
 using Ares.Datamodel.Templates;
 
