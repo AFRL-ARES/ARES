@@ -4,12 +4,23 @@
 @using Radzen.Blazor
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<SystemSettingsViewModel>
 @layout SettingsLayout
+@inject TooltipService tooltipService
 
 <div class="card flex-fill d-flex flex-column">
 
   <RadzenStack Gap="1.5rem" Class="rz-p-6">
     <RadzenTabs RenderMode="TabRenderMode.Client">
       <Tabs>
+        <RadzenTabsItem Text="Experiment Settings" Icon="biotech">
+          <RadzenCard Variant="Variant.Flat">
+            <RadzenStack Gap="1rem" Orientation="Orientation.Horizontal">
+              <RadzenFormField Text="Experiment Retry Limit">
+                <RadzenNumeric @bind-Value="ViewModel!.ExperimentRetryLimit" />
+              </RadzenFormField>
+              <RadzenIcon Icon="help_outline" MouseEnter="@(args => ShowRetryLimitTooltip(args))" Style="padding-top: 1.5rem"/>
+            </RadzenStack>
+          </RadzenCard>
+        </RadzenTabsItem>
         <RadzenTabsItem Text="Error Handling" Icon="error_outline">
           <RadzenCard Variant="Variant.Flat">
             <RadzenStack Gap="1rem">
@@ -53,4 +64,6 @@
 
     return values;
   }
+
+  void ShowRetryLimitTooltip(ElementReference elementReference, TooltipOptions options = null) => tooltipService.Open(elementReference, "Sets the max times ARES will retry a failing command or experiment", options);
 }
