@@ -189,6 +189,40 @@
   cursor: default;
 }
 
+.filter-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.filter-actions .apply-button {
+  flex: 1;
+}
+
+.cancel-button {
+  border: var(--rz-card-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--rz-text-color, #344054);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 650;
+  line-height: 1;
+  padding: 0.65rem 0.85rem;
+}
+
+.cancel-button:not(:disabled):hover {
+  background: var(--rz-secondary-lighter, #f2f4f7);
+}
+
+.cancel-button:disabled {
+  color: var(--rz-text-disabled-color, #98a2b3);
+  cursor: default;
+}
+
+.cancel-button.compact {
+  padding: 0.5rem 0.7rem;
+}
+
 .search-field {
   display: flex;
   align-items: center;
@@ -377,6 +411,33 @@
   flex: 1;
   flex-direction: column;
   overflow: hidden;
+}
+
+.loading-status {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-bottom: var(--rz-card-border);
+  background: var(--rz-card-flat-background-color);
+}
+
+.loading-status > div {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.loading-status strong {
+  color: var(--rz-text-color, #344054);
+  font-size: 0.9rem;
+}
+
+.loading-status span {
+  color: var(--rz-text-secondary-color, #667085);
+  font-size: 0.8rem;
 }
 
 ::deep .dataset-tabs {

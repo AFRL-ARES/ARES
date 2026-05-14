@@ -31,7 +31,7 @@ else
                         Density="Density.Compact"
                         GridLines="DataGridGridLines.Horizontal">
             <Columns>
-                @if (ShowRowIds && Rows.Any(row => row.HasUniqueId))
+                @if (_showRowIds)
                 {
                     <RadzenDataGridColumn TItem="AresDataRow" Title="Row ID" Width="180px" Sortable="false" Filterable="false">
                         <Template Context="row">
@@ -58,6 +58,9 @@ else
 
     private int _configuredPageSize;
     private int _selectedPageSize = 20;
+    private bool _configuredShowRowIds;
+    private bool _showRowIds;
+    private AresDataset? _configuredDataset;
 
     [Parameter]
     public AresDataset? Dataset { get; set; }
@@ -72,13 +75,20 @@ else
 
     protected override void OnParametersSet()
     {
-        if (_configuredPageSize == PageSize)
+        if (_configuredPageSize != PageSize)
+        {
+            _configuredPageSize = PageSize;
+            _selectedPageSize = _pageSizeOptions.Contains(PageSize) ? PageSize : _pageSizeOptions[1];
+        }
+
+        if (ReferenceEquals(_configuredDataset, Dataset) && _configuredShowRowIds == ShowRowIds)
         {
             return;
         }
 
-        _configuredPageSize = PageSize;
-        _selectedPageSize = _pageSizeOptions.Contains(PageSize) ? PageSize : _pageSizeOptions[1];
+        _configuredDataset = Dataset;
+        _configuredShowRowIds = ShowRowIds;
+        _showRowIds = ShowRowIds && Dataset?.Rows.Any(row => row.HasUniqueId) == true;
     }
 
     private static string GetColumnTitle(AresDataColumn column)

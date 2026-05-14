@@ -11,8 +11,15 @@ public static class DeviceStateLongDatasetProjector
   private const string ValueColumnName = "Value";
   private const string UnitColumnName = "Unit";
 
-  public static AresDataset Project(IEnumerable<AresDataset> deviceDatasets)
+  public static Task<AresDataset> ProjectAsync(IEnumerable<AresDataset> dataset, CancellationToken cancellationToken = default)
   {
+    return Task.Run(() => Project(dataset, cancellationToken), cancellationToken);
+  }
+
+  public static AresDataset Project(IEnumerable<AresDataset> deviceDatasets, CancellationToken cancellationToken = default)
+  {
+    cancellationToken.ThrowIfCancellationRequested();
+
     var longDataset = new AresDataset
     {
       Name = "Device State Long"
@@ -23,17 +30,23 @@ public static class DeviceStateLongDatasetProjector
 
     foreach(var deviceDataset in deviceDatasets)
     {
+      cancellationToken.ThrowIfCancellationRequested();
+
       var propertyColumns = deviceDataset.Columns
         .Where(column => column.Name != TimestampColumnName)
         .ToArray();
 
       foreach(var sourceRow in deviceDataset.Rows)
       {
+        cancellationToken.ThrowIfCancellationRequested();
+
         if(sourceRow.Data?.Fields.TryGetValue(TimestampColumnName, out var timestamp) != true)
           continue;
 
         foreach(var propertyColumn in propertyColumns)
         {
+          cancellationToken.ThrowIfCancellationRequested();
+
           if(sourceRow.Data.Fields.TryGetValue(propertyColumn.Name, out var value) != true)
             continue;
 
@@ -42,6 +55,7 @@ public static class DeviceStateLongDatasetProjector
       }
     }
 
+    cancellationToken.ThrowIfCancellationRequested();
     longDataset.Rows.AddRange(rows.OrderBy(GetTimestamp));
     return longDataset;
   }

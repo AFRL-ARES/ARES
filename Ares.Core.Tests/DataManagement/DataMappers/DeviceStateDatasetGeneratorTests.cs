@@ -310,6 +310,49 @@ internal class DeviceStateDatasetGeneratorTests
     stateGetter.Verify(getter => getter.GetStates<DeviceState>(It.IsAny<DeviceStateRequestFilter>()), Times.Never);
   }
 
+  [Test]
+  public void GenerateAsync_ThrowsWhenCanceledAfterFetchingStates()
+  {
+    var filter = new DeviceStateRequestFilter();
+    var states = new Dictionary<string, DeviceState[]>
+    {
+      ["Device A"] = [CreateState(DateTime.UnixEpoch, ("Temperature", AresValueHelper.CreateNumber(1)))]
+    };
+    var stateGetter = new Mock<IDeviceStateGetter>();
+    using var cancellationTokenSource = new CancellationTokenSource();
+    stateGetter
+      .Setup(getter => getter.GetStates<DeviceState>(filter, cancellationTokenSource.Token))
+      .Returns(() =>
+      {
+        cancellationTokenSource.Cancel();
+        return Task.FromResult<IDictionary<string, DeviceState[]>>(states);
+      });
+
+    var generator = new DeviceStateDatasetGenerator(stateGetter.Object);
+
+    Assert.ThrowsAsync<OperationCanceledException>(async () => await generator.GenerateAsync(filter, cancellationTokenSource.Token));
+  }
+
+  [Test]
+  public void GenerateAsync_WithIntervalThrowsWhenCanceledDuringRowGeneration()
+  {
+    var filter = new DeviceStateRequestFilter
+    {
+      Start = Timestamp.FromDateTime(DateTime.UnixEpoch),
+      End = Timestamp.FromDateTime(DateTime.UnixEpoch.AddDays(1)),
+      Interval = Duration.FromTimeSpan(TimeSpan.FromMilliseconds(1))
+    };
+    var stateGetter = CreateStateGetter(filter, new Dictionary<string, DeviceState[]>
+    {
+      ["Device A"] = [CreateState(DateTime.UnixEpoch, ("Temperature", AresValueHelper.CreateNumber(1)))]
+    });
+    using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMilliseconds(1));
+
+    var generator = new DeviceStateDatasetGenerator(stateGetter.Object);
+
+    Assert.ThrowsAsync<OperationCanceledException>(async () => await generator.GenerateAsync(filter, cancellationTokenSource.Token));
+  }
+
   private static AresValueSchema ColumnSchema(AresDataset dataset, string columnName)
   {
     return dataset.Columns.Single(column => column.Name == columnName).Schema;
@@ -322,6 +365,9 @@ internal class DeviceStateDatasetGeneratorTests
     var stateGetter = new Mock<IDeviceStateGetter>();
     stateGetter
       .Setup(getter => getter.GetStates<DeviceState>(filter))
+      .ReturnsAsync(states);
+    stateGetter
+      .Setup(getter => getter.GetStates<DeviceState>(filter, It.IsAny<CancellationToken>()))
       .ReturnsAsync(states);
     return stateGetter;
   }

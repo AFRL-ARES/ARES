@@ -122,6 +122,37 @@ internal class DeviceStateLongDatasetProjectorTests
     }
   }
 
+  [Test]
+  public void Project_ThrowsWhenAlreadyCanceled()
+  {
+    var timestamp = Timestamp.FromDateTime(DateTime.UnixEpoch);
+    var deviceDatasets = new[]
+    {
+      CreateDataset("Device A", CreateRow(timestamp, ("Temperature", AresValueHelper.CreateNumber(1))))
+    };
+    using var cancellationTokenSource = new CancellationTokenSource();
+    cancellationTokenSource.Cancel();
+
+    Assert.Throws<OperationCanceledException>(() => DeviceStateLongDatasetProjector.Project(deviceDatasets, cancellationTokenSource.Token));
+  }
+
+  [Test]
+  public void Project_ThrowsWhenCanceledDuringProjection()
+  {
+    var rows = Enumerable.Range(0, 100_000)
+      .Select(index => CreateRow(
+        Timestamp.FromDateTime(DateTime.UnixEpoch.AddMilliseconds(index)),
+        ("Temperature", AresValueHelper.CreateNumber(index))))
+      .ToArray();
+    var deviceDatasets = new[]
+    {
+      CreateDataset("Device A", rows)
+    };
+    using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMilliseconds(1));
+
+    Assert.Throws<OperationCanceledException>(() => DeviceStateLongDatasetProjector.Project(deviceDatasets, cancellationTokenSource.Token));
+  }
+
   private static AresDataset CreateDataset(string name, params AresDataRow[] rows)
   {
     var dataset = new AresDataset

@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 
 namespace Ares.Core.Device.State.Logging;
+
 public static class DeviceStateQueryBuilder
 {
   public static async Task<IQueryable<T>> BuildQuery<T>(DeviceStateRequestFilter request, CoreDatabaseContext dbContext) where T : class, IDeviceState
