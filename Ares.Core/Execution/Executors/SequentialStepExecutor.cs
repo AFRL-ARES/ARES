@@ -49,7 +49,10 @@ public class SequentialStepExecutor : StepExecutor
         commandSummaries.Add(commandExecutionSummary);
 
       else
-        return ExecutorSummaryHelpers.CreateEmptyStepExecutionSummary(startTime, DateTime.UtcNow);
+      {
+        commandSummaries.Add(commandExecutionSummary);
+        return ExecutorSummaryHelpers.CreateStepExecutionSummary(startTime, DateTime.UtcNow, commandSummaries);
+      }
     }
 
     return ExecutorSummaryHelpers.CreateStepExecutionSummary(startTime, DateTime.UtcNow, commandSummaries);

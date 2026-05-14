@@ -17,6 +17,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Ares.Core.Device.Providers;
 using Ares.Core.Settings;
+using Ares.Core.Execution.Safety;
 
 namespace Ares.Core.Tests.Execution;
 
@@ -41,6 +42,7 @@ internal class CampaignExecutorTests
   private IAresDeviceProvider _deviceProvider;
   private IDbContextFactory<CoreDatabaseContext> _dbContextFactory;
   private ISystemSettingsManager _settingsManager;
+  private IExecutionSafetyManager _safetyManager;
 
   private IAnalyzer _replyAnalyzer;
 
@@ -64,6 +66,7 @@ internal class CampaignExecutorTests
     _campaignExecutorLogger = new Mock<ILogger<CampaignExecutor>>().Object;
     _deviceProvider = new Mock<IAresDeviceProvider>().Object;
     _settingsManager = new Mock<ISystemSettingsManager>().Object;
+    _safetyManager = new Mock<IExecutionSafetyManager>().Object;
     
     var loggerFactoryMock = new Mock<ILoggerFactory>();
     loggerFactoryMock.Setup(f => f.CreateLogger(typeof(CampaignExecutor).FullName))
@@ -79,7 +82,7 @@ internal class CampaignExecutorTests
     var factory = Mock.Of<IDeviceStateLoggerFactory>();
     var dbContextFactory = Mock.Of<IDbContextFactory<CoreDatabaseContext>>();
     _stateLoggerManager = new StateLoggerManager(stateLoggerRepository, factory, _stateLoggerManagerLogger, dbContextFactory, _deviceProvider);
-    _campaignComposer = new CampaignComposer(_analysisHelper, experimentComposer, _planningHelper, _executionReporter, _resultHandlers, _analysisRepo, _analyzerRepo, _notifier, _loggerFactory, _variableManager, _stateLoggerManager);
+    _campaignComposer = new CampaignComposer(_analysisHelper, experimentComposer, _planningHelper, _executionReporter, _resultHandlers, _analysisRepo, _analyzerRepo, _notifier, _loggerFactory, _variableManager, _stateLoggerManager, _settingsManager, _safetyManager);
   }
 
   [SetUp]

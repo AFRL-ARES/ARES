@@ -1,6 +1,7 @@
 ﻿using System.Reactive.Linq;
 using Ares.Core.Execution.ControlTokens;
 using Ares.Core.Execution.Extensions;
+using Ares.Core.Settings;
 using Ares.Datamodel;
 using Ares.Datamodel.Templates;
 
@@ -8,8 +9,7 @@ namespace Ares.Core.Execution.Executors;
 
 public class ExperimentExecutor : IExecutor<ExperimentExecutionSummary, ExperimentExecutionStatus>
 {
-  public ExperimentExecutor(ExperimentTemplate template,
-    IExecutor<StepExecutionSummary, StepExecutionStatus>[] experimentStepExecutors)
+  public ExperimentExecutor(ExperimentTemplate template, IExecutor<StepExecutionSummary, StepExecutionStatus>[] experimentStepExecutors)
   {
     ExperimentStepExecutors = experimentStepExecutors;
     Template = template;

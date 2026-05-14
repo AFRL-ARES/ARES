@@ -74,7 +74,7 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
     else
     {
       Status.State = ExecutionState.Failed;
-      await _notifier.Notify("Command Failed!", result.Error, NotificationSeverityEnum.Error);
+      await _notifier.Notify("Command Execution Failed!", $"ARES failed to execute a command. {result.Error}", NotificationSeverityEnum.Error);
     }
 
     _stateSubject.OnNext(Status);
