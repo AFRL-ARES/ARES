@@ -9,12 +9,14 @@
 @using Ares.Services
 @using Google.Protobuf.WellKnownTypes
 @using Microsoft.EntityFrameworkCore
+@using Microsoft.JSInterop
 @using UI.Components.Formatting
 @implements IDisposable
 @inject IDbContextFactory<CoreDatabaseContext> DbContextFactory
 @inject IAresDeviceRepo DeviceRepo
 @inject AutomationService AutomationClient
 @inject DeviceStateDatasetGenerator DatasetGenerator
+@inject IJSRuntime JS
 
 <section class="device-state-explorer">
   <div class="explorer-header">
@@ -209,6 +211,14 @@
           </div>
         }
 
+        @if (!string.IsNullOrWhiteSpace(_exportError))
+        {
+          <div class="export-error">
+            <RadzenIcon Icon="error" />
+            <span>@_exportError</span>
+          </div>
+        }
+
         @if (!_selectedDeviceIds.Any())
         {
           <div class="empty-state">
@@ -264,6 +274,10 @@
               <h4>Long Device State Table</h4>
               <span>@_longDataset.Rows.Count state value@(_longDataset.Rows.Count == 1 ? string.Empty : "s") loaded</span>
             </div>
+            <button type="button" class="export-button" @onclick="ExportCurrentViewAsync" disabled="@(!CanExport)">
+              <RadzenIcon Icon="download" />
+              <span>@(_exportingDataset ? "Exporting..." : "Export")</span>
+            </button>
           </div>
 
           <div class="long-dataset-table">
@@ -285,6 +299,10 @@
               <h4>Device State Tables</h4>
               <span>@_deviceDatasets.Length device dataset@(_deviceDatasets.Length == 1 ? string.Empty : "s") loaded</span>
             </div>
+            <button type="button" class="export-button" @onclick="ExportCurrentViewAsync" disabled="@(!CanExport)">
+              <RadzenIcon Icon="download" />
+              <span>@(_exportingDataset ? "Exporting..." : "Export")</span>
+            </button>
           </div>
 
           <RadzenTabs Class="dataset-tabs" RenderMode="TabRenderMode.Server" @bind-SelectedIndex="_selectedDatasetTabIndex">
@@ -317,6 +335,7 @@
   private string _appliedDisplayMode = _displayModes[0];
   private string? _appliedFilterSignature;
   private string? _datasetError;
+  private string? _exportError;
   private string? _selectedCampaignId;
   private string? _selectedExperimentId;
   private DateTime _startTime;
@@ -328,11 +347,22 @@
   private bool _useCampaign;
   private bool _loadingDatasets;
   private bool _cancelingDatasetLoad;
+  private bool _exportingDataset;
   private bool _hasApplied;
 
   private int DeviceCount => _devices?.Count ?? 0;
 
-  private bool CanApply => _selectedDeviceIds.Any() && !_loadingDatasets;
+  private bool CanApply => _selectedDeviceIds.Any() && !_loadingDatasets && !_exportingDataset;
+
+  private bool CanExport =>
+      !_loadingDatasets &&
+      !_exportingDataset &&
+      _appliedDisplayMode switch
+      {
+        "Long" => (_longDataset?.Rows.Count ?? 0) > 0,
+        "Separate" => _deviceDatasets?.Any(dataset => dataset.Rows.Count > 0) == true,
+        _ => false
+      };
 
   private bool HasActiveFilters =>
       _useStartTime ||
@@ -453,6 +483,7 @@
     _loadingDatasets = true;
     _cancelingDatasetLoad = false;
     _datasetError = null;
+    _exportError = null;
     var pendingDisplayMode = _selectedDisplayMode;
     var pendingFilterSignature = CreateFilterSignature();
 
@@ -505,6 +536,55 @@
 
     _cancelingDatasetLoad = true;
     _datasetLoadCancellation?.Cancel();
+  }
+
+  private async Task ExportCurrentViewAsync()
+  {
+    if (!CanExport)
+    {
+      return;
+    }
+
+    _exportingDataset = true;
+    _exportError = null;
+    await InvokeAsync(StateHasChanged);
+    await Task.Delay(50);
+
+    try
+    {
+      var export = await Task.Run(CreateCurrentExport);
+
+      using(export.Stream)
+      using(var streamReference = new DotNetStreamReference(export.Stream))
+      {
+        await JS.InvokeVoidAsync("downloadFileFromStream", export.FileName, streamReference);
+      }
+    }
+    catch (Exception ex)
+    {
+      _exportError = $"Unable to export dataset: {ex.Message}";
+    }
+    finally
+    {
+      _exportingDataset = false;
+      await InvokeAsync(StateHasChanged);
+    }
+  }
+
+  private DatasetExport CreateCurrentExport()
+  {
+    var timestamp = DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
+
+    return _appliedDisplayMode switch
+    {
+      "Long" when _longDataset is not null => new DatasetExport(
+          AresDatasetExporter.ExportCsv(_longDataset),
+          $"device-state-long-{timestamp}.csv"),
+      "Separate" when _deviceDatasets is not null => new DatasetExport(
+          AresDatasetExporter.ExportZip(_deviceDatasets),
+          $"device-state-separate-{timestamp}.zip"),
+      _ => throw new InvalidOperationException("The current display mode does not have exportable data.")
+    };
   }
 
   private async Task OnDisplayModeChanged(object? value)
@@ -736,4 +816,6 @@
       DateTime TimeStarted);
 
   private record ExperimentDisplayItem(string Id, string Name);
+
+  private record DatasetExport(Stream Stream, string FileName);
 }

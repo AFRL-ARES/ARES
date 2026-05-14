@@ -143,6 +143,10 @@
   font-size: 0.82rem;
 }
 
+.state-panel-header > div {
+  min-width: 0;
+}
+
 .clear-button {
   border: var(--rz-card-border);
   border-radius: 6px;
@@ -221,6 +225,31 @@
 
 .cancel-button.compact {
   padding: 0.5rem 0.7rem;
+}
+
+.export-button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.4rem;
+  border: var(--rz-card-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--rz-text-color, #344054);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 650;
+  line-height: 1;
+  padding: 0.5rem 0.7rem;
+}
+
+.export-button:not(:disabled):hover {
+  background: var(--rz-secondary-lighter, #f2f4f7);
+}
+
+.export-button:disabled {
+  color: var(--rz-text-disabled-color, #98a2b3);
+  cursor: default;
 }
 
 .search-field {
@@ -438,6 +467,17 @@
 .loading-status span {
   color: var(--rz-text-secondary-color, #667085);
   font-size: 0.8rem;
+}
+
+.export-error {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem;
+  border-bottom: var(--rz-card-border);
+  color: var(--rz-danger, #dc2626);
+  font-size: 0.84rem;
 }
 
 ::deep .dataset-tabs {
