@@ -13,7 +13,7 @@
   justify-content: space-between;
   gap: 1rem;
   padding: 0.55rem 0.75rem;
-  border-bottom: 1px solid var(--rz-border-color, #d0d5dd);
+  border-bottom: var(--rz-grid-header-cell-border-bottom);
   color: var(--rz-text-secondary-color, #667085);
   font-size: 0.84rem;
 }

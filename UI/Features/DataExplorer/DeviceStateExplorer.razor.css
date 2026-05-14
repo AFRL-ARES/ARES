@@ -19,8 +19,7 @@
 .explorer-header p,
 .panel-toolbar h4,
 .filter-panel h4,
-.state-panel h4,
-.selected-device-card h5 {
+.state-panel h4 {
   margin: 0;
 }
 
@@ -43,9 +42,9 @@
 .state-summary > div {
   min-width: 5.75rem;
   padding: 0.65rem 0.85rem;
-  border: 1px solid var(--rz-border-color, #d0d5dd);
+  border: var(--rz-card-border);
   border-radius: 8px;
-  background: var(--rz-base-background-color, #fff);
+  background: var(--rz-card-background-color);
 }
 
 .summary-value,
@@ -84,9 +83,9 @@
 .device-panel,
 .state-panel,
 .display-mode-panel {
-  border: 1px solid var(--rz-border-color, #d0d5dd);
+  border: var(--rz-card-border);
   border-radius: 8px;
-  background: var(--rz-base-background-color, #fff);
+  background: var(--rz-card-background-color);
 }
 
 .device-panel {
@@ -128,7 +127,7 @@
   justify-content: space-between;
   gap: 1rem;
   padding: 0.9rem 1rem;
-  border-bottom: 1px solid var(--rz-border-color, #d0d5dd);
+  border-bottom: var(--rz-card-border);
 }
 
 .panel-toolbar h4,
@@ -139,14 +138,13 @@
 }
 
 .panel-toolbar span,
-.state-panel-header span,
-.selected-device-card span {
+.state-panel-header span {
   color: var(--rz-text-secondary-color, #667085);
   font-size: 0.82rem;
 }
 
 .clear-button {
-  border: 1px solid var(--rz-border-color, #d0d5dd);
+  border: var(--rz-card-border);
   border-radius: 6px;
   background: transparent;
   color: var(--rz-text-color, #344054);
@@ -169,10 +167,10 @@
 
 .apply-button {
   width: 100%;
-  border: 1px solid var(--rz-primary, #3b82f6);
+  border: 1px solid var(--rz-grid-apply-filter-button-background-color);
   border-radius: 6px;
-  background: var(--rz-primary, #3b82f6);
-  color: var(--rz-on-primary, #fff);
+  background: var(--rz-grid-apply-filter-button-background-color);
+  color: var(--rz-grid-apply-filter-button-color);
   cursor: pointer;
   font: inherit;
   font-weight: 650;
@@ -185,9 +183,9 @@
 }
 
 .apply-button:disabled {
-  border-color: var(--rz-border-color, #d0d5dd);
-  background: var(--rz-secondary-lighter, #f2f4f7);
-  color: var(--rz-text-disabled-color, #98a2b3);
+  border: var(--rz-card-border);
+  background: var(--rz-input-disabled-background-color);
+  color: var(--rz-input-disabled-color);
   cursor: default;
 }
 
@@ -197,7 +195,7 @@
   gap: 0.5rem;
   margin: 0.75rem 1rem;
   padding: 0.55rem 0.7rem;
-  border: 1px solid var(--rz-border-color, #d0d5dd);
+  border: var(--rz-card-border);
   border-radius: 7px;
   background: var(--rz-input-background-color, #fff);
 }
@@ -249,8 +247,8 @@
 
 .filter-panel {
   flex: 0 0 auto;
-  border-top: 1px solid var(--rz-border-color, #d0d5dd);
-  background: color-mix(in srgb, var(--rz-base-background-color, #fff) 92%, var(--rz-secondary-lighter, #f2f4f7));
+  border-top: var(--rz-card-border);
+  background: var(--rz-card-flat-background-color);
 }
 
 .filter-panel-header {
@@ -359,8 +357,7 @@
 }
 
 .device-name,
-.device-id,
-.selected-device-card span {
+.device-id {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -414,33 +411,6 @@
 
 ::deep .long-dataset-table .rz-data-grid {
   min-height: 0;
-}
-
-.selected-device-grid {
-  display: grid;
-  flex: 1;
-  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
-  gap: 0.75rem;
-  min-height: 0;
-  padding: 1rem;
-  overflow: auto;
-}
-
-.selected-device-card {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.85rem;
-  border: 1px solid var(--rz-border-color, #d0d5dd);
-  border-radius: 8px;
-  background: var(--rz-base-50, #f9fafb);
-}
-
-.selected-device-card h5 {
-  font-size: 0.95rem;
-  font-weight: 650;
-  overflow-wrap: anywhere;
 }
 
 .empty-state {
