@@ -332,7 +332,7 @@
 .filter-row,
 .filter-field {
   display: grid;
-  grid-template-columns: 5.25rem minmax(0, 1fr);
+  grid-template-columns: 8.25rem minmax(0, 1fr);
   align-items: center;
   gap: 0.65rem;
 }
@@ -503,6 +503,7 @@
   min-height: 0;
 }
 
+.wide-dataset-table,
 .long-dataset-table {
   display: flex;
   flex: 1;
@@ -510,6 +511,7 @@
   overflow: hidden;
 }
 
+::deep .wide-dataset-table .rz-data-grid,
 ::deep .long-dataset-table .rz-data-grid {
   min-height: 0;
 }

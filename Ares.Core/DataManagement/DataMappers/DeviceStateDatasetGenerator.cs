@@ -67,8 +67,8 @@ public class DeviceStateDatasetGenerator(IDeviceStateGetter _deviceStateGetter)
 
   private static IEnumerable<AresDataRow> CreateRows(DeviceState[] states, DeviceStateRequestFilter filter, CancellationToken cancellationToken)
   {
-    var interval = filter.Interval?.ToTimeSpan() ?? default;
-    if(interval.TotalMilliseconds < 1)
+    var minimumSampleInterval = filter.Interval?.ToTimeSpan() ?? default;
+    if(minimumSampleInterval.TotalMilliseconds < 1)
     {
       return states.Select(state => CreateRow(state, state.Timestamp, cancellationToken)).ToArray();
     }
@@ -78,22 +78,18 @@ public class DeviceStateDatasetGenerator(IDeviceStateGetter _deviceStateGetter)
       return [];
     }
 
-    var startTime = filter.Start ?? states.First().Timestamp;
-    var endTime = filter.End ?? states.Last().Timestamp;
-    if(startTime > endTime)
-    {
-      return [];
-    }
-
     var rows = new List<AresDataRow>();
-    for(var timestamp = startTime.ToDateTime(); timestamp <= endTime.ToDateTime(); timestamp += interval)
+    var lastIncludedTimestamp = states.First().Timestamp.ToDateTime();
+    rows.Add(CreateRow(states.First(), states.First().Timestamp, cancellationToken));
+
+    foreach(var state in states.Skip(1))
     {
       cancellationToken.ThrowIfCancellationRequested();
-      var rowTimestamp = Timestamp.FromDateTime(timestamp);
-      var state = states.LastOrDefault(state => state.Timestamp <= rowTimestamp);
-      if(state is not null)
+      var timestamp = state.Timestamp.ToDateTime();
+      if(timestamp - lastIncludedTimestamp >= minimumSampleInterval)
       {
-        rows.Add(CreateRow(state, rowTimestamp, cancellationToken));
+        rows.Add(CreateRow(state, state.Timestamp, cancellationToken));
+        lastIncludedTimestamp = timestamp;
       }
     }
 

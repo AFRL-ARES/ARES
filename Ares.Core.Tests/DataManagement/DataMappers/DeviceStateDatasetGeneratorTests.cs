@@ -225,12 +225,12 @@ internal class DeviceStateDatasetGeneratorTests
   }
 
   [Test]
-  public async Task GenerateAsync_WithIntervalCreatesFixedTimestampRows()
+  public async Task GenerateAsync_WithMinimumSampleIntervalDownsamplesRowsByElapsedTime()
   {
     var filter = new DeviceStateRequestFilter
     {
       Start = Timestamp.FromDateTime(DateTime.UnixEpoch),
-      End = Timestamp.FromDateTime(DateTime.UnixEpoch.AddSeconds(4)),
+      End = Timestamp.FromDateTime(DateTime.UnixEpoch.AddSeconds(5)),
       Interval = Duration.FromTimeSpan(TimeSpan.FromSeconds(2))
     };
     var stateGetter = CreateStateGetter(filter, new Dictionary<string, DeviceState[]>
@@ -238,7 +238,10 @@ internal class DeviceStateDatasetGeneratorTests
       ["Device A"] =
       [
         CreateState(DateTime.UnixEpoch, ("Temperature", AresValueHelper.CreateNumber(1))),
-        CreateState(DateTime.UnixEpoch.AddSeconds(3), ("Temperature", AresValueHelper.CreateNumber(2)))
+        CreateState(DateTime.UnixEpoch.AddSeconds(1), ("Temperature", AresValueHelper.CreateNumber(2))),
+        CreateState(DateTime.UnixEpoch.AddSeconds(3), ("Temperature", AresValueHelper.CreateNumber(3))),
+        CreateState(DateTime.UnixEpoch.AddSeconds(4), ("Temperature", AresValueHelper.CreateNumber(4))),
+        CreateState(DateTime.UnixEpoch.AddSeconds(5), ("Temperature", AresValueHelper.CreateNumber(5)))
       ]
     });
 
@@ -247,13 +250,13 @@ internal class DeviceStateDatasetGeneratorTests
 
     Assert.That(dataset.Rows.Select(row => row.Data.Fields["Timestamp"].TimestampValue), Is.EqualTo([
       Timestamp.FromDateTime(DateTime.UnixEpoch),
-      Timestamp.FromDateTime(DateTime.UnixEpoch.AddSeconds(2)),
-      Timestamp.FromDateTime(DateTime.UnixEpoch.AddSeconds(4))
+      Timestamp.FromDateTime(DateTime.UnixEpoch.AddSeconds(3)),
+      Timestamp.FromDateTime(DateTime.UnixEpoch.AddSeconds(5))
     ]));
   }
 
   [Test]
-  public async Task GenerateAsync_WithIntervalUsesLatestStateAtOrBeforeTimestamp()
+  public async Task GenerateAsync_WithMinimumSampleIntervalUsesRetrievedRowValues()
   {
     var filter = new DeviceStateRequestFilter
     {
@@ -266,14 +269,15 @@ internal class DeviceStateDatasetGeneratorTests
       ["Device A"] =
       [
         CreateState(DateTime.UnixEpoch, ("Temperature", AresValueHelper.CreateNumber(1))),
-        CreateState(DateTime.UnixEpoch.AddSeconds(3), ("Temperature", AresValueHelper.CreateNumber(2)))
+        CreateState(DateTime.UnixEpoch.AddSeconds(1), ("Temperature", AresValueHelper.CreateNumber(2))),
+        CreateState(DateTime.UnixEpoch.AddSeconds(3), ("Temperature", AresValueHelper.CreateNumber(3)))
       ]
     });
 
     var generator = new DeviceStateDatasetGenerator(stateGetter.Object);
     var dataset = (await generator.GenerateAsync(filter)).Single();
 
-    Assert.That(dataset.Rows.Select(row => row.Data.Fields["Temperature"].NumberValue), Is.EqualTo([1, 1, 2]));
+    Assert.That(dataset.Rows.Select(row => row.Data.Fields["Temperature"].NumberValue), Is.EqualTo([1, 3]));
   }
 
   [Test]
@@ -334,7 +338,7 @@ internal class DeviceStateDatasetGeneratorTests
   }
 
   [Test]
-  public void GenerateAsync_WithIntervalThrowsWhenCanceledDuringRowGeneration()
+  public void GenerateAsync_WithMinimumSampleIntervalThrowsWhenCanceledDuringRowGeneration()
   {
     var filter = new DeviceStateRequestFilter
     {
@@ -344,7 +348,10 @@ internal class DeviceStateDatasetGeneratorTests
     };
     var stateGetter = CreateStateGetter(filter, new Dictionary<string, DeviceState[]>
     {
-      ["Device A"] = [CreateState(DateTime.UnixEpoch, ("Temperature", AresValueHelper.CreateNumber(1)))]
+      ["Device A"] = Enumerable
+        .Range(0, 100_000)
+        .Select(index => CreateState(DateTime.UnixEpoch.AddMilliseconds(index), ("Temperature", AresValueHelper.CreateNumber(index))))
+        .ToArray()
     });
     using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMilliseconds(1));
 
