@@ -24,7 +24,8 @@ public class SystemSettingsManager : ISystemSettingsManager
         UniqueId = Guid.NewGuid().ToString(),
         CommandLatency = 0,
         ExperimentRetryLimit = 1,
-        RetryCooldown = 0
+        RetryCooldown = 0,
+        CommandRetryLimit = 1
       };
 
       context.GeneralSettingsConfigs.Add(newGeneralSettingsConfig);
@@ -136,6 +137,7 @@ public class SystemSettingsManager : ISystemSettingsManager
       existingConfig.RetryCooldown = config.RetryCooldown;
       existingConfig.CommandLatency = config.CommandLatency;
       existingConfig.ExperimentRetryLimit = config.ExperimentRetryLimit;
+      existingConfig.CommandRetryLimit = config.CommandRetryLimit;
 
       await context.SaveChangesAsync();
     }

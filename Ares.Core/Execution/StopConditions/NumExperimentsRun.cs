@@ -17,8 +17,13 @@ public class NumExperimentsRun : IStopCondition
 
   public bool ShouldStop()
   {
+    var successfullyCompletedExperiments = _executionReportStore.CampaignExecutionStatus?.ExperimentExecutionStatuses
+      .Where(e => e.StepExecutionStatuses
+      .All(s => s.CommandExecutionStatuses
+      .All(c => c.State != Datamodel.ExecutionState.Failed)));
+
     //Subtract one to offset the startup script, as even when it's empty it's always considered present here
-    var currentExperiments = _executionReportStore.CampaignExecutionStatus?.ExperimentExecutionStatuses.Count - 1;
+    var currentExperiments = successfullyCompletedExperiments?.Count() - 1;
     return currentExperiments >= _numExperiments;
   }
 }

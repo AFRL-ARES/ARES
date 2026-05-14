@@ -29,7 +29,8 @@ public partial class SystemSettingsViewModel : ReactiveObject
     {
       ExperimentRetryLimit = ExperimentRetryLimit,
       RetryCooldown = ExperimentRetryCooldown,
-      CommandLatency = CommandLatency
+      CommandLatency = CommandLatency,
+      CommandRetryLimit = CommandRetryLimit
     });
   }
 
@@ -46,6 +47,7 @@ public partial class SystemSettingsViewModel : ReactiveObject
       ExperimentRetryCooldown = newGeneralSettings.RetryCooldown;
       ExperimentRetryLimit = newGeneralSettings.ExperimentRetryLimit;
       CommandLatency = newGeneralSettings.CommandLatency;
+      CommandRetryLimit = newGeneralSettings.CommandRetryLimit;
     }
   }
 
@@ -62,6 +64,9 @@ public partial class SystemSettingsViewModel : ReactiveObject
 
   [Reactive]
   public partial int ExperimentRetryLimit { get; set; }
+
+  [Reactive]
+  public partial int CommandRetryLimit { get; set; }
 
   [Reactive]
   public partial int ExperimentRetryCooldown { get; set; }

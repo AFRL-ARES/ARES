@@ -24,6 +24,8 @@ public class SequentialStepExecutor : StepExecutor
   {
     var startTime = DateTime.UtcNow;
     var commandSummaries = new List<CommandExecutionSummary>();
+    var currentSettings = await _settingsManager.GetAresGeneralSettings();
+
     foreach (var command in CommandExecutors)
     {
       if(token.IsCancelled)
@@ -33,16 +35,39 @@ public class SequentialStepExecutor : StepExecutor
 
       //Handle Retry if needed
       var shouldRetry = await ShouldRetry(commandExecutionSummary.StatusCode);
+
       if(!commandExecutionSummary.Result.Success && shouldRetry)
       {
-        var msg = $"ARES attempted to run the command {commandExecutionSummary.CommandName} but it failed. Based on your settings ARES will retry running this command";
-        await _notifier.Notify("Retrying Command", msg, NotificationSeverityEnum.Info);
-        await Task.Delay(2000);
+        var commandRetries = 0;
+        var retryLimit = currentSettings?.CommandRetryLimit ?? 1;
 
-        var retriedCommandExecutionSummary = await command.Execute(token);
+        while(commandRetries < retryLimit)
+        {
+          commandRetries++;
+          var msg = $"ARES attempted to run the command {commandExecutionSummary.CommandName} but it failed. " +
+            $"Based on your settings ARES will retry running this command up to {retryLimit} times, this is attempt {commandRetries}";
+          
+          await _notifier.Notify("Retrying Command", msg, NotificationSeverityEnum.Info);
 
-        if(retriedCommandExecutionSummary.Result.Success)
-          commandExecutionSummary = retriedCommandExecutionSummary;
+
+          if(currentSettings is not null)
+            await Task.Delay(TimeSpan.FromSeconds(currentSettings.RetryCooldown));
+
+          var retriedCommandExecutionSummary = await command.Execute(token);
+
+          if(retriedCommandExecutionSummary.Result.Success)
+          {
+            commandExecutionSummary = retriedCommandExecutionSummary;
+            break;
+          }
+        }
+
+        if(commandRetries == retryLimit && !commandExecutionSummary.Result.Success)
+        {
+          await _notifier.Notify("Maximum Command Retries Exceeded", 
+            "ARES retried a failed command based on your settings, but exceeded the maximum number of allowed retries. Execution will stop.", 
+            NotificationSeverityEnum.Error);
+        }
       }
 
       if(commandExecutionSummary.Result.Success)
@@ -61,6 +86,6 @@ public class SequentialStepExecutor : StepExecutor
   private async Task<bool> ShouldRetry(CommandStatusCode code)
   {
     var errorHandling = await _settingsManager.GetErrorHandlingByStatusCode(code);
-    return errorHandling == ErrorHandling.Retry;
+    return errorHandling == ErrorHandling.RetryCommand;
   }
 }

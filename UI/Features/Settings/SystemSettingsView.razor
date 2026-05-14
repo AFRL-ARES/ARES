@@ -17,7 +17,13 @@
               <RadzenFormField Text="Experiment Retry Limit">
                 <RadzenNumeric @bind-Value="ViewModel!.ExperimentRetryLimit" />
               </RadzenFormField>
-              <RadzenIcon Icon="help_outline" MouseEnter="@(args => ShowRetryLimitTooltip(args, new TooltipOptions { Duration = null }))" Style="padding-top: 1.5rem" />
+              <RadzenIcon Icon="help_outline" MouseEnter="@(args => ShowExperimentRetryLimitTooltip(args, new TooltipOptions { Duration = null }))" Style="padding-top: 1.5rem" />
+            </RadzenStack>
+            <RadzenStack Gap="1rem" Orientation="Orientation.Horizontal" Style="padding: 0.5rem">
+              <RadzenFormField Text="Command Retry Limit">
+                <RadzenNumeric @bind-Value="ViewModel!.CommandRetryLimit" />
+              </RadzenFormField>
+              <RadzenIcon Icon="help_outline" MouseEnter="@(args => ShowCommandRetryLimitTooltip(args, new TooltipOptions { Duration = null }))" Style="padding-top: 1.5rem" />
             </RadzenStack>
             <RadzenStack Gap="1rem" Orientation="Orientation.Horizontal" Style="padding: 0.5rem">
               <RadzenFormField Text="Experiment Retry Cooldown">
@@ -79,7 +85,8 @@
 
   TooltipOptions Options = new TooltipOptions { Duration = null };
 
-  void ShowRetryLimitTooltip(ElementReference elementReference, TooltipOptions options = null) => tooltipService.Open(elementReference, "Sets the max times ARES will retry a failing command or experiment", options);
+  void ShowExperimentRetryLimitTooltip(ElementReference elementReference, TooltipOptions options = null) => tooltipService.Open(elementReference, "Sets the max times ARES will retry a failing experiment", options);
+  void ShowCommandRetryLimitTooltip(ElementReference elementReference, TooltipOptions options = null) => tooltipService.Open(elementReference, "Sets the max times ARES will retry a failing command", options);
   void ShowRetryCooldownTooltip(ElementReference elementReference, TooltipOptions options = null) => tooltipService.Open(elementReference, "Sets the a cooldown value, in seconds, on how long ARES waits to re-attempt failed commands", options);
   void ShowCommandLatencyTooltip(ElementReference elementReference, TooltipOptions options = null) => tooltipService.Open(elementReference, "Sets whether a universal latency should be applied, in seconds, between commands (i.e. a one second universal latency results in a constant one second delay between commands being executed)", options);
 
