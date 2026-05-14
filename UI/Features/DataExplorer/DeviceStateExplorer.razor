@@ -267,7 +267,7 @@
           </div>
 
           <div class="long-dataset-table">
-            <AresDatasetTable Dataset="@_longDataset" />
+            <AresDatasetTable @key="_longDataset" Dataset="@_longDataset" />
           </div>
         }
         else if (_deviceDatasets is null || _deviceDatasets.Length == 0)
@@ -292,7 +292,7 @@
               @foreach (var dataset in _deviceDatasets)
               {
                 <RadzenTabsItem Text="@dataset.Name">
-                  <AresDatasetTable Dataset="@dataset" />
+                  <AresDatasetTable @key="dataset" Dataset="@dataset" />
                 </RadzenTabsItem>
               }
             </Tabs>
@@ -492,6 +492,7 @@
     {
       _loadingDatasets = false;
       _cancelingDatasetLoad = false;
+      await InvokeAsync(StateHasChanged);
     }
   }
 
@@ -620,6 +621,7 @@
     {
       _loadingDatasets = false;
       _cancelingDatasetLoad = false;
+      await InvokeAsync(StateHasChanged);
     }
   }
 

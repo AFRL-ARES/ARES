@@ -26,7 +26,10 @@
   font-weight: 600;
 }
 
-::deep .dataset-table > .rz-data-grid {
+.dataset-grid-scroll {
+  display: flex;
   flex: 1;
   min-height: 0;
+  min-width: 0;
+  overflow: auto;
 }

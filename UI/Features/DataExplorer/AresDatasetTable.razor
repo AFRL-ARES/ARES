@@ -23,33 +23,36 @@ else
             </label>
         </div>
 
-        <RadzenDataGrid TItem="AresDataRow"
-                        Data="@Rows"
-                        AllowPaging="true"
-                        AllowColumnResize="true"
-                        PageSize="@_selectedPageSize"
-                        Density="Density.Compact"
-                        GridLines="DataGridGridLines.Horizontal">
-            <Columns>
-                @if (_showRowIds)
-                {
-                    <RadzenDataGridColumn TItem="AresDataRow" Title="Row ID" Width="180px" Sortable="false" Filterable="false">
-                        <Template Context="row">
-                            @row.UniqueId
-                        </Template>
-                    </RadzenDataGridColumn>
-                }
+        <div class="dataset-grid-scroll">
+            <RadzenDataGrid TItem="AresDataRow"
+                            @key="Dataset"
+                            Data="@Rows"
+                            AllowPaging="true"
+                            AllowColumnResize="true"
+                            PageSize="@_selectedPageSize"
+                            Density="Density.Compact"
+                            GridLines="DataGridGridLines.Horizontal">
+                <Columns>
+                    @if (_showRowIds)
+                    {
+                        <RadzenDataGridColumn TItem="AresDataRow" Title="Row ID" Width="180px" Sortable="false" Filterable="false">
+                            <Template Context="row">
+                                @row.UniqueId
+                            </Template>
+                        </RadzenDataGridColumn>
+                    }
 
-                @foreach (var column in Dataset.Columns)
-                {
-                    <RadzenDataGridColumn TItem="AresDataRow" Title="@GetColumnTitle(column)" Sortable="false" Filterable="false">
-                        <Template Context="row">
-                            @GetCellDisplayValue(row, column)
-                        </Template>
-                    </RadzenDataGridColumn>
-                }
-            </Columns>
-        </RadzenDataGrid>
+                    @foreach (var column in Dataset.Columns)
+                    {
+                        <RadzenDataGridColumn TItem="AresDataRow" Title="@GetColumnTitle(column)" Width="12rem" Sortable="false" Filterable="false">
+                            <Template Context="row">
+                                @GetCellDisplayValue(row, column)
+                            </Template>
+                        </RadzenDataGridColumn>
+                    }
+                </Columns>
+            </RadzenDataGrid>
+        </div>
     </div>
 }
 
