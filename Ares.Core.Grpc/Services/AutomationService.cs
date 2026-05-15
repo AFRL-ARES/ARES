@@ -314,6 +314,12 @@ public class AutomationService : AresAutomation.AresAutomationBase
     return Task.FromResult(new Empty());
   }
 
+  public override Task<Empty> SubmitUserDecision(UserDecisionRequest request, ServerCallContext? context)
+  {
+    _executionManager.SubmitUserDecision(request.Decision);
+    return Task.FromResult(new Empty());
+  }
+
   public override Task<StartStopConditionsResponse> GetAssignedStopConditions(Empty request, ServerCallContext? context)
   {
     var conditions = _executionManager.CampaignStopConditions;

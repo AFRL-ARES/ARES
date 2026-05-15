@@ -190,6 +190,9 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   public Task ResumeCampaign()
     => _automationClient.ResumeExecution(new Empty(), null);
 
+  public Task SubmitUserDecision(ErrorHandling decision)
+    => _automationClient.SubmitUserDecision(new UserDecisionRequest { Decision = decision }, null);
+
   public async Task ExecutionNotesUploaded(Stream fileStream)
   {
     using var reader = new StreamReader(fileStream);
@@ -217,6 +220,20 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     notification.NotificationSeverity = Severity.Info;
     notification.Title = "User Confirmation Required to Proceed";
     notification.Message = $"ARES has paused it's current experiment awaiting user input. Press the play button to continue experimenting.";
+    notification.Timestamp = DateTime.UtcNow.ToTimestamp();
+    notification.Loiter = true;
+
+    _notificationService.PushNotification(notification);
+
+    return Task.CompletedTask;
+  }
+
+  public Task RequestUserDecision()
+  {
+    var notification = new AresNotification();
+    notification.NotificationSeverity = Severity.Warning;
+    notification.Title = "User Decision Required to Proceed";
+    notification.Message = $"ARES has encountered an error and requires your decision on how to proceed. Please check the execution screen.";
     notification.Timestamp = DateTime.UtcNow.ToTimestamp();
     notification.Loiter = true;
 
@@ -453,6 +470,9 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     //TODO: FIX THIS!!!
     if(CampaignExecutionState == ExecutionState.AwaitingUser)
       _ = RequestUserConfirmation();
+
+    if(CampaignExecutionState == ExecutionState.WaitingForUserDecision)
+      _ = RequestUserDecision();
   }
 
   public Task UpdateDeviceChartA()

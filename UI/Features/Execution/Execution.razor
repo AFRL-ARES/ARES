@@ -48,6 +48,25 @@
 
     <RadzenSplitterPane Size="70%">
         <div class="p-3 d-flex flex-column" style="height: 100%;">
+            @if(ViewModel!.CampaignExecutionState == ExecutionState.WaitingForUserDecision)
+            {
+                <RadzenAlert AlertStyle="AlertStyle.Warning" Variant="Variant.Flat" Shade="Shade.Lighter" AllowClose="false" Size="AlertSize.Medium" Style="margin-bottom: 1rem;">
+                    <ChildContent>
+                        <div class="d-flex flex-row align-items-center justify-content-between">
+                            <div style="flex-grow: 1;">
+                                <RadzenText TextStyle="TextStyle.Subtitle1" TagName="TagName.H4" Style="margin: 0;"><strong>Action Required:</strong></RadzenText>
+                                <RadzenText TextStyle="TextStyle.Body2">An error occurred during execution. Please select how you would like to proceed.</RadzenText>
+                            </div>
+                            <div class="d-flex flex-row gap-2">
+                                <RadzenButton Text="Retry" Icon="replay" Click="@(() => ViewModel.SubmitUserDecision(ErrorHandling.RetryExperiment))" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Medium" />
+                                <RadzenButton Text="Replan" Icon="psychology" Click="@(() => ViewModel.SubmitUserDecision(ErrorHandling.Replan))" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Medium" />
+                                <RadzenButton Text="Safe Mode" Icon="security" Click="@(() => ViewModel.SubmitUserDecision(ErrorHandling.EnterSafeMode))" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Medium" />
+                                <RadzenButton Text="Stop" Icon="stop" Click="@(() => ViewModel.SubmitUserDecision(ErrorHandling.StopAndCloseout))" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.Medium" />
+                            </div>
+                        </div>
+                    </ChildContent>
+                </RadzenAlert>
+            }
             <h3>Live Execution Data</h3>
             <div style="flex-grow: 1; min-height: 0; overflow: hidden;">
                 <ExecutionChart ViewModel="@ViewModel" />
