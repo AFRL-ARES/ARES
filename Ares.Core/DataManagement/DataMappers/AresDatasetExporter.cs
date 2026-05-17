@@ -9,6 +9,19 @@ namespace Ares.Core.DataManagement.DataMappers;
 
 public static class AresDatasetExporter
 {
+  private static readonly HashSet<char> InvalidFileNameCharacters = [
+    ..Path.GetInvalidFileNameChars(),
+    '<',
+    '>',
+    ':',
+    '"',
+    '/',
+    '\\',
+    '|',
+    '?',
+    '*'
+  ];
+
   public static MemoryStream ExportCsv(AresDataset dataset)
   {
     var stream = new MemoryStream();
@@ -96,9 +109,8 @@ public static class AresDatasetExporter
 
   private static string SanitizeFileName(string name)
   {
-    var invalidCharacters = Path.GetInvalidFileNameChars();
     var sanitizedName = new string(name
-      .Select(character => invalidCharacters.Contains(character) ? '_' : character)
+      .Select(character => InvalidFileNameCharacters.Contains(character) ? '_' : character)
       .ToArray()).Trim();
 
     return string.IsNullOrWhiteSpace(sanitizedName) ? "dataset" : sanitizedName;
