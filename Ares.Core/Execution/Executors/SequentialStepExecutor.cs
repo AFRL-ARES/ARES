@@ -51,7 +51,7 @@ public class SequentialStepExecutor : StepExecutor
 
 
           if(currentSettings is not null)
-            await Task.Delay(TimeSpan.FromSeconds(currentSettings.RetryCooldown));
+            await Task.Delay(currentSettings.RetryCooldown.ToTimeSpan());
 
           var retriedCommandExecutionSummary = await command.Execute(token);
 

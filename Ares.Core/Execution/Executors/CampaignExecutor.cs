@@ -214,7 +214,7 @@ public class CampaignExecutor : ICampaignExecutor
     var currentExperimentPath = "";
     var failedExperimentRetryCount = 0;
     var failedExperimentRetryLimit = _generalSettingsConfig?.ExperimentRetryLimit ?? 1;
-    var experimentRetryCooldown = _generalSettingsConfig?.RetryCooldown ?? 0;
+    var experimentRetryCooldown = _generalSettingsConfig?.RetryCooldown ?? new Duration();
 
     while(!ShouldStop() && !token.IsCancelled && executionSuccess)
     {
@@ -343,8 +343,8 @@ public class CampaignExecutor : ICampaignExecutor
           _logger.LogInformation(retryingMsg);
           await _notifier.Notify("Retrying Experiment", retryingMsg, NotificationSeverityEnum.Info);
 
-          if(experimentRetryCooldown != 0)
-            await Task.Delay(TimeSpan.FromSeconds(experimentRetryCooldown));
+          if(experimentRetryCooldown.Seconds != 0)
+            await Task.Delay(experimentRetryCooldown.ToTimeSpan());
 
           currentState = ExecutionState.GenerateExecutor;
           break;

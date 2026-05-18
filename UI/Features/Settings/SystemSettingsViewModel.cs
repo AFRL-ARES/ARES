@@ -1,5 +1,6 @@
 ﻿using Ares.Core.Settings;
 using Ares.Datamodel;
+using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 
@@ -53,7 +54,7 @@ public partial class SystemSettingsViewModel : ReactiveObject
 
   private void Initialize()
   {
-    foreach(var status in Enum.GetValues<CommandStatusCode>())
+    foreach(var status in System.Enum.GetValues<CommandStatusCode>())
     {
       if(!CurrentErrorHandlingSettings.TryGetValue(status, out var val))
         CurrentErrorHandlingSettings[status] = ErrorHandling.UnknownHandling;
@@ -69,8 +70,8 @@ public partial class SystemSettingsViewModel : ReactiveObject
   public partial int CommandRetryLimit { get; set; }
 
   [Reactive]
-  public partial int ExperimentRetryCooldown { get; set; }
+  public partial Duration ExperimentRetryCooldown { get; set; }
 
   [Reactive]
-  public partial int CommandLatency { get; set; }
+  public partial Duration CommandLatency { get; set; }
 }

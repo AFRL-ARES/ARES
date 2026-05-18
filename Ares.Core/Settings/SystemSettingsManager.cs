@@ -1,4 +1,5 @@
 ﻿using Ares.Datamodel;
+using Google.Protobuf.WellKnownTypes;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ares.Core.Settings;
@@ -18,13 +19,13 @@ public class SystemSettingsManager : ISystemSettingsManager
     var existingGeneralSettings = await context.GeneralSettingsConfigs.FirstOrDefaultAsync();
 
     if(existingGeneralSettings is null)
-    {
+    { 
       var newGeneralSettingsConfig = new AresGeneralSettingsConfig()
       {
         UniqueId = Guid.NewGuid().ToString(),
-        CommandLatency = 0,
+        CommandLatency = new Duration() { Seconds = 0 },
         ExperimentRetryLimit = 1,
-        RetryCooldown = 0,
+        RetryCooldown = new Duration() { Seconds = 0 },
         CommandRetryLimit = 1
       };
 
@@ -32,7 +33,7 @@ public class SystemSettingsManager : ISystemSettingsManager
     }
 
     var existingErrorHandling = await context.DeviceErrorHandlingConfigs.ToListAsync();
-    var allEnumValues = Enum.GetValues<CommandStatusCode>();
+    var allEnumValues = System.Enum.GetValues<CommandStatusCode>();
 
     if(existingErrorHandling.Count != allEnumValues.Length)
     {
