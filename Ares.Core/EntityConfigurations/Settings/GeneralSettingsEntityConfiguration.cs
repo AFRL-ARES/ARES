@@ -1,4 +1,5 @@
-﻿using Ares.Datamodel;
+﻿using Ares.Core.EntityConfigurations.Helpers;
+using Ares.Datamodel;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -9,6 +10,9 @@ internal class GeneralSettingsEntityConfiguration : AresEntityTypeBaseConfigurat
   public override void Configure(EntityTypeBuilder<AresGeneralSettingsConfig> builder)
   {
     base.Configure(builder);
+    builder.Property(b => b.CommandLatency).HasDuration();
+    builder.Property(b => b.RetryCooldown).HasDuration();
+
     builder.ToTable("AresGeneralSettingsConfig");
   }
 }

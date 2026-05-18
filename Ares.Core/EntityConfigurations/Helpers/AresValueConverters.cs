@@ -24,11 +24,7 @@ public class AresValueConverter : ValueConverter<AresValue, string>
 public class AresTimestampConverter : ValueConverter<Timestamp, DateTime>
 {
   public AresTimestampConverter() : base(
-      // C# to Database: Convert Protobuf Timestamp to standard C# DateTime
       protobufTimestamp => protobufTimestamp.ToDateTime(),
-
-      // Database to C#: Convert Database DateTime back to Protobuf Timestamp
-      // We MUST specify the Kind as UTC or Protobuf will complain
       dateTime => Timestamp.FromDateTime(DateTime.SpecifyKind(dateTime, DateTimeKind.Utc)))
   { }
 }
