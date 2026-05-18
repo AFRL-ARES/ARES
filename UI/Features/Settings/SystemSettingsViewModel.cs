@@ -29,8 +29,8 @@ public partial class SystemSettingsViewModel : ReactiveObject
     await _settingsManager.UpdateAresGeneralSettings(new AresGeneralSettingsConfig
     {
       ExperimentRetryLimit = ExperimentRetryLimit,
-      RetryCooldown = ExperimentRetryCooldown,
-      CommandLatency = CommandLatency,
+      RetryCooldown = new Duration() { Seconds = ExperimentRetryCooldown },
+      CommandLatency = new Duration() { Seconds = CommandLatency },
       CommandRetryLimit = CommandRetryLimit
     });
   }
@@ -45,9 +45,9 @@ public partial class SystemSettingsViewModel : ReactiveObject
 
     if(newGeneralSettings is not null)
     {
-      ExperimentRetryCooldown = newGeneralSettings.RetryCooldown;
+      ExperimentRetryCooldown = (int)newGeneralSettings.RetryCooldown.Seconds; 
       ExperimentRetryLimit = newGeneralSettings.ExperimentRetryLimit;
-      CommandLatency = newGeneralSettings.CommandLatency;
+      CommandLatency = (int)newGeneralSettings.CommandLatency.Seconds;
       CommandRetryLimit = newGeneralSettings.CommandRetryLimit;
     }
   }
@@ -70,8 +70,8 @@ public partial class SystemSettingsViewModel : ReactiveObject
   public partial int CommandRetryLimit { get; set; }
 
   [Reactive]
-  public partial Duration ExperimentRetryCooldown { get; set; }
+  public partial int ExperimentRetryCooldown { get; set; }
 
   [Reactive]
-  public partial Duration CommandLatency { get; set; }
+  public partial int CommandLatency { get; set; }
 }
