@@ -271,20 +271,16 @@ public class CampaignExecutor : ICampaignExecutor
             break;
           }
 
-          var experimentSummary = await ExecuteTemplate(_currentExecutorResult.ExperimentExecutor, token);
-          experimentSummary.ResultOutputPath = currentExperimentPath;
+          _currentSummary = await ExecuteTemplate(_currentExecutorResult.ExperimentExecutor, token);
+          _currentSummary.ResultOutputPath = currentExperimentPath;
 
-          var failedCommandSummary = experimentSummary.StepSummaries.SelectMany(s => s.CommandSummaries.Where(c => !c.Result.Success)).FirstOrDefault();
+          var failedCommandSummary = _currentSummary.StepSummaries.SelectMany(s => s.CommandSummaries.Where(c => !c.Result.Success)).FirstOrDefault();
 
           if(failedCommandSummary is not null)
             currentState = await HandleError(failedCommandSummary);
 
           else
-          {
-            await PostExperimentExecution(experimentSummary);
-            experimentSummaries.Add(experimentSummary);
-            currentState = ExecutionState.InitializeExperiment;
-          }
+            currentState = ExecutionState.Analyzing;
 
           break;
 
@@ -304,6 +300,10 @@ public class CampaignExecutor : ICampaignExecutor
             break;
           }
 
+          Status.State = ExecutionState.Replanning;
+          _executionStatusSubject.OnNext(Status);
+          _executionReporter.Report(Status);
+
           var replanMsg = "An ARES experiment failed, but based on your settings ARES will attempt to re-plan the experiment and run it again.";
           _logger.LogInformation(replanMsg);
           await _notifier.Notify("ARES is Replanning Experiment", replanMsg, NotificationSeverityEnum.Info);
@@ -317,11 +317,17 @@ public class CampaignExecutor : ICampaignExecutor
           }
 
           else
-            currentState = ExecutionState.Running;
+            currentState = ExecutionState.GenerateExecutor;
 
           break;
 
         case ExecutionState.Retrying:
+          Status.State = ExecutionState.Retrying;
+          _executionStatusSubject.OnNext(Status);
+          _executionReporter.Report(Status);
+
+          ResetCurrentExperimentStatus();
+
           failedExperimentRetryCount++;
 
           if(failedExperimentRetryCount > failedExperimentRetryLimit)
@@ -340,7 +346,7 @@ public class CampaignExecutor : ICampaignExecutor
           if(experimentRetryCooldown != 0)
             await Task.Delay(TimeSpan.FromSeconds(experimentRetryCooldown));
 
-          currentState = ExecutionState.Running;
+          currentState = ExecutionState.GenerateExecutor;
           break;
 
         case ExecutionState.EnteringSafeMode:
@@ -358,7 +364,11 @@ public class CampaignExecutor : ICampaignExecutor
               var success = await PlanExperiment(analyses, _currentExperimentTemplate, experimentSummaries, token);
 
               if(!success)
+              {
                 _currentExecutorResult?.ErrorString = "Failed to plan! Experiment will be terminated!";
+                currentState = ExecutionState.Failed;
+                break;
+              }
             }
 
             else
@@ -399,9 +409,17 @@ public class CampaignExecutor : ICampaignExecutor
             
             if(!result.Continue) 
               break;
+
+            await PostExperimentExecution(_currentSummary);
+            experimentSummaries.Add(_currentSummary);
+            currentState = ExecutionState.InitializeExperiment;
           }
+
           else
+          {
             executionSuccess = false;
+            currentState = ExecutionState.Failed;
+          }
 
           break;
 
@@ -436,14 +454,23 @@ public class CampaignExecutor : ICampaignExecutor
     switch(errorHandling)
     {
       case ErrorHandling.Replan:
+        Status.State = ExecutionState.Replanning;
+        _executionStatusSubject.OnNext(Status);
+        _executionReporter.Report(Status);
         return ExecutionState.Replanning;
 
       case ErrorHandling.RetryExperiment:
       case ErrorHandling.RetryCommand:
+        Status.State = ExecutionState.Retrying;
+        _executionStatusSubject.OnNext(Status);
+        _executionReporter.Report(Status);
         return ExecutionState.Retrying;
         
 
       case ErrorHandling.EnterSafeMode:
+        Status.State = ExecutionState.EnteringSafeMode;
+        _executionStatusSubject.OnNext(Status);
+        _executionReporter.Report(Status);
         await _executionSafetyManager.EnterSafeMode();
         await _notifier.Notify("Safe Mode Activated", "An ARES experiment has failed and based on your settings ARES has entered safe mode in response.", NotificationSeverityEnum.Error);
         return ExecutionState.Failed;
@@ -629,6 +656,22 @@ public class CampaignExecutor : ICampaignExecutor
 
   public void SubmitUserDecision(ErrorHandling decision) => _userDecisionSource?.TrySetResult(decision);
 
+  private void ResetCurrentExperimentStatus()
+  {
+    if(_currentExecutorResult?.ExperimentExecutor?.Status == null)
+      return;
+
+    foreach(var step in _currentExecutorResult.ExperimentExecutor.Status.StepExecutionStatuses)
+    {
+      foreach(var cmd in step.CommandExecutionStatuses)
+      {
+        cmd.State = ExecutionState.Waiting;
+      }
+    }
+
+    _executionReporter.Report(_currentExecutorResult.ExperimentExecutor.Status);
+  }
+
   private static bool IsAwaitingResponse(ExperimentExecutionStatus status)
     => status.StepExecutionStatuses
     .Any(step => step.CommandExecutionStatuses
@@ -712,8 +755,12 @@ public class CampaignExecutor : ICampaignExecutor
 
   private async Task<ExperimentExecutionSummary> ExecuteTemplate(ExperimentExecutor experimentExecutor, ExecutionControlToken token)
   {
-    Status.ExperimentExecutionStatuses.Add(experimentExecutor.Status);
-    experimentExecutor.ExperimentStatusObservable.Subscribe(experimentStatus =>
+    if(!Status.ExperimentExecutionStatuses.Any(s => s.ExperimentId == experimentExecutor.Status.ExperimentId))
+    {
+      Status.ExperimentExecutionStatuses.Add(experimentExecutor.Status);
+    }
+
+    using var statusSub = experimentExecutor.ExperimentStatusObservable.Subscribe(experimentStatus =>
     {
       _executionReporter.Report(experimentStatus);
 

@@ -29,7 +29,7 @@ public class ExperimentExecutor : IExecutor<ExperimentExecutionSummary, Experime
         Status.StepExecutionStatuses.AddRange(cmdResults);
         return Status;
       });
-    }).Concat();
+    }).Merge();
 
     ExperimentStatusObservable = experimentStepExecutionObservation;
   }

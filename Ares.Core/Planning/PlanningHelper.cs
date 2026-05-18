@@ -119,7 +119,8 @@ public class PlanningHelper : IPlanningHelper
       }
       catch(Exception e)
       {
-        _logger.LogError("Failed to plan. {}", e);
+        _logger.LogError("Failed to plan. {}", e.Message);
+        await _notifier.Notify("Planner Error!", e.Message, NotificationSeverityEnum.Error);
         return false;
       }
 

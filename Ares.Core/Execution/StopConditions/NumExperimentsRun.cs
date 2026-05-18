@@ -1,4 +1,6 @@
-﻿namespace Ares.Core.Execution.StopConditions;
+﻿using Ares.Datamodel;
+
+namespace Ares.Core.Execution.StopConditions;
 
 public class NumExperimentsRun : IStopCondition
 {
@@ -17,13 +19,19 @@ public class NumExperimentsRun : IStopCondition
 
   public bool ShouldStop()
   {
-    var successfullyCompletedExperiments = _executionReportStore.CampaignExecutionStatus?.ExperimentExecutionStatuses
-      .Where(e => e.StepExecutionStatuses
-      .All(s => s.CommandExecutionStatuses
-      .All(c => c.State != Datamodel.ExecutionState.Failed)));
+    var experiments = _executionReportStore.CampaignExecutionStatus?.ExperimentExecutionStatuses ?? Enumerable.Empty<ExperimentExecutionStatus>();
 
-    //Subtract one to offset the startup script, as even when it's empty it's always considered present here
-    var currentExperiments = successfullyCompletedExperiments?.Count() - 1;
-    return currentExperiments >= _numExperiments;
+    //We skip one to account for the startup script summary
+    var successCount = experiments
+      .Skip(1)
+      .Count(e =>
+        e.StepExecutionStatuses?.Any() == true &&
+        e.StepExecutionStatuses.All(s =>
+            s.CommandExecutionStatuses != null &&
+            s.CommandExecutionStatuses.All(c => c.State == Datamodel.ExecutionState.Succeeded)
+        )
+    );
+
+    return successCount >= _numExperiments;
   }
 }
