@@ -6,6 +6,7 @@ using Ares.Core.Device.Remote;
 using Ares.Core.Device.Sila;
 using Ares.Core.Device.State.Logging;
 using Ares.Core.Planning;
+using Ares.Core.Visualization.Managers;
 using UI.Application.Devices.Repos;
 using UI.Application.Notifications;
 using UI.Application.Settings;
@@ -23,6 +24,7 @@ public class ServiceStarter : BackgroundService
   private readonly IRemotePlannerManager _plannerManager;
   private readonly IRemoteDeviceManager _remoteDeviceManager;
   private readonly IDeviceConfigManager _deviceConfigManager;
+  private readonly IVisualizationConfigManager _visualizationConfigManager;
   private readonly IDeviceDriverLoader _deviceDriverLoader;
   private readonly IDeviceManager _deviceManager;
   private readonly IDriverDatabaseManager _driverDbManager;
@@ -30,6 +32,7 @@ public class ServiceStarter : BackgroundService
   private readonly IConfiguration _configuration;
   private readonly StartupStateTracker _tracker;
   private readonly SilaClient _silaClient;
+  private readonly ILogger<ServiceStarter> _logger;
 
   private readonly string _dataPath;
   private readonly string _resultsPath;
@@ -42,6 +45,7 @@ public class ServiceStarter : BackgroundService
     IDeviceDriverLoader deviceDriverLoader,
     IRemoteAnalyzerManager analyzerManager,
     IDeviceConfigManager deviceConfigManager,
+    IVisualizationConfigManager visualizationConfigManager,
     IConfiguration configuration,
     IRemoteDeviceManager remoteDeviceManager,
     IDriverDatabaseManager driverDbManager,
@@ -52,7 +56,8 @@ public class ServiceStarter : BackgroundService
     DeviceAdapterManager deviceAdapterManager,
     StateLoggerManager stateLoggerManager,
     StartupStateTracker tracker,
-    SilaClient silaClient)
+    SilaClient silaClient,
+    ILogger<ServiceStarter> logger)
   {
     _notificationReceivingService = notificationReceivingService;
     _deviceControlViewModelRepo = deviceControlViewModelRepo;
@@ -63,6 +68,7 @@ public class ServiceStarter : BackgroundService
     _analyzerManager = analyzerManager;
     _plannerManager = plannerManager;
     _remoteDeviceManager = remoteDeviceManager;
+    _visualizationConfigManager = visualizationConfigManager;
     _configuration = configuration;
     _deviceManager = deviceManager;
     _deviceConfigManager = deviceConfigManager;
@@ -75,6 +81,7 @@ public class ServiceStarter : BackgroundService
     _templatesPath = Path.Combine(_dataPath, AppSettings.TemplatesFolder);
     _devicesPath = Path.Combine(_dataPath, AppSettings.DevicesFolder);
     _pluginsPath = PluginPathResolver.Resolve(_configuration.Get<AppSettings>());
+    _logger = logger;
   }
 
   protected override async Task ExecuteAsync(CancellationToken cancellationToken)
@@ -94,6 +101,7 @@ public class ServiceStarter : BackgroundService
       //If we overwrite it too early, our archive wipes out the references to the deleted drivers making
       //it impossible to migrate devices to updated drivers.
       await _driverDbManager.RefreshDriverArchive();
+      _logger.LogInformation("Finished loading the local startup track");
     }, cancellationToken);
 
     var infraTrack = EnsureDataPathsExist();
@@ -101,11 +109,12 @@ public class ServiceStarter : BackgroundService
     var remoteTrack = Task.WhenAll(
       _plannerManager.LoadPlanners(),
       _analyzerManager.LoadAnalyzers(),
-      _remoteDeviceManager.LoadDevices()
-    );
+      _remoteDeviceManager.LoadDevices());
 
+    await _visualizationConfigManager.Initialize();
     await Task.WhenAll(localTrack, infraTrack, remoteTrack);
     await Task.Delay(TimeSpan.FromSeconds(6));
+    _logger.LogInformation("Successfully Finished the Loading Sequences");
     _tracker.MarkAsReady();
   }
 

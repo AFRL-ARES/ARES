@@ -6,7 +6,7 @@ on:
 
 env:
   UI_PROJECT_FILE: 'UI/UI.csproj'
-  OUTPUT_PATH: 'publish' # Shared output directory for all artifacts
+  OUTPUT_PATH: 'publish'
 
 jobs:
   build-and-deploy-prerelease:
@@ -66,12 +66,16 @@ jobs:
       run: |
         dotnet restore ${{ env.UI_PROJECT_FILE }}
 
-    - name: Build and Publish Self-Contained Release Artifacts
+    - name: Build ARES
+      run: |
+        echo "Building ARES to make sure the js artifacts are properly created."
+        dotnet build ${{ env.UI_PROJECT_FILE }} --configuration Release
+
+    - name: Publish Self-Contained Release Artifacts
       run: |
         echo "Publishing UI Project for ${{ matrix.os_name_tag }}  (${{ matrix.runtime_id }})"
         dotnet publish ${{ env.UI_PROJECT_FILE }} --configuration Release --output ${{ env.OUTPUT_PATH }} /p:UseAppHost=true -r ${{ matrix.runtime_id }} --self-contained true
 
-    # Copy the plugins folder to the ARES publish directory
     - name: Copy Driver Plugins to ARES Output
       shell: bash
       run: |
@@ -92,7 +96,5 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: ${{ env.ZIP_FILE_NAME }}
-        body: |
-          Pre-release assets for version ${{ github.event.release.tag_name }} have been automatically compiled and uploaded. Ready for QA validation.
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

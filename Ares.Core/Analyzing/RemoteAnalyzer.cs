@@ -29,17 +29,10 @@ public class RemoteAnalyzer : AnalyzerBase
 
   public Uri Address { get; }
 
-  public override async Task<Analysis> Analyze(AresStruct inputs, RequestMetadata metadata, CancellationToken cancellationToken = default)
+  public override async Task<Analysis> Analyze(AnalysisRequest request, CancellationToken cancellationToken = default)
   {
     var client = GetClient();
-    var analysisRequest = new AnalysisRequest
-    {
-      Inputs = inputs,
-      Settings = Settings,
-      Metadata = metadata
-    };
-    var analysis = await client.AnalyzeAsync(analysisRequest, cancellationToken: cancellationToken);
-
+    var analysis = await client.AnalyzeAsync(request, cancellationToken: cancellationToken);
     return analysis;
   }
 
@@ -51,17 +44,12 @@ public class RemoteAnalyzer : AnalyzerBase
   /// <param name="settings">These will add-to/override existing settings values if provided. </param>
   /// <param name="cancellationToken"></param>
   /// <returns></returns>
-  public override Task<Analysis> Analyze(AresStruct inputs, AresStruct settings, RequestMetadata metadata, CancellationToken cancellationToken = default)
+  public override Task<Analysis> Analyze(AnalysisRequest request, AresStruct settings, CancellationToken cancellationToken = default)
   {
     var client = GetClient();
     var mergedSettings = Settings.AppendStruct(settings);
-    var analysisRequest = new AnalysisRequest
-    {
-      Inputs = inputs,
-      Settings = mergedSettings,
-      Metadata = metadata
-    };
-    return client.AnalyzeAsync(analysisRequest, cancellationToken: cancellationToken).ResponseAsync;
+    request.Settings = mergedSettings;
+    return client.AnalyzeAsync(request, cancellationToken: cancellationToken).ResponseAsync;
   }
 
   public override async Task<AnalyzerCapabilities> GetCapabilities(CancellationToken cancellationToken = default)

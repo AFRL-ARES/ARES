@@ -15,4 +15,7 @@ public class Constraints
 
   [JsonPropertyName("validation_hint")]
   public string ValidationHint { get; set; } = string.Empty;
+
+  [JsonPropertyName("options")]
+  public List<string> Options { get; set; } = [];
 }

@@ -17,7 +17,7 @@ namespace AresService.Migrations.Postgres.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.4")
+                .HasAnnotation("ProductVersion", "10.0.7")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -206,6 +206,51 @@ namespace AresService.Migrations.Postgres.Migrations
                     b.HasKey("UniqueId");
 
                     b.ToTable("AnalyzerSettings");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Analyzing.AnalyzerTransaction", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AnalysisRequest")
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("AnalysisResponse")
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("AnalyzerId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("AnalyzerName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("AnalyzerType")
+                        .HasColumnType("text");
+
+                    b.Property<string>("AnalyzerVersion")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<DateTime?>("TimeRequestSent")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("TimeResponseReceived")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("AnalyzerTransactions");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.AresCampaignTag", b =>
@@ -1045,6 +1090,51 @@ namespace AresService.Migrations.Postgres.Migrations
                     b.ToTable("PlannerSettings");
                 });
 
+            modelBuilder.Entity("Ares.Datamodel.Planning.PlannerTransaction", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("PlannerId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PlannerName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PlannerType")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PlannerVersion")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PlanningRequest")
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("PlanningResponse")
+                        .HasColumnType("jsonb");
+
+                    b.Property<DateTime?>("TimeRequestSent")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("TimeResponseReceived")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("PlannerTransactions");
+                });
+
             modelBuilder.Entity("Ares.Datamodel.Project", b =>
                 {
                     b.Property<Guid>("UniqueId")
@@ -1455,6 +1545,93 @@ namespace AresService.Migrations.Postgres.Migrations
                     b.HasIndex("ExperimentTemplateUniqueId");
 
                     b.ToTable("StepTemplates", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Visualizing.Local.DeviceVisualizationConfig", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ChartTitle")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<int>("GridH")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("GridW")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("GridX")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("GridY")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<int>("NumberDisplayPoints")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Paths")
+                        .HasColumnType("jsonb");
+
+                    b.Property<int>("PollingRate")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("ShowDataLabels")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("ShowMarkers")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Style")
+                        .HasColumnType("integer");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("DeviceVisualizationConfigs");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Visualizing.Local.VisualizationPath", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AssociatedDeviceId")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<int>("DataType")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsPlottable")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("Path")
+                        .HasColumnType("text");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("VisualizationPath");
                 });
 
             modelBuilder.Entity("Ares.Services.DriverInfo", b =>

@@ -109,7 +109,6 @@ public class DeviceManager : IDeviceManager
       };
 
       var device = (IAresDevice)ActivatorUtilities.CreateInstance(_serviceProvider, driver.DriverType, [connectionInfo, logger]);
-
       if(config.SerialInfo is not null)
       {
         var requestedPort = config.SerialInfo.PortName;
@@ -137,7 +136,8 @@ public class DeviceManager : IDeviceManager
 
     catch(Exception e)
     {
-      _logger.LogError($"Encountered an error when trying to add a device! {e.Message}");
+      _logger.LogError("Encountered an error when trying to add a device! {message}", e.Message);
+      _logger.LogError("{stack}", e.StackTrace);
       return null;
     }
   }

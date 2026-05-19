@@ -15,7 +15,20 @@
             @_plannerStatus.State.ToString()
           </div>
           <div>
-            @_plannerStatus.StateMessage
+            @if(_plannerStatus.State == State.Active && _plannerStatus.StateMessage == string.Empty)
+            {
+              <div>
+                Planner is Active!
+              </div>
+            }
+
+            else
+            {
+              <div>
+                @_plannerStatus.StateMessage
+              </div>  
+            }
+            
           </div>
         </div>
       }

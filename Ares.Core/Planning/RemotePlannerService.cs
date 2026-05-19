@@ -1,6 +1,4 @@
-﻿using Ares.Core.Execution.Extensions;
-using Ares.Datamodel;
-using Ares.Datamodel.Analyzing;
+﻿using Ares.Datamodel;
 using Ares.Datamodel.Connection;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Planning;
@@ -143,102 +141,21 @@ public class RemotePlannerService : PlannerServiceBase
     }
   }
 
-  public override async Task<PlanResponse> Plan(IEnumerable<ParameterMetadata> plannableParameters,
-    RequestMetadata metadata,
-    IEnumerable<ExperimentOverview> previousExperiments,
-    IEnumerable<Analysis> analysisHistory,
-    CancellationToken cancellationToken = default)
+  public override async Task<PlanningResponse> Plan(PlanningRequest planRequest, CancellationToken cancellationToken = default)
   {
     var client = GetClient();
-    var planRequest = new PlanningRequest() { AdapterSettings = Settings, Metadata = metadata };
-    planRequest.PlanningParameters.AddRange(plannableParameters.Select(parameter => ConvertToPlanningParameter(parameter, previousExperiments)));
-    planRequest.AnalysisResults.AddRange(analysisHistory.Select(a => (double)a.Result));
-    var result = await client.PlanAsync(planRequest, cancellationToken: cancellationToken);
+    planRequest.AdapterSettings = Settings;
 
-    var convertedResults = ToPlanResults(result, plannableParameters);
-    var response = new PlanResponse(convertedResults, result.PlanningOutcome, result.ErrorString);
-    return response;
+    var result = await client.PlanAsync(planRequest, cancellationToken: cancellationToken);
+    return result;
   }
 
-  public override async Task<PlanResponse> Plan(IEnumerable<ParameterMetadata> plannableParameters,
-    RequestMetadata metadata,
-    IEnumerable<ExperimentOverview> previousExperiments,
-    IEnumerable<Analysis> analysisHistory,
-    AresStruct settings,
-    CancellationToken cancellationToken = default)
+  public override async Task<PlanningResponse> Plan(PlanningRequest planRequest, AresStruct settings, CancellationToken cancellationToken = default)
   {
+    planRequest.AdapterSettings = settings;
     var client = GetClient();
-    var planRequest = new PlanningRequest() { AdapterSettings = settings, Metadata = metadata };
-    planRequest.PlanningParameters.AddRange(plannableParameters.Select(parameter => ConvertToPlanningParameter(parameter, previousExperiments)));
-    planRequest.AnalysisResults.AddRange(analysisHistory.Select(a => (double)a.Result));
     var result = await client.PlanAsync(planRequest, cancellationToken: cancellationToken);
-    
-    var convertedResults = ToPlanResults(result, plannableParameters);
-    var response = new PlanResponse(convertedResults, result.PlanningOutcome, result.ErrorString);
-    return response;
-  }
-
-  private static PlanningParameter ConvertToPlanningParameter(ParameterMetadata metadata, IEnumerable<ExperimentOverview> experimentHistory)
-  {
-    var parameter = new PlanningParameter
-    {
-      ParameterName = metadata.Name,
-      IsPlanned = true,
-      DataType = metadata.Schema.Type,
-      InitialValue = metadata.InitialValue
-    };
-
-    var paramHistory = experimentHistory.Select(exp =>
-    {
-      var plannedParameters = exp.Template.GetAllPlannedParameters();
-      var plannedValue = plannedParameters.FirstOrDefault(param => param.PlanningMetadata.Name == metadata.Name)?.Value;
-
-      var actualValue = string.IsNullOrEmpty(metadata.OutputName) ? null : exp.Result.Fields.FirstOrDefault(f => f.Key == metadata.OutputName).Value;
-
-      if(plannedValue is null)
-        return new ParameterHistoryInfo();
-
-      else
-        return new ParameterHistoryInfo
-        {
-          PlannedValue = plannedValue,
-          AchievedValue = actualValue ?? AresValueHelper.CreateNull()
-        };
-    });
-
-    parameter.ParameterHistory.AddRange(paramHistory);
-
-    if(metadata.Constraints.Any())
-    {
-      var constraint = metadata.Constraints.First();
-      parameter.MinimumValue = constraint.Minimum;
-      parameter.MaximumValue = constraint.Maximum;
-    }
-
-    parameter.PlannerName = metadata.PlannerName;
-    return parameter;
-  }
-
-  private static List<PlanResult> ToPlanResults(PlanningResponse result, IEnumerable<ParameterMetadata> plannableMetadata)
-  {
-    var planResults = new List<PlanResult>();
-
-    for(int i = 0; i < result.PlannedParameters.Count; i++)
-    {
-      var currentPlannedParameter = result.PlannedParameters[i];
-      var matchingMetadata = plannableMetadata.FirstOrDefault(data => data.Name == currentPlannedParameter.ParameterName);
-
-      //What do we do if we don't find the old metadata?
-      matchingMetadata ??= new ParameterMetadata
-      {
-        Name = currentPlannedParameter.ParameterName
-      };
-
-      var aresPlanResult = new PlanResult(matchingMetadata, currentPlannedParameter.ParameterValue);
-      planResults.Add(aresPlanResult);
-    }
-
-    return planResults;
+    return result;
   }
 
   private AresRemotePlannerService.AresRemotePlannerServiceClient GetClient()

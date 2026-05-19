@@ -61,11 +61,6 @@
     }
 </div>
 @code {
-
-  // Dummy property so that the parent would have something to bind to get metadata updates
-  //[Parameter]
-  //public CommandMetadata? CommandMetadata { get; set; }
-
   [Parameter]
   public EventCallback<CommandMetadata> CommandMetadataChanged { get; set; }
 
@@ -75,24 +70,24 @@
     StateHasChanged();
   }
 
-    private async Task MetadataChangedCallback(ChangeEventArgs obj)
-    {
-        var metaName = obj?.Value?.ToString();
-        if (metaName is null)
-            return;
+  private async Task MetadataChangedCallback(ChangeEventArgs obj)
+  {
+    var metaName = obj?.Value?.ToString();
+    if (metaName is null)
+        return;
         
-        ViewModel!.SelectMetadata(metaName);
-        await CommandMetadataChanged.InvokeAsync(ViewModel!.SelectedCommandMetadata);
-    }
+    ViewModel!.SelectMetadata(metaName);
+    await CommandMetadataChanged.InvokeAsync(ViewModel!.SelectedCommandMetadata);
+  }
 
-    private async Task DeviceSelectionChanged(ChangeEventArgs obj)
-    {
-        var deviceId = obj.Value?.ToString();
-        if (deviceId is null)
-            return;
+  private async Task DeviceSelectionChanged(ChangeEventArgs obj)
+  {
+    var deviceId = obj.Value?.ToString();
+    if (deviceId is null)
+        return;
         
-        await ViewModel!.SelectDevice(deviceId);
-        await CommandMetadataChanged.InvokeAsync(ViewModel!.SelectedCommandMetadata);
-    }
+    await ViewModel!.SelectDevice(deviceId);
+    await CommandMetadataChanged.InvokeAsync(ViewModel!.SelectedCommandMetadata);
+  }
 
 }

@@ -7,7 +7,7 @@
 
   @foreach (var argumentDesigner in ViewModel!.ArgumentDesigners)
   {
-    <CommandParameterDesigner DisablePlanning=@DisablePlanningAndOutputCheck ViewModel="@argumentDesigner" />
+    <CommandParameterDesigner DisablePlanning=@DisablePlanningAndOutputCheck ViewModel="@argumentDesigner" @key="argumentDesigner"/>
   }
 
   @if(!DisablePlanningAndOutputCheck)
@@ -47,9 +47,10 @@
   [Parameter]
   public bool DisablePlanningAndOutputCheck { get; set; }
 
-  private void CommandMetadataChanged(CommandMetadata? metadata)
+  private async Task CommandMetadataChanged(CommandMetadata? metadata)
   {
-    ViewModel!.CommandMetadata = metadata;
+    await ViewModel!.MetadataUpdated(metadata);
+    StateHasChanged();
   }
 
   private bool ShowDeviceOutputColumn =>

@@ -1,0 +1,29 @@
+﻿@using Ares.Datamodel
+@using Ares.Services
+@using System.Collections.ObjectModel
+@using Google.Protobuf.WellKnownTypes
+
+@inject IUiNotificationService NotificationService
+
+<div class="d-flex gap-2 align-items-center mb-3">
+  <div class="col gap-2">
+    <RadzenDropDown AllowClear="true" 
+      TValue="CampaignTemplateSummary"
+      FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" 
+      AllowFiltering="true" Class="w-100"
+      Placeholder="Select..." 
+      Data="ViewModel!.CampaignTemplateSummaries" 
+      TextProperty="CampaignName" 
+      @bind-Value=ViewModel!.SelectedTemplateSummary 
+      Change="args => ViewModel!.SelectCampaignTemplate(args)" />
+  </div>
+  <RadzenButton Icon="play_arrow" Click="@ViewModel!.StartCampaign" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Medium" />
+  <RadzenButton Icon="pause" Click="@ViewModel!.PauseCampaign" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Medium" />
+  <RadzenButton Icon="skip_next" Click="@ViewModel!.ResumeCampaign" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Medium" />
+  <RadzenButton Icon="stop" Click="@ViewModel!.StopCampaign" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Medium" />
+</div>
+
+@code {
+  [Parameter]
+  public ExecutionViewModel? ViewModel { get; set; }
+}

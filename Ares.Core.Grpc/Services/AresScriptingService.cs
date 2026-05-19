@@ -32,8 +32,9 @@ public partial class AresScriptingService : Ares.Services.AresScriptingService.A
     ScriptExecutionRequest request,
     [EnumeratorCancellation] CancellationToken cancellationToken = default)
   {
+
     var channel = System.Threading.Channels.Channel.CreateBounded<CoreScriptExecutionEvent>(new BoundedChannelOptions(100));
-    var env = _environmentBuilder.Build();
+    var env = await _environmentBuilder.Build();
     var runner = new ScriptRunner(env);
     var subscriptions = new CompositeDisposable
     {
@@ -86,7 +87,7 @@ public partial class AresScriptingService : Ares.Services.AresScriptingService.A
   public override async Task ExecuteScript(ScriptExecutionRequest request, IServerStreamWriter<GrpcScriptExecutionEvent> responseStream, ServerCallContext context)
   {
     var channel = System.Threading.Channels.Channel.CreateBounded<GrpcScriptExecutionEvent>(new BoundedChannelOptions(100));
-    var env = _environmentBuilder.Build();
+    var env = await _environmentBuilder.Build();
     var runner = new ScriptRunner(env);
     var subscriptions = new CompositeDisposable
     {
@@ -145,7 +146,7 @@ public partial class AresScriptingService : Ares.Services.AresScriptingService.A
 
   public override async Task<CompletionResponse> GetCompletions(CompletionRequest request, ServerCallContext context)
   {
-    var environment = _environmentBuilder.Build();
+    var environment = await _environmentBuilder.Build();
     var items = await AresScriptAnalysis.BuildCompletionsAsync(
       environment,
       request.Script,
@@ -158,7 +159,7 @@ public partial class AresScriptingService : Ares.Services.AresScriptingService.A
 
   public override async Task<ValidateScriptResponse> ValidateScript(ValidateScriptRequest request, ServerCallContext context)
   {
-    var environment = _environmentBuilder.Build();
+    var environment = await _environmentBuilder.Build();
     var diagnostics = await AresScriptAnalysis.ValidateScriptAsync(
       request.Script,
       environment,
@@ -171,7 +172,7 @@ public partial class AresScriptingService : Ares.Services.AresScriptingService.A
 
   public override async Task<ScriptSummaryResponse> GetScriptSummary(ScriptSummaryRequest request, ServerCallContext context)
   {
-    var environment = _environmentBuilder.Build();
+    var environment = await _environmentBuilder.Build();
     var (steps, diagnostics) = await AresScriptAnalysis.BuildScriptSummaryAsync(
       request.Script,
       environment,
@@ -187,7 +188,7 @@ public partial class AresScriptingService : Ares.Services.AresScriptingService.A
 
   public override async Task<SymbolMetadataResponse> GetSymbolMetadata(SymbolMetadataRequest request, ServerCallContext context)
   {
-    var environment = _environmentBuilder.Build();
+    var environment = await _environmentBuilder.Build();
     var metadata = await AresScriptAnalysis.BuildSymbolMetadataAsync(
       environment,
       request.Script,

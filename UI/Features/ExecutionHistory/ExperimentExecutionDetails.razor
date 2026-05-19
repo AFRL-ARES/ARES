@@ -1,45 +1,85 @@
-@page "/dataviewer"
-@using System.Web
 @using Ares.Datamodel
 @using Ares.Datamodel.Extensions
 @using Ares.Services
 @using UI.Components.Formatting
 @inject ContextMenuService ContextMenuService
-@inject NavigationManager NavigationManager
-@inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<DataViewerViewModel>
+@inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<ExperimentExecutionDetailsViewModel>
 
+<div class="d-flex flex-column gap-2 w-100 m-0 p-0">
+  @if(ViewModel!.LoadingSelectedSummary)
+  {
+    <LoadingSpinner SpinnerSize="SpinnerSize.Large"/>
+  }
+  else if(ViewModel!.FullSelectedSummary is null)
+  {
+    <div class="border border-1 rounded-2 p-2 w-100">
+      <p class="m-0">No Campaign Selected</p>
+    </div>
+  }
+  else
+  {
+    <div class="border border-1 rounded-2 p-2 w-100">
+      <h4> Campaign Summary </h4>
 
-<PageTitle>Data Viewer</PageTitle>
+      <div class="d-flex flex-column padded-item">
+        <b>Time Started: @ViewModel!.SelectedSummaryStartTime</b>
+        <b>Time Completed: @ViewModel!.SelectedSummaryFinishTime</b>
+        <b>Number of Experiments: @ViewModel!.SelectedSummaryNumberOfExperiments</b>
+        <b>Tags: @ViewModel!.SelectedSummaryTags</b>
+        <b>Notes: @ViewModel!.SelectedSummaryNotes</b>
+        <br />
 
-<div class="container gap-2 w-100 m-0" style="max-width: none">
-  <div class="row">
-    <div class="col-8 gap-2">
-      <div>
-        @if(ViewModel!.LoadingAvailableSumarries)
+        @if(ViewModel!.SelectedExperimentSummary is not null)
         {
-          <LoadingSpinner SpinnerSize="SpinnerSize.Large"/>
+          <h4> Experiment Summary </h4>
+          <b> Experiment Started: @ViewModel!.SelectedExperimentSummary.ExecutionInfo.TimeStarted.ToReadableTimestamp() </b>
+          <b> Experiment Finished: @(ViewModel!.SelectedExperimentSummary.ExecutionInfo.TimeFinished.ToReadableTimestamp()) </b>
+          <b> Analysis Result: @ViewModel!.SelectedExperimentSummary.ExperimentOverview.AnalysisOverview.Result </b>
+          @if(ViewModel!.SelectedExperimentSummary.ExperimentOverview.Result.Fields.Any())
+          {
+            <b> Experiment Results </b>
+            @foreach(var result in ViewModel!.SelectedExperimentSummary.ExperimentOverview.Result.Fields)
+            {
+              if(AresValueHelper.IsPrimitiveType(result.Value))
+              {
+                <b> @result.Key : @result.Value </b>
+              }
+              else
+              {
+                <b>@result.Key : Complex Data </b>
+              }
+
+              <b> @result.Key : @result.Value </b>
+            }
+          }
         }
 
-        else
+        @if(ViewModel!.SelectedStepSummary is not null)
         {
-          <RadzenDropDown TValue="CampaignExecutionSummaryMetadata" Class="w-100" Placeholder="Select..." Data="ViewModel!.AvailableSummaries" @bind-Value=ViewModel!.SelectedSummaryMetadata Change="ViewModel!.GetSelectedSummary">
-            <Template>
-              @($"{(context as CampaignExecutionSummaryMetadata)!.CampaignName} - {(context as CampaignExecutionSummaryMetadata)!.CompletionTime.ToReadableTimestamp()}")
-            </Template>
-          </RadzenDropDown>
+          <h4> Step Summary </h4>
+          <b> Step Started: @ViewModel!.SelectedStepSummary.ExecutionInfo.TimeStarted.ToReadableTimestamp()</b>
+          <b> Step Finished: @ViewModel!.SelectedStepSummary.ExecutionInfo.TimeFinished.ToReadableTimestamp()</b>
+          <b> Commands Executed: @ViewModel!.SelectedStepSummary.CommandSummaries.Count</b>
         }
 
+        @if(ViewModel!.SelectedCommandSummary is not null)
+        {
+          <h4> Command Summary </h4>
+          <b> Command Name: @ViewModel!.SelectedCommandSummary.CommandName </b>
+          <b> Command Description: @ViewModel!.SelectedCommandSummary.CommandDescription</b>
+          <b> Command Result: @CreateDeviceCommandResultDisplayString(ViewModel!.SelectedCommandSummary.Result)</b>
+          <b> Command Started: @ViewModel!.SelectedCommandSummary.ExecutionInfo.TimeStarted.ToReadableTimestamp() </b>
+          <b> Command Finished: @ViewModel!.SelectedCommandSummary.ExecutionInfo.TimeFinished.ToReadableTimestamp() </b>
+        }
       </div>
+    </div>
 
-      <div class="flex-column">
-        @if(ViewModel!.FullSelectedSummary is not null)
-        {
-          <div class="border border-1 rounded-2 p-2">
-            <div class="d-flex">
-              <h4> @ViewModel!.FullSelectedSummary.CampaignName - @ViewModel!.FullSelectedSummary.CampaignId </h4>
-            </div>
-            <div class="d-flex">
-              <RadzenTree Style="width: 100%;" Change="@(item => ViewModel!.SelectedTreeItemUpdated(item?.Value))">
+    <div class="border border-1 rounded-2 p-2 w-100">
+      <div class="d-flex">
+        <h4> @ViewModel!.FullSelectedSummary.CampaignName - @ViewModel!.FullSelectedSummary.CampaignId </h4>
+      </div>
+      <div class="d-flex">
+        <RadzenTree Style="width: 100%;" Change="@(item => ViewModel!.SelectedTreeItemUpdated(item?.Value))">
                 <RadzenTreeItem Text="Campaign Execution Info">
                   <ChildContent>
                     <RadzenTreeItem Text=@($"Local Timezone: {ViewModel!.FullSelectedSummary.ExecutionInfo.Timezone}") />
@@ -181,99 +221,24 @@
                   </RadzenTreeItem>
                 }
               </RadzenTree>
-            </div>
-          </div>
-        }
       </div>
-     </div>
-     <div class="col-sm gap-2">
-      <div class="border border-1 rounded-2 p-2">
-          <h4> Campaign Summary </h4>
-
-          @if(ViewModel!.FullSelectedSummary is null)
-          {
-            <p> No Campaign Selected </p>
-          }
-
-          else
-          {
-            <div class="d-flex flex-column padded-item">
-              <b>Time Started: @ViewModel!.SelectedSummaryStartTime</b>
-              <b>Time Completed: @ViewModel!.SelectedSummaryFinishTime</b>
-              <b>Number of Experiments: @ViewModel!.SelectedSummaryNumberOfExperiments</b>
-              <b>Tags: @ViewModel!.SelectedSummaryTags</b>
-              <b>Notes: @ViewModel!.SelectedSummaryNotes</b>
-              <br />
-            
-
-            @if(ViewModel!.SelectedExperimentSummary is not null)
-            {
-              <h4> Experiment Summary </h4>
-              <b> Experiment Started: @ViewModel!.SelectedExperimentSummary.ExecutionInfo.TimeStarted.ToReadableTimestamp() </b>
-              <b> Experiment Finished: @(ViewModel!.SelectedExperimentSummary.ExecutionInfo.TimeFinished.ToReadableTimestamp()) </b>
-              <b> Analysis Result: @ViewModel!.SelectedExperimentSummary.ExperimentOverview.AnalysisOverview.Result </b>
-              @if(ViewModel!.SelectedExperimentSummary.ExperimentOverview.Result.Fields.Any())
-              {
-                <b> Experiment Results </b>
-                @foreach(var result in ViewModel!.SelectedExperimentSummary.ExperimentOverview.Result.Fields)
-                {
-                  if(AresValueHelper.IsPrimitiveType(result.Value))
-                  {
-                    <b> @result.Key : @result.Value </b>
-                  }
-                  else
-                  {
-                    <b>@result.Key : Complex Data </b>
-                  }
-
-                  <b> @result.Key : @result.Value </b>
-                }
-              }
-            }
-
-            @if(ViewModel!.SelectedStepSummary is not null)
-            {
-              <h4> Step Summary </h4>
-              <b> Step Started: @ViewModel!.SelectedStepSummary.ExecutionInfo.TimeStarted.ToReadableTimestamp()</b>
-              <b> Step Finished: @ViewModel!.SelectedStepSummary.ExecutionInfo.TimeFinished.ToReadableTimestamp()</b>
-              <b> Commands Executed: @ViewModel!.SelectedStepSummary.CommandSummaries.Count</b>
-            }
-
-            @if(ViewModel!.SelectedCommandSummary is not null)
-            {
-              <h4> Command Summary </h4>
-              <b> Command Name: @ViewModel!.SelectedCommandSummary.CommandName </b>
-              <b> Command Description: @ViewModel!.SelectedCommandSummary.CommandDescription</b>
-              <b> Command Result: @CreateDeviceCommandResultDisplayString(ViewModel!.SelectedCommandSummary.Result)</b>
-              <b> Command Started: @ViewModel!.SelectedCommandSummary.ExecutionInfo.TimeStarted.ToReadableTimestamp() </b>
-              <b> Command Finished: @ViewModel!.SelectedCommandSummary.ExecutionInfo.TimeFinished.ToReadableTimestamp() </b>
-            }
-          </div>
-        }
-     </div>
     </div>
-  </div>
+  }
 </div>
 
 @code {
-  protected override void OnInitialized()
+  private string? _selectedSummaryId;
+
+  [Parameter]
+  public CampaignExecutionSummaryMetadata? SelectedSummaryMetadata { get; set; }
+
+  protected override async Task OnParametersSetAsync()
   {
-    var parsedQueryString = HttpUtility.ParseQueryString(NavigationManager.Uri);
+    if(SelectedSummaryMetadata?.SummaryId == _selectedSummaryId)
+      return;
 
-    if(parsedQueryString.HasKeys())
-    {
-      var idKey = parsedQueryString.AllKeys.First();
-      var idValue = parsedQueryString.Get(idKey);
-
-      if(idValue is null || idValue == string.Empty)
-        return;
-
-      _ = ViewModel!.GetSummaryFromLinkId(idValue);
-    }
-
-    else
-      _ = ViewModel!.UpdateAvailableSummaries();
-
+    _selectedSummaryId = SelectedSummaryMetadata?.SummaryId;
+    await ViewModel!.GetSelectedSummary(SelectedSummaryMetadata);
   }
 
   private string CreateDeviceCommandResultDisplayString(CommandResult commandResult)

@@ -5,6 +5,7 @@ using Ares.Core.Grpc;
 using Ares.Core.Grpc.Services;
 using Ares.Core.Grpc.Services.Notifications;
 using Ares.Core.Grpc.Services.Safety;
+using Ares.Core.Visualization.ViewModels;
 using AresService.Data;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.EntityFrameworkCore;
@@ -32,6 +33,7 @@ using UI.Features.DeviceStateLogging.Settings;
 using UI.Features.Notifications;
 using UI.Features.Planning.Settings;
 using UI.Features.ServerHealth;
+using UI.Features.Visualization.ViewModels;
 using UI.Infrastructure.Auth;
 using UI.Infrastructure.Devices;
 using UI.Infrastructure.Dialog;
@@ -40,8 +42,8 @@ using UI.Infrastructure.Monaco.Interops;
 using UI.Infrastructure.Notifications;
 using UI.Infrastructure.Startup;
 using CampaignDesignerViewModel = UI.Features.CampaignEdit.ViewModels.CampaignDesignerViewModel;
-using DataViewerViewModel = UI.Features.DataViewer.DataViewerViewModel;
 using DeviceStatesViewModel = UI.Features.DeviceStateExport.DeviceStatesViewModel;
+using ExperimentExecutionDetailsViewModel = UI.Features.ExecutionHistory.ExperimentExecutionDetailsViewModel;
 using ExecutionHistoryViewModel = UI.Features.ExecutionHistory.ExecutionHistoryViewModel;
 using ExecutionViewModel = UI.Features.Execution.ExecutionViewModel;
 using ManualPlannerViewModel = UI.Features.Execution.Planning.ManualPlannerViewModel;
@@ -104,7 +106,7 @@ internal static class ServiceCollectionExtensions
 
   private static void BindViewModels(this IServiceCollection services)
   {
-    services.AddScoped<DataViewerViewModel>();
+    services.AddScoped<ExperimentExecutionDetailsViewModel>();
     services.AddScoped<NotificationHistoryViewModel>();
     services.AddScoped<ProfileViewModel>();
     services.AddTransient<CampaignDesignerViewModel>();
@@ -112,6 +114,8 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<ExecutionHistoryViewModel>();
     services.AddScoped<ExecutionViewModel>();
     services.AddScoped<ScriptPlaygroundViewModel>();
+    services.AddScoped<VisualizationViewModel>();
+    services.AddScoped<VisualizationSidebarViewModel>();
 
     //Device Settings List View Models
     services.AddTransient<DeviceStatesViewModel>();
