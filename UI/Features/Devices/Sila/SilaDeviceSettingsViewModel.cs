@@ -13,6 +13,7 @@ public partial class SilaDeviceSettingsViewModel : ReactiveObject
     Name = silaDevice.Name;
     Id = silaDevice.UniqueId;
     Device = silaDevice;
+    Address = silaDevice.Address;
 
     Description = Device?.Description ?? string.Empty;
     SettingsSchema = Device?.SettingSchema ?? new AresStructSchema();
@@ -42,5 +43,7 @@ public partial class SilaDeviceSettingsViewModel : ReactiveObject
   [Reactive]
   public partial AresStruct Settings { get; set; }
 
+  [Reactive]
+  public partial string Address { get; private set; }
 }
 

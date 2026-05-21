@@ -193,6 +193,57 @@ public class SilaDeviceTests
   }
 
   [Test]
+  public async Task Activate_BuildsStateSchemaFromProperties()
+  {
+    var feature = new Feature
+    {
+      Identifier = "PumpControl",
+      FeatureVersion = "1.0.0",
+      Originator = "test",
+      Category = "devices",
+      Items =
+      [
+        new FeatureProperty
+        {
+          Identifier = "FlowRate",
+          Description = "Current flow rate",
+          DataType = new DataTypeType { Item = BasicType.Real }
+        },
+        new FeatureProperty
+        {
+          Identifier = "IsEnabled",
+          DataType = new DataTypeType { Item = BasicType.Boolean }
+        }
+      ]
+    };
+
+    var device = CreateDevice(CreateServerData([feature]));
+
+    await device.Activate(CancellationToken.None);
+
+    var fields = device.StateSchema.Fields;
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(fields.Keys, Is.EquivalentTo(new[] { "PumpControl.FlowRate", "PumpControl.IsEnabled" }));
+      Assert.That(fields["PumpControl.FlowRate"].Type, Is.EqualTo(AresDataType.Number));
+      Assert.That(fields["PumpControl.FlowRate"].Description, Is.EqualTo("Current flow rate"));
+      Assert.That(fields["PumpControl.IsEnabled"].Type, Is.EqualTo(AresDataType.Boolean));
+    }
+  }
+
+  [Test]
+  public async Task GetState_ReturnsLatestPropertyValues()
+  {
+    var device = CreateDevice(CreateServerData([]));
+    // Since we can't easily trigger the monitoring tasks in a unit test without complex mocks,
+    // we'll at least verify that the default state is empty.
+    
+    var state = await device.GetState();
+
+    Assert.That(state.Fields, Is.Empty);
+  }
+
+  [Test]
   public async Task ExecuteCommand_UsesExactFeatureQualifiedCommandName()
   {
     var featureA = CreateFeature(

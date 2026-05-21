@@ -33,7 +33,8 @@ public class SilaDeviceManager : ISilaDeviceManager
       Description = data.Info.Description,
       Type = data.Info.Type,
       VendorUri = data.Info.VendorUri,
-      Version = data.Info.Version
+      Version = data.Info.Version,
+      Address = data.Address ?? "Unknown"
     };
 
     var newSilaDevice = ConfigToDevice(newConfig, data);

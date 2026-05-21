@@ -3,10 +3,12 @@ using Ares.Datamodel.Device;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
 using Ares.Device;
+using System.Collections.Concurrent;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Tecan.Sila2;
 using Tecan.Sila2.DynamicClient;
+using Grpc.Core;
 
 namespace Ares.Core.Device.Sila;
 
@@ -18,6 +20,8 @@ public sealed class SilaDevice : AresDevice, IAsyncDisposable
   private CancellationTokenSource _stateStreamCts = new();
   private DevicePollingSettings _pollingSettings = new();
   private ServerData _serverData;
+  private readonly ConcurrentDictionary<string, AresValue> _currentPropertyValues = new();
+  private Task? _monitoringTask;
 
   public SilaDevice(ServerData serverData, DeviceConnectionInfo connectionInfo, SilaClient client) : base(connectionInfo)
   {
@@ -28,16 +32,204 @@ public sealed class SilaDevice : AresDevice, IAsyncDisposable
     Description = serverData.Info.Description;
     Version = serverData.Info.Version;
     Type = serverData.Info.Type;
+    Address = serverData.Address;
   }
 
   public override IObservable<AresStruct> StateStream => _stateSubject.AsObservable();
 
-  public override Task<bool> Activate(CancellationToken ct)
+  //public AresStructSchema StateSchema { get; private set; } = new();
+
+  public override async Task<bool> Activate(CancellationToken ct)
   {
     DeviceFeatures = _serverData.Features.ToArray();
+    BuildStateSchema();
 
-    Status = new DeviceOperationalStatus() { OperationalState = OperationalState.Active, Message = $"Connected to SiLA Device {Name}!" };
-    return Task.FromResult(true);
+    Status = new DeviceOperationalStatus() 
+    { 
+      OperationalState = OperationalState.Active, 
+      Message = $"Connected to SiLA Device {Name}!" 
+    };
+
+    await StartPropertyMonitoring();
+    return true;
+  }
+
+  private void BuildStateSchema()
+  {
+    var schema = new AresStructSchema();
+    foreach(var feature in DeviceFeatures)
+    {
+      foreach(var property in (feature.Items ?? []).OfType<FeatureProperty>())
+      {
+        var key = $"{feature.Identifier}.{property.Identifier}";
+        var fieldSchema = property.DataType is not null
+          ? SilaDataConverter.ToAresValueSchema(property.DataType)
+          : AresSchemaBuilder.Entry(AresDataType.Any).Build();
+
+        if(!string.IsNullOrWhiteSpace(property.Description))
+          fieldSchema.Description = property.Description;
+
+        schema.Fields[key] = fieldSchema;
+      }
+    }
+    StateSchema = schema;
+  }
+
+  private async Task StartPropertyMonitoring()
+  {
+    if(_monitoringTask is not null)
+      return;
+
+    _stateStreamCts = new CancellationTokenSource();
+    var token = _stateStreamCts.Token;
+
+    var monitorTasks = new List<Task>();
+
+    foreach(var feature in DeviceFeatures)
+    {
+      if(feature.Identifier.Contains("SiLAService")) 
+        continue;
+
+      var properties = (feature.Items ?? []).OfType<FeatureProperty>();
+      var context = new FeatureContext(feature, _serverData, _silaClient.ExecutionManager);
+
+      foreach(var property in properties)
+      {
+        if(property.Observable == FeaturePropertyObservable.Yes)
+          monitorTasks.Add(MonitorObservableProperty(property, context, token));
+
+        else
+          monitorTasks.Add(MonitorUnobservableProperty(property, context, token));
+      }
+    }
+
+    _monitoringTask = Task.WhenAll(monitorTasks);
+    await Task.CompletedTask;
+  }
+
+  private async Task MonitorUnobservableProperty(FeatureProperty property, FeatureContext context, CancellationToken token)
+  {
+    var client = new PropertyClient(property, context);
+    var targetName = $"{context.Feature.Identifier}.{property.Identifier}";
+    var pollingInterval = TimeSpan.FromMilliseconds(5000); // 5 seconds
+
+    while(!token.IsCancellationRequested)
+    {
+      try
+      {
+        Console.WriteLine($"[SiLA TEST] 1. Sending request for {targetName}...");
+
+        // Push the synchronous call onto a background thread
+        var value = await Task.Run(() => client.RequestValue(), token);
+
+        // If we reach this line, the network is perfect!
+        Console.WriteLine($"[SiLA TEST] 2. SUCCESS! Read {targetName}: {value.Value}");
+
+        // NOTE: We are intentionally NOT calling UpdatePropertyState or _stateSubject here.
+      }
+      catch(Exception ex)
+      {
+        Console.WriteLine($"[SiLA TEST] ❌ ERROR on {targetName}: {ex.Message}");
+      }
+
+      await Task.Delay(pollingInterval, token);
+    }
+  }
+
+  //private async Task<DynamicObjectProperty> RequestUnobservablePropertyAsyncRaw(FeatureProperty property, FeatureContext context, CancellationToken token)
+  //{
+    // 1. Build the exact gRPC signature (e.g., "sila2.org...MockFeature", "Get_DeviceName")
+    //var method = new Grpc.Core.Method<byte[], byte[]>(
+    //    Grpc.Core.MethodType.Unary,
+    //    context.ServiceName,
+    //    $"Get_{property.Identifier}",
+    //    Grpc.Core.Marshallers.Create(b => b, b => b), // Raw bytes in
+    //    Grpc.Core.Marshallers.Create(b => b, b => b)  // Raw bytes out
+    //);
+
+    //// SiLA 2 property requests take an empty payload
+    //var emptyPayload = Array.Empty<byte>();
+
+    //var callOptions = context.ExecutionManager
+    //    .CreateCallOptions(context.Feature.GetFullyQualifiedIdentifier(property));
+
+    //// 2. THE DEADLOCK BREAKER: Execute a native AsyncUnaryCall
+    //var call = context.Channel.CreateCallInvoker().AsyncUnaryCall(method, null, callOptions, emptyPayload);
+
+    //// 3. Await the response naturally, without blocking any native threads!
+    //var responseBytes = await call.ResponseAsync.ConfigureAwait(false);
+
+    //// 4. Use Tecan's native serializer to map the raw bytes back into an ARES-friendly object
+    //var resultProperty = new DynamicObjectProperty(property.Identifier, property.DisplayName, property.Description, property.DataType);
+    //context.Serializer.Deserialize(resultProperty, responseBytes, true, context.ExecutionManager.DownloadBinaryStore);
+
+    //return resultProperty;
+  //}
+
+
+  private async Task MonitorObservableProperty(FeatureProperty property, FeatureContext context, CancellationToken token)
+  {
+    var client = new PropertyClient(property, context);
+
+    Action<DynamicObjectProperty> onUpdateReceived = (update) =>
+    {
+      UpdatePropertyState(context.Feature, property, update);
+    };
+
+    try
+    {
+      _ = client.Subscribe(onUpdateReceived, token);
+    }
+    catch(Exception ex)
+    {
+      Console.WriteLine($"Failed to subscribe to {property.Identifier}: {ex.Message}");
+    }
+
+    // Task returns immediately so the StartPropertyMonitoring loop can continue
+    await Task.CompletedTask;
+  }
+
+  //private async Task MonitorUnobservableProperty(FeatureProperty property, FeatureContext context, CancellationToken token)
+  //{
+  //  var client = new PropertyClient(property, context);
+  //  var pollingInterval = TimeSpan.FromMilliseconds(_pollingSettings.IntervalMs > 0 ? _pollingSettings.IntervalMs : 1000);
+
+  //  while(!token.IsCancellationRequested)
+  //  {
+  //    try
+  //    {
+  //      // RequestValue is synchronous in the Tecan SDK. 
+  //      // We wrap it in Task.Run so it executes asynchronously without blocking the loop.
+  //      var value = await Task.Run(() => client.RequestValue(), token);
+  //      UpdatePropertyState(context.Feature, property, value);
+  //    }
+  //    catch(OperationCanceledException) 
+  //    { 
+  //      break; 
+  //    }
+  //    catch(Exception ex)
+  //    {
+  //      Console.WriteLine($"Error polling property {property.Identifier}: {ex.Message}");
+  //    }
+
+  //    // Wait for the next poll interval, respecting the cancellation token
+  //    await Task.Delay(pollingInterval, token);
+  //  }
+  //}
+
+  private void UpdatePropertyState(Feature feature, FeatureProperty property, DynamicObjectProperty value)
+  {
+    var key = $"{feature.Identifier}.{property.Identifier}";
+    var aresValue = SilaDataConverter.ToAresValue(value);
+    _currentPropertyValues[key] = aresValue;
+
+    var newState = new AresStruct();
+    foreach(var kvp in _currentPropertyValues)
+    {
+      newState.Fields[kvp.Key] = kvp.Value;
+    }
+
+    _stateSubject.OnNext(newState);
   }
 
   public override Task EnterSafeMode(CancellationToken ct)
@@ -99,17 +291,17 @@ public sealed class SilaDevice : AresDevice, IAsyncDisposable
 
   public override Task<AresStruct> GetSettings()
   {
-    throw new NotImplementedException();
+    return Task.FromResult(new AresStruct());
   }
 
   public override Task<AresStruct> GetState()
   {
-    throw new NotImplementedException();
+    return Task.FromResult(_stateSubject.Value);
   }
 
   public override Task UpdateSettings(AresStruct settings)
   {
-    return Task.FromResult(new AresStruct());
+    return Task.CompletedTask;
   }
 
   protected override Task<List<DeviceCommandDescriptor>> BuildCommandDescriptorsAsync()
@@ -124,9 +316,19 @@ public sealed class SilaDevice : AresDevice, IAsyncDisposable
     return Task.FromResult(_commands.ToList());
   }
 
-  public ValueTask DisposeAsync()
+  public async ValueTask DisposeAsync()
   {
-    return new ValueTask();
+    await _stateStreamCts.CancelAsync();
+    if(_monitoringTask is not null)
+    {
+      try
+      {
+        await _monitoringTask;
+      }
+      catch { }
+    }
+    _stateStreamCts.Dispose();
+    _stateSubject.Dispose();
   }
 
   private static DeviceCommandDescriptor BuildCommandDescriptor(Feature feature, FeatureCommand command)
@@ -138,6 +340,7 @@ public sealed class SilaDevice : AresDevice, IAsyncDisposable
       InputSchema = BuildStructSchema(command.Parameter),
       OutputSchema = BuildOutputSchema(command.Response)
     };
+  
   }
 
   private static DynamicRequest BuildRequest(
@@ -247,4 +450,6 @@ public sealed class SilaDevice : AresDevice, IAsyncDisposable
   }
 
   private IEnumerable<Feature> DeviceFeatures { get; set; } = [];
+
+  public string Address { get; set; } = "Unknown";
 }

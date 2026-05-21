@@ -11,7 +11,7 @@
   Name="@ViewModel!.Name" 
   DeviceOperationalStatusGetter="@ViewModel!.GetOperationalStatus">
   <div style="display: flex; flex-direction: column">
-    <span>Address: Who Knows</span>
+    <span>Address: @(ViewModel!.Address)</span>
     <span>Type: @(ViewModel.Device?.Type ?? string.Empty)</span>
     <span>Version: @(ViewModel.Device?.Version ?? string.Empty)</span>
     <span>@ViewModel.Description</span>
