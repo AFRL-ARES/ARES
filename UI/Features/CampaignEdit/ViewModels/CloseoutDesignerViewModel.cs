@@ -46,9 +46,9 @@ public partial class CloseoutDesignerViewModel : ReactiveObject
   {
     Name = existingTemplate.Name;
     CloseoutStepDesigners = existingTemplate.StepTemplates.Select(template => _stepDesignerFactory.Create(template)).OrderBy(model => model.Index).ToList();
-    if(existingTemplate.StepTemplates.Select(step => step.CommandTemplates.Select(cmd => cmd.UserOutputKeyMap)).Any())
+    if(existingTemplate.StepTemplates.SelectMany(step => step.CommandTemplates).Any(cmd => cmd.HasOutputVarName))
     {
-      var commandDesigners = CloseoutStepDesigners.SelectMany(model => model.CommandDesigners).Where(model => model.CommandTemplate.UserOutputKeyMap.Any());
+      var commandDesigners = CloseoutStepDesigners.SelectMany(model => model.CommandDesigners).Where(model => model.CommandTemplate.HasOutputVarName);
       foreach(var designer in commandDesigners)
       {
         designer.OutputProvider = true;

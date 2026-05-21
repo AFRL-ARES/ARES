@@ -72,7 +72,7 @@
     Parallel = existingTemplate.IsParallel;
     Index = Convert.ToInt32(existingTemplate.Index);
     CommandTemplates = existingTemplate.CommandTemplates.OrderBy(t => t.Index).ToList();
-    HasExperimentOutputs = CommandTemplates.Any(ct => ct.UserOutputKeyMap.Any());
+    HasExperimentOutputs = CommandTemplates.Any(ct => ct.HasOutputVarName);
   }
 }
 

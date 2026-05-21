@@ -91,13 +91,12 @@ internal class TestCampaignProvider
     var template = new CommandTemplate
     {
       Index = idx,
-      Metadata = metadata
+      Metadata = metadata,
+      OutputVarName = "TestExperimentOutput"
     };
 
     template.Parameters.AddRange(parameters);
     template.UniqueId = metadata.UniqueId;
-
-    template.UserOutputKeyMap["TestDeviceOutput"] = "TestExperimentOutput";
 
     return template;
   }

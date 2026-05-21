@@ -22,7 +22,7 @@ public static class ExperimentTemplateExtensions
   public static CommandTemplate[] GetAllOutputCommands(this ExperimentTemplate template)
     => template.StepTemplates
     .SelectMany(step => step.CommandTemplates)
-    .Where(command => command.UserOutputKeyMap.Any()).ToArray();
+    .Where(command => command.HasOutputVarName).ToArray();
 
   /// <summary>
   /// Gets all the parameters that need to be planned from a given <see cref="ExperimentTemplate" />

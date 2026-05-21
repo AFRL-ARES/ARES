@@ -47,9 +47,9 @@ public partial class StartupDesignerViewModel : ReactiveObject
   {
     Name = existingTemplate.Name;
     StartupStepDesigners = existingTemplate.StepTemplates.Select(template => _stepDesignerFactory.Create(template)).OrderBy(model => model.Index).ToList();
-    if(existingTemplate.StepTemplates.Select(step => step.CommandTemplates.Select(cmd => cmd.UserOutputKeyMap)).Any())
+    if(existingTemplate.StepTemplates.SelectMany(step => step.CommandTemplates).Any(cmd => cmd.HasOutputVarName))
     {
-      var commandDesigners = StartupStepDesigners.SelectMany(model => model.CommandDesigners).Where(model => model.CommandTemplate.UserOutputKeyMap.Any());
+      var commandDesigners = StartupStepDesigners.SelectMany(model => model.CommandDesigners).Where(model => model.CommandTemplate.HasOutputVarName);
       foreach(var designer in commandDesigners)
       {
         designer.OutputProvider = true;
