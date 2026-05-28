@@ -24,6 +24,18 @@ public static class CommandOutputVariableReferenceBuilder
     return Build(commandDesigner.OutputVariableName, outputSchema).ToArray();
   }
 
+  public static CommandOutputVariableReference[] Build(CommandTemplate commandTemplate)
+  {
+    if(!commandTemplate.HasOutputVarName)
+      return [];
+
+    var outputSchema = commandTemplate.Metadata?.OutputMetadata?.DataSchema;
+    if(outputSchema is null)
+      return [];
+
+    return Build(commandTemplate.OutputVarName, outputSchema).ToArray();
+  }
+
   public static CommandOutputVariableReference[] MarkCompatibility(
     IEnumerable<CommandOutputVariableReference> references,
     AresValueSchema parameterSchema)

@@ -161,6 +161,14 @@ public partial class CommandParameterDesignerViewModel : ReactiveObject
     AvailableVariableReferences = CommandOutputVariableReferenceBuilder.MarkCompatibility(references, Schema);
   }
 
+  public bool HasSelectedPlannedParameter()
+    => SelectedParameterSource != ParameterSource.Planned
+       || PlannedParameters.Any(metadata => metadata.UniqueId == SelectedPlannedParameterMetadataId);
+
+  public bool HasSelectedVariableReference()
+    => SelectedParameterSource != ParameterSource.Variable
+       || AvailableVariableReferences.Any(reference => reference.Path == SelectedVariableArgument && reference.Compatible);
+
   private ParameterSource DetermineParameterSource(Parameter parameter)
   {
     return parameter.GetParameterSource() == ParameterSource.Unspecified

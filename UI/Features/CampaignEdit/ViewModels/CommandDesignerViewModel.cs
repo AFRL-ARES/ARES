@@ -1,4 +1,5 @@
 ﻿using Ares.Datamodel;
+using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Templates;
 using Ares.Services.Device;
 using Ares.Core.Grpc.Services;
@@ -167,6 +168,24 @@ public partial class CommandDesignerViewModel : ReactiveObject
 
   public CommandOutputVariableReference[] GetOutputVariableReferences()
     => CommandOutputVariableReferenceBuilder.Build(this);
+
+  public string? GetParameterAssignmentError(Parameter parameter)
+  {
+    var argumentDesigner = ArgumentDesigners.FirstOrDefault(designer => designer.Name == parameter.Metadata?.Name);
+    if(argumentDesigner is null)
+      return "Parameter is no longer available for this command.";
+
+    return parameter.GetParameterSource() switch
+    {
+      ParameterSource.Planned when !argumentDesigner.HasSelectedPlannedParameter()
+        => "Planned parameter is no longer available.",
+
+      ParameterSource.Variable when !argumentDesigner.HasSelectedVariableReference()
+        => "Command output variable is no longer available.",
+
+      _ => null
+    };
+  }
 
   private void ApplyAvailableVariableReferences()
   {

@@ -32,7 +32,16 @@
       <div class="flex-grow-0">
         @foreach (var argument in CommandDesignerViewModel.Arguments)
         {
-          @if (argument.GetPlanningMetadata() is not null)
+          var assignmentError = CommandDesignerViewModel.GetParameterAssignmentError(argument);
+          @if (assignmentError is not null)
+          {
+            NotifyOfParameterError(assignmentError);
+            <div class="border border-2 border-danger rounded px-2 py-1 mx-2">
+              @assignmentError
+            </div>
+          }
+
+          else if (argument.GetPlanningMetadata() is not null)
           {
             <div class="border border-2 border-warning rounded px-2 py-1 mx-2">
               @ConvertToDisplayData(argument)
@@ -48,20 +57,9 @@
 
           else
           {
-            if(argument.GetValue() is null)
-            {
-              NotifyOfParameterError(argument);
-              <div class="border border-2 border-danger rounded px-2 py-1 mx-2">
-                Error! Parameter Deleted!
-              </div>
-            }
-
-            else
-            {
-              <div class="border border-2 rounded px-2 py-1 mx-2">
-                @ConvertToDisplayData(argument)
-              </div>
-            }
+            <div class="border border-2 rounded px-2 py-1 mx-2">
+              @ConvertToDisplayData(argument)
+            </div>
           }
         }
       </div>
@@ -80,10 +78,9 @@
   [Parameter]
   public CommandDesignerViewModel? CommandDesignerViewModel { get; set; }
 
-  public void NotifyOfParameterError(Parameter errorParam)
+  public void NotifyOfParameterError(string message)
   {
-    var message = $"A command utilizing the parameter {errorParam.Metadata.Name} needs attention, as this parameter has been deleted";
-    notificationService.Error(message, "Experiment Parameter Deleted");
+    notificationService.Error(message, "Experiment Parameter Assignment Error");
   }
 
   public object ConvertToDisplayData(Parameter argument)
@@ -92,7 +89,15 @@
     {
       return $"{argument.Metadata.Name}: {argument.GetPlanningMetadata()!.Name}";
     }
+    var varArg = argument.GetVariableArgument();
+    if(varArg is not null)
+    {
+      return $"Variable: {varArg}";
+    }
     var aresValue = argument.GetValue();
+    if(aresValue is null)
+      return $"{argument.Metadata.Name}: Unassigned";
+
     if(aresValue.HasNumberValue)
       return $"{argument.Metadata.Name}: {aresValue.NumberValue} {argument.Metadata.Unit}";
 
