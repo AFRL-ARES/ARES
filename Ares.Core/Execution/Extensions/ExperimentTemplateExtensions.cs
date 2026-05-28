@@ -1,4 +1,5 @@
-﻿using Ares.Datamodel.Templates;
+using Ares.Datamodel.Extensions;
+using Ares.Datamodel.Templates;
 
 namespace Ares.Core.Execution.Extensions;
 
@@ -30,7 +31,7 @@ public static class ExperimentTemplateExtensions
   /// <param name="template">The template to check for parameters</param>
   /// <returns>Collection of planned parameters</returns>
   public static IEnumerable<Parameter> GetAllPlannedParameters(this ExperimentTemplate template)
-    => template.GetAllParameters().Where(parameter => parameter.Planned);
+    => template.GetAllParameters().Where(parameter => parameter.IsPlanned());
 
   /// <summary>
   /// Checks whether or not every <see cref="Parameter" /> within an experiment has a value. If so then
@@ -39,7 +40,7 @@ public static class ExperimentTemplateExtensions
   /// <param name="template">The template to check if resolved</param>
   /// <returns>True if resolved, false otherwise</returns>
   public static bool IsResolved(this ExperimentTemplate template)
-    => template.GetAllParameters().All(parameter => parameter.Value is not null);
+    => template.GetAllParameters().All(parameter => parameter.GetValue() is not null);
 
   /// <summary>
   /// Checks whether or not every <see cref="Parameter" /> within an experiment has a value. If so then
@@ -54,7 +55,7 @@ public static class ExperimentTemplateExtensions
 
     foreach(var para in parameters)
     {
-      if(para.Value.StringValue == string.Empty)
+      if(para.GetValue()?.StringValue == string.Empty)
         resolved = false;
     }
 
@@ -84,7 +85,6 @@ public static class ExperimentTemplateExtensions
 
         foreach(var metadataParameterMetadata in commandTemplate.Metadata.ParameterMetadatas)
           metadataParameterMetadata.UniqueId = Guid.NewGuid().ToString();
-        
 
         foreach(var argument in commandTemplate.Parameters)
         {
@@ -110,8 +110,9 @@ public static class ExperimentTemplateExtensions
       {
         foreach(var param in cmd.Parameters)
         {
-          if(param.PlanningMetadata is not null)
-            param.PlanningMetadata.UniqueId = Guid.NewGuid().ToString();
+          var planningMetadata = param.GetPlanningMetadata();
+          if(planningMetadata is not null)
+            planningMetadata.UniqueId = Guid.NewGuid().ToString();
         }
       }
     }
@@ -131,7 +132,7 @@ public static class ExperimentTemplateExtensions
     {
       param.UniqueId = Guid.NewGuid().ToString();
       param.Metadata.UniqueId = Guid.NewGuid().ToString();
-      param.PlanningMetadata.UniqueId = Guid.NewGuid().ToString();
+      param.GetPlanningMetadata()!.UniqueId = Guid.NewGuid().ToString();
       parameters.Add(param);
     }
 

@@ -23,20 +23,21 @@ internal static class CommandVariableResolver
 
   public static string? ResolveParameters(IEnumerable<Parameter> parameters, IReadOnlyDictionary<string, AresValue> variableScope)
   {
-    foreach(var parameter in parameters.Where(parameter => parameter.ParameterSource == ParameterSource.Variable))
+    foreach(var parameter in parameters.Where(parameter => parameter.GetParameterSource() == ParameterSource.Variable))
     {
-      if(string.IsNullOrWhiteSpace(parameter.VariableArgument))
+      var variableArgument = parameter.GetVariableArgument();
+      if(string.IsNullOrWhiteSpace(variableArgument))
         return $"Parameter {parameter.Metadata.Name} is configured to use a command output variable, but no variable was selected.";
 
-      if(!variableScope.TryGetValue(parameter.VariableArgument, out var value))
-        return $"Parameter {parameter.Metadata.Name} references unavailable command output variable {parameter.VariableArgument}.";
+      if(!variableScope.TryGetValue(variableArgument, out var value))
+        return $"Parameter {parameter.Metadata.Name} references unavailable command output variable {variableArgument}.";
 
       var expectedType = parameter.Metadata.Schema?.Type ?? AresDataType.Any;
       var actualType = value.ToAresValueSchema().Type;
       if(!IsCompatible(expectedType, actualType))
-        return $"Parameter {parameter.Metadata.Name} expects {expectedType}, but variable {parameter.VariableArgument} is {actualType}.";
+        return $"Parameter {parameter.Metadata.Name} expects {expectedType}, but variable {variableArgument} is {actualType}.";
 
-      parameter.Value = value.Clone();
+      parameter.SetResolvedValue(value.Clone());
     }
 
     return null;

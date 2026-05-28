@@ -98,8 +98,7 @@ internal class CommandVariableResolutionTests
     template.Parameters.Add(new Parameter
     {
       UniqueId = Guid.NewGuid().ToString(),
-      ParameterSource = ParameterSource.Variable,
-      VariableArgument = variableArgument,
+      CommandVariableSource = new CommandVariableParameterSource { VariableArgument = variableArgument },
       Metadata = new ParameterMetadata
       {
         Name = "input",
@@ -137,7 +136,7 @@ internal class CommandVariableResolutionTests
       return Task.FromResult(new CommandResult
       {
         Success = true,
-        Result = new AresValue { NumberValue = 101 }
+        Result = new AresValue { NumberValue = 42 }
       });
     }
 

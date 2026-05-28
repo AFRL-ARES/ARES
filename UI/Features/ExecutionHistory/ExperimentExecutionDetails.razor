@@ -191,17 +191,17 @@
 
                       <RadzenTreeItem Text="Parameters">
                         <ChildContent>
-                          @foreach(var param in exp.ExperimentOverview.Parameters.Where(p => p.PlanningMetadata is not null))
+                          @foreach(var param in exp.ExperimentOverview.Parameters.Where(p => p.GetPlanningMetadata() is not null))
                           {
-                            <RadzenTreeItem Text="@param.PlanningMetadata.Name">
+                            <RadzenTreeItem Text="@param.GetPlanningMetadata()!.Name">
                               <ChildContent>
                                 <RadzenTreeItem Text=@($"Parameter Id: {param.UniqueId}") />
                                 <RadzenTreeItem Text=@($"Unit: {param.Metadata.Unit}") />
-                                <RadzenTreeItem Text=@(CreateAresValueDisplayString(param.Value)) />
-                                <RadzenTreeItem Text=@($"Is Environment Based: {param.EnvironmentBased}") />
-                                <RadzenTreeItem Text=@(GetLowerParameterConstraint(param.PlanningMetadata.Constraints.ToList())) />
-                                <RadzenTreeItem Text=@(GetHigherParameterConstraint(param.PlanningMetadata.Constraints.ToList())) />
-                                <RadzenTreeItem Text=@($"Default Value Used: {param.PlanningMetadata.UseDefault}") />
+                                <RadzenTreeItem Text=@(CreateAresValueDisplayString(param.GetValue())) />
+                                <RadzenTreeItem Text=@($"Is Environment Based: {param.IsEnvironmentBased()}") />
+                                <RadzenTreeItem Text=@(GetLowerParameterConstraint(param.GetPlanningMetadata()!.Constraints.ToList())) />
+                                <RadzenTreeItem Text=@(GetHigherParameterConstraint(param.GetPlanningMetadata()!.Constraints.ToList())) />
+                                <RadzenTreeItem Text=@($"Default Value Used: {param.GetPlanningMetadata()!.UseDefault}") />
                               </ChildContent>
                             </RadzenTreeItem>
                           }
@@ -249,7 +249,7 @@
     return CreateAresValueDisplayString(commandResult.Result);
   }
 
-  private string CreateAresValueDisplayString(AresValue value)
+  private string CreateAresValueDisplayString(AresValue? value)
   {
     if(value is null)
       return "No Value";

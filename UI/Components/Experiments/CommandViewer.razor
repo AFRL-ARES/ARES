@@ -1,4 +1,5 @@
 ﻿@using Ares.Core.Device.Providers
+@using Ares.Datamodel.Extensions
 @using Ares.Datamodel.Templates
 @using Ares.Services.Device
 
@@ -21,22 +22,22 @@
           }
           @foreach (var argument in CommandTemplate.Parameters)
             {
-                @if (argument.PlanningMetadata is not null)
+                @if (argument.GetPlanningMetadata() is not null)
                 {
                   <div class="border border-2 border-warning rounded px-2 py-1 mx-2">
                       @TryUnpackDisplayData(argument)
                   </div>
                 }
 
-                else if(argument.VariableType > 0)
+                else if(argument.GetVariableType() > 0)
                 {
                   <div class="border border-2 border-secondary rounded px-2 py-1 mx-2">
-                    @argument.VariableType.ToString()
+                    @argument.GetVariableType().ToString()
                   </div>
                 }
                 else
                 {
-                  if (argument.Value is null)
+                  if (argument.GetValue() is null)
                   {
                     <div class="border border-2 border-danger rounded px-2 py-1 mx-2">
                       Error! Parameter Deleted!
@@ -66,11 +67,11 @@
 
   public object TryUnpackDisplayData(Parameter argument)
   {
-    if(argument.PlanningMetadata is not null)
+    if(argument.GetPlanningMetadata() is not null)
     {
-      return $"{argument.Metadata.Name}: {argument.PlanningMetadata.Name}";
+      return $"{argument.Metadata.Name}: {argument.GetPlanningMetadata()!.Name}";
     }
-    var aresValue = argument.Value;
+    var aresValue = argument.GetValue();
     if(aresValue.HasNumberValue)
       return $"{argument.Metadata.Name}: {aresValue.NumberValue} {argument.Metadata.Unit}";
 

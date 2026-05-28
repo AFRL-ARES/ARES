@@ -1,4 +1,5 @@
 using Ares.Datamodel;
+using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Templates;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
@@ -21,7 +22,7 @@ public partial class CommandParameterDesignerViewModel : ReactiveObject
     : this(unitCategoryHelper, plannedParameters)
   {
     Parameter = param;
-    SelectedVariableType = param.VariableType;
+    SelectedVariableType = param.GetVariableType();
   }
 
   public CommandParameterDesignerViewModel(ParameterMetadata meta, UnitCategoryHelper unitCategoryHelper, IEnumerable<ParameterMetadata>? plannedParameters = null)
@@ -102,7 +103,7 @@ public partial class CommandParameterDesignerViewModel : ReactiveObject
     set
     {
       this.RaiseAndSetIfChanged(ref _selectedParameterSource, value);
-      Value = value == ParameterSource.Value ? Parameter.Value ?? new AresValue() : null;
+      Value = value == ParameterSource.Value ? Parameter.GetValue() ?? new AresValue() : null;
     }
   }
 
@@ -146,13 +147,13 @@ public partial class CommandParameterDesignerViewModel : ReactiveObject
 
   private void Init(Parameter existingParameter)
   {
-    Value = existingParameter.Value;
+    Value = existingParameter.GetValue();
     SelectedParameterSource = DetermineParameterSource(existingParameter);
-    SelectedPlannedParameterMetadataId = existingParameter.PlanningMetadata?.UniqueId;
-    SelectedVariableArgument = DetermineParameterSource(existingParameter) == ParameterSource.Variable ? existingParameter.VariableArgument : null;
-    SelectedVariableType = existingParameter.VariableType == VariableType.VarUnspecified ? null : existingParameter.VariableType;
+    SelectedPlannedParameterMetadataId = existingParameter.GetPlanningMetadata()?.UniqueId;
+    SelectedVariableArgument = DetermineParameterSource(existingParameter) == ParameterSource.Variable ? existingParameter.GetVariableArgument() : null;
+    SelectedVariableType = existingParameter.GetVariableType() == VariableType.VarUnspecified ? null : existingParameter.GetVariableType();
     PlannedParameters = FilterParameterMetadata(_unitCategoryHelper, _plannedParameters);
-    PastExperimentNumber = DeterminePastExperimentNumber(existingParameter.VariableArgument);
+    PastExperimentNumber = DeterminePastExperimentNumber(existingParameter.GetVariableArgument());
   }
 
   public void SetAvailableVariableReferences(IEnumerable<CommandOutputVariableReference> references)
@@ -162,19 +163,9 @@ public partial class CommandParameterDesignerViewModel : ReactiveObject
 
   private ParameterSource DetermineParameterSource(Parameter parameter)
   {
-    if(parameter.ParameterSource != ParameterSource.Unspecified)
-      return parameter.ParameterSource;
-
-    if(parameter.Planned)
-      return ParameterSource.Planned;
-
-    if(parameter.EnvironmentBased)
-      return ParameterSource.Environment;
-
-    if(!string.IsNullOrWhiteSpace(parameter.VariableArgument) && parameter.VariableType == VariableType.VarUnspecified)
-      return ParameterSource.Variable;
-
-    return ParameterSource.Value;
+    return parameter.GetParameterSource() == ParameterSource.Unspecified
+      ? ParameterSource.Value
+      : parameter.GetParameterSource();
   }
 
   private int DeterminePastExperimentNumber(string arg)
@@ -189,34 +180,24 @@ public partial class CommandParameterDesignerViewModel : ReactiveObject
 
   public Parameter Save()
   {
-    Parameter.ParameterSource = SelectedParameterSource;
-    Parameter.Value = SelectedParameterSource switch
-    {
-      ParameterSource.Planned => null,
-      ParameterSource.Value => Value,
-      _ => new AresValue()
-    };
-    Parameter.Planned = false;
-    Parameter.EnvironmentBased = false;
-    Parameter.VariableArgument = "";
-    Parameter.VariableType = VariableType.VarUnspecified;
-    Parameter.PlanningMetadata = null;
-
     switch(SelectedParameterSource)
     {
       case ParameterSource.Planned:
-        Parameter.Planned = true;
-        Parameter.PlanningMetadata = PlannedParameters.FirstOrDefault(metadata => metadata.UniqueId == SelectedPlannedParameterMetadataId);
+        Parameter.SetPlannedSource(PlannedParameters.FirstOrDefault(metadata => metadata.UniqueId == SelectedPlannedParameterMetadataId));
         break;
 
       case ParameterSource.Environment:
-        Parameter.EnvironmentBased = true;
-        Parameter.VariableType = SelectedVariableType ?? VariableType.VarUnspecified;
-        Parameter.VariableArgument = Parameter.VariableType == VariableType.PreviousExperimentPath ? PastExperimentNumber.ToString() : "";
+        var variableType = SelectedVariableType ?? VariableType.VarUnspecified;
+        var variableArgument = variableType == VariableType.PreviousExperimentPath ? PastExperimentNumber.ToString() : "";
+        Parameter.SetEnvironmentSource(variableType, variableArgument);
         break;
 
       case ParameterSource.Variable:
-        Parameter.VariableArgument = SelectedVariableArgument ?? "";
+        Parameter.SetCommandVariableSource(SelectedVariableArgument ?? "");
+        break;
+
+      default:
+        Parameter.SetLiteralSource(Value);
         break;
     }
 

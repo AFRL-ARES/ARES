@@ -44,9 +44,8 @@ internal class TestCampaignProvider
   {
     var parameter = new Parameter();
     parameter.Index = idx;
-    parameter.Planned = false;
     parameter.UniqueId = Guid.NewGuid().ToString();
-    parameter.Value = AresValueHelper.CreateString(value);
+    parameter.SetLiteralSource(AresValueHelper.CreateString(value));
 
     parameter.Metadata = new ParameterMetadata
     {
