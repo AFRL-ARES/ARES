@@ -385,6 +385,9 @@ namespace AresService.Migrations.Sqlite.Migrations
                     b.Property<string>("TemplateId")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("VarName")
+                        .HasColumnType("TEXT");
+
                     b.HasKey("UniqueId");
 
                     b.HasIndex("StepExecutionSummaryUniqueId");
@@ -1262,6 +1265,9 @@ namespace AresService.Migrations.Sqlite.Migrations
                         .HasColumnType("TEXT")
                         .HasDefaultValueSql("DATETIME('now')");
 
+                    b.Property<string>("OutputVarName")
+                        .HasColumnType("TEXT");
+
                     b.Property<Guid>("StepTemplateUniqueId")
                         .HasColumnType("TEXT");
 
@@ -1364,9 +1370,6 @@ namespace AresService.Migrations.Sqlite.Migrations
                         .HasColumnType("TEXT")
                         .HasDefaultValueSql("DATETIME('now')");
 
-                    b.Property<bool>("EnvironmentBased")
-                        .HasColumnType("INTEGER");
-
                     b.Property<Guid?>("ExperimentOverviewUniqueId")
                         .HasColumnType("TEXT");
 
@@ -1378,28 +1381,15 @@ namespace AresService.Migrations.Sqlite.Migrations
                         .HasColumnType("TEXT")
                         .HasDefaultValueSql("DATETIME('now')");
 
-                    b.Property<bool>("Planned")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<Guid?>("PlanningMetadataUniqueId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Value")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("VariableArgument")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("VariableType")
-                        .HasColumnType("INTEGER");
+                    b.Property<string>("SourcePersistence")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("Source");
 
                     b.HasKey("UniqueId");
 
                     b.HasIndex("CommandTemplateUniqueId");
 
                     b.HasIndex("ExperimentOverviewUniqueId");
-
-                    b.HasIndex("PlanningMetadataUniqueId");
 
                     b.ToTable("Parameters", (string)null);
                 });
@@ -1855,12 +1845,6 @@ namespace AresService.Migrations.Sqlite.Migrations
                     b.HasOne("Ares.Datamodel.ExperimentOverview", null)
                         .WithMany("Parameters")
                         .HasForeignKey("ExperimentOverviewUniqueId");
-
-                    b.HasOne("Ares.Datamodel.Templates.ParameterMetadata", "PlanningMetadata")
-                        .WithMany()
-                        .HasForeignKey("PlanningMetadataUniqueId");
-
-                    b.Navigation("PlanningMetadata");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Templates.ParameterMetadata", b =>

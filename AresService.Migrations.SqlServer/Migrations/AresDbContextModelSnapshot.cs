@@ -391,6 +391,9 @@ namespace AresService.Migrations.SqlServer.Migrations
                     b.Property<string>("TemplateId")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("VarName")
+                        .HasColumnType("nvarchar(max)");
+
                     b.HasKey("UniqueId");
 
                     b.HasIndex("StepExecutionSummaryUniqueId");
@@ -1275,6 +1278,9 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
 
+                    b.Property<string>("OutputVarName")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<Guid>("StepTemplateUniqueId")
                         .HasColumnType("uniqueidentifier");
 
@@ -1380,9 +1386,6 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
 
-                    b.Property<bool>("EnvironmentBased")
-                        .HasColumnType("bit");
-
                     b.Property<Guid?>("ExperimentOverviewUniqueId")
                         .HasColumnType("uniqueidentifier");
 
@@ -1394,28 +1397,15 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
 
-                    b.Property<bool>("Planned")
-                        .HasColumnType("bit");
-
-                    b.Property<Guid?>("PlanningMetadataUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Value")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("VariableArgument")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("VariableType")
-                        .HasColumnType("int");
+                    b.Property<string>("SourcePersistence")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("Source");
 
                     b.HasKey("UniqueId");
 
                     b.HasIndex("CommandTemplateUniqueId");
 
                     b.HasIndex("ExperimentOverviewUniqueId");
-
-                    b.HasIndex("PlanningMetadataUniqueId");
 
                     b.ToTable("Parameters", (string)null);
                 });
@@ -1872,12 +1862,6 @@ namespace AresService.Migrations.SqlServer.Migrations
                     b.HasOne("Ares.Datamodel.ExperimentOverview", null)
                         .WithMany("Parameters")
                         .HasForeignKey("ExperimentOverviewUniqueId");
-
-                    b.HasOne("Ares.Datamodel.Templates.ParameterMetadata", "PlanningMetadata")
-                        .WithMany()
-                        .HasForeignKey("PlanningMetadataUniqueId");
-
-                    b.Navigation("PlanningMetadata");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Templates.ParameterMetadata", b =>
