@@ -15,6 +15,7 @@ public partial class CommandDesignerViewModel : ReactiveObject
   private readonly DevicesService _devicesClient;
   private CommandMetadata? _commandMetadata;
   private CommandTemplate _commandTemplate = null!;
+  private CommandOutputVariableReference[] _availableVariableReferences = [];
 
   public CommandDesignerViewModel(
     CommandTemplate existingTemplate,
@@ -113,6 +114,7 @@ public partial class CommandDesignerViewModel : ReactiveObject
     Index = Convert.ToInt32(existingTemplate.Index);
     var existingParamDesigners = existingTemplate.Parameters.Select(_commandParameterDesignerFactory.Create).ToArray();
     ArgumentDesigners = [.. existingParamDesigners];
+    ApplyAvailableVariableReferences();
     MetadataPickerViewModel = _metadataPickerFactory.Create(existingTemplate.Metadata);
 
     OutputProvider = existingTemplate.HasOutputVarName;
@@ -141,6 +143,7 @@ public partial class CommandDesignerViewModel : ReactiveObject
         .ToArray() ?? [];
 
     ArgumentDesigners = newArgumentDesigners;
+    ApplyAvailableVariableReferences();
     if(existingMetadata?.OutputMetadata?.DataSchema is null)
     {
       OutputProvider = false;
@@ -154,5 +157,20 @@ public partial class CommandDesignerViewModel : ReactiveObject
       var deviceInfo = await _devicesClient.GetDeviceInfo(new DeviceInfoRequest { DeviceId = deviceId }, null);
       MetadataDeviceName = string.IsNullOrEmpty(deviceInfo.Name) ? null : deviceInfo.Name;
     }
+  }
+
+  public void SetAvailableVariableReferences(IEnumerable<CommandOutputVariableReference> references)
+  {
+    _availableVariableReferences = references.ToArray();
+    ApplyAvailableVariableReferences();
+  }
+
+  public CommandOutputVariableReference[] GetOutputVariableReferences()
+    => CommandOutputVariableReferenceBuilder.Build(this);
+
+  private void ApplyAvailableVariableReferences()
+  {
+    foreach(var argumentDesigner in ArgumentDesigners)
+      argumentDesigner.SetAvailableVariableReferences(_availableVariableReferences);
   }
 }

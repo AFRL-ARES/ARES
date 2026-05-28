@@ -69,9 +69,17 @@
     [Parameter]
     public bool IsCloseout { get; set; }
 
+    [Parameter]
+    public IEnumerable<CommandOutputVariableReference> PriorVariableReferences { get; set; } = [];
+
     public bool CommandsExpanded { get; set; }
 
     private bool ContainsExperimentOutput => ViewModel!.CommandDesigners.Any(cmd => cmd.TemplateOutputProvider);
+
+    protected override void OnParametersSet()
+    {
+        ViewModel!.SetPriorVariableReferences(PriorVariableReferences);
+    }
 
     private async void AddCommandClick()
     {
@@ -88,6 +96,7 @@
         if (result ?? false)
         {
             commandDesigner.Save();
+            ViewModel!.RefreshAvailableVariableReferences();
         }
         else
         {
@@ -131,6 +140,7 @@
         if (result ?? false)
         {
             commandDesigner.Save();
+            ViewModel!.RefreshAvailableVariableReferences();
         }
     }
 

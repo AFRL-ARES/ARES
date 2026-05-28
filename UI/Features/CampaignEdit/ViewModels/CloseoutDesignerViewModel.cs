@@ -56,6 +56,8 @@ public partial class CloseoutDesignerViewModel : ReactiveObject
 
       ExperimentOutputProviderCommand = commandDesigners.Select(designer => designer.CommandTemplate);
     }
+
+    RefreshVariableReferences();
   }
 
   public ExperimentTemplate Save()
@@ -66,6 +68,7 @@ public partial class CloseoutDesignerViewModel : ReactiveObject
       return CloseoutTemplate;
     }
 
+    RefreshVariableReferences();
     CloseoutTemplate.Name = Name;
     CloseoutTemplate.StepTemplates.Clear();
     CloseoutTemplate.StepTemplates.AddRange(CloseoutStepDesigners.Select(designer => designer.Save()));
@@ -80,6 +83,7 @@ public partial class CloseoutDesignerViewModel : ReactiveObject
     CloseoutStepDesigners.RemoveAt(vm.Index);
     CloseoutStepDesigners.Insert(vm.Index - 1, vm);
     ReindexCloseoutSteps();
+    RefreshVariableReferences();
   }
 
   public void MoveCloseoutStepDown(StepDesignerViewModel vm)
@@ -90,6 +94,7 @@ public partial class CloseoutDesignerViewModel : ReactiveObject
     CloseoutStepDesigners.RemoveAt(vm.Index);
     CloseoutStepDesigners.Insert(vm.Index + 1, vm);
     ReindexCloseoutSteps();
+    RefreshVariableReferences();
   }
 
   public StepDesignerViewModel AddCloseoutStep()
@@ -97,6 +102,7 @@ public partial class CloseoutDesignerViewModel : ReactiveObject
     var stepDesigner = _stepDesignerFactory.Create();
     stepDesigner.Index = CloseoutStepDesigners.Count;
     CloseoutStepDesigners.Add(stepDesigner);
+    RefreshVariableReferences();
     return stepDesigner;
   }
 
@@ -106,6 +112,7 @@ public partial class CloseoutDesignerViewModel : ReactiveObject
     {
       CloseoutStepDesigners.Remove(vm);
       ReindexCloseoutSteps();
+      RefreshVariableReferences();
     }
   }
 
@@ -134,4 +141,24 @@ public partial class CloseoutDesignerViewModel : ReactiveObject
   public partial string Name { get; set; }
   public IList<StepDesignerViewModel> CloseoutStepDesigners { get; private set; } = [];
   public IEnumerable<CommandTemplate>? ExperimentOutputProviderCommand { get; set; }
+
+  public CommandOutputVariableReference[] GetPriorVariableReferences(StepDesignerViewModel stepDesigner)
+  {
+    var priorReferences = new List<CommandOutputVariableReference>();
+    foreach(var currentStep in CloseoutStepDesigners.OrderBy(step => step.Index))
+    {
+      if(currentStep == stepDesigner)
+        return priorReferences.ToArray();
+
+      priorReferences.AddRange(currentStep.GetOutputVariableReferences());
+    }
+
+    return priorReferences.ToArray();
+  }
+
+  public void RefreshVariableReferences()
+  {
+    foreach(var stepDesigner in CloseoutStepDesigners.OrderBy(step => step.Index))
+      stepDesigner.SetPriorVariableReferences(GetPriorVariableReferences(stepDesigner));
+  }
 }

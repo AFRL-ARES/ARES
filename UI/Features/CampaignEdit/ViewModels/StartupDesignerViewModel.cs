@@ -57,6 +57,8 @@ public partial class StartupDesignerViewModel : ReactiveObject
 
       ExperimentOutputProviderCommand = commandDesigners.Select(designer => designer.CommandTemplate);
     }
+
+    RefreshVariableReferences();
   }
 
   public ExperimentTemplate Save()
@@ -67,6 +69,7 @@ public partial class StartupDesignerViewModel : ReactiveObject
       return StartupTemplate;
     }
 
+    RefreshVariableReferences();
     StartupTemplate.Name = Name;
     StartupTemplate.StepTemplates.Clear();
     StartupTemplate.StepTemplates.AddRange(StartupStepDesigners.Select(designer => designer.Save()));
@@ -78,6 +81,7 @@ public partial class StartupDesignerViewModel : ReactiveObject
     var stepDesigner = _stepDesignerFactory.Create();
     stepDesigner.Index = StartupStepDesigners.Count;
     StartupStepDesigners.Add(stepDesigner);
+    RefreshVariableReferences();
     return stepDesigner;
   }
 
@@ -87,6 +91,7 @@ public partial class StartupDesignerViewModel : ReactiveObject
     {
       StartupStepDesigners.Remove(vm);
       ReindexStartupSteps();
+      RefreshVariableReferences();
     }
   }
 
@@ -98,6 +103,7 @@ public partial class StartupDesignerViewModel : ReactiveObject
     StartupStepDesigners.RemoveAt(vm.Index);
     StartupStepDesigners.Insert(vm.Index - 1, vm);
     ReindexStartupSteps();
+    RefreshVariableReferences();
   }
 
   public void MoveStartupStepDown(StepDesignerViewModel vm)
@@ -108,6 +114,7 @@ public partial class StartupDesignerViewModel : ReactiveObject
     StartupStepDesigners.RemoveAt(vm.Index);
     StartupStepDesigners.Insert(vm.Index + 1, vm);
     ReindexStartupSteps();
+    RefreshVariableReferences();
   }
 
   private void ReindexStartupSteps()
@@ -137,4 +144,24 @@ public partial class StartupDesignerViewModel : ReactiveObject
   public IList<StepDesignerViewModel> StartupStepDesigners { get; private set; } = [];
 
   public IEnumerable<CommandTemplate>? ExperimentOutputProviderCommand { get; set; }
+
+  public CommandOutputVariableReference[] GetPriorVariableReferences(StepDesignerViewModel stepDesigner)
+  {
+    var priorReferences = new List<CommandOutputVariableReference>();
+    foreach(var currentStep in StartupStepDesigners.OrderBy(step => step.Index))
+    {
+      if(currentStep == stepDesigner)
+        return priorReferences.ToArray();
+
+      priorReferences.AddRange(currentStep.GetOutputVariableReferences());
+    }
+
+    return priorReferences.ToArray();
+  }
+
+  public void RefreshVariableReferences()
+  {
+    foreach(var stepDesigner in StartupStepDesigners.OrderBy(step => step.Index))
+      stepDesigner.SetPriorVariableReferences(GetPriorVariableReferences(stepDesigner));
+  }
 }

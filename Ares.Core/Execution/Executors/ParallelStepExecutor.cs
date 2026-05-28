@@ -11,9 +11,12 @@ public class ParallelStepExecutor : StepExecutor
   }
 
   public override async Task<StepExecutionSummary> Execute(ExecutionControlToken token)
+    => await Execute(token, new Dictionary<string, AresValue>());
+
+  public override async Task<StepExecutionSummary> Execute(ExecutionControlToken token, IReadOnlyDictionary<string, AresValue> variableScope)
   {
     var startTime = DateTime.UtcNow;
-    var commandTasks = CommandExecutors.Select(command => command.Execute(token));
+    var commandTasks = CommandExecutors.Select(command => command.Execute(token, variableScope));
     var commandSummaries = await Task.WhenAll(commandTasks);
 
     return ExecutorSummaryHelpers.CreateStepExecutionSummary(startTime, DateTime.UtcNow, commandSummaries);

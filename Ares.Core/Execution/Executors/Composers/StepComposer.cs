@@ -35,11 +35,11 @@ public class StepComposer : ICommandComposer<StepTemplate, StepExecutor>
 
             if(device is not null && commandTemplate.Metadata is not null)
             {
-              var commandArgs = new List<DeviceCommandArgument>();
-              commandArgs.AddRange(commandTemplate.Parameters.Select(p => new DeviceCommandArgument() { ArgName = p.Metadata.Name, ArgValue = p.Value }));
-
               Func<CancellationToken, Task<CommandResult>> internalAction = async (ct)
-                => await device.ExecuteCommand(commandTemplate.Metadata.Name, commandArgs, ct);
+                => await device.ExecuteCommand(
+                  commandTemplate.Metadata.Name,
+                  commandTemplate.Parameters.Select(p => new DeviceCommandArgument() { ArgName = p.Metadata.Name, ArgValue = p.Value }).ToList(),
+                  ct);
 
               return new CommandExecutor(internalAction, commandTemplate, _notifier);
             }
