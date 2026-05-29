@@ -26,7 +26,6 @@ using UI.Features.CampaignEdit.ViewModels;
 using UI.Features.Devices;
 using UI.Features.Devices.Plugin;
 using UI.Features.Devices.Remote.Factory;
-using UI.Features.DeviceStateExport;
 using UI.Features.DeviceStateLogging;
 using UI.Features.DeviceStateLogging.Settings;
 using UI.Features.Notifications;
@@ -41,7 +40,6 @@ using UI.Infrastructure.Monaco.Interops;
 using UI.Infrastructure.Notifications;
 using UI.Infrastructure.Startup;
 using CampaignDesignerViewModel = UI.Features.CampaignEdit.ViewModels.CampaignDesignerViewModel;
-using DeviceStatesViewModel = UI.Features.DeviceStateExport.DeviceStatesViewModel;
 using ExperimentExecutionDetailsViewModel = UI.Features.ExecutionHistory.ExperimentExecutionDetailsViewModel;
 using ExecutionHistoryViewModel = UI.Features.ExecutionHistory.ExecutionHistoryViewModel;
 using ExecutionViewModel = UI.Features.Execution.ExecutionViewModel;
@@ -117,16 +115,12 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<VisualizationSidebarViewModel>();
 
     //Device Settings List View Models
-    services.AddTransient<DeviceStatesViewModel>();
-    services.AddTransient<DeviceStateExporterViewModel>();
     services.AddTransient<AnalyzerSettingsListViewModel>();
     services.AddTransient<PlannerSettingsListViewModel>();
     services.AddTransient<RemoteDeviceSettingsListViewModel>();
     services.AddTransient<PluginDeviceSettingsListViewModel>();
 
     //Other View Models
-    services.AddTransient<DeviceStatesViewModel>();
-    services.AddTransient<DeviceStateExporterViewModel>();
     services.AddScoped<ManualPlannerViewModel>();
     services.AddScoped<ManualDeviceLoggerWidgetViewModel>();
     services.AddScoped<LoggingSettingsListViewModel>();
@@ -144,7 +138,6 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<StepDesignerFactory>();
     services.AddScoped<PlanningDesignerFactory>();
     services.AddScoped<AnalyzerInputDesignerVmFactory>();
-    services.AddScoped<DeviceStateFilterViewModelFactory>();
     services.AddSingleton<IAresDeviceViewModelFactory,  AresDeviceViewModelFactory>();
     services.AddSingleton<IRemoteDeviceControlViewModelFactory, RemoteDeviceControlViewModelFactory>();
   }
