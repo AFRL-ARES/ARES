@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace AresService.Migrations.Postgres.Migrations.AresDb
+namespace AresService.Migrations.Sqlite.Migrations.AresDb
 {
     /// <inheritdoc />
     public partial class CommandVariableSupport_AresDbContext : Migration
@@ -36,29 +36,38 @@ namespace AresService.Migrations.Postgres.Migrations.AresDb
                 table: "Parameters");
 
             migrationBuilder.DropColumn(
-                name: "VariableArgument",
-                table: "Parameters");
-
-            migrationBuilder.DropColumn(
                 name: "VariableType",
                 table: "Parameters");
 
-            migrationBuilder.AddColumn<string>(
-                name: "Source",
+            migrationBuilder.RenameColumn(
+                name: "VariableArgument",
                 table: "Parameters",
-                type: "jsonb",
-                nullable: true);
+                newName: "Source");
+
+            migrationBuilder.AddColumn<int>(
+                name: "StatusCode",
+                table: "DeviceCommandResults",
+                type: "INTEGER",
+                nullable: false,
+                defaultValue: 0);
 
             migrationBuilder.AddColumn<string>(
                 name: "OutputVarName",
                 table: "CommandTemplates",
-                type: "text",
+                type: "TEXT",
                 nullable: true);
+
+            migrationBuilder.AddColumn<int>(
+                name: "StatusCode",
+                table: "CommandExecutionSummaries",
+                type: "INTEGER",
+                nullable: false,
+                defaultValue: 0);
 
             migrationBuilder.AddColumn<string>(
                 name: "VarName",
                 table: "CommandExecutionSummaries",
-                type: "text",
+                type: "TEXT",
                 nullable: true);
         }
 
@@ -66,53 +75,56 @@ namespace AresService.Migrations.Postgres.Migrations.AresDb
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "Source",
-                table: "Parameters");
+                name: "StatusCode",
+                table: "DeviceCommandResults");
 
             migrationBuilder.DropColumn(
                 name: "OutputVarName",
                 table: "CommandTemplates");
 
             migrationBuilder.DropColumn(
+                name: "StatusCode",
+                table: "CommandExecutionSummaries");
+
+            migrationBuilder.DropColumn(
                 name: "VarName",
                 table: "CommandExecutionSummaries");
+
+            migrationBuilder.RenameColumn(
+                name: "Source",
+                table: "Parameters",
+                newName: "VariableArgument");
 
             migrationBuilder.AddColumn<bool>(
                 name: "EnvironmentBased",
                 table: "Parameters",
-                type: "boolean",
+                type: "INTEGER",
                 nullable: false,
                 defaultValue: false);
 
             migrationBuilder.AddColumn<bool>(
                 name: "Planned",
                 table: "Parameters",
-                type: "boolean",
+                type: "INTEGER",
                 nullable: false,
                 defaultValue: false);
 
             migrationBuilder.AddColumn<Guid>(
                 name: "PlanningMetadataUniqueId",
                 table: "Parameters",
-                type: "uuid",
+                type: "TEXT",
                 nullable: true);
 
             migrationBuilder.AddColumn<string>(
                 name: "Value",
                 table: "Parameters",
-                type: "text",
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "VariableArgument",
-                table: "Parameters",
-                type: "text",
+                type: "TEXT",
                 nullable: true);
 
             migrationBuilder.AddColumn<int>(
                 name: "VariableType",
                 table: "Parameters",
-                type: "integer",
+                type: "INTEGER",
                 nullable: false,
                 defaultValue: 0);
 

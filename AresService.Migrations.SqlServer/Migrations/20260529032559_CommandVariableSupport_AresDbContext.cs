@@ -44,11 +44,25 @@ namespace AresService.Migrations.SqlServer.Migrations.AresDb
                 table: "Parameters",
                 newName: "Source");
 
+            migrationBuilder.AddColumn<int>(
+                name: "StatusCode",
+                table: "DeviceCommandResults",
+                type: "int",
+                nullable: false,
+                defaultValue: 0);
+
             migrationBuilder.AddColumn<string>(
                 name: "OutputVarName",
                 table: "CommandTemplates",
                 type: "nvarchar(max)",
                 nullable: true);
+
+            migrationBuilder.AddColumn<int>(
+                name: "StatusCode",
+                table: "CommandExecutionSummaries",
+                type: "int",
+                nullable: false,
+                defaultValue: 0);
 
             migrationBuilder.AddColumn<string>(
                 name: "VarName",
@@ -61,8 +75,16 @@ namespace AresService.Migrations.SqlServer.Migrations.AresDb
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
+                name: "StatusCode",
+                table: "DeviceCommandResults");
+
+            migrationBuilder.DropColumn(
                 name: "OutputVarName",
                 table: "CommandTemplates");
+
+            migrationBuilder.DropColumn(
+                name: "StatusCode",
+                table: "CommandExecutionSummaries");
 
             migrationBuilder.DropColumn(
                 name: "VarName",

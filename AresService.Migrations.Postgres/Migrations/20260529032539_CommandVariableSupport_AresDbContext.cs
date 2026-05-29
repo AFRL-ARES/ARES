@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace AresService.Migrations.Sqlite.Migrations.AresDb
+namespace AresService.Migrations.Postgres.Migrations.AresDb
 {
     /// <inheritdoc />
     public partial class CommandVariableSupport_AresDbContext : Migration
@@ -36,24 +36,43 @@ namespace AresService.Migrations.Sqlite.Migrations.AresDb
                 table: "Parameters");
 
             migrationBuilder.DropColumn(
+                name: "VariableArgument",
+                table: "Parameters");
+
+            migrationBuilder.DropColumn(
                 name: "VariableType",
                 table: "Parameters");
 
-            migrationBuilder.RenameColumn(
-                name: "VariableArgument",
+            migrationBuilder.AddColumn<string>(
+                name: "Source",
                 table: "Parameters",
-                newName: "Source");
+                type: "jsonb",
+                nullable: true);
+
+            migrationBuilder.AddColumn<int>(
+                name: "StatusCode",
+                table: "DeviceCommandResults",
+                type: "integer",
+                nullable: false,
+                defaultValue: 0);
 
             migrationBuilder.AddColumn<string>(
                 name: "OutputVarName",
                 table: "CommandTemplates",
-                type: "TEXT",
+                type: "text",
                 nullable: true);
+
+            migrationBuilder.AddColumn<int>(
+                name: "StatusCode",
+                table: "CommandExecutionSummaries",
+                type: "integer",
+                nullable: false,
+                defaultValue: 0);
 
             migrationBuilder.AddColumn<string>(
                 name: "VarName",
                 table: "CommandExecutionSummaries",
-                type: "TEXT",
+                type: "text",
                 nullable: true);
         }
 
@@ -61,48 +80,61 @@ namespace AresService.Migrations.Sqlite.Migrations.AresDb
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
+                name: "Source",
+                table: "Parameters");
+
+            migrationBuilder.DropColumn(
+                name: "StatusCode",
+                table: "DeviceCommandResults");
+
+            migrationBuilder.DropColumn(
                 name: "OutputVarName",
                 table: "CommandTemplates");
+
+            migrationBuilder.DropColumn(
+                name: "StatusCode",
+                table: "CommandExecutionSummaries");
 
             migrationBuilder.DropColumn(
                 name: "VarName",
                 table: "CommandExecutionSummaries");
 
-            migrationBuilder.RenameColumn(
-                name: "Source",
-                table: "Parameters",
-                newName: "VariableArgument");
-
             migrationBuilder.AddColumn<bool>(
                 name: "EnvironmentBased",
                 table: "Parameters",
-                type: "INTEGER",
+                type: "boolean",
                 nullable: false,
                 defaultValue: false);
 
             migrationBuilder.AddColumn<bool>(
                 name: "Planned",
                 table: "Parameters",
-                type: "INTEGER",
+                type: "boolean",
                 nullable: false,
                 defaultValue: false);
 
             migrationBuilder.AddColumn<Guid>(
                 name: "PlanningMetadataUniqueId",
                 table: "Parameters",
-                type: "TEXT",
+                type: "uuid",
                 nullable: true);
 
             migrationBuilder.AddColumn<string>(
                 name: "Value",
                 table: "Parameters",
-                type: "TEXT",
+                type: "text",
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "VariableArgument",
+                table: "Parameters",
+                type: "text",
                 nullable: true);
 
             migrationBuilder.AddColumn<int>(
                 name: "VariableType",
                 table: "Parameters",
-                type: "INTEGER",
+                type: "integer",
                 nullable: false,
                 defaultValue: 0);
 
