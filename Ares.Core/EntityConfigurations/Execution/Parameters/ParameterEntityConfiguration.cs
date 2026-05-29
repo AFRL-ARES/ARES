@@ -17,7 +17,7 @@ internal class ParameterEntityConfiguration : AresEntityTypeBaseConfiguration<Pa
       .HasForeignKey<ParameterMetadata>("ParameterId")
       .OnDelete(DeleteBehavior.Cascade);
 
-    builder.Property(parameter => parameter.SourcePersistence)
+    builder.Property(parameter => parameter.SourceJson)
       .HasColumnName("Source")
       .HasParameterSource();
 

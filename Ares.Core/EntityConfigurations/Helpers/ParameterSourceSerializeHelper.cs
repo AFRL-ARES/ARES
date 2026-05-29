@@ -7,7 +7,7 @@ namespace Ares.Core.EntityConfigurations.Helpers;
 
 public static class ParameterSourceSerializeHelper
 {
-  public static PropertyBuilder<ParameterSourcePersistence?> HasParameterSource(this PropertyBuilder<ParameterSourcePersistence?> value)
+  public static PropertyBuilder<ParameterSourceJson?> HasParameterSource(this PropertyBuilder<ParameterSourceJson?> value)
   {
     var settings = SerializerSettingsHelper.CreateCustomSerializationSettings();
 
@@ -15,7 +15,7 @@ public static class ParameterSourceSerializeHelper
       v => JsonSerializer.Serialize(v, settings),
       v => string.IsNullOrWhiteSpace(v)
         ? null
-        : JsonSerializer.Deserialize<ParameterSourcePersistence>(v, settings))
+        : JsonSerializer.Deserialize<ParameterSourceJson>(v, settings))
       .HasColumnType(SerializerSettingsHelper.DetermineColumnType());
   }
 }
