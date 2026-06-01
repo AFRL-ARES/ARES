@@ -53,7 +53,7 @@ public class ExecutionManager : IExecutionManager
     var startConditions = await Task.WhenAll(startConditionTasks);
     return startConditions.All(condition => condition?.Success ?? true);
   }
-  public int ReplanRate { get; private set; } = 1;
+
   public async Task Start(string executionNotes, List<AresCampaignTag> campaignTags)
   {
     var err = await CheckCampaignStartPrerequisites();
@@ -70,7 +70,8 @@ public class ExecutionManager : IExecutionManager
       executor.UpdateCampaignTags(campaignTags);
 
     executor.StopConditions.AddRange(CampaignStopConditions);
-    executor.ReplanRate = ReplanRate;
+    executor.ReplicateRate = ReplicateRate;
+    executor.BatchPlanningSize = PlanningBatchSize;
     _executionControlTokenSource = new ExecutionControlTokenSource();
     CampaignExecutionSummary campaignExecutionSummary;
     ExecutionStartTime = DateTime.UtcNow;
@@ -108,7 +109,7 @@ public class ExecutionManager : IExecutionManager
   public async Task<string> CheckCampaignStartPrerequisites()
   {
     if(_activeCampaignTemplateStore.CampaignTemplate is null)
-      return "CampaignTemplate was not assigned to the active template store.";
+      return "Campaign Template was not assigned to the active template store.";
 
     if(!CampaignStopConditions.Any())
       return "The Campaign has no stop conditions, please set a stop condition before starting campaign.";
@@ -139,7 +140,12 @@ public class ExecutionManager : IExecutionManager
 
   public void UpdateReplanRate(int newRate)
   {
-    ReplanRate = newRate;
+    ReplicateRate = newRate;
+  }
+
+  public void UpdateBatchPlanningSize(int newBatchSize)
+  {
+    PlanningBatchSize = newBatchSize;
   }
 
   private async Task PostExecution(CampaignExecutionSummary result)
@@ -162,8 +168,11 @@ public class ExecutionManager : IExecutionManager
     {
       throw;
     }
-
   }
 
   public DateTime? ExecutionStartTime { get; set; }
+
+  public int ReplicateRate { get; private set; } = 1;
+
+  public int PlanningBatchSize { get; private set; } = 1;
 }

@@ -21,10 +21,18 @@
   </div>
 
   <div>
-    <RadzenLabel Text="Re-Planning Rate" Component="replanningInput" Style="margin-bottom: 5px; display: block;" />
+    <RadzenLabel Text="Replicate Count" Component="replicateInput" Style="margin-bottom: 5px; display: block;" />
     <div class="d-flex gap-2">
-      <RadzenNumeric @bind-Value="ViewModel!.DesiredReplanRate" Name="replanningInput" class="w-100" />
-      <RadzenButton Text="SET" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" Click="ViewModel!.SetReplanRate"/>
+      <RadzenNumeric @bind-Value="ViewModel!.ReplicateCount" Name="replicateInput" class="w-100" />
+      <RadzenButton Text="SET" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" Click="ViewModel!.SetReplicateRate"/>
+    </div>
+  </div>
+
+  <div>
+    <RadzenLabel Text="Planning Batch Size" Component="batchSizeInput" Style="margin-bottom: 5px; display: block;" />
+    <div class="d-flex gap-2">
+      <RadzenNumeric @bind-Value="ViewModel!.PlanningBatchSize" Name="batchSizeInput" class="w-100" />
+      <RadzenButton Text="SET" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" Click="ViewModel!.SetReplicateRate" />
     </div>
   </div>
 
@@ -33,6 +41,7 @@
     <RadzenTextArea @bind-Value="ViewModel!.ExecutionNotes" class="w-100" Rows="4" />
     <RadzenButton Text="Upload Notes" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small" class="mt-2" />
   </div>
+
   <div>
     <h6>Experiment Tags</h6>
     <RadzenDropDown Data="ViewModel!.AvailableTags" 

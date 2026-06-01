@@ -127,9 +127,14 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     return _automationClient.GetActiveStopCondition(new Empty(), null);
   }
 
-  public Task<GetReplanRateResponse> GetCurrentReplanRate()
+  public Task<ReplicateRate> GetCurrentReplanRate()
   {
-    return _automationClient.GetReplanRate(new Empty(), null);
+    return _automationClient.GetReplicateRate(new Empty(), null);
+  }
+
+  public Task<PlanningBatchSize> GetCurrentPlanningBatchSize()
+  {
+    return _automationClient.GetPlanningBatchSize(new Empty(), null);
   }
 
   public async Task<CampaignExecutionStatus?> GetCampaignExecutionStatus()
@@ -144,11 +149,18 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     CurrentStopCondition = await GetCurrentStopCondition();
   }
 
-  public async Task SetReplanRate()
+  public async Task SetReplicateRate()
   {
-    await _automationClient.SetReplanRate(new ReplanRate { ReplanRate_ = DesiredReplanRate }, null);
+    await _automationClient.SetReplicateRate(new ReplicateRate { ReplicateRate_ = ReplicateCount }, null);
     var replanRateResponse = await GetCurrentReplanRate();
-    DesiredReplanRate = replanRateResponse.ReplanRate;
+    ReplicateCount = replanRateResponse.ReplicateRate_;
+  }
+
+  public async Task SetPlanningBatchSize()
+  {
+    await _automationClient.SetPlanningBatchSize(new PlanningBatchSize { BatchSize = PlanningBatchSize }, null);
+    var planningBatchSizeResponse = await GetCurrentPlanningBatchSize();
+    PlanningBatchSize = planningBatchSizeResponse.BatchSize;
   }
 
   public async Task StartCampaign()
@@ -573,7 +585,10 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   public partial ExperimentStopConditionResponse? CurrentStopCondition { get; set; }
   public double DesiredResult { get; set; }
   public double DesiredLeeway { get; set; }
-  public int DesiredReplanRate { get; set; } = 1;
+  [Reactive]
+  public partial int PlanningBatchSize { get; set; } = 1;
+  [Reactive]
+  public partial int ReplicateCount { get; set; } = 1;
   [Reactive]
   public partial bool CampaignActive { get; set; }
   [Reactive]

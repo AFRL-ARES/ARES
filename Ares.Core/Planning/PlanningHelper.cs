@@ -34,6 +34,7 @@ public class PlanningHelper : IPlanningHelper
     IEnumerable<Parameter> parameters,
     IEnumerable<Analysis> seedAnalyses,
     IEnumerable<ExperimentOverview> seedExperiments,
+    int batchSize,
     CancellationToken cancellationToken)
   {
     var parameterArray = parameters.ToArray();
@@ -70,6 +71,7 @@ public class PlanningHelper : IPlanningHelper
         
         //Create the plan request. Store it in the transaction.
         var planRequest = new PlanningRequest();
+        planRequest.BatchSize = batchSize;
         planRequest.PlanningParameters.AddRange(plannableParameters.Select(parameter => ConvertToPlanningParameter(parameter, seedExperiments)));
         planRequest.AnalysisResults.AddRange(seedAnalysesArr.Select(a => (double)a.Result));
         planTransaction.PlanningRequest = planRequest;
@@ -107,14 +109,22 @@ public class PlanningHelper : IPlanningHelper
           return false;
         }
 
-        foreach(var result in planResponse.PlannedParameters)
+        if(batchSize != 1)
         {
-          var parameterPlanTarget = parameterArray.FirstOrDefault(parameter => parameter.PlanningMetadata.Name == result.ParameterName);
 
-          if(parameterPlanTarget is null)
-            continue;
+        }
 
-          parameterPlanTarget.Value = result.ParameterValue;
+        else
+        {
+          foreach(var result in planResponse.PlannedParameters)
+          {
+            var parameterPlanTarget = parameterArray.FirstOrDefault(parameter => parameter.PlanningMetadata.Name == result.ParameterName);
+
+            if(parameterPlanTarget is null)
+              continue;
+
+            parameterPlanTarget.Value = result.ParameterValue;
+          }
         }
       }
       catch(Exception e)

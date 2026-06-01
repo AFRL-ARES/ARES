@@ -276,7 +276,7 @@ public class CampaignExecutor : ICampaignExecutor
     // The following are top level checks for analysis failure in case the
     // failure is not properly handled on the Analysis itself
     // which also has support for "success" and "error" message
-    if (analysis is null || analysis.Result == float.NaN)
+    if(analysis is null || analysis.Result == float.NaN)
     {
       Status.AnalysisState = AnalysisState.AnalysisError;
       await _notifier.Notify("Analysis Failure", $"Analysis was reported as successful, but no actual analysis was provided. {analysis?.ErrorString ?? "No error string provided"}", NotificationSeverityEnum.Error);
@@ -399,7 +399,10 @@ public class CampaignExecutor : ICampaignExecutor
     .Any(step => step.CommandExecutionStatuses
     .Any(cmd => cmd.State == ExecutionState.AwaitingUser));
 
-  private async Task<ExperimentExecutorResult> GenerateExperimentExecutor(ExperimentTemplate template, IEnumerable<Analysis> analyses, IEnumerable<ExperimentOverview> previousExperiments, CancellationToken cancellationToken)
+  private async Task<ExperimentExecutorResult> GenerateExperimentExecutor(ExperimentTemplate template,
+    IEnumerable<Analysis> analyses,
+    IEnumerable<ExperimentOverview> previousExperiments,
+    CancellationToken cancellationToken)
   {
     var result = new ExperimentExecutorResult();
     var experimentTemplate = template.CloneWithNewIds();
@@ -408,12 +411,12 @@ public class CampaignExecutor : ICampaignExecutor
     if(!experimentTemplate.IsResolved())
     {
       _logger.LogTrace("Experiment was not resolved");
-      if(analyses.Count() % ReplanRate == 0)
+      if(analyses.Count() % ReplicateRate == 0)
       {
         Status.PlannerState = PlannerState.PlanningInProgress;
         _executionStatusSubject.OnNext(Status);
         _executionReporter.Report(Status);
-        _logger.LogTrace("Analyses count is {count} and replan rate {rate}", analyses.Count(), ReplanRate);
+        _logger.LogTrace("Analyses count is {count} and replan rate {rate}", analyses.Count(), ReplicateRate);
         
         var metadata = new RequestMetadata 
         { 
@@ -428,7 +431,8 @@ public class CampaignExecutor : ICampaignExecutor
           metadata, 
           experimentTemplate.GetAllPlannedParameters(), 
           analyses, 
-          previousExperiments, 
+          previousExperiments,
+          BatchPlanningSize,
           cancellationToken);
 
         if(!resolveSuccess)
@@ -508,7 +512,8 @@ public class CampaignExecutor : ICampaignExecutor
 
   public CampaignTemplate Template { get; }
   public IList<IStopCondition> StopConditions { get; } = [];
-  public double ReplanRate { get; set; } = 1;
+  public int ReplicateRate { get; set; } = 1;
+  public int BatchPlanningSize { get; set; } = 1;
   public string? ExecutionNotes { get; set; }
   public List<AresCampaignTag> CampaignTags { get; set; } = [];
   public IObservable<CampaignExecutionStatus> ExperimentStatusObservable { get; }

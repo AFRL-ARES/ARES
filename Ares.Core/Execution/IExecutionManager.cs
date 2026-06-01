@@ -11,9 +11,14 @@ public interface IExecutionManager
   public IList<IStopCondition> CampaignStopConditions { get; }
 
   /// <summary>
-  /// A double value that determines how often a campaign will re-plan it's experiment, defaults to one
+  /// A int value that determines how often a campaign will re-plan it's experiment, defaults to one
   /// </summary>
-  public int ReplanRate { get; }
+  public int ReplicateRate { get; }
+
+  /// <summary>
+  /// An int value that determines how many experiments are planned for per planning request
+  /// </summary>
+  public int PlanningBatchSize { get; }
 
   /// <summary>
   /// Indicates whether the currently loaded campaign has all the prerequisites in order to start and run
@@ -53,6 +58,12 @@ public interface IExecutionManager
   /// </summary>
   /// <param name="newRate"></param>
   void UpdateReplanRate(int newRate);
+
+  /// <summary>
+  /// Updates the batch planning size
+  /// </summary>
+  /// <param name="batchSize"></param>
+  void UpdateBatchPlanningSize(int batchSize);
 
   /// <summary>
   /// Checks whether the prerequisites to execution have been met
