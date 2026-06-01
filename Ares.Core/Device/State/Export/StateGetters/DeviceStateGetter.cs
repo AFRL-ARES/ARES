@@ -16,14 +16,14 @@ public class DeviceStateGetter : IDeviceStateGetter
     _deviceRepo = deviceRepo;
   }
 
-  public async Task<IDictionary<string, IEnumerable<TState>>> GetStates<TState>(DeviceStateRequestFilter request) where TState : class, IDeviceState
+  public async Task<IDictionary<string, TState[]>> GetStates<TState>(DeviceStateRequestFilter request, CancellationToken token) where TState : class, IDeviceState
   {
     using var context = _dbContextFactory.CreateDbContext();
     var stateQuery = await DeviceStateQueryBuilder.BuildQuery<TState>(request, context);
-    var stateMap = stateQuery
+    var stateMap = await stateQuery
       .GroupBy(s => s.DeviceId)
-      .ToDictionary(g => _deviceRepo.First(d => d.UniqueId == g.Key).Name, g => g.AsEnumerable());
-    
+      .ToDictionaryAsync(g => _deviceRepo.First(d => d.UniqueId == g.Key).Name, g => g.ToArray(), token);
+
     return stateMap;
   }
 }

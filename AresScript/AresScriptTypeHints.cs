@@ -109,9 +109,9 @@ internal static class AresScriptTypeHints
       return false;
     }
 
-    if(expected.Type == AresDataType.Number && actual.HasNumberValue)
+    if(IsNumberLike(expected.Type) && actual.TryGetNumericValue(out var numericValue))
     {
-      return IsCompatible(expected, actual.NumberValue);
+      return IsCompatible(expected, numericValue);
     }
 
     if(expected.Type == AresDataType.Quantity && actual.KindCase == AresValue.KindOneofCase.QuantityValue)
@@ -470,11 +470,11 @@ internal static class AresScriptTypeHints
       }
     }
 
-    if(schema.Type == AresDataType.Number)
+    if(IsNumberLike(schema.Type))
     {
       if(schema.HasMinNumberValue && schema.HasMaxNumberValue && schema.MinNumberValue > schema.MaxNumberValue)
       {
-        error = $"Number type hint has min {schema.MinNumberValue} greater than max {schema.MaxNumberValue}.";
+        error = $"{schema.Type} type hint has min {schema.MinNumberValue} greater than max {schema.MaxNumberValue}.";
         return false;
       }
     }
@@ -516,7 +516,7 @@ internal static class AresScriptTypeHints
     out string? error)
   {
     error = null;
-    if(schema.Type == AresDataType.Number)
+    if(IsNumberLike(schema.Type))
     {
       return ApplyNumberConstraint(schema, key, valueContext, out error);
     }
@@ -539,7 +539,7 @@ internal static class AresScriptTypeHints
     error = null;
     if(!TryReadNumericConstraintValue(valueContext, out var number))
     {
-      error = $"Number constraint '{key}' requires a numeric value.";
+      error = $"{schema.Type} constraint '{key}' requires a numeric value.";
       return false;
     }
 
@@ -555,8 +555,13 @@ internal static class AresScriptTypeHints
       return true;
     }
 
-    error = $"Unknown Number constraint '{key}'. Supported constraints are min and max.";
+    error = $"Unknown {schema.Type} constraint '{key}'. Supported constraints are min and max.";
     return false;
+  }
+
+  private static bool IsNumberLike(AresDataType type)
+  {
+    return type is AresDataType.Number or AresDataType.Float or AresDataType.Int;
   }
 
   private static bool ApplyQuantityConstraint(

@@ -14,6 +14,8 @@ internal static class AresScriptSchemaFormatter
       AresDataType.List => FormatList(schema),
       AresDataType.Quantity => FormatQuantity(schema),
       AresDataType.Number => AppendConstraints(nameof(AresDataType.Number), FormatNumberConstraints(schema)),
+      AresDataType.Float => AppendConstraints(nameof(AresDataType.Float), FormatNumberConstraints(schema)),
+      AresDataType.Int => AppendConstraints(nameof(AresDataType.Int), FormatNumberConstraints(schema)),
       _ => FormatNamedType(schema.Type)
     };
   }

@@ -1,4 +1,5 @@
 ﻿using Ares.Datamodel;
+using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Visualizing;
 using Ares.Datamodel.Visualizing.Local;
 using Ares.Device;
@@ -153,8 +154,9 @@ public partial class VisualizationItemViewModel : ReactiveObject, IDisposable
         switch(leafValue.KindCase)
         {
           case AresValue.KindOneofCase.NumberValue:
-            value = leafValue.NumberValue;
-            return true;
+          case AresValue.KindOneofCase.FloatValue:
+          case AresValue.KindOneofCase.IntValue:
+            return leafValue.TryGetNumericValue(out value);
 
           case AresValue.KindOneofCase.QuantityValue:
             value = leafValue.QuantityValue.Scalar;

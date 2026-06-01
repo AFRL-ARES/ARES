@@ -48,6 +48,20 @@ public static class DummyValueFactory
           return AresValueHelper.CreateNumber(schema.NumberChoices.Numbers[0]);
         }
         return AresValueHelper.CreateNumber(0);
+      case AresDataType.Timestamp:
+        return AresValueHelper.CreateTimestamp(DateTime.UnixEpoch);
+      case AresDataType.Float:
+        if(schema.NumberChoices is not null && schema.NumberChoices.Numbers.Count > 0)
+        {
+          return AresValueHelper.CreateFloat(schema.NumberChoices.Numbers[0]);
+        }
+        return AresValueHelper.CreateFloat(0d);
+      case AresDataType.Int:
+        if(schema.NumberChoices is not null && schema.NumberChoices.Numbers.Count > 0)
+        {
+          return AresValueHelper.CreateInt((long)schema.NumberChoices.Numbers[0]);
+        }
+        return AresValueHelper.CreateInt(0);
       case AresDataType.Boolean:
         return AresValueHelper.CreateBool(false);
       case AresDataType.StringArray:
