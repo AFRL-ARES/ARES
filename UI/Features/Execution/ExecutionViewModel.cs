@@ -375,8 +375,9 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     switch(aresValue.KindCase)
     {
       case AresValue.KindOneofCase.NumberValue:
-        result = aresValue.NumberValue;
-        return true;
+      case AresValue.KindOneofCase.FloatValue:
+      case AresValue.KindOneofCase.IntValue:
+        return aresValue.TryGetNumericValue(out result);
 
       case AresValue.KindOneofCase.QuantityValue:
         result = aresValue.QuantityValue.Scalar;

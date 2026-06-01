@@ -239,6 +239,22 @@ public class InterpreterTests
     return (bool)result!;
   }
 
+  private static AresValueSchema SchemaFromTypeHint(string typeHint)
+  {
+    var typeHintsType = typeof(StandardLibrary).Assembly.GetType("AresScript.AresScriptTypeHints");
+    Assert.That(typeHintsType, Is.Not.Null);
+
+    var method = typeHintsType!.GetMethod(
+      "SchemaFromTypeHint",
+      BindingFlags.Public | BindingFlags.Static,
+      [typeof(string)]);
+    Assert.That(method, Is.Not.Null);
+
+    var result = method!.Invoke(null, [typeHint]);
+    Assert.That(result, Is.TypeOf<AresValueSchema>());
+    return (AresValueSchema)result!;
+  }
+
   [Test]
   public async Task Assert_Passes_OnTrueCondition()
   {
@@ -510,6 +526,35 @@ public class InterpreterTests
   }
 
   [Test]
+  public void NewScalarTypeHints_Are_Parsed()
+  {
+    Assert.That(SchemaFromTypeHint("Timestamp").Type, Is.EqualTo(AresDataType.Timestamp));
+    Assert.That(SchemaFromTypeHint("Float").Type, Is.EqualTo(AresDataType.Float));
+    Assert.That(SchemaFromTypeHint("Int").Type, Is.EqualTo(AresDataType.Int));
+  }
+
+  [Test]
+  public void NewScalarTypeHintCompatibility_Enforces_Type_And_MinMax_For_Values()
+  {
+    var expectedFloat = AresSchemaBuilder.Entry(AresDataType.Float)
+      .WithNumberRange(0, 30)
+      .Build();
+    var expectedInt = AresSchemaBuilder.Entry(AresDataType.Int)
+      .WithNumberRange(0, 30)
+      .Build();
+
+    Assert.That(IsValueTypeHintCompatible(AresValueHelper.CreateFloat(12d), expectedFloat), Is.True);
+    Assert.That(IsValueTypeHintCompatible(AresValueHelper.CreateFloat(-1d), expectedFloat), Is.False);
+    Assert.That(IsValueTypeHintCompatible(AresValueHelper.CreateFloat(40d), expectedFloat), Is.False);
+    Assert.That(IsValueTypeHintCompatible(AresValueHelper.CreateNumber(12), expectedFloat), Is.False);
+
+    Assert.That(IsValueTypeHintCompatible(AresValueHelper.CreateInt(12), expectedInt), Is.True);
+    Assert.That(IsValueTypeHintCompatible(AresValueHelper.CreateInt(-1), expectedInt), Is.False);
+    Assert.That(IsValueTypeHintCompatible(AresValueHelper.CreateInt(40), expectedInt), Is.False);
+    Assert.That(IsValueTypeHintCompatible(AresValueHelper.CreateNumber(12), expectedInt), Is.False);
+  }
+
+  [Test]
   public void QuantityTypeHintCompatibility_Enforces_Type_Unit_AndBounds_For_Values()
   {
     var expected = AresSchemaBuilder.Entry(AresDataType.Quantity)
@@ -635,6 +680,38 @@ public class InterpreterTests
     var value = DummyValueFactory.CreateDummyValue(schema);
 
     Assert.That(value.KindCase, Is.EqualTo(AresValue.KindOneofCase.QuantityValue));
+  }
+
+  [TestCase(AresDataType.Timestamp, AresValue.KindOneofCase.TimestampValue)]
+  [TestCase(AresDataType.Float, AresValue.KindOneofCase.FloatValue)]
+  [TestCase(AresDataType.Int, AresValue.KindOneofCase.IntValue)]
+  public void DummyValueFactory_Creates_NewScalarTypes(AresDataType type, AresValue.KindOneofCase expectedKind)
+  {
+    var schema = AresSchemaBuilder.Entry(type).Build();
+
+    var value = DummyValueFactory.CreateDummyValue(schema);
+
+    Assert.That(value.KindCase, Is.EqualTo(expectedKind));
+  }
+
+  [TestCase(AresDataType.Timestamp, AresValue.KindOneofCase.TimestampValue)]
+  [TestCase(AresDataType.Float, AresValue.KindOneofCase.FloatValue)]
+  [TestCase(AresDataType.Int, AresValue.KindOneofCase.IntValue)]
+  public void Environment_Maps_NewScalarTypes_To_ExtensionKinds(AresDataType type, AresValue.KindOneofCase kind)
+  {
+    var env = new AresScriptEnvironment();
+    var function = new AresSystemFunctionSymbol(
+      "test_ext",
+      "test_ext",
+      (_, _) => Task.FromResult(AresValueHelper.CreateUnit()),
+      AresSchemaBuilder.Empty().Build(),
+      AresSchemaBuilder.Entry(AresDataType.Unit).Build());
+    env.AssignExtensionFunctions([new AresExtensionFunction(kind, "test", function)]);
+
+    var found = env.TryGetExtensionFunction(type, "test", out var resolved);
+
+    Assert.That(found, Is.True);
+    Assert.That(resolved, Is.SameAs(function));
   }
 
   [Test]
