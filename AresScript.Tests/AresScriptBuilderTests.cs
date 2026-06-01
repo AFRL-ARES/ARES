@@ -218,6 +218,29 @@ public class AresScriptBuilderTests
   }
 
   [Test]
+  public void AddOrReplaceFunction_WritesConstrainedFloatAndIntTypeHints()
+  {
+    var floatSchema = AresSchemaBuilder.Entry(AresDataType.Float)
+      .WithNumberRange(minValue: 0, maxValue: 30)
+      .Build();
+    var intSchema = AresSchemaBuilder.Entry(AresDataType.Int)
+      .WithNumberRange(minValue: 1, maxValue: 5)
+      .Build();
+
+    var builder = new AresScriptBuilder();
+    builder.AddOrReplaceFunction(
+      "typed_fn",
+      body => body.AddReturn("value"),
+      new AresScriptParameter("value", floatSchema),
+      new AresScriptParameter("count", intSchema));
+
+    var script = builder.Build();
+
+    Assert.That(script, Does.Contain("def typed_fn(value: Float[min=0, max=30], count: Int[min=1, max=5]):"));
+    Assert.That(() => Parse(script), Throws.Nothing);
+  }
+
+  [Test]
   public void AddFunction_WritesProgrammaticQuantitySchemas()
   {
     var valueSchema = AresSchemaBuilder.Entry(AresDataType.Quantity)

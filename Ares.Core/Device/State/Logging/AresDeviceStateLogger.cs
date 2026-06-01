@@ -1,6 +1,7 @@
 ﻿using Ares.Core.EntityConfigurations.Extensions;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
+using Ares.Datamodel.Extensions;
 using Ares.Device;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -127,11 +128,7 @@ public class AresDeviceStateLogger : IDeviceStateLogger
     if(!fieldExists)
       return false;
 
-    if(!fieldValue.HasNumberValue)
-      return false;
-
-    value = fieldValue.NumberValue;
-    return true;
+    return fieldValue.TryGetNumericValue(out value);
   }
 
   private async Task UpdateState(AresStruct? state)

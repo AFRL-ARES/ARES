@@ -6,6 +6,7 @@ using Ares.Core.Planning;
 using Ares.Core.Visualization.Helpers;
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
 using Ares.Datamodel.Visualizing.Local;
@@ -377,8 +378,9 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     switch(aresValue.KindCase)
     {
       case AresValue.KindOneofCase.NumberValue:
-        result = aresValue.NumberValue;
-        return true;
+      case AresValue.KindOneofCase.FloatValue:
+      case AresValue.KindOneofCase.IntValue:
+        return aresValue.TryGetNumericValue(out result);
 
       case AresValue.KindOneofCase.QuantityValue:
         result = aresValue.QuantityValue.Scalar;

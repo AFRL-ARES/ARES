@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 
 namespace Ares.Core.Device.State.Logging;
+
 public static class DeviceStateQueryBuilder
 {
   public static async Task<IQueryable<T>> BuildQuery<T>(DeviceStateRequestFilter request, CoreDatabaseContext dbContext) where T : class, IDeviceState
@@ -21,7 +22,8 @@ public static class DeviceStateQueryBuilder
     }
     if(!string.IsNullOrEmpty(request.CompletedCampaignId))
     {
-      var completedCampaign = await dbContext.CampaignExecutionSummaries.FirstOrDefaultAsync(result => result.CampaignId == request.CompletedCampaignId);
+      var completedCampaign = await dbContext.CampaignExecutionSummaries.FirstOrDefaultAsync(result =>
+        result.UniqueId == request.CompletedCampaignId || result.CampaignId == request.CompletedCampaignId);
       if(completedCampaign is not null)
         statesQuery = statesQuery.Where(state => state.Timestamp >= completedCampaign.ExecutionInfo.TimeStarted && state.Timestamp <= completedCampaign.ExecutionInfo.TimeFinished);
     }

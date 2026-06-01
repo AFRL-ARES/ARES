@@ -26,8 +26,8 @@
   </ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="ARES.Datamodel" Version="0.22.0-beta.13" />
-		<PackageReference Include="Ares.Toolkit.Device" Version="1.4.0-beta.1" />
+		<PackageReference Include="ARES.Datamodel" Version="0.24.0" />
+		<PackageReference Include="Ares.Toolkit.Device" Version="1.3.0" />
 	  <PackageReference Include="CsvHelper" Version="33.1.0" />
 	  <PackageReference Include="DynamicData" Version="9.4.31" />
 	  <PackageReference Include="Grpc.Net.Client" Version="2.76.0" />
