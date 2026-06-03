@@ -72,6 +72,7 @@ public class PlanningHelper : IPlanningHelper
         var planRequest = new PlanningRequest();
         planRequest.PlanningParameters.AddRange(plannableParameters.Select(parameter => ConvertToPlanningParameter(parameter, seedExperiments)));
         planRequest.AnalysisResults.AddRange(seedAnalysesArr.Select(a => (double)a.Result));
+        planRequest.Metadata = metadata;
         planTransaction.PlanningRequest = planRequest;
 
         var planResponse = await planner.Plan(planRequest, cancellationToken);
@@ -109,12 +110,12 @@ public class PlanningHelper : IPlanningHelper
 
         foreach(var result in planResponse.PlannedParameters)
         {
-          var parameterPlanTarget = parameterArray.FirstOrDefault(parameter => parameter.PlanningMetadata.Name == result.ParameterName);
+          var parameterPlanTarget = parameterArray.FirstOrDefault(parameter => parameter.GetPlanningMetadata()?.Name == result.ParameterName);
 
           if(parameterPlanTarget is null)
             continue;
 
-          parameterPlanTarget.Value = result.ParameterValue;
+          parameterPlanTarget.SetResolvedValue(result.ParameterValue);
         }
       }
       catch(Exception e)
@@ -142,7 +143,7 @@ public class PlanningHelper : IPlanningHelper
     var paramHistory = experimentHistory.Select(exp =>
     {
       var plannedParameters = exp.Template.GetAllPlannedParameters();
-      var plannedValue = plannedParameters.FirstOrDefault(param => param.PlanningMetadata.Name == metadata.Name)?.Value;
+      var plannedValue = plannedParameters.FirstOrDefault(param => param.GetPlanningMetadata()?.Name == metadata.Name)?.GetValue();
 
       var actualValue = string.IsNullOrEmpty(metadata.OutputName) ? null : exp.Result.Fields.FirstOrDefault(f => f.Key == metadata.OutputName).Value;
 

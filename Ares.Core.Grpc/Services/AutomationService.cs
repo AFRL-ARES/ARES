@@ -23,6 +23,7 @@ using Ares.Datamodel.Planning;
 using Ares.Core.Execution.Extensions;
 using Ares.Core.Planning;
 using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Extensions;
 
 namespace Ares.Core.Grpc.Services;
 
@@ -560,7 +561,8 @@ public class AutomationService : AresAutomation.AresAutomationBase
       return [];
 
     var usedPlanners = _activeCampaignTemplateStore.CampaignTemplate.ExperimentTemplate.GetAllPlannedParameters()
-      .Select(p => p.PlanningMetadata.PlannerName)
+      .Select(p => p.GetPlanningMetadata()?.PlannerName ?? "")
+      .Where(name => !string.IsNullOrWhiteSpace(name))
       .Select(_plannerServiceRepo.GetPlannerByName)
       .Where(p => p is not null)
       .Distinct()

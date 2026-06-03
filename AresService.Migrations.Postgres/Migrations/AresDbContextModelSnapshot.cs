@@ -384,10 +384,16 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
+                    b.Property<int>("StatusCode")
+                        .HasColumnType("integer");
+
                     b.Property<Guid?>("StepExecutionSummaryUniqueId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("TemplateId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("VarName")
                         .HasColumnType("text");
 
                     b.HasKey("UniqueId");
@@ -424,6 +430,9 @@ namespace AresService.Migrations.Postgres.Migrations
 
                     b.Property<string>("Result")
                         .HasColumnType("text");
+
+                    b.Property<int>("StatusCode")
+                        .HasColumnType("integer");
 
                     b.Property<bool>("Success")
                         .HasColumnType("boolean");
@@ -1267,6 +1276,9 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
+                    b.Property<string>("OutputVarName")
+                        .HasColumnType("text");
+
                     b.Property<Guid>("StepTemplateUniqueId")
                         .HasColumnType("uuid");
 
@@ -1369,9 +1381,6 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
-                    b.Property<bool>("EnvironmentBased")
-                        .HasColumnType("boolean");
-
                     b.Property<Guid?>("ExperimentOverviewUniqueId")
                         .HasColumnType("uuid");
 
@@ -1383,28 +1392,15 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
-                    b.Property<bool>("Planned")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid?>("PlanningMetadataUniqueId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Value")
-                        .HasColumnType("text");
-
-                    b.Property<string>("VariableArgument")
-                        .HasColumnType("text");
-
-                    b.Property<int>("VariableType")
-                        .HasColumnType("integer");
+                    b.Property<string>("SourceJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("Source");
 
                     b.HasKey("UniqueId");
 
                     b.HasIndex("CommandTemplateUniqueId");
 
                     b.HasIndex("ExperimentOverviewUniqueId");
-
-                    b.HasIndex("PlanningMetadataUniqueId");
 
                     b.ToTable("Parameters", (string)null);
                 });
@@ -1860,12 +1856,6 @@ namespace AresService.Migrations.Postgres.Migrations
                     b.HasOne("Ares.Datamodel.ExperimentOverview", null)
                         .WithMany("Parameters")
                         .HasForeignKey("ExperimentOverviewUniqueId");
-
-                    b.HasOne("Ares.Datamodel.Templates.ParameterMetadata", "PlanningMetadata")
-                        .WithMany()
-                        .HasForeignKey("PlanningMetadataUniqueId");
-
-                    b.Navigation("PlanningMetadata");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Templates.ParameterMetadata", b =>

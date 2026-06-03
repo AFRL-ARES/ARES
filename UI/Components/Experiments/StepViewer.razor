@@ -1,4 +1,5 @@
-﻿@using Ares.Datamodel.Templates
+@using Ares.Datamodel.Templates
+@using UI.Features.CampaignEdit.ViewModels
 
 <div class="d-flex flex-column border rounded p-2 my-2">
   <div class="container">
@@ -31,7 +32,9 @@
                         <RadzenIcon Icon="terminal"/>
 
                         <div class="flex-grow-1 px-2">
-                            <CommandViewer CommandTemplate="@template" />
+                            <CommandViewer CommandTemplate="@template"
+                                           AvailableVariableReferences="@GetPriorVariableReferences(template)"
+                                           AvailablePlannedParameters="@AvailablePlannedParameters" />
                         </div>
                 </li>
             }
@@ -59,6 +62,12 @@
     }
   }
 
+  [Parameter]
+  public IEnumerable<ParameterMetadata> AvailablePlannedParameters { get; set; } = [];
+
+  [Parameter]
+  public IEnumerable<CommandOutputVariableReference> PriorVariableReferences { get; set; } = [];
+
   private bool HasExperimentOutputs { get; set; }
 
   public IList<CommandTemplate> CommandTemplates { get; private set; } = Array.Empty<CommandTemplate>();
@@ -72,9 +81,20 @@
     Parallel = existingTemplate.IsParallel;
     Index = Convert.ToInt32(existingTemplate.Index);
     CommandTemplates = existingTemplate.CommandTemplates.OrderBy(t => t.Index).ToList();
-    HasExperimentOutputs = CommandTemplates.Any(ct => ct.UserOutputKeyMap.Any());
+    HasExperimentOutputs = CommandTemplates.Any(ct => ct.HasOutputVarName);
+  }
+
+  private CommandOutputVariableReference[] GetPriorVariableReferences(CommandTemplate template)
+  {
+    var availableReferences = PriorVariableReferences.ToList();
+
+    if(!Parallel)
+    {
+      availableReferences.AddRange(CommandTemplates
+        .Where(command => command.Index < template.Index)
+        .SelectMany(CommandOutputVariableReferenceBuilder.Build));
+    }
+
+    return availableReferences.ToArray();
   }
 }
-
-
-

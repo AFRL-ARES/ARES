@@ -1,4 +1,5 @@
-﻿using Ares.Datamodel.Templates;
+using Ares.Core.EntityConfigurations.Helpers;
+using Ares.Datamodel.Templates;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -16,13 +17,16 @@ internal class ParameterEntityConfiguration : AresEntityTypeBaseConfiguration<Pa
       .HasForeignKey<ParameterMetadata>("ParameterId")
       .OnDelete(DeleteBehavior.Cascade);
 
-    builder.HasOne(parameter => parameter.PlanningMetadata)
-      .WithMany();
+    builder.Property(parameter => parameter.SourceJson)
+      .HasColumnName("Source")
+      .HasParameterSource();
+
+    builder.Ignore(parameter => parameter.LiteralSource);
+    builder.Ignore(parameter => parameter.PlannedSource);
+    builder.Ignore(parameter => parameter.EnvironmentSource);
+    builder.Ignore(parameter => parameter.CommandVariableSource);
 
     builder.Navigation(parameter => parameter.Metadata)
-      .AutoInclude();
-
-    builder.Navigation(parameter => parameter.PlanningMetadata)
       .AutoInclude();
   }
 }

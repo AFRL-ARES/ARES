@@ -4,72 +4,79 @@
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<CommandParameterDesignerViewModel>
 
 <div class="d-flex flex-column">
-  <div class="input-group mb-3">
-    @if (ViewModel!.IsPlanned || ViewModel!.IsEnvironmentBased)
-    {
-      if(ViewModel!.IsPlanned)
-      {
-        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" Gap="0.5rem">
-          <RadzenLabel Text="@ViewModel.Name" Component="PlannableSelector" />
-          <RadzenDropDown TValue="string" Data="@ViewModel.PlannedParameters" @bind-Value="@ViewModel.SelectedPlannedParameterMetadataId" TextProperty="@nameof(ParameterMetadata.Name)" ValueProperty="@nameof(ParameterMetadata.UniqueId)" Placeholder="Select Planned Parameter" />
-        </RadzenStack>
-      }
-
-      else
-      {
-        <select @bind="ViewModel.SelectedVariableType" class="form-select align-self-stretch">
-          @if (ViewModel!.SelectedVariableType is null)
-          {
-            <option value="" selected disabled>Select a Command</option>
-          }
-          @foreach (var variable in ViewModel!.VariableTypes)
-          {
-            <option value="@variable">
-              @variable.ToString()
-            </option>
-          }
-        </select>
-      }
-    }
-
-    else
-    {
-      <AresValueDesigner ValueEditCallback="ValueEditCallback" Schema="ViewModel!.Schema" Value="@ViewModel!.Value" Unit="@ViewModel!.Unit" Name="@ViewModel!.Name" />
-    }
-  </div>
-
-  @if (ViewModel!.IsEnvironmentBased && ViewModel!.SelectedVariableType == VariableType.PreviousExperimentPath)
-  {
-    <div class="mb-2">
-      <label class="form-label" for="pastExperimentNumeric">
-        Experiment Offset:
-      </label>
-      <RadzenNumeric ShowUpDown="false" @bind-Value="ViewModel!.PastExperimentNumber" id="pastExperimentNumeric" />
+  <fieldset class="border rounded p-2 mb-2">
+    <legend class="float-none w-auto px-2 fs-6 mb-0">@ViewModel!.Name</legend>
+    <div>
+      <RadzenRadioButtonList TValue="ParameterSource"
+                             Data="@ParameterSourceOptions"
+                             @bind-Value="@ViewModel.SelectedParameterSource"
+                             TextProperty="@nameof(ParameterSourceOption.Text)"
+                             ValueProperty="@nameof(ParameterSourceOption.Value)"
+                             DisabledProperty="@nameof(ParameterSourceOption.Disabled)"
+                             Orientation="Orientation.Horizontal"
+                             Gap="1rem"
+                             Name="@($"{ViewModel.Name}-parameter-source")" />
     </div>
-  }
 
-  @if(!DisablePlanning)
-  {
-    <div class="mb-2">
-      <RadzenCheckBox @bind-Value="ViewModel!.IsPlanned" id="flexCheckDefault" Disabled="ViewModel!.IsEnvironmentBased" />
-      <label class="form-check-label" for="flexCheckDefault">
-        Planned
-      </label>
+    <div class="input-group mt-3">
+      @if(ViewModel!.IsPlanned)
+      {
+        <RadzenDropDown TValue="string" 
+                        Data="@ViewModel.PlannedParameters" 
+                        @bind-Value="@ViewModel.SelectedPlannedParameterMetadataId" 
+                        TextProperty="@nameof(ParameterMetadata.Name)" 
+                        ValueProperty="@nameof(ParameterMetadata.UniqueId)"
+                        Style="width: 100%;"
+                        Placeholder="Select Planned Parameter" />
+
+      }
+      else if(ViewModel.IsEnvironmentBased)
+      {
+        <RadzenDropDown TValue="VariableType?"
+                        Data="@ViewModel.VariableTypes"
+                        @bind-Value="@ViewModel.SelectedVariableType"
+                        Placeholder="Select an Environment Variable"
+                        Style="width: 100%" />
+      }
+      else if(ViewModel.IsVariableBased)
+      {
+        <RadzenDropDown TValue="string"
+                        @key="@VariableReferenceDropdownKey"
+                        Data="@ViewModel.AvailableVariableOptions"
+                        @bind-Value="@ViewModel.SelectedVariableArgument"
+                        TextProperty="@nameof(CommandOutputVariableOption.Text)"
+                        ValueProperty="@nameof(CommandOutputVariableOption.Value)"
+                        DisabledProperty="@nameof(CommandOutputVariableOption.Disabled)"
+                        Placeholder="Select a Command Output"
+                        Style="width: 100%" />
+      }
+      else if(ViewModel.IsValueBased)
+      {
+        <AresValueDesigner ValueEditCallback="ValueEditCallback" Schema="ViewModel!.Schema" Value="@ViewModel!.Value" Unit="@ViewModel!.Unit" Name="@ViewModel!.Name" />
+      }
     </div>
-  }
 
-  <div class="mb-2">
-    <RadzenCheckBox @bind-Value="ViewModel!.IsEnvironmentBased" id="flexCheckDefault" Disabled="ViewModel!.IsPlanned" />
-    <label class="form-check-label" for="flexCheckDefault">
-      Environment Variable
-    </label>
-  </div>
-
+    @if (ViewModel!.IsEnvironmentBased && ViewModel!.SelectedVariableType == VariableType.PreviousExperimentPath)
+    {
+      <div class="mt-2">
+        <label class="form-label" for="pastExperimentNumeric">
+          Experiment Offset:
+        </label>
+        <RadzenNumeric ShowUpDown="false" @bind-Value="ViewModel!.PastExperimentNumber" id="pastExperimentNumeric" />
+      </div>
+    }
+  </fieldset>
 </div>
 
 @code {
   [Parameter]
   public bool DisablePlanning { get; set; }
+
+  private ParameterSourceOption[] ParameterSourceOptions => ViewModel!.ParameterSources
+    .Select(source => new ParameterSourceOption(source, source.ToString(), DisablePlanning && source == ParameterSource.Planned))
+    .ToArray();
+
+  private string VariableReferenceDropdownKey => $"{ViewModel!.SelectedVariableArgument}:{string.Join("|", ViewModel.AvailableVariableOptions.Select(option => option.Value))}";
 
   private Task ValueEditCallback(AresValue value)
   {
@@ -80,4 +87,6 @@
     ViewModel!.Value = value;
     return Task.CompletedTask;
   }
+
+  private record ParameterSourceOption(ParameterSource Value, string Text, bool Disabled);
 }
