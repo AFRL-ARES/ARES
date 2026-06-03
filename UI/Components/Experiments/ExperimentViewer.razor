@@ -1,5 +1,6 @@
 ﻿@inject DialogService DialogService
 @using Ares.Datamodel.Templates
+@using UI.Features.CampaignEdit.ViewModels
 
 @if (CampaignTemplate is not null)
 {
@@ -10,7 +11,9 @@
        {
           <div class="d-flex">
             <div class="flex-grow-1">
-              <StepViewer StepTemplate="@startupStep" />
+              <StepViewer StepTemplate="@startupStep"
+                          AvailablePlannedParameters="@CampaignTemplate.PlannableParameters"
+                          PriorVariableReferences="@GetPriorVariableReferences(CampaignTemplate.StartupTemplate, startupStep)" />
             </div>
           </div>
         }
@@ -20,7 +23,9 @@
           <div class="d-flex" >
             <div class="flex-grow-1">
               
-              <StepViewer StepTemplate="@stepTemplate"/>
+              <StepViewer StepTemplate="@stepTemplate"
+                          AvailablePlannedParameters="@CampaignTemplate.PlannableParameters"
+                          PriorVariableReferences="@GetPriorVariableReferences(CampaignTemplate.ExperimentTemplate, stepTemplate)" />
             </div>
           </div>
         }
@@ -29,7 +34,9 @@
         {
           <div class="d-flex">
             <div class="flex-grow-1">
-              <StepViewer StepTemplate="@closeoutStep" />
+              <StepViewer StepTemplate="@closeoutStep"
+                          AvailablePlannedParameters="@CampaignTemplate.PlannableParameters"
+                          PriorVariableReferences="@GetPriorVariableReferences(CampaignTemplate.CloseoutTemplate, closeoutStep)" />
             </div>
           </div>
         }
@@ -41,4 +48,21 @@
 @code {
   [Parameter]
   public CampaignTemplate? CampaignTemplate { get; set; }
+
+  private static CommandOutputVariableReference[] GetPriorVariableReferences(
+    ExperimentTemplate experimentTemplate,
+    StepTemplate stepTemplate)
+  {
+    var references = new List<CommandOutputVariableReference>();
+
+    foreach(var currentStep in experimentTemplate.StepTemplates.OrderBy(step => step.Index))
+    {
+      if(currentStep == stepTemplate)
+        return references.ToArray();
+
+      references.AddRange(currentStep.CommandTemplates.SelectMany(CommandOutputVariableReferenceBuilder.Build));
+    }
+
+    return references.ToArray();
+  }
 }

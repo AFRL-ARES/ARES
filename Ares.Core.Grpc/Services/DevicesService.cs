@@ -10,6 +10,7 @@ using Ares.Core.Device.Remote;
 using Ares.Core.Device.State.Logging;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
+using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Templates;
 using Ares.Device;
 using Ares.Services.Device;
@@ -113,7 +114,7 @@ public class DevicesService(
     try
     {
       var arguments = new List<DeviceCommandArgument>();
-      arguments.AddRange(request.Parameters.Select(p => new DeviceCommandArgument() { ArgName = p.Metadata.Name, ArgValue = p.Value }));
+      arguments.AddRange(request.Parameters.Select(p => new DeviceCommandArgument() { ArgName = p.Metadata.Name, ArgValue = p.GetValue() }));
 
       Func<CancellationToken, Task<CommandResult>> internalAction = async (ct) 
         => await device.ExecuteCommand(request.Metadata.Name, arguments, ct);

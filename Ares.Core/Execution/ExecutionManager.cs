@@ -7,6 +7,7 @@ using Ares.Core.Execution.StartConditions;
 using Ares.Core.Execution.StopConditions;
 using Ares.Core.Notifications;
 using Ares.Datamodel;
+using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Templates;
 using DynamicData;
 using Microsoft.EntityFrameworkCore;
@@ -131,7 +132,7 @@ public class ExecutionManager : IExecutionManager
   {
     var experimentCommandsInvalid = _activeCampaignTemplateStore.CampaignTemplate!.ExperimentTemplate.StepTemplates
     .SelectMany(step => step.CommandTemplates)
-    .Any(cmd => cmd.Parameters.Any(param => param.Planned && param.PlanningMetadata is null));
+    .Any(cmd => cmd.Parameters.Any(param => param.IsPlanned() && param.GetPlanningMetadata() is null));
 
     if(experimentCommandsInvalid)
       return false;

@@ -1,25 +1,28 @@
 using Ares.Datamodel;
+using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Templates;
 using ReactiveUI;
+using ReactiveUI.SourceGenerators;
 using UI.Components.Formatting;
 
 namespace UI.Features.CampaignEdit.ViewModels;
 
-public class CommandParameterDesignerViewModel : ReactiveObject
+public partial class CommandParameterDesignerViewModel : ReactiveObject
 {
   private readonly ParameterMetadata[]? _plannedParameters;
   private readonly UnitCategoryHelper _unitCategoryHelper;
-  private bool _isPlanned;
   private Parameter _parameter = null!;
+  private ParameterSource _selectedParameterSource;
   private bool _valid;
   private AresValue? _value;
+  private CommandOutputVariableReference[] _availableVariableReferences = [];
+  private CommandOutputVariableOption[] _availableVariableOptions = [];
 
   public CommandParameterDesignerViewModel(Parameter param, UnitCategoryHelper unitCategoryHelper, IEnumerable<ParameterMetadata>? plannedParameters = null)
     : this(unitCategoryHelper, plannedParameters)
   {
     Parameter = param;
-    IsEnvironmentBased = param.EnvironmentBased;
-    SelectedVariableType = param.VariableType;
+    SelectedVariableType = param.GetVariableType();
   }
 
   public CommandParameterDesignerViewModel(ParameterMetadata meta, UnitCategoryHelper unitCategoryHelper, IEnumerable<ParameterMetadata>? plannedParameters = null)
@@ -88,20 +91,49 @@ public class CommandParameterDesignerViewModel : ReactiveObject
 
   public VariableType? SelectedVariableType { get; set; }
 
+  [Reactive]
+  public partial string? SelectedVariableArgument { get; set; }
+
   public VariableType[] VariableTypes { get; private set; } = System.Enum.GetValues<VariableType>().Skip(1).ToArray();
 
-  public bool IsPlanned
+  public ParameterSource SelectedParameterSource
   {
-    get => _isPlanned;
+    get => _selectedParameterSource;
 
     set
     {
-      _isPlanned = value;
-      Value = value ? null : Parameter.Value ?? new AresValue();
+      this.RaiseAndSetIfChanged(ref _selectedParameterSource, value);
+      Value = value == ParameterSource.Value ? Parameter.GetValue() ?? new AresValue() : null;
     }
   }
 
-  public bool IsEnvironmentBased { get; set; }
+  public bool IsPlanned => SelectedParameterSource == ParameterSource.Planned;
+
+  public bool IsEnvironmentBased => SelectedParameterSource == ParameterSource.Environment;
+
+  public bool IsValueBased => SelectedParameterSource == ParameterSource.Value;
+
+  public bool IsVariableBased => SelectedParameterSource == ParameterSource.Variable;
+
+  public ParameterSource[] ParameterSources { get; } = Enum.GetValues<ParameterSource>().Skip(1).ToArray();
+
+  public CommandOutputVariableReference[] AvailableVariableReferences
+  {
+    get => _availableVariableReferences;
+    private set
+    {
+      this.RaiseAndSetIfChanged(ref _availableVariableReferences, value);
+      AvailableVariableOptions = value
+        .Select(reference => new CommandOutputVariableOption(reference.Path, reference.DisplayText, reference.IsDisabled))
+        .ToArray();
+    }
+  }
+
+  public CommandOutputVariableOption[] AvailableVariableOptions
+  {
+    get => _availableVariableOptions;
+    private set => this.RaiseAndSetIfChanged(ref _availableVariableOptions, value);
+  }
 
   public int PastExperimentNumber { get; set; }
 
@@ -115,11 +147,33 @@ public class CommandParameterDesignerViewModel : ReactiveObject
 
   private void Init(Parameter existingParameter)
   {
-    Value = existingParameter.Value;
-    IsPlanned = existingParameter.Planned;
-    SelectedPlannedParameterMetadataId = existingParameter.PlanningMetadata?.UniqueId;
+    Value = existingParameter.GetValue();
+    SelectedParameterSource = DetermineParameterSource(existingParameter);
+    SelectedPlannedParameterMetadataId = existingParameter.GetPlanningMetadata()?.UniqueId;
+    SelectedVariableArgument = DetermineParameterSource(existingParameter) == ParameterSource.Variable ? existingParameter.GetVariableArgument() : null;
+    SelectedVariableType = existingParameter.GetVariableType() == VariableType.VarUnspecified ? null : existingParameter.GetVariableType();
     PlannedParameters = FilterParameterMetadata(_unitCategoryHelper, _plannedParameters);
-    PastExperimentNumber = DeterminePastExperimentNumber(existingParameter.VariableArgument);
+    PastExperimentNumber = DeterminePastExperimentNumber(existingParameter.GetVariableArgument());
+  }
+
+  public void SetAvailableVariableReferences(IEnumerable<CommandOutputVariableReference> references)
+  {
+    AvailableVariableReferences = CommandOutputVariableReferenceBuilder.MarkCompatibility(references, Schema);
+  }
+
+  public bool HasSelectedPlannedParameter()
+    => SelectedParameterSource != ParameterSource.Planned
+       || PlannedParameters.Any(metadata => metadata.UniqueId == SelectedPlannedParameterMetadataId);
+
+  public bool HasSelectedVariableReference()
+    => SelectedParameterSource != ParameterSource.Variable
+       || AvailableVariableReferences.Any(reference => reference.Path == SelectedVariableArgument && reference.Compatible);
+
+  private ParameterSource DetermineParameterSource(Parameter parameter)
+  {
+    return parameter.GetParameterSource() == ParameterSource.Unspecified
+      ? ParameterSource.Value
+      : parameter.GetParameterSource();
   }
 
   private int DeterminePastExperimentNumber(string arg)
@@ -134,13 +188,26 @@ public class CommandParameterDesignerViewModel : ReactiveObject
 
   public Parameter Save()
   {
-    Parameter.Value = Value;
-    Parameter.Planned = IsPlanned;
-    Parameter.EnvironmentBased = IsEnvironmentBased;
-    Parameter.VariableArgument = PastExperimentNumber.ToString();
-    Parameter.VariableType = SelectedVariableType ?? VariableType.VarUnspecified;
-    Parameter.PlanningMetadata = Parameter.Planned ? 
-      PlannedParameters.FirstOrDefault(metadata => metadata.UniqueId == SelectedPlannedParameterMetadataId) : null;
+    switch(SelectedParameterSource)
+    {
+      case ParameterSource.Planned:
+        Parameter.SetPlannedSource(PlannedParameters.FirstOrDefault(metadata => metadata.UniqueId == SelectedPlannedParameterMetadataId));
+        break;
+
+      case ParameterSource.Environment:
+        var variableType = SelectedVariableType ?? VariableType.VarUnspecified;
+        var variableArgument = variableType == VariableType.PreviousExperimentPath ? PastExperimentNumber.ToString() : "";
+        Parameter.SetEnvironmentSource(variableType, variableArgument);
+        break;
+
+      case ParameterSource.Variable:
+        Parameter.SetCommandVariableSource(SelectedVariableArgument ?? "");
+        break;
+
+      default:
+        Parameter.SetLiteralSource(Value);
+        break;
+    }
 
     return Parameter;
   }
@@ -166,3 +233,5 @@ public class CommandParameterDesignerViewModel : ReactiveObject
     }
   }
 }
+
+public record CommandOutputVariableOption(string Value, string Text, bool Disabled);

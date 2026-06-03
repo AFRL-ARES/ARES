@@ -97,7 +97,7 @@ internal class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _
       foreach(var parameter in parameters)
       {
         cancellationToken.ThrowIfCancellationRequested();
-        TryAddDynamicColumn(columns, GetParameterColumnName(parameter), parameter.Value);
+        TryAddDynamicColumn(columns, GetParameterColumnName(parameter), parameter.GetValue());
       }
     }
 
@@ -144,8 +144,9 @@ internal class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _
     {
       cancellationToken.ThrowIfCancellationRequested();
 
-      if(parameter.Value is not null)
-        data.Fields[GetParameterColumnName(parameter)] = parameter.Value.Clone();
+      var parameterValue = parameter.GetValue();
+      if(parameterValue is not null)
+        data.Fields[GetParameterColumnName(parameter)] = parameterValue.Clone();
     }
 
     return new AresDataRow

@@ -1,4 +1,3 @@
-using Ares.Core;
 using Ares.Core.DataManagement.DataMappers;
 using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
@@ -230,14 +229,17 @@ internal class CampaignDatasetGeneratorTests
 
   private static Parameter CreateParameter(string metadataName, AresValue value, string uniqueId = "", long index = 0)
   {
-    return new Parameter
+    var parameter = new Parameter
     {
       UniqueId = uniqueId,
       Metadata = string.IsNullOrEmpty(metadataName)
         ? null
         : new ParameterMetadata { Name = metadataName },
-      Value = value,
       Index = index
     };
+
+    parameter.SetLiteralSource(value);
+
+    return parameter;
   }
 }

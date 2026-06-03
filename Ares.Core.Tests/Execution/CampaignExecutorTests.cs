@@ -55,7 +55,7 @@ internal class CampaignExecutorTests
     _analyzerRepo.AddAnalyzer(_replyAnalyzer);
     _analysisRepo = [];
     _analysisHelperLogger = new Mock<ILogger<AnalysisHelper>>().Object;
-    _analysisHelper = new AnalysisHelper(_analyzerRepo, _analysisHelperLogger, _dbContextFactory);
+    _analysisHelper = new AnalysisHelper(_analyzerRepo, _analysisHelperLogger, _dbContextFactory, _notifier);
     _executionReportStore = new ExecutionReportStore();
     _executionReporter = new ExecutionReporter(_executionReportStore);
     _planningHelper = new Mock<IPlanningHelper>().Object;

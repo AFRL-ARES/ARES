@@ -1,4 +1,5 @@
 ﻿using Ares.Datamodel;
+using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Templates;
 using Ares.Services.Device;
 using Ares.Core.Grpc.Services;
@@ -15,6 +16,7 @@ public partial class CommandDesignerViewModel : ReactiveObject
   private readonly DevicesService _devicesClient;
   private CommandMetadata? _commandMetadata;
   private CommandTemplate _commandTemplate = null!;
+  private CommandOutputVariableReference[] _availableVariableReferences = [];
 
   public CommandDesignerViewModel(
     CommandTemplate existingTemplate,
@@ -61,9 +63,13 @@ public partial class CommandDesignerViewModel : ReactiveObject
   public string? MetadataDeviceName { get; private set; }
   public string? TemplateCommandName => CommandTemplate.Metadata?.Name;
 
-  public bool TemplateOutputProvider => CommandTemplate.UserOutputKeyMap.Any();
+  public bool TemplateOutputProvider => CommandTemplate.HasOutputVarName;
 
   public bool OutputProvider { get; set; }
+
+  public bool HasOutputMetadata => CommandMetadata?.OutputMetadata?.DataSchema is not null;
+
+  public string? OutputVariableName { get; set; }
 
   public IEnumerable<Parameter> Arguments => CommandTemplate.Parameters;
 
@@ -77,8 +83,6 @@ public partial class CommandDesignerViewModel : ReactiveObject
       InitMetadata(value);
     }
   }
-
-  public UserOutputSelection[] OutputKeyMap { get; private set; } = [];
 
   public MetadataPickerViewModel? MetadataPickerViewModel { get; set; }
 
@@ -97,17 +101,10 @@ public partial class CommandDesignerViewModel : ReactiveObject
       
 
     CommandTemplate.Index = Index;
-    CommandTemplate.UserOutputKeyMap.Clear();
-    if(OutputProvider)
+    CommandTemplate.ClearOutputVarName();
+    if(OutputProvider && HasOutputMetadata && !string.IsNullOrWhiteSpace(OutputVariableName))
     {
-      foreach(var selection in OutputKeyMap)
-      {
-        CommandTemplate.UserOutputKeyMap[selection.DeviceOutputName] = selection.CustomName;
-      }
-    }
-    else
-    {
-      CommandTemplate.UserOutputKeyMap.Clear();
+      CommandTemplate.OutputVarName = OutputVariableName.Trim();
     }
 
     return CommandTemplate;
@@ -118,20 +115,11 @@ public partial class CommandDesignerViewModel : ReactiveObject
     Index = Convert.ToInt32(existingTemplate.Index);
     var existingParamDesigners = existingTemplate.Parameters.Select(_commandParameterDesignerFactory.Create).ToArray();
     ArgumentDesigners = [.. existingParamDesigners];
+    ApplyAvailableVariableReferences();
     MetadataPickerViewModel = _metadataPickerFactory.Create(existingTemplate.Metadata);
 
-    foreach(var kvp in existingTemplate.UserOutputKeyMap)
-    {
-      var existingValue = OutputKeyMap.FirstOrDefault(keyValue => keyValue.DeviceOutputName == kvp.Key);
-      if(existingValue is null)
-      {
-        continue;
-      }
-
-      existingValue.CustomName = kvp.Value;
-    }
-
-    OutputProvider = existingTemplate.UserOutputKeyMap.Any();
+    OutputProvider = existingTemplate.HasOutputVarName;
+    OutputVariableName = existingTemplate.HasOutputVarName ? existingTemplate.OutputVarName : null;
 
     // Revisit this once we have some sort of caching on the UI end.
     // that way we don't have to bother the service every time
@@ -156,51 +144,11 @@ public partial class CommandDesignerViewModel : ReactiveObject
         .ToArray() ?? [];
 
     ArgumentDesigners = newArgumentDesigners;
-    var outputSchema = existingMetadata?.OutputMetadata?.DataSchema;
-
-    if(outputSchema is null)
+    ApplyAvailableVariableReferences();
+    if(existingMetadata?.OutputMetadata?.DataSchema is null)
     {
-      OutputKeyMap = [];
-    }
-    else
-    {
-      // Normalize the schema
-      var availableFields = new Dictionary<string, AresValueSchema>();
-
-      if(outputSchema.Type == AresDataType.Struct && outputSchema.StructSchema is not null)
-      {
-        foreach(var field in outputSchema.StructSchema.Fields)
-        {
-          availableFields[field.Key] = field.Value;
-        }
-      }
-      else
-      {
-        availableFields["Result"] = outputSchema;
-      }
-
-      // Reconcile keys
-      if(availableFields.Count > 0)
-      {
-        var existingKeys = OutputKeyMap.Select(o => o.DeviceOutputName).ToHashSet();
-
-        var keptOutputs = OutputKeyMap.Where(o => availableFields.ContainsKey(o.DeviceOutputName));
-
-        var newlyAddedOutputs = availableFields
-            .Where(kvp => !existingKeys.Contains(kvp.Key))
-            .Select(kvp =>
-            {
-
-              var defaultCustomName = kvp.Key == "Result" ? string.Empty : kvp.Key;
-              return new UserOutputSelection(kvp.Key, kvp.Value.Type, defaultCustomName);
-            });
-
-        OutputKeyMap = [.. keptOutputs, .. newlyAddedOutputs];
-      }
-      else
-      {
-        OutputKeyMap = [];
-      }
+      OutputProvider = false;
+      OutputVariableName = null;
     }
 
     var deviceId = existingMetadata?.DeviceId;
@@ -211,20 +159,37 @@ public partial class CommandDesignerViewModel : ReactiveObject
       MetadataDeviceName = string.IsNullOrEmpty(deviceInfo.Name) ? null : deviceInfo.Name;
     }
   }
-}
 
-public record UserOutputSelection
-{
-  public UserOutputSelection(string deviceOutputName, AresDataType deviceOutputType, string customName)
+  public void SetAvailableVariableReferences(IEnumerable<CommandOutputVariableReference> references)
   {
-    DeviceOutputName = deviceOutputName;
-    DeviceOutputType = deviceOutputType;
-    CustomName = customName;
+    _availableVariableReferences = references.ToArray();
+    ApplyAvailableVariableReferences();
   }
 
-  public string DeviceOutputName { get; }
+  public CommandOutputVariableReference[] GetOutputVariableReferences()
+    => CommandOutputVariableReferenceBuilder.Build(this);
 
-  public AresDataType DeviceOutputType { get; }
+  public string? GetParameterAssignmentError(Parameter parameter)
+  {
+    var argumentDesigner = ArgumentDesigners.FirstOrDefault(designer => designer.Name == parameter.Metadata?.Name);
+    if(argumentDesigner is null)
+      return "Parameter is no longer available for this command.";
 
-  public string CustomName { get; set; }
+    return parameter.GetParameterSource() switch
+    {
+      ParameterSource.Planned when !argumentDesigner.HasSelectedPlannedParameter()
+        => "Planned parameter is no longer available.",
+
+      ParameterSource.Variable when !argumentDesigner.HasSelectedVariableReference()
+        => "Command output variable is no longer available.",
+
+      _ => null
+    };
+  }
+
+  private void ApplyAvailableVariableReferences()
+  {
+    foreach(var argumentDesigner in ArgumentDesigners)
+      argumentDesigner.SetAvailableVariableReferences(_availableVariableReferences);
+  }
 }

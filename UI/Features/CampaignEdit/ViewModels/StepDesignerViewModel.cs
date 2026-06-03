@@ -7,6 +7,7 @@ namespace UI.Features.CampaignEdit.ViewModels;
 public class StepDesignerViewModel : ReactiveObject
 {
   private readonly CommandDesignerFactory _commandDesignerFactory;
+  private CommandOutputVariableReference[] _priorVariableReferences = [];
   private StepTemplate _stepTemplate = null!;
 
   public StepDesignerViewModel(CommandDesignerFactory commandDesignerFactory)
@@ -68,6 +69,7 @@ public class StepDesignerViewModel : ReactiveObject
     Parallel = existingTemplate.IsParallel;
     Index = Convert.ToInt32(existingTemplate.Index);
     CommandDesigners = existingTemplate.CommandTemplates.Select(template => _commandDesignerFactory.Create(template)).OrderBy(model => model.Index).ToList();
+    RefreshAvailableVariableReferences();
   }
 
   public StepTemplate Save()
@@ -85,6 +87,7 @@ public class StepDesignerViewModel : ReactiveObject
     var newDesigner = _commandDesignerFactory.Create();
     newDesigner.Index = CommandDesigners.Count;
     CommandDesigners.Add(newDesigner);
+    RefreshAvailableVariableReferences();
     return newDesigner;
   }
 
@@ -92,6 +95,7 @@ public class StepDesignerViewModel : ReactiveObject
   {
     CommandDesigners.Remove(vm);
     ReindexCommands();
+    RefreshAvailableVariableReferences();
   }
 
   public void MoveCommandDesignerUp(CommandDesignerViewModel vm)
@@ -102,6 +106,7 @@ public class StepDesignerViewModel : ReactiveObject
     CommandDesigners.RemoveAt(vm.Index);
     CommandDesigners.Insert(vm.Index - 1, vm);
     ReindexCommands();
+    RefreshAvailableVariableReferences();
   }
 
   public void MoveCommandDesignerDown(CommandDesignerViewModel vm)
@@ -112,6 +117,7 @@ public class StepDesignerViewModel : ReactiveObject
     CommandDesigners.RemoveAt(vm.Index);
     CommandDesigners.Insert(vm.Index + 1, vm);
     ReindexCommands();
+    RefreshAvailableVariableReferences();
   }
 
   private void ReindexCommands()
@@ -119,5 +125,29 @@ public class StepDesignerViewModel : ReactiveObject
     var idx = 0;
     foreach(var commandDesigner in CommandDesigners)
       commandDesigner.Index = idx++;
+  }
+
+  public void SetPriorVariableReferences(IEnumerable<CommandOutputVariableReference> priorVariableReferences)
+  {
+    _priorVariableReferences = priorVariableReferences.ToArray();
+    RefreshAvailableVariableReferences();
+  }
+
+  public CommandOutputVariableReference[] GetOutputVariableReferences()
+    => CommandDesigners
+      .OrderBy(command => command.Index)
+      .SelectMany(command => command.GetOutputVariableReferences())
+      .ToArray();
+
+  public void RefreshAvailableVariableReferences()
+  {
+    var availableReferences = _priorVariableReferences.ToList();
+    foreach(var commandDesigner in CommandDesigners.OrderBy(command => command.Index))
+    {
+      commandDesigner.SetAvailableVariableReferences(availableReferences);
+
+      if(!Parallel)
+        availableReferences.AddRange(commandDesigner.GetOutputVariableReferences());
+    }
   }
 }

@@ -40,6 +40,9 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
   public IObservable<CommandExecutionStatus> ExperimentStatusObservable { get; }
   public CommandExecutionStatus Status => _stateSubject.Value;
   public async Task<CommandExecutionSummary> Execute(ExecutionControlToken token)
+    => await Execute(token, new Dictionary<string, AresValue>());
+
+  public async Task<CommandExecutionSummary> Execute(ExecutionControlToken token, IReadOnlyDictionary<string, AresValue> variableScope)
   {
     Status.State = token.IsPaused ? ExecutionState.Paused : ExecutionState.Running;
     _stateSubject.OnNext(Status);
@@ -62,7 +65,11 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
 
     var timeStarted = DateTime.UtcNow;
     var execInfo = new ExecutionInfo { TimeStarted = DateTime.UtcNow.ToTimestamp() };
-    var result = await InternalExecute(token.CancellationToken);
+    var variableResolutionError = CommandVariableResolver.ResolveParameters(Template.Parameters, variableScope);
+    var result = variableResolutionError is null 
+      ? await InternalExecute(token.CancellationToken) 
+      : new CommandResult { Success = false, Error = variableResolutionError };
+
     execInfo.TimeFinished = DateTime.UtcNow.ToTimestamp();
 
     if(result.AwaitUserInput)

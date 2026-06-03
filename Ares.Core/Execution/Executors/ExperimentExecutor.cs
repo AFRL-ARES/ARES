@@ -43,7 +43,9 @@ public class ExperimentExecutor : IExecutor<ExperimentExecutionSummary, Experime
       if(token.IsCancelled)
         break;
 
-      var stepResult = await executableStep.Execute(token);
+      var stepResult = executableStep is StepExecutor stepExecutor
+        ? await stepExecutor.Execute(token, CommandVariableResolver.CreateVariableScope(stepSummaries.SelectMany(step => step.CommandSummaries)))
+        : await executableStep.Execute(token);
 
       if(!stepResult.CommandSummaries.Any())
         break;

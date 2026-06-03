@@ -21,9 +21,13 @@ public class SequentialStepExecutor : StepExecutor
   }
 
   public override async Task<StepExecutionSummary> Execute(ExecutionControlToken token)
+    => await Execute(token, new Dictionary<string, AresValue>());
+
+  public override async Task<StepExecutionSummary> Execute(ExecutionControlToken token, IReadOnlyDictionary<string, AresValue> variableScope)
   {
     var startTime = DateTime.UtcNow;
     var commandSummaries = new List<CommandExecutionSummary>();
+    var combinedScope = new Dictionary<string, AresValue>(variableScope);
     var currentSettings = await _settingsManager.GetAresGeneralSettings();
 
     foreach (var command in CommandExecutors)
@@ -31,7 +35,7 @@ public class SequentialStepExecutor : StepExecutor
       if(token.IsCancelled)
         break;
 
-      var commandExecutionSummary = await command.Execute(token);
+      var commandExecutionSummary = await command.Execute(token, combinedScope);
 
       //Handle Retry if needed
       var shouldRetry = await ShouldRetry(commandExecutionSummary.StatusCode);
@@ -71,13 +75,17 @@ public class SequentialStepExecutor : StepExecutor
       }
 
       if(commandExecutionSummary.Result.Success)
-        commandSummaries.Add(commandExecutionSummary);
-
-      else
       {
         commandSummaries.Add(commandExecutionSummary);
-        return ExecutorSummaryHelpers.CreateStepExecutionSummary(startTime, DateTime.UtcNow, commandSummaries);
+
+        foreach(var variable in CommandVariableResolver.CreateVariableScope([commandExecutionSummary]))
+          combinedScope[variable.Key] = variable.Value;
       }
+
+
+
+      else
+        return ExecutorSummaryHelpers.CreateEmptyStepExecutionSummary(startTime, DateTime.UtcNow);
     }
 
     return ExecutorSummaryHelpers.CreateStepExecutionSummary(startTime, DateTime.UtcNow, commandSummaries);

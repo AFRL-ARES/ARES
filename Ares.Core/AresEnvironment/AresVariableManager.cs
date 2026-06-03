@@ -15,16 +15,16 @@ public class AresVariableManager
 
     foreach(var parameter in parameterArray)
     {
-      if(!parameter.EnvironmentBased)
+      if(!parameter.IsEnvironmentBased())
         continue;
 
       string? variableValue = null;
 
-      if(parameter.VariableType is VariableType.PreviousExperimentPath)
-        variableValue = GetPastExperimentPath(parameter.VariableArgument);
+      if(parameter.GetVariableType() is VariableType.PreviousExperimentPath)
+        variableValue = GetPastExperimentPath(parameter.GetVariableArgument());
 
       else
-        variableValue = AresEnvironment.GetEnvironmentVariable(parameter.VariableType);
+        variableValue = AresEnvironment.GetEnvironmentVariable(parameter.GetVariableType());
 
 
       if(variableValue is null)
@@ -32,7 +32,7 @@ public class AresVariableManager
 
       var val = AresValueHelper.CreateString(variableValue);
 
-      parameter.Value = val;
+      parameter.SetResolvedValue(val);
     }
 
     return true;
