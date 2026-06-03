@@ -139,7 +139,6 @@ public class AnalysisHelper
 
     catch(Exception e)
     {
-      //TODO: Gracefully handle
       var exceptionMessage = $"ARES encountered an unexpected error when trying to assign experiment outputs to be analyzed. Associated Exception Message: {e.Message}";
       _notificationHandler.Notify("Analysis Output Assignment Error", exceptionMessage, NotificationSeverityEnum.Error);
       _logger.LogError(exceptionMessage);
