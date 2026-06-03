@@ -72,6 +72,7 @@ public class PlanningHelper : IPlanningHelper
         var planRequest = new PlanningRequest();
         planRequest.PlanningParameters.AddRange(plannableParameters.Select(parameter => ConvertToPlanningParameter(parameter, seedExperiments)));
         planRequest.AnalysisResults.AddRange(seedAnalysesArr.Select(a => (double)a.Result));
+        planRequest.Metadata = metadata;
         planTransaction.PlanningRequest = planRequest;
 
         var planResponse = await planner.Plan(planRequest, cancellationToken);
