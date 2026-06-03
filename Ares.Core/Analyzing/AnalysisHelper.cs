@@ -1,4 +1,6 @@
-﻿using Ares.Datamodel;
+﻿using Ares.Core.Execution.Executors;
+using Ares.Core.Notifications;
+using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Analyzing.Remote;
 using Ares.Datamodel.Extensions;
@@ -16,12 +18,14 @@ public class AnalysisHelper
   readonly IAnalyzerRepo _analyzerRepo;
   private readonly ILogger<AnalysisHelper> _logger;
   private readonly IDbContextFactory<CoreDatabaseContext> _dbContextFactory;
+  private readonly INotifier _notificationHandler;
 
-  public AnalysisHelper(IAnalyzerRepo analyzerRepo, ILogger<AnalysisHelper> logger, IDbContextFactory<CoreDatabaseContext> dbContextFactory)
+  public AnalysisHelper(IAnalyzerRepo analyzerRepo, ILogger<AnalysisHelper> logger, IDbContextFactory<CoreDatabaseContext> dbContextFactory, INotifier notificationHandler)
   {
     _analyzerRepo = analyzerRepo;
     _logger = logger;
     _dbContextFactory = dbContextFactory;
+    _notificationHandler = notificationHandler;
   }
 
   public async Task<Analysis> Analyze(ExperimentTemplate template, ExperimentExecutionSummary experimentSummary, ExperimentExecutionSummary startupSummary, RequestMetadata metadata, CancellationToken cancellationToken)
@@ -34,6 +38,9 @@ public class AnalysisHelper
 
       var combinedResult = AresStructHelper.AppendStruct(experimentSummary.ExperimentOverview.Result, startupSummary.ExperimentOverview.Result);
       var analyzerInputs = ExperimentOutputToAnalyzerInputs(combinedResult, template.AnalyzerMaps);
+
+      if(analyzerInputs is null)
+        return new Analysis { Result = float.NaN, AnalysisOutcome = Outcome.Failure, ErrorString = "Analysis Failure: Failed to assign analysis " };
 
       var analysisRequest = new AnalysisRequest 
       { 
@@ -100,25 +107,44 @@ public class AnalysisHelper
     .GetAnalyzerById(analyzerId) ?? throw new InvalidOperationException($"Could not find desired analyzer with id {analyzerId}");
   }
 
-  private AresStruct ExperimentOutputToAnalyzerInputs(AresStruct experimentResult, MapField<string, string> analyzerMappings)
+  private AresStruct? ExperimentOutputToAnalyzerInputs(AresStruct experimentResult, MapField<string, string> analyzerMappings)
   {
     try
     {
       var mappedStruct = new AresStruct();
+      var flattenResults = experimentResult.FlattenStruct();
       // Analyzer mapping is [KeyThatAnalyzerExpects, UserDefinedExperimentOutputKey]
       foreach(var map in analyzerMappings)
       {
-        var expResultValue = experimentResult.Fields[map.Value];
-        mappedStruct.Fields[map.Key] = expResultValue;
+        var found = flattenResults.TryGetValue(map.Value, out var expResultValue);
+        
+        if(found)
+          mappedStruct.Fields[map.Key] = expResultValue;
+        
+
+        else
+        {
+          var message = $"ARES is unable to perform analysis due to a missing value. Specifically ARES was looking for the value {map.Value}, " +
+            $"but was unable to match it to any of the existing experiment outputs. Check your template to ensure you've assigned outputs correctly. " +
+            $"If using a PyAres device, check to ensure your output schemas match your actual outputs from the device. If this problem persist please reach out to the development team.";
+          _notificationHandler.Notify("Unable to Analyzer", message, NotificationSeverityEnum.Error);
+          _logger.LogError(message);
+
+          return null;
+        }
       }
 
       return mappedStruct;
     }
 
-    catch(Exception)
+    catch(Exception e)
     {
       //TODO: Gracefully handle
-      throw;
+      var exceptionMessage = $"ARES encountered an unexpected error when trying to assign experiment outputs to be analyzed. Associated Exception Message: {e.Message}";
+      _notificationHandler.Notify("Analysis Output Assignment Error", exceptionMessage, NotificationSeverityEnum.Error);
+      _logger.LogError(exceptionMessage);
+
+      return null;
     }
 
   }
