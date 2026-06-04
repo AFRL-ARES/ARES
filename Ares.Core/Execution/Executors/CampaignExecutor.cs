@@ -345,8 +345,9 @@ public class CampaignExecutor : ICampaignExecutor
 
           if(experimentRetryCooldown.Seconds != 0)
             await Task.Delay(experimentRetryCooldown.ToTimeSpan());
-
-          currentState = ExecutionState.GenerateExecutor;
+          
+          
+          currentState = ExecutionState.Running;
           break;
 
         case ExecutionState.EnteringSafeMode:
