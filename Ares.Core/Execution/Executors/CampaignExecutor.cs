@@ -276,6 +276,9 @@ public class CampaignExecutor : ICampaignExecutor
 
           var failedCommandSummary = _currentSummary.StepSummaries.SelectMany(s => s.CommandSummaries.Where(c => !c.Result.Success)).FirstOrDefault();
 
+          if(!_currentSummary.StepSummaries.Any())
+            currentState = ExecutionState.Failed;
+
           if(failedCommandSummary is not null)
             currentState = await HandleError(failedCommandSummary);
 
@@ -460,7 +463,6 @@ public class CampaignExecutor : ICampaignExecutor
         return ExecutionState.Replanning;
 
       case ErrorHandling.RetryExperiment:
-      case ErrorHandling.RetryCommand:
         Status.State = ExecutionState.Retrying;
         _executionStatusSubject.OnNext(Status);
         _executionReporter.Report(Status);
@@ -475,6 +477,7 @@ public class CampaignExecutor : ICampaignExecutor
         await _notifier.Notify("Safe Mode Activated", "An ARES experiment has failed and based on your settings ARES has entered safe mode in response.", NotificationSeverityEnum.Error);
         return ExecutionState.Failed;
 
+      case ErrorHandling.RetryCommand: // We handle command retries at the step execution level, so we end the campaign if it reaches this point
       default:
         return ExecutionState.Failed;
     }

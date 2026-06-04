@@ -74,18 +74,16 @@ public class SequentialStepExecutor : StepExecutor
         }
       }
 
+      commandSummaries.Add(commandExecutionSummary);
+
       if(commandExecutionSummary.Result.Success)
       {
-        commandSummaries.Add(commandExecutionSummary);
-
         foreach(var variable in CommandVariableResolver.CreateVariableScope([commandExecutionSummary]))
           combinedScope[variable.Key] = variable.Value;
       }
 
-
-
       else
-        return ExecutorSummaryHelpers.CreateEmptyStepExecutionSummary(startTime, DateTime.UtcNow);
+        return ExecutorSummaryHelpers.CreateStepExecutionSummary(startTime, DateTime.UtcNow, commandSummaries);
     }
 
     return ExecutorSummaryHelpers.CreateStepExecutionSummary(startTime, DateTime.UtcNow, commandSummaries);

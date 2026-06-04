@@ -1,4 +1,5 @@
-﻿using Ares.Core.Settings;
+﻿using Ares.Core.Notifications;
+using Ares.Core.Settings;
 using Ares.Datamodel;
 using Google.Protobuf.WellKnownTypes;
 using ReactiveUI;
@@ -9,30 +10,46 @@ namespace UI.Features.Settings;
 public partial class SystemSettingsViewModel : ReactiveObject
 {
   private readonly ISystemSettingsManager _settingsManager;
+  private readonly INotificationHandler _notificationHandler;
+  private readonly ILogger<SystemSettingsViewModel> _logger;
 
-  public SystemSettingsViewModel(ISystemSettingsManager settingsManager)
+  public SystemSettingsViewModel(ISystemSettingsManager settingsManager, INotificationHandler notificationHandler, ILogger<SystemSettingsViewModel> logger)
   {
     _settingsManager = settingsManager;
+    _notificationHandler = notificationHandler;
     CurrentErrorHandlingSettings = new();
     Initialize();
+    _logger = logger;
   }
 
   public async Task PushUpdatedSettings()
   {
-    var configs = CurrentErrorHandlingSettings.Select(kvp => new DeviceErrorHandlingConfig() 
-    { 
-      Code = kvp.Key, 
-      Handling = kvp.Value }
-    ).ToList();
-
-    await _settingsManager.UpdateErrorHandlingSettings(configs);
-    await _settingsManager.UpdateAresGeneralSettings(new AresGeneralSettingsConfig
+    try
     {
-      ExperimentRetryLimit = ExperimentRetryLimit,
-      RetryCooldown = new Duration() { Seconds = ExperimentRetryCooldown },
-      CommandLatency = new Duration() { Seconds = CommandLatency },
-      CommandRetryLimit = CommandRetryLimit
-    });
+      var configs = CurrentErrorHandlingSettings.Select(kvp => new DeviceErrorHandlingConfig()
+      {
+        Code = kvp.Key,
+        Handling = kvp.Value
+      }).ToList();
+
+      await _settingsManager.UpdateErrorHandlingSettings(configs);
+      await _settingsManager.UpdateAresGeneralSettings(new AresGeneralSettingsConfig
+      {
+        ExperimentRetryLimit = ExperimentRetryLimit,
+        RetryCooldown = new Duration() { Seconds = ExperimentRetryCooldown },
+        CommandLatency = new Duration() { Seconds = CommandLatency },
+        CommandRetryLimit = CommandRetryLimit
+      });
+
+      await _notificationHandler.HandleNotification("Settings Updated!", "ARES successfully updated your settings.", NotificationSeverityEnum.Success);
+      _logger.LogInformation("ARES settings successfully updated");
+    }
+
+    catch(Exception e)
+    {
+      await _notificationHandler.HandleNotification("Failed to Update Settings", $"ARES couldn't update your settings. {e.Message}", NotificationSeverityEnum.Success);
+      _logger.LogError("ARES failed to update settings. Error: {error}", e.Message);
+    }
   }
 
   public async Task GetUpdatedSettings()
