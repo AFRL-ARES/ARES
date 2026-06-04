@@ -584,11 +584,7 @@
     {
       var export = await Task.Run(CreateCurrentExport);
 
-      using(export.Stream)
-      using(var streamReference = new DotNetStreamReference(export.Stream))
-      {
-        await JS.InvokeVoidAsync("downloadFileFromStream", export.FileName, streamReference);
-      }
+      await DatasetExportHelper.DownloadAsync(JS, export);
     }
     catch (Exception ex)
     {
@@ -603,19 +599,11 @@
 
   private DatasetExport CreateCurrentExport()
   {
-    var timestamp = DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
-
     return _appliedDisplayMode switch
     {
-      "Long" when _longDataset is not null => new DatasetExport(
-          AresDatasetExporter.ExportCsv(_longDataset),
-          $"device-state-long-{timestamp}.csv"),
-      "Wide" when _wideDataset is not null => new DatasetExport(
-          AresDatasetExporter.ExportCsv(_wideDataset),
-          $"device-state-wide-{timestamp}.csv"),
-      "Separate" when _deviceDatasets is not null => new DatasetExport(
-          AresDatasetExporter.ExportZip(_deviceDatasets),
-          $"device-state-separate-{timestamp}.zip"),
+      "Long" when _longDataset is not null => DatasetExportHelper.CreateCsv(_longDataset, "device-state-long"),
+      "Wide" when _wideDataset is not null => DatasetExportHelper.CreateCsv(_wideDataset, "device-state-wide"),
+      "Separate" when _deviceDatasets is not null => DatasetExportHelper.CreateZip(_deviceDatasets, "device-state-separate"),
       _ => throw new InvalidOperationException("The current display mode does not have exportable data.")
     };
   }
@@ -901,5 +889,4 @@
 
   private record ExperimentDisplayItem(string Id, string Name);
 
-  private record DatasetExport(Stream Stream, string FileName);
 }

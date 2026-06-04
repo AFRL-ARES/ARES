@@ -39,25 +39,33 @@ internal class CampaignDatasetGeneratorTests
 
     using(Assert.EnterMultipleScope())
     {
-      Assert.That(dataset.Name, Is.EqualTo("Campaign A"));
-      Assert.That(dataset.Columns.Take(4).Select(column => column.Name), Is.EqualTo([
+      Assert.That(dataset.Name, Is.EqualTo("Experiments"));
+      Assert.That(dataset.Columns.Take(9).Select(column => column.Name), Is.EqualTo([
         "Experiment Number",
+        "Experiment Execution ID",
+        "Experiment ID",
+        "Experiment Template",
         "Time Started",
         "Time Finished",
-        "Analysis Result"
+        "Duration Seconds",
+        "Analysis Result",
+        "Result Output Path"
       ]));
       Assert.That(ColumnSchema(dataset, "Experiment Number").Type, Is.EqualTo(AresDataType.Int));
       Assert.That(ColumnSchema(dataset, "Time Started").Type, Is.EqualTo(AresDataType.Timestamp));
       Assert.That(ColumnSchema(dataset, "Time Finished").Type, Is.EqualTo(AresDataType.Timestamp));
+      Assert.That(ColumnSchema(dataset, "Duration Seconds").Type, Is.EqualTo(AresDataType.Number));
       Assert.That(ColumnSchema(dataset, "Analysis Result").Type, Is.EqualTo(AresDataType.Number));
       Assert.That(ColumnSchema(dataset, "Analysis Result").Optional, Is.True);
       Assert.That(dataset.Rows[0].Data.Fields["Experiment Number"].IntValue, Is.EqualTo(1));
       Assert.That(dataset.Rows[0].Data.Fields["Time Started"].TimestampValue, Is.EqualTo(Timestamp.FromDateTime(firstStart)));
       Assert.That(dataset.Rows[0].Data.Fields["Time Finished"].TimestampValue, Is.EqualTo(Timestamp.FromDateTime(firstEnd)));
+      Assert.That(dataset.Rows[0].Data.Fields["Duration Seconds"].NumberValue, Is.EqualTo(1));
       Assert.That(dataset.Rows[0].Data.Fields["Analysis Result"].NumberValue, Is.EqualTo(1.5));
       Assert.That(dataset.Rows[1].Data.Fields["Experiment Number"].IntValue, Is.EqualTo(2));
       Assert.That(dataset.Rows[1].Data.Fields["Time Started"].TimestampValue, Is.EqualTo(Timestamp.FromDateTime(secondStart)));
       Assert.That(dataset.Rows[1].Data.Fields["Time Finished"].TimestampValue, Is.EqualTo(Timestamp.FromDateTime(secondEnd)));
+      Assert.That(dataset.Rows[1].Data.Fields["Duration Seconds"].NumberValue, Is.EqualTo(1));
       Assert.That(dataset.Rows[1].Data.Fields["Analysis Result"].NumberValue, Is.EqualTo(2.5));
     }
   }
@@ -84,17 +92,99 @@ internal class CampaignDatasetGeneratorTests
 
     using(Assert.EnterMultipleScope())
     {
-      Assert.That(ColumnSchema(dataset, "Yield").Type, Is.EqualTo(AresDataType.Number));
-      Assert.That(ColumnSchema(dataset, "Yield").Optional, Is.True);
-      Assert.That(ColumnSchema(dataset, "Comment").Type, Is.EqualTo(AresDataType.String));
-      Assert.That(ColumnSchema(dataset, "Comment").Optional, Is.True);
-      Assert.That(ColumnSchema(dataset, "Mass").Type, Is.EqualTo(AresDataType.Quantity));
-      Assert.That(ColumnSchema(dataset, "Mass").Optional, Is.True);
-      Assert.That(dataset.Rows[0].Data.Fields["Yield"].NumberValue, Is.EqualTo(12.3));
-      Assert.That(dataset.Rows[0].Data.Fields["Comment"].StringValue, Is.EqualTo("before"));
-      Assert.That(dataset.Rows[0].Data.Fields.ContainsKey("Mass"), Is.False);
-      Assert.That(dataset.Rows[1].Data.Fields["Mass"].QuantityValue.Scalar, Is.EqualTo(4.5));
+      Assert.That(ColumnSchema(dataset, "Output.Yield").Type, Is.EqualTo(AresDataType.Number));
+      Assert.That(ColumnSchema(dataset, "Output.Yield").Optional, Is.True);
+      Assert.That(ColumnSchema(dataset, "Output.Comment").Type, Is.EqualTo(AresDataType.String));
+      Assert.That(ColumnSchema(dataset, "Output.Comment").Optional, Is.True);
+      Assert.That(ColumnSchema(dataset, "Output.Mass").Type, Is.EqualTo(AresDataType.Quantity));
+      Assert.That(ColumnSchema(dataset, "Output.Mass").Optional, Is.True);
+      Assert.That(dataset.Rows[0].Data.Fields["Output.Yield"].NumberValue, Is.EqualTo(12.3));
+      Assert.That(dataset.Rows[0].Data.Fields["Output.Comment"].StringValue, Is.EqualTo("before"));
+      Assert.That(dataset.Rows[0].Data.Fields.ContainsKey("Output.Mass"), Is.False);
+      Assert.That(dataset.Rows[1].Data.Fields["Output.Mass"].QuantityValue.Scalar, Is.EqualTo(4.5));
     }
+  }
+
+  [Test]
+  public async Task GenerateAsync_IncludesExperimentIdentityTemplateAndOutputPath()
+  {
+    var summaryId = Guid.NewGuid().ToString();
+    var experiment = CreateExperiment(DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(1));
+    experiment.ExperimentId = "experiment-id";
+    experiment.ExperimentOverview.Template = new ExperimentTemplate { Name = "Template A" };
+    experiment.ResultOutputPath = "results/experiment.json";
+    var generator = CreateGenerator(CreateCampaignSummary(summaryId, "Campaign A", experiment));
+
+    var row = (await generator.GenerateAsync(summaryId)).Single().Rows.Single();
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(row.Data.Fields["Experiment Execution ID"].StringValue, Is.EqualTo(experiment.UniqueId));
+      Assert.That(row.Data.Fields["Experiment ID"].StringValue, Is.EqualTo("experiment-id"));
+      Assert.That(row.Data.Fields["Experiment Template"].StringValue, Is.EqualTo("Template A"));
+      Assert.That(row.Data.Fields["Result Output Path"].StringValue, Is.EqualTo("results/experiment.json"));
+    }
+  }
+
+  [Test]
+  public async Task GenerateAsync_RecursivelyFlattensStructParametersAndResults()
+  {
+    var summaryId = Guid.NewGuid().ToString();
+    var result = AresValueHelper.CreateStruct();
+    result.StructValue.Fields["Nested"] = AresValueHelper.CreateStruct();
+    result.StructValue.Fields["Nested"].StructValue.Fields["Value"] = AresValueHelper.CreateNumber(12.3);
+    var parameter = AresValueHelper.CreateStruct();
+    parameter.StructValue.Fields["Temp1"] = AresValueHelper.CreateNumber(22.5);
+    var generator = CreateGenerator(CreateCampaignSummary(
+      summaryId,
+      "Campaign A",
+      CreateExperiment(
+        DateTime.UnixEpoch,
+        DateTime.UnixEpoch.AddSeconds(1),
+        resultFields: [("Metrics", result)],
+        parameters: [CreateParameter("Temperatures", parameter)])));
+
+    var dataset = (await generator.GenerateAsync(summaryId)).Single();
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(dataset.Columns.Select(column => column.Name), Does.Contain("Output.Metrics.Nested.Value"));
+      Assert.That(dataset.Columns.Select(column => column.Name), Does.Contain("Input.Temperatures.Temp1"));
+      Assert.That(dataset.Rows.Single().Data.Fields["Output.Metrics.Nested.Value"].NumberValue, Is.EqualTo(12.3));
+      Assert.That(dataset.Rows.Single().Data.Fields["Input.Temperatures.Temp1"].NumberValue, Is.EqualTo(22.5));
+    }
+  }
+
+  [Test]
+  public async Task GenerateAsync_UsesAnySchemaForConflictingDynamicTypes()
+  {
+    var summaryId = Guid.NewGuid().ToString();
+    var generator = CreateGenerator(CreateCampaignSummary(
+      summaryId,
+      "Campaign A",
+      CreateExperiment(DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(1), resultFields: [("Value", AresValueHelper.CreateNumber(1))]),
+      CreateExperiment(DateTime.UnixEpoch.AddSeconds(2), DateTime.UnixEpoch.AddSeconds(3), resultFields: [("Value", AresValueHelper.CreateString("one"))])));
+
+    var dataset = (await generator.GenerateAsync(summaryId)).Single();
+
+    Assert.That(ColumnSchema(dataset, "Output.Value").Type, Is.EqualTo(AresDataType.Any));
+  }
+
+  [Test]
+  public async Task GenerateAsync_ExcludesStartupAndCloseoutSummaries()
+  {
+    var summaryId = Guid.NewGuid().ToString();
+    var summary = CreateCampaignSummary(
+      summaryId,
+      "Campaign A",
+      CreateExperiment(DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(1)));
+    summary.StartupExecutionSummary = CreateExperiment(DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(1));
+    summary.CloseoutExecutionSummary = CreateExperiment(DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(1));
+    var generator = CreateGenerator(summary);
+
+    var dataset = (await generator.GenerateAsync(summaryId)).Single();
+
+    Assert.That(dataset.Rows, Has.Count.EqualTo(1));
   }
 
   [Test]
@@ -119,11 +209,11 @@ internal class CampaignDatasetGeneratorTests
 
     using(Assert.EnterMultipleScope())
     {
-      Assert.That(ColumnSchema(dataset, "Parameter.Temperature").Type, Is.EqualTo(AresDataType.Quantity));
-      Assert.That(ColumnSchema(dataset, "Parameter.Temperature").Optional, Is.True);
-      Assert.That(ColumnSchema(dataset, $"Parameter.{parameterId}").Type, Is.EqualTo(AresDataType.String));
-      Assert.That(dataset.Rows.Single().Data.Fields["Parameter.Temperature"].QuantityValue.Scalar, Is.EqualTo(22.5));
-      Assert.That(dataset.Rows.Single().Data.Fields[$"Parameter.{parameterId}"].StringValue, Is.EqualTo("fallback"));
+      Assert.That(ColumnSchema(dataset, "Input.Temperature").Type, Is.EqualTo(AresDataType.Quantity));
+      Assert.That(ColumnSchema(dataset, "Input.Temperature").Optional, Is.True);
+      Assert.That(ColumnSchema(dataset, $"Input.{parameterId}").Type, Is.EqualTo(AresDataType.String));
+      Assert.That(dataset.Rows.Single().Data.Fields["Input.Temperature"].QuantityValue.Scalar, Is.EqualTo(22.5));
+      Assert.That(dataset.Rows.Single().Data.Fields[$"Input.{parameterId}"].StringValue, Is.EqualTo("fallback"));
     }
   }
 

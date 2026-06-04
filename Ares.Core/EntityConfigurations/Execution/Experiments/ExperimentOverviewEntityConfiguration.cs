@@ -18,5 +18,6 @@ internal class ExperimentOverviewEntityConfiguration : AresEntityTypeBaseConfigu
 
     builder.Navigation(e => e.AnalysisOverview).AutoInclude();
     builder.Navigation(e => e.Parameters).AutoInclude();
+    builder.Navigation(e => e.Template).AutoInclude();
   }
 }
