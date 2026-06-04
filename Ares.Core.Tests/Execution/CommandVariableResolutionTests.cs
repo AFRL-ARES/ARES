@@ -8,6 +8,8 @@ using Ares.Datamodel;
 using Ares.Datamodel.Device;
 using Ares.Datamodel.Templates;
 using Ares.Device;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
 using Moq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -17,11 +19,13 @@ namespace Ares.Core.Tests.Execution;
 internal class CommandVariableResolutionTests
 {
   private ISystemSettingsManager _systemSettingsManager;
+  private IDbContextFactory<CoreDatabaseContext> _dbContextFactory;
   
   [OneTimeSetUp]
   public void OneTimeSetUp()
   {
-    _systemSettingsManager = new Mock<SystemSettingsManager>().Object;
+    _dbContextFactory = new Mock<IDbContextFactory<CoreDatabaseContext>>().Object;
+    _systemSettingsManager = new Mock<ISystemSettingsManager>().Object;
   }
 
   [Test]
