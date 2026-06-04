@@ -218,6 +218,9 @@ public class CampaignExecutor : ICampaignExecutor
 
     while(!ShouldStop() && !token.IsCancelled && executionSuccess)
     {
+      _executionStatusSubject.OnNext(Status);
+      _executionReporter.Report(Status);
+
       switch(currentState)
       {
         case ExecutionState.InitializeExperiment:
@@ -304,8 +307,6 @@ public class CampaignExecutor : ICampaignExecutor
           }
 
           Status.State = ExecutionState.Replanning;
-          _executionStatusSubject.OnNext(Status);
-          _executionReporter.Report(Status);
 
           var replanMsg = "An ARES experiment failed, but based on your settings ARES will attempt to re-plan the experiment and run it again.";
           _logger.LogInformation(replanMsg);
@@ -326,11 +327,7 @@ public class CampaignExecutor : ICampaignExecutor
 
         case ExecutionState.Retrying:
           Status.State = ExecutionState.Retrying;
-          _executionStatusSubject.OnNext(Status);
-          _executionReporter.Report(Status);
-
           ResetCurrentExperimentStatus();
-
           failedExperimentRetryCount++;
 
           if(failedExperimentRetryCount > failedExperimentRetryLimit)
