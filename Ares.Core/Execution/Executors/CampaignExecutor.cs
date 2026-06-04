@@ -438,7 +438,7 @@ public class CampaignExecutor : ICampaignExecutor
   {
     var errorHandling = await _settingsManager.GetErrorHandlingByStatusCode(cmdSummary.Result.StatusCode);
 
-    if(errorHandling == ErrorHandling.PromptUser)
+    if(errorHandling == ErrorHandling.PromptUser || cmdSummary.Result.StatusCode == CommandStatusCode.StatusUnspecified)
     {
       _logger.LogInformation("ARES encountered an error that requires a user decision: {Code}", cmdSummary.Result.StatusCode);
       Status.State = ExecutionState.WaitingForUserDecision;
