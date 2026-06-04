@@ -184,6 +184,17 @@
           </div>
         </div>
 
+        <div class="campaign-details" aria-label="Applied campaign details">
+          <div>
+            <span class="detail-label">Tags</span>
+            <span class="detail-value">@AppliedCampaignTags</span>
+          </div>
+          <div>
+            <span class="detail-label">Notes</span>
+            <span class="detail-value">@AppliedCampaignNotes</span>
+          </div>
+        </div>
+
         <RadzenTabs Class="dataset-tabs" RenderMode="TabRenderMode.Server" @bind-SelectedIndex="_selectedDatasetTabIndex">
           <Tabs>
             @for (var index = 0; index < _datasets.Length; index++)
@@ -219,6 +230,8 @@
   private int FilteredCampaignCount => FilteredCampaigns.Count();
   private int AppliedExperimentCount => AppliedCampaign?.ExperimentCount ?? 0;
   private string AppliedCampaignName => AppliedCampaign?.CampaignName ?? "Campaign Data";
+  private string AppliedCampaignTags => string.IsNullOrWhiteSpace(AppliedCampaign?.Tags) ? "No tags" : AppliedCampaign.Tags;
+  private string AppliedCampaignNotes => string.IsNullOrWhiteSpace(AppliedCampaign?.Notes) ? "No notes" : AppliedCampaign.Notes;
   private CampaignDisplayItem? AppliedCampaign => _campaigns?.FirstOrDefault(campaign => campaign.SummaryId == _appliedCampaignId);
   private bool CanApply => !string.IsNullOrWhiteSpace(_selectedCampaignId) && !_loadingDatasets && !_exportingDatasets;
   private bool CanExport => !_loadingDatasets && !_exportingDatasets && _datasets?.Any(dataset => dataset.Rows.Count > 0) == true;
@@ -235,20 +248,33 @@
 
       return _campaigns.Where(campaign =>
         campaign.CampaignName.Contains(_filterText, StringComparison.OrdinalIgnoreCase) ||
-        campaign.SummaryId.Contains(_filterText, StringComparison.OrdinalIgnoreCase));
+        campaign.SummaryId.Contains(_filterText, StringComparison.OrdinalIgnoreCase) ||
+        campaign.Tags.Contains(_filterText, StringComparison.OrdinalIgnoreCase) ||
+        campaign.Notes.Contains(_filterText, StringComparison.OrdinalIgnoreCase));
     }
   }
 
   protected override async Task OnInitializedAsync()
   {
     var response = await AutomationClient.GetAvailableCampaignExecutionSummaries(new Empty(), null);
-    _campaigns = response.AvailableCampaignSummaries
-      .Select(campaign => new CampaignDisplayItem(
-        campaign.SummaryId,
-        string.IsNullOrWhiteSpace(campaign.CampaignName) ? campaign.SummaryId : campaign.CampaignName,
-        campaign.CompletionTime.ToReadableTimestamp(),
-        campaign.CompletionTime.ToDateTime(),
-        (int)campaign.NumExperiments))
+    var campaigns = await Task.WhenAll(response.AvailableCampaignSummaries
+      .Select(async campaign =>
+      {
+        var summary = await AutomationClient.GetCampaignSummary(
+          new CampaignExecutionSummaryRequest { SummaryId = campaign.SummaryId },
+          null);
+
+        return new CampaignDisplayItem(
+          campaign.SummaryId,
+          string.IsNullOrWhiteSpace(campaign.CampaignName) ? campaign.SummaryId : campaign.CampaignName,
+          campaign.CompletionTime.ToReadableTimestamp(),
+          campaign.CompletionTime.ToDateTime(),
+          (int)campaign.NumExperiments,
+          summary.CampaignTags ?? string.Empty,
+          summary.CampaignNotes ?? string.Empty);
+      }));
+
+    _campaigns = campaigns
       .OrderByDescending(campaign => campaign.CompletionTime)
       .ToList();
   }
@@ -381,5 +407,7 @@
     string CampaignName,
     string CompletionTimeDisplay,
     DateTime CompletionTime,
-    int ExperimentCount);
+    int ExperimentCount,
+    string Tags,
+    string Notes);
 }
