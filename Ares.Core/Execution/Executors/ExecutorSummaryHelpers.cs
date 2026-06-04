@@ -57,6 +57,7 @@ internal static class ExecutorSummaryHelpers
       TemplateId = template.UniqueId,
       CommandDescription = template.Metadata.Description,
       CommandName = template.Metadata.Name,
+      StatusCode = deviceResult?.StatusCode ?? CommandStatusCode.StatusUnspecified
     };
 
     if(template.HasOutputVarName)

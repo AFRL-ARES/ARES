@@ -35,21 +35,18 @@ internal class CampaignDatasetGeneratorTests
       CreateExperiment(firstStart, firstEnd, analysisResult: 1.5));
     var generator = CreateGenerator(summary);
 
-    var dataset = (await generator.GenerateAsync(summaryId)).Single();
+    var dataset = GetDataset(await generator.GenerateAsync(summaryId), "Experiments");
 
     using(Assert.EnterMultipleScope())
     {
       Assert.That(dataset.Name, Is.EqualTo("Experiments"));
-      Assert.That(dataset.Columns.Take(9).Select(column => column.Name), Is.EqualTo([
+      Assert.That(dataset.Columns.Take(6).Select(column => column.Name), Is.EqualTo([
         "Experiment Number",
-        "Experiment Execution ID",
-        "Experiment ID",
         "Experiment Template",
         "Time Started",
         "Time Finished",
         "Duration Seconds",
-        "Analysis Result",
-        "Result Output Path"
+        "Analysis Result"
       ]));
       Assert.That(ColumnSchema(dataset, "Experiment Number").Type, Is.EqualTo(AresDataType.Int));
       Assert.That(ColumnSchema(dataset, "Time Started").Type, Is.EqualTo(AresDataType.Timestamp));
@@ -87,7 +84,7 @@ internal class CampaignDatasetGeneratorTests
       ]));
     var generator = CreateGenerator(summary);
 
-    var dataset = (await generator.GenerateAsync(summaryId)).Single();
+    var dataset = GetDataset(await generator.GenerateAsync(summaryId), "Experiments");
     original.StringValue = "after";
 
     using(Assert.EnterMultipleScope())
@@ -106,24 +103,16 @@ internal class CampaignDatasetGeneratorTests
   }
 
   [Test]
-  public async Task GenerateAsync_IncludesExperimentIdentityTemplateAndOutputPath()
+  public async Task GenerateAsync_IncludesExperimentTemplate()
   {
     var summaryId = Guid.NewGuid().ToString();
     var experiment = CreateExperiment(DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(1));
-    experiment.ExperimentId = "experiment-id";
     experiment.ExperimentOverview.Template = new ExperimentTemplate { Name = "Template A" };
-    experiment.ResultOutputPath = "results/experiment.json";
     var generator = CreateGenerator(CreateCampaignSummary(summaryId, "Campaign A", experiment));
 
-    var row = (await generator.GenerateAsync(summaryId)).Single().Rows.Single();
+    var row = GetDataset(await generator.GenerateAsync(summaryId), "Experiments").Rows.Single();
 
-    using(Assert.EnterMultipleScope())
-    {
-      Assert.That(row.Data.Fields["Experiment Execution ID"].StringValue, Is.EqualTo(experiment.UniqueId));
-      Assert.That(row.Data.Fields["Experiment ID"].StringValue, Is.EqualTo("experiment-id"));
-      Assert.That(row.Data.Fields["Experiment Template"].StringValue, Is.EqualTo("Template A"));
-      Assert.That(row.Data.Fields["Result Output Path"].StringValue, Is.EqualTo("results/experiment.json"));
-    }
+    Assert.That(row.Data.Fields["Experiment Template"].StringValue, Is.EqualTo("Template A"));
   }
 
   [Test]
@@ -144,7 +133,7 @@ internal class CampaignDatasetGeneratorTests
         resultFields: [("Metrics", result)],
         parameters: [CreateParameter("Temperatures", parameter)])));
 
-    var dataset = (await generator.GenerateAsync(summaryId)).Single();
+    var dataset = GetDataset(await generator.GenerateAsync(summaryId), "Experiments");
 
     using(Assert.EnterMultipleScope())
     {
@@ -165,7 +154,7 @@ internal class CampaignDatasetGeneratorTests
       CreateExperiment(DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(1), resultFields: [("Value", AresValueHelper.CreateNumber(1))]),
       CreateExperiment(DateTime.UnixEpoch.AddSeconds(2), DateTime.UnixEpoch.AddSeconds(3), resultFields: [("Value", AresValueHelper.CreateString("one"))])));
 
-    var dataset = (await generator.GenerateAsync(summaryId)).Single();
+    var dataset = GetDataset(await generator.GenerateAsync(summaryId), "Experiments");
 
     Assert.That(ColumnSchema(dataset, "Output.Value").Type, Is.EqualTo(AresDataType.Any));
   }
@@ -182,9 +171,192 @@ internal class CampaignDatasetGeneratorTests
     summary.CloseoutExecutionSummary = CreateExperiment(DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(1));
     var generator = CreateGenerator(summary);
 
-    var dataset = (await generator.GenerateAsync(summaryId)).Single();
+    var dataset = GetDataset(await generator.GenerateAsync(summaryId), "Experiments");
 
     Assert.That(dataset.Rows, Has.Count.EqualTo(1));
+  }
+
+  [Test]
+  public async Task GenerateAsync_ReturnsExperimentsAndCommandsDatasets()
+  {
+    var summaryId = Guid.NewGuid().ToString();
+    var generator = CreateGenerator(CreateCampaignSummary(
+      summaryId,
+      "Campaign A",
+      CreateExperiment(DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(1))));
+
+    var datasets = await generator.GenerateAsync(summaryId);
+
+    Assert.That(datasets.Select(dataset => dataset.Name), Is.EqualTo(["Experiments", "Commands"]));
+  }
+
+  [Test]
+  public async Task GenerateAsync_CreatesCommandRowsAndFixedColumns()
+  {
+    var summaryId = Guid.NewGuid().ToString();
+    var commandStart = DateTime.UnixEpoch.AddSeconds(12);
+    var commandEnd = DateTime.UnixEpoch.AddSeconds(15);
+    var command = CreateCommand(
+      commandStart,
+      commandEnd,
+      commandName: "Aspirate",
+      commandDescription: "Move liquid",
+      statusCode: CommandStatusCode.CommandSuccess,
+      result: new CommandResult
+      {
+        Success = true,
+        Result = AresValueHelper.CreateNumber(10),
+        StatusCode = CommandStatusCode.CommandFailed,
+        Error = "warning"
+      });
+    var step = CreateStep("step-id", DateTime.UnixEpoch.AddSeconds(11), DateTime.UnixEpoch.AddSeconds(16), command);
+    var experiment = CreateExperiment(DateTime.UnixEpoch.AddSeconds(10), DateTime.UnixEpoch.AddSeconds(20), steps: [step]);
+    var generator = CreateGenerator(CreateCampaignSummary(summaryId, "Campaign A", experiment));
+
+    var dataset = GetDataset(await generator.GenerateAsync(summaryId), "Commands");
+    var row = dataset.Rows.Single();
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(dataset.Columns.Take(12).Select(column => column.Name), Is.EqualTo([
+        "Experiment Number",
+        "Step Number",
+        "Command Number",
+        "Command Name",
+        "Command Description",
+        "Time Started",
+        "Time Finished",
+        "Duration Seconds",
+        "Status",
+        "Success",
+        "Error",
+        "Output"
+      ]));
+      Assert.That(ColumnSchema(dataset, "Experiment Number").Type, Is.EqualTo(AresDataType.Int));
+      Assert.That(ColumnSchema(dataset, "Step Number").Type, Is.EqualTo(AresDataType.Int));
+      Assert.That(ColumnSchema(dataset, "Command Number").Type, Is.EqualTo(AresDataType.Int));
+      Assert.That(ColumnSchema(dataset, "Status").Type, Is.EqualTo(AresDataType.String));
+      Assert.That(ColumnSchema(dataset, "Success").Type, Is.EqualTo(AresDataType.Boolean));
+      Assert.That(row.Data.Fields["Experiment Number"].IntValue, Is.EqualTo(1));
+      Assert.That(row.Data.Fields["Step Number"].IntValue, Is.EqualTo(1));
+      Assert.That(row.Data.Fields["Command Number"].IntValue, Is.EqualTo(1));
+      Assert.That(row.Data.Fields["Command Name"].StringValue, Is.EqualTo("Aspirate"));
+      Assert.That(row.Data.Fields["Command Description"].StringValue, Is.EqualTo("Move liquid"));
+      Assert.That(row.Data.Fields["Time Started"].TimestampValue, Is.EqualTo(Timestamp.FromDateTime(commandStart)));
+      Assert.That(row.Data.Fields["Time Finished"].TimestampValue, Is.EqualTo(Timestamp.FromDateTime(commandEnd)));
+      Assert.That(row.Data.Fields["Duration Seconds"].NumberValue, Is.EqualTo(3));
+      Assert.That(row.Data.Fields["Status"].StringValue, Is.EqualTo(CommandStatusCode.CommandSuccess.ToString()));
+      Assert.That(row.Data.Fields["Success"].BoolValue, Is.True);
+      Assert.That(row.Data.Fields["Error"].StringValue, Is.EqualTo("warning"));
+      Assert.That(row.Data.Fields["Output"].NumberValue, Is.EqualTo(10));
+    }
+  }
+
+  [Test]
+  public async Task GenerateAsync_SortsCommandRowsByExperimentStepAndCommandTime()
+  {
+    var summaryId = Guid.NewGuid().ToString();
+    var firstCommand = CreateCommand(DateTime.UnixEpoch.AddSeconds(2), DateTime.UnixEpoch.AddSeconds(3), commandName: "First");
+    var secondCommand = CreateCommand(DateTime.UnixEpoch.AddSeconds(4), DateTime.UnixEpoch.AddSeconds(5), commandName: "Second");
+    var firstStep = CreateStep("first-step", DateTime.UnixEpoch.AddSeconds(1), DateTime.UnixEpoch.AddSeconds(6), secondCommand, firstCommand);
+    var secondStep = CreateStep("second-step", DateTime.UnixEpoch.AddSeconds(7), DateTime.UnixEpoch.AddSeconds(8), CreateCommand(DateTime.UnixEpoch.AddSeconds(7), DateTime.UnixEpoch.AddSeconds(8), commandName: "Third"));
+    var laterExperiment = CreateExperiment(DateTime.UnixEpoch.AddSeconds(20), DateTime.UnixEpoch.AddSeconds(21), steps: [
+      CreateStep("later-step", DateTime.UnixEpoch.AddSeconds(20), DateTime.UnixEpoch.AddSeconds(21), CreateCommand(DateTime.UnixEpoch.AddSeconds(20), DateTime.UnixEpoch.AddSeconds(21), commandName: "Fourth"))
+    ]);
+    var earlierExperiment = CreateExperiment(DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(10), steps: [secondStep, firstStep]);
+    var generator = CreateGenerator(CreateCampaignSummary(summaryId, "Campaign A", laterExperiment, earlierExperiment));
+
+    var dataset = GetDataset(await generator.GenerateAsync(summaryId), "Commands");
+
+    Assert.That(dataset.Rows.Select(row => row.Data.Fields["Command Name"].StringValue), Is.EqualTo(["First", "Second", "Third", "Fourth"]));
+  }
+
+  [Test]
+  public async Task GenerateAsync_FlattensStructCommandOutputs()
+  {
+    var summaryId = Guid.NewGuid().ToString();
+    var output = AresValueHelper.CreateStruct();
+    output.StructValue.Fields["Measurement"] = AresValueHelper.CreateStruct();
+    output.StructValue.Fields["Measurement"].StructValue.Fields["Mass"] = AresValueHelper.CreateQuantity(4.5, QuantityType.Mass, "g");
+    var command = CreateCommand(DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(1), result: new CommandResult { Result = output });
+    var generator = CreateGenerator(CreateCampaignSummary(
+      summaryId,
+      "Campaign A",
+      CreateExperiment(DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(2), steps: [CreateStep("step", DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(2), command)])));
+
+    var dataset = GetDataset(await generator.GenerateAsync(summaryId), "Commands");
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(dataset.Columns.Select(column => column.Name), Does.Contain("Output.Measurement.Mass"));
+      Assert.That(dataset.Rows.Single().Data.Fields["Output.Measurement.Mass"].QuantityValue.Scalar, Is.EqualTo(4.5));
+    }
+  }
+
+  [Test]
+  public async Task GenerateAsync_UsesAnySchemaForConflictingCommandOutputTypes()
+  {
+    var summaryId = Guid.NewGuid().ToString();
+    var generator = CreateGenerator(CreateCampaignSummary(
+      summaryId,
+      "Campaign A",
+      CreateExperiment(DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(4), steps: [
+        CreateStep(
+          "step",
+          DateTime.UnixEpoch,
+          DateTime.UnixEpoch.AddSeconds(4),
+          CreateCommand(DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(1), result: new CommandResult { Result = AresValueHelper.CreateNumber(1) }),
+          CreateCommand(DateTime.UnixEpoch.AddSeconds(2), DateTime.UnixEpoch.AddSeconds(3), result: new CommandResult { Result = AresValueHelper.CreateString("one") }))
+      ])));
+
+    var dataset = GetDataset(await generator.GenerateAsync(summaryId), "Commands");
+
+    Assert.That(ColumnSchema(dataset, "Output").Type, Is.EqualTo(AresDataType.Any));
+  }
+
+  [Test]
+  public async Task GenerateAsync_LeavesCommandOutputColumnsEmptyWhenResultIsMissing()
+  {
+    var summaryId = Guid.NewGuid().ToString();
+    var commandWithoutResult = CreateCommand(DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(1), result: null);
+    var commandWithResult = CreateCommand(DateTime.UnixEpoch.AddSeconds(2), DateTime.UnixEpoch.AddSeconds(3), result: new CommandResult { Result = AresValueHelper.CreateNumber(2) });
+    var generator = CreateGenerator(CreateCampaignSummary(
+      summaryId,
+      "Campaign A",
+      CreateExperiment(DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(4), steps: [
+        CreateStep("step", DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(4), commandWithoutResult, commandWithResult)
+      ])));
+
+    var dataset = GetDataset(await generator.GenerateAsync(summaryId), "Commands");
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(dataset.Rows[0].Data.Fields.ContainsKey("Output"), Is.False);
+      Assert.That(dataset.Rows[1].Data.Fields["Output"].NumberValue, Is.EqualTo(2));
+    }
+  }
+
+  [Test]
+  public async Task GenerateAsync_ExcludesStartupAndCloseoutCommands()
+  {
+    var summaryId = Guid.NewGuid().ToString();
+    var summary = CreateCampaignSummary(
+      summaryId,
+      "Campaign A",
+      CreateExperiment(DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(1), steps: [
+        CreateStep("experiment-step", DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(1), CreateCommand(DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(1), commandName: "Experiment"))
+      ]));
+    summary.StartupExecutionSummary = CreateExperiment(DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(1), steps: [
+      CreateStep("startup-step", DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(1), CreateCommand(DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(1), commandName: "Startup"))
+    ]);
+    summary.CloseoutExecutionSummary = CreateExperiment(DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(1), steps: [
+      CreateStep("closeout-step", DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(1), CreateCommand(DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(1), commandName: "Closeout"))
+    ]);
+    var generator = CreateGenerator(summary);
+
+    var dataset = GetDataset(await generator.GenerateAsync(summaryId), "Commands");
+
+    Assert.That(dataset.Rows.Select(row => row.Data.Fields["Command Name"].StringValue), Is.EqualTo(["Experiment"]));
   }
 
   [Test]
@@ -205,7 +377,7 @@ internal class CampaignDatasetGeneratorTests
         ]));
     var generator = CreateGenerator(summary);
 
-    var dataset = (await generator.GenerateAsync(summaryId)).Single();
+    var dataset = GetDataset(await generator.GenerateAsync(summaryId), "Experiments");
 
     using(Assert.EnterMultipleScope())
     {
@@ -263,6 +435,11 @@ internal class CampaignDatasetGeneratorTests
     return dataset.Columns.Single(column => column.Name == columnName).Schema;
   }
 
+  private static AresDataset GetDataset(IEnumerable<AresDataset> datasets, string name)
+  {
+    return datasets.Single(dataset => dataset.Name == name);
+  }
+
   private static CampaignExecutionSummary CreateCampaignSummary(
     string uniqueId,
     string campaignName,
@@ -288,7 +465,8 @@ internal class CampaignDatasetGeneratorTests
     DateTime timeFinished,
     double? analysisResult = null,
     (string Name, AresValue Value)[] resultFields = null,
-    Parameter[] parameters = null)
+    Parameter[] parameters = null,
+    StepExecutionSummary[] steps = null)
   {
     var overview = new ExperimentOverview
     {
@@ -305,7 +483,7 @@ internal class CampaignDatasetGeneratorTests
 
     overview.Parameters.AddRange(parameters ?? []);
 
-    return new ExperimentExecutionSummary
+    var experiment = new ExperimentExecutionSummary
     {
       UniqueId = Guid.NewGuid().ToString(),
       ExecutionInfo = new ExecutionInfo
@@ -315,6 +493,53 @@ internal class CampaignDatasetGeneratorTests
       },
       ExperimentOverview = overview
     };
+    experiment.StepSummaries.AddRange(steps ?? []);
+    return experiment;
+  }
+
+  private static StepExecutionSummary CreateStep(
+    string stepId,
+    DateTime timeStarted,
+    DateTime timeFinished,
+    params CommandExecutionSummary[] commands)
+  {
+    var step = new StepExecutionSummary
+    {
+      UniqueId = Guid.NewGuid().ToString(),
+      StepId = stepId,
+      ExecutionInfo = new ExecutionInfo
+      {
+        TimeStarted = Timestamp.FromDateTime(timeStarted),
+        TimeFinished = Timestamp.FromDateTime(timeFinished)
+      }
+    };
+    step.CommandSummaries.AddRange(commands);
+    return step;
+  }
+
+  private static CommandExecutionSummary CreateCommand(
+    DateTime timeStarted,
+    DateTime timeFinished,
+    string commandName = "",
+    string commandDescription = "",
+    CommandStatusCode statusCode = CommandStatusCode.StatusUnspecified,
+    CommandResult result = null)
+  {
+    var command = new CommandExecutionSummary
+    {
+      UniqueId = Guid.NewGuid().ToString(),
+      CommandName = commandName,
+      CommandDescription = commandDescription,
+      StatusCode = statusCode,
+      Result = result,
+      ExecutionInfo = new ExecutionInfo
+      {
+        TimeStarted = Timestamp.FromDateTime(timeStarted),
+        TimeFinished = Timestamp.FromDateTime(timeFinished)
+      }
+    };
+
+    return command;
   }
 
   private static Parameter CreateParameter(string metadataName, AresValue value, string uniqueId = "", long index = 0)

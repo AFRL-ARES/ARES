@@ -8,16 +8,21 @@ namespace Ares.Core.DataManagement.DataMappers;
 public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _dbContextFactory)
 {
   private const string ExperimentNumberColumnName = "Experiment Number";
-  private const string ExperimentExecutionIdColumnName = "Experiment Execution ID";
-  private const string ExperimentIdColumnName = "Experiment ID";
   private const string ExperimentTemplateColumnName = "Experiment Template";
+  private const string StepNumberColumnName = "Step Number";
+  private const string CommandNumberColumnName = "Command Number";
+  private const string CommandNameColumnName = "Command Name";
+  private const string CommandDescriptionColumnName = "Command Description";
   private const string TimeStartedColumnName = "Time Started";
   private const string TimeFinishedColumnName = "Time Finished";
   private const string DurationSecondsColumnName = "Duration Seconds";
   private const string AnalysisResultColumnName = "Analysis Result";
-  private const string ResultOutputPathColumnName = "Result Output Path";
+  private const string StatusColumnName = "Status";
+  private const string SuccessColumnName = "Success";
+  private const string ErrorColumnName = "Error";
   private const string InputColumnPrefix = "Input.";
   private const string OutputColumnPrefix = "Output.";
+  private const string OutputColumnName = "Output";
 
   public async ValueTask<AresDataset[]> GenerateAsync(string summaryId, CancellationToken cancellationToken = default)
   {
@@ -32,44 +37,71 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
       .OrderBy(experiment => experiment.ExecutionInfo?.TimeStarted)
       .ToArray();
 
+    return [
+      CreateExperimentsDataset(experiments, cancellationToken),
+      CreateCommandsDataset(experiments, cancellationToken)
+    ];
+  }
+
+  private static AresDataset CreateExperimentsDataset(ExperimentExecutionSummary[] experiments, CancellationToken cancellationToken)
+  {
     var dataset = new AresDataset
     {
       Name = "Experiments"
     };
 
-    dataset.Columns.AddRange(CreateFixedColumns());
-    dataset.Columns.AddRange(CreateDynamicColumns(experiments, cancellationToken));
-    dataset.Rows.AddRange(experiments.Select((experiment, index) => CreateRow(experiment, index + 1, cancellationToken)));
-
-    return [dataset];
+    dataset.Columns.AddRange(CreateExperimentColumns(experiments, cancellationToken));
+    dataset.Rows.AddRange(experiments.Select((experiment, index) => CreateExperimentRow(experiment, index + 1, cancellationToken)));
+    return dataset;
   }
 
-  private static IEnumerable<AresDataColumn> CreateFixedColumns()
+  private static AresDataset CreateCommandsDataset(ExperimentExecutionSummary[] experiments, CancellationToken cancellationToken)
+  {
+    var commandRecords = CreateCommandRecords(experiments, cancellationToken).ToArray();
+    var dataset = new AresDataset
+    {
+      Name = "Commands"
+    };
+
+    dataset.Columns.AddRange(CreateCommandColumns(commandRecords, cancellationToken));
+    dataset.Rows.AddRange(commandRecords.Select(record => CreateCommandRow(record, cancellationToken)));
+    return dataset;
+  }
+
+  private static IEnumerable<AresDataColumn> CreateExperimentColumns(IEnumerable<ExperimentExecutionSummary> experiments, CancellationToken cancellationToken)
   {
     return
     [
       CreateColumn(ExperimentNumberColumnName, AresDataType.Int),
-      CreateColumn(ExperimentExecutionIdColumnName, AresDataType.String, optional: true),
-      CreateColumn(ExperimentIdColumnName, AresDataType.String, optional: true),
       CreateColumn(ExperimentTemplateColumnName, AresDataType.String, optional: true),
       CreateColumn(TimeStartedColumnName, AresDataType.Timestamp, optional: true),
       CreateColumn(TimeFinishedColumnName, AresDataType.Timestamp, optional: true),
       CreateColumn(DurationSecondsColumnName, AresDataType.Number, optional: true),
       CreateColumn(AnalysisResultColumnName, AresDataType.Number, optional: true),
-      CreateColumn(ResultOutputPathColumnName, AresDataType.String, optional: true)
+      .. CreateExperimentDynamicColumns(experiments, cancellationToken)
     ];
   }
 
-  private static AresDataColumn CreateColumn(string name, AresDataType type, bool optional = false)
+  private static IEnumerable<AresDataColumn> CreateCommandColumns(IEnumerable<CommandRecord> commandRecords, CancellationToken cancellationToken)
   {
-    return new AresDataColumn
-    {
-      Name = name,
-      Schema = new AresValueSchema { Type = type, Optional = optional }
-    };
+    return
+    [
+      CreateColumn(ExperimentNumberColumnName, AresDataType.Int),
+      CreateColumn(StepNumberColumnName, AresDataType.Int),
+      CreateColumn(CommandNumberColumnName, AresDataType.Int),
+      CreateColumn(CommandNameColumnName, AresDataType.String, optional: true),
+      CreateColumn(CommandDescriptionColumnName, AresDataType.String, optional: true),
+      CreateColumn(TimeStartedColumnName, AresDataType.Timestamp, optional: true),
+      CreateColumn(TimeFinishedColumnName, AresDataType.Timestamp, optional: true),
+      CreateColumn(DurationSecondsColumnName, AresDataType.Number, optional: true),
+      CreateColumn(StatusColumnName, AresDataType.String, optional: true),
+      CreateColumn(SuccessColumnName, AresDataType.Boolean, optional: true),
+      CreateColumn(ErrorColumnName, AresDataType.String, optional: true),
+      .. CreateCommandDynamicColumns(commandRecords, cancellationToken)
+    ];
   }
 
-  private static IEnumerable<AresDataColumn> CreateDynamicColumns(IEnumerable<ExperimentExecutionSummary> experiments, CancellationToken cancellationToken)
+  private static IEnumerable<AresDataColumn> CreateExperimentDynamicColumns(IEnumerable<ExperimentExecutionSummary> experiments, CancellationToken cancellationToken)
   {
     var columns = new Dictionary<string, AresValueSchema>();
 
@@ -111,6 +143,64 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     });
   }
 
+  private static IEnumerable<AresDataColumn> CreateCommandDynamicColumns(IEnumerable<CommandRecord> commandRecords, CancellationToken cancellationToken)
+  {
+    var columns = new Dictionary<string, AresValueSchema>();
+
+    foreach(var commandRecord in commandRecords)
+    {
+      cancellationToken.ThrowIfCancellationRequested();
+      var output = commandRecord.Command.Result?.Result;
+      if(output is null || output.KindCase == AresValue.KindOneofCase.None)
+        continue;
+
+      foreach(var flattenedField in AresValueFlattener.Flatten(OutputColumnName, output))
+      {
+        cancellationToken.ThrowIfCancellationRequested();
+        TryAddDynamicColumn(columns, flattenedField.Key, flattenedField.Value);
+      }
+    }
+
+    return columns.Select(column => new AresDataColumn
+    {
+      Name = column.Key,
+      Schema = column.Value
+    });
+  }
+
+  private static IEnumerable<CommandRecord> CreateCommandRecords(IEnumerable<ExperimentExecutionSummary> experiments, CancellationToken cancellationToken)
+  {
+    foreach(var experimentItem in experiments.Select((experiment, index) => new { Experiment = experiment, ExperimentNumber = index + 1 }))
+    {
+      cancellationToken.ThrowIfCancellationRequested();
+
+      var steps = experimentItem.Experiment.StepSummaries
+        .OrderBy(step => step.ExecutionInfo?.TimeStarted)
+        .ToArray();
+
+      foreach(var stepItem in steps.Select((step, index) => new { Step = step, StepNumber = index + 1 }))
+      {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var commands = stepItem.Step.CommandSummaries
+          .OrderBy(command => command.ExecutionInfo?.TimeStarted)
+          .ToArray();
+
+        foreach(var commandItem in commands.Select((command, index) => new { Command = command, CommandNumber = index + 1 }))
+        {
+          cancellationToken.ThrowIfCancellationRequested();
+          yield return new CommandRecord(
+            experimentItem.Experiment,
+            experimentItem.ExperimentNumber,
+            stepItem.Step,
+            stepItem.StepNumber,
+            commandItem.Command,
+            commandItem.CommandNumber);
+        }
+      }
+    }
+  }
+
   private static void TryAddDynamicColumn(IDictionary<string, AresValueSchema> columns, string columnName, AresValue? value)
   {
     if(value is null)
@@ -128,33 +218,17 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
       existingSchema.Type = AresDataType.Any;
   }
 
-  private static AresDataRow CreateRow(ExperimentExecutionSummary experiment, int experimentNumber, CancellationToken cancellationToken)
+  private static AresDataRow CreateExperimentRow(ExperimentExecutionSummary experiment, int experimentNumber, CancellationToken cancellationToken)
   {
     cancellationToken.ThrowIfCancellationRequested();
 
     var data = new AresStruct();
-    data.Fields[ExperimentNumberColumnName] = AresValueHelper.CreateInt(experimentNumber);
-
-    AddString(data, ExperimentExecutionIdColumnName, experiment.HasUniqueId ? experiment.UniqueId : null);
-    AddString(data, ExperimentIdColumnName, experiment.ExperimentId);
+    AddExperimentFields(data, experiment, experimentNumber);
     AddString(data, ExperimentTemplateColumnName, experiment.ExperimentOverview?.Template?.Name);
-
-    if(experiment.ExecutionInfo?.TimeStarted is not null)
-      data.Fields[TimeStartedColumnName] = AresValueHelper.CreateTimestamp(experiment.ExecutionInfo.TimeStarted);
-
-    if(experiment.ExecutionInfo?.TimeFinished is not null)
-      data.Fields[TimeFinishedColumnName] = AresValueHelper.CreateTimestamp(experiment.ExecutionInfo.TimeFinished);
-
-    if(experiment.ExecutionInfo?.TimeStarted is not null && experiment.ExecutionInfo.TimeFinished is not null)
-    {
-      var duration = experiment.ExecutionInfo.TimeFinished.ToDateTime() - experiment.ExecutionInfo.TimeStarted.ToDateTime();
-      data.Fields[DurationSecondsColumnName] = AresValueHelper.CreateNumber(duration.TotalSeconds);
-    }
+    AddExecutionFields(data, experiment.ExecutionInfo);
 
     if(experiment.ExperimentOverview?.AnalysisOverview is not null)
       data.Fields[AnalysisResultColumnName] = AresValueHelper.CreateNumber(experiment.ExperimentOverview.AnalysisOverview.Result);
-
-    AddString(data, ResultOutputPathColumnName, experiment.ResultOutputPath);
 
     foreach(var field in experiment.ExperimentOverview?.Result?.Fields ?? [])
     {
@@ -175,6 +249,63 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     {
       Data = data
     };
+  }
+
+  private static AresDataRow CreateCommandRow(CommandRecord record, CancellationToken cancellationToken)
+  {
+    cancellationToken.ThrowIfCancellationRequested();
+
+    var data = new AresStruct();
+    AddExperimentFields(data, record.Experiment, record.ExperimentNumber);
+    data.Fields[StepNumberColumnName] = AresValueHelper.CreateInt(record.StepNumber);
+    data.Fields[CommandNumberColumnName] = AresValueHelper.CreateInt(record.CommandNumber);
+    AddString(data, CommandNameColumnName, record.Command.CommandName);
+    AddString(data, CommandDescriptionColumnName, record.Command.CommandDescription);
+    AddExecutionFields(data, record.Command.ExecutionInfo);
+    AddString(data, StatusColumnName, record.Command.StatusCode.ToString());
+
+    if(record.Command.Result is not null)
+    {
+      data.Fields[SuccessColumnName] = AresValueHelper.CreateBool(record.Command.Result.Success);
+      AddString(data, ErrorColumnName, record.Command.Result.Error);
+
+      if(record.Command.Result.Result is not null && record.Command.Result.Result.KindCase != AresValue.KindOneofCase.None)
+        AddFlattenedValue(data, OutputColumnName, record.Command.Result.Result, cancellationToken);
+    }
+
+    return new AresDataRow
+    {
+      Data = data
+    };
+  }
+
+  private static AresDataColumn CreateColumn(string name, AresDataType type, bool optional = false)
+  {
+    return new AresDataColumn
+    {
+      Name = name,
+      Schema = new AresValueSchema { Type = type, Optional = optional }
+    };
+  }
+
+  private static void AddExperimentFields(AresStruct data, ExperimentExecutionSummary experiment, int experimentNumber)
+  {
+    data.Fields[ExperimentNumberColumnName] = AresValueHelper.CreateInt(experimentNumber);
+  }
+
+  private static void AddExecutionFields(AresStruct data, ExecutionInfo? executionInfo)
+  {
+    if(executionInfo?.TimeStarted is not null)
+      data.Fields[TimeStartedColumnName] = AresValueHelper.CreateTimestamp(executionInfo.TimeStarted);
+
+    if(executionInfo?.TimeFinished is not null)
+      data.Fields[TimeFinishedColumnName] = AresValueHelper.CreateTimestamp(executionInfo.TimeFinished);
+
+    if(executionInfo?.TimeStarted is not null && executionInfo.TimeFinished is not null)
+    {
+      var duration = executionInfo.TimeFinished.ToDateTime() - executionInfo.TimeStarted.ToDateTime();
+      data.Fields[DurationSecondsColumnName] = AresValueHelper.CreateNumber(duration.TotalSeconds);
+    }
   }
 
   private static void AddString(AresStruct data, string columnName, string? value)
@@ -202,4 +333,12 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
 
     return $"{InputColumnPrefix}{parameter.Index}";
   }
+
+  private record CommandRecord(
+    ExperimentExecutionSummary Experiment,
+    int ExperimentNumber,
+    StepExecutionSummary Step,
+    int StepNumber,
+    CommandExecutionSummary Command,
+    int CommandNumber);
 }
