@@ -169,7 +169,8 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
       CreateColumn(StatusColumnName, AresDataType.String, optional: true),
       CreateColumn(SuccessColumnName, AresDataType.Boolean, optional: true),
       CreateColumn(ErrorColumnName, AresDataType.String, optional: true),
-      .. CreateCommandDynamicColumns(commandRecords, cancellationToken)
+      .. CreateCommandInputColumns(commandRecords, cancellationToken),
+      .. CreateCommandOutputColumns(commandRecords, cancellationToken)
     ];
   }
 
@@ -257,7 +258,25 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     });
   }
 
-  private static IEnumerable<AresDataColumn> CreateCommandDynamicColumns(IEnumerable<CommandRecord> commandRecords, CancellationToken cancellationToken)
+  private static IEnumerable<AresDataColumn> CreateCommandInputColumns(IEnumerable<CommandRecord> commandRecords, CancellationToken cancellationToken)
+  {
+    var columns = new Dictionary<string, AresValueSchema>();
+
+    foreach(var commandRecord in commandRecords)
+    {
+      foreach(var parameter in commandRecord.Template?.Parameters ?? [])
+      {
+        cancellationToken.ThrowIfCancellationRequested();
+        var value = parameter.GetValue();
+        if(value is not null)
+          AddDynamicColumns(columns, GetParameterColumnName(parameter), value);
+      }
+    }
+
+    return CreateDynamicColumns(columns);
+  }
+
+  private static IEnumerable<AresDataColumn> CreateCommandOutputColumns(IEnumerable<CommandRecord> commandRecords, CancellationToken cancellationToken)
   {
     var columns = new Dictionary<string, AresValueSchema>();
 
@@ -338,6 +357,7 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     foreach(var experimentItem in experiments.Select((experiment, index) => new { Experiment = experiment, ExperimentNumber = index + 1 }))
     {
       cancellationToken.ThrowIfCancellationRequested();
+      var commandTemplates = CreateUniqueCommandTemplateMap(experimentItem.Experiment);
 
       var steps = experimentItem.Experiment.StepSummaries
         .OrderBy(step => step.ExecutionInfo?.TimeStarted)
@@ -354,16 +374,28 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
         foreach(var commandItem in commands.Select((command, index) => new { Command = command, CommandNumber = index + 1 }))
         {
           cancellationToken.ThrowIfCancellationRequested();
+          commandTemplates.TryGetValue(commandItem.Command.TemplateId, out var commandTemplate);
           yield return new CommandRecord(
             experimentItem.Experiment,
             experimentItem.ExperimentNumber,
             stepItem.Step,
             stepItem.StepNumber,
             commandItem.Command,
-            commandItem.CommandNumber);
+            commandItem.CommandNumber,
+            commandTemplate);
         }
       }
     }
+  }
+
+  private static IReadOnlyDictionary<string, CommandTemplate> CreateUniqueCommandTemplateMap(ExperimentExecutionSummary experiment)
+  {
+    return (experiment.ExperimentOverview?.Template?.StepTemplates ?? [])
+      .SelectMany(step => step.CommandTemplates)
+      .Where(template => !string.IsNullOrWhiteSpace(template.UniqueId))
+      .GroupBy(template => template.UniqueId)
+      .Where(group => group.Count() == 1)
+      .ToDictionary(group => group.Key, group => group.Single());
   }
 
   private static void TryAddDynamicColumn(IDictionary<string, AresValueSchema> columns, string columnName, AresValue? value)
@@ -428,6 +460,14 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     AddString(data, CommandDescriptionColumnName, record.Command.CommandDescription);
     AddExecutionFields(data, record.Command.ExecutionInfo);
     AddString(data, StatusColumnName, record.Command.StatusCode.ToString());
+
+    foreach(var parameter in record.Template?.Parameters ?? [])
+    {
+      cancellationToken.ThrowIfCancellationRequested();
+      var value = parameter.GetValue();
+      if(value is not null)
+        AddFlattenedValue(data, GetParameterColumnName(parameter), value, cancellationToken);
+    }
 
     if(record.Command.Result is not null)
     {
@@ -638,7 +678,8 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     StepExecutionSummary Step,
     int StepNumber,
     CommandExecutionSummary Command,
-    int CommandNumber);
+    int CommandNumber,
+    CommandTemplate? Template);
 
   private record PlannerRecord(PlannerTransaction Transaction, int ExperimentNumber);
 

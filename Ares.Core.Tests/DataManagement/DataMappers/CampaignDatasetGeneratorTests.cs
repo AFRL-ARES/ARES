@@ -350,6 +350,107 @@ internal class CampaignDatasetGeneratorTests
   }
 
   [Test]
+  public async Task GenerateAsync_IncludesResolvedCommandInputsBeforeOutputs()
+  {
+    var summaryId = Guid.NewGuid().ToString();
+    var structValue = AresValueHelper.CreateStruct();
+    structValue.StructValue.Fields["Temperature"] = AresValueHelper.CreateNumber(22.5);
+    var literal = CreateParameter("Literal", AresValueHelper.CreateString("literal"));
+    var planned = CreateParameter("Planned", AresValueHelper.CreateNumber(1));
+    planned.SetPlannedSource(new ParameterMetadata { Name = "Planned" });
+    planned.SetResolvedValue(AresValueHelper.CreateNumber(2));
+    var environment = CreateParameter("Environment", AresValueHelper.CreateString("initial"));
+    environment.SetEnvironmentSource(VariableType.VarUnspecified, "environment");
+    environment.SetResolvedValue(structValue);
+    var variable = CreateParameter("Variable", AresValueHelper.CreateString("initial"));
+    variable.SetCommandVariableSource("previous");
+    variable.SetResolvedValue(AresValueHelper.CreateList([AresValueHelper.CreateNumber(3), AresValueHelper.CreateNumber(4)]));
+    var template = CreateCommandTemplate("command-template", literal, planned, environment, variable);
+    var command = CreateCommand(
+      DateTime.UnixEpoch,
+      DateTime.UnixEpoch.AddSeconds(1),
+      result: new CommandResult { Result = AresValueHelper.CreateNumber(10) },
+      templateId: template.UniqueId);
+    var experiment = CreateExperiment(
+      DateTime.UnixEpoch,
+      DateTime.UnixEpoch.AddSeconds(2),
+      steps: [CreateStep("step", DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(2), command)]);
+    SetCommandTemplates(experiment, template);
+    var generator = CreateGenerator(CreateCampaignSummary(summaryId, "Campaign A", experiment));
+
+    var dataset = GetDataset(await generator.GenerateAsync(summaryId), "Commands");
+    var columns = dataset.Columns.Select(column => column.Name).ToArray();
+    var row = dataset.Rows.Single();
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(columns, Does.Contain("Input.Literal"));
+      Assert.That(columns, Does.Contain("Input.Planned"));
+      Assert.That(columns, Does.Contain("Input.Environment.Temperature"));
+      Assert.That(columns, Does.Contain("Input.Variable"));
+      Assert.That(Array.IndexOf(columns, "Input.Literal"), Is.LessThan(Array.IndexOf(columns, "Output")));
+      Assert.That(row.Data.Fields["Input.Literal"].StringValue, Is.EqualTo("literal"));
+      Assert.That(row.Data.Fields["Input.Planned"].NumberValue, Is.EqualTo(2));
+      Assert.That(row.Data.Fields["Input.Environment.Temperature"].NumberValue, Is.EqualTo(22.5));
+      Assert.That(row.Data.Fields["Input.Variable"].ListValue.Values.Select(value => value.NumberValue), Is.EqualTo([3, 4]));
+      Assert.That(row.Data.Fields["Output"].NumberValue, Is.EqualTo(10));
+    }
+  }
+
+  [Test]
+  public async Task GenerateAsync_MatchesCommandInputsByTemplateId()
+  {
+    var summaryId = Guid.NewGuid().ToString();
+    var firstTemplate = CreateCommandTemplate("first-template", CreateParameter("Value", AresValueHelper.CreateString("first")));
+    var secondTemplate = CreateCommandTemplate("second-template", CreateParameter("Value", AresValueHelper.CreateString("second")));
+    var unmatchedCommand = CreateCommand(DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(1), commandName: "Unmatched", templateId: Guid.NewGuid().ToString());
+    var matchedCommand = CreateCommand(DateTime.UnixEpoch.AddSeconds(2), DateTime.UnixEpoch.AddSeconds(3), commandName: "Matched", templateId: secondTemplate.UniqueId);
+    var experiment = CreateExperiment(
+      DateTime.UnixEpoch,
+      DateTime.UnixEpoch.AddSeconds(4),
+      steps: [CreateStep("step", DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(4), unmatchedCommand, matchedCommand)]);
+    SetCommandTemplates(experiment, firstTemplate, secondTemplate);
+    var generator = CreateGenerator(CreateCampaignSummary(summaryId, "Campaign A", experiment));
+
+    var dataset = GetDataset(await generator.GenerateAsync(summaryId), "Commands");
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(dataset.Rows[0].Data.Fields.ContainsKey("Input.Value"), Is.False);
+      Assert.That(dataset.Rows[1].Data.Fields["Input.Value"].StringValue, Is.EqualTo("second"));
+    }
+  }
+
+  [Test]
+  public async Task GenerateAsync_UsesAnySchemaForConflictingCommandInputTypes()
+  {
+    var summaryId = Guid.NewGuid().ToString();
+    var firstTemplate = CreateCommandTemplate("first-template", CreateParameter("Value", AresValueHelper.CreateNumber(1)));
+    var secondTemplate = CreateCommandTemplate("second-template", CreateParameter("Value", AresValueHelper.CreateString("one")));
+    var experiment = CreateExperiment(
+      DateTime.UnixEpoch,
+      DateTime.UnixEpoch.AddSeconds(4),
+      steps: [
+        CreateStep(
+          "step",
+          DateTime.UnixEpoch,
+          DateTime.UnixEpoch.AddSeconds(4),
+          CreateCommand(DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(1), templateId: firstTemplate.UniqueId),
+          CreateCommand(DateTime.UnixEpoch.AddSeconds(2), DateTime.UnixEpoch.AddSeconds(3), templateId: secondTemplate.UniqueId))
+      ]);
+    SetCommandTemplates(experiment, firstTemplate, secondTemplate);
+    var generator = CreateGenerator(CreateCampaignSummary(summaryId, "Campaign A", experiment));
+
+    var dataset = GetDataset(await generator.GenerateAsync(summaryId), "Commands");
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(ColumnSchema(dataset, "Input.Value").Type, Is.EqualTo(AresDataType.Any));
+      Assert.That(ColumnSchema(dataset, "Input.Value").Optional, Is.True);
+    }
+  }
+
+  [Test]
   public async Task GenerateAsync_ExcludesStartupAndCloseoutCommands()
   {
     var summaryId = Guid.NewGuid().ToString();
@@ -678,11 +779,13 @@ internal class CampaignDatasetGeneratorTests
     string commandName = "",
     string commandDescription = "",
     CommandStatusCode statusCode = CommandStatusCode.StatusUnspecified,
-    CommandResult result = null)
+    CommandResult result = null,
+    string templateId = "")
   {
     var command = new CommandExecutionSummary
     {
       UniqueId = Guid.NewGuid().ToString(),
+      TemplateId = templateId,
       CommandName = commandName,
       CommandDescription = commandDescription,
       StatusCode = statusCode,
@@ -711,6 +814,46 @@ internal class CampaignDatasetGeneratorTests
     parameter.SetLiteralSource(value);
 
     return parameter;
+  }
+
+  private static CommandTemplate CreateCommandTemplate(string uniqueId, params Parameter[] parameters)
+  {
+    foreach(var parameter in parameters)
+    {
+      if(string.IsNullOrWhiteSpace(parameter.UniqueId))
+        parameter.UniqueId = Guid.NewGuid().ToString();
+
+      if(parameter.Metadata is not null && string.IsNullOrWhiteSpace(parameter.Metadata.UniqueId))
+        parameter.Metadata.UniqueId = Guid.NewGuid().ToString();
+    }
+
+    var template = new CommandTemplate
+    {
+      UniqueId = Guid.NewGuid().ToString(),
+      Metadata = new CommandMetadata
+      {
+        UniqueId = Guid.NewGuid().ToString(),
+        Name = uniqueId
+      }
+    };
+    template.Parameters.AddRange(parameters);
+    return template;
+  }
+
+  private static void SetCommandTemplates(ExperimentExecutionSummary experiment, params CommandTemplate[] commandTemplates)
+  {
+    var stepTemplate = new StepTemplate
+    {
+      UniqueId = Guid.NewGuid().ToString(),
+      Name = "Step"
+    };
+    stepTemplate.CommandTemplates.AddRange(commandTemplates);
+    experiment.ExperimentOverview.Template = new ExperimentTemplate
+    {
+      UniqueId = Guid.NewGuid().ToString(),
+      Name = "Experiment"
+    };
+    experiment.ExperimentOverview.Template.StepTemplates.Add(stepTemplate);
   }
 
   private static PlannerTransaction CreatePlannerTransaction(
