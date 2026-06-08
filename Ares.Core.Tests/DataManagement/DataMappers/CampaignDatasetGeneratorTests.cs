@@ -1,6 +1,9 @@
 using Ares.Core.DataManagement.DataMappers;
 using Ares.Datamodel;
+using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Analyzing.Remote;
 using Ares.Datamodel.Extensions;
+using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.EntityFrameworkCore;
@@ -177,7 +180,7 @@ internal class CampaignDatasetGeneratorTests
   }
 
   [Test]
-  public async Task GenerateAsync_ReturnsExperimentsAndCommandsDatasets()
+  public async Task GenerateAsync_ReturnsAllCampaignDatasets()
   {
     var summaryId = Guid.NewGuid().ToString();
     var generator = CreateGenerator(CreateCampaignSummary(
@@ -187,7 +190,17 @@ internal class CampaignDatasetGeneratorTests
 
     var datasets = await generator.GenerateAsync(summaryId);
 
-    Assert.That(datasets.Select(dataset => dataset.Name), Is.EqualTo(["Experiments", "Commands"]));
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(datasets.Select(dataset => dataset.Name), Is.EqualTo([
+        "Experiments",
+        "Commands",
+        "Planner Transactions",
+        "Analyzer Transactions"
+      ]));
+      Assert.That(GetDataset(datasets, "Planner Transactions").Rows, Is.Empty);
+      Assert.That(GetDataset(datasets, "Analyzer Transactions").Rows, Is.Empty);
+    }
   }
 
   [Test]
@@ -390,6 +403,142 @@ internal class CampaignDatasetGeneratorTests
   }
 
   [Test]
+  public async Task GenerateAsync_CreatesPlannerTransactionRows()
+  {
+    var summaryId = Guid.NewGuid().ToString();
+    var experiment = CreateExperiment(DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(5));
+    var nestedOutput = AresValueHelper.CreateStruct();
+    nestedOutput.StructValue.Fields["Value"] = AresValueHelper.CreateNumber(12.5);
+    var transaction = CreatePlannerTransaction(
+      experiment.ExperimentId,
+      DateTime.UnixEpoch.AddSeconds(1),
+      DateTime.UnixEpoch.AddSeconds(3),
+      ("Temperature", nestedOutput));
+    transaction.PlanningRequest.AnalysisResults.AddRange([1.5, 2.5]);
+    transaction.PlanningResponse.PlanningOutcome = Outcome.Warning;
+    transaction.PlanningResponse.ErrorString = "planner warning";
+    var generator = CreateGenerator(CreateCampaignSummary(summaryId, "Campaign A", experiment), [transaction]);
+
+    var dataset = GetDataset(await generator.GenerateAsync(summaryId), "Planner Transactions");
+    var row = dataset.Rows.Single();
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(dataset.Columns.Take(11).Select(column => column.Name), Is.EqualTo([
+        "Experiment Number",
+        "Planner Name",
+        "Planner Type",
+        "Planner Version",
+        "Time Request Sent",
+        "Time Response Received",
+        "Duration Seconds",
+        "Outcome",
+        "Error",
+        "Analysis Results",
+        "Output.Temperature.Value"
+      ]));
+      Assert.That(row.Data.Fields["Experiment Number"].IntValue, Is.EqualTo(1));
+      Assert.That(row.Data.Fields["Planner Name"].StringValue, Is.EqualTo("Planner A"));
+      Assert.That(row.Data.Fields["Duration Seconds"].NumberValue, Is.EqualTo(2));
+      Assert.That(row.Data.Fields["Outcome"].StringValue, Is.EqualTo(Outcome.Warning.ToString()));
+      Assert.That(row.Data.Fields["Error"].StringValue, Is.EqualTo("planner warning"));
+      Assert.That(row.Data.Fields["Analysis Results"].ListValue.Values.Select(value => value.NumberValue), Is.EqualTo([1.5, 2.5]));
+      Assert.That(row.Data.Fields["Output.Temperature.Value"].NumberValue, Is.EqualTo(12.5));
+    }
+  }
+
+  [Test]
+  public async Task GenerateAsync_CreatesAnalyzerTransactionRows()
+  {
+    var summaryId = Guid.NewGuid().ToString();
+    var experiment = CreateExperiment(DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(5));
+    var nestedInput = AresValueHelper.CreateStruct();
+    nestedInput.StructValue.Fields["Mass"] = AresValueHelper.CreateQuantity(4.5, QuantityType.Mass, "g");
+    var transaction = CreateAnalyzerTransaction(
+      experiment.ExperimentId,
+      DateTime.UnixEpoch.AddSeconds(2),
+      DateTime.UnixEpoch.AddSeconds(4),
+      ("Measurement", nestedInput));
+    transaction.AnalysisResponse = new Analysis
+    {
+      Result = 9.5f,
+      AnalysisOutcome = Outcome.Success,
+      ErrorString = "analysis note"
+    };
+    var generator = CreateGenerator(CreateCampaignSummary(summaryId, "Campaign A", experiment), analyzerTransactions: [transaction]);
+
+    var dataset = GetDataset(await generator.GenerateAsync(summaryId), "Analyzer Transactions");
+    var row = dataset.Rows.Single();
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(dataset.Columns.Take(11).Select(column => column.Name), Is.EqualTo([
+        "Experiment Number",
+        "Analyzer Name",
+        "Analyzer Type",
+        "Analyzer Version",
+        "Time Request Sent",
+        "Time Response Received",
+        "Duration Seconds",
+        "Result",
+        "Outcome",
+        "Error",
+        "Input.Measurement.Mass"
+      ]));
+      Assert.That(row.Data.Fields["Analyzer Version"].StringValue, Is.EqualTo("2.0"));
+      Assert.That(row.Data.Fields["Duration Seconds"].NumberValue, Is.EqualTo(2));
+      Assert.That(row.Data.Fields["Result"].NumberValue, Is.EqualTo(9.5));
+      Assert.That(row.Data.Fields["Outcome"].StringValue, Is.EqualTo(Outcome.Success.ToString()));
+      Assert.That(row.Data.Fields["Input.Measurement.Mass"].QuantityValue.Scalar, Is.EqualTo(4.5));
+    }
+  }
+
+  [Test]
+  public async Task GenerateAsync_FiltersTransactionsToMatchedCampaignExperimentsAndWindow()
+  {
+    var summaryId = Guid.NewGuid().ToString();
+    var experiment = CreateExperiment(DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(5));
+    var valid = CreatePlannerTransaction(experiment.ExperimentId, DateTime.UnixEpoch.AddSeconds(1), DateTime.UnixEpoch.AddSeconds(2));
+    var wrongCampaign = CreatePlannerTransaction(experiment.ExperimentId, DateTime.UnixEpoch.AddSeconds(1), DateTime.UnixEpoch.AddSeconds(2));
+    wrongCampaign.PlanningRequest.Metadata.CampaignId = "other-campaign";
+    var wrongExperiment = CreatePlannerTransaction("other-experiment", DateTime.UnixEpoch.AddSeconds(1), DateTime.UnixEpoch.AddSeconds(2));
+    var outsideWindow = CreatePlannerTransaction(experiment.ExperimentId, DateTime.UnixEpoch.AddSeconds(9), DateTime.UnixEpoch.AddSeconds(11));
+    var generator = CreateGenerator(
+      CreateCampaignSummary(summaryId, "Campaign A", experiment),
+      [valid, wrongCampaign, wrongExperiment, outsideWindow]);
+
+    var dataset = GetDataset(await generator.GenerateAsync(summaryId), "Planner Transactions");
+
+    Assert.That(dataset.Rows, Has.Count.EqualTo(1));
+  }
+
+  [Test]
+  public async Task GenerateAsync_UsesAnySchemaForConflictingTransactionValues()
+  {
+    var summaryId = Guid.NewGuid().ToString();
+    var experiment = CreateExperiment(DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(5));
+    var first = CreatePlannerTransaction(
+      experiment.ExperimentId,
+      DateTime.UnixEpoch.AddSeconds(1),
+      DateTime.UnixEpoch.AddSeconds(2),
+      ("Value", AresValueHelper.CreateNumber(1)));
+    var second = CreatePlannerTransaction(
+      experiment.ExperimentId,
+      DateTime.UnixEpoch.AddSeconds(3),
+      DateTime.UnixEpoch.AddSeconds(4),
+      ("Value", AresValueHelper.CreateString("one")));
+    var generator = CreateGenerator(CreateCampaignSummary(summaryId, "Campaign A", experiment), [first, second]);
+
+    var dataset = GetDataset(await generator.GenerateAsync(summaryId), "Planner Transactions");
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(ColumnSchema(dataset, "Output.Value").Type, Is.EqualTo(AresDataType.Any));
+      Assert.That(ColumnSchema(dataset, "Output.Value").Optional, Is.True);
+    }
+  }
+
+  [Test]
   public void GenerateAsync_ThrowsWhenAlreadyCanceled()
   {
     var contextFactory = CreateContextFactory();
@@ -401,12 +550,17 @@ internal class CampaignDatasetGeneratorTests
     contextFactory.Verify(factory => factory.CreateDbContextAsync(It.IsAny<CancellationToken>()), Times.Never);
   }
 
-  private static CampaignDatasetGenerator CreateGenerator(CampaignExecutionSummary summary)
+  private static CampaignDatasetGenerator CreateGenerator(
+    CampaignExecutionSummary summary,
+    PlannerTransaction[] plannerTransactions = null,
+    AnalyzerTransaction[] analyzerTransactions = null)
   {
     var options = CreateContextOptions();
     using(var context = new CoreDatabaseContext(options))
     {
       context.CampaignExecutionSummaries.Add(summary);
+      context.PlannerTransactions.AddRange(plannerTransactions ?? []);
+      context.AnalyzerTransactions.AddRange(analyzerTransactions ?? []);
       context.SaveChanges();
     }
 
@@ -486,6 +640,7 @@ internal class CampaignDatasetGeneratorTests
     var experiment = new ExperimentExecutionSummary
     {
       UniqueId = Guid.NewGuid().ToString(),
+      ExperimentId = Guid.NewGuid().ToString(),
       ExecutionInfo = new ExecutionInfo
       {
         TimeStarted = Timestamp.FromDateTime(timeStarted),
@@ -556,5 +711,72 @@ internal class CampaignDatasetGeneratorTests
     parameter.SetLiteralSource(value);
 
     return parameter;
+  }
+
+  private static PlannerTransaction CreatePlannerTransaction(
+    string experimentId,
+    DateTime requestSent,
+    DateTime responseReceived,
+    params (string Name, AresValue Value)[] outputs)
+  {
+    var transaction = new PlannerTransaction
+    {
+      UniqueId = Guid.NewGuid().ToString(),
+      PlannerName = "Planner A",
+      PlannerType = "Remote",
+      PlannerVersion = "1.0",
+      TimeRequestSent = Timestamp.FromDateTime(requestSent),
+      TimeResponseReceived = Timestamp.FromDateTime(responseReceived),
+      PlanningRequest = new PlanningRequest
+      {
+        Metadata = new RequestMetadata
+        {
+          CampaignId = "campaign-id",
+          ExperimentId = experimentId
+        }
+      },
+      PlanningResponse = new PlanningResponse()
+    };
+
+    transaction.PlanningResponse.PlannedParameters.AddRange(outputs.Select(output => new PlannedParameter
+    {
+      ParameterName = output.Name,
+      ParameterValue = output.Value
+    }));
+    return transaction;
+  }
+
+  private static AnalyzerTransaction CreateAnalyzerTransaction(
+    string experimentId,
+    DateTime requestSent,
+    DateTime responseReceived,
+    params (string Name, AresValue Value)[] inputs)
+  {
+    var transaction = new AnalyzerTransaction
+    {
+      UniqueId = Guid.NewGuid().ToString(),
+      AnalyzerName = "Analyzer A",
+      AnalyzerType = "Remote",
+      AnalyzerVersion = "2.0",
+      TimeRequestSent = Timestamp.FromDateTime(requestSent),
+      TimeResponseReceived = Timestamp.FromDateTime(responseReceived),
+      AnalysisRequest = new AnalysisRequest
+      {
+        Inputs = new AresStruct(),
+        Metadata = new RequestMetadata
+        {
+          CampaignId = "campaign-id",
+          ExperimentId = experimentId
+        }
+      },
+      AnalysisResponse = new Analysis()
+    };
+
+    foreach(var input in inputs)
+    {
+      transaction.AnalysisRequest.Inputs.Fields[input.Name] = input.Value;
+    }
+
+    return transaction;
   }
 }

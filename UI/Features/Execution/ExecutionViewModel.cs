@@ -103,7 +103,9 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     PlannerAdapterInfos = CampaignTemplate.ExperimentTemplate.GetAllPlannedParameters()
     .Select(parameter => parameter.GetPlanningMetadata())
     .Select(metadata => CampaignTemplate.PlannerAllocations
-    .FirstOrDefault(allocation => allocation.Parameter.Equals(metadata))?.Planner).ToHashSet();
+    .FirstOrDefault(allocation => allocation.Parameter.Equals(metadata))?.Planner)
+    .Where(info => info is not null)
+    .ToHashSet();
 
     var analyzerId = CampaignTemplate.ExperimentTemplate.AnalyzerId;
 
