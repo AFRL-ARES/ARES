@@ -9,5 +9,7 @@ public interface INotificationReceivingService
   // to some sort of app-specific implementation so we're not depending on datamodel in our
   // Application layer
   void PushNotification(AresNotification notification);
+
+  event Action<UiNotificationMessage>? OnNotificationReceived;
 }
 

@@ -42,7 +42,8 @@ public class CoreDatabaseContext : DbContext
   public DbSet<DeviceVisualizationConfig> DeviceVisualizationConfigs => Set<DeviceVisualizationConfig>();
   public DbSet<PlannerTransaction> PlannerTransactions => Set<PlannerTransaction>();
   public DbSet<AnalyzerTransaction> AnalyzerTransactions => Set<AnalyzerTransaction>();
-
+  public DbSet<DeviceErrorHandlingConfig> DeviceErrorHandlingConfigs => Set<DeviceErrorHandlingConfig>();
+  public DbSet<AresGeneralSettingsConfig> GeneralSettingsConfigs => Set<AresGeneralSettingsConfig>();
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
     var assembly = Assembly.GetAssembly(typeof(CoreDatabaseContext));

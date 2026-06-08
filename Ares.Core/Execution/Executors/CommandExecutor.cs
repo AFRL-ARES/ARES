@@ -1,5 +1,6 @@
 ﻿using Ares.Core.Execution.ControlTokens;
 using Ares.Core.Notifications;
+using Ares.Core.Settings;
 using Ares.Datamodel;
 using Ares.Datamodel.Templates;
 using Google.Protobuf.WellKnownTypes;
@@ -13,8 +14,9 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
   private readonly Func<CancellationToken, Task<CommandResult>> _command;
   private readonly BehaviorSubject<CommandExecutionStatus> _stateSubject;
   private readonly INotifier _notifier;
+  private readonly ISystemSettingsManager _settingsManager; 
 
-  public CommandExecutor(Func<CancellationToken, Task<CommandResult>> command, CommandTemplate template, INotifier notificer)
+  public CommandExecutor(Func<CancellationToken, Task<CommandResult>> command, CommandTemplate template, INotifier notifier, ISystemSettingsManager settingsManager)
   {
     _command = command;
     Template = template;
@@ -27,7 +29,8 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
     };
 
     _stateSubject = new BehaviorSubject<CommandExecutionStatus>(executionStatus);
-    _notifier = notificer;
+    _notifier = notifier;
+    _settingsManager = settingsManager;
 
     ExperimentStatusObservable = _stateSubject.AsObservable();
   }
@@ -75,16 +78,11 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
     else if(result.Success)
       Status.State = ExecutionState.Succeeded;
 
-
     else
-    {
       Status.State = ExecutionState.Failed;
-      await _notifier.Notify("Command Failed!", result.Error, NotificationSeverityEnum.Error);
-    }
 
 
     _stateSubject.OnNext(Status);
-    _stateSubject.OnCompleted();
 
     return ExecutorSummaryHelpers.CreateCommandExecutionSummary(Template, result, timeStarted, DateTime.UtcNow);
   }
@@ -96,6 +94,7 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
       var result = await _command(token);
       return result;
     }
+
     catch(Exception e)
     {
       var result = new CommandResult() { Success = false, Error = e.Message };

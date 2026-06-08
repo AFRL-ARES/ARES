@@ -1,21 +1,23 @@
-﻿using System.Reactive.Linq;
-using System.Reactive.Subjects;
-using Ares.Core.Analyzing;
+﻿using Ares.Core.Analyzing;
 using Ares.Core.AresEnvironment;
 using Ares.Core.Device.State.Logging;
 using Ares.Core.Exceptions;
 using Ares.Core.Execution.ControlTokens;
 using Ares.Core.Execution.Executors.Composers;
 using Ares.Core.Execution.Extensions;
+using Ares.Core.Execution.Safety;
 using Ares.Core.Execution.StopConditions;
 using Ares.Core.Notifications;
 using Ares.Core.Output;
 using Ares.Core.Planning;
+using Ares.Core.Settings;
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Templates;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 
 namespace Ares.Core.Execution.Executors;
 
@@ -33,6 +35,16 @@ public class CampaignExecutor : ICampaignExecutor
   readonly AnalysisHelper _analysisHelper;
   readonly AnalysisRepo _analysisRepo;
   readonly IAnalyzerRepo _analyzerRepo;
+  readonly ISystemSettingsManager _settingsManager;
+  readonly IExecutionSafetyManager _executionSafetyManager;
+
+  private readonly string _campaignFailedTitle = "Campaign Execution Failed!";
+  private AresGeneralSettingsConfig? _generalSettingsConfig;
+  private ExperimentExecutorResult _currentExecutorResult = new();
+  private ExperimentExecutionSummary? _currentSummary = null;
+  private ExperimentTemplate? _currentExperimentTemplate = null;
+  private int _experimentCount = 0;
+  private TaskCompletionSource<ErrorHandling>? _userDecisionSource;
 
   internal CampaignExecutor(ICommandComposer<ExperimentTemplate, ExperimentExecutor> experimentComposer,
     IPlanningHelper planningHelper,
@@ -45,7 +57,9 @@ public class CampaignExecutor : ICampaignExecutor
     IAnalyzerRepo analyzerRepo,
     ILogger<CampaignExecutor> logger,
     AresVariableManager variableManager,
-    StateLoggerManager stateLoggerManager)
+    StateLoggerManager stateLoggerManager,
+    ISystemSettingsManager settingsManager,
+    IExecutionSafetyManager executionSafetyManager)
   {
     _analyzerRepo = analyzerRepo;
     _analysisRepo = analysisRepo;
@@ -59,6 +73,8 @@ public class CampaignExecutor : ICampaignExecutor
     _logger = logger;
     Template = template;
     _notifier = notifier;
+    _settingsManager = settingsManager;
+    _executionSafetyManager = executionSafetyManager;
 
     Status = new CampaignExecutionStatus
     {
@@ -108,8 +124,6 @@ public class CampaignExecutor : ICampaignExecutor
       executionSuccess = await ExecuteExperimentLoop(campaignPath, analyses, experimentSummaries, token, executionSuccess, startupResult.Summary);
 
       _logger.LogDebug("The campaign loop is now finished. Moving onto the closeout script.");
-
-
       var closeoutResult = await ExecuteCloseout(analyses, experimentSummaries, token, executionSuccess);
       closeoutSummary = closeoutResult.Summary;
 
@@ -148,6 +162,8 @@ public class CampaignExecutor : ICampaignExecutor
     _logger.LogInformation("Analyzer selected {AnalyzerName}", analyzer?.Name ?? "NO ANALYZER");
     await CampaignOutputHelper.OutputVersionFile(campaignPath, Template, analyzer);
 
+    _generalSettingsConfig = await _settingsManager.GetAresGeneralSettings();
+    _experimentCount = 0;
     return campaignPath;
   }
 
@@ -192,64 +208,309 @@ public class CampaignExecutor : ICampaignExecutor
 
   private async Task<bool> ExecuteExperimentLoop(string campaignPath, List<Analysis> analyses, List<ExperimentExecutionSummary> experimentSummaries, ExecutionControlToken token, bool executionSuccess, ExperimentExecutionSummary startupSummary)
   {
-    var experimentCount = 0;
-    while(!ShouldStop() && !token.IsCancelled && executionSuccess == true)
+    var currentState = ExecutionState.InitializeExperiment;
+    executionSuccess = true;
+    var currentExperimentFolder = "";
+    var currentExperimentPath = "";
+    var failedExperimentRetryCount = 0;
+    var failedExperimentRetryLimit = _generalSettingsConfig?.ExperimentRetryLimit ?? 1;
+    var experimentRetryCooldown = _generalSettingsConfig?.RetryCooldown ?? new Duration();
+
+    while(!ShouldStop() && !token.IsCancelled && executionSuccess)
     {
-      var experimentFolder = $"Experiment_{++experimentCount}";
-      var experimentPath = CampaignOutputHelper.CreateExperimentSubFolder(campaignPath, experimentFolder);
-      var startTime = DateTime.UtcNow;
+      _executionStatusSubject.OnNext(Status);
+      _executionReporter.Report(Status);
 
-      //Populate Internal Variables Related to Experiment
-      AresEnvironment.AresEnvironment.SetInternalVariable(InternalVariableType.CurrentExperimentNumber, experimentCount.ToString());
-      _logger.LogDebug("Set ARES environment variable {VarName} to {VarValue}", InternalVariableType.CurrentExperimentNumber, experimentCount);
-      var experimentExecutorResult = await GenerateExperimentExecutor(Template.ExperimentTemplate, analyses, experimentSummaries.Select(es => es.ExperimentOverview), token.CancellationToken);
-
-      if(experimentExecutorResult.ErrorString is not null)
+      switch(currentState)
       {
-        _logger.LogError($"Experiment Executor Generation Failed! Reason: {experimentExecutorResult.ErrorString}");
-        await _notifier.Notify("Experiment Executor Generation Failure", experimentExecutorResult.ErrorString, NotificationSeverityEnum.Error);
-        executionSuccess = false;
-        break;
-      }
+        case ExecutionState.InitializeExperiment:
+          _experimentCount++;
+          currentExperimentFolder = $"Experiment_{++_experimentCount}";
+          currentExperimentPath = CampaignOutputHelper.CreateExperimentSubFolder(campaignPath, currentExperimentFolder);
+          _currentExperimentTemplate = Template.ExperimentTemplate.CloneWithNewIds();
+          _currentExperimentTemplate.Name = Template.Name;
 
-      if(experimentExecutorResult.ExperimentExecutor is null)
-      {
-        _logger.LogError("Experiment Executor Generation Failed! Reason was not specified.");
-        await _notifier.Notify("Experiment Executor Generation Failure", "Error was not specified, but the executor generation has failed.", NotificationSeverityEnum.Error);
-        executionSuccess = false;
-        break;
-      }
+          AresEnvironment.AresEnvironment.SetInternalVariable(InternalVariableType.CurrentExperimentNumber, _experimentCount.ToString());
+          _logger.LogInformation("ARES is initializing experiment {exp_number}, and has created the associated directories.", _experimentCount);
+          currentState = ExecutionState.Planning;
+          break;
 
-      var experimentExecutor = experimentExecutorResult.ExperimentExecutor;
-      var experimentSummary = await ExecuteTemplate(experimentExecutor, token);
-      experimentSummary.ResultOutputPath = experimentPath;
+        case ExecutionState.GenerateExecutor:
+          if(_currentExperimentTemplate is null)
+          {
+            var nullTemplateMsg = "ARES attempted to generate an experiment executor, but failed due to a null experiment template! The experiment will be terminated.";
+            _logger.LogError(nullTemplateMsg);
+            await _notifier.Notify(_campaignFailedTitle, nullTemplateMsg, NotificationSeverityEnum.Error);
+            currentState = ExecutionState.Failed;
+            break;
+          }
 
-      //If a command failed, stop the experiment.
-      if(experimentSummary.StepSummaries.Any(step => step.CommandSummaries.Any(cmd => !cmd.Result.Success)) || !experimentSummary.StepSummaries.Any())
-      {
-        _logger.LogWarning("Command failure detected. Stopping experiment.");
-        executionSuccess = false;
-        experimentSummaries.Add(experimentSummary);
-        break;
-      }
+          try
+          {
+            _currentExecutorResult = new ExperimentExecutorResult();
+            _currentExecutorResult.ExperimentExecutor = _experimentComposer.Compose(_currentExperimentTemplate);
+            currentState = ExecutionState.Running;
+          }
 
-      // if the execution was canceled, the experiment may not have executed the command to provide the output
-      // and thus sending a null result to the analyzer might break it depending on the analyzer
-      if(!token.IsCancelled)
-      {
-        var result = await AnalyzeResult(experimentExecutor, experimentSummary, startupSummary, analyses, token);
-        if (!result.Success) executionSuccess = false;
-        if (!result.Continue) break;
-      }
-      else
-      {
-        executionSuccess = false;
-      }
+          catch(Exception e)
+          {
+            currentState = ExecutionState.Failed;
+            _logger.LogError("ARES encountered an error while composing an experiment executor! {msg}", e.Message);
+            await _notifier.Notify(_campaignFailedTitle, $"Executor Composition Error: {e.Message}", NotificationSeverityEnum.Error);
+            break;
+          }
 
-      await PostExperimentExecution(experimentSummary);
-      experimentSummaries.Add(experimentSummary);
+          break;
+
+        case ExecutionState.Succeeded:
+          _logger.LogInformation("ARES successfully executed the experiment {exp_name}!", _currentExperimentTemplate?.Name ?? "UNKNOWN");
+          break;
+
+        case ExecutionState.Running:
+          if(_currentExecutorResult is null || _currentExecutorResult.ExperimentExecutor is null)
+          {
+            _logger.LogError("ARES tried to execute an experiment but failed due to a null experiment executor.");
+            currentState = ExecutionState.Failed;
+            break;
+          }
+
+          _currentSummary = await ExecuteTemplate(_currentExecutorResult.ExperimentExecutor, token);
+          _currentSummary.ResultOutputPath = currentExperimentPath;
+
+          var failedCommandSummary = _currentSummary.StepSummaries.SelectMany(s => s.CommandSummaries.Where(c => !c.Result.Success)).FirstOrDefault();
+
+          if(!_currentSummary.StepSummaries.Any())
+            currentState = ExecutionState.Failed;
+
+          if(failedCommandSummary is not null)
+            currentState = await HandleError(failedCommandSummary);
+
+          else
+            currentState = ExecutionState.Analyzing;
+
+          break;
+
+        case ExecutionState.Failed:
+          executionSuccess = false;
+          _logger.LogInformation("ARES experiment reached the 'Failed' execution state. Experiment will be terminated.");
+          break;
+
+        case ExecutionState.WaitingForUserDecision:
+          break;
+
+        case ExecutionState.Replanning:
+          if(_currentExperimentTemplate is null)
+          {
+            _logger.LogError("ARES tried to follow replanning protocols but failed due to a null experiment template.");
+            currentState = ExecutionState.Failed;
+            break;
+          }
+
+          Status.State = ExecutionState.Replanning;
+
+          var replanMsg = "An ARES experiment failed, but based on your settings ARES will attempt to re-plan the experiment and run it again.";
+          _logger.LogInformation(replanMsg);
+          await _notifier.Notify("ARES is Replanning Experiment", replanMsg, NotificationSeverityEnum.Info);
+          var replanSuccess = await PlanExperiment(analyses, _currentExperimentTemplate, experimentSummaries, token);
+
+          if(!replanSuccess)
+          {
+            currentState = ExecutionState.Failed;
+            _logger.LogError("ARES failed to replan the experiment due to a planning error.");
+            await _notifier.Notify("Replan Failure", "ARES failed to replan the experiment due to a planning error.", NotificationSeverityEnum.Error);
+          }
+
+          else
+            currentState = ExecutionState.GenerateExecutor;
+
+          break;
+
+        case ExecutionState.Retrying:
+          Status.State = ExecutionState.Retrying;
+          ResetCurrentExperimentStatus();
+          failedExperimentRetryCount++;
+
+          if(failedExperimentRetryCount > failedExperimentRetryLimit)
+          {
+            var retryLimitMsg = "An ARES experiment failed, based on your settings ARES reached the maximum number of retries for this campaign. Execution will be terminated.";
+            _logger.LogError(retryLimitMsg);
+            await _notifier.Notify("Retry Limit Reached, Experiment Failed", retryLimitMsg, NotificationSeverityEnum.Error);
+            currentState = ExecutionState.Failed;
+            break;
+          }
+
+          var retryingMsg = $"An ARES experiment failed, but based on your settings ARES will retry running the experiment up to {failedExperimentRetryLimit} times. This is retry number {failedExperimentRetryCount}";
+          _logger.LogInformation(retryingMsg);
+          await _notifier.Notify("Retrying Experiment", retryingMsg, NotificationSeverityEnum.Info);
+
+          if(experimentRetryCooldown.Seconds != 0)
+            await Task.Delay(experimentRetryCooldown.ToTimeSpan());
+          
+          
+          currentState = ExecutionState.Running;
+          break;
+
+        case ExecutionState.EnteringSafeMode:
+          await _executionSafetyManager.EnterSafeMode();
+          currentState = ExecutionState.Failed;
+          break;
+
+        case ExecutionState.Planning:
+          if(_currentExperimentTemplate is not null && !_currentExperimentTemplate.IsResolved())
+          {
+            _logger.LogTrace("Experiment has not been resolved, ARES will now begin the planning process.");
+
+            if(analyses.Count() % ReplanRate == 0)
+            {
+              var success = await PlanExperiment(analyses, _currentExperimentTemplate, experimentSummaries, token);
+
+              if(!success)
+              {
+                _currentExecutorResult?.ErrorString = "Failed to plan! Experiment will be terminated!";
+                currentState = ExecutionState.Failed;
+                break;
+              }
+            }
+
+            else
+            {
+              _currentExperimentTemplate = experimentSummaries.Select(es => es.ExperimentOverview).Last().Template.CloneWithNewIds();
+              _logger.LogDebug("Experiment was already resolved, so ARES cloned the template with new UUID's");
+            }
+
+            Status.PlannerState = PlannerState.PlanningComplete;
+          }
+
+          if(_currentExperimentTemplate is not null && !_currentExperimentTemplate.IsEnvironmentResolved())
+          {
+            _logger.LogTrace("Environment variables were not resolved yet. ARES will attempt to resolve the experiments environment variables.");
+            var resolveVarsSuccess = _variableManager.TryResolveVariable(_currentExperimentTemplate.GetAllParameters());
+
+            if(!resolveVarsSuccess)
+            {
+              _logger.LogDebug("Failed to assign environment variables, experiment will be terminated!");
+              currentState = ExecutionState.Failed;
+              break;
+            }
+
+            else
+              _logger.LogDebug("Successfully resolved ARES environment variables.");
+          }
+
+          currentState = ExecutionState.GenerateExecutor;
+          break;
+
+        case ExecutionState.Analyzing:
+          if(!token.IsCancelled && _currentExecutorResult is not null && _currentExecutorResult.ExperimentExecutor is not null && _currentSummary is not null)
+          {
+            var result = await AnalyzeResult(_currentExecutorResult.ExperimentExecutor, _currentSummary, startupSummary, analyses, token);
+            
+            if(!result.Success) 
+              executionSuccess = false;
+            
+            if(!result.Continue) 
+              break;
+
+            await PostExperimentExecution(_currentSummary);
+            experimentSummaries.Add(_currentSummary);
+            currentState = ExecutionState.InitializeExperiment;
+          }
+
+          else
+          {
+            executionSuccess = false;
+            currentState = ExecutionState.Failed;
+          }
+
+          break;
+
+        default:
+          break;
+      }
     }
+
     return executionSuccess;
+  }
+
+  private async Task<ExecutionState> HandleError(CommandExecutionSummary cmdSummary)
+  {
+    var errorHandling = await _settingsManager.GetErrorHandlingByStatusCode(cmdSummary.Result.StatusCode);
+
+    if(errorHandling == ErrorHandling.PromptUser || cmdSummary.Result.StatusCode == CommandStatusCode.StatusUnspecified)
+    {
+      _logger.LogInformation("ARES encountered an error that requires a user decision: {Code}", cmdSummary.Result.StatusCode);
+      Status.State = ExecutionState.WaitingForUserDecision;
+      _executionStatusSubject.OnNext(Status);
+      _executionReporter.Report(Status);
+
+      var msg = $"ARES encountered an error in command '{cmdSummary.CommandName}' and requires your decision on how to proceed. " +
+        $"The error reported was: {cmdSummary.Result.Error}";
+
+      await _notifier.Notify("User Decision Required!", msg, NotificationSeverityEnum.Warning);
+
+      _userDecisionSource = new TaskCompletionSource<ErrorHandling>();
+      errorHandling = await _userDecisionSource.Task;
+    }
+
+    switch(errorHandling)
+    {
+      case ErrorHandling.Replan:
+        Status.State = ExecutionState.Replanning;
+        _executionStatusSubject.OnNext(Status);
+        _executionReporter.Report(Status);
+        return ExecutionState.Replanning;
+
+      case ErrorHandling.RetryExperiment:
+        Status.State = ExecutionState.Retrying;
+        _executionStatusSubject.OnNext(Status);
+        _executionReporter.Report(Status);
+        return ExecutionState.Retrying;
+        
+
+      case ErrorHandling.EnterSafeMode:
+        Status.State = ExecutionState.EnteringSafeMode;
+        _executionStatusSubject.OnNext(Status);
+        _executionReporter.Report(Status);
+        await _executionSafetyManager.EnterSafeMode();
+        await _notifier.Notify("Safe Mode Activated", "An ARES experiment has failed and based on your settings ARES has entered safe mode in response.", NotificationSeverityEnum.Error);
+        return ExecutionState.Failed;
+
+      case ErrorHandling.RetryCommand: // We handle command retries at the step execution level, so we end the campaign if it reaches this point
+      default:
+        return ExecutionState.Failed;
+    }
+  }
+
+  private async Task<bool> PlanExperiment(List<Analysis> analyses, ExperimentTemplate currentExperimentTemplate, List<ExperimentExecutionSummary> experimentSummaries, ExecutionControlToken token)
+  {
+    Status.PlannerState = PlannerState.PlanningInProgress;
+    _executionStatusSubject.OnNext(Status);
+    _executionReporter.Report(Status);
+    _logger.LogTrace("Analyses count is {count} and replan rate {rate}", analyses.Count(), ReplanRate);
+
+    var metadata = new RequestMetadata
+    {
+      CampaignId = Template.UniqueId,
+      CampaignName = Template.Name,
+      ExperimentId = currentExperimentTemplate.UniqueId ?? "",
+      SystemName = "ARES OS",
+      ExperimentStartTime = DateTime.UtcNow.ToUniversalTime().ToTimestamp()
+    };
+
+    var resolveSuccess = await _planningHelper.TryResolveParameters(Template.PlannerAllocations,
+      metadata,
+      currentExperimentTemplate.GetAllPlannedParameters(),
+      analyses,
+      experimentSummaries.Select(es => es.ExperimentOverview),
+      token.CancellationToken);
+
+    if(!resolveSuccess)
+    {
+      Status.PlannerState = PlannerState.PlanningError;
+      _logger.LogDebug("Failed to resolve the experiment template.");
+    }
+
+    return resolveSuccess;
   }
 
   private async Task<(bool Success, bool Continue)> AnalyzeResult(ExperimentExecutor experimentExecutor, ExperimentExecutionSummary experimentSummary, ExperimentExecutionSummary startupSummary, List<Analysis> analyses, ExecutionControlToken token)
@@ -394,6 +655,24 @@ public class CampaignExecutor : ICampaignExecutor
 
   public void UpdateCampaignTags(List<AresCampaignTag> tags) => CampaignTags = tags;
 
+  public void SubmitUserDecision(ErrorHandling decision) => _userDecisionSource?.TrySetResult(decision);
+
+  private void ResetCurrentExperimentStatus()
+  {
+    if(_currentExecutorResult?.ExperimentExecutor?.Status == null)
+      return;
+
+    foreach(var step in _currentExecutorResult.ExperimentExecutor.Status.StepExecutionStatuses)
+    {
+      foreach(var cmd in step.CommandExecutionStatuses)
+      {
+        cmd.State = ExecutionState.Waiting;
+      }
+    }
+
+    _executionReporter.Report(_currentExecutorResult.ExperimentExecutor.Status);
+  }
+
   private static bool IsAwaitingResponse(ExperimentExecutionStatus status)
     => status.StepExecutionStatuses
     .Any(step => step.CommandExecutionStatuses
@@ -477,13 +756,18 @@ public class CampaignExecutor : ICampaignExecutor
 
   private async Task<ExperimentExecutionSummary> ExecuteTemplate(ExperimentExecutor experimentExecutor, ExecutionControlToken token)
   {
-    Status.ExperimentExecutionStatuses.Add(experimentExecutor.Status);
-    experimentExecutor.ExperimentStatusObservable.Subscribe(experimentStatus =>
+    if(!Status.ExperimentExecutionStatuses.Any(s => s.ExperimentId == experimentExecutor.Status.ExperimentId))
+    {
+      Status.ExperimentExecutionStatuses.Add(experimentExecutor.Status);
+    }
+
+    using var statusSub = experimentExecutor.ExperimentStatusObservable.Subscribe(experimentStatus =>
     {
       _executionReporter.Report(experimentStatus);
 
       if(IsAwaitingResponse(experimentStatus))
         Status.State = ExecutionState.AwaitingUser;
+
       else
         Status.State = token.IsPaused ? ExecutionState.Paused : ExecutionState.Running;
 

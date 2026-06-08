@@ -55,6 +55,12 @@ public interface IExecutionManager
   void UpdateReplanRate(int newRate);
 
   /// <summary>
+  /// Submits a user decision for how to handle an error that has occurred during execution
+  /// </summary>
+  /// <param name="decision"></param>
+  void SubmitUserDecision(ErrorHandling decision);
+
+  /// <summary>
   /// Checks whether the prerequisites to execution have been met
   /// </summary>
   /// <returns> An error string if the campaign is not executable, an empty string otherwise </returns>
