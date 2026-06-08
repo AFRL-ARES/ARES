@@ -46,6 +46,7 @@ using ExecutionViewModel = UI.Features.Execution.ExecutionViewModel;
 using ManualPlannerViewModel = UI.Features.Execution.Planning.ManualPlannerViewModel;
 using RemoteDeviceSettingsListViewModel = UI.Features.Devices.Remote.RemoteDeviceSettingsListViewModel;
 using ScriptPlaygroundViewModel = UI.Features.ScriptPlayground.ScriptPlaygroundViewModel;
+using UI.Features.Settings;
 
 namespace UI;
 
@@ -92,9 +93,9 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<AnalyzerService>();
     services.AddScoped<AnalysisService>();
     services.AddScoped<AresSafetyManagementService>();
-    services.AddScoped<Ares.Core.Grpc.Services.DeviceStateExportService>();
+    services.AddScoped<DeviceStateExportService>();
     services.AddSingleton<AresNotificationService>();
-    services.AddSingleton<Ares.Core.Grpc.Services.AresScriptingService>();
+    services.AddSingleton<AresScriptingService>();
     services.AddSingleton<AresDriverService>();
 
     //Device Services
@@ -119,6 +120,7 @@ internal static class ServiceCollectionExtensions
     services.AddTransient<PlannerSettingsListViewModel>();
     services.AddTransient<RemoteDeviceSettingsListViewModel>();
     services.AddTransient<PluginDeviceSettingsListViewModel>();
+    services.AddTransient<SystemSettingsViewModel>();
 
     //Other View Models
     services.AddScoped<ManualPlannerViewModel>();

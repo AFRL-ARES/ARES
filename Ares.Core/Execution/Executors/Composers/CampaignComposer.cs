@@ -1,8 +1,10 @@
 ﻿using Ares.Core.Analyzing;
 using Ares.Core.AresEnvironment;
 using Ares.Core.Device.State.Logging;
+using Ares.Core.Execution.Safety;
 using Ares.Core.Notifications;
 using Ares.Core.Planning;
+using Ares.Core.Settings;
 using Ares.Datamodel.Templates;
 using Microsoft.Extensions.Logging;
 
@@ -21,6 +23,8 @@ public class CampaignComposer : ICommandComposer<CampaignTemplate, ICampaignExec
   readonly AnalysisHelper _analysisHelper;
   readonly AnalysisRepo _analysisRepo;
   readonly IAnalyzerRepo _analyzerRepo;
+  readonly ISystemSettingsManager _settingsManager;
+  readonly IExecutionSafetyManager _safetyManager;
 
   public CampaignComposer(AnalysisHelper analysisHelper,
     ICommandComposer<ExperimentTemplate, ExperimentExecutor> experimentComposer,
@@ -32,7 +36,9 @@ public class CampaignComposer : ICommandComposer<CampaignTemplate, ICampaignExec
     INotifier notifier,
     ILoggerFactory loggerFactory,
     AresVariableManager variableManager,
-    StateLoggerManager stateLoggerManager)
+    StateLoggerManager stateLoggerManager,
+    ISystemSettingsManager settingsManager,
+    IExecutionSafetyManager safetyManager)
   {
     _analyzerRepo = analyzerRepo;
     _analysisRepo = analysisRepo;
@@ -45,8 +51,10 @@ public class CampaignComposer : ICommandComposer<CampaignTemplate, ICampaignExec
     _resultHandlers = resultHandlers;
     _notifier = notifier;
     _loggerFactory = loggerFactory;
+    _settingsManager = settingsManager;
+    _safetyManager = safetyManager;
   }
 
   public ICampaignExecutor Compose(CampaignTemplate template)
-    => new CampaignExecutor(_experimentComposer, _planningHelper, _executionReporter, _analysisHelper, template, _resultHandlers, _analysisRepo, _notifier, _analyzerRepo, _loggerFactory.CreateLogger<CampaignExecutor>(), _variableManager, _stateLoggerManager);
+    => new CampaignExecutor(_experimentComposer, _planningHelper, _executionReporter, _analysisHelper, template, _resultHandlers, _analysisRepo, _notifier, _analyzerRepo, _loggerFactory.CreateLogger<CampaignExecutor>(), _variableManager, _stateLoggerManager, _settingsManager, _safetyManager);
 }

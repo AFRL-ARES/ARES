@@ -1,4 +1,3 @@
-using Ares.Core.Device.Plugins.Drivers;
 using Ares.Core.Device.Plugins.Manifest;
 using Ares.Core.Device.Repos;
 using Ares.Device;
@@ -32,7 +31,6 @@ public class DeviceDriverLoader : IDeviceDriverLoader
     if(!Directory.Exists(directoryPath)) 
       return;
 
-    // 1. Process and extract all .ares files
     var aresFiles = Directory.GetFiles(directoryPath, "*.ares");
     foreach(var file in aresFiles)
     {
@@ -110,7 +108,6 @@ public class DeviceDriverLoader : IDeviceDriverLoader
         viewModelType = assembly.GetType(manifest.ViewModelTypeName);
       }
 
-      //Attempt to Manually Find the View Model
       else
       {
         viewModelType = assembly.GetTypes().FirstOrDefault(t =>

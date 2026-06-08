@@ -25,6 +25,7 @@ public class ExecutionManager : IExecutionManager
   private readonly INotifier _notifier;
   private readonly ILogger _logger;
   private ExecutionControlTokenSource? _executionControlTokenSource;
+  private ICampaignExecutor? _activeExecutor;
 
   public ExecutionManager(IEnumerable<IStartCondition> startConditions,
     IDbContextFactory<CoreDatabaseContext> dbContextFactory,
@@ -63,6 +64,7 @@ public class ExecutionManager : IExecutionManager
       throw new InvalidOperationException(err);
     }
     var executor = _campaignComposer.Compose(_activeCampaignTemplateStore.CampaignTemplate!);
+    _activeExecutor = executor;
 
     if(!string.IsNullOrEmpty(executionNotes))
       executor.UpdateExecutionNotes(executionNotes);
@@ -143,11 +145,17 @@ public class ExecutionManager : IExecutionManager
     ReplanRate = newRate;
   }
 
+  public void SubmitUserDecision(ErrorHandling decision)
+  {
+    _activeExecutor?.SubmitUserDecision(decision);
+  }
+
   private async Task PostExecution(CampaignExecutionSummary result)
   {
     await StoreCompletedCampaign(result);
     _executionControlTokenSource?.Dispose();
     _executionControlTokenSource = null;
+    _activeExecutor = null;
   }
 
   private async Task StoreCompletedCampaign(CampaignExecutionSummary result)

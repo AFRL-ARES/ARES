@@ -1,20 +1,32 @@
-﻿using System.Reflection;
-using Ares.Core.Analyzing;
+﻿using Ares.Core.Analyzing;
 using Ares.Core.Execution.Executors;
 using Ares.Core.Execution.Executors.Composers;
+using Ares.Core.Notifications;
+using Ares.Core.Settings;
 using Ares.Datamodel.Templates;
 using Moq;
+using System.Reflection;
 
 namespace Ares.Core.Tests.Execution.Composers;
 
 internal class ExperimentComposerTests
 {
+  private INotifier _notifier;
+  private ISystemSettingsManager _settingsManager;
+
+  [OneTimeSetUp]
+  public void OneTimeSetUp()
+  {
+    _settingsManager = new Mock<ISystemSettingsManager>().Object;
+    _notifier = new Mock<INotifier>().Object;
+  }
+
   [Test]
   public void ExperimentComposer_Composes_StepTemplates_In_Order()
   {
     var stepComposerMock = new Mock<ICommandComposer<StepTemplate, StepExecutor>>();
 
-    stepComposerMock.Setup(composer => composer.Compose(It.IsAny<StepTemplate>())).Returns<StepTemplate>(template => new SequentialStepExecutor(template, []));
+    stepComposerMock.Setup(composer => composer.Compose(It.IsAny<StepTemplate>())).Returns<StepTemplate>(template => new SequentialStepExecutor(template, [], _settingsManager, _notifier));
     var stepTemplate1 = new StepTemplate
     { Index = 0, UniqueId = Guid.NewGuid().ToString() };
 

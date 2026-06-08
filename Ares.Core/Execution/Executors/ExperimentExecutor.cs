@@ -8,8 +8,7 @@ namespace Ares.Core.Execution.Executors;
 
 public class ExperimentExecutor : IExecutor<ExperimentExecutionSummary, ExperimentExecutionStatus>
 {
-  public ExperimentExecutor(ExperimentTemplate template,
-    IExecutor<StepExecutionSummary, StepExecutionStatus>[] experimentStepExecutors)
+  public ExperimentExecutor(ExperimentTemplate template, IExecutor<StepExecutionSummary, StepExecutionStatus>[] experimentStepExecutors)
   {
     ExperimentStepExecutors = experimentStepExecutors;
     Template = template;
@@ -30,7 +29,7 @@ public class ExperimentExecutor : IExecutor<ExperimentExecutionSummary, Experime
         Status.StepExecutionStatuses.AddRange(cmdResults);
         return Status;
       });
-    }).Concat();
+    }).Merge();
 
     ExperimentStatusObservable = experimentStepExecutionObservation;
   }

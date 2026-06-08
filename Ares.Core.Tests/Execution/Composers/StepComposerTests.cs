@@ -6,6 +6,7 @@ using Ares.Core.Notifications;
 using Ares.Datamodel.Templates;
 using Moq;
 using System.Reflection;
+using Ares.Core.Settings;
 
 namespace Ares.Core.Tests.Execution.Composers;
 
@@ -14,6 +15,7 @@ internal class StepComposerTests
   private StepTemplate _stepTemplate;
   private AresDeviceRepo _deviceRepo;
   private INotifier _notifer;
+  private ISystemSettingsManager _settingsManager;
 
   [SetUp]
   public void SetUp()
@@ -63,6 +65,7 @@ internal class StepComposerTests
   public void OneTimeSetUp()
   {
     _notifer = new Mock<INotifier>().Object;
+    _settingsManager = new Mock<ISystemSettingsManager>().Object;
   }
 
   [TearDown]
@@ -74,7 +77,7 @@ internal class StepComposerTests
   [Test]
   public void StepComposer_Composes_CommandTemplates_Correctly()
   {
-    var stepComposer = new StepComposer(_deviceRepo, _notifer);
+    var stepComposer = new StepComposer(_deviceRepo, _notifer, _settingsManager);
     var stepExecutor = stepComposer.Compose(_stepTemplate);
     var templates = stepExecutor.CommandExecutors.Select(executor => typeof(CommandExecutor).GetProperty("Template", BindingFlags.Public | BindingFlags.Instance).GetValue(executor)).OfType<CommandTemplate>();
     Assert.That(templates.Select((template, i) => template.Index == i), Is.All.True);
@@ -84,7 +87,7 @@ internal class StepComposerTests
   public void StepComposer_Composes_Parallel_Template()
   {
     _stepTemplate.IsParallel = true;
-    var stepComposer = new StepComposer(_deviceRepo, _notifer);
+    var stepComposer = new StepComposer(_deviceRepo, _notifer, _settingsManager);
     var stepExecutor = stepComposer.Compose(_stepTemplate);
     Assert.That(stepExecutor, Is.TypeOf<ParallelStepExecutor>());
   }
@@ -93,7 +96,7 @@ internal class StepComposerTests
   public void StepComposer_Composes_Sequential_Template()
   {
     _stepTemplate.IsParallel = false;
-    var stepComposer = new StepComposer(_deviceRepo, _notifer);
+    var stepComposer = new StepComposer(_deviceRepo, _notifer, _settingsManager);
     var stepExecutor = stepComposer.Compose(_stepTemplate);
     Assert.That(stepExecutor, Is.TypeOf<SequentialStepExecutor>());
   }

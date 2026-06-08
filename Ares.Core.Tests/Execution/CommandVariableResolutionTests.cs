@@ -3,10 +3,13 @@ using Ares.Core.Execution.ControlTokens;
 using Ares.Core.Execution.Executors;
 using Ares.Core.Execution.Executors.Composers;
 using Ares.Core.Notifications;
+using Ares.Core.Settings;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
 using Ares.Datamodel.Templates;
 using Ares.Device;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
 using Moq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -15,6 +18,16 @@ namespace Ares.Core.Tests.Execution;
 
 internal class CommandVariableResolutionTests
 {
+  private ISystemSettingsManager _systemSettingsManager;
+  private IDbContextFactory<CoreDatabaseContext> _dbContextFactory;
+  
+  [OneTimeSetUp]
+  public void OneTimeSetUp()
+  {
+    _dbContextFactory = new Mock<IDbContextFactory<CoreDatabaseContext>>().Object;
+    _systemSettingsManager = new Mock<ISystemSettingsManager>().Object;
+  }
+
   [Test]
   public async Task SequentialStepExecutor_ResolvesVariableParameterFromEarlierCommandOutput()
   {
@@ -26,7 +39,7 @@ internal class CommandVariableResolutionTests
     stepTemplate.CommandTemplates.Add(CreateSourceCommand());
     stepTemplate.CommandTemplates.Add(CreateConsumerCommand("sourceResult"));
 
-    var stepComposer = new StepComposer(deviceRepo, new Mock<INotifier>().Object);
+    var stepComposer = new StepComposer(deviceRepo, new Mock<INotifier>().Object, _systemSettingsManager);
     var stepExecutor = stepComposer.Compose(stepTemplate);
 
     using var tokenSource = new ExecutionControlTokenSource();
@@ -52,7 +65,8 @@ internal class CommandVariableResolutionTests
         return Task.FromResult(new CommandResult { Success = true });
       },
       template,
-      new Mock<INotifier>().Object);
+      new Mock<INotifier>().Object,
+      _systemSettingsManager);
 
     using var tokenSource = new ExecutionControlTokenSource();
     var summary = await executor.Execute(tokenSource.Token);

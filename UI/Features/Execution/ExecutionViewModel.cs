@@ -193,6 +193,9 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   public Task ResumeCampaign()
     => _automationClient.ResumeExecution(new Empty(), null);
 
+  public Task SubmitUserDecision(ErrorHandling decision)
+    => _automationClient.SubmitUserDecision(new UserDecisionRequest { Decision = decision }, null);
+
   public async Task ExecutionNotesUploaded(Stream fileStream)
   {
     using var reader = new StreamReader(fileStream);
