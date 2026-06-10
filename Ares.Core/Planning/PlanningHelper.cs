@@ -34,6 +34,7 @@ public class PlanningHelper : IPlanningHelper
     IEnumerable<Parameter> parameters,
     IEnumerable<Analysis> seedAnalyses,
     IEnumerable<ExperimentOverview> seedExperiments,
+    PlanStatusCode statusCode,
     CancellationToken cancellationToken)
   {
     var parameterArray = parameters.ToArray();
@@ -72,6 +73,7 @@ public class PlanningHelper : IPlanningHelper
         var planRequest = new PlanningRequest();
         planRequest.PlanningParameters.AddRange(plannableParameters.Select(parameter => ConvertToPlanningParameter(parameter, seedExperiments)));
         planRequest.AnalysisResults.AddRange(seedAnalysesArr.Select(a => (double)a.Result));
+        planRequest.PreviousPlanStatusCode = statusCode;
         planRequest.Metadata = metadata;
         planTransaction.PlanningRequest = planRequest;
 

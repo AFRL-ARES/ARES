@@ -13,6 +13,7 @@ using Ares.Core.Planning;
 using Ares.Core.Settings;
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
@@ -45,6 +46,7 @@ public class CampaignExecutor : ICampaignExecutor
   private ExperimentTemplate? _currentExperimentTemplate = null;
   private int _experimentCount = 0;
   private TaskCompletionSource<ErrorHandling>? _userDecisionSource;
+  private CommandStatusCode? _latestStatusCode = null;
 
   internal CampaignExecutor(ICommandComposer<ExperimentTemplate, ExperimentExecutor> experimentComposer,
     IPlanningHelper planningHelper,
@@ -280,13 +282,23 @@ public class CampaignExecutor : ICampaignExecutor
           var failedCommandSummary = _currentSummary.StepSummaries.SelectMany(s => s.CommandSummaries.Where(c => !c.Result.Success)).FirstOrDefault();
 
           if(!_currentSummary.StepSummaries.Any())
+          {
             currentState = ExecutionState.Failed;
+            _latestStatusCode = CommandStatusCode.CommandFailed;
+          }
+            
 
           if(failedCommandSummary is not null)
+          {
             currentState = await HandleError(failedCommandSummary);
+            _latestStatusCode = failedCommandSummary.StatusCode;
+          }
 
           else
+          {
             currentState = ExecutionState.Analyzing;
+            _latestStatusCode = CommandStatusCode.CommandSuccess;
+          }
 
           break;
 
@@ -311,7 +323,46 @@ public class CampaignExecutor : ICampaignExecutor
           var replanMsg = "An ARES experiment failed, but based on your settings ARES will attempt to re-plan the experiment and run it again.";
           _logger.LogInformation(replanMsg);
           await _notifier.Notify("ARES is Replanning Experiment", replanMsg, NotificationSeverityEnum.Info);
-          var replanSuccess = await PlanExperiment(analyses, _currentExperimentTemplate, experimentSummaries, token);
+          var code = PlanStatusCode.PlanAccepted;
+
+          if(_latestStatusCode is null)
+            code = PlanStatusCode.PlanAccepted;
+
+          else
+          {
+            switch(_latestStatusCode)
+            {
+              case CommandStatusCode.CommandSuccess:
+                code = PlanStatusCode.PlanAccepted;
+                break;
+
+              case CommandStatusCode.SuccessWithWarnings:
+                code = PlanStatusCode.PlanAccepted;
+                break;
+
+              case CommandStatusCode.CommandFailed:
+                code = PlanStatusCode.PlanFailed;
+                break;
+
+              case CommandStatusCode.InvalidCommand:
+                code = PlanStatusCode.PlanFailed;
+                break;
+
+              case CommandStatusCode.HardwareFault:
+                code = PlanStatusCode.PlanFailed;
+                break;
+
+              case CommandStatusCode.OutOfRange:
+                code = PlanStatusCode.PlanUnachievable;
+                break;
+
+              case CommandStatusCode.ParametersUnachievable:
+                code = PlanStatusCode.PlanUnachievable;
+                break;
+            }
+          }
+          
+          var replanSuccess = await PlanExperiment(analyses, _currentExperimentTemplate, experimentSummaries, code, token);
 
           if(!replanSuccess)
           {
@@ -362,7 +413,7 @@ public class CampaignExecutor : ICampaignExecutor
 
             if(analyses.Count() % ReplanRate == 0)
             {
-              var success = await PlanExperiment(analyses, _currentExperimentTemplate, experimentSummaries, token);
+              var success = await PlanExperiment(analyses, _currentExperimentTemplate, experimentSummaries, PlanStatusCode.PlanAccepted, token);
 
               if(!success)
               {
@@ -481,7 +532,7 @@ public class CampaignExecutor : ICampaignExecutor
     }
   }
 
-  private async Task<bool> PlanExperiment(List<Analysis> analyses, ExperimentTemplate currentExperimentTemplate, List<ExperimentExecutionSummary> experimentSummaries, ExecutionControlToken token)
+  private async Task<bool> PlanExperiment(List<Analysis> analyses, ExperimentTemplate currentExperimentTemplate, List<ExperimentExecutionSummary> experimentSummaries, PlanStatusCode code, ExecutionControlToken token)
   {
     Status.PlannerState = PlannerState.PlanningInProgress;
     _executionStatusSubject.OnNext(Status);
@@ -502,6 +553,7 @@ public class CampaignExecutor : ICampaignExecutor
       currentExperimentTemplate.GetAllPlannedParameters(),
       analyses,
       experimentSummaries.Select(es => es.ExperimentOverview),
+      code,
       token.CancellationToken);
 
     if(!resolveSuccess)
@@ -707,7 +759,8 @@ public class CampaignExecutor : ICampaignExecutor
           metadata, 
           experimentTemplate.GetAllPlannedParameters(), 
           analyses, 
-          previousExperiments, 
+          previousExperiments,
+          PlanStatusCode.PlanAccepted,
           cancellationToken);
 
         if(!resolveSuccess)

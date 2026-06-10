@@ -23,5 +23,6 @@ public interface IPlanningHelper
     IEnumerable<Parameter> parameters,
     IEnumerable<Analysis> seedAnalyses,
     IEnumerable<ExperimentOverview> seedExperiments,
+    PlanStatusCode code,
     CancellationToken cancellationToken);
 }
