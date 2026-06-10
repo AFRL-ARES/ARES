@@ -39,7 +39,7 @@ public class DeviceStateDatasetGenerator(IDeviceStateGetter _deviceStateGetter)
   {
     var columns = states
       .SelectMany(state => state.Data?.Fields ?? [])
-      .SelectMany(field => FlattenField(field.Key, field.Value))
+      .SelectMany(field => AresValueFlattener.Flatten(GetColumnName(field.Key), field.Value))
       .GroupBy(field => field.Key)
       .OrderBy(group => group.Key)
       .Select(group => new AresDataColumn
@@ -106,7 +106,7 @@ public class DeviceStateDatasetGenerator(IDeviceStateGetter _deviceStateGetter)
     foreach(var field in state.Data?.Fields ?? [])
     {
       cancellationToken.ThrowIfCancellationRequested();
-      foreach(var flattenedField in FlattenField(field.Key, field.Value))
+      foreach(var flattenedField in AresValueFlattener.Flatten(GetColumnName(field.Key), field.Value))
       {
         cancellationToken.ThrowIfCancellationRequested();
         data.Fields[flattenedField.Key] = flattenedField.Value.Clone();
@@ -117,23 +117,6 @@ public class DeviceStateDatasetGenerator(IDeviceStateGetter _deviceStateGetter)
     {
       Data = data
     };
-  }
-
-  private static IEnumerable<KeyValuePair<string, AresValue>> FlattenField(string fieldName, AresValue value)
-  {
-    if(value.KindCase != AresValue.KindOneofCase.StructValue)
-    {
-      yield return KeyValuePair.Create(GetColumnName(fieldName), value);
-      yield break;
-    }
-
-    foreach(var childField in value.StructValue.Fields)
-    {
-      foreach(var flattenedChildField in FlattenField($"{fieldName}.{childField.Key}", childField.Value))
-      {
-        yield return flattenedChildField;
-      }
-    }
   }
 
   private static string GetColumnName(string fieldName)
