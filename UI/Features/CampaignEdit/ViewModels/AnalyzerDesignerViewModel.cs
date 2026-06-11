@@ -89,19 +89,45 @@ public partial class AnalyzerDesignerViewModel : ReactiveObject
   {
     foreach(var outputInputMap in outputInputMappings)
     {
-      var outputs = _commandDesignerViewModels.SelectMany(cdv => cdv.OutputKeyMap)
-        .Where(okm => okm.DeviceOutputType == outputInputMap.InputType)
-        .Select(okm => okm.CustomName)
+      var outputs = _commandDesignerViewModels.SelectMany(GetOutputSchemaPaths)
+        .Where(output => output.Type == outputInputMap.InputType)
+        .Select(output => output.Path)
         .ToArray();
 
-      var startupOutputs = _startupCommandDesignerViewModels.SelectMany(cdv => cdv.OutputKeyMap)
-        .Where(okm => okm.DeviceOutputType == outputInputMap.InputType)
-        .Select(okm => okm.CustomName)
+      var startupOutputs = _startupCommandDesignerViewModels.SelectMany(GetOutputSchemaPaths)
+        .Where(output => output.Type == outputInputMap.InputType)
+        .Select(output => output.Path)
         .ToArray();
 
       var combinedOutputs = outputs.Concat(startupOutputs);
 
       outputInputMap.MatchingOutputs = combinedOutputs.ToArray();
+    }
+  }
+
+  private static IEnumerable<ExperimentOutputSchemaPath> GetOutputSchemaPaths(CommandDesignerViewModel commandDesigner)
+  {
+    if(!commandDesigner.OutputProvider || string.IsNullOrWhiteSpace(commandDesigner.OutputVariableName))
+      return [];
+
+    var outputSchema = commandDesigner.CommandMetadata?.OutputMetadata?.DataSchema;
+    if(outputSchema is null)
+      return [];
+
+    return GetOutputSchemaPaths(commandDesigner.OutputVariableName, outputSchema);
+  }
+
+  private static IEnumerable<ExperimentOutputSchemaPath> GetOutputSchemaPaths(string path, AresValueSchema schema)
+  {
+    yield return new ExperimentOutputSchemaPath(path, schema.Type);
+
+    if(schema.Type != AresDataType.Struct || schema.StructSchema is null)
+      yield break;
+
+    foreach(var field in schema.StructSchema.Fields)
+    {
+      foreach(var nestedPath in GetOutputSchemaPaths($"{path}.{field.Key}", field.Value))
+        yield return nestedPath;
     }
   }
 
@@ -148,3 +174,5 @@ public record ExperimentOutputAnalyzerInputMapping
   public string[] MatchingOutputs { get; set; } = [];
   public string? ExperimentOutput { get; set; }
 }
+
+internal record ExperimentOutputSchemaPath(string Path, AresDataType Type);

@@ -19,7 +19,7 @@
             </button>
           </div>
           <div class="flex-grow-1">
-            <StepDesigner RemoveStepCallback="@RemoveStepCallback" IsCloseout="true" ViewModel="@stepDesigner" />
+            <StepDesigner RemoveStepCallback="@RemoveStepCallback" IsCloseout="true" PriorVariableReferences="@ViewModel.GetPriorVariableReferences(stepDesigner)" ViewModel="@stepDesigner" />
           </div>
         </div>
       }

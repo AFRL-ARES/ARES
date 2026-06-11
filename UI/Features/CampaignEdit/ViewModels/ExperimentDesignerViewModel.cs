@@ -46,9 +46,9 @@ public partial class ExperimentDesignerViewModel : ReactiveObject
   {
     Name = existingTemplate.Name;
     StepDesigners = existingTemplate.StepTemplates.Select(template => _stepDesignerFactory.Create(template)).OrderBy(model => model.Index).ToList();
-    if(existingTemplate.StepTemplates.Select(step => step.CommandTemplates.Select(cmd => cmd.UserOutputKeyMap)).Any())
+    if(existingTemplate.StepTemplates.SelectMany(step => step.CommandTemplates).Any(cmd => cmd.HasOutputVarName))
     {
-      var commandDesigners = StepDesigners.SelectMany(model => model.CommandDesigners).Where(model => model.CommandTemplate.UserOutputKeyMap.Any());
+      var commandDesigners = StepDesigners.SelectMany(model => model.CommandDesigners).Where(model => model.CommandTemplate.HasOutputVarName);
       foreach(var designer in commandDesigners)
       {
         designer.OutputProvider = true;
@@ -56,6 +56,8 @@ public partial class ExperimentDesignerViewModel : ReactiveObject
 
       ExperimentOutputProviderCommand = commandDesigners.Select(designer => designer.CommandTemplate);
     }
+
+    RefreshVariableReferences();
   }
 
   public ExperimentTemplate Save()
@@ -66,6 +68,7 @@ public partial class ExperimentDesignerViewModel : ReactiveObject
       return ExperimentTemplate;
     }
 
+    RefreshVariableReferences();
     ExperimentTemplate.Name = Name;
     ExperimentTemplate.StepTemplates.Clear();
     ExperimentTemplate.StepTemplates.AddRange(StepDesigners.Select(designer => designer.Save()));
@@ -77,6 +80,7 @@ public partial class ExperimentDesignerViewModel : ReactiveObject
     var stepDesigner = _stepDesignerFactory.Create();
     stepDesigner.Index = StepDesigners.Count;
     StepDesigners.Add(stepDesigner);
+    RefreshVariableReferences();
     return stepDesigner;
   }
 
@@ -86,6 +90,7 @@ public partial class ExperimentDesignerViewModel : ReactiveObject
     {
       StepDesigners.Remove(vm);
       ReindexSteps();
+      RefreshVariableReferences();
     }
   }
 
@@ -97,6 +102,7 @@ public partial class ExperimentDesignerViewModel : ReactiveObject
     StepDesigners.RemoveAt(vm.Index);
     StepDesigners.Insert(vm.Index - 1, vm);
     ReindexSteps();
+    RefreshVariableReferences();
   }
 
   public void MoveStepDesignerDown(StepDesignerViewModel vm)
@@ -107,6 +113,7 @@ public partial class ExperimentDesignerViewModel : ReactiveObject
     StepDesigners.RemoveAt(vm.Index);
     StepDesigners.Insert(vm.Index + 1, vm);
     ReindexSteps();
+    RefreshVariableReferences();
   }
 
   private void ReindexSteps()
@@ -136,4 +143,24 @@ public partial class ExperimentDesignerViewModel : ReactiveObject
   public IList<StepDesignerViewModel> StepDesigners { get; private set; } = [];
 
   public IEnumerable<CommandTemplate>? ExperimentOutputProviderCommand { get; set; }
+
+  public CommandOutputVariableReference[] GetPriorVariableReferences(StepDesignerViewModel stepDesigner)
+  {
+    var priorReferences = new List<CommandOutputVariableReference>();
+    foreach(var currentStep in StepDesigners.OrderBy(step => step.Index))
+    {
+      if(currentStep == stepDesigner)
+        return priorReferences.ToArray();
+
+      priorReferences.AddRange(currentStep.GetOutputVariableReferences());
+    }
+
+    return priorReferences.ToArray();
+  }
+
+  public void RefreshVariableReferences()
+  {
+    foreach(var stepDesigner in StepDesigners.OrderBy(step => step.Index))
+      stepDesigner.SetPriorVariableReferences(GetPriorVariableReferences(stepDesigner));
+  }
 }

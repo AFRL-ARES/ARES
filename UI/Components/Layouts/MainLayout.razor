@@ -1,3 +1,5 @@
+@implements IDisposable
+
 @using Ares.Core.Device.Providers
 @using Ares.Core.Execution.Safety
 @using Ares.Core.Device.Repos
@@ -11,6 +13,7 @@
 
 @inject IUiDialogService dialogService
 @inject INotificationReceivingService notificationService
+@inject IUiNotificationService uiNotificationService
 @inject IExecutionSafetyManager executionSafetyManager 
 @inject IDeviceDriverProvider deviceDriverRepo
 @inject StartupStateTracker Tracker
@@ -25,11 +28,7 @@
 <PageTitle>ARES</PageTitle>
 
 <div class="page">
-  <RadzenDialog />
-  <RadzenNotification />
-  <RadzenContextMenu />
   <RadzenComponents />
-  <RadzenTooltip />
 
   <main>
     @* <AuthorizeView>
@@ -48,10 +47,10 @@
               <AresNavItem Icon="directions_run" Text="Execution" Path="automation/execution" />
               <AresNavItem Icon="history" Text="Execution History" Path="automation/executionhistory" />
             </AresNavItem>
-            <AresNavItem Icon="assessment" Text="Device States" Path="device_states" />
+            <AresNavItem Icon="assessment" Text="Data Explorer" Path="data-explorer" />
             <AresNavItem Icon="bar_chart" Text="Visualization" Path="visualization"/>
-            @* Coming Soon *@
             <AresNavItem Icon="terminal" Text="Scripting" Path="scripting" />
+            @* Coming Soon *@
             @* <AresNavItem Icon="detector" Text="Safety" Path="/safety"/> *@
           </MainNavContent>
 
@@ -72,6 +71,7 @@
               <AresNavItem Icon="stairs" Path="automation/customstepbuilder" />
               <AresNavItem Icon="directions_run" Path="automation/execution" />
               <AresNavItem Icon="history" Path="automation/executionhistory" />
+              <AresNavItem Icon="assessment" Path="data-explorer" />
               @* Coming Soon *@
               @* <AresNavItem Icon="detector" Text="Safety" Path="/safety" /> *@
             </AresNavItem>
@@ -141,9 +141,17 @@
   protected override void OnInitialized()
   {
     Tracker.OnSystemReady += HandleSystemReady;
-
-    // Fire and forget the message cycler
+    notificationService.OnNotificationReceived += HandleBackgroundNotification;
     _ = CycleLoadingMessagesAsync(_cts.Token);
+  }
+
+  private void HandleBackgroundNotification(UiNotificationMessage message)
+  {
+    InvokeAsync(() =>
+    {
+      uiNotificationService.Notify(message);
+      StateHasChanged();
+    });
   }
 
   private async Task CycleLoadingMessagesAsync(CancellationToken token)
@@ -237,6 +245,7 @@
   public void Dispose()
   {
     Tracker.OnSystemReady -= HandleSystemReady;
+    notificationService.OnNotificationReceived -= HandleBackgroundNotification;
     _cts.Cancel();
     _cts.Dispose();
   }

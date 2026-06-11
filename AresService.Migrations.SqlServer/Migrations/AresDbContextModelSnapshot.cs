@@ -17,7 +17,7 @@ namespace AresService.Migrations.SqlServer.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.7")
+                .HasAnnotation("ProductVersion", "10.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -278,6 +278,39 @@ namespace AresService.Migrations.SqlServer.Migrations
                     b.ToTable("CampaignTags");
                 });
 
+            modelBuilder.Entity("Ares.Datamodel.AresGeneralSettingsConfig", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CommandLatency")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("CommandRetryLimit")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<int>("ExperimentRetryLimit")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("RetryCooldown")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("AresGeneralSettingsConfig", (string)null);
+                });
+
             modelBuilder.Entity("Ares.Datamodel.CampaignExecutionSummary", b =>
                 {
                     b.Property<Guid>("UniqueId")
@@ -385,10 +418,16 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
 
+                    b.Property<int>("StatusCode")
+                        .HasColumnType("int");
+
                     b.Property<Guid?>("StepExecutionSummaryUniqueId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("TemplateId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("VarName")
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("UniqueId");
@@ -425,6 +464,9 @@ namespace AresService.Migrations.SqlServer.Migrations
 
                     b.Property<string>("Result")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("StatusCode")
+                        .HasColumnType("int");
 
                     b.Property<bool>("Success")
                         .HasColumnType("bit");
@@ -701,6 +743,33 @@ namespace AresService.Migrations.SqlServer.Migrations
                     b.HasKey("UniqueId");
 
                     b.ToTable("SerialConnection");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.DeviceErrorHandlingConfig", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Code")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<int>("Handling")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("ErrorHandlingConfigs", (string)null);
                 });
 
             modelBuilder.Entity("Ares.Datamodel.ExecutionInfo", b =>
@@ -1275,6 +1344,9 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
 
+                    b.Property<string>("OutputVarName")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<Guid>("StepTemplateUniqueId")
                         .HasColumnType("uniqueidentifier");
 
@@ -1380,9 +1452,6 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
 
-                    b.Property<bool>("EnvironmentBased")
-                        .HasColumnType("bit");
-
                     b.Property<Guid?>("ExperimentOverviewUniqueId")
                         .HasColumnType("uniqueidentifier");
 
@@ -1394,28 +1463,15 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
 
-                    b.Property<bool>("Planned")
-                        .HasColumnType("bit");
-
-                    b.Property<Guid?>("PlanningMetadataUniqueId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Value")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("VariableArgument")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("VariableType")
-                        .HasColumnType("int");
+                    b.Property<string>("SourceJson")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("Source");
 
                     b.HasKey("UniqueId");
 
                     b.HasIndex("CommandTemplateUniqueId");
 
                     b.HasIndex("ExperimentOverviewUniqueId");
-
-                    b.HasIndex("PlanningMetadataUniqueId");
 
                     b.ToTable("Parameters", (string)null);
                 });
@@ -1872,12 +1928,6 @@ namespace AresService.Migrations.SqlServer.Migrations
                     b.HasOne("Ares.Datamodel.ExperimentOverview", null)
                         .WithMany("Parameters")
                         .HasForeignKey("ExperimentOverviewUniqueId");
-
-                    b.HasOne("Ares.Datamodel.Templates.ParameterMetadata", "PlanningMetadata")
-                        .WithMany()
-                        .HasForeignKey("PlanningMetadataUniqueId");
-
-                    b.Navigation("PlanningMetadata");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Templates.ParameterMetadata", b =>

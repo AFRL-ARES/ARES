@@ -16,6 +16,8 @@ using Moq;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Ares.Core.Device.Providers;
+using Ares.Core.Settings;
+using Ares.Core.Execution.Safety;
 
 namespace Ares.Core.Tests.Execution;
 
@@ -39,6 +41,8 @@ internal class CampaignExecutorTests
   private ILoggerFactory _loggerFactory;
   private IAresDeviceProvider _deviceProvider;
   private IDbContextFactory<CoreDatabaseContext> _dbContextFactory;
+  private ISystemSettingsManager _settingsManager;
+  private IExecutionSafetyManager _safetyManager;
 
   private IAnalyzer _replyAnalyzer;
 
@@ -51,7 +55,7 @@ internal class CampaignExecutorTests
     _analyzerRepo.AddAnalyzer(_replyAnalyzer);
     _analysisRepo = [];
     _analysisHelperLogger = new Mock<ILogger<AnalysisHelper>>().Object;
-    _analysisHelper = new AnalysisHelper(_analyzerRepo, _analysisHelperLogger, _dbContextFactory);
+    _analysisHelper = new AnalysisHelper(_analyzerRepo, _analysisHelperLogger, _dbContextFactory, _notifier);
     _executionReportStore = new ExecutionReportStore();
     _executionReporter = new ExecutionReporter(_executionReportStore);
     _planningHelper = new Mock<IPlanningHelper>().Object;
@@ -61,6 +65,8 @@ internal class CampaignExecutorTests
     _stateLoggerManagerLogger = new Mock<ILogger<StateLoggerManager>>().Object;
     _campaignExecutorLogger = new Mock<ILogger<CampaignExecutor>>().Object;
     _deviceProvider = new Mock<IAresDeviceProvider>().Object;
+    _settingsManager = new Mock<ISystemSettingsManager>().Object;
+    _safetyManager = new Mock<IExecutionSafetyManager>().Object;
     
     var loggerFactoryMock = new Mock<ILoggerFactory>();
     loggerFactoryMock.Setup(f => f.CreateLogger(typeof(CampaignExecutor).FullName))
@@ -69,14 +75,14 @@ internal class CampaignExecutorTests
 
     var deviceRepo = new AresDeviceRepo();
     deviceRepo.AddOrUpdate(new TestDevice());
-    var stepComposer = new StepComposer(deviceRepo, _notifier);
+    var stepComposer = new StepComposer(deviceRepo, _notifier, _settingsManager);
     var experimentComposer = new ExperimentComposer(stepComposer, _analyzerRepo);
 
     var stateLoggerRepository = new DeviceStateLoggerRepository();
     var factory = Mock.Of<IDeviceStateLoggerFactory>();
     var dbContextFactory = Mock.Of<IDbContextFactory<CoreDatabaseContext>>();
     _stateLoggerManager = new StateLoggerManager(stateLoggerRepository, factory, _stateLoggerManagerLogger, dbContextFactory, _deviceProvider);
-    _campaignComposer = new CampaignComposer(_analysisHelper, experimentComposer, _planningHelper, _executionReporter, _resultHandlers, _analysisRepo, _analyzerRepo, _notifier, _loggerFactory, _variableManager, _stateLoggerManager);
+    _campaignComposer = new CampaignComposer(_analysisHelper, experimentComposer, _planningHelper, _executionReporter, _resultHandlers, _analysisRepo, _analyzerRepo, _notifier, _loggerFactory, _variableManager, _stateLoggerManager, _settingsManager, _safetyManager);
   }
 
   [SetUp]

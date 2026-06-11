@@ -1,3 +1,4 @@
+@using Ares.Datamodel.Extensions
 @using Ares.Datamodel.Templates
 @using UI.Application.Notifications
 @using CommandDesignerViewModel=UI.Features.CampaignEdit.ViewModels.CommandDesignerViewModel
@@ -31,36 +32,34 @@
       <div class="flex-grow-0">
         @foreach (var argument in CommandDesignerViewModel.Arguments)
         {
-          @if (argument.PlanningMetadata is not null)
+          var assignmentError = CommandDesignerViewModel.GetParameterAssignmentError(argument);
+          @if (assignmentError is not null)
+          {
+            NotifyOfParameterError(assignmentError);
+            <div class="border border-2 border-danger rounded px-2 py-1 mx-2">
+              @assignmentError
+            </div>
+          }
+
+          else if (argument.GetPlanningMetadata() is not null)
           {
             <div class="border border-2 border-warning rounded px-2 py-1 mx-2">
               @ConvertToDisplayData(argument)
             </div>
           }
 
-          else if(argument.VariableType > 0)
+          else if(argument.GetVariableType() > 0)
           {
             <div class="border border-2 border-secondary rounded px-2 py-1 mx-2">
-              @argument.VariableType.ToString()
+              @argument.GetVariableType().ToString()
             </div>
           }
 
           else
           {
-            if(argument.Value is null)
-            {
-              NotifyOfParameterError(argument);
-              <div class="border border-2 border-danger rounded px-2 py-1 mx-2">
-                Error! Parameter Deleted!
-              </div>
-            }
-
-            else
-            {
-              <div class="border border-2 rounded px-2 py-1 mx-2">
-                @ConvertToDisplayData(argument)
-              </div>
-            }
+            <div class="border border-2 rounded px-2 py-1 mx-2">
+              @ConvertToDisplayData(argument)
+            </div>
           }
         }
       </div>
@@ -79,19 +78,26 @@
   [Parameter]
   public CommandDesignerViewModel? CommandDesignerViewModel { get; set; }
 
-  public void NotifyOfParameterError(Parameter errorParam)
+  public void NotifyOfParameterError(string message)
   {
-    var message = $"A command utilizing the parameter {errorParam.Metadata.Name} needs attention, as this parameter has been deleted";
-    notificationService.Error(message, "Experiment Parameter Deleted");
+    notificationService.Error(message, "Experiment Parameter Assignment Error");
   }
 
   public object ConvertToDisplayData(Parameter argument)
   {
-    if(argument.PlanningMetadata is not null)
+    if(argument.GetPlanningMetadata() is not null)
     {
-      return $"{argument.Metadata.Name}: {argument.PlanningMetadata.Name}";
+      return $"{argument.Metadata.Name}: {argument.GetPlanningMetadata()!.Name}";
     }
-    var aresValue = argument.Value;
+    var varArg = argument.GetVariableArgument();
+    if(varArg is not null)
+    {
+      return $"Variable: {varArg}";
+    }
+    var aresValue = argument.GetValue();
+    if(aresValue is null)
+      return $"{argument.Metadata.Name}: Unassigned";
+
     if(aresValue.HasNumberValue)
       return $"{argument.Metadata.Name}: {aresValue.NumberValue} {argument.Metadata.Unit}";
 

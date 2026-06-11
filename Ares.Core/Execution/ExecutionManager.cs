@@ -7,6 +7,7 @@ using Ares.Core.Execution.StartConditions;
 using Ares.Core.Execution.StopConditions;
 using Ares.Core.Notifications;
 using Ares.Datamodel;
+using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Templates;
 using DynamicData;
 using Microsoft.EntityFrameworkCore;
@@ -24,6 +25,7 @@ public class ExecutionManager : IExecutionManager
   private readonly INotifier _notifier;
   private readonly ILogger _logger;
   private ExecutionControlTokenSource? _executionControlTokenSource;
+  private ICampaignExecutor? _activeExecutor;
 
   public ExecutionManager(IEnumerable<IStartCondition> startConditions,
     IDbContextFactory<CoreDatabaseContext> dbContextFactory,
@@ -62,6 +64,7 @@ public class ExecutionManager : IExecutionManager
       throw new InvalidOperationException(err);
     }
     var executor = _campaignComposer.Compose(_activeCampaignTemplateStore.CampaignTemplate!);
+    _activeExecutor = executor;
 
     if(!string.IsNullOrEmpty(executionNotes))
       executor.UpdateExecutionNotes(executionNotes);
@@ -130,7 +133,7 @@ public class ExecutionManager : IExecutionManager
   {
     var experimentCommandsInvalid = _activeCampaignTemplateStore.CampaignTemplate!.ExperimentTemplate.StepTemplates
     .SelectMany(step => step.CommandTemplates)
-    .Any(cmd => cmd.Parameters.Any(param => param.Planned && param.PlanningMetadata is null));
+    .Any(cmd => cmd.Parameters.Any(param => param.IsPlanned() && param.GetPlanningMetadata() is null));
 
     if(experimentCommandsInvalid)
       return false;
@@ -148,11 +151,17 @@ public class ExecutionManager : IExecutionManager
     PlanningBatchSize = newBatchSize;
   }
 
+  public void SubmitUserDecision(ErrorHandling decision)
+  {
+    _activeExecutor?.SubmitUserDecision(decision);
+  }
+
   private async Task PostExecution(CampaignExecutionSummary result)
   {
     await StoreCompletedCampaign(result);
     _executionControlTokenSource?.Dispose();
     _executionControlTokenSource = null;
+    _activeExecutor = null;
   }
 
   private async Task StoreCompletedCampaign(CampaignExecutionSummary result)

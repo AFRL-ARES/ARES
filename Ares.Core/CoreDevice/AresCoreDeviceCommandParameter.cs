@@ -1,5 +1,8 @@
 ﻿namespace Ares.Core.CoreDevice;
 public enum AresCoreDeviceCommandParameter
 {
-  Duration
+  Duration,
+  NumericData,
+  IntData,
+  FloatData
 }

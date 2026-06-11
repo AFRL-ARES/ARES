@@ -482,6 +482,15 @@ public class AresScriptEnvironment
       case AresDataType.Number:
         kind = AresValue.KindOneofCase.NumberValue;
         return true;
+      case AresDataType.Timestamp:
+        kind = AresValue.KindOneofCase.TimestampValue;
+        return true;
+      case AresDataType.Float:
+        kind = AresValue.KindOneofCase.FloatValue;
+        return true;
+      case AresDataType.Int:
+        kind = AresValue.KindOneofCase.IntValue;
+        return true;
       case AresDataType.String:
         kind = AresValue.KindOneofCase.StringValue;
         return true;

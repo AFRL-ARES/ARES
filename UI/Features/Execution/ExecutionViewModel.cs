@@ -6,6 +6,7 @@ using Ares.Core.Planning;
 using Ares.Core.Visualization.Helpers;
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
 using Ares.Datamodel.Visualizing.Local;
@@ -100,9 +101,11 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
       return;
 
     PlannerAdapterInfos = CampaignTemplate.ExperimentTemplate.GetAllPlannedParameters()
-    .Select(parameter => parameter.PlanningMetadata)
+    .Select(parameter => parameter.GetPlanningMetadata())
     .Select(metadata => CampaignTemplate.PlannerAllocations
-    .FirstOrDefault(allocation => allocation.Parameter.Equals(metadata))?.Planner).ToHashSet();
+    .FirstOrDefault(allocation => allocation.Parameter.Equals(metadata))?.Planner)
+    .Where(info => info is not null)
+    .ToHashSet();
 
     var analyzerId = CampaignTemplate.ExperimentTemplate.AnalyzerId;
 
@@ -201,6 +204,9 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
   public Task ResumeCampaign()
     => _automationClient.ResumeExecution(new Empty(), null);
+
+  public Task SubmitUserDecision(ErrorHandling decision)
+    => _automationClient.SubmitUserDecision(new UserDecisionRequest { Decision = decision }, null);
 
   public async Task ExecutionNotesUploaded(Stream fileStream)
   {
@@ -386,8 +392,9 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     switch(aresValue.KindCase)
     {
       case AresValue.KindOneofCase.NumberValue:
-        result = aresValue.NumberValue;
-        return true;
+      case AresValue.KindOneofCase.FloatValue:
+      case AresValue.KindOneofCase.IntValue:
+        return aresValue.TryGetNumericValue(out result);
 
       case AresValue.KindOneofCase.QuantityValue:
         result = aresValue.QuantityValue.Scalar;

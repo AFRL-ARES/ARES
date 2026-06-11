@@ -65,6 +65,11 @@ public interface IExecutionManager
   /// <param name="batchSize"></param>
   void UpdateBatchPlanningSize(int batchSize);
 
+  /// Submits a user decision for how to handle an error that has occurred during execution
+  /// </summary>
+  /// <param name="decision"></param>
+  void SubmitUserDecision(ErrorHandling decision);
+
   /// <summary>
   /// Checks whether the prerequisites to execution have been met
   /// </summary>

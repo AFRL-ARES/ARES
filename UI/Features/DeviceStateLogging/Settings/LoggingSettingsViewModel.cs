@@ -1,4 +1,5 @@
 using System.Reactive;
+using Ares.Datamodel;
 using Ares.Datamodel.Device;
 using Ares.Services.Device;
 using Ares.Core.Grpc.Services;
@@ -90,7 +91,9 @@ public partial class LoggingSettingsViewModel : ReactiveObject
     LoggingType = settings.LoggingType;
 
     var stateSchema = await _devicesClient.GetDeviceStateSchema(new DeviceStateSchemaRequest { DeviceId = _deviceId }, null);
-    var numericFields = stateSchema.Schema?.Fields.Where(f => f.Value.Type == Ares.Datamodel.AresDataType.Number).ToArray() ?? [];
+    var numericFields = stateSchema.Schema?.Fields
+      .Where(f => f.Value.Type is AresDataType.Number or AresDataType.Float or AresDataType.Int)
+      .ToArray() ?? [];
 
     var deviceDefaultDeltas = numericFields.Select(nf => new KeyValuePair<string, double>(nf.Key, 0)).ToDictionary();
     foreach(var delta in deviceDefaultDeltas)
