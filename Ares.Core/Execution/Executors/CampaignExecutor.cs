@@ -94,10 +94,13 @@ public class CampaignExecutor : ICampaignExecutor
       LoggingType = Datamodel.Device.DeviceLoggingSettings.Types.LoggingType.OnChange
     });
 
+    await _planningHelper.ReseedManualPlanner();
+
     var campaignStartTime = DateTime.UtcNow;
     var experimentSummaries = new List<ExperimentExecutionSummary>();
     ExperimentExecutionSummary startupSummary = new();
     ExperimentExecutionSummary closeoutSummary = new();
+
     
     try
     {
