@@ -90,7 +90,7 @@
       return $"{argument.Metadata.Name}: {argument.GetPlanningMetadata()!.Name}";
     }
     var varArg = argument.GetVariableArgument();
-    if(varArg is not null)
+    if(!string.IsNullOrWhiteSpace(varArg))
     {
       return $"Variable: {varArg}";
     }
