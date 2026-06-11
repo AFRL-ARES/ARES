@@ -110,7 +110,7 @@ public class AresCoreDevice : AresDevice
 
       case AresCoreDeviceCommand.GetTimestamp:
         result.Success = true;
-        result.Result.TimestampValue = DateTime.UtcNow.ToTimestampUtc();
+        result.Result = AresValueHelper.CreateTimestamp(DateTime.UtcNow.ToTimestampUtc());
         break;
 
       case AresCoreDeviceCommand.CalculateAverage:
