@@ -284,7 +284,12 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
 
     foreach(var newSetting in newSettings)
     {
-      if(newSetting.Value.Type == AresDataType.String)
+      if(newSetting.Value.DefaultValue is not null)
+      {
+        Settings[newSetting.Key] = newSetting.Value.DefaultValue;
+      }
+
+      else if(newSetting.Value.Type == AresDataType.String)
         Settings[newSetting.Key] = AresValueHelper.CreateDefault(newSetting.Value.Type, newSetting.Value.StringChoices?.Strings);
 
       else if(newSetting.Value.Type == AresDataType.Number)
