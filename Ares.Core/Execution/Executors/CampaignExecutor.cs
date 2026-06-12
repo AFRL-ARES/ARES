@@ -218,8 +218,9 @@ public class CampaignExecutor : ICampaignExecutor
     var failedExperimentRetryCount = 0;
     var failedExperimentRetryLimit = _generalSettingsConfig?.ExperimentRetryLimit ?? 1;
     var experimentRetryCooldown = _generalSettingsConfig?.RetryCooldown ?? new Duration();
+    var shouldStop = false;
 
-    while(!ShouldStop() && !token.IsCancelled && executionSuccess)
+    while(!shouldStop && !token.IsCancelled && executionSuccess)
     {
       _executionStatusSubject.OnNext(Status);
       _executionReporter.Report(Status);
@@ -228,7 +229,7 @@ public class CampaignExecutor : ICampaignExecutor
       {
         case ExecutionState.InitializeExperiment:
           _experimentCount++;
-          currentExperimentFolder = $"Experiment_{++_experimentCount}";
+          currentExperimentFolder = $"Experiment_{_experimentCount}";
           currentExperimentPath = CampaignOutputHelper.CreateExperimentSubFolder(campaignPath, currentExperimentFolder);
           _currentExperimentTemplate = Template.ExperimentTemplate.CloneWithNewIds();
           _currentExperimentTemplate.Name = Template.Name;
@@ -267,6 +268,9 @@ public class CampaignExecutor : ICampaignExecutor
 
         case ExecutionState.Succeeded:
           _logger.LogInformation("ARES successfully executed the experiment {exp_name}!", _currentExperimentTemplate?.Name ?? "UNKNOWN");
+          shouldStop = ShouldStop();
+          // Go back to initialize the next experiment assuming the stop hasn't been set to true here
+          currentState = ExecutionState.InitializeExperiment;
           break;
 
         case ExecutionState.Running:
@@ -296,6 +300,7 @@ public class CampaignExecutor : ICampaignExecutor
         case ExecutionState.Failed:
           executionSuccess = false;
           _logger.LogInformation("ARES experiment reached the 'Failed' execution state. Experiment will be terminated.");
+          shouldStop = ShouldStop();
           break;
 
         case ExecutionState.WaitingForUserDecision:
@@ -416,7 +421,7 @@ public class CampaignExecutor : ICampaignExecutor
 
             await PostExperimentExecution(_currentSummary);
             experimentSummaries.Add(_currentSummary);
-            currentState = ExecutionState.InitializeExperiment;
+            currentState = ExecutionState.Succeeded;
           }
 
           else
