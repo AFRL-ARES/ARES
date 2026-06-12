@@ -88,8 +88,16 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
       return;
 
     CampaignTemplate = await _automationClient.GetSingleCampaign(new CampaignRequest { UniqueId = campaignTemplateSummary.UniqueId }, null);
-    await _automationClient.SetCampaignForExecution(new CampaignRequest { UniqueId = CampaignTemplate.UniqueId }, null);
-    _ = UpdateCurrentTemplate();
+    
+    if(CampaignTemplate is not null)
+    {
+      await _automationClient.SetCampaignForExecution(new CampaignRequest { UniqueId = CampaignTemplate.UniqueId }, null);
+      _ = UpdateCurrentTemplate();
+    }
+
+    else
+      SelectedTemplateSummary = null;
+
     DisplayExecutionSummary = false;
   }
 

@@ -100,7 +100,7 @@
   {
     ViewModel!.StateChanged += InvokeStateHasChanged;
     await ViewModel!.RefreshCampaigns();
-    await ViewModel!.SelectCampaignTemplate(ViewModel!.CampaignTemplate);
+    await ViewModel!.SelectCampaignTemplate(ViewModel!.SelectedTemplateSummary);
     await ViewModel!.UpdateCurrentTemplate();
     await ViewModel!.GetAllTags();
     ViewModel!.StartWatchingTelemetry();

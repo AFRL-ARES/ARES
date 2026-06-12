@@ -142,6 +142,12 @@ public class AutomationService : AresAutomation.AresAutomationBase
 
   public override Task<Empty> RemoveCampaign(CampaignRequest request, ServerCallContext? context)
   {
+    if(_activeCampaignTemplateStore.CampaignTemplate?.UniqueId == request.UniqueId)
+    {
+      HandleNotification("Cannot Delete Active Campaign", $"ARES rejected a request to delete the campaign {_activeCampaignTemplateStore.CampaignTemplate.Name} as it is currently running.", NotificationSeverityEnum.Info);
+      return Task.FromResult(new Empty());
+    }
+
     var desiredCampaign = Directory.EnumerateFiles(AresConfig.TemplatePath, "*.json").FirstOrDefault(campaign => campaign.Contains(request.UniqueId));
 
     if(desiredCampaign is not null)
@@ -225,8 +231,8 @@ public class AutomationService : AresAutomation.AresAutomationBase
     }
 
     var title = "Error Fetching Campaign Template";
-    var message = $"Attempted to fetch a campaign that didn't exist. {request.CampaignName}'s UUID did not match any of the existing campaigns in your data directory";
-    HandleNotification(title, message, NotificationSeverityEnum.Error);
+    var message = $"Attempted to fetch a campaign that didn't exist. {request.CampaignName}'s UUID did not match any of the existing campaigns in your data directory. If you deleted a campaign this is expected.";
+    HandleNotification(title, message, NotificationSeverityEnum.Warning);
     return null;
   }
 
