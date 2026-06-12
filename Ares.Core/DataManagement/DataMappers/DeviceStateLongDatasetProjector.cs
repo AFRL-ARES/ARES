@@ -6,6 +6,9 @@ namespace Ares.Core.DataManagement.DataMappers;
 public static class DeviceStateLongDatasetProjector
 {
   private const string TimestampColumnName = "Timestamp";
+  private const string CampaignColumnName = "Campaign";
+  private const string ExperimentNumberColumnName = "Experiment Number";
+  private const string StepNameColumnName = "Step Name";
   private const string DeviceColumnName = "Device";
   private const string PropertyColumnName = "Property";
   private const string ValueColumnName = "Value";
@@ -33,7 +36,7 @@ public static class DeviceStateLongDatasetProjector
       cancellationToken.ThrowIfCancellationRequested();
 
       var propertyColumns = deviceDataset.Columns
-        .Where(column => column.Name != TimestampColumnName)
+        .Where(column => !IsContextColumn(column.Name))
         .ToArray();
 
       foreach(var sourceRow in deviceDataset.Rows)
@@ -50,7 +53,7 @@ public static class DeviceStateLongDatasetProjector
           if(sourceRow.Data.Fields.TryGetValue(propertyColumn.Name, out var value) != true)
             continue;
 
-          rows.Add(CreateRow(timestamp, deviceDataset.Name, propertyColumn.Name, value));
+          rows.Add(CreateRow(sourceRow.Data, timestamp, deviceDataset.Name, propertyColumn.Name, value));
         }
       }
     }
@@ -69,6 +72,9 @@ public static class DeviceStateLongDatasetProjector
         Name = TimestampColumnName,
         Schema = new AresValueSchema { Type = AresDataType.Timestamp }
       },
+      CreateOptionalColumn(CampaignColumnName, AresDataType.String),
+      CreateOptionalColumn(ExperimentNumberColumnName, AresDataType.Int),
+      CreateOptionalColumn(StepNameColumnName, AresDataType.String),
       new AresDataColumn
       {
         Name = DeviceColumnName,
@@ -92,10 +98,13 @@ public static class DeviceStateLongDatasetProjector
     ];
   }
 
-  private static AresDataRow CreateRow(AresValue timestamp, string deviceName, string propertyName, AresValue value)
+  private static AresDataRow CreateRow(AresStruct sourceData, AresValue timestamp, string deviceName, string propertyName, AresValue value)
   {
     var rowData = new AresStruct();
     rowData.Fields[TimestampColumnName] = timestamp.Clone();
+    CopyOptionalField(sourceData, rowData, CampaignColumnName);
+    CopyOptionalField(sourceData, rowData, ExperimentNumberColumnName);
+    CopyOptionalField(sourceData, rowData, StepNameColumnName);
     rowData.Fields[DeviceColumnName] = AresValueHelper.CreateString(deviceName);
     rowData.Fields[PropertyColumnName] = AresValueHelper.CreateString(propertyName);
 
@@ -113,6 +122,26 @@ public static class DeviceStateLongDatasetProjector
     {
       Data = rowData
     };
+  }
+
+  private static AresDataColumn CreateOptionalColumn(string name, AresDataType type)
+  {
+    return new AresDataColumn
+    {
+      Name = name,
+      Schema = new AresValueSchema { Type = type, Optional = true }
+    };
+  }
+
+  private static void CopyOptionalField(AresStruct sourceData, AresStruct destinationData, string fieldName)
+  {
+    if(sourceData.Fields.TryGetValue(fieldName, out var value))
+      destinationData.Fields[fieldName] = value.Clone();
+  }
+
+  private static bool IsContextColumn(string columnName)
+  {
+    return columnName is TimestampColumnName or CampaignColumnName or ExperimentNumberColumnName or StepNameColumnName;
   }
 
   private static DateTime GetTimestamp(AresDataRow row)
