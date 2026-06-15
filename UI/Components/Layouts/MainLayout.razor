@@ -118,7 +118,7 @@
   public bool BodyExpanded { get; set; }
   private CancellationTokenSource _cts = new();
   private string _loadingMessage = "Initializing ARES OS...";
-  private IDisposable _driverSubscription;
+  private IDisposable? _driverSubscription;
 
   private readonly string[] _loadingMessageOptions = new[]
   {
