@@ -391,15 +391,15 @@ public class AutomationService : AresAutomation.AresAutomationBase
     return Task.FromResult(new Empty());
   }
 
-  public override Task<Empty> SetReplanRate(ReplanRate request, ServerCallContext? context)
+  public override Task<Empty> SetReplicateRate(ReplicateRate request, ServerCallContext? context)
   {
-    _executionManager.UpdateReplanRate(request.ReplanRate_);
+    _executionManager.UpdateReplanRate(request.ReplicateRate_ );
     return Task.FromResult(new Empty());
   }
 
-  public override Task<GetReplanRateResponse> GetReplanRate(Empty request, ServerCallContext? context)
+  public override Task<ReplicateRate> GetReplicateRate(Empty request, ServerCallContext? context)
   {
-    return Task.FromResult(new GetReplanRateResponse { ReplanRate = _executionManager.ReplanRate });
+    return Task.FromResult(new ReplicateRate { ReplicateRate_ = _executionManager.ReplanRate });
   }
 
   public override Task<Empty> SetAnalysisResultStopCondition(AnalysisResultCondition request, ServerCallContext? context)

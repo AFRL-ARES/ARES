@@ -23,9 +23,10 @@ public partial class LoggingSettingsViewModel : ReactiveObject
     this.WhenAnyValue(vm => vm.IntervalMs,
       vm => vm.LoggingType,
       vm => vm.CurrentSettings,
+      vm => vm.LoggingEnabled,
       vm => vm.DeltasChanged,
-      (interval, logType, settings, deltasChanged) =>
-        (settings is not null && (interval != settings.IntervalMs || logType != settings.LoggingType)) || deltasChanged
+      (interval, logType, settings, loggingEnabled, deltasChanged) =>
+        (settings is not null && (interval != settings.IntervalMs || logType != settings.LoggingType || loggingEnabled != settings.LoggingEnabled)) || deltasChanged
     ).ToProperty(this, vm => vm.Updated, out _updatedObservable);
 
     FetchSettingsCommand = ReactiveCommand.CreateFromTask(Init);
@@ -43,6 +44,9 @@ public partial class LoggingSettingsViewModel : ReactiveObject
 
   [Reactive]
   private partial bool DeltasChanged { get; set; }
+
+  [Reactive]
+  public partial bool LoggingEnabled { get; set; }
 
   [Reactive]
   public partial long IntervalMs { get; set; }
@@ -89,6 +93,7 @@ public partial class LoggingSettingsViewModel : ReactiveObject
     CurrentSettings = settings;
     IntervalMs = settings.IntervalMs;
     LoggingType = settings.LoggingType;
+    LoggingEnabled = settings.LoggingEnabled;
 
     var stateSchema = await _devicesClient.GetDeviceStateSchema(new DeviceStateSchemaRequest { DeviceId = _deviceId }, null);
     var numericFields = stateSchema.Schema?.Fields
@@ -129,7 +134,9 @@ public partial class LoggingSettingsViewModel : ReactiveObject
       DeviceId = _deviceId,
       IntervalMs = IntervalMs,
       LoggingType = LoggingType,
+      LoggingEnabled = LoggingEnabled
     };
+
     settings.Deltas.Add(Deltas);
     await _devicesClient.SetDeviceLoggerSettings(settings, null);
     await Init();

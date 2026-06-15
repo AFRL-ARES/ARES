@@ -138,9 +138,9 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     return _automationClient.GetActiveStopCondition(new Empty(), null);
   }
 
-  public Task<GetReplanRateResponse> GetCurrentReplanRate()
+  public Task<ReplicateRate> GetCurrentReplanRate()
   {
-    return _automationClient.GetReplanRate(new Empty(), null);
+    return _automationClient.GetReplicateRate(new Empty(), null);
   }
 
   public async Task<CampaignExecutionStatus?> GetCampaignExecutionStatus()
@@ -157,9 +157,9 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
   public async Task SetReplanRate()
   {
-    await _automationClient.SetReplanRate(new ReplanRate { ReplanRate_ = DesiredReplanRate }, null);
+    await _automationClient.SetReplicateRate(new ReplicateRate { ReplicateRate_ = DesiredReplanRate }, null);
     var replanRateResponse = await GetCurrentReplanRate();
-    DesiredReplanRate = replanRateResponse.ReplanRate;
+    DesiredReplanRate = replanRateResponse.ReplicateRate_;
   }
 
   public async Task StartCampaign()
