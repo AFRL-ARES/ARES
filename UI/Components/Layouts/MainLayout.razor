@@ -5,6 +5,7 @@
 @using Ares.Core.Device.Repos
 @using Ares.Services
 @using Google.Protobuf.WellKnownTypes
+@using System.Reactive.Linq
 @using UI.Application.Dialog
 @using UI.Application.Notifications
 @using UI.Infrastructure.Startup
@@ -117,6 +118,7 @@
   public bool BodyExpanded { get; set; }
   private CancellationTokenSource _cts = new();
   private string _loadingMessage = "Initializing ARES OS...";
+  private IDisposable _driverSubscription;
 
   private readonly string[] _loadingMessageOptions = new[]
   {
@@ -142,7 +144,13 @@
   {
     Tracker.OnSystemReady += HandleSystemReady;
     notificationService.OnNotificationReceived += HandleBackgroundNotification;
+    _driverSubscription = deviceDriverRepo.Connect().Throttle(TimeSpan.FromMilliseconds(250)).Subscribe(_ => HandleDriversChanged());
     _ = CycleLoadingMessagesAsync(_cts.Token);
+  }
+
+  private void HandleDriversChanged()
+  {
+    InvokeAsync(StateHasChanged);
   }
 
   private void HandleBackgroundNotification(UiNotificationMessage message)
@@ -217,7 +225,7 @@
 
   }
 
-  IEnumerable<string> GetPluginStylesheetPaths()
+  public IEnumerable<string> GetPluginStylesheetPaths()
   {
     return deviceDriverRepo
       .GetAllDeviceDrivers()
@@ -246,6 +254,7 @@
   {
     Tracker.OnSystemReady -= HandleSystemReady;
     notificationService.OnNotificationReceived -= HandleBackgroundNotification;
+    _driverSubscription?.Dispose();
     _cts.Cancel();
     _cts.Dispose();
   }
