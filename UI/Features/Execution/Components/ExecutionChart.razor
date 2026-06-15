@@ -1,4 +1,4 @@
-﻿@using Ares.Datamodel.Visualizing.Local
+@using Ares.Datamodel.Visualizing.Local
 @using UI.Features.Execution.Planning
 @using UI.Features.Visualization.ViewModels
 @using UI.Features.Visualization.Views
@@ -6,82 +6,101 @@
 
 @inject DialogService DialogService
 
-<RadzenStack Orientation="Orientation.Vertical" Gap="1rem" Style="width: 100%; height: 100%; overflow-y: auto; padding-right: 10px;">
-  <RadzenCard Variant="Variant.Outlined" Style="flex: 1 1 auto; min-height: 450px; display: flex; flex-direction: column;">
-    <RadzenColumn Style="flex: 1; display: flex; flex-direction: column;">
-      <RadzenText TextStyle="TextStyle.H6" Class="rz-mb-4">Planner Data</RadzenText>
-      
-      @if(ViewModel!.PlannerAdapterInfos.Any(p => p.Name == "Manual Planner"))
-      {
-        <ManualPlanner />
-      }
+<div class="live-metrics">
+  <section class="execution-card planner-card">
+    <div class="card-heading compact">
+      <div>
+        <h3>Planner Data</h3>
+        <p>@ViewModel!.PlannerSummary</p>
+      </div>
+      <span class="metric-chip">Normalized 0-100</span>
+    </div>
 
-      else
-      {
-        <RadzenChart Style="flex: 1; width: 100%;">
-          <RadzenChartTooltipOptions Shared="false" />
-          @foreach (var plannerSeries in ViewModel!.PlannerMetricsMap)
-          {
-            var currentSeries = plannerSeries;
-            <RadzenLineSeries Data="@currentSeries.Value"
-            TItem="ChartMetricPoint"
-            CategoryProperty="ExecutionIndex"
-            ValueProperty="PlotValue"
-            Title="@($"Planner: {currentSeries.Key}")">
-              <ChildContent>
-                <RadzenMarkers Visible="true" MarkerType="MarkerType.Circle" Size="6" />
-              </ChildContent>
-
-              <TooltipTemplate Context="data">
-                <div style="background-color: #333; border: 1px solid #555; padding: 8px; border-radius: 4px;">
-                  <span style="color: #aaa;">@currentSeries.Key: </span>
-                  <strong style="color: #fff;">@data.RawValue</strong>
-                </div>
-              </TooltipTemplate>
-            </RadzenLineSeries>
-          }
-          <RadzenCategoryAxis Step="1">
-          </RadzenCategoryAxis>
-
-          <RadzenValueAxis Min="0" Max="100" Step="25">
-            <RadzenGridLines Visible="false" />
-          </RadzenValueAxis>
-        </RadzenChart>
-      }
-
-      <RadzenText TextStyle="TextStyle.H6" class="rz-mb-4" Style="padding-top: 1rem">Objective Score</RadzenText>
-      <RadzenChart Style="height: 200px; width: 100%;">
-        @if (ViewModel?.AnalyzerMetrics != null)
+    @if(ViewModel!.PlannerAdapterInfos.Any(p => p?.Name == "Manual Planner"))
+    {
+      <ManualPlanner />
+    }
+    else if(ViewModel!.PlannerMetricsMap.Any())
+    {
+      <RadzenChart Style="height: 260px; width: 100%;">
+        <RadzenChartTooltipOptions Shared="false" />
+        @foreach(var plannerSeries in ViewModel!.PlannerMetricsMap)
         {
-          <RadzenLineSeries Data="@ViewModel.AnalyzerMetrics"
+          var currentSeries = plannerSeries;
+          <RadzenLineSeries Data="@currentSeries.Value"
+                            TItem="ChartMetricPoint"
                             CategoryProperty="ExecutionIndex"
-                            ValueProperty="RawValue"
-                            Title="Analyzer Output"
-                            Stroke="#FFC0CB">
-            <RadzenMarkers MarkerType="MarkerType.Square" />
+                            ValueProperty="PlotValue"
+                            Title="@currentSeries.Key"
+                            Stroke="#5b9dff">
+            <ChildContent>
+              <RadzenMarkers Visible="true" MarkerType="MarkerType.Circle" Size="6" />
+            </ChildContent>
+
+            <TooltipTemplate Context="data">
+              <div class="chart-tooltip">
+                <span>@currentSeries.Key: </span>
+                <strong>@data.RawValue</strong>
+              </div>
+            </TooltipTemplate>
           </RadzenLineSeries>
         }
-
-        <RadzenCategoryAxis Step="1">
-        </RadzenCategoryAxis>
+        <RadzenCategoryAxis Step="1" />
+        <RadzenValueAxis Min="0" Max="100" Step="25">
+          <RadzenGridLines Visible="false" />
+        </RadzenValueAxis>
       </RadzenChart>
+    }
+    else
+    {
+      <div class="empty-state">Planner metrics will appear after planning completes.</div>
+    }
+  </section>
 
-            
-    </RadzenColumn>
-  </RadzenCard>
+  <section class="execution-card analyzer-card">
+    <div class="card-heading compact">
+      <div>
+        <h3>Analyzer Data</h3>
+        <p>@ViewModel!.AnalyzerSummary</p>
+      </div>
+      <span class="metric-chip">@GetAnalyzerMetricLabel()</span>
+    </div>
 
-  <RadzenCard Variant="Variant.Outlined" Style="height: 55%">
-        
-    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Class="rz-mb-4">
-      <RadzenText TextStyle="TextStyle.H6" Style="margin: 0;">Device Monitoring</RadzenText>
-            
+    @if(ViewModel!.AnalyzerMetrics.Any())
+    {
+      <RadzenChart Style="height: 260px; width: 100%;">
+        <RadzenChartTooltipOptions Shared="false" />
+        <RadzenLineSeries Data="@ViewModel!.AnalyzerMetrics"
+                          TItem="ChartMetricPoint"
+                          CategoryProperty="ExecutionIndex"
+                          ValueProperty="RawValue"
+                          Title="Objective Score"
+                          Stroke="#ff8db3">
+          <RadzenMarkers MarkerType="MarkerType.Square" />
+        </RadzenLineSeries>
+        <RadzenCategoryAxis Step="1" />
+      </RadzenChart>
+    }
+    else
+    {
+      <div class="empty-state">Analyzer results will appear after analysis completes.</div>
+    }
+  </section>
+
+  <section class="execution-card device-card">
+    <div class="card-heading compact">
+      <div>
+        <h3>Device Monitoring</h3>
+        <p>Configure one or two live device charts.</p>
+      </div>
+
       <RadzenSelectBar @bind-Value="ViewMode" Size="ButtonSize.Small">
         <Items>
           <RadzenSelectBarItem Value="1" Text="Single View" Icon="crop_square" />
           <RadzenSelectBarItem Value="2" Text="Dual View" Icon="view_column" />
         </Items>
       </RadzenSelectBar>
-    </RadzenStack>
+    </div>
 
     <RadzenRow Gap="1rem">
       <RadzenColumn Size="12" SizeMD="@(ViewMode == 1 ? 12 : 6)">
@@ -91,12 +110,10 @@
         }
         else
         {
-          <RadzenCard Variant="Variant.Outlined" Style="display: flex; align-items: center; justify-content: center; border-style: dashed;">
-            <RadzenStack AlignItems="AlignItems.Center" Gap="1rem">
-              <RadzenText TextStyle="TextStyle.Body1" Style="color: var(--rz-text-disabled-color);">Empty Chart Slot</RadzenText>
-              <RadzenButton Icon="add" Text="Add Chart" ButtonStyle="ButtonStyle.Light" Click="@(() => OpenChartSelector("A"))" />
-            </RadzenStack>
-          </RadzenCard>
+          <div class="empty-chart-slot">
+            <span>Empty Chart Slot</span>
+            <RadzenButton Icon="add" Text="Add Chart" ButtonStyle="ButtonStyle.Light" Click="@(() => OpenChartSelector("A"))" />
+          </div>
         }
       </RadzenColumn>
 
@@ -109,25 +126,29 @@
           }
           else
           {
-            <RadzenCard Variant="Variant.Outlined" Style="display: flex; align-items: center; justify-content: center; border-style: dashed;">
-              <RadzenStack AlignItems="AlignItems.Center" Gap="1rem">
-                <RadzenText TextStyle="TextStyle.Body1" Style="color: var(--rz-text-disabled-color);">Empty Chart Slot</RadzenText>
-                <RadzenButton Icon="add" Text="Add Chart" ButtonStyle="ButtonStyle.Light" Click="@(() => OpenChartSelector("B"))" />
-              </RadzenStack>
-            </RadzenCard>
+            <div class="empty-chart-slot">
+              <span>Empty Chart Slot</span>
+              <RadzenButton Icon="add" Text="Add Chart" ButtonStyle="ButtonStyle.Light" Click="@(() => OpenChartSelector("B"))" />
+            </div>
           }
         </RadzenColumn>
       }
-
     </RadzenRow>
-  </RadzenCard>
-
-</RadzenStack>
+  </section>
+</div>
 
 @code {
   [Parameter]
   public ExecutionViewModel? ViewModel { get; set; }
+
   public int ViewMode { get; set; } = 1;
+
+  private string GetAnalyzerMetricLabel()
+  {
+    return ViewModel!.ActiveStopConditionMode == ExecutionStopConditionMode.AnalyzerResult
+      ? $"Target {ViewModel!.DesiredResult} ± {ViewModel!.DesiredLeeway}"
+      : "Objective Score";
+  }
 
   private async Task OpenChartSelector(string slotId)
   {
