@@ -21,14 +21,14 @@
 
 <HeadContent>
   <link rel="icon" type="image/png" href="images/ARESLogo.png">
-  @foreach(var cssPath in GetPluginStylesheetPaths())
-  {
-    <link rel="stylesheet" href="@cssPath">
-  }
 </HeadContent>
 <PageTitle>ARES</PageTitle>
 
 <div class="page">
+  @foreach(var cssPath in GetPluginStylesheetPaths())
+  {
+    <link rel="stylesheet" href="@cssPath">
+  }
   <RadzenComponents />
 
   <main>
@@ -113,12 +113,13 @@
   </div>
 </div>
 
-  @code {
+@code {
   public bool SidebarExpanded { get; set; } = true;
   public bool BodyExpanded { get; set; }
   private CancellationTokenSource _cts = new();
   private string _loadingMessage = "Initializing ARES OS...";
   private IDisposable? _driverSubscription;
+  private List<string> _approvedCssPaths = new();
 
   private readonly string[] _loadingMessageOptions = new[]
   {
@@ -144,7 +145,11 @@
   {
     Tracker.OnSystemReady += HandleSystemReady;
     notificationService.OnNotificationReceived += HandleBackgroundNotification;
-    _driverSubscription = deviceDriverRepo.Connect().Throttle(TimeSpan.FromMilliseconds(250)).Subscribe(_ => HandleDriversChanged());
+
+    _driverSubscription = deviceDriverRepo.Connect()
+            .Throttle(TimeSpan.FromMilliseconds(500))
+            .Subscribe(_ => InvokeAsync(StateHasChanged));
+
     _ = CycleLoadingMessagesAsync(_cts.Token);
   }
 
@@ -234,9 +239,7 @@
         var pluginFolder = Path.GetFileName(driver.ModulePath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
         var assemblyName = Path.GetFileNameWithoutExtension(driver.Manifest.AssemblyName);
         if(string.IsNullOrWhiteSpace(pluginFolder) || string.IsNullOrWhiteSpace(assemblyName))
-        {
           return null;
-        }
 
         return $"/plugins/{Uri.EscapeDataString(pluginFolder)}/{Uri.EscapeDataString(assemblyName)}.styles.css";
       })
