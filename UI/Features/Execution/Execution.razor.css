@@ -253,6 +253,7 @@
 .apply-box {
   display: flex;
   align-items: end;
+  margin-bottom: 1px;
 }
 
 .tag-editor,

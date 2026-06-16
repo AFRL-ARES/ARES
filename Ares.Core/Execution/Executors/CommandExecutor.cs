@@ -66,9 +66,28 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
     var timeStarted = DateTime.UtcNow;
     var execInfo = new ExecutionInfo { TimeStarted = DateTime.UtcNow.ToTimestamp() };
     var variableResolutionError = CommandVariableResolver.ResolveParameters(Template.Parameters, variableScope);
-    var result = variableResolutionError is null 
-      ? await InternalExecute(token.CancellationToken) 
-      : new CommandResult { Success = false, Error = variableResolutionError };
+    CommandResult result;
+
+    if(variableResolutionError is null)
+    {
+      var internalTask = InternalExecute(token.CancellationToken);
+
+      while(!internalTask.IsCompleted)
+      {
+        var completedTask = await Task.WhenAny(internalTask, Task.Delay(1000, token.CancellationToken));
+
+        if(completedTask != internalTask)
+        {
+          Status.State = ExecutionState.Running;
+          _stateSubject.OnNext(Status);
+        }
+      }
+
+      result = await internalTask;
+    }
+
+    else
+      result = new CommandResult { Success = false, Error = variableResolutionError };
 
     execInfo.TimeFinished = DateTime.UtcNow.ToTimestamp();
 

@@ -1,8 +1,6 @@
-using Ares.Core.Analyzing;
 using Ares.Core.Device.Providers;
 using Ares.Core.Execution;
 using Ares.Core.Grpc.Services;
-using Ares.Core.Planning;
 using Ares.Core.Visualization.Helpers;
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
@@ -34,6 +32,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   private readonly IExecutionReportStore _executionReportStore;
   private readonly IAresDeviceProvider _deviceProvider;
   public event Action? StateChanged;
+  private readonly SynchronizationContext? _uiContext = SynchronizationContext.Current;
 
   private IDisposable? _experimentSubscription;
   private IDisposable? _campaignStateSubscription;
@@ -448,6 +447,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   {
     _experimentSubscription = _executionReportStore.ExperimentStatusObservable
         .Where(status => status is not null)
+        .ObserveOn(_uiContext ?? new SynchronizationContext())
         .Subscribe(
             onNext: status => UpdateExperimentStatus(status!),
             onError: ex => Console.WriteLine($"Telemetry Error: {ex.Message}")
@@ -455,6 +455,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
     _campaignStateSubscription = _executionReportStore.CampaignStatusObservable
       .Where(status => status is not null)
+      .ObserveOn(_uiContext ?? new SynchronizationContext())
       .Select(status => new CampaignExecutionState
       {
         CampaignId = status!.CampaignId,
@@ -473,9 +474,8 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     var existingStatus = ExperimentExecutionStatuses.FirstOrDefault(s => s.ExperimentId == status.ExperimentId);
 
     if(existingStatus is null)
-    {
       ExperimentExecutionStatuses.Add(status);
-    }
+    
     else
     {
       var incomingCommands = status.GetCommandExecutionStatuses();
@@ -484,11 +484,17 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
       foreach(var existingCommand in existingCommands)
       {
         var newCommand = incomingCommands.FirstOrDefault(c => c.CommandId == existingCommand.CommandId);
-        existingCommand.State = newCommand?.State ?? ExecutionState.Undefined;
+        if(newCommand is not null)
+          existingCommand.State = newCommand.State;
+        
       }
     }
 
     StateChanged?.Invoke();
+
+    this.RaisePropertyChanged(nameof(CurrentCommand));
+    this.RaisePropertyChanged(nameof(CompletedExperimentCount));
+    this.RaisePropertyChanged(nameof(ActiveExperimentNumber));
   }
 
   private void UpdateCampaignStatus(CampaignExecutionState state)

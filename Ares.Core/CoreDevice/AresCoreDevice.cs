@@ -14,7 +14,7 @@ public class AresCoreDevice : AresDevice
 {
   private readonly BehaviorSubject<AresStruct> _stateSubject = new(new AresStruct());
 
-  public AresCoreDevice() : base(new DeviceConnectionInfo {DeviceName = "ARES", DeviceId = "ARES-CORE-DEVICE" })
+  public AresCoreDevice() : base(new DeviceConnectionInfo { DeviceName = "ARES", DeviceId = "ARES-CORE-DEVICE" })
   {
     Status = new DeviceOperationalStatus()
     {

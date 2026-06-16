@@ -113,7 +113,6 @@
                   <div>
                     <RadzenLabel Text="Number of experiments" Component="experimentsInput" />
                     <RadzenNumeric @bind-Value="ViewModel!.ExperimentsToRun" Name="experimentsInput" Class="w-100" Min="1" />
-                    <small>Editable during execution so the run can be shortened or extended.</small>
                   </div>
                   <div class="apply-box">
                     <RadzenButton Text="Apply Stop Condition" Icon="check" ButtonStyle="ButtonStyle.Primary" Click="@ViewModel!.ApplyActiveStopCondition" />
@@ -265,8 +264,6 @@
                   <dd>@(ViewModel!.SelectedTags.Any() ? string.Join(", ", ViewModel!.SelectedTags.Select(tag => tag.TagName)) : "None")</dd>
                 </div>
               </dl>
-
-              <RadzenButton Text="Start Campaign" Icon="play_arrow" ButtonStyle="ButtonStyle.Primary" Class="w-100" Disabled="@(!ViewModel!.PreflightReady || ViewModel!.CampaignActive)" Click="@ViewModel!.StartConfiguredCampaign" />
             </section>
           </aside>
         </div>
