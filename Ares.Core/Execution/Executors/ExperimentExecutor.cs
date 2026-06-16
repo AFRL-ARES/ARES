@@ -24,10 +24,13 @@ public class ExperimentExecutor : IExecutor<ExperimentExecutionSummary, Experime
     {
       return executor.ExperimentStatusObservable.Select(_ =>
       {
-        var cmdResults = experimentStepExecutors.Select(cmdExecutor => cmdExecutor.Status);
-        Status.StepExecutionStatuses.Clear();
-        Status.StepExecutionStatuses.AddRange(cmdResults);
-        return Status;
+        var newStatus = new ExperimentExecutionStatus
+        {
+          ExperimentId = template.UniqueId
+        };
+
+        newStatus.StepExecutionStatuses.AddRange(experimentStepExecutors.Select(cmdExecutor => cmdExecutor.Status));
+        return newStatus;
       });
     }).Merge();
 

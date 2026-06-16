@@ -3,12 +3,12 @@
 @using Ares.Datamodel.Extensions
 @using Ares.Datamodel.Visualizing.Local
 @using Ares.Services
+@using System.ComponentModel
 @using UI.Domain.Execution
 @using UI.Features.Execution.Components
 @using UI.Features.Execution.Planning
 @using UI.Features.Visualization.Views
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<ExecutionViewModel>
-@implements IDisposable
 @rendermode InteractiveServer
 
 @inject DialogService DialogService
@@ -291,7 +291,7 @@
                   @for(var i = 0; i < ViewModel!.ExperimentExecutionStatuses.Count; i++)
                   {
                     var experiment = ViewModel!.ExperimentExecutionStatuses[i];
-                    <div class="timeline-item @GetExperimentClass(experiment)">
+                    <div class="timeline-item @GetExperimentClass(experiment)" @key="experiment.ExperimentId">
                       <div class="timeline-marker"></div>
                       <div class="timeline-content">
                         <h4>Experiment @(i + 1)</h4>
@@ -406,6 +406,7 @@
                   </RadzenValueAxis>
                 </RadzenChart>
               }
+
               else
               {
                 <div class="empty-state">Planner metrics will appear after planning completes.</div>
@@ -454,9 +455,9 @@
                   <div class="empty-state">Analyzer results will appear after analysis completes.</div>
                 }
               }
-
             </section>
 
+            <!-- Device Visualization Charts -->
             <section class="execution-card device-card">
               <div class="card-heading compact">
                 <div>
@@ -523,6 +524,13 @@
                   <span class="execution-status-pill @GetStatusClass(command.State)">@command.State</span>
                   <h4>@command.CommandName</h4>
                   <p>@command.DeviceName</p>
+      
+                  @if(!string.IsNullOrWhiteSpace(command.StatusMessage))
+                  {
+                    <p class="command-pulse-text" style="color: #6c757d; font-size: 0.9em; margin-top: 0.5rem;">
+                      @command.StatusMessage
+                    </p>
+                  }
                 </div>
               }
               else
@@ -589,18 +597,22 @@
 @code {
   protected override async Task OnInitializedAsync()
   {
+    await base.OnInitializedAsync();
     ViewModel!.StateChanged += InvokeStateHasChanged;
+
     await ViewModel!.RefreshCampaigns();
+    await ViewModel!.SelectCampaignTemplate(ViewModel!.SelectedTemplateSummary);
     await ViewModel!.UpdateCurrentTemplate();
     await ViewModel!.GetAllTags();
     await ViewModel!.RefreshCampaignSetup();
     ViewModel!.StartWatchingTelemetry();
     await ViewModel!.RefreshExecutionContext();
+
   }
 
   private void InvokeStateHasChanged()
   {
-    InvokeAsync(StateHasChanged);
+    _ = InvokeAsync(StateHasChanged);
   }
 
   private static string GetStatusClass(ExecutionState? state)
@@ -635,10 +647,15 @@
     return $"{key} - {value.Stringify()}";
   }
 
-  public new void Dispose()
+  protected override void Dispose(bool disposing)
   {
-    ViewModel!.StateChanged -= InvokeStateHasChanged;
-    ViewModel!.Dispose();
+    if(disposing)
+    {
+      ViewModel!.StateChanged -= InvokeStateHasChanged;
+      ViewModel!.Dispose();
+    }
+
+    base.Dispose(disposing);
   }
 
   public int ViewMode { get; set; } = 1;
@@ -676,5 +693,10 @@
     }
 
     StateHasChanged();
+  }
+
+  private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+  {
+    _ = InvokeAsync(StateHasChanged);
   }
 }

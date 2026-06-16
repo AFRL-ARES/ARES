@@ -20,6 +20,7 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
   {
     _command = command;
     Template = template;
+
     var executionStatus = new CommandExecutionStatus
     {
       CommandId = template.UniqueId,
@@ -55,7 +56,7 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
         await token.WaitForResumeAsync();
       }
       catch(OperationCanceledException)
-      {
+      { 
       }
 
     if(token.IsCancelled)
@@ -74,6 +75,7 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
     if(variableResolutionError is null)
     {
       var internalTask = InternalExecute(token.CancellationToken);
+      var timerStartTime = DateTime.UtcNow;
 
       while(!internalTask.IsCompleted)
       {
@@ -81,6 +83,8 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
 
         if(completedTask != internalTask)
         {
+          var elapsed = DateTime.UtcNow - timerStartTime;
+          Status.StatusMessage = $"Executing... ({elapsed.TotalSeconds:F0}s elapsed)";
           Status.State = ExecutionState.Running;
           _stateSubject.OnNext(Status);
         }
@@ -105,6 +109,7 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
 
     Status.Result = result.Result;
     _stateSubject.OnNext(Status);
+    _stateSubject.OnCompleted();
 
     return ExecutorSummaryHelpers.CreateCommandExecutionSummary(Template, result, timeStarted, DateTime.UtcNow);
   }

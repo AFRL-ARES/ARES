@@ -32,7 +32,6 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   private readonly IExecutionReportStore _executionReportStore;
   private readonly IAresDeviceProvider _deviceProvider;
   public event Action? StateChanged;
-  private readonly SynchronizationContext? _uiContext = SynchronizationContext.Current;
 
   private IDisposable? _experimentSubscription;
   private IDisposable? _campaignStateSubscription;
@@ -447,7 +446,6 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   {
     _experimentSubscription = _executionReportStore.ExperimentStatusObservable
         .Where(status => status is not null)
-        .ObserveOn(_uiContext ?? new SynchronizationContext())
         .Subscribe(
             onNext: status => UpdateExperimentStatus(status!),
             onError: ex => Console.WriteLine($"Telemetry Error: {ex.Message}")
@@ -455,7 +453,6 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
     _campaignStateSubscription = _executionReportStore.CampaignStatusObservable
       .Where(status => status is not null)
-      .ObserveOn(_uiContext ?? new SynchronizationContext())
       .Select(status => new CampaignExecutionState
       {
         CampaignId = status!.CampaignId,
@@ -466,7 +463,6 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
       .Subscribe(
         onNext: state => UpdateCampaignStatus(state!), 
         onError: ex => Console.WriteLine($"Error Updating Campaign State: {ex.Message}"));
-
   }
 
   private void UpdateExperimentStatus(ExperimentExecutionStatus status)
@@ -474,10 +470,8 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     var existingStatus = ExperimentExecutionStatuses.FirstOrDefault(s => s.ExperimentId == status.ExperimentId);
 
     if(existingStatus is null)
-    {
       ExperimentExecutionStatuses.Add(status);
-      ExtractCommandVariables(status);
-    }
+ 
       
     else
     {
@@ -488,30 +482,40 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
       {
         var newCommand = incomingCommands.FirstOrDefault(c => c.CommandId == existingCommand.CommandId);
         if(newCommand is not null)
+        {
           existingCommand.State = newCommand.State;
-        
+          existingCommand.StatusMessage = newCommand.StatusMessage;
+          existingCommand.Result = newCommand.Result;
+          existingCommand.VariableName = newCommand.VariableName;
+        }
       }
     }
 
+    ExtractCommandVariables(status);
     StateChanged?.Invoke();
 
     this.RaisePropertyChanged(nameof(CurrentCommand));
     this.RaisePropertyChanged(nameof(CompletedExperimentCount));
     this.RaisePropertyChanged(nameof(ActiveExperimentNumber));
+    this.RaisePropertyChanged(nameof(CurrentOutputVariables));
   }
 
   private void ExtractCommandVariables(ExperimentExecutionStatus status)
   {
     CurrentOutputVariables.Clear();
 
+    var dictionary = new Dictionary<string, AresValue>();
+
     foreach(var step in status.StepExecutionStatuses)
     {
       foreach(var cmd in step.CommandExecutionStatuses)
       {
         if(!string.IsNullOrWhiteSpace(cmd.VariableName))
-          CurrentOutputVariables.Add(cmd.VariableName, cmd.Result);
+          dictionary.Add(cmd.VariableName, cmd.Result);
       }
     }
+
+    CurrentOutputVariables = dictionary;
   }
 
   private void UpdateCampaignStatus(CampaignExecutionState state)
