@@ -425,7 +425,7 @@ public class AutomationService : AresAutomation.AresAutomationBase
         new ExperimentStopConditionResponse
         {
           ActiveCondition = "None",
-          Description = "No stop conditions assigned, experiment will run until manually stopped."
+          Description = "No stop conditions assigned."
         });
     }
 
@@ -579,6 +579,7 @@ public class AutomationService : AresAutomation.AresAutomationBase
       .Where(p => p is not null)
       .Distinct()
       .ToList();
+
 
     var listOfTransactions = new List<IEnumerable<PlannerTransaction>?>();
 

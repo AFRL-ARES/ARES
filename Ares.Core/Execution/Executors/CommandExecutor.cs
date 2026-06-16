@@ -28,6 +28,9 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
       State = ExecutionState.Undefined
     };
 
+    if(template.HasOutputVarName)
+      executionStatus.VariableName = template.OutputVarName;
+
     _stateSubject = new BehaviorSubject<CommandExecutionStatus>(executionStatus);
     _notifier = notifier;
     _settingsManager = settingsManager;
@@ -100,7 +103,7 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
     else
       Status.State = ExecutionState.Failed;
 
-
+    Status.Result = result.Result;
     _stateSubject.OnNext(Status);
 
     return ExecutorSummaryHelpers.CreateCommandExecutionSummary(Template, result, timeStarted, DateTime.UtcNow);

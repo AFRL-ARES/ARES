@@ -167,9 +167,9 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
   public async Task SetReplanRate()
   {
-    await _automationClient.SetReplicateRate(new ReplicateRate { ReplicateRate_ = DesiredReplanRate }, null);
+    await _automationClient.SetReplicateRate(new ReplicateRate { ReplicateRate_ = DesiredReplicationRate }, null);
     var replanRateResponse = await GetCurrentReplanRate();
-    DesiredReplanRate = replanRateResponse.ReplicateRate_;
+    DesiredReplicationRate = replanRateResponse.ReplicateRate_;
   }
 
   public async Task StartCampaign()
@@ -474,8 +474,11 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     var existingStatus = ExperimentExecutionStatuses.FirstOrDefault(s => s.ExperimentId == status.ExperimentId);
 
     if(existingStatus is null)
+    {
       ExperimentExecutionStatuses.Add(status);
-    
+      ExtractCommandVariables(status);
+    }
+      
     else
     {
       var incomingCommands = status.GetCommandExecutionStatuses();
@@ -497,6 +500,20 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     this.RaisePropertyChanged(nameof(ActiveExperimentNumber));
   }
 
+  private void ExtractCommandVariables(ExperimentExecutionStatus status)
+  {
+    CurrentOutputVariables.Clear();
+
+    foreach(var step in status.StepExecutionStatuses)
+    {
+      foreach(var cmd in step.CommandExecutionStatuses)
+      {
+        if(!string.IsNullOrWhiteSpace(cmd.VariableName))
+          CurrentOutputVariables.Add(cmd.VariableName, cmd.Result);
+      }
+    }
+  }
+
   private void UpdateCampaignStatus(CampaignExecutionState state)
   {
     CampaignActive = state.IsActive();
@@ -509,8 +526,8 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     if(CampaignExecutionState == ExecutionState.AwaitingUser)
       _ = RequestUserConfirmation();
 
-    if(CampaignActive)
-      SelectedExecutionTabIndex = 1;
+    //if(CampaignActive)
+    //  SelectedExecutionTabIndex = 1;
 
     StateChanged?.Invoke();
   }
@@ -634,7 +651,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
       ActiveStopConditionMode = ExecutionStopConditionMode.AnalyzerResult;
 
     var replanRate = await GetCurrentReplanRate();
-    DesiredReplanRate = replanRate.ReplicateRate_;
+    DesiredReplicationRate = replanRate.ReplicateRate_;
 
     await RefreshExecutionEligibility();
   }
@@ -656,7 +673,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
         new("Stop condition", stopConditionSet, stopConditionSet ? CurrentStopCondition!.Description : "Choose how the run should stop."),
         new("Planner", plannerReady, PlannerAdapterInfos.Any() ? string.Join(", ", PlannerAdapterInfos.Select(info => info?.Name).Where(name => !string.IsNullOrWhiteSpace(name))) : "No planner-backed parameters detected."),
         new("Analyzer", analyzerReady, AnalyzerInfo?.Name ?? "No analyzer assigned to the selected experiment."),
-        new("Eligibility", LastExecutionEligibility?.IsEligible == true, LastExecutionEligibility?.IsEligible == true ? "Backend start checks are passing." : LastExecutionEligibility?.Error ?? "Eligibility has not been checked yet.")
+        new("Eligibility", LastExecutionEligibility?.IsEligible == true, LastExecutionEligibility?.IsEligible == true ? "Camapign is eligible to start." : LastExecutionEligibility?.Error ?? "Campaign is not eligible to start.")
       ];
     }
   }
@@ -701,7 +718,8 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   public partial ExperimentStopConditionResponse? CurrentStopCondition { get; set; }
   public double DesiredResult { get; set; }
   public double DesiredLeeway { get; set; }
-  public int DesiredReplanRate { get; set; } = 1;
+  public int DesiredReplicationRate { get; set; } = 1;
+
   [Reactive]
   public partial bool CampaignActive { get; set; }
   [Reactive]
@@ -722,7 +740,8 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   public partial HashSet<PlannerServiceInfo?> PlannerAdapterInfos { get; set; }
   [Reactive]
   public partial AnalyzerInfo? AnalyzerInfo { get; set; }
-  public Dictionary<string, List<ChartMetricPoint>> PlannerMetricsMap { get; private set; }
+  [Reactive]
+  public partial Dictionary<string, List<ChartMetricPoint>> PlannerMetricsMap { get; private set; }
   [Reactive]
   public partial List<ChartMetricPoint> AnalyzerMetrics { get; private set; }
   [Reactive]
@@ -749,6 +768,8 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   public List<AresCampaignTag> AvailableTags { get; set; } = [];
   public List<AresCampaignTag> SelectedTags { get; set; } = [];
   public string? NewTagName { get; set; }
+  [Reactive]
+  public partial Dictionary<string, AresValue> CurrentOutputVariables { get; set; } = new();
 }
 
 public enum ExecutionStopConditionMode

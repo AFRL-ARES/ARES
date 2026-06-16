@@ -1,11 +1,17 @@
 @page "/automation/execution"
 @using Ares.Datamodel
+@using Ares.Datamodel.Extensions
+@using Ares.Datamodel.Visualizing.Local
 @using Ares.Services
 @using UI.Domain.Execution
 @using UI.Features.Execution.Components
+@using UI.Features.Execution.Planning
+@using UI.Features.Visualization.Views
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<ExecutionViewModel>
 @implements IDisposable
 @rendermode InteractiveServer
+
+@inject DialogService DialogService
 
 <PageTitle>Execution</PageTitle>
 
@@ -79,7 +85,15 @@
                 </div>
                 <div>
                   <span>Analyzer</span>
-                  <strong>@ViewModel!.AnalyzerSummary</strong>
+                  @if(ViewModel!.AnalyzerSummary == "NONE")
+                  {
+                    <strong>No Analyzer Assigned</strong> 
+                  }
+
+                  else
+                  {
+                    <strong>@ViewModel!.AnalyzerSummary</strong>
+                  }
                 </div>
               </div>
             </section>
@@ -188,25 +202,16 @@
               <div class="card-heading">
                 <div>
                   <h3>Execution Policy</h3>
-                  <p>Runtime policy uses the existing system execution settings.</p>
                 </div>
               </div>
 
               <div class="policy-grid">
                 <div>
-                  <span>Re-planning rate</span>
+                  <span>Experiment Replication Rate</span>
                   <div class="policy-input">
-                    <RadzenNumeric @bind-Value="ViewModel!.DesiredReplanRate" Disabled="@ViewModel!.CampaignActive" Min="1" />
+                    <RadzenNumeric @bind-Value="ViewModel!.DesiredReplicationRate" Disabled="@ViewModel!.CampaignActive" Min="1" />
                     <RadzenButton Text="Apply" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" Disabled="@ViewModel!.CampaignActive" Click="@ViewModel!.SetReplanRate" />
                   </div>
-                </div>
-                <div>
-                  <span>Failure handling</span>
-                  <strong>System settings</strong>
-                </div>
-                <div>
-                  <span>User approval</span>
-                  <strong>Shown when requested by executor</strong>
                 </div>
               </div>
             </section>
@@ -216,7 +221,7 @@
             <section class="execution-card">
               <div class="card-heading compact">
                 <div>
-                  <h3>Preflight Check</h3>
+                  <h3>Pre-Experiment Check</h3>
                   <p>@(ViewModel!.PreflightReady ? "Ready to run" : "Needs attention")</p>
                 </div>
                 <span class="execution-status-pill @(ViewModel!.PreflightReady ? "status-success" : "status-warning")">
@@ -257,7 +262,7 @@
                 </div>
                 <div>
                   <dt>Re-plan</dt>
-                  <dd>Every @ViewModel!.DesiredReplanRate experiment(s)</dd>
+                  <dd>Every @ViewModel!.DesiredReplicationRate experiment(s)</dd>
                 </div>
                 <div>
                   <dt>Tags</dt>
@@ -351,7 +356,156 @@
               </RadzenAlert>
             }
 
-            <ExecutionChart ViewModel="@ViewModel" />
+            <!-- Planner Data Chart -->
+            <div class="live-metrics">
+            <section class="execution-card device-card">
+              <div class="card-heading compact">
+                <div>
+                  <h3>Planner Data</h3>
+                </div>
+              </div>
+
+              @if(ViewModel!.PlannerAdapterInfos.Any(p => p?.Name == "Manual Planner"))
+              {
+                <ManualPlanner />
+              }
+
+              else if(!ViewModel!.PlannerAdapterInfos.Any())
+              {
+                <div class="empty-state">No planner assigned, no metrics available.</div>
+              }
+
+              else if(ViewModel!.PlannerMetricsMap.Any())
+              {
+                <RadzenChart Style="height: 260px; width: 100%;">
+                  <RadzenChartTooltipOptions Shared="false" />
+                  @foreach(var plannerSeries in ViewModel!.PlannerMetricsMap)
+                  {
+                    var currentSeries = plannerSeries;
+                    <RadzenLineSeries Data="@currentSeries.Value"
+                                      TItem="ChartMetricPoint"
+                                      CategoryProperty="ExecutionIndex"
+                                      ValueProperty="PlotValue"
+                                      Title="@currentSeries.Key"
+                                      Stroke="#5b9dff">
+                      <ChildContent>
+                        <RadzenMarkers Visible="true" MarkerType="MarkerType.Circle" Size="6" />
+                      </ChildContent>
+
+                      <TooltipTemplate Context="data">
+                        <div class="chart-tooltip">
+                          <span>@currentSeries.Key: </span>
+                          <strong>@data.RawValue</strong>
+                        </div>
+                      </TooltipTemplate>
+                    </RadzenLineSeries>
+                  }
+                  <RadzenCategoryAxis Step="1" />
+                  <RadzenValueAxis Min="0" Max="100" Step="25">
+                    <RadzenGridLines Visible="false" />
+                  </RadzenValueAxis>
+                </RadzenChart>
+              }
+              else
+              {
+                <div class="empty-state">Planner metrics will appear after planning completes.</div>
+              }
+            </section>
+
+            <!-- Analyzer Data Chart -->
+            <section class="execution-card device-card">
+              @if(ViewModel!.AnalyzerSummary == "NONE")
+              {
+                <div class="card-heading compact">
+                  <div>
+                    <h3>Analyzer Data</h3>
+                  </div>
+                </div>
+                <div class="empty-state">No analyzer assigned, no metrics available.</div>
+              }
+
+              else
+              {
+                <div class="card-heading compact">
+                  <div>
+                    <h3>Analyzer Data</h3>
+                    <p>@ViewModel!.AnalyzerSummary</p>
+                  </div>
+                  <span class="metric-chip">@GetAnalyzerMetricLabel()</span>
+                </div>
+
+                @if(ViewModel!.AnalyzerMetrics.Any())
+                {
+                  <RadzenChart Style="height: 260px; width: 100%;">
+                    <RadzenChartTooltipOptions Shared="false" />
+                    <RadzenLineSeries Data="@ViewModel!.AnalyzerMetrics"
+                                      TItem="ChartMetricPoint"
+                                      CategoryProperty="ExecutionIndex"
+                                      ValueProperty="RawValue"
+                                      Title="Objective Score"
+                                      Stroke="#ff8db3">
+                      <RadzenMarkers MarkerType="MarkerType.Square" />
+                    </RadzenLineSeries>
+                    <RadzenCategoryAxis Step="1" />
+                  </RadzenChart>
+                }
+                else
+                {
+                  <div class="empty-state">Analyzer results will appear after analysis completes.</div>
+                }
+              }
+
+            </section>
+
+            <section class="execution-card device-card">
+              <div class="card-heading compact">
+                <div>
+                  <h3>Device Monitoring</h3>
+                  <p>Configure one or two live device charts.</p>
+                </div>
+
+                <RadzenSelectBar @bind-Value="ViewMode" Size="ButtonSize.Small">
+                  <Items>
+                    <RadzenSelectBarItem Value="1" Text="Single View" Icon="crop_square" />
+                    <RadzenSelectBarItem Value="2" Text="Dual View" Icon="view_column" />
+                  </Items>
+                </RadzenSelectBar>
+              </div>
+
+              <RadzenRow Gap="1rem">
+                <RadzenColumn Size="12" SizeMD="@(ViewMode == 1 ? 12 : 6)">
+                  @if(ViewModel!.ChartA is not null)
+                  {
+                    <VisualizationItem ViewModel="ViewModel!.ChartA" />
+                  }
+                  else
+                  {
+                    <div class="empty-chart-slot">
+                      <span>Empty Chart Slot</span>
+                      <RadzenButton Icon="add" Text="Add Chart" ButtonStyle="ButtonStyle.Light" Click="@(() => OpenChartSelector("A"))" />
+                    </div>
+                  }
+                </RadzenColumn>
+
+                @if(ViewMode == 2)
+                {
+                  <RadzenColumn Size="12" SizeMD="6">
+                    @if(ViewModel!.ChartB is not null)
+                    {
+                      <VisualizationItem ViewModel="ViewModel!.ChartB" />
+                    }
+                    else
+                    {
+                      <div class="empty-chart-slot">
+                        <span>Empty Chart Slot</span>
+                        <RadzenButton Icon="add" Text="Add Chart" ButtonStyle="ButtonStyle.Light" Click="@(() => OpenChartSelector("B"))" />
+                      </div>
+                    }
+                  </RadzenColumn>
+                }
+              </RadzenRow>
+            </section>
+          </div>
           </main>
 
           <aside class="live-side-column">
@@ -377,18 +531,32 @@
               }
             </section>
 
+            
             <section class="execution-card">
               <div class="card-heading compact">
                 <div>
-                  <h3>Run Controls</h3>
-                  <p>Supported execution actions.</p>
+                  <h3>Experiment Variables</h3>
+                  <p>The active variables within this experiment</p>
                 </div>
               </div>
 
-              <div class="control-stack">
-                <RadzenButton Text="Pause" Icon="pause" ButtonStyle="ButtonStyle.Light" Disabled="@(!ViewModel!.CampaignActive || ViewModel!.CampaignPaused)" Click="@ViewModel!.PauseCampaign" />
-                <RadzenButton Text="Resume" Icon="play_arrow" ButtonStyle="ButtonStyle.Primary" Disabled="@(!ViewModel!.CampaignPaused)" Click="@ViewModel!.ResumeCampaign" />
-                <RadzenButton Text="Stop" Icon="stop" ButtonStyle="ButtonStyle.Danger" Disabled="@(!ViewModel!.CampaignActive)" Click="@ViewModel!.StopCampaign" />
+              <div class="activity-list">
+                @foreach(var variable in ViewModel!.CurrentOutputVariables)
+                {
+                  @if(variable.Value is not null)
+                  {
+                    <div class="activity-item">
+                      <span>@variable.Key: @variable.Value.Stringify()</span>
+                    </div>
+                  }
+
+                  else
+                  {
+                    <div class="activity-item">
+                      <span>@variable.Key: Pending...</span>
+                    </div>
+                  }
+                }
               </div>
             </section>
 
@@ -410,6 +578,7 @@
                 }
               </div>
             </section>
+
           </aside>
         </div>
       </RadzenTabsItem>
@@ -461,9 +630,51 @@
     return "queued";
   }
 
+  private static string FormatVariableDisplayString(string key, AresValue value)
+  {
+    return $"{key} - {value.Stringify()}";
+  }
+
   public new void Dispose()
   {
     ViewModel!.StateChanged -= InvokeStateHasChanged;
     ViewModel!.Dispose();
+  }
+
+  public int ViewMode { get; set; } = 1;
+
+  private string GetAnalyzerMetricLabel()
+  {
+    return ViewModel!.ActiveStopConditionMode == ExecutionStopConditionMode.AnalyzerResult
+      ? $"Target {ViewModel!.DesiredResult} ± {ViewModel!.DesiredLeeway}"
+      : "Objective Score";
+  }
+
+  private async Task OpenChartSelector(string slotId)
+  {
+    var result = await DialogService.OpenAsync<AddChartDialog>("Configure Visualization", new Dictionary<string, object?>(), new DialogOptions()
+    {
+      Width = "900px",
+      Height = "850px",
+      Resizable = true,
+      Draggable = true
+    });
+
+    if(result is not null && result is DeviceVisualizationConfig dvc)
+    {
+      if(slotId == "A")
+      {
+        ViewModel!.ChartConfigA = dvc;
+        await ViewModel!.UpdateDeviceChartA();
+      }
+
+      if(slotId == "B")
+      {
+        ViewModel!.ChartConfigB = dvc;
+        await ViewModel!.UpdateDeviceChartB();
+      }
+    }
+
+    StateHasChanged();
   }
 }
