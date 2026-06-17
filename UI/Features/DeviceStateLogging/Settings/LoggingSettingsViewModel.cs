@@ -125,9 +125,7 @@ public partial class LoggingSettingsViewModel : ReactiveObject
   public async Task<bool> Save()
   {
     if(!Updated)
-    {
       return false;
-    }
 
     var settings = new DeviceLoggingSettings
     {
