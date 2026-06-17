@@ -54,6 +54,7 @@ public class AnalysisHelper
       transaction.AnalyzerId = analyzer.UniqueId;
       transaction.AnalyzerName = analyzer.Name;
       transaction.AnalyzerType = analyzer.Type;
+      transaction.AnalyzerVersion = analyzer.Version;
       transaction.AnalysisRequest = analysisRequest;
       transaction.TimeRequestSent = DateTime.UtcNow.ToTimestamp();
 

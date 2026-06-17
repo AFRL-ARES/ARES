@@ -25,4 +25,11 @@ public interface IPlanningHelper
     IEnumerable<ExperimentOverview> seedExperiments,
     PlanStatusCode code,
     CancellationToken cancellationToken);
+
+  /// <summary>
+  /// Will try and reseed the manual planner with the latest provided manual plan.
+  /// This rebuilds the queue of manually planned values, ensuring experiments are not skipped.
+  /// </summary>
+  /// <returns></returns>
+  Task ReseedManualPlanner();
 }

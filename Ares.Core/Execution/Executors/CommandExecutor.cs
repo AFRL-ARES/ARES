@@ -20,6 +20,7 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
   {
     _command = command;
     Template = template;
+
     var executionStatus = new CommandExecutionStatus
     {
       CommandId = template.UniqueId,
@@ -27,6 +28,9 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
       DeviceName = template.Metadata.DeviceType,
       State = ExecutionState.Undefined
     };
+
+    if(template.HasOutputVarName)
+      executionStatus.VariableName = template.OutputVarName;
 
     _stateSubject = new BehaviorSubject<CommandExecutionStatus>(executionStatus);
     _notifier = notifier;
@@ -52,7 +56,7 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
         await token.WaitForResumeAsync();
       }
       catch(OperationCanceledException)
-      {
+      { 
       }
 
     if(token.IsCancelled)
@@ -66,9 +70,31 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
     var timeStarted = DateTime.UtcNow;
     var execInfo = new ExecutionInfo { TimeStarted = DateTime.UtcNow.ToTimestamp() };
     var variableResolutionError = CommandVariableResolver.ResolveParameters(Template.Parameters, variableScope);
-    var result = variableResolutionError is null 
-      ? await InternalExecute(token.CancellationToken) 
-      : new CommandResult { Success = false, Error = variableResolutionError };
+    CommandResult result;
+
+    if(variableResolutionError is null)
+    {
+      var internalTask = InternalExecute(token.CancellationToken);
+      var timerStartTime = DateTime.UtcNow;
+
+      while(!internalTask.IsCompleted)
+      {
+        var completedTask = await Task.WhenAny(internalTask, Task.Delay(1000, token.CancellationToken));
+
+        if(completedTask != internalTask)
+        {
+          var elapsed = DateTime.UtcNow - timerStartTime;
+          Status.StatusMessage = $"Executing... ({elapsed.TotalSeconds:F0}s elapsed)";
+          Status.State = ExecutionState.Running;
+          _stateSubject.OnNext(Status);
+        }
+      }
+
+      result = await internalTask;
+    }
+
+    else
+      result = new CommandResult { Success = false, Error = variableResolutionError };
 
     execInfo.TimeFinished = DateTime.UtcNow.ToTimestamp();
 
@@ -81,7 +107,7 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
     else
       Status.State = ExecutionState.Failed;
 
-
+    Status.Result = result.Result;
     _stateSubject.OnNext(Status);
 
     return ExecutorSummaryHelpers.CreateCommandExecutionSummary(Template, result, timeStarted, DateTime.UtcNow);

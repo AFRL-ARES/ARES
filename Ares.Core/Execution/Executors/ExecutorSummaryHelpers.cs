@@ -60,6 +60,7 @@ internal static class ExecutorSummaryHelpers
       StatusCode = deviceResult?.StatusCode ?? CommandStatusCode.StatusUnspecified
      };
 
+
     if(template.HasOutputVarName)
       commandExecutionSummary.VarName = template.OutputVarName;
 

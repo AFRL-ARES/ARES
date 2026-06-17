@@ -616,6 +616,9 @@ namespace AresService.Migrations.Sqlite.Migrations
                         .HasColumnType("TEXT")
                         .HasDefaultValueSql("DATETIME('now')");
 
+                    b.Property<bool>("LoggingEnabled")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("LoggingType")
                         .HasColumnType("INTEGER");
 

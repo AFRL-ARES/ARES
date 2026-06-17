@@ -621,6 +621,9 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
+                    b.Property<bool>("LoggingEnabled")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("LoggingType")
                         .HasColumnType("integer");
 

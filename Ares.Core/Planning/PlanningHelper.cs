@@ -180,4 +180,12 @@ public class PlanningHelper : IPlanningHelper
     await context.PlannerTransactions.AddAsync(transaction);
     await context.SaveChangesAsync();
   }
+
+  public async Task ReseedManualPlanner()
+  {
+    var manualPlanner = _plannerManager.GetManualPlanner();
+
+    if(manualPlanner is not null)
+      await manualPlanner.Reseed();
+  }
 }

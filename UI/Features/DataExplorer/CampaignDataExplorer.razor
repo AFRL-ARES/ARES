@@ -1,5 +1,413 @@
-﻿<h3>CampaignDataExplorer</h3>
+@using Ares.Core.DataManagement.DataMappers
+@using Ares.Core.Grpc.Services
+@using Ares.Datamodel
+@using Ares.Services
+@using Google.Protobuf.WellKnownTypes
+@using Microsoft.JSInterop
+@using UI.Components.Formatting
+@implements IDisposable
+@inject AutomationService AutomationClient
+@inject CampaignDatasetGenerator DatasetGenerator
+@inject IJSRuntime JS
+
+<section class="campaign-data-explorer">
+  <div class="explorer-header">
+    <div>
+      <h3>Campaign Data Explorer</h3>
+      <p>Select a completed campaign execution to inspect and export its experiment data.</p>
+    </div>
+
+    <div class="data-summary" aria-label="Campaign data summary">
+      <div>
+        <span class="summary-value">@CampaignCount</span>
+        <span class="summary-label">Campaigns</span>
+      </div>
+      <div>
+        <span class="summary-value">@AppliedExperimentCount</span>
+        <span class="summary-label">Experiments</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="campaign-data-grid">
+    <aside class="campaign-panel" aria-label="Completed campaigns">
+      <div class="panel-toolbar">
+        <div>
+          <h4>Campaigns</h4>
+          <span>@FilteredCampaignCount shown</span>
+        </div>
+        <button type="button" class="clear-button" @onclick="ClearSelection" disabled="@(string.IsNullOrWhiteSpace(_selectedCampaignId) || _loadingDatasets)">
+          Clear
+        </button>
+      </div>
+
+      <label class="search-field">
+        <RadzenIcon Icon="search" />
+        <input type="search" placeholder="Filter campaigns" disabled="@_loadingDatasets" @bind="_filterText" @bind:event="oninput" />
+      </label>
+
+      @if (_campaigns is null)
+      {
+        <div class="empty-state compact">
+          <RadzenIcon Icon="hourglass_empty" />
+          <span>Loading campaigns...</span>
+        </div>
+      }
+      else if (!_campaigns.Any())
+      {
+        <div class="empty-state compact">
+          <RadzenIcon Icon="science" />
+          <span>No completed campaign data found.</span>
+        </div>
+      }
+      else if (!FilteredCampaigns.Any())
+      {
+        <div class="empty-state compact">
+          <RadzenIcon Icon="search_off" />
+          <span>No campaigns match this filter.</span>
+        </div>
+      }
+      else
+      {
+        <ul class="campaign-list">
+          @foreach (var campaign in FilteredCampaigns)
+          {
+            var isSelected = campaign.SummaryId == _selectedCampaignId;
+
+            <li class="@(isSelected ? "selected" : null)">
+              <button type="button" disabled="@_loadingDatasets" @onclick="() => SelectCampaign(campaign.SummaryId)">
+                <span class="campaign-marker" aria-hidden="true"></span>
+                <span class="campaign-text">
+                  <span class="campaign-name">@campaign.CampaignName</span>
+                  <span class="campaign-meta">@campaign.CompletionTimeDisplay</span>
+                  <span class="campaign-meta">@campaign.ExperimentCount experiment@(campaign.ExperimentCount == 1 ? string.Empty : "s")</span>
+                </span>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+
+      <div class="selection-actions">
+        <button type="button" class="apply-button" @onclick="ApplySelectionAsync" disabled="@(!CanApply)">
+          Apply
+        </button>
+
+        @if (_loadingDatasets)
+        {
+          <button type="button" class="cancel-button" @onclick="CancelDatasetLoad" disabled="@_cancelingDatasetLoad">
+            @(_cancelingDatasetLoad ? "Canceling..." : "Cancel")
+          </button>
+        }
+      </div>
+    </aside>
+
+    <section class="data-panel" aria-label="Campaign experiment data">
+      @if (_loadingDatasets)
+      {
+        <div class="loading-status">
+          <RadzenProgressBarCircular Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.Small" ShowValue="false" />
+          <div>
+            <strong>@(_cancelingDatasetLoad ? "Canceling..." : "Generating campaign tables...")</strong>
+            <span>@(_hasApplied ? "Current results remain available until the new data is ready." : "Loading experiment data for the selected campaign.")</span>
+          </div>
+          <button type="button" class="cancel-button compact" @onclick="CancelDatasetLoad" disabled="@_cancelingDatasetLoad">
+            @(_cancelingDatasetLoad ? "Canceling..." : "Cancel")
+          </button>
+        </div>
+      }
+
+      @if (!string.IsNullOrWhiteSpace(_exportError))
+      {
+        <div class="export-error">
+          <RadzenIcon Icon="error" />
+          <span>@_exportError</span>
+        </div>
+      }
+
+      @if (!_hasApplied && string.IsNullOrWhiteSpace(_selectedCampaignId))
+      {
+        <div class="empty-state">
+          <RadzenIcon Icon="table_view" />
+          <h4>No campaign selected</h4>
+          <p>Choose a completed campaign execution and apply the selection.</p>
+        </div>
+      }
+      else if (_loadingDatasets && !_hasApplied)
+      {
+        <div class="empty-state">
+          <RadzenIcon Icon="hourglass_empty" />
+          <h4>Loading campaign data</h4>
+          <p>Generating experiment tables for the selected campaign.</p>
+        </div>
+      }
+      else if (!string.IsNullOrWhiteSpace(_datasetError))
+      {
+        <div class="empty-state error">
+          <RadzenIcon Icon="error" />
+          <h4>Unable to load data</h4>
+          <p>@_datasetError</p>
+        </div>
+      }
+      else if (!_hasApplied)
+      {
+        <div class="empty-state">
+          <RadzenIcon Icon="table_view" />
+          <h4>Apply selection to load data</h4>
+          <p>Use Apply to generate tables for the selected campaign.</p>
+        </div>
+      }
+      else if (_datasets is null || _datasets.Length == 0 || _datasets.All(dataset => dataset.Rows.Count == 0))
+      {
+        <div class="empty-state">
+          <RadzenIcon Icon="filter_alt_off" />
+          <h4>No campaign data found</h4>
+          <p>The selected campaign did not produce any experiment tables.</p>
+        </div>
+      }
+      else
+      {
+        <div class="data-panel-header">
+          <div>
+            <h4>@AppliedCampaignName</h4>
+            <span>@AppliedExperimentCount experiment@(AppliedExperimentCount == 1 ? string.Empty : "s") across @_datasets.Length table@(_datasets.Length == 1 ? string.Empty : "s")</span>
+          </div>
+          <div class="export-actions">
+            <button type="button" class="export-button" @onclick="ExportCurrentAsync" disabled="@(!CanExport)">
+              <RadzenIcon Icon="download" />
+              <span>Export Current</span>
+            </button>
+            <button type="button" class="export-button" @onclick="ExportAllAsync" disabled="@(!CanExport)">
+              <RadzenIcon Icon="folder_zip" />
+              <span>@(_exportingDatasets ? "Exporting..." : "Export All")</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="campaign-details" aria-label="Applied campaign details">
+          <div>
+            <span class="detail-label">Tags</span>
+            <span class="detail-value">@AppliedCampaignTags</span>
+          </div>
+          <div>
+            <span class="detail-label">Notes</span>
+            <span class="detail-value">@AppliedCampaignNotes</span>
+          </div>
+        </div>
+
+        <RadzenTabs Class="dataset-tabs" RenderMode="TabRenderMode.Server" @bind-SelectedIndex="_selectedDatasetTabIndex">
+          <Tabs>
+            @for (var index = 0; index < _datasets.Length; index++)
+            {
+              var dataset = _datasets[index];
+              <RadzenTabsItem Text="@GetTableName(index, dataset)">
+                <AresDatasetTable @key="dataset" Dataset="@dataset" />
+              </RadzenTabsItem>
+            }
+          </Tabs>
+        </RadzenTabs>
+      }
+    </section>
+  </div>
+</section>
 
 @code {
+  private List<CampaignDisplayItem>? _campaigns;
+  private AresDataset[]? _datasets;
+  private CancellationTokenSource? _datasetLoadCancellation;
+  private string? _filterText;
+  private string? _selectedCampaignId;
+  private string? _appliedCampaignId;
+  private string? _datasetError;
+  private string? _exportError;
+  private int _selectedDatasetTabIndex;
+  private bool _loadingDatasets;
+  private bool _cancelingDatasetLoad;
+  private bool _exportingDatasets;
+  private bool _hasApplied;
 
+  private int CampaignCount => _campaigns?.Count ?? 0;
+  private int FilteredCampaignCount => FilteredCampaigns.Count();
+  private int AppliedExperimentCount => AppliedCampaign?.ExperimentCount ?? 0;
+  private string AppliedCampaignName => AppliedCampaign?.CampaignName ?? "Campaign Data";
+  private string AppliedCampaignTags => string.IsNullOrWhiteSpace(AppliedCampaign?.Tags) ? "No tags" : AppliedCampaign.Tags;
+  private string AppliedCampaignNotes => string.IsNullOrWhiteSpace(AppliedCampaign?.Notes) ? "No notes" : AppliedCampaign.Notes;
+  private CampaignDisplayItem? AppliedCampaign => _campaigns?.FirstOrDefault(campaign => campaign.SummaryId == _appliedCampaignId);
+  private bool CanApply => !string.IsNullOrWhiteSpace(_selectedCampaignId) && !_loadingDatasets && !_exportingDatasets;
+  private bool CanExport => !_loadingDatasets && !_exportingDatasets && _datasets?.Any(dataset => dataset.Rows.Count > 0) == true;
+
+  private IEnumerable<CampaignDisplayItem> FilteredCampaigns
+  {
+    get
+    {
+      if (_campaigns is null)
+        return Enumerable.Empty<CampaignDisplayItem>();
+
+      if (string.IsNullOrWhiteSpace(_filterText))
+        return _campaigns;
+
+      return _campaigns.Where(campaign =>
+        campaign.CampaignName.Contains(_filterText, StringComparison.OrdinalIgnoreCase) ||
+        campaign.SummaryId.Contains(_filterText, StringComparison.OrdinalIgnoreCase) ||
+        campaign.Tags.Contains(_filterText, StringComparison.OrdinalIgnoreCase) ||
+        campaign.Notes.Contains(_filterText, StringComparison.OrdinalIgnoreCase));
+    }
+  }
+
+  protected override async Task OnInitializedAsync()
+  {
+    var response = await AutomationClient.GetAvailableCampaignExecutionSummaries(new Empty(), null);
+    var campaigns = await Task.WhenAll(response.AvailableCampaignSummaries
+      .Select(async campaign =>
+      {
+        var summary = await AutomationClient.GetCampaignSummary(
+          new CampaignExecutionSummaryRequest { SummaryId = campaign.SummaryId },
+          null);
+
+        return new CampaignDisplayItem(
+          campaign.SummaryId,
+          string.IsNullOrWhiteSpace(campaign.CampaignName) ? campaign.SummaryId : campaign.CampaignName,
+          campaign.CompletionTime.ToReadableTimestamp(),
+          campaign.CompletionTime.ToDateTime(),
+          (int)campaign.NumExperiments,
+          summary.CampaignTags ?? string.Empty,
+          summary.CampaignNotes ?? string.Empty);
+      }));
+
+    _campaigns = campaigns
+      .OrderByDescending(campaign => campaign.CompletionTime)
+      .ToList();
+  }
+
+  private void SelectCampaign(string summaryId)
+  {
+    if (!_loadingDatasets)
+      _selectedCampaignId = summaryId;
+  }
+
+  private void ClearSelection()
+  {
+    if (!_loadingDatasets)
+      _selectedCampaignId = null;
+  }
+
+  private async Task ApplySelectionAsync()
+  {
+    if (!CanApply || _selectedCampaignId is null)
+      return;
+
+    _datasetLoadCancellation?.Cancel();
+    _datasetLoadCancellation?.Dispose();
+    _datasetLoadCancellation = new CancellationTokenSource();
+    var cancellationToken = _datasetLoadCancellation.Token;
+    var pendingCampaignId = _selectedCampaignId;
+
+    _loadingDatasets = true;
+    _cancelingDatasetLoad = false;
+    _datasetError = null;
+    _exportError = null;
+    StateHasChanged();
+    await Task.Yield();
+
+    try
+    {
+      var datasets = await Task.Run(
+        async () => await DatasetGenerator.GenerateAsync(pendingCampaignId, cancellationToken).ConfigureAwait(false),
+        cancellationToken);
+
+      cancellationToken.ThrowIfCancellationRequested();
+      _datasets = datasets;
+      _appliedCampaignId = pendingCampaignId;
+      _selectedDatasetTabIndex = 0;
+      _hasApplied = true;
+    }
+    catch (OperationCanceledException)
+    {
+      _datasetError = null;
+    }
+    catch (Exception ex)
+    {
+      _datasetError = ex.Message;
+    }
+    finally
+    {
+      _loadingDatasets = false;
+      _cancelingDatasetLoad = false;
+      await InvokeAsync(StateHasChanged);
+    }
+  }
+
+  private void CancelDatasetLoad()
+  {
+    if (!_loadingDatasets || _cancelingDatasetLoad)
+      return;
+
+    _cancelingDatasetLoad = true;
+    _datasetLoadCancellation?.Cancel();
+  }
+
+  private async Task ExportCurrentAsync()
+  {
+    if (!CanExport || _datasets is null)
+      return;
+
+    var index = Math.Clamp(_selectedDatasetTabIndex, 0, _datasets.Length - 1);
+    await ExportAsync(() => DatasetExportHelper.CreateCsv(_datasets[index], $"campaign-{GetExportCampaignName()}-{GetTableName(index, _datasets[index]).ToLowerInvariant()}"));
+  }
+
+  private async Task ExportAllAsync()
+  {
+    if (!CanExport || _datasets is null)
+      return;
+
+    await ExportAsync(() => DatasetExportHelper.CreateZip(_datasets, $"campaign-{GetExportCampaignName()}-all"));
+  }
+
+  private async Task ExportAsync(Func<DatasetExport> createExport)
+  {
+    _exportingDatasets = true;
+    _exportError = null;
+    await InvokeAsync(StateHasChanged);
+    await Task.Delay(50);
+
+    try
+    {
+      var export = await Task.Run(createExport);
+      await DatasetExportHelper.DownloadAsync(JS, export);
+    }
+    catch (Exception ex)
+    {
+      _exportError = $"Unable to export dataset: {ex.Message}";
+    }
+    finally
+    {
+      _exportingDatasets = false;
+      await InvokeAsync(StateHasChanged);
+    }
+  }
+
+  private string GetExportCampaignName()
+  {
+    return string.IsNullOrWhiteSpace(_appliedCampaignId) ? "data" : _appliedCampaignId;
+  }
+
+  private static string GetTableName(int index, AresDataset dataset)
+  {
+    return index == 0 ? "Experiments" : dataset.Name;
+  }
+
+  public void Dispose()
+  {
+    _datasetLoadCancellation?.Cancel();
+    _datasetLoadCancellation?.Dispose();
+  }
+
+  private record CampaignDisplayItem(
+    string SummaryId,
+    string CampaignName,
+    string CompletionTimeDisplay,
+    DateTime CompletionTime,
+    int ExperimentCount,
+    string Tags,
+    string Notes);
 }
