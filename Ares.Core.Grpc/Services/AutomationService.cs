@@ -393,7 +393,7 @@ public class AutomationService : AresAutomation.AresAutomationBase
 
   public override Task<Empty> SetReplicateRate(ReplicateRate request, ServerCallContext? context)
   {
-    _executionManager.UpdateReplanRate(request.ReplicateRate_ );
+    _executionManager.UpdateReplicateRate(request.ReplicateRate_);
     return Task.FromResult(new Empty());
   }
 

@@ -144,7 +144,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     return _automationClient.GetActiveStopCondition(new Empty(), null);
   }
 
-  public Task<ReplicateRate> GetCurrentReplanRate()
+  public Task<ReplicateRate> GetCurrentReplicateRate()
   {
     return _automationClient.GetReplicateRate(new Empty(), null);
   }
@@ -167,7 +167,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   public async Task SetReplanRate()
   {
     await _automationClient.SetReplicateRate(new ReplicateRate { ReplicateRate_ = DesiredReplicationRate }, null);
-    var replanRateResponse = await GetCurrentReplanRate();
+    var replanRateResponse = await GetCurrentReplicateRate();
     DesiredReplicationRate = replanRateResponse.ReplicateRate_;
   }
 
@@ -654,7 +654,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     else if(CurrentStopCondition.ActiveCondition.Contains("Analysis", StringComparison.OrdinalIgnoreCase))
       ActiveStopConditionMode = ExecutionStopConditionMode.AnalyzerResult;
 
-    var replanRate = await GetCurrentReplanRate();
+    var replanRate = await GetCurrentReplicateRate();
     DesiredReplicationRate = replanRate.ReplicateRate_;
 
     await RefreshExecutionEligibility();

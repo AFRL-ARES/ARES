@@ -110,7 +110,12 @@ public class RemotePlannerService : PlannerServiceBase
 
     foreach(var newSetting in newSettings)
     {
-      if(newSetting.Value.Type == AresDataType.String)
+      if(newSetting.Value.DefaultValue is not null)
+      {
+        Settings.Fields[newSetting.Key] = newSetting.Value.DefaultValue;
+      }
+
+      else if(newSetting.Value.Type == AresDataType.String)
       {
         Settings.Fields[newSetting.Key] = AresValueHelper.CreateDefault(newSetting.Value.Type, newSetting.Value.StringChoices?.Strings);
       }
