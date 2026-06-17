@@ -47,6 +47,7 @@ public class CampaignExecutor : ICampaignExecutor
   private ExperimentTemplate? _currentExperimentTemplate = null;
   private int _experimentCount = 0;
   private TaskCompletionSource<ErrorHandling>? _userDecisionSource;
+  private PlanStatusCode _latestPlanStatusCode = PlanStatusCode.PlanStatusUnspecified;
 
   internal CampaignExecutor(ICommandComposer<ExperimentTemplate, ExperimentExecutor> experimentComposer,
     IPlanningHelper planningHelper,
@@ -208,7 +209,11 @@ public class CampaignExecutor : ICampaignExecutor
     return (true, startupSummary);
   }
 
-  private async Task<ExperimentLoopOutcome> ExecuteExperimentLoop(string campaignPath, List<Analysis> analyses, List<ExperimentExecutionSummary> experimentSummaries, ExecutionControlToken token, ExperimentExecutionSummary startupSummary)
+  private async Task<ExperimentLoopOutcome> ExecuteExperimentLoop(string campaignPath, 
+    List<Analysis> analyses, 
+    List<ExperimentExecutionSummary> experimentSummaries, 
+    ExecutionControlToken token, 
+    ExperimentExecutionSummary startupSummary)
   {
     var currentPhase = ExperimentPhase.Initialize;
     var currentExperimentPath = "";
@@ -379,9 +384,17 @@ public class CampaignExecutor : ICampaignExecutor
       .SelectMany(s => s.CommandSummaries)
       .FirstOrDefault(c => !c.Result.Success);
 
-    return failedCommandSummary is null
-      ? ExperimentPhase.Analyze
-      : await HandleError(failedCommandSummary, token);
+    if(failedCommandSummary is null)
+    {
+      _latestPlanStatusCode = PlanStatusCode.PlanAccepted;
+      return ExperimentPhase.Analyze;
+    }
+
+    else
+    {
+      UpdatePlanStatus(failedCommandSummary.StatusCode);
+      return await HandleError(failedCommandSummary, token);
+    }
   }
 
   private async Task<ExperimentPhase> AnalyzeCurrentExperiment(ExperimentExecutionSummary startupSummary, List<Analysis> analyses, List<ExperimentExecutionSummary> experimentSummaries, ExecutionControlToken token)
@@ -461,6 +474,7 @@ public class CampaignExecutor : ICampaignExecutor
 
       var decisionSource = new TaskCompletionSource<ErrorHandling>(TaskCreationOptions.RunContinuationsAsynchronously);
       _userDecisionSource = decisionSource;
+
       try
       {
         errorHandling = await decisionSource.Task.WaitAsync(token.CancellationToken);
@@ -498,6 +512,15 @@ public class CampaignExecutor : ICampaignExecutor
     }
   }
 
+  private void UpdatePlanStatus(CommandStatusCode failCode)
+  {
+    if(failCode == CommandStatusCode.OutOfRange || failCode == CommandStatusCode.ParametersUnachievable)
+      _latestPlanStatusCode = PlanStatusCode.PlanUnachievable;
+
+    else
+      _latestPlanStatusCode = PlanStatusCode.PlanFailed;
+  }
+
   private async Task<bool> PlanExperiment(List<Analysis> analyses, ExperimentTemplate currentExperimentTemplate, List<ExperimentExecutionSummary> experimentSummaries, ExecutionControlToken token)
   {
     Status.PlannerState = PlannerState.PlanningInProgress;
@@ -518,7 +541,7 @@ public class CampaignExecutor : ICampaignExecutor
       currentExperimentTemplate.GetAllPlannedParameters(),
       analyses,
       experimentSummaries.Select(es => es.ExperimentOverview),
-      PlanStatusCode.PlanAccepted,
+      _latestPlanStatusCode,
       token.CancellationToken);
 
     if(!resolveSuccess)
