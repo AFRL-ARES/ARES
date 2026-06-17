@@ -1,8 +1,6 @@
-using Ares.Core.Analyzing;
 using Ares.Core.Device.Providers;
 using Ares.Core.Execution;
 using Ares.Core.Grpc.Services;
-using Ares.Core.Planning;
 using Ares.Core.Visualization.Helpers;
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
@@ -84,13 +82,25 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
   public async Task SelectCampaignTemplate(object? templateSummary)
   {
+    if(CampaignActive)
+      return;
+
     if(templateSummary is null || templateSummary is not CampaignTemplateSummary campaignTemplateSummary)
       return;
 
     CampaignTemplate = await _automationClient.GetSingleCampaign(new CampaignRequest { UniqueId = campaignTemplateSummary.UniqueId }, null);
-    await _automationClient.SetCampaignForExecution(new CampaignRequest { UniqueId = CampaignTemplate.UniqueId }, null);
-    _ = UpdateCurrentTemplate();
-    DisplayExecutionSummary = false;
+    
+    if(CampaignTemplate is not null)
+    {
+      await _automationClient.SetCampaignForExecution(new CampaignRequest { UniqueId = CampaignTemplate.UniqueId }, null);
+      _ = UpdateCurrentTemplate();
+    }
+
+    else
+      SelectedTemplateSummary = null;
+
+    SelectedExecutionTabIndex = 0;
+    await RefreshCampaignSetup();
   }
 
   public async Task UpdateCurrentTemplate()
@@ -100,6 +110,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     if(CampaignTemplate is null)
       return;
 
+    AnalyzerInfo = null;
     PlannerAdapterInfos = CampaignTemplate.ExperimentTemplate.GetAllPlannedParameters()
     .Select(parameter => parameter.GetPlanningMetadata())
     .Select(metadata => CampaignTemplate.PlannerAllocations
@@ -123,6 +134,9 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     await _automationClient.SetAnalysisResultStopCondition(
       new AnalysisResultCondition { DesiredResult = DesiredResult, Leeway = DesiredLeeway }, null);
     CurrentStopCondition = await GetCurrentStopCondition();
+    ActiveStopConditionMode = ExecutionStopConditionMode.AnalyzerResult;
+    await RefreshExecutionEligibility();
+    StateChanged?.Invoke();
   }
 
   public Task<ExperimentStopConditionResponse> GetCurrentStopCondition()
@@ -130,7 +144,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     return _automationClient.GetActiveStopCondition(new Empty(), null);
   }
 
-  public Task<ReplicateRate> GetCurrentReplanRate()
+  public Task<ReplicateRate> GetCurrentReplicateRate()
   {
     return _automationClient.GetReplicateRate(new Empty(), null);
   }
@@ -145,18 +159,27 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   {
     await _automationClient.SetNumExperimentsStopCondition(new NumExperimentsCondition { NumExperiments = ExperimentsToRun }, null);
     CurrentStopCondition = await GetCurrentStopCondition();
+    ActiveStopConditionMode = ExecutionStopConditionMode.NumExperiments;
+    await RefreshExecutionEligibility();
+    StateChanged?.Invoke();
   }
 
   public async Task SetReplanRate()
   {
-    await _automationClient.SetReplicateRate(new ReplicateRate { ReplicateRate_ = DesiredReplanRate }, null);
-    var replanRateResponse = await GetCurrentReplanRate();
-    DesiredReplanRate = replanRateResponse.ReplicateRate_;
+    await _automationClient.SetReplicateRate(new ReplicateRate { ReplicateRate_ = DesiredReplicationRate }, null);
+    var replanRateResponse = await GetCurrentReplicateRate();
+    DesiredReplicationRate = replanRateResponse.ReplicateRate_;
   }
 
   public async Task StartCampaign()
   {
+    await ApplyActiveStopCondition();
+
+    if(!CampaignActive)
+      await SetReplanRate();
+
     var executionEligibility = await _automationClient.CheckExecutionEligibility(new Empty(), null);
+    LastExecutionEligibility = executionEligibility;
 
     if(!executionEligibility.IsEligible)
     {
@@ -181,8 +204,11 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     await _automationClient.StartExecution(request, null);
     PlannerMetricsMap.Clear();
     AnalyzerMetrics.Clear();
-    DisplayExecutionSummary = true;
+    SelectedExecutionTabIndex = 1;
   }
+
+  public Task StartConfiguredCampaign()
+    => StartCampaign();
 
   public Task StopCampaign()
     => _automationClient.StopExecution(new Empty(), null);
@@ -195,6 +221,20 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
   public Task SubmitUserDecision(ErrorHandling decision)
     => _automationClient.SubmitUserDecision(new UserDecisionRequest { Decision = decision }, null);
+
+  public Task ApplyActiveStopCondition()
+  {
+    return ActiveStopConditionMode switch
+    {
+      ExecutionStopConditionMode.AnalyzerResult => SetDesiredAnalysis(),
+      _ => SetExperimentsToRun()
+    };
+  }
+
+  private async Task RefreshExecutionEligibility()
+  {
+    LastExecutionEligibility = await _automationClient.CheckExecutionEligibility(new Empty(), null);
+  }
 
   public async Task ExecutionNotesUploaded(Stream fileStream)
   {
@@ -423,7 +463,6 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
       .Subscribe(
         onNext: state => UpdateCampaignStatus(state!), 
         onError: ex => Console.WriteLine($"Error Updating Campaign State: {ex.Message}"));
-
   }
 
   private void UpdateExperimentStatus(ExperimentExecutionStatus status)
@@ -431,9 +470,9 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     var existingStatus = ExperimentExecutionStatuses.FirstOrDefault(s => s.ExperimentId == status.ExperimentId);
 
     if(existingStatus is null)
-    {
       ExperimentExecutionStatuses.Add(status);
-    }
+ 
+      
     else
     {
       var incomingCommands = status.GetCommandExecutionStatuses();
@@ -442,11 +481,41 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
       foreach(var existingCommand in existingCommands)
       {
         var newCommand = incomingCommands.FirstOrDefault(c => c.CommandId == existingCommand.CommandId);
-        existingCommand.State = newCommand?.State ?? ExecutionState.Undefined;
+        if(newCommand is not null)
+        {
+          existingCommand.State = newCommand.State;
+          existingCommand.StatusMessage = newCommand.StatusMessage;
+          existingCommand.Result = newCommand.Result;
+          existingCommand.VariableName = newCommand.VariableName;
+        }
       }
     }
 
+    ExtractCommandVariables(status);
     StateChanged?.Invoke();
+
+    this.RaisePropertyChanged(nameof(CurrentCommand));
+    this.RaisePropertyChanged(nameof(CompletedExperimentCount));
+    this.RaisePropertyChanged(nameof(ActiveExperimentNumber));
+    this.RaisePropertyChanged(nameof(CurrentOutputVariables));
+  }
+
+  private void ExtractCommandVariables(ExperimentExecutionStatus status)
+  {
+    CurrentOutputVariables.Clear();
+
+    var dictionary = new Dictionary<string, AresValue>();
+
+    foreach(var step in status.StepExecutionStatuses)
+    {
+      foreach(var cmd in step.CommandExecutionStatuses)
+      {
+        if(!string.IsNullOrWhiteSpace(cmd.VariableName))
+          dictionary.Add(cmd.VariableName, cmd.Result);
+      }
+    }
+
+    CurrentOutputVariables = dictionary;
   }
 
   private void UpdateCampaignStatus(CampaignExecutionState state)
@@ -460,6 +529,11 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     //TODO: FIX THIS!!!
     if(CampaignExecutionState == ExecutionState.AwaitingUser)
       _ = RequestUserConfirmation();
+
+    //if(CampaignActive)
+    //  SelectedExecutionTabIndex = 1;
+
+    StateChanged?.Invoke();
   }
 
   public Task UpdateDeviceChartA()
@@ -573,14 +647,83 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
   public async Task RefreshCampaignSetup()
   {
-    var stopConditionResponse = await _automationClient.GetActiveStopCondition(new Empty(), null);
+    CurrentStopCondition = await _automationClient.GetActiveStopCondition(new Empty(), null);
+
+    if(CurrentStopCondition.ActiveCondition.Contains("NumExperimentsRun", StringComparison.OrdinalIgnoreCase))
+      ActiveStopConditionMode = ExecutionStopConditionMode.NumExperiments;
+    else if(CurrentStopCondition.ActiveCondition.Contains("Analysis", StringComparison.OrdinalIgnoreCase))
+      ActiveStopConditionMode = ExecutionStopConditionMode.AnalyzerResult;
+
+    var replanRate = await GetCurrentReplicateRate();
+    DesiredReplicationRate = replanRate.ReplicateRate_;
+
+    await RefreshExecutionEligibility();
   }
+
+  public IReadOnlyList<ExecutionPreflightItem> PreflightItems
+  {
+    get
+    {
+      var templateSelected = CampaignTemplate is not null;
+      var stopConditionSet = CurrentStopCondition is not null && CurrentStopCondition.ActiveCondition != "None";
+      var plannerRequired = CampaignTemplate?.ExperimentTemplate.GetAllPlannedParameters().Any() == true;
+      var analyzerRequired = !string.IsNullOrWhiteSpace(CampaignTemplate?.ExperimentTemplate.AnalyzerId);
+      var plannerReady = !plannerRequired || PlannerAdapterInfos.Any();
+      var analyzerReady = !analyzerRequired || AnalyzerInfo is not null;
+
+      return
+      [
+        new("Campaign template", templateSelected, templateSelected ? CampaignTemplate!.Name : "Select a campaign before starting."),
+        new("Stop condition", stopConditionSet, stopConditionSet ? CurrentStopCondition!.Description : "Choose how the run should stop."),
+        new("Planner", plannerReady, PlannerAdapterInfos.Any() ? string.Join(", ", PlannerAdapterInfos.Select(info => info?.Name).Where(name => !string.IsNullOrWhiteSpace(name))) : "No planner-backed parameters detected."),
+        new("Analyzer", analyzerReady, AnalyzerInfo?.Name ?? "No analyzer assigned to the selected experiment."),
+        new("Eligibility", LastExecutionEligibility?.IsEligible == true, LastExecutionEligibility?.IsEligible == true ? "Camapign is eligible to start." : LastExecutionEligibility?.Error ?? "Campaign is not eligible to start.")
+      ];
+    }
+  }
+
+  public bool PreflightReady => PreflightItems.All(item => item.IsReady);
+
+  public int CompletedExperimentCount => ExperimentExecutionStatuses.Count(status =>
+    status.GetCommandExecutionStatuses().All(command => command.State == ExecutionState.Succeeded));
+
+  public int ActiveExperimentNumber
+  {
+    get
+    {
+      var activeIndex = ExperimentExecutionStatuses.ToList().FindIndex(status => status.IsActive());
+      return activeIndex >= 0 ? activeIndex + 1 : ExperimentExecutionStatuses.Count;
+    }
+  }
+
+  public CommandExecutionStatus? CurrentCommand => ExperimentExecutionStatuses
+    .LastOrDefault()?
+    .GetCommandExecutionStatuses()
+    .FirstOrDefault(command => command.State is ExecutionState.Running or ExecutionState.AwaitingUser or ExecutionState.Paused or ExecutionState.WaitingForUserDecision)
+    ?? ExperimentExecutionStatuses.LastOrDefault()?.GetCommandExecutionStatuses().FirstOrDefault(command => command.State == ExecutionState.Waiting);
+
+  public string RunStateLabel => CampaignExecutionState?.ToString() ?? "Not Started";
+
+  public string StopConditionSummary => CurrentStopCondition?.Description ?? "No stop condition assigned.";
+
+  public string CampaignSummaryName => CampaignTemplate?.Name ?? SelectedTemplateSummary?.CampaignName ?? "No campaign selected";
+
+  public int CampaignStepCount => CampaignTemplate?.ExperimentTemplate.StepTemplates.Count ?? 0;
+
+  public int CampaignCommandCount => CampaignTemplate?.ExperimentTemplate.StepTemplates.Sum(step => step.CommandTemplates.Count) ?? 0;
+
+  public string PlannerSummary => PlannerAdapterInfos.Any()
+    ? string.Join(", ", PlannerAdapterInfos.Select(info => info?.Name).Where(name => !string.IsNullOrWhiteSpace(name)))
+    : "No planner";
+
+  public string AnalyzerSummary => AnalyzerInfo?.Name ?? "No analyzer";
 
   [Reactive]
   public partial ExperimentStopConditionResponse? CurrentStopCondition { get; set; }
   public double DesiredResult { get; set; }
   public double DesiredLeeway { get; set; }
-  public int DesiredReplanRate { get; set; } = 1;
+  public int DesiredReplicationRate { get; set; } = 1;
+
   [Reactive]
   public partial bool CampaignActive { get; set; }
   [Reactive]
@@ -602,7 +745,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   [Reactive]
   public partial AnalyzerInfo? AnalyzerInfo { get; set; }
   [Reactive]
-  public Dictionary<string, List<ChartMetricPoint>> PlannerMetricsMap { get; private set; }
+  public partial Dictionary<string, List<ChartMetricPoint>> PlannerMetricsMap { get; private set; }
   [Reactive]
   public partial List<ChartMetricPoint> AnalyzerMetrics { get; private set; }
   [Reactive]
@@ -615,6 +758,12 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   public partial DeviceVisualizationConfig? ChartConfigB { get; set; }
   [Reactive]
   public partial VisualizationItemViewModel? ChartB { get; private set; }
+  [Reactive]
+  public partial int SelectedExecutionTabIndex { get; set; }
+  [Reactive]
+  public partial ExecutionStopConditionMode ActiveStopConditionMode { get; set; }
+  [Reactive]
+  public partial CheckExecutionEligibilityResponse? LastExecutionEligibility { get; private set; }
   public uint ExperimentsToRun { get; set; }
   public string ExecutionNotes { get; set; } = string.Empty;
   public CampaignExecutionSummary? TestCampaignExecutionSummary { get; private set; }
@@ -623,7 +772,17 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   public List<AresCampaignTag> AvailableTags { get; set; } = [];
   public List<AresCampaignTag> SelectedTags { get; set; } = [];
   public string? NewTagName { get; set; }
+  [Reactive]
+  public partial Dictionary<string, AresValue> CurrentOutputVariables { get; set; } = new();
 }
+
+public enum ExecutionStopConditionMode
+{
+  NumExperiments,
+  AnalyzerResult
+}
+
+public record ExecutionPreflightItem(string Label, bool IsReady, string Detail);
 
 public class ChartMetricPoint
 {

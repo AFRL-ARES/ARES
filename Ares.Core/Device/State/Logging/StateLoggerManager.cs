@@ -149,6 +149,7 @@ public class StateLoggerManager
       existingSettings.LoggingType = settings.LoggingType;
       existingSettings.Deltas.Clear();
       existingSettings.Deltas.Add(settings.Deltas);
+      existingSettings.LoggingEnabled = settings.LoggingEnabled;
     }
     else
     {

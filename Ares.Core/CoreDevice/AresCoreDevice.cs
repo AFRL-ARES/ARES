@@ -1,6 +1,7 @@
 ﻿using Ares.Core.EntityConfigurations.Extensions;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
+using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
 using Ares.Device;
 using System.Reactive.Linq;
@@ -13,7 +14,7 @@ public class AresCoreDevice : AresDevice
 {
   private readonly BehaviorSubject<AresStruct> _stateSubject = new(new AresStruct());
 
-  public AresCoreDevice() : base(new DeviceConnectionInfo {DeviceName = "ARES", DeviceId = "ARES-CORE-DEVICE" })
+  public AresCoreDevice() : base(new DeviceConnectionInfo { DeviceName = "ARES", DeviceId = "ARES-CORE-DEVICE" })
   {
     Status = new DeviceOperationalStatus()
     {
@@ -109,7 +110,7 @@ public class AresCoreDevice : AresDevice
 
       case AresCoreDeviceCommand.GetTimestamp:
         result.Success = true;
-        result.Result.TimestampValue = DateTime.UtcNow.ToTimestampUtc();
+        result.Result = AresValueHelper.CreateTimestamp(DateTime.UtcNow.ToTimestampUtc());
         break;
 
       case AresCoreDeviceCommand.CalculateAverage:
@@ -126,19 +127,19 @@ public class AresCoreDevice : AresDevice
         { 
           case AresValue.KindOneofCase.NumberArrayValue:
             var average = dataToBeAveraged.NumberArrayValue.Numbers.Average();
-            result.Result.FloatValue = average;
+            result.Result = AresValueHelper.CreateFloat(average);
             result.Success = true;
             break;
 
           case AresValue.KindOneofCase.FloatArrayValue:
             var floatAverage = dataToBeAveraged.FloatArrayValue.Floats.Average();
-            result.Result.FloatValue = floatAverage;
+            result.Result = AresValueHelper.CreateFloat(floatAverage);
             result.Success = true;
             break;
 
           case AresValue.KindOneofCase.IntArrayValue:
             var intAverage = dataToBeAveraged.IntArrayValue.Ints.Average();
-            result.Result.FloatValue = intAverage;
+            result.Result = AresValueHelper.CreateFloat(intAverage);
             result.Success = true;
             break;
 

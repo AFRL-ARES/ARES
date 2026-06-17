@@ -23,6 +23,9 @@ internal class DeviceStateLongDatasetProjectorTests
     {
       Assert.That(longDataset.Columns.Select(column => column.Name), Is.EqualTo([
         "Timestamp",
+        "Campaign",
+        "Experiment Number",
+        "Step Name",
         "Device",
         "Property",
         "Value",
@@ -31,6 +34,53 @@ internal class DeviceStateLongDatasetProjectorTests
       Assert.That(longDataset.Rows.Select(row => row.Data.Fields["Device"].StringValue), Is.EqualTo(["Device A", "Device B"]));
       Assert.That(longDataset.Rows.Select(row => row.Data.Fields["Property"].StringValue), Is.EqualTo(["Temperature", "Pressure"]));
       Assert.That(longDataset.Rows.Select(row => row.Data.Fields["Value"].NumberValue), Is.EqualTo([1, 2]));
+    }
+  }
+
+  [Test]
+  public void Project_CopiesExecutionInformationOntoPropertyRows()
+  {
+    var timestamp = Timestamp.FromDateTime(DateTime.UnixEpoch);
+    var deviceDatasets = new[]
+    {
+      CreateDataset(
+        "Device A",
+        CreateRow(
+          timestamp,
+          ("Campaign", AresValueHelper.CreateString("Campaign A")),
+          ("Experiment Number", AresValueHelper.CreateInt(2)),
+          ("Step Name", AresValueHelper.CreateString("Heat")),
+          ("Temperature", AresValueHelper.CreateNumber(1)),
+          ("Pressure", AresValueHelper.CreateNumber(2))))
+    };
+
+    var longDataset = DeviceStateLongDatasetProjector.Project(deviceDatasets);
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(longDataset.Rows.Select(row => row.Data.Fields["Property"].StringValue), Is.EqualTo(["Temperature", "Pressure"]));
+      Assert.That(longDataset.Rows.All(row => row.Data.Fields["Campaign"].StringValue == "Campaign A"), Is.True);
+      Assert.That(longDataset.Rows.All(row => row.Data.Fields["Experiment Number"].IntValue == 2), Is.True);
+      Assert.That(longDataset.Rows.All(row => row.Data.Fields["Step Name"].StringValue == "Heat"), Is.True);
+    }
+  }
+
+  [Test]
+  public void Project_LeavesExecutionInformationBlankWhenSourceRowDoesNotContainIt()
+  {
+    var timestamp = Timestamp.FromDateTime(DateTime.UnixEpoch);
+    var deviceDatasets = new[]
+    {
+      CreateDataset("Device A", CreateRow(timestamp, ("Temperature", AresValueHelper.CreateNumber(1))))
+    };
+
+    var row = DeviceStateLongDatasetProjector.Project(deviceDatasets).Rows.Single();
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(row.Data.Fields.ContainsKey("Campaign"), Is.False);
+      Assert.That(row.Data.Fields.ContainsKey("Experiment Number"), Is.False);
+      Assert.That(row.Data.Fields.ContainsKey("Step Name"), Is.False);
     }
   }
 

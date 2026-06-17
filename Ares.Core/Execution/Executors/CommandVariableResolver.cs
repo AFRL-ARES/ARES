@@ -59,5 +59,14 @@ internal static class CommandVariableResolver
   // TODO: This one might need a bit of extra logic based on schema instead of plain datatype
   // unless we just use non-struct variables.
   private static bool IsCompatible(AresDataType expectedType, AresDataType actualType)
-    => expectedType == AresDataType.Any || actualType == AresDataType.Any || expectedType == actualType;
+  {
+    if(expectedType == AresDataType.Any || actualType == AresDataType.Any || expectedType == actualType)
+      return true;
+    
+    if(expectedType == AresDataType.Number && actualType == AresDataType.Float || actualType == AresDataType.Int)
+      return true;
+
+    return false;
+  }
+    
 }

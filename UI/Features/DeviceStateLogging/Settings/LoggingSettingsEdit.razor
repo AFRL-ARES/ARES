@@ -33,7 +33,7 @@ else
         @if (ViewModel.LoggingType != DeviceLoggingSettings.Types.LoggingType.None)
         {
           <div class="input-group">
-            @if (IsOnChange)
+            @if(IsOnChange)
             {
               <span class="input-group-text">Throttle</span>
             }
@@ -41,10 +41,13 @@ else
           </div>
         }
       </td>
+      <td>
+        <RadzenSwitch @bind-Value="ViewModel!.LoggingEnabled" style="--rz-switch-background-color: lightgray; --rz-switch-checked-background-color: lightgray; --rz-switch-circle-background-color: darkred; --rz-switch-checked-circle-background-color: darkgreen;" />
+      </td>
       <td class="text-end align-middle">
-        @if (IsOnChange)
+        @if(IsOnChange)
         {
-          if (!ViewModel!.Deltas.Any())
+          if(!ViewModel!.Deltas.Any())
           {
             <span class="text-muted small">No numeric deltas.</span>
           }
@@ -104,12 +107,12 @@ else
   private void OnDeltaChanged(string key, ChangeEventArgs args)
   {
     var rawValue = args.Value?.ToString();
-    if (string.IsNullOrWhiteSpace(rawValue))
+    if(string.IsNullOrWhiteSpace(rawValue))
     {
       return;
     }
 
-    if (!double.TryParse(rawValue, NumberStyles.Float | NumberStyles.AllowThousands, DeltaCulture, out var parsedValue))
+    if(!double.TryParse(rawValue, NumberStyles.Float | NumberStyles.AllowThousands, DeltaCulture, out var parsedValue))
     {
       return;
     }

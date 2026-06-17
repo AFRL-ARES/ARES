@@ -214,6 +214,7 @@ internal class CampaignDatasetGeneratorTests
       commandEnd,
       commandName: "Aspirate",
       commandDescription: "Move liquid",
+      varName: "aspirateResult",
       statusCode: CommandStatusCode.CommandSuccess,
       result: new CommandResult
       {
@@ -231,12 +232,13 @@ internal class CampaignDatasetGeneratorTests
 
     using(Assert.EnterMultipleScope())
     {
-      Assert.That(dataset.Columns.Take(12).Select(column => column.Name), Is.EqualTo([
+      Assert.That(dataset.Columns.Take(13).Select(column => column.Name), Is.EqualTo([
         "Experiment Number",
         "Step Number",
         "Command Number",
         "Command Name",
         "Command Description",
+        "Output Variable Name",
         "Time Started",
         "Time Finished",
         "Duration Seconds",
@@ -255,6 +257,7 @@ internal class CampaignDatasetGeneratorTests
       Assert.That(row.Data.Fields["Command Number"].IntValue, Is.EqualTo(1));
       Assert.That(row.Data.Fields["Command Name"].StringValue, Is.EqualTo("Aspirate"));
       Assert.That(row.Data.Fields["Command Description"].StringValue, Is.EqualTo("Move liquid"));
+      Assert.That(row.Data.Fields["Output Variable Name"].StringValue, Is.EqualTo("aspirateResult"));
       Assert.That(row.Data.Fields["Time Started"].TimestampValue, Is.EqualTo(Timestamp.FromDateTime(commandStart)));
       Assert.That(row.Data.Fields["Time Finished"].TimestampValue, Is.EqualTo(Timestamp.FromDateTime(commandEnd)));
       Assert.That(row.Data.Fields["Duration Seconds"].NumberValue, Is.EqualTo(3));
@@ -282,6 +285,26 @@ internal class CampaignDatasetGeneratorTests
     var dataset = GetDataset(await generator.GenerateAsync(summaryId), "Commands");
 
     Assert.That(dataset.Rows.Select(row => row.Data.Fields["Command Name"].StringValue), Is.EqualTo(["First", "Second", "Third", "Fourth"]));
+  }
+
+  [Test]
+  public async Task GenerateAsync_LeavesOutputVariableNameEmptyWhenCommandHasNoVariableName()
+  {
+    var summaryId = Guid.NewGuid().ToString();
+    var command = CreateCommand(DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(1));
+    var experiment = CreateExperiment(
+      DateTime.UnixEpoch,
+      DateTime.UnixEpoch.AddSeconds(2),
+      steps: [CreateStep("step", DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(2), command)]);
+    var generator = CreateGenerator(CreateCampaignSummary(summaryId, "Campaign A", experiment));
+
+    var dataset = GetDataset(await generator.GenerateAsync(summaryId), "Commands");
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(ColumnSchema(dataset, "Output Variable Name").Optional, Is.True);
+      Assert.That(dataset.Rows.Single().Data.Fields.ContainsKey("Output Variable Name"), Is.False);
+    }
   }
 
   [Test]
@@ -778,6 +801,7 @@ internal class CampaignDatasetGeneratorTests
     DateTime timeFinished,
     string commandName = "",
     string commandDescription = "",
+    string varName = "",
     CommandStatusCode statusCode = CommandStatusCode.StatusUnspecified,
     CommandResult result = null,
     string templateId = "")
@@ -788,6 +812,7 @@ internal class CampaignDatasetGeneratorTests
       TemplateId = templateId,
       CommandName = commandName,
       CommandDescription = commandDescription,
+      VarName = varName,
       StatusCode = statusCode,
       Result = result,
       ExecutionInfo = new ExecutionInfo

@@ -17,6 +17,7 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
   private const string CommandNumberColumnName = "Command Number";
   private const string CommandNameColumnName = "Command Name";
   private const string CommandDescriptionColumnName = "Command Description";
+  private const string OutputVariableNameColumnName = "Output Variable Name";
   private const string TimeStartedColumnName = "Time Started";
   private const string TimeFinishedColumnName = "Time Finished";
   private const string DurationSecondsColumnName = "Duration Seconds";
@@ -163,6 +164,7 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
       CreateColumn(CommandNumberColumnName, AresDataType.Int),
       CreateColumn(CommandNameColumnName, AresDataType.String, optional: true),
       CreateColumn(CommandDescriptionColumnName, AresDataType.String, optional: true),
+      CreateColumn(OutputVariableNameColumnName, AresDataType.String, optional: true),
       CreateColumn(TimeStartedColumnName, AresDataType.Timestamp, optional: true),
       CreateColumn(TimeFinishedColumnName, AresDataType.Timestamp, optional: true),
       CreateColumn(DurationSecondsColumnName, AresDataType.Number, optional: true),
@@ -458,6 +460,7 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     data.Fields[CommandNumberColumnName] = AresValueHelper.CreateInt(record.CommandNumber);
     AddString(data, CommandNameColumnName, record.Command.CommandName);
     AddString(data, CommandDescriptionColumnName, record.Command.CommandDescription);
+    AddString(data, OutputVariableNameColumnName, record.Command.VarName);
     AddExecutionFields(data, record.Command.ExecutionInfo);
     AddString(data, StatusColumnName, record.Command.StatusCode.ToString());
 
