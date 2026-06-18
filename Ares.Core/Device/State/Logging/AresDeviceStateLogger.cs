@@ -34,6 +34,8 @@ public class AresDeviceStateLogger : IDeviceStateLogger
   public Task Start(DeviceLoggingSettings? settings = null)
   {
     Settings = settings ?? Settings;
+    _lastDeltaValues.Clear();
+    _eligibleDeltas = [];
 
     if(Settings.LoggingEnabled)
     {

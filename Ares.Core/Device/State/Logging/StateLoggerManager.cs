@@ -90,7 +90,9 @@ public class StateLoggerManager
 
       using var ctx = _dbContextFactory.CreateDbContext();
       var existingSettings = await ctx.DeviceLoggingSettings.FirstOrDefaultAsync(s => s.DeviceId == device.UniqueId);
-      var settings = _overrideActive ? _overrideSettings?.Clone() : existingSettings;
+      var settings = _overrideActive
+        ? CreateOverrideSettings(device.UniqueId)
+        : existingSettings ?? CreateDisabledSettings(device.UniqueId);
 
       await logger.Start(settings);
       _stateLoggerRepository.Add(device.UniqueId, logger);
@@ -101,7 +103,7 @@ public class StateLoggerManager
     }
   }
 
-  public async Task RemoveLogger(string deviceId)
+  public async Task RemoveLogger(string deviceId, bool removeSettings = false)
   {
     await _overrideLock.WaitAsync();
 
@@ -113,14 +115,19 @@ public class StateLoggerManager
         _stateLoggerRepository.Remove(deviceId);
       }
 
-      using var ctx = _dbContextFactory.CreateDbContext();
-      var existingSettings = await ctx.DeviceLoggingSettings.FirstOrDefaultAsync(s => s.DeviceId == deviceId);
-      if(existingSettings is not null)
+      if(removeSettings)
       {
-        ctx.DeviceLoggingSettings.Remove(existingSettings);
-      }
+        using var ctx = _dbContextFactory.CreateDbContext();
+        var existingSettings = await ctx.DeviceLoggingSettings.FirstOrDefaultAsync(s => s.DeviceId == deviceId);
+        if(existingSettings is not null)
+        {
+          ctx.DeviceLoggingSettings.Remove(existingSettings);
+          await ctx.SaveChangesAsync();
+        }
 
-      await ctx.SaveChangesAsync();
+        _logger.LogInformation("Removed logger and settings for device id {DeviceId}", deviceId);
+        return;
+      }
 
       _logger.LogInformation("Removed logger for device id {DeviceId}", deviceId);
     }
@@ -132,33 +139,33 @@ public class StateLoggerManager
 
   public async Task UpdateLogger(string deviceId, DeviceLoggingSettings settings)
   {
-    if(_stateLoggerRepository.TryGetValue(deviceId, out var logger))
+    await _overrideLock.WaitAsync();
+
+    try
     {
-      await _overrideLock.WaitAsync();
-
-
-      try
+      if(!_stateLoggerRepository.TryGetValue(deviceId, out var logger))
       {
-        await UpdateDatabase(deviceId, settings);
-
-        if(!_overrideActive)
-        {
-          await logger.UpdateSettings(settings);
-          _logger.LogInformation("Updated logger for device id {DeviceId}", deviceId);
-        }
+        throw new KeyNotFoundException($"No logger found for device {deviceId}");
       }
-      catch(Exception e)
+
+      var deviceSettings = settings.Clone();
+      deviceSettings.DeviceId = deviceId;
+      await UpdateDatabase(deviceId, deviceSettings);
+
+      if(!_overrideActive)
       {
-        _logger.LogError("Error updating device state logger for device {DeviceId}: {Exception}", deviceId, e);
-      }
-      finally
-      {
-        _overrideLock.Release();
+        await logger.UpdateSettings(deviceSettings);
+        _logger.LogInformation("Updated logger for device id {DeviceId}", deviceId);
       }
     }
-    else
+    catch(Exception e)
     {
-      throw new KeyNotFoundException($"No logger found for device {deviceId}");
+      _logger.LogError("Error updating device state logger for device {DeviceId}: {Exception}", deviceId, e);
+      throw;
+    }
+    finally
+    {
+      _overrideLock.Release();
     }
   }
 
@@ -216,21 +223,22 @@ public class StateLoggerManager
       _logger.LogDebug("Preparing the tasks to disable device logging override");
       var loggerRestoreTasks = _stateLoggerRepository.Select(async logger =>
       {
-        var settings = await GetDatabaseLoggerSettings(logger.Key);
+        var settings = await GetDatabaseLoggerSettings(logger.Key) ?? CreateDisabledSettings(logger.Key);
         await logger.Value.UpdateSettings(settings);
       });
 
       await Task.WhenAll(loggerRestoreTasks);
+      _overrideActive = false;
+      _overrideSettings = null;
       _logger.LogInformation("Disabled state logging override");
     }
     catch(Exception e)
     {
       _logger.LogError("Error disabling state logging override: {Exception}", e);
+      throw;
     }
     finally
     {
-      _overrideActive = false;
-      _overrideSettings = null;
       _overrideLock.Release();
       _logger.LogDebug("Released the device logging override lock. (Disable method)");
     }
@@ -241,6 +249,8 @@ public class StateLoggerManager
     _logger.LogInformation("Attempting to enable device logging override.");
     await _overrideLock.WaitAsync();
 
+    var previousOverrideActive = _overrideActive;
+    var previousOverrideSettings = _overrideSettings;
     _overrideSettings = settings.Clone();
     _overrideSettings.LoggingEnabled = loggingEnabled;
     _overrideActive = true;
@@ -249,7 +259,7 @@ public class StateLoggerManager
     {
       _logger.LogDebug("Preparing the tasks to enable device logging override");
       var loggerOverrideTasks = _stateLoggerRepository
-        .Select(logger => logger.Value.UpdateSettings(_overrideSettings.Clone()));
+        .Select(logger => logger.Value.UpdateSettings(CreateOverrideSettings(logger.Key)));
 
       await Task.WhenAll(loggerOverrideTasks);
       _logger.LogInformation("Enabled state logging override");
@@ -257,11 +267,50 @@ public class StateLoggerManager
     catch(Exception e)
     {
       _logger.LogError("Error enabling state logging override: {Exception}", e);
+      _overrideActive = previousOverrideActive;
+      _overrideSettings = previousOverrideSettings;
+
+      try
+      {
+        var loggerRollbackTasks = _stateLoggerRepository.Select(async logger =>
+        {
+          var rollbackSettings = previousOverrideActive
+            ? CreateOverrideSettings(logger.Key)
+            : await GetDatabaseLoggerSettings(logger.Key) ?? CreateDisabledSettings(logger.Key);
+          await logger.Value.UpdateSettings(rollbackSettings);
+        });
+
+        await Task.WhenAll(loggerRollbackTasks);
+      }
+      catch(Exception rollbackException)
+      {
+        _logger.LogError("Error rolling back state logging override: {Exception}", rollbackException);
+        throw new AggregateException(e, rollbackException);
+      }
+
+      throw;
     }
     finally
     {
       _overrideLock.Release();
       _logger.LogDebug("Released the device logging override lock. (Enable method)");
     }
+  }
+
+  private DeviceLoggingSettings CreateOverrideSettings(string deviceId)
+  {
+    var settings = _overrideSettings?.Clone() ?? CreateDisabledSettings(deviceId);
+    settings.DeviceId = deviceId;
+    return settings;
+  }
+
+  private static DeviceLoggingSettings CreateDisabledSettings(string deviceId)
+  {
+    return new DeviceLoggingSettings
+    {
+      DeviceId = deviceId,
+      LoggingEnabled = false,
+      LoggingType = DeviceLoggingSettings.Types.LoggingType.None
+    };
   }
 }

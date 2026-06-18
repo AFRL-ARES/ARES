@@ -100,7 +100,7 @@ internal class RemoteDeviceManager(
     monitor.Dispose();
     _deviceMonitors.Remove(monitor);
 
-    await _stateLoggerManager.RemoveLogger(device.UniqueId);
+    await _stateLoggerManager.RemoveLogger(device.UniqueId, removeSettings: true);
 
     return true;
   }
