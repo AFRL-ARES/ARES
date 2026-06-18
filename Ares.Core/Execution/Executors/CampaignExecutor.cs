@@ -113,7 +113,7 @@ public class CampaignExecutor : ICampaignExecutor
     await _stateLoggerManager.EnableOverrideAsync(new Datamodel.Device.DeviceLoggingSettings
     {
       LoggingType = Datamodel.Device.DeviceLoggingSettings.Types.LoggingType.OnChange
-    });
+    }, true);
 
     await _planningHelper.ReseedManualPlanner();
 
