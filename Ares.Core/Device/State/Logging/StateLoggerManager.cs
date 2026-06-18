@@ -20,6 +20,7 @@ public class StateLoggerManager
   private readonly IAresDeviceProvider _deviceProvider;
   private readonly CompositeDisposable _cleanup = new();
   private bool _overrideActive;
+  private DeviceLoggingSettings? _overrideSettings;
   private readonly SemaphoreSlim _overrideLock = new(1, 1);
 
   public StateLoggerManager(IDeviceStateLoggerRepository stateLoggerRepository,
@@ -68,44 +69,65 @@ public class StateLoggerManager
 
   public async Task SetupLogger(IAresDevice device)
   {
-    // Stop and remove any existing logger for the device
-    if(_stateLoggerRepository.TryGetValue(device.UniqueId, out var existingLogger))
+    await _overrideLock.WaitAsync();
+
+    try
     {
-      await existingLogger.Stop();
-      _stateLoggerRepository.Remove(device.UniqueId);
-    }
+      // Stop and remove any existing logger for the device
+      if(_stateLoggerRepository.TryGetValue(device.UniqueId, out var existingLogger))
+      {
+        await existingLogger.Stop();
+        _stateLoggerRepository.Remove(device.UniqueId);
+      }
 
-    if(_deviceLoggerFactory is null)
+      if(_deviceLoggerFactory is null)
+      {
+        _logger.LogError("No suitable logger factory found for device type {DeviceType}", device.GetType().Name);
+        return;
+      }
+
+      var logger = _deviceLoggerFactory.Create(device);
+
+      using var ctx = _dbContextFactory.CreateDbContext();
+      var existingSettings = await ctx.DeviceLoggingSettings.FirstOrDefaultAsync(s => s.DeviceId == device.UniqueId);
+      var settings = _overrideActive ? _overrideSettings?.Clone() : existingSettings;
+
+      await logger.Start(settings);
+      _stateLoggerRepository.Add(device.UniqueId, logger);
+    }
+    finally
     {
-      _logger.LogError("No suitable logger factory found for device type {DeviceType}", device.GetType().Name);
-      return;
+      _overrideLock.Release();
     }
-
-    var logger = _deviceLoggerFactory.Create(device);
-
-    using var ctx = _dbContextFactory.CreateDbContext();
-    var existingSettings = await ctx.DeviceLoggingSettings.FirstOrDefaultAsync(s => s.DeviceId == device.UniqueId);
-
-    await logger.Start(existingSettings);
-    _stateLoggerRepository.Add(device.UniqueId, logger);
   }
 
   public async Task RemoveLogger(string deviceId)
   {
-    if(_stateLoggerRepository.TryGetValue(deviceId, out var logger))
-    {
-      await logger.Stop();
-      _stateLoggerRepository.Remove(deviceId);
-    }
+    await _overrideLock.WaitAsync();
 
-    using var ctx = _dbContextFactory.CreateDbContext();
-    var existingSettings = await ctx.DeviceLoggingSettings.FirstOrDefaultAsync(s => s.DeviceId == deviceId);
-    if(existingSettings is not null)
+    try
     {
-      ctx.DeviceLoggingSettings.Remove(existingSettings);
-    }
+      if(_stateLoggerRepository.TryGetValue(deviceId, out var logger))
+      {
+        await logger.Stop();
+        _stateLoggerRepository.Remove(deviceId);
+      }
 
-    _logger.LogInformation("Removed logger for device id {DeviceId}", deviceId);
+      using var ctx = _dbContextFactory.CreateDbContext();
+      var existingSettings = await ctx.DeviceLoggingSettings.FirstOrDefaultAsync(s => s.DeviceId == deviceId);
+      if(existingSettings is not null)
+      {
+        ctx.DeviceLoggingSettings.Remove(existingSettings);
+      }
+
+      await ctx.SaveChangesAsync();
+
+      _logger.LogInformation("Removed logger for device id {DeviceId}", deviceId);
+    }
+    finally
+    {
+      _overrideLock.Release();
+    }
   }
 
   public async Task UpdateLogger(string deviceId, DeviceLoggingSettings settings)
@@ -114,10 +136,11 @@ public class StateLoggerManager
     {
       await _overrideLock.WaitAsync();
 
-      await UpdateDatabase(deviceId, settings);
 
       try
       {
+        await UpdateDatabase(deviceId, settings);
+
         if(!_overrideActive)
         {
           await logger.UpdateSettings(settings);
@@ -206,23 +229,27 @@ public class StateLoggerManager
     }
     finally
     {
+      _overrideActive = false;
+      _overrideSettings = null;
       _overrideLock.Release();
       _logger.LogDebug("Released the device logging override lock. (Disable method)");
     }
   }
 
-  public async Task EnableOverrideAsync(DeviceLoggingSettings settings)
+  public async Task EnableOverrideAsync(DeviceLoggingSettings settings, bool loggingEnabled)
   {
     _logger.LogInformation("Attempting to enable device logging override.");
     await _overrideLock.WaitAsync();
 
+    _overrideSettings = settings.Clone();
+    _overrideSettings.LoggingEnabled = loggingEnabled;
     _overrideActive = true;
 
     try
     {
       _logger.LogDebug("Preparing the tasks to enable device logging override");
       var loggerOverrideTasks = _stateLoggerRepository
-        .Select(async logger => await logger.Value.UpdateSettings(settings));
+        .Select(logger => logger.Value.UpdateSettings(_overrideSettings.Clone()));
 
       await Task.WhenAll(loggerOverrideTasks);
       _logger.LogInformation("Enabled state logging override");
