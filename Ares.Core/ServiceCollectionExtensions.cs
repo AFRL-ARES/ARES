@@ -28,6 +28,7 @@ using Ares.Core.Visualization.Repos;
 using Ares.Datamodel.Templates;
 using Microsoft.Extensions.DependencyInjection;
 using Ares.Core.Device.Sila;
+using Ares.Core.Settings;
 
 
 namespace Ares.Core;
