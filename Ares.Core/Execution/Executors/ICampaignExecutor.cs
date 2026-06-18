@@ -10,4 +10,6 @@ public interface ICampaignExecutor : IExecutor<CampaignExecutionSummary, Campaig
   void UpdateExecutionNotes(string executionNotes);
 
   void UpdateCampaignTags(List<AresCampaignTag> campaignTags);
+
+  void SubmitUserDecision(ErrorHandling decision);
 }

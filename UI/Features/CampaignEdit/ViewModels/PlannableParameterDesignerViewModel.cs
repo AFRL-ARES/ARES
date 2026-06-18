@@ -40,15 +40,21 @@ public class PlannableParameterDesignerViewModel : ReactiveObject
 
   private void Init(IEnumerable<ParameterMetadata> paramMetadata)
   {
-    var outputs = _experimentTemplate?.GetAllOutputCommands().SelectMany(cmd => cmd.UserOutputKeyMap.Select(m => m.Value)).ToArray() ?? [];
+    var outputs = GetExperimentOutputNames();
     ParameterEditors.AddRange(paramMetadata.Select(metadata => _editorFactory.Create(metadata, outputs)));
   }
 
   public void Create()
   {
-    var outputs = _experimentTemplate?.GetAllOutputCommands().SelectMany(cmd => cmd.UserOutputKeyMap.Select(m => m.Value)).ToArray() ?? [];
+    var outputs = GetExperimentOutputNames();
     ParameterEditors.Add(_editorFactory.Create(outputs));
   }
+
+  private string[] GetExperimentOutputNames()
+    => _experimentTemplate?.GetAllOutputCommands()
+      .Where(cmd => !string.IsNullOrWhiteSpace(cmd.OutputVarName))
+      .Select(cmd => cmd.OutputVarName)
+      .ToArray() ?? [];
 
   public void Remove(ParameterEditorViewModel vm)
   {

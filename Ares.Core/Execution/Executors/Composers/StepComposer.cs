@@ -1,7 +1,9 @@
 ﻿using Ares.Core.Device.Repos;
 using Ares.Core.Notifications;
+using Ares.Core.Settings;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
+using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Templates;
 
 namespace Ares.Core.Execution.Executors.Composers;
@@ -10,11 +12,12 @@ public class StepComposer : ICommandComposer<StepTemplate, StepExecutor>
 {
   private readonly INotifier _notifier;
   private readonly IAresDeviceRepo _deviceRepo;
-
-  public StepComposer(IAresDeviceRepo deviceRepo, INotifier notifier)
+  private readonly ISystemSettingsManager _settingsManager;
+  public StepComposer(IAresDeviceRepo deviceRepo, INotifier notifier, ISystemSettingsManager settingsManager)
   {
     _deviceRepo = deviceRepo;
     _notifier = notifier;
+    _settingsManager = settingsManager;
   }
 
   public StepExecutor Compose(StepTemplate template)
@@ -35,13 +38,13 @@ public class StepComposer : ICommandComposer<StepTemplate, StepExecutor>
 
             if(device is not null && commandTemplate.Metadata is not null)
             {
-              var commandArgs = new List<DeviceCommandArgument>();
-              commandArgs.AddRange(commandTemplate.Parameters.Select(p => new DeviceCommandArgument() { ArgName = p.Metadata.Name, ArgValue = p.Value }));
-
               Func<CancellationToken, Task<CommandResult>> internalAction = async (ct)
-                => await device.ExecuteCommand(commandTemplate.Metadata.Name, commandArgs, ct);
+                => await device.ExecuteCommand(
+                  commandTemplate.Metadata.Name,
+                  commandTemplate.Parameters.Select(p => new DeviceCommandArgument() { ArgName = p.Metadata.Name, ArgValue = p.GetValue() }).ToList(),
+                  ct);
 
-              return new CommandExecutor(internalAction, commandTemplate, _notifier);
+              return new CommandExecutor(internalAction, commandTemplate, _notifier, _settingsManager);
             }
 
             throw new InvalidOperationException("I'm not certain what to do here yet :(");
@@ -52,7 +55,7 @@ public class StepComposer : ICommandComposer<StepTemplate, StepExecutor>
 
     return template.IsParallel
       ? new ParallelStepExecutor(template, executables)
-      : new SequentialStepExecutor(template, executables);
+      : new SequentialStepExecutor(template, executables, _settingsManager, _notifier);
   }
 
   public StepExecutor Compose(StepTemplate template, ExperimentExecutionStatus experimentExecutionStatus)

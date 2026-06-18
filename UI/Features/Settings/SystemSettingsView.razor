@@ -1,0 +1,93 @@
+﻿@page "/settings/system"
+@using Ares.Datamodel
+@using Radzen
+@using Radzen.Blazor
+@inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<SystemSettingsViewModel>
+@layout SettingsLayout
+@inject TooltipService tooltipService
+
+<div class="card flex-fill d-flex flex-column">
+
+  <RadzenStack Gap="1.5rem" Class="rz-p-6">
+    <RadzenTabs RenderMode="TabRenderMode.Client">
+      <Tabs>
+        <RadzenTabsItem Text="Experiment Settings" Icon="biotech">
+          <RadzenCard Variant="Variant.Flat"">
+            <RadzenStack Gap="1rem" Orientation="Orientation.Horizontal" Style="padding: 0.5rem">
+              <RadzenFormField Text="Experiment Retry Limit">
+                <RadzenNumeric @bind-Value="ViewModel!.ExperimentRetryLimit" />
+              </RadzenFormField>
+              <RadzenIcon Icon="help_outline" MouseEnter="@(args => ShowExperimentRetryLimitTooltip(args, new TooltipOptions { Duration = null }))" Style="padding-top: 1.5rem" />
+            </RadzenStack>
+            <RadzenStack Gap="1rem" Orientation="Orientation.Horizontal" Style="padding: 0.5rem">
+              <RadzenFormField Text="Command Retry Limit">
+                <RadzenNumeric @bind-Value="ViewModel!.CommandRetryLimit" />
+              </RadzenFormField>
+              <RadzenIcon Icon="help_outline" MouseEnter="@(args => ShowCommandRetryLimitTooltip(args, new TooltipOptions { Duration = null }))" Style="padding-top: 1.5rem" />
+            </RadzenStack>
+            <RadzenStack Gap="1rem" Orientation="Orientation.Horizontal" Style="padding: 0.5rem">
+              <RadzenFormField Text="Experiment Retry Cooldown">
+                <RadzenNumeric @bind-Value="ViewModel!.ExperimentRetryCooldown" />
+              </RadzenFormField>
+              <RadzenIcon Icon="help_outline" MouseEnter="@(args => ShowRetryCooldownTooltip(args, new TooltipOptions { Duration = null }))" Style="padding-top: 1.5rem" />
+            </RadzenStack>
+            <RadzenStack Gap="1rem" Orientation="Orientation.Horizontal" Style="padding: 0.5rem">
+              <RadzenFormField Text="Universal Command Latency">
+                <RadzenNumeric @bind-Value="ViewModel!.CommandLatency" />
+              </RadzenFormField>
+              <RadzenIcon Icon="help_outline" MouseEnter="@(args => ShowCommandLatencyTooltip(args, new TooltipOptions { Duration = null }))" Style="padding-top: 1.5rem" />
+            </RadzenStack>
+          </RadzenCard>
+        </RadzenTabsItem>
+        <RadzenTabsItem Text="Error Handling" Icon="error_outline">
+          <RadzenCard Variant="Variant.Flat">
+            <RadzenStack Gap="1rem">
+              <RadzenFieldset Text="Configure Error Handling">
+                <RadzenStack Gap="1rem">
+                  @foreach(var error in GetFilteredValues())
+                  {
+                    <RadzenFormField Text="@(error.ToString())" Variant="Variant.Outlined" Style="width: 100%;">
+                      <RadzenDropDown @bind-Value="ViewModel!.CurrentErrorHandlingSettings[error]"
+                                      Data="@(Enum.GetValues<ErrorHandling>().Where(v => v != ErrorHandling.UnknownHandling))"
+                                      Style="width: 100%;" />
+                    </RadzenFormField>
+                  }
+                </RadzenStack>
+              </RadzenFieldset>
+            </RadzenStack>
+          </RadzenCard>
+        </RadzenTabsItem>
+
+      </Tabs>
+    </RadzenTabs>
+
+  </RadzenStack>
+
+  <RadzenButton Click=@ViewModel!.PushUpdatedSettings Text="Save All Changes" Icon="save" ButtonStyle="ButtonStyle.Primary" Style="max-width: 175px; margin-left: 10px; margin-top: 10px"/>
+</div>
+
+
+
+@code {
+  protected override async Task OnInitializedAsync()
+  {
+    if(ViewModel is not null)
+      await ViewModel!.GetUpdatedSettings();
+  }
+
+  private IEnumerable<CommandStatusCode> GetFilteredValues()
+  {
+    var values = Enum.GetValues<CommandStatusCode>()
+    .Where(c => c != CommandStatusCode.StatusUnspecified && c != CommandStatusCode.CommandSuccess && c != CommandStatusCode.SuccessWithWarnings);
+
+    return values;
+  }
+
+  TooltipOptions Options = new TooltipOptions { Duration = null };
+
+  void ShowExperimentRetryLimitTooltip(ElementReference elementReference, TooltipOptions options = null) => tooltipService.Open(elementReference, "Sets the max times ARES will retry a failing experiment", options);
+  void ShowCommandRetryLimitTooltip(ElementReference elementReference, TooltipOptions options = null) => tooltipService.Open(elementReference, "Sets the max times ARES will retry a failing command", options);
+  void ShowRetryCooldownTooltip(ElementReference elementReference, TooltipOptions options = null) => tooltipService.Open(elementReference, "Sets the a cooldown value, in seconds, on how long ARES waits to re-attempt failed commands", options);
+  void ShowCommandLatencyTooltip(ElementReference elementReference, TooltipOptions options = null) => tooltipService.Open(elementReference, "Sets whether a universal latency should be applied, in seconds, between commands (i.e. a one second universal latency results in a constant one second delay between commands being executed)", options);
+
+}

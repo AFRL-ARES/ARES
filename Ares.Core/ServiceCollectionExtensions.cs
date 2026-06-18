@@ -1,8 +1,12 @@
 using Ares.Core.Analyzing;
 using Ares.Core.AresEnvironment;
+using Ares.Core.DataManagement.DataMappers;
 using Ares.Core.Device.Managers;
-using Ares.Core.Device.Repos;
+using Ares.Core.Device.Plugins.Drivers;
+using Ares.Core.Device.Plugins.Drivers.Loading;
+using Ares.Core.Device.Providers;
 using Ares.Core.Device.Remote;
+using Ares.Core.Device.Repos;
 using Ares.Core.Device.State.Export;
 using Ares.Core.Device.State.Export.ExportStreamProviders;
 using Ares.Core.Device.State.Export.StateGetters;
@@ -15,18 +19,16 @@ using Ares.Core.Execution.StartConditions;
 using Ares.Core.Execution.StopConditions;
 using Ares.Core.Notifications;
 using Ares.Core.Planning;
+using Ares.Core.Resources;
 using Ares.Core.Scripting;
 using Ares.Core.Validation.Campaign;
+using Ares.Core.Visualization.Managers;
+using Ares.Core.Visualization.Providers;
+using Ares.Core.Visualization.Repos;
 using Ares.Datamodel.Templates;
 using Microsoft.Extensions.DependencyInjection;
-using Ares.Core.Device.Providers;
-using Ares.Core.Resources;
-using Ares.Core.Device.Plugins.Drivers.Loading;
-using Ares.Core.Device.Plugins.Drivers;
 using Ares.Core.Device.Sila;
-using Ares.Core.Visualization.Repos;
-using Ares.Core.Visualization.Providers;
-using Ares.Core.Visualization.Managers;
+
 
 namespace Ares.Core;
 
@@ -64,11 +66,15 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<INotifier, Notifier>();
     services.AddSingleton<IDeviceConfigManager, DeviceConfigManager>();
     services.AddSingleton<IDriverDatabaseManager, DriverDatabaseManager>();
+    services.AddSingleton<ISystemSettingsManager, SystemSettingsManager>();
     services.AddSingleton<IResourceConnectionArbiter, ResourceConnectionArbiter>();
 
     services.AddSingleton<ISymbolProvider, DeviceSymbolProvider>();
     services.AddSingleton<ISymbolProvider, QuantitySymbolProvider>();
     services.AddSingleton<BaseEnvironmentBuilder>();
+
+    services.AddSingleton<DeviceStateDatasetGenerator>();
+    services.AddSingleton<CampaignDatasetGenerator>();
 
     services.BindRepositories();
     services.BindComposers();

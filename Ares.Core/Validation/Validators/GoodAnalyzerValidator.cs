@@ -2,7 +2,6 @@
 using Ares.Core.Execution.Extensions;
 using Ares.Datamodel;
 using Ares.Datamodel.Connection;
-using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Templates;
 
 namespace Ares.Core.Validation.Validators;
@@ -43,39 +42,45 @@ public static class GoodAnalyzerValidator
 
     var inputSchema = new AresStructSchema();
 
-    //TODO: This should be more robust. Even slightly improved like this we're still not going to process nested structs very well, but that's an unlikely scenario for now.
     foreach(var map in experimentTemplate.AnalyzerMaps)
     {
-      var matchingCommand = outputCommands.FirstOrDefault(cmd => cmd.UserOutputKeyMap.Values.Contains(map.Value));
+      var splitVarName = map.Value.Split('.');
+      if(!splitVarName.Any())
+        continue;
+
+      var matchingCommand = outputCommands.FirstOrDefault(cmd => cmd.HasOutputVarName && cmd.OutputVarName.Equals(splitVarName.First()));
 
       if(matchingCommand is null)
         continue;
 
-      var matchingMap = matchingCommand.UserOutputKeyMap.FirstOrDefault(userMap => userMap.Value == map.Value);
-      //var outputAresValueSchema = matchingCommand.Metadata.OutputMetadata.DataSchema;
-      var matchingOutputSchema = matchingCommand.Metadata.OutputMetadata;
+      var cmdSchema = matchingCommand.Metadata.OutputMetadata?.DataSchema;
+      if(cmdSchema is null)
+        continue;
 
-      if(matchingOutputSchema.DataSchema.Type == AresDataType.Struct)
-      {
-        //Look for matching values internal to the struct
-        var matched = matchingOutputSchema.DataSchema.StructSchema.Fields.TryGetValue(map.Value, out var matchingValue);
-        
-        if(matched)
-          inputSchema.AddEntry(map.Key, matchingValue.Type);
-
-        //If we don't find a match inside the struct assume the type requested was a struct
-        else
-          inputSchema.AddEntry(map.Key, AresDataType.Struct);
-      }
-
-      else
-        inputSchema.AddEntry(map.Key, matchingOutputSchema.DataSchema.Type);
+      var matchingSchema = FindNestedSchema(cmdSchema, splitVarName.Skip(1).ToArray());
+      if(matchingSchema is not null)
+        inputSchema.Fields[map.Key] = matchingSchema.Clone();
     }
 
     var result = await analyzer.ValidateInputs(inputSchema);
     var validationResult = new ValidationResult(result.Success, result.Messages);
 
     return validationResult;
+  }
+
+  private static AresValueSchema? FindNestedSchema(AresValueSchema schema, string[] keys)
+  {
+    if(keys.Length == 0)
+      return schema;
+
+    if(schema.Type != AresDataType.Struct || schema.StructSchema is null)
+      return null;
+
+    var key = keys[0];
+    if(!schema.StructSchema.Fields.TryGetValue(key, out var nestedSchema))
+      return null;
+
+    return FindNestedSchema(nestedSchema, keys.Skip(1).ToArray());
   }
 
   public static async Task<ValidationResult> Validate(IEnumerable<ExperimentTemplate> experimentTemplates, ExperimentTemplate startupTemplate, IAnalyzerRepo analyzerManager)

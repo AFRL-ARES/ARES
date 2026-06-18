@@ -1,5 +1,7 @@
-﻿using Ares.Datamodel;
+﻿using Ares.Core.EntityConfigurations.Extensions;
+using Ares.Datamodel;
 using Ares.Datamodel.Device;
+using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
 using Ares.Device;
 using System.Reactive.Linq;
@@ -12,7 +14,7 @@ public class AresCoreDevice : AresDevice
 {
   private readonly BehaviorSubject<AresStruct> _stateSubject = new(new AresStruct());
 
-  public AresCoreDevice() : base(new DeviceConnectionInfo {DeviceName = "ARES", DeviceId = "ARES-CORE-DEVICE" })
+  public AresCoreDevice() : base(new DeviceConnectionInfo { DeviceName = "ARES", DeviceId = "ARES-CORE-DEVICE" })
   {
     Status = new DeviceOperationalStatus()
     {
@@ -68,6 +70,7 @@ public class AresCoreDevice : AresDevice
           result.Success = false;
           break;
         }
+
       case AresCoreDeviceCommand.SleepForSeconds:
         if(durationParam is not null && durationParam.HasNumberValue)
         {
@@ -83,6 +86,7 @@ public class AresCoreDevice : AresDevice
           result.Success = false;
           break;
         }
+
       case AresCoreDeviceCommand.SleepForMinutes:
         if(durationParam is not null && durationParam.HasNumberValue)
         {
@@ -98,9 +102,53 @@ public class AresCoreDevice : AresDevice
           result.Success = false;
           break;
         }
+
       case AresCoreDeviceCommand.WaitForUser:
         result.Success = true;
         result.AwaitUserInput = true;
+        break;
+
+      case AresCoreDeviceCommand.GetTimestamp:
+        result.Success = true;
+        result.Result = AresValueHelper.CreateTimestamp(DateTime.UtcNow.ToTimestampUtc());
+        break;
+
+      case AresCoreDeviceCommand.CalculateAverage:
+        var dataToBeAveraged = arguments.FirstOrDefault()?.ArgValue;
+
+        if(dataToBeAveraged is null)
+        {
+          result.Error = "ARES was asked to average a list of data, but no argument was provided.";
+          result.Success = false;
+          break;
+        }
+
+        switch(dataToBeAveraged.KindCase)
+        { 
+          case AresValue.KindOneofCase.NumberArrayValue:
+            var average = dataToBeAveraged.NumberArrayValue.Numbers.Average();
+            result.Result = AresValueHelper.CreateFloat(average);
+            result.Success = true;
+            break;
+
+          case AresValue.KindOneofCase.FloatArrayValue:
+            var floatAverage = dataToBeAveraged.FloatArrayValue.Floats.Average();
+            result.Result = AresValueHelper.CreateFloat(floatAverage);
+            result.Success = true;
+            break;
+
+          case AresValue.KindOneofCase.IntArrayValue:
+            var intAverage = dataToBeAveraged.IntArrayValue.Ints.Average();
+            result.Result = AresValueHelper.CreateFloat(intAverage);
+            result.Success = true;
+            break;
+
+          default:
+            result.Error = $"ARES was asked to average a list of data, but an invalid argument was provided of type {dataToBeAveraged.KindCase}";
+            result.Success = false;
+            break;
+        }
+
         break;
     }
 
@@ -131,11 +179,31 @@ public class AresCoreDevice : AresDevice
         Description = "Sleep for a given amount of minutes",
         InputSchema = AresSchemaBuilder.Create(AresCoreDeviceCommandParameter.Duration.ToString(), AresDataType.Number).Build()
       },
-      
+
       new()
       {
         Name = AresCoreDeviceCommand.WaitForUser.ToString(),
         Description = "Have ARES request user confirmation before continuing."
+      },
+
+      new()
+      {
+        Name = AresCoreDeviceCommand.GetTimestamp.ToString(),
+        Description = "Returns the current time in the form of a timestamp",
+        OutputSchema = AresSchemaBuilder.TimestampEntry().WithDescription("A timestamp representing the current time")
+        .Build()
+      },
+
+      new()
+      {
+        Name = AresCoreDeviceCommand.CalculateAverage.ToString(),
+        Description = "Takes in a list of numeric values, floats or ints and returns the average of that list of values.",
+        InputSchema = AresSchemaBuilder.Empty()
+        .AddEntry(AresCoreDeviceCommandParameter.NumericData.ToString(), AresSchemaBuilder.Entry(AresDataType.NumberArray).Build()).AsOptional()
+        .AddEntry(AresCoreDeviceCommandParameter.IntData.ToString(), AresSchemaBuilder.Entry(AresDataType.IntArray).Build()).AsOptional()
+        .AddEntry(AresCoreDeviceCommandParameter.FloatData.ToString(), AresSchemaBuilder.Entry(AresDataType.FloatArray).Build()).AsOptional()
+        .Build(),
+        OutputSchema = AresSchemaBuilder.NumberEntry().WithDescription("The average value of the provided list of numeric values").Build()
       }
     ]);
   }

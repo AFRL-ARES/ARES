@@ -49,10 +49,16 @@ public interface IExecutionManager
   void Resume();
 
   /// <summary>
-  /// Updates the replan rate of the campaign
+  /// Updates the replication rate of the campaign
   /// </summary>
   /// <param name="newRate"></param>
-  void UpdateReplanRate(int newRate);
+  void UpdateReplicateRate(int newRate);
+
+  /// <summary>
+  /// Submits a user decision for how to handle an error that has occurred during execution
+  /// </summary>
+  /// <param name="decision"></param>
+  void SubmitUserDecision(ErrorHandling decision);
 
   /// <summary>
   /// Checks whether the prerequisites to execution have been met

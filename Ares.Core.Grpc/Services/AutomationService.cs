@@ -23,6 +23,7 @@ using Ares.Datamodel.Planning;
 using Ares.Core.Execution.Extensions;
 using Ares.Core.Planning;
 using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Extensions;
 
 namespace Ares.Core.Grpc.Services;
 
@@ -141,6 +142,12 @@ public class AutomationService : AresAutomation.AresAutomationBase
 
   public override Task<Empty> RemoveCampaign(CampaignRequest request, ServerCallContext? context)
   {
+    if(_activeCampaignTemplateStore.CampaignTemplate?.UniqueId == request.UniqueId)
+    {
+      HandleNotification("Cannot Delete Active Campaign", $"ARES rejected a request to delete the campaign {_activeCampaignTemplateStore.CampaignTemplate.Name} as it is currently running.", NotificationSeverityEnum.Info);
+      return Task.FromResult(new Empty());
+    }
+
     var desiredCampaign = Directory.EnumerateFiles(AresConfig.TemplatePath, "*.json").FirstOrDefault(campaign => campaign.Contains(request.UniqueId));
 
     if(desiredCampaign is not null)
@@ -224,8 +231,8 @@ public class AutomationService : AresAutomation.AresAutomationBase
     }
 
     var title = "Error Fetching Campaign Template";
-    var message = $"Attempted to fetch a campaign that didn't exist. {request.CampaignName}'s UUID did not match any of the existing campaigns in your data directory";
-    HandleNotification(title, message, NotificationSeverityEnum.Error);
+    var message = $"Attempted to fetch a campaign that didn't exist. {request.CampaignName}'s UUID did not match any of the existing campaigns in your data directory. If you deleted a campaign this is expected.";
+    HandleNotification(title, message, NotificationSeverityEnum.Warning);
     return null;
   }
 
@@ -314,6 +321,12 @@ public class AutomationService : AresAutomation.AresAutomationBase
     return Task.FromResult(new Empty());
   }
 
+  public override Task<Empty> SubmitUserDecision(UserDecisionRequest request, ServerCallContext? context)
+  {
+    _executionManager.SubmitUserDecision(request.Decision);
+    return Task.FromResult(new Empty());
+  }
+
   public override Task<StartStopConditionsResponse> GetAssignedStopConditions(Empty request, ServerCallContext? context)
   {
     var conditions = _executionManager.CampaignStopConditions;
@@ -378,15 +391,15 @@ public class AutomationService : AresAutomation.AresAutomationBase
     return Task.FromResult(new Empty());
   }
 
-  public override Task<Empty> SetReplanRate(ReplanRate request, ServerCallContext? context)
+  public override Task<Empty> SetReplicateRate(ReplicateRate request, ServerCallContext? context)
   {
-    _executionManager.UpdateReplanRate(request.ReplanRate_);
+    _executionManager.UpdateReplicateRate(request.ReplicateRate_);
     return Task.FromResult(new Empty());
   }
 
-  public override Task<GetReplanRateResponse> GetReplanRate(Empty request, ServerCallContext? context)
+  public override Task<ReplicateRate> GetReplicateRate(Empty request, ServerCallContext? context)
   {
-    return Task.FromResult(new GetReplanRateResponse { ReplanRate = _executionManager.ReplanRate });
+    return Task.FromResult(new ReplicateRate { ReplicateRate_ = _executionManager.ReplanRate });
   }
 
   public override Task<Empty> SetAnalysisResultStopCondition(AnalysisResultCondition request, ServerCallContext? context)
@@ -412,7 +425,7 @@ public class AutomationService : AresAutomation.AresAutomationBase
         new ExperimentStopConditionResponse
         {
           ActiveCondition = "None",
-          Description = "No stop conditions assigned, experiment will run until manually stopped."
+          Description = "No stop conditions assigned."
         });
     }
 
@@ -560,11 +573,13 @@ public class AutomationService : AresAutomation.AresAutomationBase
       return [];
 
     var usedPlanners = _activeCampaignTemplateStore.CampaignTemplate.ExperimentTemplate.GetAllPlannedParameters()
-      .Select(p => p.PlanningMetadata.PlannerName)
+      .Select(p => p.GetPlanningMetadata()?.PlannerName ?? "")
+      .Where(name => !string.IsNullOrWhiteSpace(name))
       .Select(_plannerServiceRepo.GetPlannerByName)
       .Where(p => p is not null)
       .Distinct()
       .ToList();
+
 
     var listOfTransactions = new List<IEnumerable<PlannerTransaction>?>();
 

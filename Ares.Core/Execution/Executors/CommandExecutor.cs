@@ -1,5 +1,6 @@
 ﻿using Ares.Core.Execution.ControlTokens;
 using Ares.Core.Notifications;
+using Ares.Core.Settings;
 using Ares.Datamodel;
 using Ares.Datamodel.Templates;
 using Google.Protobuf.WellKnownTypes;
@@ -13,11 +14,13 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
   private readonly Func<CancellationToken, Task<CommandResult>> _command;
   private readonly BehaviorSubject<CommandExecutionStatus> _stateSubject;
   private readonly INotifier _notifier;
+  private readonly ISystemSettingsManager _settingsManager; 
 
-  public CommandExecutor(Func<CancellationToken, Task<CommandResult>> command, CommandTemplate template, INotifier notificer)
+  public CommandExecutor(Func<CancellationToken, Task<CommandResult>> command, CommandTemplate template, INotifier notifier, ISystemSettingsManager settingsManager)
   {
     _command = command;
     Template = template;
+
     var executionStatus = new CommandExecutionStatus
     {
       CommandId = template.UniqueId,
@@ -26,8 +29,12 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
       State = ExecutionState.Undefined
     };
 
+    if(template.HasOutputVarName)
+      executionStatus.VariableName = template.OutputVarName;
+
     _stateSubject = new BehaviorSubject<CommandExecutionStatus>(executionStatus);
-    _notifier = notificer;
+    _notifier = notifier;
+    _settingsManager = settingsManager;
 
     ExperimentStatusObservable = _stateSubject.AsObservable();
   }
@@ -37,6 +44,9 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
   public IObservable<CommandExecutionStatus> ExperimentStatusObservable { get; }
   public CommandExecutionStatus Status => _stateSubject.Value;
   public async Task<CommandExecutionSummary> Execute(ExecutionControlToken token)
+    => await Execute(token, new Dictionary<string, AresValue>());
+
+  public async Task<CommandExecutionSummary> Execute(ExecutionControlToken token, IReadOnlyDictionary<string, AresValue> variableScope)
   {
     Status.State = token.IsPaused ? ExecutionState.Paused : ExecutionState.Running;
     _stateSubject.OnNext(Status);
@@ -46,7 +56,7 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
         await token.WaitForResumeAsync();
       }
       catch(OperationCanceledException)
-      {
+      { 
       }
 
     if(token.IsCancelled)
@@ -59,7 +69,33 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
 
     var timeStarted = DateTime.UtcNow;
     var execInfo = new ExecutionInfo { TimeStarted = DateTime.UtcNow.ToTimestamp() };
-    var result = await InternalExecute(token.CancellationToken);
+    var variableResolutionError = CommandVariableResolver.ResolveParameters(Template.Parameters, variableScope);
+    CommandResult result;
+
+    if(variableResolutionError is null)
+    {
+      var internalTask = InternalExecute(token.CancellationToken);
+      var timerStartTime = DateTime.UtcNow;
+
+      while(!internalTask.IsCompleted)
+      {
+        var completedTask = await Task.WhenAny(internalTask, Task.Delay(1000, token.CancellationToken));
+
+        if(completedTask != internalTask)
+        {
+          var elapsed = DateTime.UtcNow - timerStartTime;
+          Status.StatusMessage = $"Executing... ({elapsed.TotalSeconds:F0}s elapsed)";
+          Status.State = ExecutionState.Running;
+          _stateSubject.OnNext(Status);
+        }
+      }
+
+      result = await internalTask;
+    }
+
+    else
+      result = new CommandResult { Success = false, Error = variableResolutionError };
+
     execInfo.TimeFinished = DateTime.UtcNow.ToTimestamp();
 
     if(result.AwaitUserInput)
@@ -68,14 +104,10 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
     else if(result.Success)
       Status.State = ExecutionState.Succeeded;
 
-
     else
-    {
       Status.State = ExecutionState.Failed;
-      await _notifier.Notify("Command Failed!", result.Error, NotificationSeverityEnum.Error);
-    }
 
-
+    Status.Result = result.Result;
     _stateSubject.OnNext(Status);
     _stateSubject.OnCompleted();
 
@@ -89,6 +121,7 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
       var result = await _command(token);
       return result;
     }
+
     catch(Exception e)
     {
       var result = new CommandResult() { Success = false, Error = e.Message };

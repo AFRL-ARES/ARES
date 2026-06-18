@@ -17,7 +17,7 @@ namespace AresService.Migrations.Postgres.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.7")
+                .HasAnnotation("ProductVersion", "10.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -277,6 +277,39 @@ namespace AresService.Migrations.Postgres.Migrations
                     b.ToTable("CampaignTags");
                 });
 
+            modelBuilder.Entity("Ares.Datamodel.AresGeneralSettingsConfig", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CommandLatency")
+                        .HasColumnType("jsonb");
+
+                    b.Property<int>("CommandRetryLimit")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<int>("ExperimentRetryLimit")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("RetryCooldown")
+                        .HasColumnType("jsonb");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("AresGeneralSettingsConfig", (string)null);
+                });
+
             modelBuilder.Entity("Ares.Datamodel.CampaignExecutionSummary", b =>
                 {
                     b.Property<Guid>("UniqueId")
@@ -345,12 +378,21 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
+                    b.Property<string>("Result")
+                        .HasColumnType("text");
+
                     b.Property<string>("State")
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("StatusMessage")
+                        .HasColumnType("text");
+
                     b.Property<Guid?>("StepExecutionStatusUniqueId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("VariableName")
+                        .HasColumnType("text");
 
                     b.HasKey("UniqueId");
 
@@ -384,10 +426,16 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
+                    b.Property<int>("StatusCode")
+                        .HasColumnType("integer");
+
                     b.Property<Guid?>("StepExecutionSummaryUniqueId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("TemplateId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("VarName")
                         .HasColumnType("text");
 
                     b.HasKey("UniqueId");
@@ -424,6 +472,9 @@ namespace AresService.Migrations.Postgres.Migrations
 
                     b.Property<string>("Result")
                         .HasColumnType("text");
+
+                    b.Property<int>("StatusCode")
+                        .HasColumnType("integer");
 
                     b.Property<bool>("Success")
                         .HasColumnType("boolean");
@@ -579,6 +630,9 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
+                    b.Property<bool>("LoggingEnabled")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("LoggingType")
                         .HasColumnType("integer");
 
@@ -701,40 +755,31 @@ namespace AresService.Migrations.Postgres.Migrations
                     b.ToTable("SerialConnection");
                 });
 
-            modelBuilder.Entity("Ares.Datamodel.Device.SilaDeviceConfig", b =>
+            modelBuilder.Entity("Ares.Datamodel.DeviceErrorHandlingConfig", b =>
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<int>("Code")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
-                    b.Property<string>("Description")
-                        .HasColumnType("text");
+                    b.Property<int>("Handling")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
-                    b.Property<string>("ServerName")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Type")
-                        .HasColumnType("text");
-
-                    b.Property<string>("VendorUri")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Version")
-                        .HasColumnType("text");
-
                     b.HasKey("UniqueId");
 
-                    b.ToTable("SilaConfigs");
+                    b.ToTable("ErrorHandlingConfigs", (string)null);
                 });
 
             modelBuilder.Entity("Ares.Datamodel.ExecutionInfo", b =>
@@ -1303,6 +1348,9 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
+                    b.Property<string>("OutputVarName")
+                        .HasColumnType("text");
+
                     b.Property<Guid>("StepTemplateUniqueId")
                         .HasColumnType("uuid");
 
@@ -1405,9 +1453,6 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
-                    b.Property<bool>("EnvironmentBased")
-                        .HasColumnType("boolean");
-
                     b.Property<Guid?>("ExperimentOverviewUniqueId")
                         .HasColumnType("uuid");
 
@@ -1419,28 +1464,15 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
-                    b.Property<bool>("Planned")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid?>("PlanningMetadataUniqueId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Value")
-                        .HasColumnType("text");
-
-                    b.Property<string>("VariableArgument")
-                        .HasColumnType("text");
-
-                    b.Property<int>("VariableType")
-                        .HasColumnType("integer");
+                    b.Property<string>("SourceJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("Source");
 
                     b.HasKey("UniqueId");
 
                     b.HasIndex("CommandTemplateUniqueId");
 
                     b.HasIndex("ExperimentOverviewUniqueId");
-
-                    b.HasIndex("PlanningMetadataUniqueId");
 
                     b.ToTable("Parameters", (string)null);
                 });
@@ -1896,12 +1928,6 @@ namespace AresService.Migrations.Postgres.Migrations
                     b.HasOne("Ares.Datamodel.ExperimentOverview", null)
                         .WithMany("Parameters")
                         .HasForeignKey("ExperimentOverviewUniqueId");
-
-                    b.HasOne("Ares.Datamodel.Templates.ParameterMetadata", "PlanningMetadata")
-                        .WithMany()
-                        .HasForeignKey("PlanningMetadataUniqueId");
-
-                    b.Navigation("PlanningMetadata");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Templates.ParameterMetadata", b =>

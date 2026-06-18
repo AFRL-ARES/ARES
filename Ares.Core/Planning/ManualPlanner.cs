@@ -2,7 +2,6 @@ using Ares.Datamodel;
 using Ares.Datamodel.Connection;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Planning;
-using Ares.Datamodel.Templates;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 
@@ -46,6 +45,7 @@ public class ManualPlanner : IPlannerService
 
   public Task Seed(ManualPlannerSeed seedParam)
   {
+    LatestManualPlannerSeed = seedParam;
     Reset();
     switch(seedParam.PlannerStuffCase)
     {
@@ -68,6 +68,12 @@ public class ManualPlanner : IPlannerService
     }
 
     return Task.CompletedTask;
+  }
+
+  public async Task Reseed()
+  {
+    if(LatestManualPlannerSeed is not null)
+      await Seed(LatestManualPlannerSeed);
   }
 
   public void Reset()
@@ -189,4 +195,5 @@ public class ManualPlanner : IPlannerService
   public string StateMessage { get; } = "Manual Planner is active!";
   public AresStruct Settings { get; } = new AresStruct();
   public TimeSpan PlanningTimeout { get; } = TimeSpan.MaxValue;
+  public ManualPlannerSeed? LatestManualPlannerSeed { get; set; }
 }

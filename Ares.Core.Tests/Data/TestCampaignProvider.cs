@@ -44,9 +44,8 @@ internal class TestCampaignProvider
   {
     var parameter = new Parameter();
     parameter.Index = idx;
-    parameter.Planned = false;
     parameter.UniqueId = Guid.NewGuid().ToString();
-    parameter.Value = AresValueHelper.CreateString(value);
+    parameter.SetLiteralSource(AresValueHelper.CreateString(value));
 
     parameter.Metadata = new ParameterMetadata
     {
@@ -91,13 +90,12 @@ internal class TestCampaignProvider
     var template = new CommandTemplate
     {
       Index = idx,
-      Metadata = metadata
+      Metadata = metadata,
+      OutputVarName = "TestExperimentOutput"
     };
 
     template.Parameters.AddRange(parameters);
     template.UniqueId = metadata.UniqueId;
-
-    template.UserOutputKeyMap["TestDeviceOutput"] = "TestExperimentOutput";
 
     return template;
   }

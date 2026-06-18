@@ -1,7 +1,6 @@
 using Ares.Services;
 using Ares.Core.Grpc.Services.Notifications;
 using Google.Protobuf.WellKnownTypes;
-using Grpc.Core;
 using NuGet.Packaging;
 using UI.Application.Notifications;
 using UI.Infrastructure.Grpc;
@@ -13,6 +12,7 @@ public class NotificationReceivingService : INotificationReceivingService
   private readonly AresNotificationService _notificationClient;
   private readonly IUiNotificationService _uiNotificationService;
   private readonly INotificationRepository _notificationRepo;
+  public event Action<UiNotificationMessage>? OnNotificationReceived;
 
   public NotificationReceivingService(
     AresNotificationService notificationClient,
@@ -47,8 +47,9 @@ public class NotificationReceivingService : INotificationReceivingService
             CloseOnClick = notification.NotificationSeverity == Severity.Danger
           };
 
-          _uiNotificationService.Notify(userNotification);
+          //_uiNotificationService.Notify(userNotification);
           _notificationRepo.Add(notification);
+          OnNotificationReceived?.Invoke(userNotification);
         }
       }
       catch(Exception ex)
@@ -75,8 +76,9 @@ public class NotificationReceivingService : INotificationReceivingService
     if(notification.Timestamp is null)
       notification.Timestamp = DateTime.UtcNow.ToTimestamp();
 
-    _uiNotificationService.Notify(uiNotification);
+    //_uiNotificationService.Notify(uiNotification);
     _notificationRepo.Add(notification);
+    OnNotificationReceived?.Invoke(uiNotification);
   }
 
   public async Task GetLatestNotificationHistory()
