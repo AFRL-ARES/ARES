@@ -45,7 +45,7 @@
   private async void AddStepClick()
   {
     var stepDesigner = ViewModel!.AddCloseoutStep();
-    string name = stepDesigner.Name;
+    string name = stepDesigner.Name == "New Step" ? "" : stepDesigner.Name;
     bool isParallel = stepDesigner.Parallel;
     var result = await DialogService.OpenAsync("Step Create", ds =>
       @<div class="d-flex flex-column">
@@ -58,7 +58,7 @@
         );
     if(result ?? false)
     {
-      stepDesigner.Name = name;
+      stepDesigner.Name = name == "" ? "New Step" : name;
       stepDesigner.Parallel = isParallel;
     }
     else
