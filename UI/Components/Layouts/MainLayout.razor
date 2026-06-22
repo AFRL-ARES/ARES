@@ -5,6 +5,7 @@
 @using Ares.Core.Device.Repos
 @using Ares.Services
 @using Google.Protobuf.WellKnownTypes
+@using System.Reactive.Linq
 @using UI.Application.Dialog
 @using UI.Application.Notifications
 @using UI.Infrastructure.Startup
@@ -20,14 +21,14 @@
 
 <HeadContent>
   <link rel="icon" type="image/png" href="images/ARESLogo.png">
-  @foreach(var cssPath in GetPluginStylesheetPaths())
-  {
-    <link rel="stylesheet" href="@cssPath">
-  }
 </HeadContent>
 <PageTitle>ARES</PageTitle>
 
 <div class="page">
+  @foreach(var cssPath in GetPluginStylesheetPaths())
+  {
+    <link rel="stylesheet" href="@cssPath">
+  }
   <RadzenComponents />
 
   <main>
@@ -112,11 +113,13 @@
   </div>
 </div>
 
-  @code {
+@code {
   public bool SidebarExpanded { get; set; } = true;
   public bool BodyExpanded { get; set; }
   private CancellationTokenSource _cts = new();
   private string _loadingMessage = "Initializing ARES OS...";
+  private IDisposable? _driverSubscription;
+  private List<string> _approvedCssPaths = new();
 
   private readonly string[] _loadingMessageOptions = new[]
   {
@@ -142,7 +145,17 @@
   {
     Tracker.OnSystemReady += HandleSystemReady;
     notificationService.OnNotificationReceived += HandleBackgroundNotification;
+
+    _driverSubscription = deviceDriverRepo.Connect()
+            .Throttle(TimeSpan.FromMilliseconds(500))
+            .Subscribe(_ => InvokeAsync(StateHasChanged));
+
     _ = CycleLoadingMessagesAsync(_cts.Token);
+  }
+
+  private void HandleDriversChanged()
+  {
+    InvokeAsync(StateHasChanged);
   }
 
   private void HandleBackgroundNotification(UiNotificationMessage message)
@@ -205,7 +218,7 @@
         notification = new AresNotification
         {
           Loiter = true,
-          Message = "ARES HAS FAILED TO ENTER SAFE MODE. DEVICES MIGHT BE IN AN UNSTABLE STATE AND SHOULD BE POWERED OFF IMMEDIATELY IF IT IS SAFE TO DO SO.",
+          Message = "ARES HAS FAILED TO ENTER SAFE MODE. DEVICES MAY BE IN AN UNSTABLE STATE AND SHOULD BE POWERED OFF IMMEDIATELY IF IT IS SAFE TO DO SO.",
           Title = "FAILED TO PROCESS EMERGENCY SHUTDOWN REQUEST!",
           NotificationSeverity = Severity.Danger,
           Timestamp = DateTime.UtcNow.ToTimestamp()
@@ -217,7 +230,7 @@
 
   }
 
-  IEnumerable<string> GetPluginStylesheetPaths()
+  public IEnumerable<string> GetPluginStylesheetPaths()
   {
     return deviceDriverRepo
       .GetAllDeviceDrivers()
@@ -226,9 +239,7 @@
         var pluginFolder = Path.GetFileName(driver.ModulePath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
         var assemblyName = Path.GetFileNameWithoutExtension(driver.Manifest.AssemblyName);
         if(string.IsNullOrWhiteSpace(pluginFolder) || string.IsNullOrWhiteSpace(assemblyName))
-        {
           return null;
-        }
 
         return $"/plugins/{Uri.EscapeDataString(pluginFolder)}/{Uri.EscapeDataString(assemblyName)}.styles.css";
       })
@@ -246,6 +257,7 @@
   {
     Tracker.OnSystemReady -= HandleSystemReady;
     notificationService.OnNotificationReceived -= HandleBackgroundNotification;
+    _driverSubscription?.Dispose();
     _cts.Cancel();
     _cts.Dispose();
   }

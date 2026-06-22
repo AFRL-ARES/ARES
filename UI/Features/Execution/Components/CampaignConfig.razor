@@ -23,7 +23,7 @@
   <div>
     <RadzenLabel Text="Replicate Count" Component="replicateInput" Style="margin-bottom: 5px; display: block;" />
     <div class="d-flex gap-2">
-      <RadzenNumeric @bind-Value="ViewModel!.ReplicateCount" Name="replicateInput" class="w-100" />
+      <RadzenNumeric @bind-Value="ViewModel!.DesiredReplicationRate" Name="replicateInput" class="w-100" />
       <RadzenButton Text="SET" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Outlined" Click="ViewModel!.SetReplicateRate"/>
     </div>
   </div>

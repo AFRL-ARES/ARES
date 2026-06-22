@@ -1,70 +1,463 @@
-﻿.execution-button {
-  max-width: 50px;
+.execution-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 0;
+  height: 100%;
+  color: #f4f7fb;
 }
 
-.analyzer-display {
-  width: 50%;
+.execution-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 14px;
+  background: #171d26;
 }
 
-.planner-display {
-  width: 50%;
+.execution-breadcrumb {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  margin-bottom: 0.25rem;
 }
 
-.padded-item {
-  padding-top: 0.5rem;
+.execution-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
-.scrollable-summary {
-  max-height: 75vh;
-  overflow: auto;
+.execution-title-row h2 {
+  margin: 0;
 }
 
-/* 1. The Container that holds Main Content and Drawer side-by-side */
-.drawer-layout-container {
-  display: flex; /* This enables the side-by-side layout */
-  flex-direction: row;
+.execution-header-actions,
+.decision-buttons,
+.control-stack {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.execution-tabs {
+  min-height: 0;
+  flex: 1;
+}
+
+.execution-tab-content {
+  min-height: 0;
+  padding-top: 1rem;
+}
+
+.setup-grid,
+.live-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.setup-grid {
+  grid-template-columns: minmax(0, 2fr) minmax(320px, 0.9fr);
+}
+
+.live-grid {
+  grid-template-columns: minmax(260px, 0.8fr) minmax(0, 2fr) minmax(280px, 0.85fr);
+  align-items: start;
+}
+
+.setup-main,
+.setup-side,
+.live-progress-column,
+.live-data-column,
+.live-side-column,
+.live-metrics {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.execution-card {
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 14px;
+  background: #151b24;
+  padding: 1rem;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+}
+
+.full-height {
+  height: 100%;
+}
+
+.card-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.card-heading.compact {
+  margin-bottom: 0.75rem;
+}
+
+.card-heading h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.card-heading p {
+  margin: 0.25rem 0 0;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.card-note,
+.metric-chip {
+  color: #93c5fd;
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: 999px;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.execution-status-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.status-success,
+.ready {
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.14);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+}
+
+.status-running,
+.status-info {
+  color: #93c5fd;
+  background: rgba(59, 130, 246, 0.14);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+}
+
+.status-warning,
+.blocked {
+  color: #fcd34d;
+  background: rgba(245, 158, 11, 0.14);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.status-danger {
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.14);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.status-muted {
+  color: #cbd5e1;
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.campaign-meta-grid,
+.policy-grid,
+.form-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.campaign-meta-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 1rem;
+}
+
+.campaign-meta-grid div,
+.policy-grid div {
+  padding: 0.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.campaign-meta-grid span,
+.policy-grid span,
+.summary-list dt {
+  display: block;
+  color: #94a3b8;
+  font-size: 0.78rem;
+  margin-bottom: 0.25rem;
+}
+
+.campaign-meta-grid strong,
+.policy-grid strong {
+  color: #f8fafc;
+  font-size: 0.9rem;
+}
+
+.stop-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.stop-mode-card {
+  text-align: left;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.55);
+  color: #f8fafc;
+  padding: 0.85rem;
+  cursor: pointer;
+}
+
+.stop-mode-card.selected {
+  border-color: rgba(59, 130, 246, 0.75);
+  background: rgba(59, 130, 246, 0.16);
+}
+
+.stop-mode-card span,
+.stop-mode-card strong {
+  display: block;
+}
+
+.stop-mode-card span {
+  color: #94a3b8;
+  font-size: 0.8rem;
+}
+
+.form-grid.two {
+  grid-template-columns: 1fr auto;
+}
+
+.form-grid.three {
+  grid-template-columns: 1fr 1fr auto;
+}
+
+.form-grid small {
+  display: block;
+  color: #94a3b8;
+  margin-top: 0.3rem;
+}
+
+.apply-box {
+  display: flex;
+  align-items: end;
+  margin-bottom: 1px;
+}
+
+.tag-editor,
+.new-tag-row {
+  margin-top: 1rem;
+}
+
+.tag-option,
+.new-tag-row,
+.policy-input {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.tag-option {
+  justify-content: space-between;
   width: 100%;
-  height: 100vh; /* Full viewport height */
-  overflow: hidden; /* Prevents scrollbar on the container itself */
 }
 
-/* 2. Main Content Area (The part that shrinks) */
-.main-content-area {
-  flex-grow: 1; /* Take all available space */
-  transition: width 0.3s ease; /* Smooth "shove" animation */
-  overflow-y: auto; /* Scroll vertically INSIDE this area */
-  min-width: 0; /* Prevents flex items from breaking */
+.preflight-list,
+.activity-list,
+.summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.preflight-item {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.preflight-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+
+.preflight-item strong,
+.activity-item p {
+  margin: 0;
+}
+
+.preflight-item p {
+  margin: 0.15rem 0 0;
+  color: #94a3b8;
+  font-size: 0.82rem;
+}
+
+.summary-list {
+  margin: 0 0 1rem;
+}
+
+.summary-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+  padding-bottom: 0.5rem;
+}
+
+.summary-list dd {
+  margin: 0;
+  text-align: right;
+  color: #f8fafc;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.timeline-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.75rem;
+}
+
+.timeline-marker {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 999px;
+  margin-top: 0.25rem;
+  background: #64748b;
+}
+
+.timeline-item.complete .timeline-marker {
+  background: #22c55e;
+}
+
+.timeline-item.active .timeline-marker {
+  background: #3b82f6;
+}
+
+.timeline-item.failed .timeline-marker {
+  background: #ef4444;
+}
+
+.timeline-content {
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 10px;
+  padding: 0.75rem;
+  background: rgba(15, 23, 42, 0.4);
+}
+
+.timeline-content h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+.timeline-content details {
+  margin-top: 0.4rem;
+}
+
+.timeline-content summary {
+  cursor: pointer;
+  color: #e2e8f0;
+}
+
+.command-row,
+.activity-item {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  color: #cbd5e1;
+  font-size: 0.82rem;
+  margin-top: 0.4rem;
+}
+
+.decision-alert {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.decision-alert p {
+  margin: 0.2rem 0 0;
+}
+
+.now-running h4 {
+  margin: 0.75rem 0 0.25rem;
+}
+
+.now-running p {
+  margin: 0;
+  color: #94a3b8;
+}
+
+.control-stack {
+  flex-direction: column;
+}
+
+.live-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.device-card {
+  grid-column: 1 / -1;
+}
+
+.empty-state,
+.empty-chart-slot {
+  min-height: 120px;
+  border: 1px dashed rgba(148, 163, 184, 0.3);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  text-align: center;
   padding: 1rem;
 }
 
-/* 3. The Side Drawer Wrapper (Animated Width) */
-.side-drawer {
-  width: 0; /* Default state: Closed (Invisible) */
-  flex-shrink: 0; /* Prevent it from being squished */
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Smooth animation */
-  overflow-x: hidden; /* Hide content when width is 0 */
-  background-color: var(--rz-base-background-color); /* Match Radzen theme */
-  border-left: 1px solid var(--rz-border-color); /* Match Radzen border */
-  padding: 0rem;
-  border-radius: .25rem;
-  height: 100vh;
+.empty-chart-slot {
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
-  /* The 'Open' state - toggled via Blazor logic */
-  .side-drawer.drawer-open {
-    width: 400px; /* Target width when open */
+.chart-tooltip {
+  background-color: #111827;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  padding: 0.5rem;
+  border-radius: 0.35rem;
+}
+
+@media (max-width: 1300px) {
+  .setup-grid,
+  .live-grid,
+  .live-metrics {
+    grid-template-columns: 1fr;
   }
 
-/* 4. The Content Wrapper (Fixed Width) */
-/* Critical: Prevents text reflow/wrapping during the slide animation */
-.drawer-content {
-  width: 400px; /* Must match the open width */
-  height: 100%;
-  overflow-y: auto; /* Allow scrolling inside the drawer */
-}
-
-.drawer-inner-card {
-  height: inherit;
-  border: none;
-  border-radius: 0;
+  .campaign-meta-grid,
+  .form-grid.three {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

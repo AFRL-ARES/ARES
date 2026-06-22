@@ -378,12 +378,21 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
+                    b.Property<string>("Result")
+                        .HasColumnType("text");
+
                     b.Property<string>("State")
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("StatusMessage")
+                        .HasColumnType("text");
+
                     b.Property<Guid?>("StepExecutionStatusUniqueId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("VariableName")
+                        .HasColumnType("text");
 
                     b.HasKey("UniqueId");
 
@@ -620,6 +629,9 @@ namespace AresService.Migrations.Postgres.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
+
+                    b.Property<bool>("LoggingEnabled")
+                        .HasColumnType("boolean");
 
                     b.Property<int>("LoggingType")
                         .HasColumnType("integer");

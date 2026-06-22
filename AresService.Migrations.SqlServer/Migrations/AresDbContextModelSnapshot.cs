@@ -379,12 +379,21 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
 
+                    b.Property<string>("Result")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("State")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("StatusMessage")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<Guid?>("StepExecutionStatusUniqueId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("VariableName")
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("UniqueId");
 
@@ -622,6 +631,9 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
+
+                    b.Property<bool>("LoggingEnabled")
+                        .HasColumnType("bit");
 
                     b.Property<int>("LoggingType")
                         .HasColumnType("int");

@@ -23,12 +23,17 @@ public abstract class StepExecutor : IExecutor<StepExecutionSummary, StepExecuti
     {
       return executor.ExperimentStatusObservable.Select(_ =>
       {
-        var cmdResults = commandExecutors.Select(cmdExecutor => cmdExecutor.Status);
-        Status.CommandExecutionStatuses.Clear();
-        Status.CommandExecutionStatuses.AddRange(cmdResults);
-        return Status;
+        var newStatus = new StepExecutionStatus
+        {
+          StepId = template.UniqueId,
+          StepName = template.Name
+        };
+
+
+        newStatus.CommandExecutionStatuses.AddRange(commandExecutors.Select(cmdExecutor => cmdExecutor.Status.Clone()));
+        return newStatus;
       });
-    }).Concat();
+    }).Merge();
 
     ExperimentStatusObservable = commandExecutionObservation;
   }

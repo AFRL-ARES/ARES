@@ -20,6 +20,14 @@ public class PlannerServiceRepo : IPlannerServiceRepo
   public IPlannerService? GetPlannerByName(string name)
   {
     var planner = _plannerStore.FirstOrDefault(planner => planner.Name == name);
+
+    //Search nested planner services
+    if(planner is null)
+    {
+      var remotePlanners = _plannerStore.Where(p => p is RemotePlannerService).ToList();
+      planner = remotePlanners.FirstOrDefault(rp => rp.AvailablePlanners.Any(availablePlanner => availablePlanner.PlannerName == name));
+    }
+
     return planner;
   }
 

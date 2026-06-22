@@ -3,7 +3,9 @@ using Ares.Core.Device.State.Export.StateGetters;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
 using Ares.Datamodel.Extensions;
+using Ares.Datamodel.Templates;
 using Google.Protobuf.WellKnownTypes;
+using Microsoft.EntityFrameworkCore;
 using Moq;
 
 namespace Ares.Core.Tests.DataManagement.DataMappers;
@@ -20,7 +22,7 @@ internal class DeviceStateDatasetGeneratorTests
       ["Device B"] = [CreateState(DateTime.UnixEpoch.AddSeconds(1), ("Enabled", AresValueHelper.CreateBool(true)))]
     });
 
-    var generator = new DeviceStateDatasetGenerator(stateGetter.Object);
+    var generator = CreateGenerator(stateGetter.Object);
     var datasets = await generator.GenerateAsync(filter);
 
     Assert.That(datasets.Select(dataset => dataset.Name), Is.EquivalentTo(["Device A", "Device B"]));
@@ -41,7 +43,7 @@ internal class DeviceStateDatasetGeneratorTests
       ]
     });
 
-    var generator = new DeviceStateDatasetGenerator(stateGetter.Object);
+    var generator = CreateGenerator(stateGetter.Object);
     var dataset = (await generator.GenerateAsync(filter)).Single();
 
     using(Assert.EnterMultipleScope())
@@ -75,19 +77,22 @@ internal class DeviceStateDatasetGeneratorTests
       ]
     });
 
-    var generator = new DeviceStateDatasetGenerator(stateGetter.Object);
+    var generator = CreateGenerator(stateGetter.Object);
     var dataset = (await generator.GenerateAsync(filter)).Single();
 
     using(Assert.EnterMultipleScope())
     {
       Assert.That(dataset.Columns.Select(column => column.Name), Is.EqualTo([
-          "Timestamp",
-      "Enabled",
-      "Mass",
-      "MeasuredAt",
-      "Name",
-      "Temperature"
-        ]));
+        "Timestamp",
+        "Campaign",
+        "Experiment Number",
+        "Step Name",
+        "Enabled",
+        "Mass",
+        "MeasuredAt",
+        "Name",
+        "Temperature"
+      ]));
       Assert.That(ColumnSchema(dataset, "Enabled").Type, Is.EqualTo(AresDataType.Boolean));
       Assert.That(ColumnSchema(dataset, "Mass").Type, Is.EqualTo(AresDataType.Quantity));
       Assert.That(ColumnSchema(dataset, "MeasuredAt").Type, Is.EqualTo(AresDataType.Timestamp));
@@ -114,12 +119,18 @@ internal class DeviceStateDatasetGeneratorTests
       ]
     });
 
-    var generator = new DeviceStateDatasetGenerator(stateGetter.Object);
+    var generator = CreateGenerator(stateGetter.Object);
     var dataset = (await generator.GenerateAsync(filter)).Single();
 
     using(Assert.EnterMultipleScope())
     {
-      Assert.That(dataset.Columns.Select(column => column.Name), Is.EqualTo(new[] { "Timestamp", "Data.Timestamp" }));
+      Assert.That(dataset.Columns.Select(column => column.Name), Is.EqualTo([
+        "Timestamp",
+        "Campaign",
+        "Experiment Number",
+        "Step Name",
+        "Data.Timestamp"
+      ]));
       Assert.That(dataset.Rows.Single().Data.Fields["Timestamp"].TimestampValue, Is.EqualTo(Timestamp.FromDateTime(DateTime.UnixEpoch)));
       Assert.That(dataset.Rows.Single().Data.Fields["Data.Timestamp"].TimestampValue, Is.EqualTo(dynamicTimestamp));
     }
@@ -137,7 +148,7 @@ internal class DeviceStateDatasetGeneratorTests
       ["Device A"] = [CreateState(DateTime.UnixEpoch, ("Position", AresValueHelper.CreateStruct(position)))]
     });
 
-    var generator = new DeviceStateDatasetGenerator(stateGetter.Object);
+    var generator = CreateGenerator(stateGetter.Object);
     var dataset = (await generator.GenerateAsync(filter)).Single();
     var row = dataset.Rows.Single();
 
@@ -145,6 +156,9 @@ internal class DeviceStateDatasetGeneratorTests
     {
       Assert.That(dataset.Columns.Select(column => column.Name), Is.EqualTo([
         "Timestamp",
+        "Campaign",
+        "Experiment Number",
+        "Step Name",
         "Position.X",
         "Position.Y"
       ]));
@@ -169,7 +183,7 @@ internal class DeviceStateDatasetGeneratorTests
       ["Device A"] = [CreateState(DateTime.UnixEpoch, ("Position", AresValueHelper.CreateStruct(position)))]
     });
 
-    var generator = new DeviceStateDatasetGenerator(stateGetter.Object);
+    var generator = CreateGenerator(stateGetter.Object);
     var dataset = (await generator.GenerateAsync(filter)).Single();
     var row = dataset.Rows.Single();
 
@@ -177,6 +191,9 @@ internal class DeviceStateDatasetGeneratorTests
     {
       Assert.That(dataset.Columns.Select(column => column.Name), Is.EqualTo([
         "Timestamp",
+        "Campaign",
+        "Experiment Number",
+        "Step Name",
         "Position.Offset.X",
         "Position.Y"
       ]));
@@ -198,7 +215,7 @@ internal class DeviceStateDatasetGeneratorTests
       ["Device A"] = [CreateState(DateTime.UnixEpoch, ("Metadata", AresValueHelper.CreateStruct(metadata)))]
     });
 
-    var generator = new DeviceStateDatasetGenerator(stateGetter.Object);
+    var generator = CreateGenerator(stateGetter.Object);
     var dataset = (await generator.GenerateAsync(filter)).Single();
 
     original.StringValue = "after";
@@ -216,7 +233,7 @@ internal class DeviceStateDatasetGeneratorTests
       ["Device A"] = [CreateState(DateTime.UnixEpoch, ("Name", original))]
     });
 
-    var generator = new DeviceStateDatasetGenerator(stateGetter.Object);
+    var generator = CreateGenerator(stateGetter.Object);
     var dataset = (await generator.GenerateAsync(filter)).Single();
 
     original.StringValue = "after";
@@ -245,7 +262,7 @@ internal class DeviceStateDatasetGeneratorTests
       ]
     });
 
-    var generator = new DeviceStateDatasetGenerator(stateGetter.Object);
+    var generator = CreateGenerator(stateGetter.Object);
     var dataset = (await generator.GenerateAsync(filter)).Single();
 
     Assert.That(dataset.Rows.Select(row => row.Data.Fields["Timestamp"].TimestampValue), Is.EqualTo([
@@ -274,7 +291,7 @@ internal class DeviceStateDatasetGeneratorTests
       ]
     });
 
-    var generator = new DeviceStateDatasetGenerator(stateGetter.Object);
+    var generator = CreateGenerator(stateGetter.Object);
     var dataset = (await generator.GenerateAsync(filter)).Single();
 
     Assert.That(dataset.Rows.Select(row => row.Data.Fields["Temperature"].NumberValue), Is.EqualTo([1, 3]));
@@ -289,14 +306,160 @@ internal class DeviceStateDatasetGeneratorTests
       ["Device A"] = []
     });
 
-    var generator = new DeviceStateDatasetGenerator(stateGetter.Object);
+    var generator = CreateGenerator(stateGetter.Object);
     var dataset = (await generator.GenerateAsync(filter)).Single();
 
     using(Assert.EnterMultipleScope())
     {
       Assert.That(dataset.Name, Is.EqualTo("Device A"));
-      Assert.That(dataset.Columns.Select(column => column.Name), Is.EqualTo(["Timestamp"]));
+      Assert.That(dataset.Columns.Select(column => column.Name), Is.EqualTo(["Timestamp", "Campaign", "Experiment Number", "Step Name"]));
       Assert.That(dataset.Rows, Is.Empty);
+    }
+  }
+
+  [Test]
+  public async Task GenerateAsync_AddsCampaignExperimentAndStepInformation()
+  {
+    var timestamp = DateTime.UnixEpoch.AddSeconds(5);
+    var filter = new DeviceStateRequestFilter
+    {
+      Start = Timestamp.FromDateTime(DateTime.UnixEpoch.AddSeconds(4)),
+      End = Timestamp.FromDateTime(DateTime.UnixEpoch.AddSeconds(6))
+    };
+    var stateGetter = CreateStateGetter(filter, new Dictionary<string, DeviceState[]>
+    {
+      ["Device A"] = [CreateState(timestamp, ("Temperature", AresValueHelper.CreateNumber(1)))]
+    });
+    var firstExperiment = CreateExperiment(
+      DateTime.UnixEpoch.AddSeconds(1),
+      DateTime.UnixEpoch.AddSeconds(3));
+    var secondExperiment = CreateExperiment(
+      DateTime.UnixEpoch.AddSeconds(4),
+      DateTime.UnixEpoch.AddSeconds(8),
+      CreateStep(
+        Guid.NewGuid().ToString(),
+        DateTime.UnixEpoch.AddSeconds(4),
+        DateTime.UnixEpoch.AddSeconds(8)));
+    secondExperiment.ExperimentOverview.Template.StepTemplates.Add(new StepTemplate
+    {
+      UniqueId = Guid.NewGuid().ToString(),
+      Name = "Heat"
+    });
+    var summary = CreateCampaign(
+      "Campaign A",
+      DateTime.UnixEpoch,
+      DateTime.UnixEpoch.AddSeconds(10),
+      firstExperiment,
+      secondExperiment);
+
+    var dataset = (await CreateGenerator(stateGetter.Object, summary).GenerateAsync(filter)).Single();
+    var row = dataset.Rows.Single();
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(row.Data.Fields["Campaign"].StringValue, Is.EqualTo("Campaign A"));
+      Assert.That(row.Data.Fields["Experiment Number"].IntValue, Is.EqualTo(2));
+      Assert.That(row.Data.Fields["Step Name"].StringValue, Is.EqualTo("Heat"));
+      Assert.That(ColumnSchema(dataset, "Campaign").Optional, Is.True);
+      Assert.That(ColumnSchema(dataset, "Experiment Number").Optional, Is.True);
+      Assert.That(ColumnSchema(dataset, "Step Name").Optional, Is.True);
+    }
+  }
+
+  [Test]
+  public async Task GenerateAsync_LeavesExecutionInformationBlankWhenNoCampaignIsActive()
+  {
+    var filter = new DeviceStateRequestFilter();
+    var stateGetter = CreateStateGetter(filter, new Dictionary<string, DeviceState[]>
+    {
+      ["Device A"] = [CreateState(DateTime.UnixEpoch.AddSeconds(20))]
+    });
+    var summary = CreateCampaign(
+      "Campaign A",
+      DateTime.UnixEpoch,
+      DateTime.UnixEpoch.AddSeconds(10));
+
+    var row = (await CreateGenerator(stateGetter.Object, summary).GenerateAsync(filter)).Single().Rows.Single();
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(row.Data.Fields.ContainsKey("Campaign"), Is.False);
+      Assert.That(row.Data.Fields.ContainsKey("Experiment Number"), Is.False);
+      Assert.That(row.Data.Fields.ContainsKey("Step Name"), Is.False);
+    }
+  }
+
+  [Test]
+  public async Task GenerateAsync_DuplicatesRowsForConcurrentCampaigns()
+  {
+    var filter = new DeviceStateRequestFilter();
+    var stateGetter = CreateStateGetter(filter, new Dictionary<string, DeviceState[]>
+    {
+      ["Device A"] = [CreateState(DateTime.UnixEpoch.AddSeconds(5))]
+    });
+    var firstCampaign = CreateCampaign(
+      "Campaign A",
+      DateTime.UnixEpoch,
+      DateTime.UnixEpoch.AddSeconds(10));
+    var secondCampaign = CreateCampaign(
+      "Campaign B",
+      DateTime.UnixEpoch.AddSeconds(5),
+      DateTime.UnixEpoch.AddSeconds(15));
+
+    var rows = (await CreateGenerator(stateGetter.Object, firstCampaign, secondCampaign).GenerateAsync(filter)).Single().Rows;
+
+    Assert.That(rows.Select(row => row.Data.Fields["Campaign"].StringValue), Is.EqualTo(["Campaign A", "Campaign B"]));
+  }
+
+  [Test]
+  public async Task GenerateAsync_WithCompletedCampaignFilterOnlyRetrievesMatchingCampaign()
+  {
+    var firstCampaign = CreateCampaign(
+      "Campaign A",
+      DateTime.UnixEpoch,
+      DateTime.UnixEpoch.AddSeconds(10));
+    var secondCampaign = CreateCampaign(
+      "Campaign B",
+      DateTime.UnixEpoch,
+      DateTime.UnixEpoch.AddSeconds(10));
+    var filter = new DeviceStateRequestFilter
+    {
+      CompletedCampaignId = firstCampaign.UniqueId
+    };
+    var stateGetter = CreateStateGetter(filter, new Dictionary<string, DeviceState[]>
+    {
+      ["Device A"] = [CreateState(DateTime.UnixEpoch.AddSeconds(5))]
+    });
+
+    var rows = (await CreateGenerator(stateGetter.Object, firstCampaign, secondCampaign).GenerateAsync(filter)).Single().Rows;
+
+    Assert.That(rows.Select(row => row.Data.Fields["Campaign"].StringValue), Is.EqualTo(["Campaign A"]));
+  }
+
+  [Test]
+  public async Task GenerateAsync_PreservesReservedDeviceFieldsUnderDataPrefix()
+  {
+    var filter = new DeviceStateRequestFilter();
+    var stateGetter = CreateStateGetter(filter, new Dictionary<string, DeviceState[]>
+    {
+      ["Device A"] =
+      [
+        CreateState(
+          DateTime.UnixEpoch,
+          ("Campaign", AresValueHelper.CreateString("device value")),
+          ("Experiment Number", AresValueHelper.CreateInt(42)),
+          ("Step Name", AresValueHelper.CreateString("device step")))
+      ]
+    });
+
+    var dataset = (await CreateGenerator(stateGetter.Object).GenerateAsync(filter)).Single();
+    var row = dataset.Rows.Single();
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(row.Data.Fields["Data.Campaign"].StringValue, Is.EqualTo("device value"));
+      Assert.That(row.Data.Fields["Data.Experiment Number"].IntValue, Is.EqualTo(42));
+      Assert.That(row.Data.Fields["Data.Step Name"].StringValue, Is.EqualTo("device step"));
     }
   }
 
@@ -308,7 +471,7 @@ internal class DeviceStateDatasetGeneratorTests
     using var cancellationTokenSource = new CancellationTokenSource();
     cancellationTokenSource.Cancel();
 
-    var generator = new DeviceStateDatasetGenerator(stateGetter.Object);
+    var generator = CreateGenerator(stateGetter.Object);
 
     Assert.ThrowsAsync<OperationCanceledException>(async () => await generator.GenerateAsync(filter, cancellationTokenSource.Token));
     stateGetter.Verify(getter => getter.GetStates<DeviceState>(It.IsAny<DeviceStateRequestFilter>()), Times.Never);
@@ -332,7 +495,7 @@ internal class DeviceStateDatasetGeneratorTests
         return Task.FromResult<IDictionary<string, DeviceState[]>>(states);
       });
 
-    var generator = new DeviceStateDatasetGenerator(stateGetter.Object);
+    var generator = CreateGenerator(stateGetter.Object);
 
     Assert.ThrowsAsync<OperationCanceledException>(async () => await generator.GenerateAsync(filter, cancellationTokenSource.Token));
   }
@@ -355,7 +518,7 @@ internal class DeviceStateDatasetGeneratorTests
     });
     using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMilliseconds(1));
 
-    var generator = new DeviceStateDatasetGenerator(stateGetter.Object);
+    var generator = CreateGenerator(stateGetter.Object);
 
     Assert.ThrowsAsync<OperationCanceledException>(async () => await generator.GenerateAsync(filter, cancellationTokenSource.Token));
   }
@@ -377,6 +540,87 @@ internal class DeviceStateDatasetGeneratorTests
       .Setup(getter => getter.GetStates<DeviceState>(filter, It.IsAny<CancellationToken>()))
       .ReturnsAsync(states);
     return stateGetter;
+  }
+
+  private static DeviceStateDatasetGenerator CreateGenerator(
+    IDeviceStateGetter stateGetter,
+    params CampaignExecutionSummary[] summaries)
+  {
+    var options = new DbContextOptionsBuilder<CoreDatabaseContext>()
+      .UseInMemoryDatabase(Guid.NewGuid().ToString())
+      .Options;
+    using(var context = new CoreDatabaseContext(options))
+    {
+      context.CampaignExecutionSummaries.AddRange(summaries);
+      context.SaveChanges();
+    }
+
+    var contextFactory = new Mock<IDbContextFactory<CoreDatabaseContext>>();
+    contextFactory
+      .Setup(factory => factory.CreateDbContextAsync(It.IsAny<CancellationToken>()))
+      .ReturnsAsync(() => new CoreDatabaseContext(options));
+    return new DeviceStateDatasetGenerator(stateGetter, contextFactory.Object);
+  }
+
+  private static CampaignExecutionSummary CreateCampaign(
+    string name,
+    DateTime timeStarted,
+    DateTime timeFinished,
+    params ExperimentExecutionSummary[] experiments)
+  {
+    var summary = new CampaignExecutionSummary
+    {
+      UniqueId = Guid.NewGuid().ToString(),
+      CampaignId = Guid.NewGuid().ToString(),
+      CampaignName = name,
+      ExecutionInfo = CreateExecutionInfo(timeStarted, timeFinished)
+    };
+    summary.ExperimentSummaries.AddRange(experiments);
+    return summary;
+  }
+
+  private static ExperimentExecutionSummary CreateExperiment(
+    DateTime timeStarted,
+    DateTime timeFinished,
+    params StepExecutionSummary[] steps)
+  {
+    var experiment = new ExperimentExecutionSummary
+    {
+      UniqueId = Guid.NewGuid().ToString(),
+      ExperimentId = Guid.NewGuid().ToString(),
+      ExecutionInfo = CreateExecutionInfo(timeStarted, timeFinished),
+      ExperimentOverview = new ExperimentOverview
+      {
+        UniqueId = Guid.NewGuid().ToString(),
+        Template = new ExperimentTemplate
+        {
+          UniqueId = Guid.NewGuid().ToString(),
+          Name = "Experiment"
+        }
+      }
+    };
+    experiment.StepSummaries.AddRange(steps);
+    return experiment;
+  }
+
+  private static StepExecutionSummary CreateStep(string stepId, DateTime timeStarted, DateTime timeFinished)
+  {
+    return new StepExecutionSummary
+    {
+      UniqueId = Guid.NewGuid().ToString(),
+      StepId = stepId,
+      ExecutionInfo = CreateExecutionInfo(timeStarted, timeFinished)
+    };
+  }
+
+  private static ExecutionInfo CreateExecutionInfo(DateTime timeStarted, DateTime timeFinished)
+  {
+    return new ExecutionInfo
+    {
+      UniqueId = Guid.NewGuid().ToString(),
+      TimeStarted = Timestamp.FromDateTime(timeStarted),
+      TimeFinished = Timestamp.FromDateTime(timeFinished)
+    };
   }
 
   private static DeviceState CreateState(DateTime timestamp, params (string Name, AresValue Value)[] values)

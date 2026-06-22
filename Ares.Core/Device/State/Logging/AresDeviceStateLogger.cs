@@ -34,34 +34,38 @@ public class AresDeviceStateLogger : IDeviceStateLogger
   public Task Start(DeviceLoggingSettings? settings = null)
   {
     Settings = settings ?? Settings;
+    _lastDeltaValues.Clear();
+    _eligibleDeltas = [];
 
-    _eligibleDeltas = Settings.Deltas
-      .Where(d => d.Value > 0)
-      .ToDictionary();
+    if(Settings.LoggingEnabled)
+    {
+      _eligibleDeltas = Settings.Deltas
+        .Where(d => d.Value > 0)
+        .ToDictionary();
 
-    var stream = _device.StateStream;
-    if(Settings.LoggingType == DeviceLoggingSettings.Types.LoggingType.Interval)
-    {
-      var timer = Observable.Interval(
-        Settings.IntervalMs > 0 ? TimeSpan.FromMilliseconds(Settings.IntervalMs) : TimeSpan.FromMilliseconds(1));
-      _stateWatcher = timer
-        .WithLatestFrom(stream, (_, state) => state)
-        .SelectMany(meme => Observable.FromAsync(() => UpdateState(meme)))
-        .OnErrorResumeNext(Observable.Empty<Unit>())
-        .Subscribe();
-    }
-    else if(Settings.LoggingType == DeviceLoggingSettings.Types.LoggingType.OnChange)
-    {
-      if(Settings.IntervalMs > 0)
+      var stream = _device.StateStream;
+      if(Settings.LoggingType == DeviceLoggingSettings.Types.LoggingType.Interval)
       {
-        stream = stream.Sample(TimeSpan.FromMilliseconds(Settings.IntervalMs));
+        var timer = Observable.Interval(Settings.IntervalMs > 0 ? TimeSpan.FromMilliseconds(Settings.IntervalMs) : TimeSpan.FromMilliseconds(1));
+        
+        _stateWatcher = timer
+          .WithLatestFrom(stream, (_, state) => state)
+          .SelectMany(meme => Observable.FromAsync(() => UpdateState(meme)))
+          .OnErrorResumeNext(Observable.Empty<Unit>())
+          .Subscribe();
       }
 
-      _stateWatcher = stream
-        .Where(state => ShouldEmitByDeltas(state))
-        .SelectMany(meme => Observable.FromAsync(() => UpdateState(meme)))
-        .OnErrorResumeNext(Observable.Empty<Unit>())
-        .Subscribe();
+      else if(Settings.LoggingType == DeviceLoggingSettings.Types.LoggingType.OnChange)
+      {
+        if(Settings.IntervalMs > 0)
+          stream = stream.Sample(TimeSpan.FromMilliseconds(Settings.IntervalMs));
+
+        _stateWatcher = stream
+          .Where(state => ShouldEmitByDeltas(state))
+          .SelectMany(meme => Observable.FromAsync(() => UpdateState(meme)))
+          .OnErrorResumeNext(Observable.Empty<Unit>())
+          .Subscribe();
+      }
     }
 
     return Task.CompletedTask;

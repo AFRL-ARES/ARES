@@ -373,11 +373,20 @@ namespace AresService.Migrations.Sqlite.Migrations
                         .HasColumnType("TEXT")
                         .HasDefaultValueSql("DATETIME('now')");
 
+                    b.Property<string>("Result")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("State")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("StatusMessage")
+                        .HasColumnType("TEXT");
+
                     b.Property<Guid?>("StepExecutionStatusUniqueId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("VariableName")
                         .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
@@ -615,6 +624,9 @@ namespace AresService.Migrations.Sqlite.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("TEXT")
                         .HasDefaultValueSql("DATETIME('now')");
+
+                    b.Property<bool>("LoggingEnabled")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("LoggingType")
                         .HasColumnType("INTEGER");

@@ -141,7 +141,7 @@ public class ExecutionManager : IExecutionManager
     return true;
   }
 
-  public void UpdateReplanRate(int newRate)
+  public void UpdateReplicateRate(int newRate)
   {
     ReplicateRate = newRate;
   }

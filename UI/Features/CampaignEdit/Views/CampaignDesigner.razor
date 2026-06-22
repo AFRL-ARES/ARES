@@ -158,23 +158,38 @@
 
     private async void TitleClicked(MouseEventArgs obj)
     {
-        string newName = ViewModel!.CampaignName;
-        var result = await DialogService.OpenAsync("Campaign Name Edit", ds =>
-            @<div class="d-flex flex-column">
-                <div class="input-group mb-3">
-                    <div class="input-group-prepend">
-                        <span class="input-group-text" id="inputGroup-sizing-default">Campaign Name</span>
-                    </div>
+      string newName = ViewModel!.CampaignName;
+      var result = await DialogService.OpenAsync("Campaign Name Edit", ds =>
+          @<div class="d-flex flex-column">
+              <div class="input-group mb-3">
+                  <div class="input-group-prepend">
+                      <span class="input-group-text" id="inputGroup-sizing-default">Campaign Name</span>
+                  </div>
+                  @if(newName == "New Campaign 1")
+                  {
+                    newName = "";
                     <input @bind="newName" type="text" class="form-control" aria-label="Default" aria-describedby="inputGroup-sizing-default">
-                </div>
-                <div class="d-flex">
-                    <button class="btn btn-primary btn-outline-light" @onclick="() => ds.Close(true)">Save</button>
-                    <button class="btn btn-danger btn-outline-light" @onclick="() => ds.Close(false)">Cancel</button>
-                </div>
-            </div>
-            );
+                  }
 
-        if (result ?? false)
+                  else
+                  {
+                    <input @bind="newName" type="text" class="form-control" aria-label="Default" aria-describedby="inputGroup-sizing-default">
+                  }
+
+              </div>
+              <div class="d-flex">
+                  <button class="btn btn-primary btn-outline-light" @onclick="() => ds.Close(true)">Save</button>
+                  <button class="btn btn-danger btn-outline-light" @onclick="() => ds.Close(false)">Cancel</button>
+              </div>
+          </div>
+          );
+        
+        if(newName == "")
+        {
+          ViewModel!.CampaignName = "New Campaign 1";
+        }
+        
+        else if(result ?? false)
         {
             ViewModel!.CampaignName = newName;
         }
