@@ -24,6 +24,7 @@ public interface IPlanningHelper
     IEnumerable<Analysis> seedAnalyses,
     IEnumerable<ExperimentOverview> seedExperiments,
     int batchSize,
+    PlanStatusCode code,
     CancellationToken cancellationToken);
 
   /// <summary>

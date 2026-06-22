@@ -249,6 +249,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     LastExecutionEligibility = await _automationClient.CheckExecutionEligibility(new Empty(), null);
   }
 
+
   public async Task ExecutionNotesUploaded(Stream fileStream)
   {
     using var reader = new StreamReader(fileStream);
