@@ -60,7 +60,7 @@ public class PlanningHelper : IPlanningHelper
         return true;
       }
 
-      return await RequestNewPlans(planner, grouping, seedExperiments, seedAnalysesArr, statusCode, metadata, planQueue, parameterArray, cancellationToken);
+      return await RequestNewPlans(planner, grouping, seedExperiments, seedAnalysesArr, statusCode, metadata, planQueue, parameterArray, batchSize, cancellationToken);
     });
 
     var results = await Task.WhenAll(planningTasks);
@@ -88,6 +88,7 @@ public class PlanningHelper : IPlanningHelper
     RequestMetadata metadata,
     ConcurrentQueue<Plan> planQueue,
     Parameter[] parameterArray,
+    int batchSize,
     CancellationToken cancellationToken)
   {
     var planTransaction = new PlannerTransaction()
@@ -105,7 +106,7 @@ public class PlanningHelper : IPlanningHelper
       planTransaction.TimeRequestSent = DateTime.UtcNow.ToTimestamp();
 
       //Create the plan request. Store it in the transaction.
-      var planRequest = CreatePlanningRequest(plannableParameters, seedExperiments, seedAnalysesArr, statusCode, metadata);
+      var planRequest = CreatePlanningRequest(plannableParameters, seedExperiments, seedAnalysesArr, statusCode, batchSize, metadata);
       planTransaction.PlanningRequest = planRequest;
 
       var planResponse = await planner.Plan(planRequest, cancellationToken);
@@ -149,7 +150,8 @@ public class PlanningHelper : IPlanningHelper
   private PlanningRequest CreatePlanningRequest(ParameterMetadata[] plannableParameters, 
     IEnumerable<ExperimentOverview> seedExperiments, 
     Analysis[] seedAnalysesArr, 
-    PlanStatusCode statusCode, 
+    PlanStatusCode statusCode,
+    int batchSize,
     RequestMetadata metadata)
   {
     //Create the plan request. Store it in the transaction.
@@ -158,6 +160,7 @@ public class PlanningHelper : IPlanningHelper
     planRequest.AnalysisResults.AddRange(seedAnalysesArr.Select(a => (double)a.Result));
     planRequest.PreviousPlanStatusCode = statusCode;
     planRequest.Metadata = metadata;
+    planRequest.BatchSize = batchSize;
 
     return planRequest;
   }

@@ -381,39 +381,71 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
         if(newestTransaction is null)
           continue;
 
-        OnPlannerTransactionReceived(newestTransaction, transactionList.Count());
+        OnPlannerTransactionReceived(newestTransaction, DetermineTransactionCount(transactionList.SkipLast(1)));
       }
     }
   }
 
   public void OnPlannerTransactionReceived(PlannerTransaction transaction, int currentTurn)
   {
-    foreach(var field in transaction.PlanningResponse.PlannedParameters)
+    if(transaction.PlanningResponse.PlannedParameters.Any())
+      foreach(var field in transaction.PlanningResponse.PlannedParameters)
+        ProcessTransactionParameterData(field, transaction, currentTurn);
+
+    else if(transaction.PlanningResponse.Plans.Any())
     {
-      var metricName = field.ParameterName;
-      var metricData = field.ParameterValue;
-      var matchingParam = transaction.PlanningRequest.PlanningParameters.FirstOrDefault(p => p.ParameterName == field.ParameterName);
-
-      if(TryGetChartableValue(metricData, out double numericValue) && matchingParam is not null)
+      foreach(var plan in transaction.PlanningResponse.Plans)
       {
-        var minBound = matchingParam.MinimumValue;
-        var maxBound = matchingParam.MaximumValue;
-        var normalizedValue = 0.0;
-
-        if(maxBound > minBound)
-          normalizedValue = ((numericValue - minBound) / (maxBound - minBound)) * 100;
-
-        if(!PlannerMetricsMap.ContainsKey(metricName))
-          PlannerMetricsMap[metricName] = new List<ChartMetricPoint>();
-
-        PlannerMetricsMap[metricName].Add(new ChartMetricPoint
-        {
-          ExecutionIndex = currentTurn,
-          PlotValue = normalizedValue,  // Charting Value
-          RawValue = numericValue       // Tooltip Display Value
-        });
+        foreach(var param in plan.PlannedParameters)
+          ProcessTransactionParameterData(param, transaction, currentTurn);
+        
+        currentTurn++;
       }
     }
+  }
+
+  private int DetermineTransactionCount(IEnumerable<PlannerTransaction> transactionList)
+  {
+    var count = 0;
+
+    foreach(var transaction in transactionList)
+    {
+      if(transaction.PlanningResponse.PlannedParameters.Any())
+        count++;
+
+      else
+        count += transaction.PlanningResponse.Plans.Count();
+    }
+
+    return count;
+  }
+
+  private void ProcessTransactionParameterData(PlannedParameter field, PlannerTransaction transaction, int currentTurn)
+  {
+    var metricName = field.ParameterName;
+    var metricData = field.ParameterValue;
+    var matchingParam = transaction.PlanningRequest.PlanningParameters.FirstOrDefault(p => p.ParameterName == field.ParameterName);
+
+    if(TryGetChartableValue(metricData, out double numericValue) && matchingParam is not null)
+    {
+      var minBound = matchingParam.MinimumValue;
+      var maxBound = matchingParam.MaximumValue;
+      var normalizedValue = 0.0;
+
+      if(maxBound > minBound)
+        normalizedValue = ((numericValue - minBound) / (maxBound - minBound)) * 100;
+
+      if(!PlannerMetricsMap.ContainsKey(metricName))
+        PlannerMetricsMap[metricName] = new List<ChartMetricPoint>();
+
+      PlannerMetricsMap[metricName].Add(new ChartMetricPoint
+      {
+        ExecutionIndex = currentTurn,
+        PlotValue = normalizedValue,  // Charting Value
+        RawValue = numericValue       // Tooltip Display Value
+      });
+    }
+
   }
 
   public void OnAnalyzerTransactionReceived(AnalyzerTransaction transaction, int currentTurn)
@@ -544,9 +576,6 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     if(CampaignExecutionState == ExecutionState.AwaitingUser)
       _ = RequestUserConfirmation();
 
-    //if(CampaignActive)
-    //  SelectedExecutionTabIndex = 1;
-
     StateChanged?.Invoke();
   }
 
@@ -635,8 +664,10 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
   public async Task RefreshPlannerTransactionData()
   {
+    PlannerMetricsMap.Clear();
     var plannerTransactions = await _automationClient.GetLatestPlanningTransactions();
 
+    var transactionNumber = 0;
     foreach(var transactionList in plannerTransactions)
     {
       if(transactionList is null)
@@ -644,19 +675,24 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
       foreach(var (index, item) in transactionList.Index())
       {
-        OnPlannerTransactionReceived(item, index);
+        OnPlannerTransactionReceived(item, transactionNumber);
+
+        if(item.PlanningResponse.Plans.Any())
+          transactionNumber += item.PlanningResponse.Plans.Count();
+
+        else
+          transactionNumber++;
       }
     }
   }
 
   public async Task RefreshAnalyzerTransactionData()
   {
+    AnalyzerMetrics.Clear();
     var analyzerTransactions = await _automationClient.GetLatestAnalyzerTransactions();
 
     foreach(var (index, item) in analyzerTransactions.Index())
-    {
       OnAnalyzerTransactionReceived(item, index);
-    }
   }
 
   public async Task RefreshCampaignSetup()
