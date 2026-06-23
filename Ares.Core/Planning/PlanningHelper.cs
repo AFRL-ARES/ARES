@@ -36,7 +36,7 @@ public class PlanningHelper : IPlanningHelper
     IEnumerable<Analysis> seedAnalyses,
     IEnumerable<ExperimentOverview> seedExperiments,
     int batchSize,
-    PlanStatusCode statusCode,
+    List<PlanStatusCode> statusCodes,
     CancellationToken cancellationToken)
   {
     var parameterArray = parameters.ToArray();
@@ -60,7 +60,7 @@ public class PlanningHelper : IPlanningHelper
         return true;
       }
 
-      return await RequestNewPlans(planner, grouping, seedExperiments, seedAnalysesArr, statusCode, metadata, planQueue, parameterArray, batchSize, cancellationToken);
+      return await RequestNewPlans(planner, grouping, seedExperiments, seedAnalysesArr, statusCodes, metadata, planQueue, parameterArray, batchSize, cancellationToken);
     });
 
     var results = await Task.WhenAll(planningTasks);
@@ -84,7 +84,7 @@ public class PlanningHelper : IPlanningHelper
     IGrouping<IPlannerService, (IPlannerService, ParameterMetadata)> grouping,
     IEnumerable<ExperimentOverview> seedExperiments,
     Analysis[] seedAnalysesArr,
-    PlanStatusCode statusCode,
+    List<PlanStatusCode> statusCodes,
     RequestMetadata metadata,
     ConcurrentQueue<Plan> planQueue,
     Parameter[] parameterArray,
@@ -106,7 +106,7 @@ public class PlanningHelper : IPlanningHelper
       planTransaction.TimeRequestSent = DateTime.UtcNow.ToTimestamp();
 
       //Create the plan request. Store it in the transaction.
-      var planRequest = CreatePlanningRequest(plannableParameters, seedExperiments, seedAnalysesArr, statusCode, batchSize, metadata);
+      var planRequest = CreatePlanningRequest(plannableParameters, seedExperiments, seedAnalysesArr, statusCodes, batchSize, metadata);
       planTransaction.PlanningRequest = planRequest;
 
       var planResponse = await planner.Plan(planRequest, cancellationToken);
@@ -150,7 +150,7 @@ public class PlanningHelper : IPlanningHelper
   private PlanningRequest CreatePlanningRequest(ParameterMetadata[] plannableParameters, 
     IEnumerable<ExperimentOverview> seedExperiments, 
     Analysis[] seedAnalysesArr, 
-    PlanStatusCode statusCode,
+    List<PlanStatusCode> statusCodes,
     int batchSize,
     RequestMetadata metadata)
   {
@@ -158,7 +158,7 @@ public class PlanningHelper : IPlanningHelper
     var planRequest = new PlanningRequest();
     planRequest.PlanningParameters.AddRange(plannableParameters.Select(parameter => ConvertToPlanningParameter(parameter, seedExperiments)));
     planRequest.AnalysisResults.AddRange(seedAnalysesArr.Select(a => (double)a.Result));
-    planRequest.PreviousPlanStatusCode = statusCode;
+    planRequest.PreviousPlanStatusCodes.AddRange(statusCodes);
     planRequest.Metadata = metadata;
     planRequest.BatchSize = batchSize;
 

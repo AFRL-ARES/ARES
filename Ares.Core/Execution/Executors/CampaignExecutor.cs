@@ -47,7 +47,7 @@ public class CampaignExecutor : ICampaignExecutor
   private ExperimentTemplate? _currentExperimentTemplate = null;
   private int _experimentCount = 0;
   private TaskCompletionSource<ErrorHandling>? _userDecisionSource;
-  private PlanStatusCode _latestPlanStatusCode = PlanStatusCode.PlanStatusUnspecified;
+  private List<PlanStatusCode> _latestPlanStatusCode = new List<PlanStatusCode>();
 
   internal CampaignExecutor(ICommandComposer<ExperimentTemplate, ExperimentExecutor> experimentComposer,
     IPlanningHelper planningHelper,
@@ -215,6 +215,7 @@ public class CampaignExecutor : ICampaignExecutor
     ExecutionControlToken token, 
     ExperimentExecutionSummary startupSummary)
   {
+    _latestPlanStatusCode = new List<PlanStatusCode>();
     var currentPhase = ExperimentPhase.Initialize;
     var currentExperimentPath = "";
     var failedExperimentRetryCount = 0;
@@ -386,7 +387,7 @@ public class CampaignExecutor : ICampaignExecutor
 
     if(failedCommandSummary is null)
     {
-      _latestPlanStatusCode = PlanStatusCode.PlanAccepted;
+      _latestPlanStatusCode.Add(PlanStatusCode.PlanAccepted);
       return ExperimentPhase.Analyze;
     }
 
@@ -515,10 +516,10 @@ public class CampaignExecutor : ICampaignExecutor
   private void UpdatePlanStatus(CommandStatusCode failCode)
   {
     if(failCode == CommandStatusCode.OutOfRange || failCode == CommandStatusCode.ParametersUnachievable)
-      _latestPlanStatusCode = PlanStatusCode.PlanUnachievable;
+      _latestPlanStatusCode.Add(PlanStatusCode.PlanUnachievable);
 
     else
-      _latestPlanStatusCode = PlanStatusCode.PlanFailed;
+      _latestPlanStatusCode.Add(PlanStatusCode.PlanFailed);
   }
 
   private async Task<bool> PlanExperiment(List<Analysis> analyses, ExperimentTemplate currentExperimentTemplate, List<ExperimentExecutionSummary> experimentSummaries, ExecutionControlToken token)
@@ -757,7 +758,7 @@ public class CampaignExecutor : ICampaignExecutor
           analyses, 
           previousExperiments,
           BatchPlanningSize,
-          PlanStatusCode.PlanAccepted,
+          _latestPlanStatusCode,
           cancellationToken);
 
         if(!resolveSuccess)
