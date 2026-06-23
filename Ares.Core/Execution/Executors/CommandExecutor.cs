@@ -77,7 +77,7 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
       var internalTask = InternalExecute(token.CancellationToken);
       var timerStartTime = DateTime.UtcNow;
 
-      while(!internalTask.IsCompleted)
+      while(!internalTask.IsCompleted && !token.IsCancelled)
       {
         var completedTask = await Task.WhenAny(internalTask, Task.Delay(1000, token.CancellationToken));
 
