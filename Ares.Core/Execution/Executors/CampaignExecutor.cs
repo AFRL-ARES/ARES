@@ -117,7 +117,7 @@ public class CampaignExecutor : ICampaignExecutor
 
     await _planningHelper.ReseedManualPlanner();
 
-    var campaignStartTime = DateTime.UtcNow;
+    CampaignStartTime = DateTime.UtcNow;
     var experimentSummaries = new List<ExperimentExecutionSummary>();
     ExperimentExecutionSummary startupSummary = new();
     ExperimentExecutionSummary closeoutSummary = new();
@@ -125,8 +125,7 @@ public class CampaignExecutor : ICampaignExecutor
     
     try
     {
-      var campaignPath = await InitializeCampaign(campaignStartTime);
-      
+      var campaignPath = await InitializeCampaign(CampaignStartTime);
       var analyses = new List<Analysis>();
       
       ResetStatus(token);
@@ -162,7 +161,7 @@ public class CampaignExecutor : ICampaignExecutor
       await _stateLoggerManager.DisableOverrideAsync();
     }
     
-    return CreateCampaignSummary(campaignStartTime, experimentSummaries, startupSummary, closeoutSummary);
+    return CreateCampaignSummary(CampaignStartTime, experimentSummaries, startupSummary, closeoutSummary);
   }
 
   private async Task<string> InitializeCampaign(DateTime startTime)
@@ -517,7 +516,10 @@ public class CampaignExecutor : ICampaignExecutor
     }
   }
 
-  private async Task<bool> PlanExperiment(List<Analysis> analyses, ExperimentTemplate currentExperimentTemplate, List<ExperimentExecutionSummary> experimentSummaries, ExecutionControlToken token)
+  private async Task<bool> PlanExperiment(List<Analysis> analyses, 
+    ExperimentTemplate currentExperimentTemplate, 
+    List<ExperimentExecutionSummary> experimentSummaries, 
+    ExecutionControlToken token)
   {
     Status.PlannerState = PlannerState.PlanningInProgress;
     ReportCampaignStatus();
@@ -529,7 +531,8 @@ public class CampaignExecutor : ICampaignExecutor
       CampaignName = Template.Name,
       ExperimentId = currentExperimentTemplate.UniqueId ?? "",
       SystemName = "ARES OS",
-      ExperimentStartTime = DateTime.UtcNow.ToUniversalTime().ToTimestamp()
+      ExperimentStartTime = DateTime.UtcNow.ToUniversalTime().ToTimestamp(),
+      CampaignStartTime = CampaignStartTime.ToUniversalTime().ToTimestamp()
     };
 
     var resolveSuccess = await _planningHelper.TryResolveParameters(Template.PlannerAllocations,
@@ -548,7 +551,11 @@ public class CampaignExecutor : ICampaignExecutor
     return resolveSuccess;
   }
 
-  private async Task<(bool Success, bool Continue)> AnalyzeResult(ExperimentExecutor experimentExecutor, ExperimentExecutionSummary experimentSummary, ExperimentExecutionSummary startupSummary, List<Analysis> analyses, ExecutionControlToken token)
+  private async Task<(bool Success, bool Continue)> AnalyzeResult(ExperimentExecutor experimentExecutor, 
+    ExperimentExecutionSummary experimentSummary, 
+    ExperimentExecutionSummary startupSummary, 
+    List<Analysis> analyses, 
+    ExecutionControlToken token)
   {
     var metadata = new RequestMetadata 
     { 
@@ -556,7 +563,8 @@ public class CampaignExecutor : ICampaignExecutor
       CampaignName = Template.Name, 
       ExperimentId = experimentExecutor.Template.UniqueId, 
       SystemName = "ARES OS",
-      ExperimentStartTime = experimentSummary.ExecutionInfo.TimeStarted
+      ExperimentStartTime = experimentSummary.ExecutionInfo.TimeStarted,
+      CampaignStartTime = CampaignStartTime.ToUniversalTime().ToTimestamp()
     };
 
     Status.AnalysisState = AnalysisState.AnalysisInProgress;
@@ -717,7 +725,10 @@ public class CampaignExecutor : ICampaignExecutor
     .Any(step => step.CommandExecutionStatuses
     .Any(cmd => cmd.State == ExecutionState.AwaitingUser));
 
-  private async Task<ExperimentExecutorResult> GenerateExperimentExecutor(ExperimentTemplate template, IEnumerable<Analysis> analyses, IEnumerable<ExperimentOverview> previousExperiments, CancellationToken cancellationToken)
+  private async Task<ExperimentExecutorResult> GenerateExperimentExecutor(ExperimentTemplate template, 
+    IEnumerable<Analysis> analyses, 
+    IEnumerable<ExperimentOverview> previousExperiments, 
+    CancellationToken cancellationToken)
   {
     var result = new ExperimentExecutorResult();
     var experimentTemplate = template.CloneWithNewIds();
@@ -738,7 +749,8 @@ public class CampaignExecutor : ICampaignExecutor
           CampaignName = Template.Name, 
           ExperimentId = experimentTemplate.UniqueId, 
           SystemName = "ARES OS",
-          ExperimentStartTime = DateTime.UtcNow.ToUniversalTime().ToTimestamp()
+          ExperimentStartTime = DateTime.UtcNow.ToUniversalTime().ToTimestamp(),
+          CampaignStartTime = CampaignStartTime.ToUniversalTime().ToTimestamp()
         };
 
         var resolveSuccess = await _planningHelper.TryResolveParameters(Template.PlannerAllocations, 
@@ -833,6 +845,7 @@ public class CampaignExecutor : ICampaignExecutor
   public List<AresCampaignTag> CampaignTags { get; set; } = [];
   public IObservable<CampaignExecutionStatus> ExperimentStatusObservable { get; }
   public CampaignExecutionStatus Status { get; private set; }
+  public DateTime CampaignStartTime { get; set; } = DateTime.MinValue;
 }
 
 
