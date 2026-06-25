@@ -1,0 +1,643 @@
+@using Ares.Datamodel
+@using Ares.Datamodel.Extensions
+@using Google.Protobuf
+
+<section class="@RootClass">
+  <div class="ares-schema-designer__header">
+    <button class="ares-schema-designer__collapse-button"
+            type="button"
+            disabled="@(!Collapsible)"
+            @onclick="ToggleCollapsed"
+            title="@CollapseTitle">
+      <RadzenIcon Icon="@CollapseIcon" />
+    </button>
+    <div class="ares-schema-designer__heading">
+      <h4 class="ares-schema-designer__title">@DisplayTitle</h4>
+      <span class="ares-schema-designer__summary">@SchemaSummary</span>
+    </div>
+  </div>
+
+  @if(!IsCollapsed)
+  {
+    <div class="ares-schema-designer__body">
+      @if(IsMaxDepthExceeded)
+      {
+        <div class="ares-schema-designer__notice">
+          Maximum schema nesting depth reached.
+        </div>
+      }
+      else
+      {
+        <div class="ares-schema-designer__grid">
+          <label class="ares-schema-designer__field">
+            <span>Type</span>
+            <select value="@_schema.Type" @onchange="OnTypeChanged">
+              @foreach(var type in DataTypeOptions)
+              {
+                <option value="@type">@GetDataTypeLabel(type)</option>
+              }
+            </select>
+          </label>
+
+          <label class="ares-schema-designer__toggle-field">
+            <input type="checkbox" checked="@_schema.Optional" @onchange="OnOptionalChanged" />
+            <span>Optional</span>
+          </label>
+        </div>
+
+        <label class="ares-schema-designer__field">
+          <span>Description</span>
+          <textarea rows="3" value="@_schema.Description" @onchange="OnDescriptionChanged"></textarea>
+        </label>
+
+        @if(IsNumericType(_schema.Type))
+        {
+          <div class="ares-schema-designer__section">
+            <h5>Numeric Bounds</h5>
+            <div class="ares-schema-designer__grid">
+              <label class="ares-schema-designer__toggle-field">
+                <input type="checkbox" checked="@_schema.HasMinNumberValue" @onchange="OnHasMinNumberChanged" />
+                <span>Minimum</span>
+              </label>
+              <input class="ares-schema-designer__number-input"
+                     type="number"
+                     value="@(_schema.HasMinNumberValue ? _schema.MinNumberValue.ToString() : string.Empty)"
+                     disabled="@(!_schema.HasMinNumberValue)"
+                     @onchange="OnMinNumberChanged" />
+
+              <label class="ares-schema-designer__toggle-field">
+                <input type="checkbox" checked="@_schema.HasMaxNumberValue" @onchange="OnHasMaxNumberChanged" />
+                <span>Maximum</span>
+              </label>
+              <input class="ares-schema-designer__number-input"
+                     type="number"
+                     value="@(_schema.HasMaxNumberValue ? _schema.MaxNumberValue.ToString() : string.Empty)"
+                     disabled="@(!_schema.HasMaxNumberValue)"
+                     @onchange="OnMaxNumberChanged" />
+            </div>
+          </div>
+        }
+
+        @if(_schema.Type == AresDataType.Quantity)
+        {
+          <div class="ares-schema-designer__section">
+            <h5>Quantity</h5>
+            <div class="ares-schema-designer__grid">
+              <label class="ares-schema-designer__field">
+                <span>Quantity Type</span>
+                <select value="@QuantitySchema.QuantityType" @onchange="OnQuantityTypeChanged">
+                  @foreach(var type in QuantityTypeOptions)
+                  {
+                    <option value="@type">@GetQuantityTypeLabel(type)</option>
+                  }
+                </select>
+              </label>
+
+              <label class="ares-schema-designer__field">
+                <span>Bounds Unit</span>
+                <input value="@QuantitySchema.BoundsUnit" @onchange="OnQuantityBoundsUnitChanged" />
+              </label>
+
+              <label class="ares-schema-designer__toggle-field">
+                <input type="checkbox" checked="@QuantitySchema.HasMinScalarValue" @onchange="OnHasMinScalarChanged" />
+                <span>Minimum Scalar</span>
+              </label>
+              <input class="ares-schema-designer__number-input"
+                     type="number"
+                     value="@(QuantitySchema.HasMinScalarValue ? QuantitySchema.MinScalarValue.ToString() : string.Empty)"
+                     disabled="@(!QuantitySchema.HasMinScalarValue)"
+                     @onchange="OnMinScalarChanged" />
+
+              <label class="ares-schema-designer__toggle-field">
+                <input type="checkbox" checked="@QuantitySchema.HasMaxScalarValue" @onchange="OnHasMaxScalarChanged" />
+                <span>Maximum Scalar</span>
+              </label>
+              <input class="ares-schema-designer__number-input"
+                     type="number"
+                     value="@(QuantitySchema.HasMaxScalarValue ? QuantitySchema.MaxScalarValue.ToString() : string.Empty)"
+                     disabled="@(!QuantitySchema.HasMaxScalarValue)"
+                     @onchange="OnMaxScalarChanged" />
+            </div>
+          </div>
+        }
+
+        @if(SupportsStringChoices(_schema.Type))
+        {
+          <div class="ares-schema-designer__section">
+            <div class="ares-schema-designer__section-header">
+              <h5>String Choices</h5>
+              <button class="ares-schema-designer__icon-button" type="button" title="Add string choice" @onclick="AddStringChoice">
+                <RadzenIcon Icon="add" />
+              </button>
+            </div>
+            @for(var i = 0; i < StringChoices.Strings.Count; i++)
+            {
+              var index = i;
+              <div class="ares-schema-designer__list-row">
+                <input value="@StringChoices.Strings[index]" @onchange="args => OnStringChoiceChanged(index, args)" />
+                <button class="ares-schema-designer__icon-button ares-schema-designer__icon-button--danger"
+                        type="button"
+                        title="Remove string choice"
+                        @onclick="() => RemoveStringChoice(index)">
+                  <RadzenIcon Icon="delete" />
+                </button>
+              </div>
+            }
+          </div>
+        }
+
+        @if(SupportsNumberChoices(_schema.Type))
+        {
+          <div class="ares-schema-designer__section">
+            <div class="ares-schema-designer__section-header">
+              <h5>Number Choices</h5>
+              <button class="ares-schema-designer__icon-button" type="button" title="Add number choice" @onclick="AddNumberChoice">
+                <RadzenIcon Icon="add" />
+              </button>
+            </div>
+            @for(var i = 0; i < NumberChoices.Numbers.Count; i++)
+            {
+              var index = i;
+              <div class="ares-schema-designer__list-row">
+                <input type="number" value="@NumberChoices.Numbers[index]" @onchange="args => OnNumberChoiceChanged(index, args)" />
+                <button class="ares-schema-designer__icon-button ares-schema-designer__icon-button--danger"
+                        type="button"
+                        title="Remove number choice"
+                        @onclick="() => RemoveNumberChoice(index)">
+                  <RadzenIcon Icon="delete" />
+                </button>
+              </div>
+            }
+          </div>
+        }
+
+        @if(_schema.Type == AresDataType.Struct)
+        {
+          <div class="ares-schema-designer__section">
+            <div class="ares-schema-designer__section-header">
+              <h5>Struct Fields</h5>
+              <button class="ares-schema-designer__icon-button" type="button" title="Add field" @onclick="AddStructField">
+                <RadzenIcon Icon="add" />
+              </button>
+            </div>
+            @foreach(var field in StructFields)
+            {
+              <div class="ares-schema-designer__struct-field">
+                <div class="ares-schema-designer__list-row">
+                  <input value="@field.Name" @onchange="args => RenameStructField(field.Name, args)" />
+                  <button class="ares-schema-designer__icon-button ares-schema-designer__icon-button--danger"
+                          type="button"
+                          title="Remove field"
+                          @onclick="() => RemoveStructField(field.Name)">
+                    <RadzenIcon Icon="delete" />
+                  </button>
+                </div>
+                <AresValueSchemaDesigner Schema="@field.Schema"
+                                         SchemaChanged="schema => OnStructFieldSchemaChanged(field.Name, schema)"
+                                         Title="@field.Name"
+                                         Collapsible="true"
+                                         MaxDepth="@MaxDepth"
+                                         Depth="@(Depth + 1)" />
+              </div>
+            }
+          </div>
+        }
+
+        @if(_schema.Type == AresDataType.List)
+        {
+          <div class="ares-schema-designer__section">
+            <h5>List Element Schema</h5>
+            <AresValueSchemaDesigner Schema="@ListElementSchema"
+                                     SchemaChanged="OnListElementSchemaChanged"
+                                     Title="Element"
+                                     Collapsible="true"
+                                     MaxDepth="@MaxDepth"
+                                     Depth="@(Depth + 1)" />
+          </div>
+        }
+
+        <div class="ares-schema-designer__section">
+          <label class="ares-schema-designer__toggle-field">
+            <input type="checkbox" checked="@HasDefaultValue" @onchange="OnHasDefaultValueChanged" />
+            <span>Default Value</span>
+          </label>
+
+          @if(HasDefaultValue)
+          {
+            @if(UseValueDesignerForDefault)
+            {
+              <AresValueDesigner Schema="@_schema"
+                                 Value="@_schema.DefaultValue"
+                                 Unit="@QuantitySchema.BoundsUnit"
+                                 Name="Default"
+                                 ValueEditCallback="OnDefaultValueChanged" />
+            }
+            else
+            {
+              <label class="ares-schema-designer__field">
+                <span>Default Value JSON</span>
+                <textarea rows="6" value="@_defaultJson" @onchange="OnDefaultJsonChanged"></textarea>
+              </label>
+              @if(!string.IsNullOrWhiteSpace(_defaultJsonError))
+              {
+                <div class="ares-schema-designer__error">@_defaultJsonError</div>
+              }
+            }
+          }
+        </div>
+      }
+    </div>
+  }
+</section>
+
+@code {
+  [Parameter]
+  public AresValueSchema? Schema { get; set; }
+
+  [Parameter]
+  public EventCallback<AresValueSchema> SchemaChanged { get; set; }
+
+  [Parameter]
+  public string? Title { get; set; }
+
+  [Parameter]
+  public bool Collapsible { get; set; }
+
+  [Parameter]
+  public int MaxDepth { get; set; } = 6;
+
+  [Parameter]
+  public int Depth { get; set; }
+
+  private AresValueSchema _schema = new() { Type = AresDataType.String };
+  private bool _collapsed;
+  private string _defaultJson = string.Empty;
+  private string? _defaultJsonError;
+
+  private static readonly AresDataType[] DataTypeOptions = Enum.GetValues<AresDataType>()
+    .Where(type => type != AresDataType.UnspecifiedType)
+    .ToArray();
+
+  private static readonly QuantityType[] QuantityTypeOptions = Enum.GetValues<QuantityType>();
+
+  private string RootClass => $"ares-schema-designer{(Depth > 0 ? " ares-schema-designer--nested" : string.Empty)}";
+  private string DisplayTitle => string.IsNullOrWhiteSpace(Title) ? "Schema" : Title;
+  private string CollapseIcon => !Collapsible ? "unfold_more" : _collapsed ? "chevron_right" : "expand_more";
+  private string CollapseTitle => !Collapsible ? "Schema details" : _collapsed ? "Expand schema" : "Collapse schema";
+  private bool IsCollapsed => Collapsible && _collapsed;
+  private bool IsMaxDepthExceeded => Depth > MaxDepth;
+  private bool HasDefaultValue => _schema.DefaultValue is not null;
+  private string SchemaSummary => $"{GetDataTypeLabel(_schema.Type)}{(_schema.Optional ? ", optional" : string.Empty)}";
+
+  private QuantitySchema QuantitySchema
+  {
+    get
+    {
+      _schema.QuantitySchema ??= new QuantitySchema();
+      return _schema.QuantitySchema;
+    }
+  }
+
+  private StringArray StringChoices
+  {
+    get
+    {
+      if(_schema.AvailableChoicesCase != AresValueSchema.AvailableChoicesOneofCase.StringChoices)
+        _schema.StringChoices = new StringArray();
+      return _schema.StringChoices;
+    }
+  }
+
+  private NumberArray NumberChoices
+  {
+    get
+    {
+      if(_schema.AvailableChoicesCase != AresValueSchema.AvailableChoicesOneofCase.NumberChoices)
+        _schema.NumberChoices = new NumberArray();
+      return _schema.NumberChoices;
+    }
+  }
+
+  private AresStructSchema StructSchema
+  {
+    get
+    {
+      _schema.StructSchema ??= new AresStructSchema();
+      return _schema.StructSchema;
+    }
+  }
+
+  private AresValueSchema ListElementSchema
+  {
+    get
+    {
+      _schema.ListElementSchema ??= new AresValueSchema { Type = AresDataType.String };
+      return _schema.ListElementSchema;
+    }
+  }
+
+  private IReadOnlyList<StructField> StructFields => StructSchema.Fields
+    .OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase)
+    .Select(entry => new StructField(entry.Key, entry.Value))
+    .ToArray();
+
+  private bool UseValueDesignerForDefault => _schema.Type is
+    AresDataType.Boolean or
+    AresDataType.String or
+    AresDataType.Number or
+    AresDataType.Quantity or
+    AresDataType.StringArray or
+    AresDataType.NumberArray;
+
+  protected override void OnParametersSet()
+  {
+    _schema = Schema?.Clone() ?? new AresValueSchema { Type = AresDataType.String };
+    EnsureTypeState(_schema.Type, clearExisting: false);
+    RefreshDefaultJson();
+  }
+
+  private void ToggleCollapsed()
+  {
+    if(Collapsible)
+      _collapsed = !_collapsed;
+  }
+
+  private async Task EmitChanged()
+  {
+    RefreshDefaultJson();
+    await SchemaChanged.InvokeAsync(_schema.Clone());
+  }
+
+  private async Task OnTypeChanged(ChangeEventArgs args)
+  {
+    if(Enum.TryParse<AresDataType>(args.Value?.ToString(), out var type))
+    {
+      _schema.Type = type;
+      EnsureTypeState(type, clearExisting: true);
+      await EmitChanged();
+    }
+  }
+
+  private async Task OnOptionalChanged(ChangeEventArgs args)
+  {
+    _schema.Optional = args.Value is bool value && value;
+    await EmitChanged();
+  }
+
+  private async Task OnDescriptionChanged(ChangeEventArgs args)
+  {
+    _schema.Description = args.Value?.ToString() ?? string.Empty;
+    await EmitChanged();
+  }
+
+  private async Task OnHasMinNumberChanged(ChangeEventArgs args)
+  {
+    if(args.Value is bool value && value)
+      _schema.MinNumberValue = _schema.HasMinNumberValue ? _schema.MinNumberValue : 0;
+    else
+      _schema.ClearMinNumberValue();
+    await EmitChanged();
+  }
+
+  private async Task OnHasMaxNumberChanged(ChangeEventArgs args)
+  {
+    if(args.Value is bool value && value)
+      _schema.MaxNumberValue = _schema.HasMaxNumberValue ? _schema.MaxNumberValue : 0;
+    else
+      _schema.ClearMaxNumberValue();
+    await EmitChanged();
+  }
+
+  private async Task OnMinNumberChanged(ChangeEventArgs args)
+  {
+    if(double.TryParse(args.Value?.ToString(), out var value))
+      _schema.MinNumberValue = value;
+    await EmitChanged();
+  }
+
+  private async Task OnMaxNumberChanged(ChangeEventArgs args)
+  {
+    if(double.TryParse(args.Value?.ToString(), out var value))
+      _schema.MaxNumberValue = value;
+    await EmitChanged();
+  }
+
+  private async Task OnQuantityTypeChanged(ChangeEventArgs args)
+  {
+    if(Enum.TryParse<QuantityType>(args.Value?.ToString(), out var type))
+      QuantitySchema.QuantityType = type;
+    await EmitChanged();
+  }
+
+  private async Task OnQuantityBoundsUnitChanged(ChangeEventArgs args)
+  {
+    QuantitySchema.BoundsUnit = args.Value?.ToString() ?? string.Empty;
+    await EmitChanged();
+  }
+
+  private async Task OnHasMinScalarChanged(ChangeEventArgs args)
+  {
+    if(args.Value is bool value && value)
+      QuantitySchema.MinScalarValue = QuantitySchema.HasMinScalarValue ? QuantitySchema.MinScalarValue : 0;
+    else
+      QuantitySchema.ClearMinScalarValue();
+    await EmitChanged();
+  }
+
+  private async Task OnHasMaxScalarChanged(ChangeEventArgs args)
+  {
+    if(args.Value is bool value && value)
+      QuantitySchema.MaxScalarValue = QuantitySchema.HasMaxScalarValue ? QuantitySchema.MaxScalarValue : 0;
+    else
+      QuantitySchema.ClearMaxScalarValue();
+    await EmitChanged();
+  }
+
+  private async Task OnMinScalarChanged(ChangeEventArgs args)
+  {
+    if(double.TryParse(args.Value?.ToString(), out var value))
+      QuantitySchema.MinScalarValue = value;
+    await EmitChanged();
+  }
+
+  private async Task OnMaxScalarChanged(ChangeEventArgs args)
+  {
+    if(double.TryParse(args.Value?.ToString(), out var value))
+      QuantitySchema.MaxScalarValue = value;
+    await EmitChanged();
+  }
+
+  private async Task AddStringChoice()
+  {
+    StringChoices.Strings.Add(string.Empty);
+    await EmitChanged();
+  }
+
+  private async Task OnStringChoiceChanged(int index, ChangeEventArgs args)
+  {
+    if(index >= 0 && index < StringChoices.Strings.Count)
+      StringChoices.Strings[index] = args.Value?.ToString() ?? string.Empty;
+    await EmitChanged();
+  }
+
+  private async Task RemoveStringChoice(int index)
+  {
+    if(index >= 0 && index < StringChoices.Strings.Count)
+      StringChoices.Strings.RemoveAt(index);
+    await EmitChanged();
+  }
+
+  private async Task AddNumberChoice()
+  {
+    NumberChoices.Numbers.Add(0);
+    await EmitChanged();
+  }
+
+  private async Task OnNumberChoiceChanged(int index, ChangeEventArgs args)
+  {
+    if(index >= 0 && index < NumberChoices.Numbers.Count && double.TryParse(args.Value?.ToString(), out var value))
+      NumberChoices.Numbers[index] = value;
+    await EmitChanged();
+  }
+
+  private async Task RemoveNumberChoice(int index)
+  {
+    if(index >= 0 && index < NumberChoices.Numbers.Count)
+      NumberChoices.Numbers.RemoveAt(index);
+    await EmitChanged();
+  }
+
+  private async Task AddStructField()
+  {
+    var name = GetNextFieldName();
+    StructSchema.Fields[name] = new AresValueSchema { Type = AresDataType.String };
+    await EmitChanged();
+  }
+
+  private async Task RenameStructField(string oldName, ChangeEventArgs args)
+  {
+    var newName = args.Value?.ToString()?.Trim() ?? string.Empty;
+    if(string.IsNullOrWhiteSpace(newName) || newName == oldName || StructSchema.Fields.ContainsKey(newName))
+      return;
+
+    var existing = StructSchema.Fields[oldName];
+    StructSchema.Fields.Remove(oldName);
+    StructSchema.Fields[newName] = existing;
+    await EmitChanged();
+  }
+
+  private async Task RemoveStructField(string name)
+  {
+    StructSchema.Fields.Remove(name);
+    await EmitChanged();
+  }
+
+  private async Task OnStructFieldSchemaChanged(string name, AresValueSchema schema)
+  {
+    if(StructSchema.Fields.ContainsKey(name))
+      StructSchema.Fields[name] = schema.Clone();
+    await EmitChanged();
+  }
+
+  private async Task OnListElementSchemaChanged(AresValueSchema schema)
+  {
+    _schema.ListElementSchema = schema.Clone();
+    await EmitChanged();
+  }
+
+  private async Task OnHasDefaultValueChanged(ChangeEventArgs args)
+  {
+    if(args.Value is bool value && value)
+      _schema.DefaultValue = AresValueHelper.CreateDefault(_schema.Type);
+    else
+      _schema.DefaultValue = null;
+    await EmitChanged();
+  }
+
+  private async Task OnDefaultValueChanged(AresValue value)
+  {
+    _schema.DefaultValue = value.Clone();
+    await EmitChanged();
+  }
+
+  private async Task OnDefaultJsonChanged(ChangeEventArgs args)
+  {
+    _defaultJson = args.Value?.ToString() ?? string.Empty;
+    try
+    {
+      _schema.DefaultValue = JsonParser.Default.Parse<AresValue>(_defaultJson);
+      _defaultJsonError = null;
+      await EmitChanged();
+    }
+    catch(Exception ex)
+    {
+      _defaultJsonError = ex.Message;
+    }
+  }
+
+  private void EnsureTypeState(AresDataType type, bool clearExisting)
+  {
+    if(clearExisting)
+    {
+      _schema.QuantitySchema = null;
+      _schema.StructSchema = null;
+      _schema.ListElementSchema = null;
+      _schema.DefaultValue = null;
+      _schema.ClearAvailableChoices();
+      _schema.ClearMinNumberValue();
+      _schema.ClearMaxNumberValue();
+    }
+
+    if(type == AresDataType.Quantity)
+      _schema.QuantitySchema ??= new QuantitySchema();
+    else if(type == AresDataType.Struct)
+      _schema.StructSchema ??= new AresStructSchema();
+    else if(type == AresDataType.List)
+      _schema.ListElementSchema ??= new AresValueSchema { Type = AresDataType.String };
+
+    if(!SupportsStringChoices(type) && _schema.AvailableChoicesCase == AresValueSchema.AvailableChoicesOneofCase.StringChoices)
+      _schema.ClearAvailableChoices();
+    if(!SupportsNumberChoices(type) && _schema.AvailableChoicesCase == AresValueSchema.AvailableChoicesOneofCase.NumberChoices)
+      _schema.ClearAvailableChoices();
+    if(!IsNumericType(type))
+    {
+      _schema.ClearMinNumberValue();
+      _schema.ClearMaxNumberValue();
+    }
+  }
+
+  private void RefreshDefaultJson()
+  {
+    _defaultJson = _schema.DefaultValue is null ? string.Empty : JsonFormatter.Default.Format(_schema.DefaultValue);
+    _defaultJsonError = null;
+  }
+
+  private string GetNextFieldName()
+  {
+    var index = StructSchema.Fields.Count + 1;
+    var name = $"field_{index}";
+    while(StructSchema.Fields.ContainsKey(name))
+    {
+      index++;
+      name = $"field_{index}";
+    }
+    return name;
+  }
+
+  private static bool SupportsStringChoices(AresDataType type)
+    => type is AresDataType.String or AresDataType.StringArray;
+
+  private static bool SupportsNumberChoices(AresDataType type)
+    => type is AresDataType.Number or AresDataType.NumberArray or AresDataType.Float or AresDataType.FloatArray or AresDataType.Int or AresDataType.IntArray;
+
+  private static bool IsNumericType(AresDataType type)
+    => type is AresDataType.Number or AresDataType.NumberArray or AresDataType.Float or AresDataType.FloatArray or AresDataType.Int or AresDataType.IntArray;
+
+  private static string GetDataTypeLabel(AresDataType type)
+    => type.ToString();
+
+  private static string GetQuantityTypeLabel(QuantityType type)
+    => type.ToString();
+
+  private record StructField(string Name, AresValueSchema Schema);
+}

@@ -1,5 +1,6 @@
 @page "/automation/custom-command-builder"
 @page "/automation/custom-command-builder/{CommandId:guid}"
+@using Ares.Datamodel
 
 <PageTitle>Custom Command Designer</PageTitle>
 
@@ -20,82 +21,89 @@
     </div>
   </div>
 
-  <div class="custom-command-builder__summary-grid">
-    <div class="custom-command-builder__panel">
-      <fieldset class="custom-command-builder__fieldset">
-        <legend class="custom-command-builder__legend">Command Metadata</legend>
+  <fieldset class="custom-command-builder__fieldset">
+    <legend class="custom-command-builder__legend">Command Metadata</legend>
 
-        <div class="custom-command-builder__field">
-          <label class="custom-command-builder__label" for="custom-command-name">Name</label>
-          <RadzenTextBox id="custom-command-name"
-                         @bind-Value="_commandName"
-                         Placeholder="e.g., Measure Temperature"
-                         Style="width: 100%;" />
-        </div>
+    <div class="custom-command-builder__metadata-grid">
+      <div class="custom-command-builder__field">
+        <label class="custom-command-builder__label" for="custom-command-name">Name</label>
+        <RadzenTextBox id="custom-command-name"
+                       @bind-Value="_commandName"
+                       Placeholder="e.g., Measure Temperature"
+                       Style="width: 100%;" />
+      </div>
 
-        <div class="custom-command-builder__field">
-          <label class="custom-command-builder__label" for="custom-command-description">Description</label>
-          <RadzenTextArea id="custom-command-description"
-                          @bind-Value="_commandDescription"
-                          Rows="5"
-                          Placeholder="Describe what this command does."
-                          Style="width: 100%;" />
-        </div>
-      </fieldset>
+      <div class="custom-command-builder__field">
+        <label class="custom-command-builder__label" for="custom-command-description">Description</label>
+        <RadzenTextArea id="custom-command-description"
+                        @bind-Value="_commandDescription"
+                        Rows="4"
+                        Placeholder="Describe what this command does."
+                        Style="width: 100%;" />
+      </div>
     </div>
+  </fieldset>
 
-    <div class="custom-command-builder__panel">
-      <fieldset class="custom-command-builder__fieldset">
-        <legend class="custom-command-builder__legend">Input Parameters</legend>
+  <div class="custom-command-builder__schema-grid">
+    <fieldset class="custom-command-builder__fieldset custom-command-builder__parameters-panel">
+      <legend class="custom-command-builder__legend">Input Parameters</legend>
 
-        <div class="custom-command-builder__table-wrapper">
-          <table class="custom-command-builder__parameter-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Optional</th>
-                <th>Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              @foreach(var parameter in _inputParameters)
-              {
-                <tr>
-                  <td>@parameter.Name</td>
-                  <td>@parameter.Type</td>
-                  <td>@(parameter.Optional ? "Yes" : "No")</td>
-                  <td>@parameter.Description</td>
-                </tr>
-              }
-            </tbody>
-          </table>
+      <div class="custom-command-builder__section-header">
+        <span>@_inputParameters.Count parameter(s)</span>
+        <button class="custom-command-builder__icon-button" type="button" title="Add parameter" @onclick="AddParameter">
+          <RadzenIcon Icon="add" />
+        </button>
+      </div>
+
+      <div class="custom-command-builder__parameter-list">
+        @foreach(var parameter in _inputParameters)
+        {
+          <div class="@GetParameterRowClass(parameter)">
+            <button class="custom-command-builder__parameter-select"
+                    type="button"
+                    title="@($"Edit {parameter.Name}")"
+                    @onclick="() => SelectParameter(parameter)">
+              <span class="custom-command-builder__parameter-name">@parameter.Name</span>
+              <span class="custom-command-builder__parameter-type">@parameter.Schema.Type</span>
+            </button>
+
+            <input class="custom-command-builder__parameter-name-input"
+                   value="@parameter.Name"
+                   aria-label="@($"Parameter name for {parameter.Name}")"
+                   @onchange="args => OnParameterNameChanged(parameter, args)" />
+
+            <button class="custom-command-builder__icon-button custom-command-builder__icon-button--danger"
+                    type="button"
+                    title="@($"Remove {parameter.Name}")"
+                    @onclick="() => RemoveParameter(parameter)">
+              <RadzenIcon Icon="delete" />
+            </button>
+          </div>
+        }
+      </div>
+
+      @if(SelectedParameter is not null)
+      {
+        <AresValueSchemaDesigner Schema="@SelectedParameter.Schema"
+                                 SchemaChanged="OnSelectedParameterSchemaChanged"
+                                 Title="@($"{SelectedParameter.Name} Schema")"
+                                 Collapsible="true" />
+      }
+      else
+      {
+        <div class="custom-command-builder__empty-state">
+          Add a parameter to define its schema.
         </div>
-      </fieldset>
-    </div>
+      }
+    </fieldset>
 
-    <div class="custom-command-builder__panel">
-      <fieldset class="custom-command-builder__fieldset">
-        <legend class="custom-command-builder__legend">Output Schema</legend>
-
-        <dl class="custom-command-builder__schema-list">
-          <dt>Type</dt>
-          <dd>@_outputSchema.Type</dd>
-
-          <dt>Optional</dt>
-          <dd>@(_outputSchema.Optional ? "Yes" : "No")</dd>
-
-          <dt>Quantity</dt>
-          <dd>@_outputSchema.Quantity</dd>
-
-          <dt>Bounds</dt>
-          <dd>@_outputSchema.Bounds</dd>
-
-          <dt>Description</dt>
-          <dd>@_outputSchema.Description</dd>
-        </dl>
-      </fieldset>
-    </div>
+    <fieldset class="custom-command-builder__fieldset custom-command-builder__output-panel">
+      <legend class="custom-command-builder__legend">Output Value Schema</legend>
+      <AresValueSchemaDesigner Schema="@_outputSchema"
+                               SchemaChanged="OnOutputSchemaChanged"
+                               Title="Output Schema"
+                               Collapsible="true" />
+    </fieldset>
   </div>
 
   <fieldset class="custom-command-builder__fieldset custom-command-builder__script-panel">
@@ -111,6 +119,7 @@
   [Parameter]
   public Guid? CommandId { get; set; }
 
+  private Guid? _selectedParameterId;
   private string _commandName = "Measure Temperature";
   private string _commandDescription = "Reads a temperature value from a configured source and returns it as a quantity.";
   private string _scriptBody = """
@@ -122,25 +131,132 @@ def main(sample_id, timeout_seconds):
     }
 """;
 
-  private readonly IReadOnlyList<ParameterPlaceholder> _inputParameters =
+  private readonly List<CustomCommandParameterDraft> _inputParameters =
   [
-    new("sample_id", "STRING", false, "Identifier for the sample to measure."),
-    new("timeout_seconds", "NUMBER", true, "Maximum time to wait before failing."),
-    new("include_metadata", "BOOLEAN", true, "Include device metadata in the command context.")
+    new("sample_id", new AresValueSchema
+    {
+      Type = AresDataType.String,
+      Description = "Identifier for the sample to measure."
+    }),
+    new("timeout_seconds", new AresValueSchema
+    {
+      Type = AresDataType.Number,
+      Optional = true,
+      Description = "Maximum time to wait before failing.",
+      MinNumberValue = 0
+    }),
+    new("include_metadata", new AresValueSchema
+    {
+      Type = AresDataType.Boolean,
+      Optional = true,
+      Description = "Include device metadata in the command context."
+    })
   ];
 
-  private readonly SchemaPlaceholder _outputSchema = new(
-    "QUANTITY",
-    false,
-    "Temperature",
-    "0 to 100 degC",
-    "Measured sample temperature.");
+  private AresValueSchema _outputSchema = new()
+  {
+    Type = AresDataType.Quantity,
+    Description = "Measured sample temperature.",
+    QuantitySchema = new QuantitySchema
+    {
+      QuantityType = QuantityType.Temperature,
+      BoundsUnit = "degC",
+      MinScalarValue = 0,
+      MaxScalarValue = 100
+    }
+  };
 
   private string Subtitle => CommandId is null
     ? "Create a new custom command definition."
     : $"Editing placeholder custom command {CommandId}.";
 
-  private record ParameterPlaceholder(string Name, string Type, bool Optional, string Description);
+  private CustomCommandParameterDraft? SelectedParameter
+    => _inputParameters.FirstOrDefault(parameter => parameter.Id == SelectedParameterId);
 
-  private record SchemaPlaceholder(string Type, bool Optional, string Quantity, string Bounds, string Description);
+  private Guid? SelectedParameterId
+  {
+    get
+    {
+      _selectedParameterId ??= _inputParameters.FirstOrDefault()?.Id;
+      return _selectedParameterId;
+    }
+    set => _selectedParameterId = value;
+  }
+
+  private void SelectParameter(CustomCommandParameterDraft parameter)
+  {
+    SelectedParameterId = parameter.Id;
+  }
+
+  private void AddParameter()
+  {
+    var parameter = new CustomCommandParameterDraft(GetNextParameterName(), new AresValueSchema
+    {
+      Type = AresDataType.String,
+      Description = "Describe this parameter."
+    });
+
+    _inputParameters.Add(parameter);
+    SelectedParameterId = parameter.Id;
+  }
+
+  private void RemoveParameter(CustomCommandParameterDraft parameter)
+  {
+    _inputParameters.Remove(parameter);
+
+    if(SelectedParameterId == parameter.Id)
+      SelectedParameterId = _inputParameters.FirstOrDefault()?.Id;
+  }
+
+  private void OnParameterNameChanged(CustomCommandParameterDraft parameter, ChangeEventArgs args)
+  {
+    var newName = args.Value?.ToString()?.Trim() ?? string.Empty;
+    if(!string.IsNullOrWhiteSpace(newName))
+      parameter.Name = newName;
+  }
+
+  private void OnSelectedParameterSchemaChanged(AresValueSchema schema)
+  {
+    if(SelectedParameter is not null)
+      SelectedParameter.Schema = schema.Clone();
+  }
+
+  private void OnOutputSchemaChanged(AresValueSchema schema)
+  {
+    _outputSchema = schema.Clone();
+  }
+
+  private string GetParameterRowClass(CustomCommandParameterDraft parameter)
+  {
+    var selectedClass = parameter.Id == SelectedParameterId ? " custom-command-builder__parameter-row--selected" : string.Empty;
+    return $"custom-command-builder__parameter-row{selectedClass}";
+  }
+
+  private string GetNextParameterName()
+  {
+    var index = _inputParameters.Count + 1;
+    var name = $"parameter_{index}";
+
+    while(_inputParameters.Any(parameter => string.Equals(parameter.Name, name, StringComparison.OrdinalIgnoreCase)))
+    {
+      index++;
+      name = $"parameter_{index}";
+    }
+
+    return name;
+  }
+
+  private sealed class CustomCommandParameterDraft
+  {
+    public CustomCommandParameterDraft(string name, AresValueSchema schema)
+    {
+      Id = Guid.NewGuid();
+      Name = name;
+      Schema = schema;
+    }
+
+    public Guid Id { get; }
+    public string Name { get; set; }
+    public AresValueSchema Schema { get; set; }
+  }
 }
