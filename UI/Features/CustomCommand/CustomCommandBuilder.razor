@@ -128,6 +128,28 @@
                     @ref="_scriptEditor" />
     </div>
   </fieldset>
+
+  <fieldset class="@DiagnosticsPanelClass">
+    <legend class="custom-command-builder__legend">Command Diagnostics</legend>
+
+    @if(_commandDiagnostics.Count == 0)
+    {
+      <div class="custom-command-builder__diagnostics-empty">No command diagnostics.</div>
+    }
+    else
+    {
+      <div class="custom-command-builder__diagnostics-list">
+        @foreach(var diagnostic in _commandDiagnostics)
+        {
+          <div class="@GetDiagnosticClass(diagnostic)">
+            <span class="custom-command-builder__diagnostic-severity">@GetDiagnosticSeverityText(diagnostic)</span>
+            <span class="custom-command-builder__diagnostic-location">@diagnostic.Location</span>
+            <span class="custom-command-builder__diagnostic-message">@diagnostic.Message</span>
+          </div>
+        }
+      </div>
+    }
+  </fieldset>
 </section>
 
 @code {
@@ -137,6 +159,7 @@
   private Guid? _selectedParameterId;
   private ScriptEditor? _scriptEditor;
   private CustomCommandMonacoProviderAdapter? _languageProviderAdapter;
+  private IReadOnlyList<CustomCommandDiagnostic> _commandDiagnostics = [];
   private string _commandName = "Measure Temperature";
   private string _commandDescription = "Reads a temperature value from a configured source and returns it as a quantity.";
   private string _scriptBody = """
@@ -198,10 +221,16 @@ return {
         DiagnosticsProvider,
         SemanticTokensProvider,
         HoverProvider,
-        BuildScriptContext);
+        BuildScriptContext,
+        OnCommandDiagnosticsChanged);
       return _languageProviderAdapter;
     }
   }
+
+  private string DiagnosticsPanelClass
+    => _commandDiagnostics.Count == 0
+      ? "custom-command-builder__fieldset custom-command-builder__diagnostics-panel"
+      : "custom-command-builder__fieldset custom-command-builder__diagnostics-panel custom-command-builder__diagnostics-panel--has-items";
 
   private CustomCommandParameterDraft? SelectedParameter
     => _inputParameters.FirstOrDefault(parameter => parameter.Id == SelectedParameterId);
@@ -310,6 +339,37 @@ return {
     {
       await _scriptEditor.RefreshLanguageFeaturesAsync();
     }
+  }
+
+  private void OnCommandDiagnosticsChanged(IReadOnlyList<CustomCommandDiagnostic> diagnostics)
+  {
+    _ = InvokeAsync(() =>
+    {
+      _commandDiagnostics = diagnostics;
+      StateHasChanged();
+    });
+  }
+
+  private static string GetDiagnosticClass(CustomCommandDiagnostic diagnostic)
+  {
+    return diagnostic.Severity switch
+    {
+      0 => "custom-command-builder__diagnostic custom-command-builder__diagnostic--error",
+      1 => "custom-command-builder__diagnostic custom-command-builder__diagnostic--warning",
+      _ => "custom-command-builder__diagnostic"
+    };
+  }
+
+  private static string GetDiagnosticSeverityText(CustomCommandDiagnostic diagnostic)
+  {
+    return diagnostic.Severity switch
+    {
+      0 => "Error",
+      1 => "Warning",
+      2 => "Info",
+      3 => "Hint",
+      _ => "Diagnostic"
+    };
   }
 
   private sealed class CustomCommandParameterDraft

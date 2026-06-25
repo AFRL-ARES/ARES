@@ -12,7 +12,8 @@ internal sealed class CustomCommandMonacoProviderAdapter(
   IMonacoDiagnosticsProvider diagnosticsProvider,
   IMonacoSemanticTokensProvider semanticTokensProvider,
   IMonacoHoverProvider hoverProvider,
-  Func<CustomCommandScriptContext> getContext)
+  Func<CustomCommandScriptContext> getContext,
+  Action<IReadOnlyList<CustomCommandDiagnostic>>? diagnosticsChanged = null)
   : IMonacoCompletionProvider, IMonacoDiagnosticsProvider, IMonacoSemanticTokensProvider, IMonacoHoverProvider
 {
   private const int WrappedBodyLineOffset = 1;
@@ -33,14 +34,34 @@ internal sealed class CustomCommandMonacoProviderAdapter(
   {
     var wrappedScript = BuildWrappedScript(script);
     var diagnostics = await diagnosticsProvider.GetDiagnostics(wrappedScript);
+    diagnosticsChanged?.Invoke(diagnostics.Select(MapCommandDiagnostic).ToArray());
     return diagnostics.Select(MapDiagnostic).ToArray();
   }
 
   [JSInvokable]
   public SemanticToken[] GetSemanticTokens(string script)
   {
-    var wrappedScript = BuildWrappedScript(script);
-    return semanticTokensProvider.GetSemanticTokens(wrappedScript)
+    try
+    {
+      var wrappedScript = BuildWrappedScript(script);
+      return semanticTokensProvider.GetSemanticTokens(wrappedScript)
+        .Where(token => token.Line > WrappedBodyLineOffset)
+        .Select(token => token with
+        {
+          Line = ToBodyLine(token.Line),
+          StartColumn = ToBodyColumn(token.StartColumn)
+        })
+        .ToArray();
+    }
+    catch
+    {
+      return [];
+    }
+  }
+
+  internal static SemanticToken[] MapSemanticTokens(IEnumerable<SemanticToken> tokens)
+  {
+    return tokens
       .Where(token => token.Line > WrappedBodyLineOffset)
       .Select(token => token with
       {
@@ -92,6 +113,24 @@ internal sealed class CustomCommandMonacoProviderAdapter(
     };
   }
 
+  internal static CustomCommandDiagnostic MapCommandDiagnostic(MonacoDiagnostic diagnostic)
+  {
+    if(diagnostic.StartLineNumber <= WrappedBodyLineOffset)
+    {
+      return new CustomCommandDiagnostic(
+        "Generated Signature",
+        diagnostic.Message,
+        diagnostic.Severity,
+        diagnostic.Code);
+    }
+
+    return new CustomCommandDiagnostic(
+      $"Script Body line {ToBodyLine(diagnostic.StartLineNumber)}",
+      diagnostic.Message,
+      diagnostic.Severity,
+      diagnostic.Code);
+  }
+
   private string BuildWrappedScript(string body)
   {
     var context = getContext();
@@ -107,3 +146,9 @@ internal sealed record CustomCommandScriptContext(
   string CommandName,
   IReadOnlyList<AresScriptParameter> Parameters,
   AresValueSchema OutputSchema);
+
+internal sealed record CustomCommandDiagnostic(
+  string Location,
+  string Message,
+  int Severity,
+  string? Code);

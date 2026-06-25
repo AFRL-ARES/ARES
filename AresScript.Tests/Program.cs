@@ -424,6 +424,18 @@ public class InterpreterTests
   }
 
   [Test]
+  public void SemanticTokens_ReturnsEmptyTokens_ForIncompleteMemberAccess()
+  {
+    var script = """
+      def custom_command_Test(value: Quantity.Temperature) -> Quantity.Temperature:
+        return Quantity.
+      """;
+
+    Assert.That(() => BuildSemanticTokens(script), Throws.Nothing);
+    Assert.That(BuildSemanticTokens(script), Is.Empty);
+  }
+
+  [Test]
   public async Task Function_TypeHints_Are_Parsed_For_Parameters_And_Returns()
   {
     var script = """
