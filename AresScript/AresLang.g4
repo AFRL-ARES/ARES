@@ -67,11 +67,11 @@ parallelStatement:
   PARALLEL COLON parallelBlock;
 
 // Simple block for non-loop statements (no loop depth change)
-block: NEWLINE INDENT (statement NEWLINE*)+ DEDENT;
+block: NEWLINE+ INDENT (statement | NEWLINE)* DEDENT;
 
 // Loop block increments/decrements loop depth for break/continue validation
 loopBlock:
-	NEWLINE INDENT {loopDepth++;} (statement NEWLINE*)+ DEDENT {loopDepth--;};
+	NEWLINE+ INDENT {loopDepth++;} (statement | NEWLINE)* DEDENT {loopDepth--;};
 
 // Function declarations. TODO: Decide if AresScript should even support custom functions
 functionDeclaration:
@@ -115,11 +115,11 @@ listTypeHint:
 
 // Function body increments/decrements func depth for return validation
 funcBlock:
-	NEWLINE INDENT {funcDepth++;} (statement NEWLINE*)+ DEDENT {funcDepth--;};
+	NEWLINE+ INDENT {funcDepth++;} (statement | NEWLINE)* DEDENT {funcDepth--;};
 
 // Parallel block executes expression asynchronously. Let's not worry about statements for now
 parallelBlock:
-  NEWLINE INDENT (expression NEWLINE*)+ DEDENT;
+  NEWLINE+ INDENT (expression | NEWLINE)* DEDENT;
   
 // Assignment statements
 assignment: lvalue '=' expression;
@@ -260,4 +260,4 @@ STRING: ('"' ( '\\' . | ~["\\\r\n])* '"')
 	| ('\'' ( '\\' . | ~['\\\r\n])* '\'');
 
 // Comments: skip single line comments starting with # just like python :)
-COMMENT: '#' ~[\r\n]* -> skip;
+COMMENT: '#' ~[\r\n]* -> channel(HIDDEN);

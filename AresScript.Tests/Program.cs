@@ -1431,6 +1431,33 @@ public class InterpreterTests
   }
 
   [Test]
+  public async Task Summary_Allows_Comment_As_First_Function_Body_Line()
+  {
+    var script = """
+      def main():
+        # test
+        print("ready")
+
+      main()
+      """;
+
+    var steps = await BuildScriptSummaryAsync(script, includeUserFunctions: true);
+    Assert.That(steps.Select(s => s.FunctionId), Is.EqualTo(["main"]));
+  }
+
+  [Test]
+  public async Task Summary_Allows_Comment_Only_Function_Body()
+  {
+    var script = """
+      def main():
+        # test
+      """;
+
+    var steps = await BuildScriptSummaryAsync(script, includeUserFunctions: true);
+    Assert.That(steps, Is.Empty);
+  }
+
+  [Test]
   public Task Cancellation_Stops_Interpreter()
   {
     var script = "assert True";

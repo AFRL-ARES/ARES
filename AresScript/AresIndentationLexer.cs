@@ -20,6 +20,7 @@ public class AresIndentationLexer : AresLangLexer
 
   // Keep track of the previous token to know if we just saw a newline
   private IToken? _lastToken = null;
+  private IToken? _lastParserVisibleToken = null;
 
   public AresIndentationLexer(ICharStream input) : base(input)
   {
@@ -29,7 +30,7 @@ public class AresIndentationLexer : AresLangLexer
   public override IToken NextToken()
   {
     // 1. If we have queued tokens (INDENTs/DEDENTs), return them first
-    if (_pendingTokens.Count > 0)
+    if(_pendingTokens.Count > 0)
     {
       var next = _pendingTokens.Dequeue();
       _lastToken = next;
@@ -42,30 +43,36 @@ public class AresIndentationLexer : AresLangLexer
     // 3. Check indentation if we are at the start of a line
     // (i.e., if the previous token was a NEWLINE or we are at the start of the file)
     // We ignore EOF and NEWLINE itself (empty lines don't change indentation)
-    if ((_lastToken == null || _lastToken.Type == NEWLINE) &&
+    if((_lastToken == null || _lastToken.Type == NEWLINE) &&
         token.Type != Eof &&
         token.Type != NEWLINE)
     {
       int currentIndent = token.Column;
       int previousIndent = _indents.Peek();
+      var hiddenTokenCanStartIndentedBlock =
+        token.Channel != DefaultTokenChannel &&
+        (_lastParserVisibleToken?.Type == COLON || _indents.Count > 1);
 
-      if (currentIndent > previousIndent)
+      if(currentIndent > previousIndent)
       {
-        // Indentation increased -> Emit INDENT
-        _indents.Push(currentIndent);
-        _pendingTokens.Enqueue(CreateToken(IndentToken, token));
+        if(token.Channel == DefaultTokenChannel || hiddenTokenCanStartIndentedBlock)
+        {
+          // Indentation increased -> Emit INDENT
+          _indents.Push(currentIndent);
+          _pendingTokens.Enqueue(CreateToken(IndentToken, token));
+        }
       }
-      else if (currentIndent < previousIndent)
+      else if(currentIndent < previousIndent)
       {
         // Indentation decreased -> Emit one or more DEDENTs
-        while (currentIndent < _indents.Peek())
+        while(currentIndent < _indents.Peek())
         {
           _indents.Pop();
           _pendingTokens.Enqueue(CreateToken(DedentToken, token));
         }
 
         // Safety check: ensure we landed on a valid previous indentation level
-        if (currentIndent != _indents.Peek())
+        if(currentIndent != _indents.Peek())
         {
           // You might want to throw a custom error here for "Unaligned dedent"
         }
@@ -73,16 +80,16 @@ public class AresIndentationLexer : AresLangLexer
     }
 
     // 4. Handle End Of File: Close any remaining open blocks
-    if (token.Type == Eof && _indents.Count > 1)
+    if(token.Type == Eof && _indents.Count > 1)
     {
       // This one's here to make it work when there's a top level block without a newline at the end
       // we just add a "fake" newline to make sure we can still run the block without syntax errors
-      if (_lastToken is not null && _lastToken.Type != NEWLINE)
+      if(_lastToken is not null && _lastToken.Type != NEWLINE)
       {
         _pendingTokens.Enqueue(CreateToken(NEWLINE, token));
       }
 
-      while (_indents.Count > 1)
+      while(_indents.Count > 1)
       {
         _indents.Pop();
         _pendingTokens.Enqueue(CreateToken(DedentToken, token));
@@ -94,7 +101,7 @@ public class AresIndentationLexer : AresLangLexer
     }
 
     // 5. If we generated tokens, queue the real token and return the first generated one
-    if (_pendingTokens.Count > 0)
+    if(_pendingTokens.Count > 0)
     {
       _pendingTokens.Enqueue(token);
       var next = _pendingTokens.Dequeue();
@@ -103,6 +110,10 @@ public class AresIndentationLexer : AresLangLexer
     }
 
     _lastToken = token;
+    if(token.Channel == DefaultTokenChannel && token.Type != NEWLINE && token.Type != Eof)
+    {
+      _lastParserVisibleToken = token;
+    }
 
     // Otherwise, just return the real token
     return token;
