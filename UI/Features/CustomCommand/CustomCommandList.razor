@@ -1,0 +1,87 @@
+@page "/automation/custom-commands"
+
+<PageTitle>Custom Commands</PageTitle>
+
+<section class="custom-command-list">
+  <div class="custom-command-list__header">
+    <div>
+      <h3 class="custom-command-list__title">Custom Commands</h3>
+      <p class="custom-command-list__subtitle">Select a custom command to edit or start a new definition.</p>
+    </div>
+
+    <div class="custom-command-list__actions">
+      <a class="custom-command-list__icon-link" href="automation/custom-command-builder" title="New custom command">
+        <RadzenIcon Icon="add" />
+      </a>
+      <button class="custom-command-list__icon-button" title="Refresh custom commands" disabled>
+        <RadzenIcon Icon="refresh" />
+      </button>
+    </div>
+  </div>
+
+  <div class="custom-command-list__table-wrapper">
+    <table class="custom-command-list__table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Description</th>
+          <th>Inputs</th>
+          <th>Output</th>
+          <th aria-label="Actions"></th>
+        </tr>
+      </thead>
+      <tbody>
+        @foreach(var command in _commands)
+        {
+          <tr>
+            <td>@command.Name</td>
+            <td>@command.Description</td>
+            <td>@command.InputSummary</td>
+            <td>@command.OutputSummary</td>
+            <td>
+              <div class="custom-command-list__row-actions">
+                <a class="custom-command-list__icon-link" href="@($"automation/custom-command-builder/{command.Id}")" title="@($"Edit {command.Name}")">
+                  <RadzenIcon Icon="edit" />
+                </a>
+                <button class="custom-command-list__icon-button custom-command-list__icon-button--danger" title="@($"Delete {command.Name}")" disabled>
+                  <RadzenIcon Icon="delete" />
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>
+
+@code {
+  private readonly IReadOnlyList<CustomCommandSummary> _commands =
+  [
+    new(
+      Guid.Parse("86f8d450-72da-4a40-9df8-01d106314b32"),
+      "Measure Temperature",
+      "Reads a temperature value from a configured source.",
+      "sample_id, timeout_seconds",
+      "QUANTITY Temperature"),
+    new(
+      Guid.Parse("6ad6fb0e-2754-4caa-9b5e-405340d8783d"),
+      "Capture Image",
+      "Captures an image from a selected device channel.",
+      "sample_id, channel_name",
+      "BYTE_ARRAY"),
+    new(
+      Guid.Parse("318d86bd-41d1-48b0-a7bc-57cb835adce2"),
+      "Calculate Dilution",
+      "Calculates reagent and solvent volumes for a target concentration.",
+      "target_concentration, final_volume",
+      "STRUCT")
+  ];
+
+  private record CustomCommandSummary(
+    Guid Id,
+    string Name,
+    string Description,
+    string InputSummary,
+    string OutputSummary);
+}
