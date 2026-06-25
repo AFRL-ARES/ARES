@@ -34,7 +34,11 @@
         @foreach(var command in _commands)
         {
           <tr>
-            <td>@command.Name</td>
+            <td>
+              <a class="custom-command-list__name-link" href="@($"automation/custom-command-builder/{command.Id}")">
+                @command.Name
+              </a>
+            </td>
             <td>@command.Description</td>
             <td>@command.InputSummary</td>
             <td>@command.OutputSummary</td>

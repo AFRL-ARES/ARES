@@ -73,9 +73,11 @@
 .custom-command-builder__fieldset {
   min-width: 0;
   margin: 0;
-  padding: 1rem;
-  border: 1px solid var(--rz-base-400, #dee2e6);
-  border-radius: 6px;
+  padding: 1.125rem;
+  border: 1px solid var(--rz-base-300, #ced4da);
+  border-radius: 8px;
+  background: var(--rz-card-background-color, var(--rz-base-background-color, #fff));
+  box-shadow: 0 0.25rem 0.85rem rgba(0, 0, 0, 0.08);
 }
 
 .custom-command-builder__legend {
@@ -83,7 +85,9 @@
   width: auto;
   margin: 0;
   padding: 0 0.5rem;
+  color: var(--rz-text-color, inherit);
   font-size: 1rem;
+  font-weight: 600;
 }
 
 .custom-command-builder__field {
