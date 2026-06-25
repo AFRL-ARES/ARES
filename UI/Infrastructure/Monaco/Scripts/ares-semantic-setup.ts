@@ -15,6 +15,7 @@ const legend: languages.SemanticTokensLegend = {
 };
 
 let semanticTokensDisposable: IDisposable | null = null;
+const semanticTokenListeners = new Set<() => void>();
 
 export function setupSemanticTokens(provider: DotNet.DotNetObject) {
   if (typeof monaco === 'undefined') {
@@ -26,6 +27,14 @@ export function setupSemanticTokens(provider: DotNet.DotNetObject) {
   semanticTokensDisposable = monaco.languages.registerDocumentSemanticTokensProvider('ares', {
     getLegend() {
       return legend;
+    },
+    onDidChange(listener) {
+      semanticTokenListeners.add(listener);
+      return {
+        dispose() {
+          semanticTokenListeners.delete(listener);
+        }
+      };
     },
     provideDocumentSemanticTokens(model: editor.ITextModel) {
       return provider.invokeMethodAsync('GetSemanticTokens', model.getValue())
@@ -40,9 +49,14 @@ export function setupSemanticTokens(provider: DotNet.DotNetObject) {
   });
 }
 
+export function refreshSemanticTokens() {
+  semanticTokenListeners.forEach(listener => listener());
+}
+
 export function disposeSemanticTokens() {
   semanticTokensDisposable?.dispose();
   semanticTokensDisposable = null;
+  semanticTokenListeners.clear();
 }
 
 function encodeSemanticTokens(tokens: SemanticToken[]): Uint32Array {

@@ -1,6 +1,8 @@
 @page "/automation/custom-command-builder"
 @page "/automation/custom-command-builder/{CommandId:guid}"
 @using Ares.Datamodel
+@using AresScript.ScriptBuilding
+@using AresScript.Symbols
 @using UI.Application.Scripting
 @inject IMonacoCompletionProvider CompletionProvider
 @inject IMonacoDiagnosticsProvider DiagnosticsProvider
@@ -34,6 +36,7 @@
         <label class="custom-command-builder__label" for="custom-command-name">Name</label>
         <RadzenTextBox id="custom-command-name"
                        @bind-Value="_commandName"
+                       Change="OnCommandNameChanged"
                        Placeholder="e.g., Measure Temperature"
                        Style="width: 100%;" />
       </div>
@@ -113,11 +116,14 @@
 
   <fieldset class="custom-command-builder__fieldset custom-command-builder__script-panel">
     <legend class="custom-command-builder__legend">Script Body</legend>
+    <div class="custom-command-builder__signature-preview" aria-label="Generated custom command function signature">
+      @GeneratedFunctionSignature:
+    </div>
     <div class="custom-command-builder__script-editor">
-      <ScriptEditor CompletionProvider="@CompletionProvider"
-                    DiagnosticsProvider="@DiagnosticsProvider"
-                    SemanticTokensProvider="@SemanticTokensProvider"
-                    HoverProvider="@HoverProvider"
+      <ScriptEditor CompletionProvider="@LanguageProviderAdapter"
+                    DiagnosticsProvider="@LanguageProviderAdapter"
+                    SemanticTokensProvider="@LanguageProviderAdapter"
+                    HoverProvider="@LanguageProviderAdapter"
                     InitialScript="@_scriptBody"
                     @ref="_scriptEditor" />
     </div>
@@ -130,15 +136,15 @@
 
   private Guid? _selectedParameterId;
   private ScriptEditor? _scriptEditor;
+  private CustomCommandMonacoProviderAdapter? _languageProviderAdapter;
   private string _commandName = "Measure Temperature";
   private string _commandDescription = "Reads a temperature value from a configured source and returns it as a quantity.";
   private string _scriptBody = """
-def main(sample_id, timeout_seconds):
-    # Placeholder script editor.
-    return {
-        "value": 21.5,
-        "unit": "degC"
-    }
+# Placeholder custom command body.
+return {
+    "value": 21.5,
+    "unit": "degC"
+}
 """;
 
   private readonly List<CustomCommandParameterDraft> _inputParameters =
@@ -180,6 +186,23 @@ def main(sample_id, timeout_seconds):
     ? "Create a new custom command definition."
     : $"Editing placeholder custom command {CommandId}.";
 
+  private string GeneratedFunctionSignature
+    => CustomCommandScriptBuilder.BuildFunctionSignature(_commandName, BuildScriptParameters(), _outputSchema);
+
+  private CustomCommandMonacoProviderAdapter LanguageProviderAdapter
+  {
+    get
+    {
+      _languageProviderAdapter ??= new CustomCommandMonacoProviderAdapter(
+        CompletionProvider,
+        DiagnosticsProvider,
+        SemanticTokensProvider,
+        HoverProvider,
+        BuildScriptContext);
+      return _languageProviderAdapter;
+    }
+  }
+
   private CustomCommandParameterDraft? SelectedParameter
     => _inputParameters.FirstOrDefault(parameter => parameter.Id == SelectedParameterId);
 
@@ -208,6 +231,7 @@ def main(sample_id, timeout_seconds):
 
     _inputParameters.Add(parameter);
     SelectedParameterId = parameter.Id;
+    _ = RefreshLanguageFeaturesAsync();
   }
 
   private void RemoveParameter(CustomCommandParameterDraft parameter)
@@ -216,24 +240,33 @@ def main(sample_id, timeout_seconds):
 
     if(SelectedParameterId == parameter.Id)
       SelectedParameterId = _inputParameters.FirstOrDefault()?.Id;
+
+    _ = RefreshLanguageFeaturesAsync();
   }
 
   private void OnParameterNameChanged(CustomCommandParameterDraft parameter, ChangeEventArgs args)
   {
     var newName = args.Value?.ToString()?.Trim() ?? string.Empty;
     if(!string.IsNullOrWhiteSpace(newName))
+    {
       parameter.Name = newName;
+      _ = RefreshLanguageFeaturesAsync();
+    }
   }
 
   private void OnSelectedParameterSchemaChanged(AresValueSchema schema)
   {
     if(SelectedParameter is not null)
+    {
       SelectedParameter.Schema = schema.Clone();
+      _ = RefreshLanguageFeaturesAsync();
+    }
   }
 
   private void OnOutputSchemaChanged(AresValueSchema schema)
   {
     _outputSchema = schema.Clone();
+    _ = RefreshLanguageFeaturesAsync();
   }
 
   private string GetParameterRowClass(CustomCommandParameterDraft parameter)
@@ -254,6 +287,29 @@ def main(sample_id, timeout_seconds):
     }
 
     return name;
+  }
+
+  private IEnumerable<AresScriptParameter> BuildScriptParameters()
+  {
+    return _inputParameters.Select(parameter => new AresScriptParameter(parameter.Name, parameter.Schema));
+  }
+
+  private CustomCommandScriptContext BuildScriptContext()
+  {
+    return new CustomCommandScriptContext(_commandName, BuildScriptParameters().ToArray(), _outputSchema);
+  }
+
+  private async Task OnCommandNameChanged(string _)
+  {
+    await RefreshLanguageFeaturesAsync();
+  }
+
+  private async Task RefreshLanguageFeaturesAsync()
+  {
+    if(_scriptEditor is not null)
+    {
+      await _scriptEditor.RefreshLanguageFeaturesAsync();
+    }
   }
 
   private sealed class CustomCommandParameterDraft

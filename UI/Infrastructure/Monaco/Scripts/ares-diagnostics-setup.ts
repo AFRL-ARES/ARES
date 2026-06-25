@@ -15,6 +15,7 @@ let diagnosticsModel: editor.ITextModel | null = null;
 let diagnosticsContentChangeDisposable: IDisposable | null = null;
 let diagnosticsModelDisposeDisposable: IDisposable | null = null;
 let diagnosticsTimer: number | undefined;
+let refreshDiagnosticsCallback: (() => void) | null = null;
 
 export function setupDiagnostics(diagnosticsService: DotNet.DotNetObject, debounceMs = 250) {
   if (typeof monaco === 'undefined') {
@@ -54,6 +55,7 @@ export function setupDiagnostics(diagnosticsService: DotNet.DotNetObject, deboun
       })
       .catch((err) => console.error('Failed to fetch diagnostics', err));
   };
+  refreshDiagnosticsCallback = updateMarkers;
 
   const debouncedUpdate = () => {
     if (diagnosticsTimer !== undefined) {
@@ -69,6 +71,10 @@ export function setupDiagnostics(diagnosticsService: DotNet.DotNetObject, deboun
   updateMarkers();
 }
 
+export function refreshDiagnostics() {
+  refreshDiagnosticsCallback?.();
+}
+
 export function disposeDiagnostics() {
   if (diagnosticsTimer !== undefined) {
     clearTimeout(diagnosticsTimer);
@@ -80,6 +86,8 @@ export function disposeDiagnostics() {
 
   diagnosticsModelDisposeDisposable?.dispose();
   diagnosticsModelDisposeDisposable = null;
+
+  refreshDiagnosticsCallback = null;
 
   if (diagnosticsModel && !diagnosticsModel.isDisposed()) {
     monaco.editor.setModelMarkers(diagnosticsModel, 'ares', []);
