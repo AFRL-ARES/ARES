@@ -2,7 +2,9 @@
 @inject IJSRuntime JSRuntime
 @implements IAsyncDisposable
 
-<StandaloneCodeEditor CssClass="h-100" @ref="_editor" Id="ares-editor" ConstructionOptions="EditorConstructionOptions" />
+<div class="script-editor">
+  <StandaloneCodeEditor CssClass="script-editor__monaco" @ref="_editor" Id="ares-editor" ConstructionOptions="EditorConstructionOptions" />
+</div>
 
 @code {
   private const string DefaultScript = "# Welcome to ARES\ndef main():\n    return True\n";

@@ -1,6 +1,11 @@
 @page "/automation/custom-command-builder"
 @page "/automation/custom-command-builder/{CommandId:guid}"
 @using Ares.Datamodel
+@using UI.Application.Scripting
+@inject IMonacoCompletionProvider CompletionProvider
+@inject IMonacoDiagnosticsProvider DiagnosticsProvider
+@inject IMonacoSemanticTokensProvider SemanticTokensProvider
+@inject IMonacoHoverProvider HoverProvider
 
 <PageTitle>Custom Command Designer</PageTitle>
 
@@ -108,10 +113,14 @@
 
   <fieldset class="custom-command-builder__fieldset custom-command-builder__script-panel">
     <legend class="custom-command-builder__legend">Script Body</legend>
-    <RadzenTextArea @bind-Value="_scriptBody"
-                    Rows="18"
-                    Style="width: 100%; font-family: Consolas, 'Courier New', monospace;"
-                    Placeholder="Write the command script body here." />
+    <div class="custom-command-builder__script-editor">
+      <ScriptEditor CompletionProvider="@CompletionProvider"
+                    DiagnosticsProvider="@DiagnosticsProvider"
+                    SemanticTokensProvider="@SemanticTokensProvider"
+                    HoverProvider="@HoverProvider"
+                    InitialScript="@_scriptBody"
+                    @ref="_scriptEditor" />
+    </div>
   </fieldset>
 </section>
 
@@ -120,6 +129,7 @@
   public Guid? CommandId { get; set; }
 
   private Guid? _selectedParameterId;
+  private ScriptEditor? _scriptEditor;
   private string _commandName = "Measure Temperature";
   private string _commandDescription = "Reads a temperature value from a configured source and returns it as a quantity.";
   private string _scriptBody = """
