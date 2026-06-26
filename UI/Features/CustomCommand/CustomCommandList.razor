@@ -1,4 +1,8 @@
 @page "/automation/custom-commands"
+@using Ares.Core.CustomCommands
+@using UI.Application.Notifications
+@inject ICustomCommandPersistenceService CustomCommandService
+@inject IUiNotificationService NotificationService
 
 <PageTitle>Custom Commands</PageTitle>
 
@@ -13,79 +17,119 @@
       <a class="custom-command-list__icon-link" href="automation/custom-command-builder" title="New custom command">
         <RadzenIcon Icon="add" />
       </a>
-      <button class="custom-command-list__icon-button" title="Refresh custom commands" disabled>
+      <button class="custom-command-list__icon-button" type="button" title="Refresh custom commands" disabled="@_isLoading" @onclick="LoadCommandsAsync">
         <RadzenIcon Icon="refresh" />
       </button>
     </div>
   </div>
 
-  <div class="custom-command-list__table-wrapper">
-    <table class="custom-command-list__table">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Description</th>
-          <th>Inputs</th>
-          <th>Output</th>
-          <th aria-label="Actions"></th>
-        </tr>
-      </thead>
-      <tbody>
-        @foreach(var command in _commands)
-        {
+  @if(_isLoading)
+  {
+    <div class="custom-command-list__state">Loading custom commands...</div>
+  }
+  else if(!string.IsNullOrWhiteSpace(_loadError))
+  {
+    <div class="custom-command-list__state custom-command-list__state--error">@_loadError</div>
+  }
+  else if(_commands.Count == 0)
+  {
+    <div class="custom-command-list__state">No custom commands have been saved yet.</div>
+  }
+  else
+  {
+    <div class="custom-command-list__table-wrapper">
+      <table class="custom-command-list__table">
+        <thead>
           <tr>
-            <td>
-              <a class="custom-command-list__name-link" href="@($"automation/custom-command-builder/{command.Id}")">
-                @command.Name
-              </a>
-            </td>
-            <td>@command.Description</td>
-            <td>@command.InputSummary</td>
-            <td>@command.OutputSummary</td>
-            <td>
-              <div class="custom-command-list__row-actions">
-                <a class="custom-command-list__icon-link" href="@($"automation/custom-command-builder/{command.Id}")" title="@($"Edit {command.Name}")">
-                  <RadzenIcon Icon="edit" />
-                </a>
-                <button class="custom-command-list__icon-button custom-command-list__icon-button--danger" title="@($"Delete {command.Name}")" disabled>
-                  <RadzenIcon Icon="delete" />
-                </button>
-              </div>
-            </td>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Inputs</th>
+            <th>Output</th>
+            <th aria-label="Actions"></th>
           </tr>
-        }
-      </tbody>
-    </table>
-  </div>
+        </thead>
+        <tbody>
+          @foreach(var command in _commands)
+          {
+            <tr>
+              <td>
+                <a class="custom-command-list__name-link" href="@($"automation/custom-command-builder/{command.Id}")">
+                  @command.Name
+                </a>
+              </td>
+              <td>@command.Description</td>
+              <td>@command.InputSummary</td>
+              <td>@command.OutputSummary</td>
+              <td>
+                <div class="custom-command-list__row-actions">
+                  <a class="custom-command-list__icon-link" href="@($"automation/custom-command-builder/{command.Id}")" title="@($"Edit {command.Name}")">
+                    <RadzenIcon Icon="edit" />
+                  </a>
+                  <button class="custom-command-list__icon-button custom-command-list__icon-button--danger"
+                          type="button"
+                          title="@($"Delete {command.Name}")"
+                          disabled="@_isDeleting"
+                          @onclick="() => DeleteCommandAsync(command)">
+                    <RadzenIcon Icon="delete" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
 </section>
 
 @code {
-  private readonly IReadOnlyList<CustomCommandSummary> _commands =
-  [
-    new(
-      Guid.Parse("86f8d450-72da-4a40-9df8-01d106314b32"),
-      "Measure Temperature",
-      "Reads a temperature value from a configured source.",
-      "sample_id, timeout_seconds",
-      "QUANTITY Temperature"),
-    new(
-      Guid.Parse("6ad6fb0e-2754-4caa-9b5e-405340d8783d"),
-      "Capture Image",
-      "Captures an image from a selected device channel.",
-      "sample_id, channel_name",
-      "BYTE_ARRAY"),
-    new(
-      Guid.Parse("318d86bd-41d1-48b0-a7bc-57cb835adce2"),
-      "Calculate Dilution",
-      "Calculates reagent and solvent volumes for a target concentration.",
-      "target_concentration, final_volume",
-      "STRUCT")
-  ];
+  private IReadOnlyList<CustomCommandSummary> _commands = [];
+  private bool _isLoading;
+  private bool _isDeleting;
+  private string? _loadError;
 
-  private record CustomCommandSummary(
-    Guid Id,
-    string Name,
-    string Description,
-    string InputSummary,
-    string OutputSummary);
+  protected override async Task OnInitializedAsync()
+  {
+    await LoadCommandsAsync();
+  }
+
+  private async Task LoadCommandsAsync()
+  {
+    _isLoading = true;
+    _loadError = null;
+
+    try
+    {
+      _commands = await CustomCommandService.GetSummariesAsync();
+    }
+    catch(Exception ex)
+    {
+      _loadError = $"Failed to load custom commands. {ex.Message}";
+      NotificationService.Error(_loadError);
+    }
+    finally
+    {
+      _isLoading = false;
+    }
+  }
+
+  private async Task DeleteCommandAsync(CustomCommandSummary command)
+  {
+    _isDeleting = true;
+
+    try
+    {
+      await CustomCommandService.DeleteAsync(command.Id);
+      NotificationService.Success($"Deleted custom command '{command.Name}'.");
+      await LoadCommandsAsync();
+    }
+    catch(Exception ex)
+    {
+      NotificationService.Error($"Failed to delete custom command '{command.Name}'. {ex.Message}");
+    }
+    finally
+    {
+      _isDeleting = false;
+    }
+  }
 }

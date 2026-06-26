@@ -65,6 +65,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Ares.Core\Ares.Core.csproj" />
     <ProjectReference Include="..\Ares.Core.Grpc\Ares.Core.Grpc.csproj" />
     <ProjectReference Include="..\AresScript\AresScript.csproj" />
     <ProjectReference Include="..\AresService.Data\AresService.Data.csproj" />

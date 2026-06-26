@@ -80,6 +80,18 @@
   box-shadow: 0 0.25rem 0.85rem rgba(0, 0, 0, 0.08);
 }
 
+.custom-command-builder__state {
+  padding: 1rem;
+  border: 1px solid var(--rz-base-300, #ced4da);
+  border-radius: 6px;
+  color: var(--rz-text-secondary-color, #6c757d);
+}
+
+.custom-command-builder__state--error {
+  border-color: var(--rz-danger, #dc3545);
+  color: var(--rz-danger, #dc3545);
+}
+
 .custom-command-builder__legend {
   float: none;
   width: auto;

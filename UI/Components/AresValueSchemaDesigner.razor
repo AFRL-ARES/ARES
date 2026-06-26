@@ -28,6 +28,11 @@
       }
       else
       {
+        <label class="ares-schema-designer__field">
+          <span>Description</span>
+          <textarea rows="3" value="@_schema.Description" @onchange="OnDescriptionChanged"></textarea>
+        </label>
+
         <div class="ares-schema-designer__grid">
           <label class="ares-schema-designer__field">
             <span>Type</span>
@@ -44,11 +49,6 @@
             <span>Optional</span>
           </label>
         </div>
-
-        <label class="ares-schema-designer__field">
-          <span>Description</span>
-          <textarea rows="3" value="@_schema.Description" @onchange="OnDescriptionChanged"></textarea>
-        </label>
 
         @if(IsNumericType(_schema.Type))
         {

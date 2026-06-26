@@ -1,13 +1,21 @@
 @page "/automation/custom-command-builder"
 @page "/automation/custom-command-builder/{CommandId:guid}"
+@using Ares.Core.CustomCommands
 @using Ares.Datamodel
+@using Ares.Datamodel.Automation
 @using AresScript.ScriptBuilding
 @using AresScript.Symbols
+@using UI.Application.Notifications
 @using UI.Application.Scripting
+@using CustomCommandModel = Ares.Datamodel.Automation.CustomCommand
+@using CustomCommandParameterModel = Ares.Datamodel.Automation.CustomCommandParameter
 @inject IMonacoCompletionProvider CompletionProvider
 @inject IMonacoDiagnosticsProvider DiagnosticsProvider
 @inject IMonacoSemanticTokensProvider SemanticTokensProvider
 @inject IMonacoHoverProvider HoverProvider
+@inject ICustomCommandPersistenceService CustomCommandService
+@inject IUiNotificationService NotificationService
+@inject NavigationManager NavigationManager
 
 <PageTitle>Custom Command Designer</PageTitle>
 
@@ -23,10 +31,18 @@
     </div>
 
     <div class="custom-command-builder__actions">
-      <RadzenButton Text="Save" Icon="save" ButtonStyle="ButtonStyle.Secondary" Disabled="true" />
-      <RadzenButton Text="Validate" Icon="check_circle" ButtonStyle="ButtonStyle.Primary" Disabled="true" />
+      <RadzenButton Text="@SaveButtonText" Icon="save" ButtonStyle="ButtonStyle.Secondary" Disabled="@(_isSaving || _isLoading)" Click="SaveAsync" />
     </div>
   </div>
+
+  @if(_isLoading)
+  {
+    <div class="custom-command-builder__state">Loading custom command...</div>
+  }
+  else if(!string.IsNullOrWhiteSpace(_loadError))
+  {
+    <div class="custom-command-builder__state custom-command-builder__state--error">@_loadError</div>
+  }
 
   <fieldset class="custom-command-builder__fieldset">
     <legend class="custom-command-builder__legend">Command Metadata</legend>
@@ -157,57 +173,31 @@
   public Guid? CommandId { get; set; }
 
   private Guid? _selectedParameterId;
+  private Guid? _loadedCommandId;
   private ScriptEditor? _scriptEditor;
   private CustomCommandMonacoProviderAdapter? _languageProviderAdapter;
   private IReadOnlyList<CustomCommandDiagnostic> _commandDiagnostics = [];
-  private string _commandName = "Measure Temperature";
-  private string _commandDescription = "Reads a temperature value from a configured source and returns it as a quantity.";
+  private bool _isLoading;
+  private bool _isSaving;
+  private string? _loadError;
+  private string _commandName = "New Custom Command";
+  private string _commandDescription = string.Empty;
   private string _scriptBody = """
-# Placeholder custom command body.
-return {
-    "value": 21.5,
-    "unit": "degC"
-}
+return
 """;
 
-  private readonly List<CustomCommandParameterDraft> _inputParameters =
-  [
-    new("sample_id", new AresValueSchema
-    {
-      Type = AresDataType.String,
-      Description = "Identifier for the sample to measure."
-    }),
-    new("timeout_seconds", new AresValueSchema
-    {
-      Type = AresDataType.Number,
-      Optional = true,
-      Description = "Maximum time to wait before failing.",
-      MinNumberValue = 0
-    }),
-    new("include_metadata", new AresValueSchema
-    {
-      Type = AresDataType.Boolean,
-      Optional = true,
-      Description = "Include device metadata in the command context."
-    })
-  ];
+  private readonly List<CustomCommandParameterDraft> _inputParameters = [];
 
   private AresValueSchema _outputSchema = new()
   {
-    Type = AresDataType.Quantity,
-    Description = "Measured sample temperature.",
-    QuantitySchema = new QuantitySchema
-    {
-      QuantityType = QuantityType.Temperature,
-      BoundsUnit = "degC",
-      MinScalarValue = 0,
-      MaxScalarValue = 100
-    }
+    Type = AresDataType.Unit
   };
 
   private string Subtitle => CommandId is null
     ? "Create a new custom command definition."
-    : $"Editing placeholder custom command {CommandId}.";
+    : $"Editing custom command {CommandId}.";
+
+  private string SaveButtonText => _isSaving ? "Saving" : "Save";
 
   private string GeneratedFunctionSignature
     => CustomCommandScriptBuilder.BuildFunctionSignature(_commandName, BuildScriptParameters(), _outputSchema);
@@ -248,6 +238,24 @@ return {
   private void SelectParameter(CustomCommandParameterDraft parameter)
   {
     SelectedParameterId = parameter.Id;
+  }
+
+  protected override async Task OnParametersSetAsync()
+  {
+    if(CommandId == _loadedCommandId)
+    {
+      return;
+    }
+
+    if(CommandId is null)
+    {
+      ResetDraftState();
+      _loadedCommandId = null;
+      _loadError = null;
+      return;
+    }
+
+    await LoadCommandAsync(CommandId.Value);
   }
 
   private void AddParameter()
@@ -331,6 +339,124 @@ return {
   private async Task OnCommandNameChanged(string _)
   {
     await RefreshLanguageFeaturesAsync();
+  }
+
+  private async Task LoadCommandAsync(Guid commandId)
+  {
+    _isLoading = true;
+    _loadError = null;
+
+    try
+    {
+      var command = await CustomCommandService.GetAsync(commandId);
+      if(command is null)
+      {
+        _loadError = $"Custom command {commandId} was not found.";
+        ResetDraftState();
+        return;
+      }
+
+      ApplyCommand(command);
+      _loadedCommandId = commandId;
+      await RefreshLanguageFeaturesAsync();
+    }
+    catch(Exception ex)
+    {
+      _loadError = $"Failed to load custom command. {ex.Message}";
+      NotificationService.Error(_loadError);
+    }
+    finally
+    {
+      _isLoading = false;
+    }
+  }
+
+  private async Task SaveAsync()
+  {
+    _isSaving = true;
+
+    try
+    {
+      var command = await BuildCommandAsync();
+      var savedId = await CustomCommandService.SaveAsync(CommandId, command);
+      CommandId = savedId;
+      _loadedCommandId = savedId;
+      NotificationService.Success("Custom command saved.");
+      NavigationManager.NavigateTo($"/automation/custom-command-builder/{savedId}", replace: true);
+    }
+    catch(Exception ex)
+    {
+      NotificationService.Error($"Failed to save custom command. {ex.Message}");
+    }
+    finally
+    {
+      _isSaving = false;
+    }
+  }
+
+  private async Task<CustomCommandModel> BuildCommandAsync()
+  {
+    if(_scriptEditor is not null)
+    {
+      _scriptBody = await _scriptEditor.GetScript();
+    }
+
+    var command = new CustomCommandModel
+    {
+      Name = _commandName,
+      Description = _commandDescription,
+      OutputSchema = _outputSchema.Clone(),
+      ScriptBody = _scriptBody
+    };
+
+    command.InputParameters.AddRange(_inputParameters.Select(parameter => new CustomCommandParameterModel
+    {
+      Name = parameter.Name,
+      Schema = parameter.Schema.Clone()
+    }));
+
+    return command;
+  }
+
+  private void ApplyCommand(CustomCommandModel command)
+  {
+    _commandName = command.Name;
+    _commandDescription = command.Description;
+    _scriptBody = command.ScriptBody;
+    _outputSchema = command.OutputSchema?.Clone() ?? new AresValueSchema { Type = AresDataType.Unit };
+
+    _inputParameters.Clear();
+    _inputParameters.AddRange(command.InputParameters.Select(parameter => new CustomCommandParameterDraft(
+      parameter.Name,
+      parameter.Schema?.Clone() ?? new AresValueSchema { Type = AresDataType.String })));
+
+    SelectedParameterId = _inputParameters.FirstOrDefault()?.Id;
+
+    if(_scriptEditor is not null)
+    {
+      _ = _scriptEditor.SetScript(_scriptBody);
+    }
+  }
+
+  private void ResetDraftState()
+  {
+    _commandName = "New Custom Command";
+    _commandDescription = string.Empty;
+    _scriptBody = """
+return
+""";
+    _outputSchema = new AresValueSchema
+    {
+      Type = AresDataType.Unit
+    };
+
+    _inputParameters.Clear();
+    SelectedParameterId = _inputParameters.FirstOrDefault()?.Id;
+
+    if(_scriptEditor is not null)
+    {
+      _ = _scriptEditor.SetScript(_scriptBody);
+    }
   }
 
   private async Task RefreshLanguageFeaturesAsync()

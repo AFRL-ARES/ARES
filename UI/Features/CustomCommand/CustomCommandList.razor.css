@@ -84,6 +84,18 @@
   border-radius: 6px;
 }
 
+.custom-command-list__state {
+  padding: 1rem;
+  border: 1px solid var(--rz-base-300, #ced4da);
+  border-radius: 6px;
+  color: var(--rz-text-secondary-color, #6c757d);
+}
+
+.custom-command-list__state--error {
+  border-color: var(--rz-danger, #dc3545);
+  color: var(--rz-danger, #dc3545);
+}
+
 .custom-command-list__table {
   width: 100%;
   min-width: 42rem;
