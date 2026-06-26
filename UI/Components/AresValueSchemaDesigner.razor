@@ -337,7 +337,6 @@
   }
 
   private IReadOnlyList<StructField> StructFields => StructSchema.Fields
-    .OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase)
     .Select(entry => new StructField(entry.Key, entry.Value))
     .ToArray();
 
@@ -520,9 +519,16 @@
     if(string.IsNullOrWhiteSpace(newName) || newName == oldName || StructSchema.Fields.ContainsKey(newName))
       return;
 
-    var existing = StructSchema.Fields[oldName];
-    StructSchema.Fields.Remove(oldName);
-    StructSchema.Fields[newName] = existing;
+    var reorderedFields = StructSchema.Fields
+      .Select(entry => entry.Key == oldName
+        ? new KeyValuePair<string, AresValueSchema>(newName, entry.Value)
+        : entry)
+      .ToArray();
+
+    StructSchema.Fields.Clear();
+    foreach(var field in reorderedFields)
+      StructSchema.Fields[field.Key] = field.Value;
+
     await EmitChanged();
   }
 
