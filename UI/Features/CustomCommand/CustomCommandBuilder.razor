@@ -114,21 +114,6 @@
     </fieldset>
   </div>
 
-  <fieldset class="custom-command-builder__fieldset custom-command-builder__script-panel">
-    <legend class="custom-command-builder__legend">Script Body</legend>
-    <div class="custom-command-builder__signature-preview" aria-label="Generated custom command function signature">
-      @GeneratedFunctionSignature:
-    </div>
-    <div class="custom-command-builder__script-editor">
-      <ScriptEditor CompletionProvider="@LanguageProviderAdapter"
-                    DiagnosticsProvider="@LanguageProviderAdapter"
-                    SemanticTokensProvider="@LanguageProviderAdapter"
-                    HoverProvider="@LanguageProviderAdapter"
-                    InitialScript="@_scriptBody"
-                    @ref="_scriptEditor" />
-    </div>
-  </fieldset>
-
   <fieldset class="@DiagnosticsPanelClass">
     <legend class="custom-command-builder__legend">Command Diagnostics</legend>
 
@@ -149,6 +134,21 @@
         }
       </div>
     }
+  </fieldset>
+
+  <fieldset class="custom-command-builder__fieldset custom-command-builder__script-panel">
+    <legend class="custom-command-builder__legend">Script Body</legend>
+    <div class="custom-command-builder__signature-preview" aria-label="Generated custom command function signature">
+      @GeneratedFunctionSignature:
+    </div>
+    <div class="custom-command-builder__script-editor">
+      <ScriptEditor CompletionProvider="@LanguageProviderAdapter"
+                    DiagnosticsProvider="@LanguageProviderAdapter"
+                    SemanticTokensProvider="@LanguageProviderAdapter"
+                    HoverProvider="@LanguageProviderAdapter"
+                    InitialScript="@_scriptBody"
+                    @ref="_scriptEditor" />
+    </div>
   </fieldset>
 </section>
 

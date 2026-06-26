@@ -103,7 +103,8 @@
 
 .custom-command-builder__parameters-panel,
 .custom-command-builder__output-panel,
-.custom-command-builder__script-panel {
+.custom-command-builder__script-panel,
+.custom-command-builder__diagnostics-panel {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -200,7 +201,7 @@
   padding: 0.65rem 0.75rem;
   border: 1px solid var(--rz-base-300, #ced4da);
   border-radius: 6px;
-  background: var(--rz-base-100, rgba(0, 0, 0, 0.03));
+  background: var(--rz-base-600, rgba(0, 0, 0, 0.03));
   font-family: Consolas, "Courier New", monospace;
   font-size: 0.9rem;
   overflow-wrap: anywhere;
@@ -213,6 +214,54 @@
   overflow: hidden;
   border: 1px solid var(--rz-base-300, #ced4da);
   border-radius: 6px;
+}
+
+.custom-command-builder__diagnostics-panel--has-items {
+  border-color: var(--rz-danger, #dc3545);
+}
+
+.custom-command-builder__diagnostics-empty {
+  color: var(--rz-text-secondary-color, #6c757d);
+}
+
+.custom-command-builder__diagnostics-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.custom-command-builder__diagnostic {
+  display: grid;
+  grid-template-columns: auto minmax(8rem, auto) minmax(0, 1fr);
+  align-items: start;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--rz-base-300, #ced4da);
+  border-radius: 6px;
+  background: var(--rz-base-600, rgba(0, 0, 0, 0.03));
+}
+
+.custom-command-builder__diagnostic--error {
+  border-color: var(--rz-danger, #dc3545);
+}
+
+.custom-command-builder__diagnostic--warning {
+  border-color: var(--rz-warning, #ffc107);
+}
+
+.custom-command-builder__diagnostic-severity {
+  font-weight: 700;
+}
+
+.custom-command-builder__diagnostic-location {
+  color: var(--rz-text-secondary-color, #6c757d);
+}
+
+.custom-command-builder__diagnostic-message {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 1200px) {
@@ -242,5 +291,9 @@
   .custom-command-builder__parameter-name-input {
     grid-column: 1 / -1;
     grid-row: 2;
+  }
+
+  .custom-command-builder__diagnostic {
+    grid-template-columns: 1fr;
   }
 }

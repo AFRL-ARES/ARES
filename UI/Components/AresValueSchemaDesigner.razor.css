@@ -11,7 +11,7 @@
 
 .ares-schema-designer--nested {
   margin-top: 0.5rem;
-  background: var(--rz-base-100, rgba(255, 255, 255, 0.03));
+  background: var(--rz-base-600, rgba(255, 255, 255, 0.03));
 }
 
 .ares-schema-designer__header {
