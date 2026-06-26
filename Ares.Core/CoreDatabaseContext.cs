@@ -67,6 +67,9 @@ public class CoreDatabaseContext : DbContext
     // Utilities
     configurationBuilder.Properties<Timestamp>().HaveConversion<AresTimestampConverter>();
 
+    // Ignores
+    configurationBuilder.IgnoreAny<Objective>();
+
     base.ConfigureConventions(configurationBuilder);
   }
 }

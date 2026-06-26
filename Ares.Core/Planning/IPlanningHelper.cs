@@ -21,7 +21,7 @@ public interface IPlanningHelper
   Task<bool> TryResolveParameters(IEnumerable<PlannerAllocation> plannerAllocations,
     RequestMetadata metadata,
     IEnumerable<Parameter> parameters,
-    IEnumerable<Analysis> seedAnalyses,
+    IEnumerable<AnalysisResponse> seedAnalyses,
     IEnumerable<ExperimentOverview> seedExperiments,
     CancellationToken cancellationToken);
 

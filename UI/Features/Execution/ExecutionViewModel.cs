@@ -404,11 +404,19 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
   public void OnAnalyzerTransactionReceived(AnalyzerTransaction transaction, int currentTurn)
   {
-    AnalyzerMetrics.Add(new ChartMetricPoint
+    foreach(var objective in transaction.AnalysisResponse.Objectives)
     {
-      ExecutionIndex = currentTurn,
-      RawValue = transaction.AnalysisResponse.Result
-    }); 
+      var found = objective.ObjectiveValue.TryGetNumericValue(out var numericValue);
+      
+      if(found)
+      {
+        AnalyzerMetrics.Add(new ChartMetricPoint
+        {
+          ExecutionIndex = currentTurn,
+          RawValue = numericValue
+        });
+      }
+    }
   }
 
   public bool TryGetChartableValue(AresValue aresValue, out double result)

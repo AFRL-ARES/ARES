@@ -44,9 +44,6 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
-                    b.Property<double>("Result")
-                        .HasColumnType("double precision");
-
                     b.HasKey("UniqueId");
 
                     b.HasIndex("ExperimentOverviewId")
@@ -55,7 +52,7 @@ namespace AresService.Migrations.Postgres.Migrations
                     b.ToTable("AnalysisOverview");
                 });
 
-            modelBuilder.Entity("Ares.Datamodel.Analyzing.Analysis", b =>
+            modelBuilder.Entity("Ares.Datamodel.Analyzing.AnalysisResponse", b =>
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
@@ -77,8 +74,8 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
-                    b.Property<float>("Result")
-                        .HasColumnType("real");
+                    b.Property<string>("Objectives")
+                        .HasColumnType("jsonb");
 
                     b.HasKey("UniqueId");
 

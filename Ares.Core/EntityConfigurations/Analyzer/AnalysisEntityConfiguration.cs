@@ -1,14 +1,16 @@
-﻿using Ares.Datamodel.Analyzing;
+﻿using Ares.Core.EntityConfigurations.Helpers;
+using Ares.Datamodel.Analyzing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Ares.Core.EntityConfigurations.Analyzer;
 
-internal class AnalysisEntityConfiguration : AresEntityTypeBaseConfiguration<Analysis>
+internal class AnalysisEntityConfiguration : AresEntityTypeBaseConfiguration<AnalysisResponse>
 {
-  public override void Configure(EntityTypeBuilder<Analysis> builder)
+  public override void Configure(EntityTypeBuilder<AnalysisResponse> builder)
   {
     base.Configure(builder);
+    builder.Property(a => a.Objectives).HasObjectives();
     builder.ToTable("Analyses");
   }
 }

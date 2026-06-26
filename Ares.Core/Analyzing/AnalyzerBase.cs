@@ -69,9 +69,9 @@ public abstract class AnalyzerBase : IAnalyzer
     }
   }
 
-  public abstract Task<Analysis> Analyze(AnalysisRequest request, CancellationToken cancellationToken);
+  public abstract Task<AnalysisResponse> Analyze(AnalysisRequest request, CancellationToken cancellationToken);
 
-  public abstract Task<Analysis> Analyze(AnalysisRequest request, AresStruct settings, CancellationToken cancellationToken);
+  public abstract Task<AnalysisResponse> Analyze(AnalysisRequest request, AresStruct settings, CancellationToken cancellationToken);
 
   public abstract Task<AresStructSchema> GetParameters(CancellationToken cancellationToken);
 

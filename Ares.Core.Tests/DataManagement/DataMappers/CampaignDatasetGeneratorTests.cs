@@ -34,8 +34,8 @@ internal class CampaignDatasetGeneratorTests
     var summary = CreateCampaignSummary(
       summaryId,
       "Campaign A",
-      CreateExperiment(secondStart, secondEnd, analysisResult: 2.5),
-      CreateExperiment(firstStart, firstEnd, analysisResult: 1.5));
+      CreateExperiment(secondStart, secondEnd, analysisResult: new List<Objective> { new Objective { ObjectiveName = "Result", ObjectiveValue = AresValueHelper.CreateNumber(2.5) } }),
+      CreateExperiment(firstStart, firstEnd, analysisResult: new List<Objective> { new Objective { ObjectiveName = "Result", ObjectiveValue = AresValueHelper.CreateNumber(1.5) } }));
     var generator = CreateGenerator(summary);
 
     var dataset = GetDataset(await generator.GenerateAsync(summaryId), "Experiments");
@@ -538,7 +538,11 @@ internal class CampaignDatasetGeneratorTests
       DateTime.UnixEpoch.AddSeconds(1),
       DateTime.UnixEpoch.AddSeconds(3),
       ("Temperature", nestedOutput));
-    transaction.PlanningRequest.AnalysisResults.AddRange([1.5, 2.5]);
+    var objectiveOne = new Objective() { ObjectiveValue = AresValueHelper.CreateNumber(1.5), ObjectiveName = "ObjectiveOne" };
+    var objectiveTwo = new Objective() { ObjectiveValue = AresValueHelper.CreateNumber(2.5), ObjectiveName = "ObjectiveTwo" };
+    var responseOne = new AnalysisResponse() { AnalysisOutcome = Outcome.Success, Objectives = { objectiveOne } };
+    var responseTwo = new AnalysisResponse() { AnalysisOutcome = Outcome.Success, Objectives = { objectiveTwo } };
+    transaction.PlanningRequest.AnalysisResults.AddRange([responseOne, responseTwo]);
     transaction.PlanningResponse.PlanningOutcome = Outcome.Warning;
     transaction.PlanningResponse.ErrorString = "planner warning";
     var generator = CreateGenerator(CreateCampaignSummary(summaryId, "Campaign A", experiment), [transaction]);
@@ -583,9 +587,10 @@ internal class CampaignDatasetGeneratorTests
       DateTime.UnixEpoch.AddSeconds(2),
       DateTime.UnixEpoch.AddSeconds(4),
       ("Measurement", nestedInput));
-    transaction.AnalysisResponse = new Analysis
+
+    transaction.AnalysisResponse = new AnalysisResponse
     {
-      Result = 9.5f,
+      Objectives = { new Objective() { ObjectiveName = "Result", ObjectiveValue = AresValueHelper.CreateNumber(9.5) } },
       AnalysisOutcome = Outcome.Success,
       ErrorString = "analysis note"
     };
@@ -741,7 +746,7 @@ internal class CampaignDatasetGeneratorTests
   private static ExperimentExecutionSummary CreateExperiment(
     DateTime timeStarted,
     DateTime timeFinished,
-    double? analysisResult = null,
+    List<Objective>? analysisResult = null,
     (string Name, AresValue Value)[] resultFields = null,
     Parameter[] parameters = null,
     StepExecutionSummary[] steps = null)
@@ -752,7 +757,12 @@ internal class CampaignDatasetGeneratorTests
     };
 
     if(analysisResult is not null)
-      overview.AnalysisOverview = new AnalysisOverview { Result = analysisResult.Value };
+    {
+      overview.AnalysisOverview = new AnalysisOverview();
+      overview.AnalysisOverview.Result.AddRange(analysisResult);
+
+    }
+      
 
     foreach(var field in resultFields ?? [])
     {
@@ -937,7 +947,7 @@ internal class CampaignDatasetGeneratorTests
           ExperimentId = experimentId
         }
       },
-      AnalysisResponse = new Analysis()
+      AnalysisResponse = new AnalysisResponse()
     };
 
     foreach(var input in inputs)

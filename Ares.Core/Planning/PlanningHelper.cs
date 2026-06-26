@@ -32,7 +32,7 @@ public class PlanningHelper : IPlanningHelper
   public async Task<bool> TryResolveParameters(IEnumerable<PlannerAllocation> plannerAllocations,
     RequestMetadata metadata,
     IEnumerable<Parameter> parameters,
-    IEnumerable<Analysis> seedAnalyses,
+    IEnumerable<AnalysisResponse> seedAnalyses,
     IEnumerable<ExperimentOverview> seedExperiments,
     CancellationToken cancellationToken)
   {
@@ -50,6 +50,7 @@ public class PlanningHelper : IPlanningHelper
 
     var planGroup = plannerToMetadataMaps.GroupBy(pair => pair.Planner);
     var seedAnalysesArr = seedAnalyses.ToArray();
+
     foreach(var grouping in planGroup)
     {
       var planner = grouping.Key;
@@ -71,7 +72,7 @@ public class PlanningHelper : IPlanningHelper
         //Create the plan request. Store it in the transaction.
         var planRequest = new PlanningRequest();
         planRequest.PlanningParameters.AddRange(plannableParameters.Select(parameter => ConvertToPlanningParameter(parameter, seedExperiments)));
-        planRequest.AnalysisResults.AddRange(seedAnalysesArr.Select(a => (double)a.Result));
+        planRequest.AnalysisResults.AddRange(seedAnalysesArr);
         planRequest.Metadata = metadata;
         planTransaction.PlanningRequest = planRequest;
 

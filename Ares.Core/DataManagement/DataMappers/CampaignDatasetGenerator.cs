@@ -63,15 +63,25 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     var campaignEnd = summary.ExecutionInfo?.TimeFinished;
     if(campaignStart is not null && campaignEnd is not null)
     {
-      var plannerTransactions = await ctx.PlannerTransactions
-        .Where(transaction => transaction.TimeRequestSent >= campaignStart && transaction.TimeResponseReceived <= campaignEnd)
-        .ToListAsync(cancellationToken);
-      foreach(var transaction in plannerTransactions)
+      try
       {
-        cancellationToken.ThrowIfCancellationRequested();
-        if(TryCreatePlannerRecord(transaction, summary, experimentNumbers, out var record))
-          plannerRecords.Add(record);
+        var plannerTransactions = await ctx.PlannerTransactions
+          .Where(transaction => transaction.TimeRequestSent >= campaignStart && transaction.TimeResponseReceived <= campaignEnd)
+          .ToListAsync(cancellationToken);
+
+        foreach(var transaction in plannerTransactions)
+        {
+          cancellationToken.ThrowIfCancellationRequested();
+          if(TryCreatePlannerRecord(transaction, summary, experimentNumbers, out var record))
+            plannerRecords.Add(record);
+        }
       }
+      catch(Exception e)
+      {
+        throw e;
+      }
+
+
 
       var analyzerTransactions = await ctx.AnalyzerTransactions
         .Where(transaction => transaction.TimeRequestSent >= campaignStart && transaction.TimeResponseReceived <= campaignEnd)
@@ -427,7 +437,10 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     AddExecutionFields(data, experiment.ExecutionInfo);
 
     if(experiment.ExperimentOverview?.AnalysisOverview is not null)
-      data.Fields[AnalysisResultColumnName] = AresValueHelper.CreateNumber(experiment.ExperimentOverview.AnalysisOverview.Result);
+    {
+      foreach(var objective in experiment.ExperimentOverview.AnalysisOverview.Result)
+        data.Fields[objective.ObjectiveName] = objective.ObjectiveValue;
+    }
 
     foreach(var field in experiment.ExperimentOverview?.Result?.Fields ?? [])
     {
@@ -513,7 +526,13 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     }
 
     if(transaction.PlanningRequest?.AnalysisResults.Count > 0)
-      data.Fields[AnalysisResultsColumnName] = AresValueHelper.CreateList(transaction.PlanningRequest.AnalysisResults.Select(AresValueHelper.CreateNumber));
+    {
+      foreach(var analysisResponse in transaction.PlanningRequest.AnalysisResults)
+      {
+        foreach(var objective in analysisResponse.Objectives)
+          data.Fields[objective.ObjectiveName] = objective.ObjectiveValue;
+      }
+    }
 
     return new AresDataRow { Data = data };
   }
@@ -532,7 +551,9 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
 
     if(transaction.AnalysisResponse is not null)
     {
-      data.Fields[ResultColumnName] = AresValueHelper.CreateNumber(transaction.AnalysisResponse.Result);
+      foreach(var objective in transaction.AnalysisResponse.Objectives)
+        data.Fields[objective.ObjectiveName] = objective.ObjectiveValue;
+
       AddString(data, OutcomeColumnName, transaction.AnalysisResponse.AnalysisOutcome.ToString());
       AddString(data, ErrorColumnName, transaction.AnalysisResponse.ErrorString);
     }

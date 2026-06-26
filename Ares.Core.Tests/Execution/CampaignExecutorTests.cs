@@ -57,7 +57,7 @@ internal class CampaignExecutorTests
         It.IsAny<IEnumerable<PlannerAllocation>>(),
         It.IsAny<RequestMetadata>(),
         It.IsAny<IEnumerable<Parameter>>(),
-        It.IsAny<IEnumerable<Ares.Datamodel.Analyzing.Analysis>>(),
+        It.IsAny<IEnumerable<Datamodel.Analyzing.AnalysisResponse>>(),
         It.IsAny<IEnumerable<ExperimentOverview>>(),
         It.IsAny<CancellationToken>()))
       .ReturnsAsync(true);
@@ -216,7 +216,7 @@ internal class CampaignExecutorTests
       It.IsAny<IEnumerable<PlannerAllocation>>(),
       It.IsAny<RequestMetadata>(),
       It.IsAny<IEnumerable<Parameter>>(),
-      It.IsAny<IEnumerable<Ares.Datamodel.Analyzing.Analysis>>(),
+      It.IsAny<IEnumerable<Datamodel.Analyzing.AnalysisResponse>>(),
       It.IsAny<IEnumerable<ExperimentOverview>>(),
       It.IsAny<CancellationToken>()), Times.Once);
   }

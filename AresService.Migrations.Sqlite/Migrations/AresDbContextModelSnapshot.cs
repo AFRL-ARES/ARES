@@ -39,9 +39,6 @@ namespace AresService.Migrations.Sqlite.Migrations
                         .HasColumnType("TEXT")
                         .HasDefaultValueSql("DATETIME('now')");
 
-                    b.Property<double>("Result")
-                        .HasColumnType("REAL");
-
                     b.HasKey("UniqueId");
 
                     b.HasIndex("ExperimentOverviewId")
@@ -50,7 +47,7 @@ namespace AresService.Migrations.Sqlite.Migrations
                     b.ToTable("AnalysisOverview");
                 });
 
-            modelBuilder.Entity("Ares.Datamodel.Analyzing.Analysis", b =>
+            modelBuilder.Entity("Ares.Datamodel.Analyzing.AnalysisResponse", b =>
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
@@ -72,8 +69,8 @@ namespace AresService.Migrations.Sqlite.Migrations
                         .HasColumnType("TEXT")
                         .HasDefaultValueSql("DATETIME('now')");
 
-                    b.Property<float>("Result")
-                        .HasColumnType("REAL");
+                    b.Property<string>("Objectives")
+                        .HasColumnType("TEXT");
 
                     b.HasKey("UniqueId");
 

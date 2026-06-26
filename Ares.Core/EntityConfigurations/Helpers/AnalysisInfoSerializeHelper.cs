@@ -1,5 +1,6 @@
 ﻿using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Analyzing.Remote;
+using Google.Protobuf.Collections;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System.Text.Json;
@@ -28,13 +29,23 @@ public static class AnalysisInfoSerializeHelper
       .HasColumnType(SerializerSettingsHelper.DetermineColumnType());
   }
 
-  public static PropertyBuilder<Analysis> HasAnalysis(this PropertyBuilder<Analysis> value)
+  public static PropertyBuilder<AnalysisResponse> HasAnalysis(this PropertyBuilder<AnalysisResponse> value)
   {
     var settings = SerializerSettingsHelper.CreateCustomSerializationSettings();
 
     return value.HasConversion(
       v => JsonSerializer.Serialize(v, settings),
-      v => JsonSerializer.Deserialize<Analysis>(v, settings) ?? new Analysis())
+      v => JsonSerializer.Deserialize<AnalysisResponse>(v, settings) ?? new AnalysisResponse())
+      .HasColumnType(SerializerSettingsHelper.DetermineColumnType());
+  }
+
+  public static PropertyBuilder<RepeatedField<Objective>> HasObjectives(this PropertyBuilder<RepeatedField<Objective>> value)
+  {
+    var settings = SerializerSettingsHelper.CreateCustomSerializationSettings();
+
+    return value.HasConversion(
+      v => JsonSerializer.Serialize(v, settings),
+      v => JsonSerializer.Deserialize<RepeatedField<Objective>>(v, settings) ?? new RepeatedField<Objective>())
       .HasColumnType(SerializerSettingsHelper.DetermineColumnType());
   }
 }

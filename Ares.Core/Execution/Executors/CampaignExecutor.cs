@@ -126,7 +126,7 @@ public class CampaignExecutor : ICampaignExecutor
     try
     {
       var campaignPath = await InitializeCampaign(CampaignStartTime);
-      var analyses = new List<Analysis>();
+      var analyses = new List<AnalysisResponse>();
       
       ResetStatus(token);
       await NotifyCampaignStart();
@@ -206,7 +206,7 @@ public class CampaignExecutor : ICampaignExecutor
     _logger.LogInformation("Campaign started named {CampaignName}", Template.Name);
   }
 
-  private async Task<(bool Success, ExperimentExecutionSummary Summary)> ExecuteStartup(List<Analysis> analyses, List<ExperimentExecutionSummary> experimentSummaries, ExecutionControlToken token)
+  private async Task<(bool Success, ExperimentExecutionSummary Summary)> ExecuteStartup(List<AnalysisResponse> analyses, List<ExperimentExecutionSummary> experimentSummaries, ExecutionControlToken token)
   {
     _logger.LogDebug("Startup template not null, will run startup script");
     var startupExecutorResult = await GenerateExperimentExecutor(Template.StartupTemplate, analyses, experimentSummaries.Select(es => es.ExperimentOverview), token.CancellationToken);
@@ -226,7 +226,11 @@ public class CampaignExecutor : ICampaignExecutor
     return (true, startupSummary);
   }
 
-  private async Task<ExperimentLoopOutcome> ExecuteExperimentLoop(string campaignPath, List<Analysis> analyses, List<ExperimentExecutionSummary> experimentSummaries, ExecutionControlToken token, ExperimentExecutionSummary startupSummary)
+  private async Task<ExperimentLoopOutcome> ExecuteExperimentLoop(string campaignPath, 
+    List<AnalysisResponse> analyses, 
+    List<ExperimentExecutionSummary> experimentSummaries,
+    ExecutionControlToken token, 
+    ExperimentExecutionSummary startupSummary)
   {
     var currentPhase = ExperimentPhase.Initialize;
     var currentExperimentPath = "";
@@ -306,7 +310,7 @@ public class CampaignExecutor : ICampaignExecutor
     }
   }
 
-  private async Task<ExperimentPhase> PrepareExperiment(List<Analysis> analyses, List<ExperimentExecutionSummary> experimentSummaries, ExecutionControlToken token)
+  private async Task<ExperimentPhase> PrepareExperiment(List<AnalysisResponse> analyses, List<ExperimentExecutionSummary> experimentSummaries, ExecutionControlToken token)
   {
     if(_currentExperimentTemplate is null)
     {
@@ -402,7 +406,10 @@ public class CampaignExecutor : ICampaignExecutor
       : await HandleError(failedCommandSummary, token);
   }
 
-  private async Task<ExperimentPhase> AnalyzeCurrentExperiment(ExperimentExecutionSummary startupSummary, List<Analysis> analyses, List<ExperimentExecutionSummary> experimentSummaries, ExecutionControlToken token)
+  private async Task<ExperimentPhase> AnalyzeCurrentExperiment(ExperimentExecutionSummary startupSummary, 
+    List<AnalysisResponse> analyses, 
+    List<ExperimentExecutionSummary> experimentSummaries, 
+    ExecutionControlToken token)
   {
     if(token.IsCancelled)
       return ExperimentPhase.Canceled;
@@ -411,6 +418,7 @@ public class CampaignExecutor : ICampaignExecutor
       return ExperimentPhase.Failed;
 
     var result = await AnalyzeResult(_currentExecutorResult.ExperimentExecutor, _currentSummary, startupSummary, analyses, token);
+
     if(!result.Continue)
       return result.Success ? ExperimentPhase.Canceled : ExperimentPhase.Failed;
 
@@ -419,7 +427,7 @@ public class CampaignExecutor : ICampaignExecutor
     return ExperimentPhase.Complete;
   }
 
-  private async Task<ExperimentPhase> ReplanCurrentExperiment(List<Analysis> analyses, List<ExperimentExecutionSummary> experimentSummaries, ExecutionControlToken token)
+  private async Task<ExperimentPhase> ReplanCurrentExperiment(List<AnalysisResponse> analyses, List<ExperimentExecutionSummary> experimentSummaries, ExecutionControlToken token)
   {
     if(_currentExperimentTemplate is null)
     {
@@ -516,7 +524,7 @@ public class CampaignExecutor : ICampaignExecutor
     }
   }
 
-  private async Task<bool> PlanExperiment(List<Analysis> analyses, 
+  private async Task<bool> PlanExperiment(List<AnalysisResponse> analyses, 
     ExperimentTemplate currentExperimentTemplate, 
     List<ExperimentExecutionSummary> experimentSummaries, 
     ExecutionControlToken token)
@@ -554,7 +562,7 @@ public class CampaignExecutor : ICampaignExecutor
   private async Task<(bool Success, bool Continue)> AnalyzeResult(ExperimentExecutor experimentExecutor, 
     ExperimentExecutionSummary experimentSummary, 
     ExperimentExecutionSummary startupSummary, 
-    List<Analysis> analyses, 
+    List<AnalysisResponse> analyses, 
     ExecutionControlToken token)
   {
     var metadata = new RequestMetadata 
@@ -579,11 +587,11 @@ public class CampaignExecutor : ICampaignExecutor
     // The following are top level checks for analysis failure in case the
     // failure is not properly handled on the Analysis itself
     // which also has support for "success" and "error" message
-    if (analysis is null || analysis.Result == float.NaN)
+    if (analysis is null || !analysis.Objectives.Any())
     {
       Status.AnalysisState = AnalysisState.AnalysisError;
       await _notifier.Notify("Analysis Failure", $"Analysis was reported as successful, but no actual analysis was provided. {analysis?.ErrorString ?? "No error string provided"}", NotificationSeverityEnum.Error);
-      _logger.LogError("Failed to analyze. The analysis result came back as {Result}", analysis?.Result);
+      _logger.LogError("Failed to analyze. The analysis result came back as {Result}", analysis?.Objectives);
       return (false, false);
     }
 
@@ -614,6 +622,7 @@ public class CampaignExecutor : ICampaignExecutor
     analyses.Add(analysis);
 
     _analysisRepo.Add(analysis);
+
     // Here the analysis has failed, but the analyzer properly reported why
     // it failed via the analysis result.
     if(analysis.ErrorString != string.Empty && string.IsNullOrEmpty(analysis.ErrorString))
@@ -625,7 +634,7 @@ public class CampaignExecutor : ICampaignExecutor
     return (true, true);
   }
 
-  private async Task<(bool Success, ExperimentExecutionSummary Summary)> ExecuteCloseout(List<Analysis> analyses, List<ExperimentExecutionSummary> experimentSummaries, ExecutionControlToken token, bool executionSuccess)
+  private async Task<(bool Success, ExperimentExecutionSummary Summary)> ExecuteCloseout(List<AnalysisResponse> analyses, List<ExperimentExecutionSummary> experimentSummaries, ExecutionControlToken token, bool executionSuccess)
   {
     _logger.LogInformation("Closeout template is set. Running the closeout script.");
     var closeoutExecutorResult = await GenerateExperimentExecutor(Template.CloseoutTemplate, analyses, experimentSummaries.Select(es => es.ExperimentOverview), token.CancellationToken);
@@ -726,7 +735,7 @@ public class CampaignExecutor : ICampaignExecutor
     .Any(cmd => cmd.State == ExecutionState.AwaitingUser));
 
   private async Task<ExperimentExecutorResult> GenerateExperimentExecutor(ExperimentTemplate template, 
-    IEnumerable<Analysis> analyses, 
+    IEnumerable<AnalysisResponse> analyses, 
     IEnumerable<ExperimentOverview> previousExperiments, 
     CancellationToken cancellationToken)
   {
