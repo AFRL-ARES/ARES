@@ -44,14 +44,7 @@ internal sealed class CustomCommandMonacoProviderAdapter(
     try
     {
       var wrappedScript = BuildWrappedScript(script);
-      return semanticTokensProvider.GetSemanticTokens(wrappedScript)
-        .Where(token => token.Line > WrappedBodyLineOffset)
-        .Select(token => token with
-        {
-          Line = ToBodyLine(token.Line),
-          StartColumn = ToBodyColumn(token.StartColumn)
-        })
-        .ToArray();
+      return MapSemanticTokens(semanticTokensProvider.GetSemanticTokens(wrappedScript));
     }
     catch
     {
@@ -62,11 +55,11 @@ internal sealed class CustomCommandMonacoProviderAdapter(
   internal static SemanticToken[] MapSemanticTokens(IEnumerable<SemanticToken> tokens)
   {
     return tokens
-      .Where(token => token.Line > WrappedBodyLineOffset)
+      .Where(token => token.Line >= WrappedBodyLineOffset)
       .Select(token => token with
       {
-        Line = ToBodyLine(token.Line),
-        StartColumn = ToBodyColumn(token.StartColumn)
+        Line = token.Line - WrappedBodyLineOffset,
+        StartColumn = Math.Max(0, token.StartColumn - WrappedBodyColumnOffset)
       })
       .ToArray();
   }

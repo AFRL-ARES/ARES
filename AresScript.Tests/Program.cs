@@ -393,7 +393,7 @@ public class InterpreterTests
     Assert.That(tokens, Has.Exactly(1).Matches<ScriptSemanticToken>(t =>
       t.Type == ScriptSemanticTokenType.Function
       && t.Line == 0
-      && t.StartColumn == 1
+      && t.StartColumn == 0
       && t.Length == 3));
   }
 
@@ -409,17 +409,17 @@ public class InterpreterTests
     Assert.That(tokens, Has.Some.Matches<ScriptSemanticToken>(t =>
       t.Type == ScriptSemanticTokenType.Variable
       && t.Line == 0
-      && t.StartColumn == 1
+      && t.StartColumn == 0
       && t.Length == 5));
     Assert.That(tokens, Has.Some.Matches<ScriptSemanticToken>(t =>
       t.Type == ScriptSemanticTokenType.Function
       && t.Line == 0
-      && t.StartColumn == 9
+      && t.StartColumn == 8
       && t.Length == 3));
     Assert.That(tokens, Has.Some.Matches<ScriptSemanticToken>(t =>
       t.Type == ScriptSemanticTokenType.Variable
       && t.Line == 0
-      && t.StartColumn == 13
+      && t.StartColumn == 12
       && t.Length == 3));
   }
 
