@@ -439,15 +439,26 @@
                 {
                   <RadzenChart Style="height: 260px; width: 100%;">
                     <RadzenChartTooltipOptions Shared="false" />
-                    <RadzenLineSeries Data="@ViewModel!.AnalyzerMetrics"
-                                      TItem="ChartMetricPoint"
-                                      CategoryProperty="ExecutionIndex"
-                                      ValueProperty="RawValue"
-                                      Title="Objective Score"
-                                      Stroke="#ff8db3">
-                      <RadzenMarkers MarkerType="MarkerType.Square" />
+                    @foreach(var analyzerSeries in ViewModel!.AnalyzerMetrics)
+                    {
+                      <RadzenLineSeries Data="@analyzerSeries.Value" TItem="ChartMetricPoint" CategoryProperty="ExecutionIndex" ValueProperty="PlotValue" Title="@analyzerSeries.Key" Stroke="#ff8db3">
+                        <ChildContent>
+                          <RadzenMarkers Visible="true" MarkerType="MarkerType.Circle" Size="6"/>
+                        </ChildContent>
+
+                        <TooltipTemplate Context="data">
+                          <div class="chart-tooltip">
+                            <span>@analyzerSeries.Key: </span>
+                            <strong>@data.RawValue</strong>
+                          </div>
+                        </TooltipTemplate>
                     </RadzenLineSeries>
+                    }
+
                     <RadzenCategoryAxis Step="1" />
+                      <RadzenValueAxis Min="0" Max="100" Step="25">
+                        <RadzenGridLines Visible="false" />
+                      </RadzenValueAxis>
                   </RadzenChart>
                 }
                 else

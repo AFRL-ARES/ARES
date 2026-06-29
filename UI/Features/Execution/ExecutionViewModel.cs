@@ -407,15 +407,18 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     foreach(var objective in transaction.AnalysisResponse.Objectives)
     {
       var found = objective.ObjectiveValue.TryGetNumericValue(out var numericValue);
-      
-      if(found)
+      if(!found)
+        return;
+
+      if(!AnalyzerMetrics.ContainsKey(objective.ObjectiveName))
+        AnalyzerMetrics[objective.ObjectiveName] = new List<ChartMetricPoint>();
+
+      AnalyzerMetrics[objective.ObjectiveName].Add(new ChartMetricPoint
       {
-        AnalyzerMetrics.Add(new ChartMetricPoint
-        {
-          ExecutionIndex = currentTurn,
-          RawValue = numericValue
-        });
-      }
+        ExecutionIndex = currentTurn,
+        RawValue = numericValue,
+        PlotValue = numericValue
+      });      
     }
   }
 
@@ -755,7 +758,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   [Reactive]
   public partial Dictionary<string, List<ChartMetricPoint>> PlannerMetricsMap { get; private set; }
   [Reactive]
-  public partial List<ChartMetricPoint> AnalyzerMetrics { get; private set; }
+  public partial Dictionary<string, List<ChartMetricPoint>> AnalyzerMetrics { get; private set; }
   [Reactive]
   public partial IList<ExperimentExecutionStatus> ExperimentExecutionStatuses { get; private set; }
   [Reactive]

@@ -587,14 +587,6 @@ public class CampaignExecutor : ICampaignExecutor
     // The following are top level checks for analysis failure in case the
     // failure is not properly handled on the Analysis itself
     // which also has support for "success" and "error" message
-    if (analysis is null || !analysis.Objectives.Any())
-    {
-      Status.AnalysisState = AnalysisState.AnalysisError;
-      await _notifier.Notify("Analysis Failure", $"Analysis was reported as successful, but no actual analysis was provided. {analysis?.ErrorString ?? "No error string provided"}", NotificationSeverityEnum.Error);
-      _logger.LogError("Failed to analyze. The analysis result came back as {Result}", analysis?.Objectives);
-      return (false, false);
-    }
-
     if(analysis.AnalysisOutcome == Outcome.Failure)
     {
       Status.AnalysisState = AnalysisState.AnalysisError;
@@ -615,6 +607,14 @@ public class CampaignExecutor : ICampaignExecutor
     { 
       await _notifier.Notify("Warning From Analyzer!", $"Analysis completed successfully, but the analyzer emitted a warning! {analysis.ErrorString}", NotificationSeverityEnum.Warning);
       _logger.LogWarning("Analysis completed successfully, but the analyzer emitted a warning! {Warning}", analysis.ErrorString);
+    }
+
+    if(analysis is null || !analysis.Objectives.Any())
+    {
+      Status.AnalysisState = AnalysisState.AnalysisError;
+      await _notifier.Notify("Analysis Failure", $"Analysis was reported as successful, but no actual analysis was provided. {analysis?.ErrorString ?? "No error string provided"}", NotificationSeverityEnum.Error);
+      _logger.LogError("Failed to analyze. The analysis result came back as {Result}", analysis?.Objectives);
+      return (false, false);
     }
 
     Status.AnalysisState = AnalysisState.AnalysisComplete;
