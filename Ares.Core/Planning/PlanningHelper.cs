@@ -19,9 +19,9 @@ public class PlanningHelper : IPlanningHelper
   private readonly INotifier _notifier;
   private readonly IDbContextFactory<CoreDatabaseContext> _dbContextFactory;
 
-  public PlanningHelper(IPlannerServiceRepo plannerManager, 
-    ILogger<PlanningHelper> logger, 
-    INotifier notifier, 
+  public PlanningHelper(IPlannerServiceRepo plannerManager,
+    ILogger<PlanningHelper> logger,
+    INotifier notifier,
     IDbContextFactory<CoreDatabaseContext> dbContextFactory)
   {
     _plannerManager = plannerManager;
@@ -80,7 +80,7 @@ public class PlanningHelper : IPlanningHelper
   /// <param name="parameterArray"></param>
   /// <param name="cancellationToken"></param>
   /// <returns></returns>
-  private async Task<bool> RequestNewPlans(IPlannerService planner, 
+  private async Task<bool> RequestNewPlans(IPlannerService planner,
     IGrouping<IPlannerService, (IPlannerService, ParameterMetadata)> grouping,
     IEnumerable<ExperimentOverview> seedExperiments,
     Analysis[] seedAnalysesArr,
@@ -147,9 +147,9 @@ public class PlanningHelper : IPlanningHelper
   /// <param name="statusCode">The previous plans status code</param>
   /// <param name="metadata">Request metadata</param>
   /// <returns>An ARES <cref><see cref="PlanningRequest"/></cref></returns>
-  private PlanningRequest CreatePlanningRequest(ParameterMetadata[] plannableParameters, 
-    IEnumerable<ExperimentOverview> seedExperiments, 
-    Analysis[] seedAnalysesArr, 
+  private PlanningRequest CreatePlanningRequest(ParameterMetadata[] plannableParameters,
+    IEnumerable<ExperimentOverview> seedExperiments,
+    Analysis[] seedAnalysesArr,
     List<PlanStatusCode> statusCodes,
     int batchSize,
     RequestMetadata metadata)
@@ -195,7 +195,7 @@ public class PlanningHelper : IPlanningHelper
   /// <returns>A bool indicating whether or not resolving variables was a success</returns>
   private async Task<bool> HandleLegacyPlanResponse(PlanningResponse planResponse, Parameter[] parameterArray)
   {
-    #pragma warning disable CS0612 // Type or member is obsolete
+#pragma warning disable CS0612 // Type or member is obsolete
 
     if(planResponse.PlanningOutcome == Outcome.Failure)
     {
@@ -237,7 +237,7 @@ public class PlanningHelper : IPlanningHelper
     }
 
     return true;
-    #pragma warning restore CS0612 // Type or member is obsolete
+#pragma warning restore CS0612 // Type or member is obsolete
   }
 
   /// <summary>
@@ -259,7 +259,7 @@ public class PlanningHelper : IPlanningHelper
   }
 
   /// <summary>
-  /// Taks in a piece of parameter metadata and the experiment history to create an ARES planning parameter.
+  /// Takes in a piece of parameter metadata and the experiment history to create an ARES planning parameter.
   /// </summary>
   /// <param name="metadata"></param>
   /// <param name="experimentHistory"></param>
