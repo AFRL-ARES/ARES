@@ -399,7 +399,18 @@ public class AutomationService : AresAutomation.AresAutomationBase
 
   public override Task<ReplicateRate> GetReplicateRate(Empty request, ServerCallContext? context)
   {
-    return Task.FromResult(new ReplicateRate { ReplicateRate_ = _executionManager.ReplanRate });
+    return Task.FromResult(new ReplicateRate { ReplicateRate_ = _executionManager.ReplicateRate });
+  }
+
+  public override Task<Empty> SetPlanningBatchSize(PlanningBatchSize request, ServerCallContext? context)
+  {
+    _executionManager.UpdateBatchPlanningSize(request.BatchSize);
+    return Task.FromResult(new Empty());
+  }
+
+  public override Task<PlanningBatchSize> GetPlanningBatchSize(Empty request, ServerCallContext? context)
+  {
+    return Task.FromResult(new PlanningBatchSize { BatchSize = _executionManager.PlanningBatchSize });
   }
 
   public override Task<Empty> SetAnalysisResultStopCondition(AnalysisResultCondition request, ServerCallContext? context)
