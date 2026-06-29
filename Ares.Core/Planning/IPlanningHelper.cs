@@ -23,6 +23,8 @@ public interface IPlanningHelper
     IEnumerable<Parameter> parameters,
     IEnumerable<AnalysisResponse> seedAnalyses,
     IEnumerable<ExperimentOverview> seedExperiments,
+    int batchSize,
+    List<PlanStatusCode> codes,
     CancellationToken cancellationToken);
 
   /// <summary>

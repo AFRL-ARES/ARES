@@ -3,6 +3,7 @@ using Ares.Core.AresEnvironment;
 using Ares.Core.Device.State.Logging;
 using Ares.Core.Exceptions;
 using Ares.Core.Execution.ControlTokens;
+using Ares.Core.Execution.Enums;
 using Ares.Core.Execution.Executors.Composers;
 using Ares.Core.Execution.Extensions;
 using Ares.Core.Execution.Safety;
@@ -13,6 +14,7 @@ using Ares.Core.Planning;
 using Ares.Core.Settings;
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.Extensions.Logging;
@@ -22,28 +24,7 @@ using System.Reactive.Subjects;
 namespace Ares.Core.Execution.Executors;
 
 public class CampaignExecutor : ICampaignExecutor
-{
-  private enum ExperimentPhase
-  {
-    Initialize,
-    Plan,
-    Compose,
-    Execute,
-    Analyze,
-    Retry,
-    Replan,
-    Complete,
-    Failed,
-    Canceled
-  }
-
-  private enum ExperimentLoopOutcome
-  {
-    Succeeded,
-    Failed,
-    Canceled
-  }
-
+{ 
   private readonly IExecutionReporter _executionReporter;
   private readonly ISubject<CampaignExecutionStatus> _executionStatusSubject;
   private readonly ICommandComposer<ExperimentTemplate, ExperimentExecutor> _experimentComposer;
@@ -66,6 +47,7 @@ public class CampaignExecutor : ICampaignExecutor
   private ExperimentTemplate? _currentExperimentTemplate = null;
   private int _experimentCount = 0;
   private TaskCompletionSource<ErrorHandling>? _userDecisionSource;
+  private List<PlanStatusCode> _latestPlanStatusCodes = new List<PlanStatusCode>();
 
   internal CampaignExecutor(ICommandComposer<ExperimentTemplate, ExperimentExecutor> experimentComposer,
     IPlanningHelper planningHelper,
@@ -226,12 +208,13 @@ public class CampaignExecutor : ICampaignExecutor
     return (true, startupSummary);
   }
 
-  private async Task<ExperimentLoopOutcome> ExecuteExperimentLoop(string campaignPath, 
+  private async Task<ExperimentLoopOutcome> ExecuteExperimentLoop(string campaignPath,
     List<AnalysisResponse> analyses, 
     List<ExperimentExecutionSummary> experimentSummaries,
     ExecutionControlToken token, 
     ExperimentExecutionSummary startupSummary)
   {
+    _latestPlanStatusCodes = new List<PlanStatusCode>();
     var currentPhase = ExperimentPhase.Initialize;
     var currentExperimentPath = "";
     var failedExperimentRetryCount = 0;
@@ -321,7 +304,7 @@ public class CampaignExecutor : ICampaignExecutor
     if(!_currentExperimentTemplate.IsResolved())
     {
       _logger.LogTrace("Experiment has not been resolved, ARES will now begin the planning process.");
-      if(analyses.Count % ReplanRate == 0)
+      if(analyses.Count % ReplicateRate == 0)
       {
         if(!await PlanExperiment(analyses, _currentExperimentTemplate, experimentSummaries, token))
         {
@@ -401,9 +384,17 @@ public class CampaignExecutor : ICampaignExecutor
       .SelectMany(s => s.CommandSummaries)
       .FirstOrDefault(c => !c.Result.Success);
 
-    return failedCommandSummary is null
-      ? ExperimentPhase.Analyze
-      : await HandleError(failedCommandSummary, token);
+    if(failedCommandSummary is null)
+    {
+      _latestPlanStatusCodes.Add(PlanStatusCode.PlanAccepted);
+      return ExperimentPhase.Analyze;
+    }
+
+    else
+    {
+      UpdatePlanStatus(failedCommandSummary.StatusCode);
+      return await HandleError(failedCommandSummary, token);
+    }
   }
 
   private async Task<ExperimentPhase> AnalyzeCurrentExperiment(ExperimentExecutionSummary startupSummary, 
@@ -487,6 +478,7 @@ public class CampaignExecutor : ICampaignExecutor
 
       var decisionSource = new TaskCompletionSource<ErrorHandling>(TaskCreationOptions.RunContinuationsAsynchronously);
       _userDecisionSource = decisionSource;
+
       try
       {
         errorHandling = await decisionSource.Task.WaitAsync(token.CancellationToken);
@@ -523,15 +515,24 @@ public class CampaignExecutor : ICampaignExecutor
         return ExperimentPhase.Failed;
     }
   }
+  private void UpdatePlanStatus(CommandStatusCode failCode)
+  {
+    if(failCode == CommandStatusCode.OutOfRange || failCode == CommandStatusCode.ParametersUnachievable)
+      _latestPlanStatusCodes.Add(PlanStatusCode.PlanUnachievable);
 
-  private async Task<bool> PlanExperiment(List<AnalysisResponse> analyses, 
-    ExperimentTemplate currentExperimentTemplate, 
-    List<ExperimentExecutionSummary> experimentSummaries, 
+    else
+      _latestPlanStatusCodes.Add(PlanStatusCode.PlanFailed);
+  }
+
+  private async Task<bool> PlanExperiment(List<AnalysisResponse> analyses,
+    ExperimentTemplate currentExperimentTemplate,
+    List<ExperimentExecutionSummary> experimentSummaries,
     ExecutionControlToken token)
   {
     Status.PlannerState = PlannerState.PlanningInProgress;
     ReportCampaignStatus();
-    _logger.LogTrace("Analyses count is {count} and replan rate {rate}", analyses.Count(), ReplanRate);
+    _logger.LogTrace("Analyses count is {count} and replan rate {rate}", analyses.Count(), ReplicateRate);
+
 
     var metadata = new RequestMetadata
     {
@@ -548,6 +549,8 @@ public class CampaignExecutor : ICampaignExecutor
       currentExperimentTemplate.GetAllPlannedParameters(),
       analyses,
       experimentSummaries.Select(es => es.ExperimentOverview),
+      BatchPlanningSize,
+      _latestPlanStatusCodes,
       token.CancellationToken);
 
     if(!resolveSuccess)
@@ -736,7 +739,7 @@ public class CampaignExecutor : ICampaignExecutor
 
   private async Task<ExperimentExecutorResult> GenerateExperimentExecutor(ExperimentTemplate template, 
     IEnumerable<AnalysisResponse> analyses, 
-    IEnumerable<ExperimentOverview> previousExperiments, 
+    IEnumerable<ExperimentOverview> previousExperiments,
     CancellationToken cancellationToken)
   {
     var result = new ExperimentExecutorResult();
@@ -746,11 +749,11 @@ public class CampaignExecutor : ICampaignExecutor
     if(!experimentTemplate.IsResolved())
     {
       _logger.LogTrace("Experiment was not resolved");
-      if(analyses.Count() % ReplanRate == 0)
+      if(analyses.Count() % ReplicateRate == 0)
       {
         Status.PlannerState = PlannerState.PlanningInProgress;
         ReportCampaignStatus();
-        _logger.LogTrace("Analyses count is {count} and replan rate {rate}", analyses.Count(), ReplanRate);
+        _logger.LogTrace("Analyses count is {count} and replan rate {rate}", analyses.Count(), ReplicateRate);
         
         var metadata = new RequestMetadata 
         { 
@@ -766,7 +769,9 @@ public class CampaignExecutor : ICampaignExecutor
           metadata, 
           experimentTemplate.GetAllPlannedParameters(), 
           analyses, 
-          previousExperiments, 
+          previousExperiments,
+          BatchPlanningSize,
+          _latestPlanStatusCodes,
           cancellationToken);
 
         if(!resolveSuccess)
@@ -849,7 +854,8 @@ public class CampaignExecutor : ICampaignExecutor
 
   public CampaignTemplate Template { get; }
   public IList<IStopCondition> StopConditions { get; } = [];
-  public double ReplanRate { get; set; } = 1;
+  public int ReplicateRate { get; set; } = 1;
+  public int BatchPlanningSize { get; set; } = 1;
   public string? ExecutionNotes { get; set; }
   public List<AresCampaignTag> CampaignTags { get; set; } = [];
   public IObservable<CampaignExecutionStatus> ExperimentStatusObservable { get; }
