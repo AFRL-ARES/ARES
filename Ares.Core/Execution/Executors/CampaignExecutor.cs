@@ -47,7 +47,7 @@ public class CampaignExecutor : ICampaignExecutor
   private ExperimentTemplate? _currentExperimentTemplate = null;
   private int _experimentCount = 0;
   private TaskCompletionSource<ErrorHandling>? _userDecisionSource;
-  private List<PlanStatusCode> _latestPlanStatusCode = new List<PlanStatusCode>();
+  private List<PlanStatusCode> _latestPlanStatusCodes = new List<PlanStatusCode>();
 
   internal CampaignExecutor(ICommandComposer<ExperimentTemplate, ExperimentExecutor> experimentComposer,
     IPlanningHelper planningHelper,
@@ -99,7 +99,7 @@ public class CampaignExecutor : ICampaignExecutor
 
     await _planningHelper.ReseedManualPlanner();
 
-    var campaignStartTime = DateTime.UtcNow;
+    CampaignStartTime = DateTime.UtcNow;
     var experimentSummaries = new List<ExperimentExecutionSummary>();
     ExperimentExecutionSummary startupSummary = new();
     ExperimentExecutionSummary closeoutSummary = new();
@@ -107,8 +107,7 @@ public class CampaignExecutor : ICampaignExecutor
     
     try
     {
-      var campaignPath = await InitializeCampaign(campaignStartTime);
-      
+      var campaignPath = await InitializeCampaign(CampaignStartTime);
       var analyses = new List<Analysis>();
       
       ResetStatus(token);
@@ -144,7 +143,7 @@ public class CampaignExecutor : ICampaignExecutor
       await _stateLoggerManager.DisableOverrideAsync();
     }
     
-    return CreateCampaignSummary(campaignStartTime, experimentSummaries, startupSummary, closeoutSummary);
+    return CreateCampaignSummary(CampaignStartTime, experimentSummaries, startupSummary, closeoutSummary);
   }
 
   private async Task<string> InitializeCampaign(DateTime startTime)
@@ -215,7 +214,7 @@ public class CampaignExecutor : ICampaignExecutor
     ExecutionControlToken token, 
     ExperimentExecutionSummary startupSummary)
   {
-    _latestPlanStatusCode = new List<PlanStatusCode>();
+    _latestPlanStatusCodes = new List<PlanStatusCode>();
     var currentPhase = ExperimentPhase.Initialize;
     var currentExperimentPath = "";
     var failedExperimentRetryCount = 0;
@@ -387,7 +386,7 @@ public class CampaignExecutor : ICampaignExecutor
 
     if(failedCommandSummary is null)
     {
-      _latestPlanStatusCode.Add(PlanStatusCode.PlanAccepted);
+      _latestPlanStatusCodes.Add(PlanStatusCode.PlanAccepted);
       return ExperimentPhase.Analyze;
     }
 
@@ -513,16 +512,20 @@ public class CampaignExecutor : ICampaignExecutor
     }
   }
 
+
   private void UpdatePlanStatus(CommandStatusCode failCode)
   {
     if(failCode == CommandStatusCode.OutOfRange || failCode == CommandStatusCode.ParametersUnachievable)
-      _latestPlanStatusCode.Add(PlanStatusCode.PlanUnachievable);
+      _latestPlanStatusCodes.Add(PlanStatusCode.PlanUnachievable);
 
     else
-      _latestPlanStatusCode.Add(PlanStatusCode.PlanFailed);
+      _latestPlanStatusCodes.Add(PlanStatusCode.PlanFailed);
   }
 
-  private async Task<bool> PlanExperiment(List<Analysis> analyses, ExperimentTemplate currentExperimentTemplate, List<ExperimentExecutionSummary> experimentSummaries, ExecutionControlToken token)
+  private async Task<bool> PlanExperiment(List<Analysis> analyses, 
+    ExperimentTemplate currentExperimentTemplate, 
+    List<ExperimentExecutionSummary> experimentSummaries, 
+    ExecutionControlToken token)
   {
     Status.PlannerState = PlannerState.PlanningInProgress;
     ReportCampaignStatus();
@@ -535,7 +538,8 @@ public class CampaignExecutor : ICampaignExecutor
       CampaignName = Template.Name,
       ExperimentId = currentExperimentTemplate.UniqueId ?? "",
       SystemName = "ARES OS",
-      ExperimentStartTime = DateTime.UtcNow.ToUniversalTime().ToTimestamp()
+      ExperimentStartTime = DateTime.UtcNow.ToUniversalTime().ToTimestamp(),
+      CampaignStartTime = CampaignStartTime.ToUniversalTime().ToTimestamp()
     };
 
     var resolveSuccess = await _planningHelper.TryResolveParameters(Template.PlannerAllocations,
@@ -544,7 +548,7 @@ public class CampaignExecutor : ICampaignExecutor
       analyses,
       experimentSummaries.Select(es => es.ExperimentOverview),
       BatchPlanningSize,
-      _latestPlanStatusCode,
+      _latestPlanStatusCodes,
       token.CancellationToken);
 
     if(!resolveSuccess)
@@ -556,7 +560,11 @@ public class CampaignExecutor : ICampaignExecutor
     return resolveSuccess;
   }
 
-  private async Task<(bool Success, bool Continue)> AnalyzeResult(ExperimentExecutor experimentExecutor, ExperimentExecutionSummary experimentSummary, ExperimentExecutionSummary startupSummary, List<Analysis> analyses, ExecutionControlToken token)
+  private async Task<(bool Success, bool Continue)> AnalyzeResult(ExperimentExecutor experimentExecutor, 
+    ExperimentExecutionSummary experimentSummary, 
+    ExperimentExecutionSummary startupSummary, 
+    List<Analysis> analyses, 
+    ExecutionControlToken token)
   {
     var metadata = new RequestMetadata 
     { 
@@ -564,7 +572,8 @@ public class CampaignExecutor : ICampaignExecutor
       CampaignName = Template.Name, 
       ExperimentId = experimentExecutor.Template.UniqueId, 
       SystemName = "ARES OS",
-      ExperimentStartTime = experimentSummary.ExecutionInfo.TimeStarted
+      ExperimentStartTime = experimentSummary.ExecutionInfo.TimeStarted,
+      CampaignStartTime = CampaignStartTime.ToUniversalTime().ToTimestamp()
     };
 
     Status.AnalysisState = AnalysisState.AnalysisInProgress;
@@ -749,7 +758,8 @@ public class CampaignExecutor : ICampaignExecutor
           CampaignName = Template.Name, 
           ExperimentId = experimentTemplate.UniqueId, 
           SystemName = "ARES OS",
-          ExperimentStartTime = DateTime.UtcNow.ToUniversalTime().ToTimestamp()
+          ExperimentStartTime = DateTime.UtcNow.ToUniversalTime().ToTimestamp(),
+          CampaignStartTime = CampaignStartTime.ToUniversalTime().ToTimestamp()
         };
 
         var resolveSuccess = await _planningHelper.TryResolveParameters(Template.PlannerAllocations, 
@@ -758,7 +768,7 @@ public class CampaignExecutor : ICampaignExecutor
           analyses, 
           previousExperiments,
           BatchPlanningSize,
-          _latestPlanStatusCode,
+          _latestPlanStatusCodes,
           cancellationToken);
 
         if(!resolveSuccess)
@@ -847,6 +857,7 @@ public class CampaignExecutor : ICampaignExecutor
   public List<AresCampaignTag> CampaignTags { get; set; } = [];
   public IObservable<CampaignExecutionStatus> ExperimentStatusObservable { get; }
   public CampaignExecutionStatus Status { get; private set; }
+  public DateTime CampaignStartTime { get; set; } = DateTime.MinValue;
 }
 
 

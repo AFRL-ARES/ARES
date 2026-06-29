@@ -18,244 +18,302 @@
 @inject DeviceStateDatasetGenerator DatasetGenerator
 @inject IJSRuntime JS
 
-<section class="device-state-explorer">
-  <div class="explorer-header">
-    <div>
-      <h3>Device State Explorer</h3>
-      <p>Select devices with logged state data to inspect their captured values.</p>
-    </div>
+@if(_devices is null || _campaigns is null)
+{
+  <LoadingSpinner />
+}
 
-    <div class="state-summary" aria-label="Device state summary">
+else
+{
+  <section class="device-state-explorer">
+    <div class="explorer-header">
       <div>
-        <span class="summary-value">@DeviceCount</span>
-        <span class="summary-label">Devices</span>
+        <h3>Device State Explorer</h3>
+        <p>Select devices with logged state data to inspect their captured values.</p>
       </div>
-      <div>
-        <span class="summary-value">@_selectedDeviceIds.Count</span>
-        <span class="summary-label">Selected</span>
-      </div>
-    </div>
-  </div>
 
-  <div class="device-state-grid">
-    <aside class="device-panel" aria-label="Devices with state data">
-      <div class="panel-toolbar">
+      <div class="state-summary" aria-label="Device state summary">
         <div>
-          <h4>Devices</h4>
-          <span>@FilteredDeviceCount shown</span>
+          <span class="summary-value">@DeviceCount</span>
+          <span class="summary-label">Devices</span>
         </div>
-
-        <button type="button" class="clear-button" @onclick="ClearSelection" disabled="@(!_selectedDeviceIds.Any() || _loadingDatasets)">
-          Clear
-        </button>
+        <div>
+          <span class="summary-value">@_selectedDeviceIds.Count</span>
+          <span class="summary-label">Selected</span>
+        </div>
       </div>
+    </div>
 
-      <label class="search-field">
-        <RadzenIcon Icon="search" />
-        <input type="search" placeholder="Filter devices" disabled="@_loadingDatasets" @bind="_filterText" @bind:event="oninput" />
-      </label>
+    <div class="device-state-grid">
+      <aside class="device-panel" aria-label="Devices with state data">
+        <div class="panel-toolbar">
+          <div>
+            <h4>Devices</h4>
+            <span>@FilteredDeviceCount shown</span>
+          </div>
 
-      @if (_devices == null)
-      {
-        <div class="empty-state compact">
-          <RadzenIcon Icon="hourglass_empty" />
-          <span>Loading devices...</span>
-        </div>
-      }
-      else if (!_devices.Any())
-      {
-        <div class="empty-state compact">
-          <RadzenIcon Icon="devices" />
-          <span>No device state data found.</span>
-        </div>
-      }
-      else if (!FilteredDevices.Any())
-      {
-        <div class="empty-state compact">
-          <RadzenIcon Icon="search_off" />
-          <span>No devices match this filter.</span>
-        </div>
-      }
-      else
-      {
-        <ul class="device-list">
-          @foreach (var device in FilteredDevices)
-          {
-            var isSelected = _selectedDeviceIds.Contains(device.Id);
-
-            <li class="@(isSelected ? "selected" : null)">
-              <label>
-                <input type="checkbox" checked="@isSelected" disabled="@_loadingDatasets" @onchange="args => ToggleDevice(device.Id, args)" />
-                <span class="device-marker" aria-hidden="true"></span>
-                <span class="device-text">
-                  <span class="device-name">@device.Name</span>
-                  <span class="device-id">@device.Type</span>
-                </span>
-              </label>
-            </li>
-          }
-        </ul>
-      }
-
-      <section class="filter-panel" aria-label="Device state filters">
-        <div class="filter-panel-header">
-          <h4>Filters</h4>
-          <button type="button" class="clear-button" @onclick="ClearFilters" disabled="@(!HasActiveFilters || _loadingDatasets)">
-            Reset
+          <button type="button" class="clear-button" @onclick="ClearSelection" disabled="@(!_selectedDeviceIds.Any() || _loadingDatasets)">
+            Clear
           </button>
         </div>
 
-        <div class="filter-stack">
-          <div class="filter-row">
-            <label class="filter-toggle">
-              <input type="checkbox" disabled="@_loadingDatasets" @bind="_useStartTime" />
-              <span>Start</span>
-            </label>
-            <RadzenDatePicker @bind-Value="_startTime" TValue="DateTime" ShowTime="true" HourFormat="24"
-                              DateFormat="MM/dd/yyyy HH:mm" Disabled="@(!_useStartTime || _loadingDatasets)" Style="width: 100%;" />
+        <label class="search-field">
+          <RadzenIcon Icon="search" />
+          <input type="search" placeholder="Filter devices" disabled="@_loadingDatasets" @bind="_filterText" @bind:event="oninput" />
+        </label>
+
+        @if(_devices == null)
+        {
+          <div class="empty-state compact">
+            <RadzenIcon Icon="hourglass_empty" />
+            <span>Loading devices...</span>
           </div>
-
-          <div class="filter-row">
-            <label class="filter-toggle">
-              <input type="checkbox" disabled="@_loadingDatasets" @bind="_useEndTime" />
-              <span>End</span>
-            </label>
-            <RadzenDatePicker @bind-Value="_endTime" TValue="DateTime" ShowTime="true" HourFormat="24"
-                              DateFormat="MM/dd/yyyy HH:mm" Disabled="@(!_useEndTime || _loadingDatasets)" Style="width: 100%;" />
+        }
+        else if(!_devices.Any())
+        {
+          <div class="empty-state compact">
+            <RadzenIcon Icon="devices" />
+            <span>No device state data found.</span>
           </div>
-
-          <label class="filter-field">
-            <span>Minimum Sample Interval</span>
-            <RadzenTimeSpanPicker @bind-Value="_minimumSampleInterval" TValue="TimeSpan"
-                                  Min="@TimeSpan.Zero" FieldPrecision="TimeSpanUnit.Millisecond"
-                                  Disabled="@_loadingDatasets" Placeholder="Minimum elapsed time"
-                                  Style="width: 100%;" />
-          </label>
-
-          <label class="filter-toggle">
-            <input type="checkbox" disabled="@_loadingDatasets" @bind="_useCampaign" />
-            <span>Campaign</span>
-          </label>
-
-          @if (_campaigns == null)
-          {
-            <div class="filter-loading">Loading campaigns...</div>
-          }
-          else
-          {
-            <RadzenDropDown Data="@_campaigns" TValue="string"
-                            TextProperty="@nameof(CampaignDisplayItem.CampaignName)"
-                            ValueProperty="@nameof(CampaignDisplayItem.SummaryId)" @bind-Value="_selectedCampaignId"
-                            Change="@OnCampaignChanged" Disabled="@(!_useCampaign || _loadingDatasets)" AllowClear="true" Placeholder="Select campaign"
-                            Style="width: 100%;">
-              <Template Context="campaign">
-                <div class="campaign-option">
-                  <span class="campaign-option-name">@campaign.CampaignName</span>
-                  <span class="campaign-option-meta">@campaign.TimeStartedDisplay</span>
-                  <span class="campaign-option-meta">@campaign.Timezone</span>
-                </div>
-              </Template>
-              <ValueTemplate Context="campaign">
-                <div class="campaign-option selected-value">
-                  <span class="campaign-option-name">@campaign.CampaignName</span>
-                  <span class="campaign-option-meta">@campaign.TimeStartedDisplay · @campaign.Timezone</span>
-                </div>
-              </ValueTemplate>
-            </RadzenDropDown>
-          }
-
-          <RadzenDropDown Data="@_experiments" TValue="string" TextProperty="@nameof(ExperimentDisplayItem.Name)"
-                          ValueProperty="@nameof(ExperimentDisplayItem.Id)" @bind-Value="_selectedExperimentId"
-                          Disabled="@(!_useCampaign || _experiments.Count == 0 || _loadingDatasets)" AllowClear="true"
-                          Placeholder="@ExperimentPlaceholder" Style="width: 100%;" />
-
-          <div class="filter-actions">
-            <button type="button" class="apply-button" @onclick="ApplyFiltersAsync" disabled="@(!CanApply)">
-              Apply
-            </button>
-
-            @if (_loadingDatasets)
+        }
+        else if(!FilteredDevices.Any())
+        {
+          <div class="empty-state compact">
+            <RadzenIcon Icon="search_off" />
+            <span>No devices match this filter.</span>
+          </div>
+        }
+        else
+        {
+          <ul class="device-list">
+            @foreach(var device in FilteredDevices)
             {
-              <button type="button" class="cancel-button" @onclick="CancelDatasetLoad" disabled="@_cancelingDatasetLoad">
+              var isSelected = _selectedDeviceIds.Contains(device.Id);
+
+              <li class="@(isSelected ? "selected" : null)">
+                <label>
+                  <input type="checkbox" checked="@isSelected" disabled="@_loadingDatasets" @onchange="args => ToggleDevice(device.Id, args)" />
+                  <span class="device-marker" aria-hidden="true"></span>
+                  <span class="device-text">
+                    <span class="device-name">@device.Name</span>
+                    <span class="device-id">@device.Type</span>
+                  </span>
+                </label>
+              </li>
+            }
+          </ul>
+        }
+
+        <section class="filter-panel" aria-label="Device state filters">
+          <div class="filter-panel-header">
+            <h4>Filters</h4>
+            <button type="button" class="clear-button" @onclick="ClearFilters" disabled="@(!HasActiveFilters || _loadingDatasets)">
+              Reset
+            </button>
+          </div>
+
+          <div class="filter-stack">
+            <div class="filter-row">
+              <label class="filter-toggle">
+                <input type="checkbox" disabled="@_loadingDatasets" @bind="_useStartTime" />
+                <span>Start</span>
+              </label>
+              <RadzenDatePicker @bind-Value="_startTime" TValue="DateTime" ShowTime="true" HourFormat="24"
+              DateFormat="MM/dd/yyyy HH:mm" Disabled="@(!_useStartTime || _loadingDatasets)" Style="width: 100%;" />
+            </div>
+
+            <div class="filter-row">
+              <label class="filter-toggle">
+                <input type="checkbox" disabled="@_loadingDatasets" @bind="_useEndTime" />
+                <span>End</span>
+              </label>
+              <RadzenDatePicker @bind-Value="_endTime" TValue="DateTime" ShowTime="true" HourFormat="24"
+              DateFormat="MM/dd/yyyy HH:mm" Disabled="@(!_useEndTime || _loadingDatasets)" Style="width: 100%;" />
+            </div>
+
+            <label class="filter-field">
+              <span>Minimum Sample Interval</span>
+              <RadzenTimeSpanPicker @bind-Value="_minimumSampleInterval" TValue="TimeSpan"
+              Min="@TimeSpan.Zero" FieldPrecision="TimeSpanUnit.Millisecond"
+              Disabled="@_loadingDatasets" Placeholder="Minimum elapsed time"
+              Style="width: 100%;" />
+            </label>
+
+            <label class="filter-toggle">
+              <input type="checkbox" disabled="@_loadingDatasets" @bind="_useCampaign" />
+              <span>Campaign</span>
+            </label>
+
+            @if(_campaigns == null)
+            {
+              <div class="filter-loading">Loading campaigns...</div>
+            }
+            else
+            {
+              <RadzenDropDown Data="@_campaigns" TValue="string"
+              TextProperty="@nameof(CampaignDisplayItem.CampaignName)"
+              ValueProperty="@nameof(CampaignDisplayItem.SummaryId)" @bind-Value="_selectedCampaignId"
+              Change="@OnCampaignChanged" Disabled="@(!_useCampaign || _loadingDatasets)" AllowClear="true" Placeholder="Select campaign"
+              Style="width: 100%;">
+                <Template Context="campaign">
+                  <div class="campaign-option">
+                    <span class="campaign-option-name">@campaign.CampaignName</span>
+                    <span class="campaign-option-meta">@campaign.TimeStartedDisplay</span>
+                    <span class="campaign-option-meta">@campaign.Timezone</span>
+                  </div>
+                </Template>
+                <ValueTemplate Context="campaign">
+                  <div class="campaign-option selected-value">
+                    <span class="campaign-option-name">@campaign.CampaignName</span>
+                    <span class="campaign-option-meta">@campaign.TimeStartedDisplay · @campaign.Timezone</span>
+                  </div>
+                </ValueTemplate>
+              </RadzenDropDown>
+            }
+
+            <RadzenDropDown Data="@_experiments" TValue="string" TextProperty="@nameof(ExperimentDisplayItem.Name)"
+            ValueProperty="@nameof(ExperimentDisplayItem.Id)" @bind-Value="_selectedExperimentId"
+            Disabled="@(!_useCampaign || _experiments.Count == 0 || _loadingDatasets)" AllowClear="true"
+            Placeholder="@ExperimentPlaceholder" Style="width: 100%;" />
+
+            <div class="filter-actions">
+              <button type="button" class="apply-button" @onclick="ApplyFiltersAsync" disabled="@(!CanApply)">
+                Apply
+              </button>
+
+              @if(_loadingDatasets)
+              {
+                <button type="button" class="cancel-button" @onclick="CancelDatasetLoad" disabled="@_cancelingDatasetLoad">
+                  @(_cancelingDatasetLoad ? "Canceling..." : "Cancel")
+                </button>
+              }
+            </div>
+          </div>
+        </section>
+      </aside>
+
+      <div class="state-workspace">
+        <section class="display-mode-panel" aria-label="Device state display mode">
+          <label class="display-mode-field">
+            <span>Display Mode</span>
+            <RadzenDropDown Data="@_displayModes"
+            TValue="string"
+            @bind-Value="_selectedDisplayMode"
+            Change="@OnDisplayModeChanged"
+            Disabled="@_loadingDatasets"
+            Style="width: 12rem;" />
+          </label>
+        </section>
+
+        <section class="state-panel" aria-label="Selected device state details">
+          @if(_loadingDatasets)
+          {
+            <div class="loading-status">
+              <RadzenProgressBarCircular Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.Small" ShowValue="false" />
+              <div>
+                <strong>@(_cancelingDatasetLoad ? "Canceling..." : "Generating datasets...")</strong>
+                <span>@(_hasApplied ? "Current results remain available until the new data is ready." : "Loading state data for the selected devices.")</span>
+              </div>
+              <button type="button" class="cancel-button compact" @onclick="CancelDatasetLoad" disabled="@_cancelingDatasetLoad">
                 @(_cancelingDatasetLoad ? "Canceling..." : "Cancel")
               </button>
-            }
-          </div>
-        </div>
-      </section>
-    </aside>
-
-    <div class="state-workspace">
-      <section class="display-mode-panel" aria-label="Device state display mode">
-        <label class="display-mode-field">
-          <span>Display Mode</span>
-          <RadzenDropDown Data="@_displayModes"
-                          TValue="string"
-                          @bind-Value="_selectedDisplayMode"
-                          Change="@OnDisplayModeChanged"
-                          Disabled="@_loadingDatasets"
-                          Style="width: 12rem;" />
-        </label>
-      </section>
-
-      <section class="state-panel" aria-label="Selected device state details">
-        @if (_loadingDatasets)
-        {
-          <div class="loading-status">
-            <RadzenProgressBarCircular Mode="ProgressBarMode.Indeterminate" Size="ProgressBarCircularSize.Small" ShowValue="false" />
-            <div>
-              <strong>@(_cancelingDatasetLoad ? "Canceling..." : "Generating datasets...")</strong>
-              <span>@(_hasApplied ? "Current results remain available until the new data is ready." : "Loading state data for the selected devices.")</span>
             </div>
-            <button type="button" class="cancel-button compact" @onclick="CancelDatasetLoad" disabled="@_cancelingDatasetLoad">
-              @(_cancelingDatasetLoad ? "Canceling..." : "Cancel")
-            </button>
-          </div>
-        }
+          }
 
-        @if (!string.IsNullOrWhiteSpace(_exportError))
-        {
-          <div class="export-error">
-            <RadzenIcon Icon="error" />
-            <span>@_exportError</span>
-          </div>
-        }
+          @if(!string.IsNullOrWhiteSpace(_exportError))
+          {
+            <div class="export-error">
+              <RadzenIcon Icon="error" />
+              <span>@_exportError</span>
+            </div>
+          }
 
-        @if (!_selectedDeviceIds.Any())
-        {
-          <div class="empty-state">
-            <RadzenIcon Icon="query_stats" />
-            <h4>No devices selected</h4>
-            <p>Choose one or more devices.</p>
-          </div>
-        }
-        else if (_loadingDatasets && !_hasApplied)
-        {
-          <div class="empty-state">
-            <RadzenIcon Icon="hourglass_empty" />
-            <h4>Loading device state data</h4>
-            <p>Generating datasets for the selected devices and filters.</p>
-          </div>
-        }
-        else if (!string.IsNullOrWhiteSpace(_datasetError))
-        {
-          <div class="empty-state error">
-            <RadzenIcon Icon="error" />
-            <h4>Unable to load data</h4>
-            <p>@_datasetError</p>
-          </div>
-        }
-        else if (!_hasApplied)
-        {
-          <div class="empty-state">
-            <RadzenIcon Icon="table_view" />
-            <h4>Apply filters to load data</h4>
-            <p>Use Apply to generate tables for the selected devices.</p>
-          </div>
-        }
-        else if (_appliedDisplayMode == "Wide")
-        {
-          @if (_wideDataset is null || _wideDataset.Rows.Count == 0)
+          @if(!_selectedDeviceIds.Any())
+          {
+            <div class="empty-state">
+              <RadzenIcon Icon="query_stats" />
+              <h4>No devices selected</h4>
+              <p>Choose one or more devices.</p>
+            </div>
+          }
+          else if(_loadingDatasets && !_hasApplied)
+          {
+            <div class="empty-state">
+              <RadzenIcon Icon="hourglass_empty" />
+              <h4>Loading device state data</h4>
+              <p>Generating datasets for the selected devices and filters.</p>
+            </div>
+          }
+          else if(!string.IsNullOrWhiteSpace(_datasetError))
+          {
+            <div class="empty-state error">
+              <RadzenIcon Icon="error" />
+              <h4>Unable to load data</h4>
+              <p>@_datasetError</p>
+            </div>
+          }
+          else if(!_hasApplied)
+          {
+            <div class="empty-state">
+              <RadzenIcon Icon="table_view" />
+              <h4>Apply filters to load data</h4>
+              <p>Use Apply to generate tables for the selected devices.</p>
+            </div>
+          }
+          else if(_appliedDisplayMode == "Wide")
+          {
+            @if(_wideDataset is null || _wideDataset.Rows.Count == 0)
+            {
+              <div class="empty-state">
+                <RadzenIcon Icon="filter_alt_off" />
+                <h4>No state data matched</h4>
+                <p>No state data matched the selected devices and filters.</p>
+              </div>
+            }
+            else
+            {
+              <div class="state-panel-header">
+                <div>
+                  <h4>Wide Device State Table</h4>
+                  <span>@_wideDataset.Rows.Count timestamp row@(_wideDataset.Rows.Count == 1 ? string.Empty : "s") loaded</span>
+                </div>
+                <button type="button" class="export-button" @onclick="ExportCurrentViewAsync" disabled="@(!CanExport)">
+                  <RadzenIcon Icon="download" />
+                  <span>@(_exportingDataset ? "Exporting..." : "Export")</span>
+                </button>
+              </div>
+
+              <div class="wide-dataset-table">
+                <AresDatasetTable @key="_wideDataset" Dataset="@_wideDataset" />
+              </div>
+            }
+          }
+          else if(_appliedDisplayMode == "Long" && (_longDataset is null || _longDataset.Rows.Count == 0))
+          {
+            <div class="empty-state">
+              <RadzenIcon Icon="filter_alt_off" />
+              <h4>No state data matched</h4>
+              <p>No state data matched the selected devices and filters.</p>
+            </div>
+          }
+          else if(_appliedDisplayMode == "Long" && _longDataset is not null)
+          {
+            <div class="state-panel-header">
+              <div>
+                <h4>Long Device State Table</h4>
+                <span>@_longDataset.Rows.Count state value@(_longDataset.Rows.Count == 1 ? string.Empty : "s") loaded</span>
+              </div>
+              <button type="button" class="export-button" @onclick="ExportCurrentViewAsync" disabled="@(!CanExport)">
+                <RadzenIcon Icon="download" />
+                <span>@(_exportingDataset ? "Exporting..." : "Export")</span>
+              </button>
+            </div>
+
+            <div class="long-dataset-table">
+              <AresDatasetTable @key="_longDataset" Dataset="@_longDataset" />
+            </div>
+          }
+          else if(_deviceDatasets is null || _deviceDatasets.Length == 0)
           {
             <div class="empty-state">
               <RadzenIcon Icon="filter_alt_off" />
@@ -267,8 +325,8 @@
           {
             <div class="state-panel-header">
               <div>
-                <h4>Wide Device State Table</h4>
-                <span>@_wideDataset.Rows.Count timestamp row@(_wideDataset.Rows.Count == 1 ? string.Empty : "s") loaded</span>
+                <h4>Device State Tables</h4>
+                <span>@_deviceDatasets.Length device dataset@(_deviceDatasets.Length == 1 ? string.Empty : "s") loaded</span>
               </div>
               <button type="button" class="export-button" @onclick="ExportCurrentViewAsync" disabled="@(!CanExport)">
                 <RadzenIcon Icon="download" />
@@ -276,72 +334,22 @@
               </button>
             </div>
 
-            <div class="wide-dataset-table">
-              <AresDatasetTable @key="_wideDataset" Dataset="@_wideDataset" />
-            </div>
+            <RadzenTabs Class="dataset-tabs" RenderMode="TabRenderMode.Server" @bind-SelectedIndex="_selectedDatasetTabIndex">
+              <Tabs>
+                @foreach(var dataset in _deviceDatasets)
+                {
+                  <RadzenTabsItem Text="@dataset.Name">
+                    <AresDatasetTable @key="dataset" Dataset="@dataset" />
+                  </RadzenTabsItem>
+                }
+              </Tabs>
+            </RadzenTabs>
           }
-        }
-        else if (_appliedDisplayMode == "Long" && (_longDataset is null || _longDataset.Rows.Count == 0))
-        {
-          <div class="empty-state">
-            <RadzenIcon Icon="filter_alt_off" />
-            <h4>No state data matched</h4>
-            <p>No state data matched the selected devices and filters.</p>
-          </div>
-        }
-        else if (_appliedDisplayMode == "Long" && _longDataset is not null)
-        {
-          <div class="state-panel-header">
-            <div>
-              <h4>Long Device State Table</h4>
-              <span>@_longDataset.Rows.Count state value@(_longDataset.Rows.Count == 1 ? string.Empty : "s") loaded</span>
-            </div>
-            <button type="button" class="export-button" @onclick="ExportCurrentViewAsync" disabled="@(!CanExport)">
-              <RadzenIcon Icon="download" />
-              <span>@(_exportingDataset ? "Exporting..." : "Export")</span>
-            </button>
-          </div>
-
-          <div class="long-dataset-table">
-            <AresDatasetTable @key="_longDataset" Dataset="@_longDataset" />
-          </div>
-        }
-        else if (_deviceDatasets is null || _deviceDatasets.Length == 0)
-        {
-          <div class="empty-state">
-            <RadzenIcon Icon="filter_alt_off" />
-            <h4>No state data matched</h4>
-            <p>No state data matched the selected devices and filters.</p>
-          </div>
-        }
-        else
-        {
-          <div class="state-panel-header">
-            <div>
-              <h4>Device State Tables</h4>
-              <span>@_deviceDatasets.Length device dataset@(_deviceDatasets.Length == 1 ? string.Empty : "s") loaded</span>
-            </div>
-            <button type="button" class="export-button" @onclick="ExportCurrentViewAsync" disabled="@(!CanExport)">
-              <RadzenIcon Icon="download" />
-              <span>@(_exportingDataset ? "Exporting..." : "Export")</span>
-            </button>
-          </div>
-
-          <RadzenTabs Class="dataset-tabs" RenderMode="TabRenderMode.Server" @bind-SelectedIndex="_selectedDatasetTabIndex">
-            <Tabs>
-              @foreach (var dataset in _deviceDatasets)
-              {
-                <RadzenTabsItem Text="@dataset.Name">
-                  <AresDatasetTable @key="dataset" Dataset="@dataset" />
-                </RadzenTabsItem>
-              }
-            </Tabs>
-          </RadzenTabs>
-        }
-      </section>
-    </div>
+        </section>
+      </div>
     </div>
   </section>
+}
 
 @code {
   private static readonly string[] _displayModes = ["Separate", "Wide", "Long"];
@@ -428,42 +436,47 @@
   {
     SetDefaultFilterTimes();
 
-    using var context = await DbContextFactory.CreateDbContextAsync();
+    await Task.Yield();
 
-    var deviceIds = await context.Set<DeviceState>()
-        .Select(s => s.DeviceId)
-        .Distinct()
-        .ToListAsync();
+    await Task.Run(async () =>
+    {
+      using var context = await DbContextFactory.CreateDbContextAsync();
 
-    _devices = deviceIds
-        .Select(id =>
-        {
-          var device = DeviceRepo.FirstOrDefault(d => d.UniqueId == id);
-          return new DeviceDisplayItem(id, device?.Name ?? id, device?.Type ?? "Unknown");
-        })
-        .OrderBy(device => device.Name)
-        .ThenBy(device => device.Id)
-        .ToList();
+      var deviceIds = await context.Set<DeviceState>()
+          .Select(s => s.DeviceId)
+          .Distinct()
+          .ToListAsync();
 
-    var campaignResponse = await AutomationClient.GetAvailableCampaignExecutionSummaries(new Empty(), null);
-    var campaigns = await Task.WhenAll(campaignResponse.AvailableCampaignSummaries
-        .Select(async campaignMetadata =>
-        {
-          var campaign = await AutomationClient.GetCampaignSummary(
-              new CampaignExecutionSummaryRequest { SummaryId = campaignMetadata.SummaryId },
-              null);
+      _devices = deviceIds
+          .Select(id =>
+          {
+            var device = DeviceRepo.FirstOrDefault(d => d.UniqueId == id);
+            return new DeviceDisplayItem(id, device?.Name ?? id, device?.Type ?? "Unknown");
+          })
+          .OrderBy(device => device.Name)
+          .ThenBy(device => device.Id)
+          .ToList();
 
-          return new CampaignDisplayItem(
-              campaignMetadata.SummaryId,
-              campaign.CampaignName,
-              GetCampaignStartTime(campaign),
-              GetCampaignTimezone(campaign),
-              GetCampaignStartSortTime(campaign));
-        }));
+      var campaignResponse = await AutomationClient.GetAvailableCampaignExecutionSummaries(new Empty(), null);
+      var campaigns = await Task.WhenAll(campaignResponse.AvailableCampaignSummaries
+          .Select(async campaignMetadata =>
+          {
+            var campaign = await AutomationClient.GetCampaignSummary(
+                new CampaignExecutionSummaryRequest { SummaryId = campaignMetadata.SummaryId },
+                null);
 
-    _campaigns = campaigns
-        .OrderByDescending(campaign => campaign.TimeStarted)
-        .ToList();
+            return new CampaignDisplayItem(
+                campaignMetadata.SummaryId,
+                campaign.CampaignName,
+                GetCampaignStartTime(campaign),
+                GetCampaignTimezone(campaign),
+                GetCampaignStartSortTime(campaign));
+          }));
+
+      _campaigns = campaigns
+          .OrderByDescending(campaign => campaign.TimeStarted)
+          .ToList();
+    });
   }
 
   private void ToggleDevice(string deviceId, ChangeEventArgs args)
