@@ -381,7 +381,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
         if(newestTransaction is null)
           continue;
 
-        OnPlannerTransactionReceived(newestTransaction, DetermineTransactionCount(transactionList.SkipLast(1)));
+        OnPlannerTransactionReceived(newestTransaction, DeterminePlanCount(transactionList.SkipLast(1)));
       }
     }
   }
@@ -404,7 +404,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     }
   }
 
-  private int DetermineTransactionCount(IEnumerable<PlannerTransaction> transactionList)
+  private int DeterminePlanCount(IEnumerable<PlannerTransaction> transactionList)
   {
     var count = 0;
 

@@ -124,7 +124,12 @@ public class PlanningHelper : IPlanningHelper
       }
 
       else
-        await HandleLegacyPlanResponse(planResponse, parameterArray);
+      {
+        var legacyResponseProcessed = await HandleLegacyPlanResponse(planResponse, parameterArray);
+
+        if(!legacyResponseProcessed)
+          return false;
+      }
     }
 
     catch(Exception e)
