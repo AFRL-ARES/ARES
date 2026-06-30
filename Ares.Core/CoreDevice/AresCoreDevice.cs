@@ -13,6 +13,7 @@ namespace Ares.Core.CoreDevice;
 public class AresCoreDevice : AresDevice
 {
   private readonly BehaviorSubject<AresStruct> _stateSubject = new(new AresStruct());
+  private readonly IEnumerable<string> _inputChoices = ["String", "Int", "Float", "StringArray", "IntArray", "FloatArray"];
 
   public AresCoreDevice() : base(new DeviceConnectionInfo { DeviceName = "ARES", DeviceId = "ARES-CORE-DEVICE" })
   {
@@ -113,6 +114,11 @@ public class AresCoreDevice : AresDevice
         result.Result = AresValueHelper.CreateTimestamp(DateTime.UtcNow.ToTimestampUtc());
         break;
 
+      case AresCoreDeviceCommand.WaitForUserInput:
+        result.Success = true;
+        result.AwaitUserInput = true;
+        break;
+
       case AresCoreDeviceCommand.CalculateAverage:
         var dataToBeAveraged = arguments.FirstOrDefault()?.ArgValue;
 
@@ -185,6 +191,14 @@ public class AresCoreDevice : AresDevice
         Name = AresCoreDeviceCommand.WaitForUser.ToString(),
         Description = "Have ARES request user confirmation before continuing."
       },
+ 
+      new()
+      {
+        Name = AresCoreDeviceCommand.WaitForUserInput.ToString(),
+        Description = "ARES will wait for the user to provide an input to the system before continuing.",
+        InputSchema = AresSchemaBuilder.Create(AresCoreDeviceCommandParameter.UserInput.ToString(), AresDataType.StringArray).WithStringChoices(_inputChoices).Build(),
+        OutputSchema = AresSchemaBuilder.AnyEntry().WithDescription("Outputs whatever value the user provides for use within their experiment").Build()
+      },
 
       new()
       {
@@ -210,6 +224,7 @@ public class AresCoreDevice : AresDevice
 
   public override Task UpdateSettings(AresStruct settings)
   {
+    var blah = AresSchemaBuilder.Create(AresCoreDeviceCommandParameter.UserInput.ToString(), AresDataType.StringArray).Build();
     return Task.FromResult(new AresStruct());
   }
 

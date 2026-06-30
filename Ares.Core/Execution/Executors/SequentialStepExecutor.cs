@@ -11,10 +11,10 @@ public class SequentialStepExecutor : StepExecutor
   private readonly ISystemSettingsManager _settingsManager;
   private readonly INotifier _notifier;
 
-  public SequentialStepExecutor(StepTemplate template, 
-    CommandExecutor[] commandExecutors, 
+  public SequentialStepExecutor(StepTemplate template,
+    IEnumerable<IExecutor<CommandExecutionSummary, CommandExecutionStatus>> executionNodes, 
     ISystemSettingsManager settingsManager, 
-    INotifier notifier) : base(template, commandExecutors)
+    INotifier notifier) : base(template, executionNodes)
   {
     _settingsManager = settingsManager;
     _notifier = notifier;
@@ -57,7 +57,7 @@ public class SequentialStepExecutor : StepExecutor
           if(currentSettings is not null)
             await Task.Delay(currentSettings.RetryCooldown.ToTimeSpan());
 
-          var retriedCommandExecutionSummary = await command.Execute(token);
+          var retriedCommandExecutionSummary = await command.Execute(token, combinedScope);
 
           if(retriedCommandExecutionSummary.Result.Success)
           {

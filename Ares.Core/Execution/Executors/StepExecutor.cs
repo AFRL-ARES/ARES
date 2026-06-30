@@ -7,7 +7,7 @@ namespace Ares.Core.Execution.Executors;
 
 public abstract class StepExecutor : IExecutor<StepExecutionSummary, StepExecutionStatus>
 {
-  public StepExecutor(StepTemplate template, CommandExecutor[] commandExecutors)
+  public StepExecutor(StepTemplate template, IEnumerable<IExecutor<CommandExecutionSummary, CommandExecutionStatus>> commandExecutors)
   {
     Template = template;
     CommandExecutors = commandExecutors;
@@ -38,7 +38,7 @@ public abstract class StepExecutor : IExecutor<StepExecutionSummary, StepExecuti
     ExperimentStatusObservable = commandExecutionObservation;
   }
 
-  public CommandExecutor[] CommandExecutors { get; }
+  public IEnumerable<IExecutor<CommandExecutionSummary, CommandExecutionStatus>> CommandExecutors { get; }
   protected StepTemplate Template { get; }
   public IObservable<StepExecutionStatus> ExperimentStatusObservable { get; }
   public StepExecutionStatus Status { get; }

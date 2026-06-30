@@ -1,12 +1,11 @@
 ﻿using Ares.Core.Execution.ControlTokens;
 using Ares.Datamodel;
-using Ares.Datamodel.Templates;
 
 namespace Ares.Core.Execution.Executors;
 
 public class ParallelStepExecutor : StepExecutor
 {
-  public ParallelStepExecutor(StepTemplate template, CommandExecutor[] commandExecutors) : base(template, commandExecutors)
+  public ParallelStepExecutor(IEnumerable<IExecutor<CommandExecutionSummary, CommandExecutionStatus>> executionNodes) : base(template, executionNodes)
   {
   }
 

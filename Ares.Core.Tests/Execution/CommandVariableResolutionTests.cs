@@ -2,6 +2,7 @@ using Ares.Core.Device.Repos;
 using Ares.Core.Execution.ControlTokens;
 using Ares.Core.Execution.Executors;
 using Ares.Core.Execution.Executors.Composers;
+using Ares.Core.Execution.Interaction;
 using Ares.Core.Notifications;
 using Ares.Core.Settings;
 using Ares.Datamodel;
@@ -9,7 +10,6 @@ using Ares.Datamodel.Device;
 using Ares.Datamodel.Templates;
 using Ares.Device;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
 using Moq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -20,12 +20,14 @@ internal class CommandVariableResolutionTests
 {
   private ISystemSettingsManager _systemSettingsManager;
   private IDbContextFactory<CoreDatabaseContext> _dbContextFactory;
+  private IUserInteractionBroker _userInteractionBroker;
   
   [OneTimeSetUp]
   public void OneTimeSetUp()
   {
     _dbContextFactory = new Mock<IDbContextFactory<CoreDatabaseContext>>().Object;
     _systemSettingsManager = new Mock<ISystemSettingsManager>().Object;
+    _userInteractionBroker = new Mock<IUserInteractionBroker>().Object;
   }
 
   [Test]
@@ -39,7 +41,7 @@ internal class CommandVariableResolutionTests
     stepTemplate.CommandTemplates.Add(CreateSourceCommand());
     stepTemplate.CommandTemplates.Add(CreateConsumerCommand("sourceResult"));
 
-    var stepComposer = new StepComposer(deviceRepo, new Mock<INotifier>().Object, _systemSettingsManager);
+    var stepComposer = new StepComposer(deviceRepo, new Mock<INotifier>().Object, _systemSettingsManager, _userInteractionBroker);
     var stepExecutor = stepComposer.Compose(stepTemplate);
 
     using var tokenSource = new ExecutionControlTokenSource();

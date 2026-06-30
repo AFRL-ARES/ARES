@@ -353,7 +353,7 @@
               </RadzenAlert>
             }
 
-            @if(ViewModel!.CampaignExecutionState == ExecutionState.AwaitingUser)
+            @if(ViewModel!.AwaitingUserConfirmation)
             {
               <RadzenAlert AlertStyle="AlertStyle.Info" Variant="Variant.Flat" Shade="Shade.Lighter" AllowClose="false" Size="AlertSize.Medium">
                 <ChildContent>

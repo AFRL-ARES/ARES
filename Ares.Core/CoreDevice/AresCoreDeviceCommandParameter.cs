@@ -4,5 +4,6 @@ public enum AresCoreDeviceCommandParameter
   Duration,
   NumericData,
   IntData,
-  FloatData
+  FloatData,
+  UserInput
 }

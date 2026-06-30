@@ -1,5 +1,6 @@
 using Ares.Core.Device.Providers;
 using Ares.Core.Execution;
+using Ares.Core.Execution.Interaction;
 using Ares.Core.Grpc.Services;
 using Ares.Core.Visualization.Helpers;
 using Ares.Datamodel;
@@ -31,6 +32,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   private readonly INotificationReceivingService _notificationService;
   private readonly IExecutionReportStore _executionReportStore;
   private readonly IAresDeviceProvider _deviceProvider;
+  private readonly IUserInteractionBroker _userInteractionBroker;
   public event Action? StateChanged;
 
   private IDisposable? _experimentSubscription;
@@ -41,13 +43,15 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     INotificationReceivingService notificationService,
     AnalyzerService analyzerService,
     IExecutionReportStore executionReportStore,
-    IAresDeviceProvider deviceProvider)
+    IAresDeviceProvider deviceProvider,
+    IUserInteractionBroker userInteractionBroker)
   {
     _automationClient = automationClient;
     _notificationService = notificationService;
     _analyzerService = analyzerService;
     _executionReportStore = executionReportStore;
     _deviceProvider = deviceProvider;
+    _userInteractionBroker = userInteractionBroker;
 
     PlannerAdapterInfos = [];
     AnalyzerMetrics = [];
@@ -65,6 +69,24 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
       {
         _ = UpdateAnalysisTransactions();
       });
+
+    _userInteractionBroker.ActiveRequestStream.Subscribe(async request =>
+    {
+      if(request.Type == InteractionType.Confirmation)
+      {
+        AwaitingUserConfirmation = true;
+
+        while(AwaitingUserConfirmation != false)
+          await Task.Delay(TimeSpan.FromSeconds(1));
+
+        _userInteractionBroker.SubmitResponse(string.Empty);
+      }
+
+      else if(request.Type == InteractionType.DataInput)
+      {
+        //Do things
+      }
+    });
   }
 
   public async Task<bool> EnsureStopConditionSet()
@@ -827,6 +849,8 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   public string? NewTagName { get; set; }
   [Reactive]
   public partial Dictionary<string, AresValue> CurrentOutputVariables { get; set; } = new();
+  [Reactive]
+  public partial bool AwaitingUserConfirmation { get; set; } = false;
 }
 
 public enum ExecutionStopConditionMode

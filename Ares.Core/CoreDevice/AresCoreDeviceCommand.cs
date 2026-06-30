@@ -6,6 +6,6 @@ public enum AresCoreDeviceCommand
   SleepForMinutes,
   WaitForUser,
   GetTimestamp,
-  CalculateAverage
-
+  CalculateAverage,
+  WaitForUserInput
 }

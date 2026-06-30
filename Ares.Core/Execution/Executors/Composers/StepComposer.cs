@@ -1,4 +1,6 @@
-﻿using Ares.Core.Device.Repos;
+﻿using Ares.Core.CoreDevice;
+using Ares.Core.Device.Repos;
+using Ares.Core.Execution.Interaction;
 using Ares.Core.Notifications;
 using Ares.Core.Settings;
 using Ares.Datamodel;
@@ -8,29 +10,34 @@ using Ares.Datamodel.Templates;
 
 namespace Ares.Core.Execution.Executors.Composers;
 
-public class StepComposer : ICommandComposer<StepTemplate, StepExecutor>
+public class StepComposer : IStepComposer
 {
   private readonly INotifier _notifier;
   private readonly IAresDeviceRepo _deviceRepo;
   private readonly ISystemSettingsManager _settingsManager;
-  public StepComposer(IAresDeviceRepo deviceRepo, INotifier notifier, ISystemSettingsManager settingsManager)
+  private readonly IUserInteractionBroker _userInteractionBroker;
+
+  public StepComposer(IAresDeviceRepo deviceRepo, INotifier notifier, ISystemSettingsManager settingsManager, IUserInteractionBroker userInteractionBroker)
   {
     _deviceRepo = deviceRepo;
     _notifier = notifier;
     _settingsManager = settingsManager;
+    _userInteractionBroker = userInteractionBroker;
   }
 
-  public StepExecutor Compose(StepTemplate template)
-  { 
-    var executables =
-      template
-        .CommandTemplates
-        .OrderBy(t => t.Index)
-        .Select
-        (
-          commandTemplate =>
-          {
+  public StepExecutor ComposeNodes(IEnumerable<ExecutionNode> executionNodes, bool isParallel)
+  {
+    var executables = executionNodes
+      .OrderBy(t => t.Index)
+      .Select<ExecutionNode, IExecutor<CommandExecutionSummary, CommandExecutionStatus>>(node =>
+      {
+        switch(node.TemplateTypeCase)
+        {
+          // Standard hardware communications
+          case ExecutionNode.TemplateTypeOneofCase.CommandTemplate:
+            var commandTemplate = node.CommandTemplate;
             var deviceId = commandTemplate.Metadata?.DeviceId;
+
             if(deviceId is null)
               throw new InvalidOperationException("Device ID was null when attempting to retrieve the command interpreter");
 
@@ -47,15 +54,26 @@ public class StepComposer : ICommandComposer<StepTemplate, StepExecutor>
               return new CommandExecutor(internalAction, commandTemplate, _notifier, _settingsManager);
             }
 
-            throw new InvalidOperationException("I'm not certain what to do here yet :(");
-          }
-        )
-        .ToArray();
+            throw new InvalidOperationException($"Could not resolve device {deviceId} for hardware command.");
+
+          // System control (Sleep, Waiting for Input, etc.)
+          case ExecutionNode.TemplateTypeOneofCase.SystemTemplate:
+            var systemTemplate = node.SystemTemplate;
+            return new SystemExecutor(systemTemplate, _userInteractionBroker, _notifier, _settingsManager);
+
+          case ExecutionNode.TemplateTypeOneofCase.LogicGate:
 
 
-    return template.IsParallel
-      ? new ParallelStepExecutor(template, executables)
-      : new SequentialStepExecutor(template, executables, _settingsManager, _notifier);
+          default:
+            throw new InvalidOperationException($"Unrecognized execution node type: {node.TemplateTypeCase}");
+        }
+      })
+      .ToArray();
+
+    // The Parallel/Sequential executors will now take an array of IExecutor rather than CommandExecutor
+    return isParallel
+      ? new ParallelStepExecutor(executables)
+      : new SequentialStepExecutor(executables, _settingsManager, _notifier);
   }
 
   public StepExecutor Compose(StepTemplate template, ExperimentExecutionStatus experimentExecutionStatus)

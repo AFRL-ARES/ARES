@@ -43,6 +43,51 @@ internal static class ExecutorSummaryHelpers
   {
     return new StepExecutionSummary { UniqueId = Guid.NewGuid().ToString(), ExecutionInfo = MakeExecutionInfo(startTime, endTime) };
   }
+
+  public static CommandExecutionSummary CreateCommandExecutionSummary(LogicTemplate template,
+    CommandResult? commandResult,
+    DateTime startTime,
+    DateTime endTime)
+  {
+    var commandExecutionSummary = new CommandExecutionSummary
+    {
+      UniqueId = Guid.NewGuid().ToString(),
+      ExecutionInfo = MakeExecutionInfo(startTime, endTime),
+      CommandId = Guid.NewGuid().ToString(),
+      Result = commandResult,
+      TemplateId = template.UniqueId,
+      CommandDescription = "A logic gate template",
+      CommandName = "Logic Gate Template",
+      StatusCode = commandResult?.StatusCode ?? CommandStatusCode.StatusUnspecified
+    };
+
+    return commandExecutionSummary;
+  }
+
+  public static CommandExecutionSummary CreateCommandExecutionSummary(SystemTemplate template,
+    CommandResult? deviceResult,
+    DateTime startTime,
+    DateTime endTime)
+  {
+    var commandExecutionSummary = new CommandExecutionSummary
+    {
+      UniqueId = Guid.NewGuid().ToString(),
+      ExecutionInfo = MakeExecutionInfo(startTime, endTime),
+      CommandId = Guid.NewGuid().ToString(),
+      Result = deviceResult,
+      TemplateId = template.UniqueId,
+      CommandDescription = template.Metadata.Description,
+      CommandName = template.Metadata.Name,
+      StatusCode = deviceResult?.StatusCode ?? CommandStatusCode.StatusUnspecified
+    };
+
+
+    if(template.HasOutputVarName)
+      commandExecutionSummary.VarName = template.OutputVarName;
+
+    return commandExecutionSummary;
+  }
+
   public static CommandExecutionSummary CreateCommandExecutionSummary(CommandTemplate template,
     CommandResult? deviceResult,
     DateTime startTime,
