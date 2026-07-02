@@ -129,4 +129,13 @@ internal sealed class CustomCommandPersistenceService(IDbContextFactory<CoreData
       ? "Unspecified"
       : command.OutputSchema.Stringify();
   }
+
+  public async Task<IReadOnlyList<CustomCommandModel>> GetCommandsAsync()
+  {
+    await using var context = await dbContextFactory.CreateDbContextAsync();
+    return await context.CustomCommands
+      .AsNoTracking()
+      .Include(command => command.InputParameters)
+      .ToListAsync();
+  }
 }
