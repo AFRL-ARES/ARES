@@ -10,14 +10,5 @@ internal class CustomCommandEntityConfiguration : AresEntityTypeBaseConfiguratio
   {
     base.Configure(builder);
     builder.ToTable("CustomCommands");
-
-    builder.HasMany(command => command.InputParameters)
-      .WithOne()
-      .HasForeignKey("CustomCommandId")
-      .IsRequired()
-      .OnDelete(DeleteBehavior.Cascade);
-
-    builder.Navigation(command => command.InputParameters)
-      .AutoInclude();
   }
 }

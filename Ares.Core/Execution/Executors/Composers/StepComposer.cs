@@ -21,27 +21,29 @@ public class StepComposer : ICommandComposer<StepTemplate, StepExecutor>
   }
 
   public StepExecutor Compose(StepTemplate template)
-  { 
+  {
     var executables =
       template
         .CommandTemplates
         .OrderBy(t => t.Index)
         .Select
         (
+          // TODO make sure we handle the rest of command template types AB 7/9/2026
           commandTemplate =>
           {
-            var deviceId = commandTemplate.Metadata?.DeviceId;
+            var metadata = commandTemplate.DeviceCommand?.Metadata;
+            var deviceId = metadata?.DeviceId;
             if(deviceId is null)
               throw new InvalidOperationException("Device ID was null when attempting to retrieve the command interpreter");
 
             var device = _deviceRepo.FirstOrDefault(d => d.UniqueId == deviceId);
 
-            if(device is not null && commandTemplate.Metadata is not null)
+            if(device is not null && metadata is not null)
             {
               Func<CancellationToken, Task<CommandResult>> internalAction = async (ct)
                 => await device.ExecuteCommand(
-                  commandTemplate.Metadata.Name,
-                  commandTemplate.Parameters.Select(p => new DeviceCommandArgument() { ArgName = p.Metadata.Name, ArgValue = p.GetValue() }).ToList(),
+                  metadata.Name,
+                  commandTemplate.ArgumentBindings.Select(p => new DeviceCommandArgument() { ArgName = p.Metadata.Name, ArgValue = p.GetValue() }).ToList(),
                   ct);
 
               return new CommandExecutor(internalAction, commandTemplate, _notifier, _settingsManager);

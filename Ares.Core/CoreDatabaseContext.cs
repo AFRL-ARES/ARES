@@ -46,6 +46,7 @@ public class CoreDatabaseContext : DbContext
   public DbSet<DeviceErrorHandlingConfig> DeviceErrorHandlingConfigs => Set<DeviceErrorHandlingConfig>();
   public DbSet<AresGeneralSettingsConfig> GeneralSettingsConfigs => Set<AresGeneralSettingsConfig>();
   public DbSet<CustomCommand> CustomCommands => Set<CustomCommand>();
+  public DbSet<CustomCommandVersion> CustomCommandVersions => Set<CustomCommandVersion>();
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
     var assembly = Assembly.GetAssembly(typeof(CoreDatabaseContext));

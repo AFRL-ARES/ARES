@@ -14,8 +14,10 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
   private readonly Func<CancellationToken, Task<CommandResult>> _command;
   private readonly BehaviorSubject<CommandExecutionStatus> _stateSubject;
   private readonly INotifier _notifier;
-  private readonly ISystemSettingsManager _settingsManager; 
+  private readonly ISystemSettingsManager _settingsManager;
 
+
+  // TODO: Execute the system and custom commands in addition to device AB 7/9/2026
   public CommandExecutor(Func<CancellationToken, Task<CommandResult>> command, CommandTemplate template, INotifier notifier, ISystemSettingsManager settingsManager)
   {
     _command = command;
@@ -24,8 +26,8 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
     var executionStatus = new CommandExecutionStatus
     {
       CommandId = template.UniqueId,
-      CommandName = template.Metadata.Name,
-      DeviceName = template.Metadata.DeviceType,
+      CommandName = template.DeviceCommand.Metadata.Name,
+      DeviceName = template.DeviceCommand.Metadata.DeviceType,
       State = ExecutionState.Undefined
     };
 
@@ -56,7 +58,7 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
         await token.WaitForResumeAsync();
       }
       catch(OperationCanceledException)
-      { 
+      {
       }
 
     if(token.IsCancelled)
@@ -69,7 +71,7 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
 
     var timeStarted = DateTime.UtcNow;
     var execInfo = new ExecutionInfo { TimeStarted = DateTime.UtcNow.ToTimestamp() };
-    var variableResolutionError = CommandVariableResolver.ResolveParameters(Template.Parameters, variableScope);
+    var variableResolutionError = CommandVariableResolver.ResolveParameters(Template.ArgumentBindings, variableScope);
     CommandResult result;
 
     if(variableResolutionError is null)

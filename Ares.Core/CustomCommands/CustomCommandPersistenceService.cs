@@ -1,6 +1,10 @@
+using Ares.Datamodel.Automation;
 using Ares.Datamodel.Extensions;
+using Google.Protobuf;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
 using CustomCommandModel = Ares.Datamodel.Automation.CustomCommand;
+using CustomCommandVersionModel = Ares.Datamodel.Automation.CustomCommandVersion;
 
 namespace Ares.Core.CustomCommands;
 
@@ -11,68 +15,64 @@ internal sealed class CustomCommandPersistenceService(IDbContextFactory<CoreData
 
   public async Task<IReadOnlyList<CustomCommandSummary>> GetSummariesAsync()
   {
-    await using var context = await dbContextFactory.CreateDbContextAsync();
-    var rows = await context.CustomCommands
-      .AsNoTracking()
-      .Include(command => command.InputParameters)
+    var commands = await GetCurrentVersionsAsync();
+    return commands
+      .Select(command => new CustomCommandSummary(
+        ParseEntityId(command.CustomCommandId),
+        string.IsNullOrWhiteSpace(command.Name) ? "(Unnamed command)" : command.Name,
+        command.Description,
+        BuildInputSummary(command),
+        BuildOutputSummary(command)))
       .OrderBy(command => command.Name)
-      .Select(command => new
-      {
-        Id = EF.Property<string>(command, UniqueIdPropertyName),
-        Command = command
-      })
-      .ToListAsync();
-
-    return rows
-      .Select(row => new CustomCommandSummary(
-        ParseEntityId(row.Id),
-        string.IsNullOrWhiteSpace(row.Command.Name) ? "(Unnamed command)" : row.Command.Name,
-        row.Command.Description,
-        BuildInputSummary(row.Command),
-        BuildOutputSummary(row.Command)))
       .ToArray();
   }
 
-  public async Task<CustomCommandModel?> GetAsync(Guid id)
+  public async Task<CustomCommandVersionModel?> GetAsync(Guid id)
   {
     await using var context = await dbContextFactory.CreateDbContextAsync();
-    return await context.CustomCommands
+    var currentVersionId = await context.CustomCommands
       .AsNoTracking()
-      .Include(command => command.InputParameters)
-      .FirstOrDefaultAsync(command => EF.Property<string>(command, UniqueIdPropertyName) == id.ToString());
+      .Where(command => EF.Property<string>(command, UniqueIdPropertyName) == id.ToString())
+      .Select(command => command.CurrentVersionId)
+      .FirstOrDefaultAsync();
+
+    return string.IsNullOrWhiteSpace(currentVersionId)
+      ? null
+      : await GetVersionAsync(context, currentVersionId);
   }
 
-  public async Task<Guid> SaveAsync(Guid? id, CustomCommandModel command)
+  public async Task<Guid> SaveAsync(Guid? id, CustomCommandVersionModel command)
   {
     await using var context = await dbContextFactory.CreateDbContextAsync();
     var commandId = id ?? Guid.NewGuid();
     var existingCommand = id is null
       ? null
       : await context.CustomCommands
-        .Include(command => command.InputParameters)
         .FirstOrDefaultAsync(command => EF.Property<string>(command, UniqueIdPropertyName) == id.Value.ToString());
+
+    var nextVersionNumber = existingCommand is null
+      ? 1
+      : await context.CustomCommandVersions
+        .Where(version => version.CustomCommandId == commandId.ToString())
+        .Select(version => (long?)version.VersionNumber)
+        .MaxAsync() ?? 0;
+
+    if(existingCommand is not null)
+      nextVersionNumber++;
+
+    var version = CreateVersion(commandId, nextVersionNumber, command);
+    context.CustomCommandVersions.Add(version);
+    var versionId = AssignEntityId(context, version);
+    AssignParameterIds(context, version);
 
     if(existingCommand is null)
     {
-      var commandToAdd = command.Clone();
-      context.CustomCommands.Add(commandToAdd);
-      AssignEntityId(context, commandToAdd, commandId);
-      AssignParameterIds(context, commandToAdd);
-    }
-    else
-    {
-      existingCommand.Name = command.Name;
-      existingCommand.Description = command.Description;
-      existingCommand.OutputSchema = command.OutputSchema?.Clone();
-      existingCommand.ScriptBody = command.ScriptBody;
-
-      context.RemoveRange(existingCommand.InputParameters);
-      existingCommand.InputParameters.Clear();
-      existingCommand.InputParameters.AddRange(command.InputParameters.Select(parameter => parameter.Clone()));
-      context.ChangeTracker.DetectChanges();
-      AssignParameterIds(context, existingCommand);
+      existingCommand = new CustomCommandModel();
+      context.CustomCommands.Add(existingCommand);
+      AssignEntityId(context, existingCommand, commandId);
     }
 
+    existingCommand.CurrentVersionId = versionId.ToString();
     await context.SaveChangesAsync();
     return commandId;
   }
@@ -84,58 +84,98 @@ internal sealed class CustomCommandPersistenceService(IDbContextFactory<CoreData
       .FirstOrDefaultAsync(command => EF.Property<string>(command, UniqueIdPropertyName) == id.ToString());
 
     if(command is null)
-    {
       return;
-    }
 
     context.CustomCommands.Remove(command);
     await context.SaveChangesAsync();
   }
 
-  private static Guid ParseEntityId(string? id)
+  public Task<IReadOnlyList<CustomCommandVersionModel>> GetCommandsAsync() => GetCurrentVersionsAsync();
+
+  private async Task<IReadOnlyList<CustomCommandVersionModel>> GetCurrentVersionsAsync()
   {
-    return Guid.TryParse(id, out var guid) ? guid : Guid.Empty;
+    await using var context = await dbContextFactory.CreateDbContextAsync();
+    var versionIds = await context.CustomCommands
+      .AsNoTracking()
+      .Select(command => command.CurrentVersionId)
+      .Where(id => id != null && id != string.Empty)
+      .ToListAsync();
+
+    return await context.CustomCommandVersions
+      .AsNoTracking()
+      .Include(version => version.InputParameters)
+      .Where(version => versionIds.Contains(EF.Property<string>(version, UniqueIdPropertyName)))
+      .ToListAsync();
   }
+
+  private static Task<CustomCommandVersionModel?> GetVersionAsync(CoreDatabaseContext context, string versionId)
+  {
+    return context.CustomCommandVersions
+      .AsNoTracking()
+      .Include(version => version.InputParameters)
+      .FirstOrDefaultAsync(version => EF.Property<string>(version, UniqueIdPropertyName) == versionId);
+  }
+
+  private static Guid ParseEntityId(string? id) => Guid.TryParse(id, out var guid) ? guid : Guid.Empty;
 
   private static void AssignEntityId(CoreDatabaseContext context, CustomCommandModel command, Guid id)
   {
-    context.Entry(command).Property<string?>(UniqueIdPropertyName).CurrentValue = id.ToString();
+    command.UniqueId = id.ToString();
+    context.Entry(command).Property<string?>(UniqueIdPropertyName).CurrentValue = command.UniqueId;
   }
 
-  private static void AssignParameterIds(CoreDatabaseContext context, CustomCommandModel command)
+  private static Guid AssignEntityId(CoreDatabaseContext context, CustomCommandVersionModel version)
   {
-    foreach(var parameter in command.InputParameters)
+    var id = Guid.NewGuid();
+    version.UniqueId = id.ToString();
+    context.Entry(version).Property<string?>(UniqueIdPropertyName).CurrentValue = version.UniqueId;
+    return id;
+  }
+
+  private static void AssignParameterIds(CoreDatabaseContext context, CustomCommandVersionModel version)
+  {
+    foreach(var parameter in version.InputParameters)
     {
       var entry = context.Entry(parameter);
       if(entry.State == EntityState.Detached)
-      {
         entry.State = EntityState.Added;
-      }
 
       entry.Property<string?>(UniqueIdPropertyName).CurrentValue = Guid.NewGuid().ToString();
     }
   }
 
-  private static string BuildInputSummary(CustomCommandModel command)
+  private static CustomCommandVersionModel CreateVersion(
+    Guid commandId,
+    long versionNumber,
+    CustomCommandVersionModel command)
+  {
+    var version = command.Clone();
+    version.UniqueId = string.Empty;
+    version.CustomCommandId = commandId.ToString();
+    version.VersionNumber = versionNumber;
+    version.ContentHash = ComputeContentHash(version);
+    return version;
+  }
+
+  private static string ComputeContentHash(CustomCommandVersionModel version)
+  {
+    var hashInput = version.Clone();
+    hashInput.UniqueId = string.Empty;
+    hashInput.ContentHash = string.Empty;
+    return Convert.ToHexString(SHA256.HashData(hashInput.ToByteArray()));
+  }
+
+  private static string BuildInputSummary(CustomCommandVersionModel command)
   {
     return command.InputParameters.Count == 0
       ? "None"
       : string.Join(", ", command.InputParameters.Select(parameter => parameter.Name));
   }
 
-  private static string BuildOutputSummary(CustomCommandModel command)
+  private static string BuildOutputSummary(CustomCommandVersionModel command)
   {
     return command.OutputSchema is null
       ? "Unspecified"
       : command.OutputSchema.Stringify();
-  }
-
-  public async Task<IReadOnlyList<CustomCommandModel>> GetCommandsAsync()
-  {
-    await using var context = await dbContextFactory.CreateDbContextAsync();
-    return await context.CustomCommands
-      .AsNoTracking()
-      .Include(command => command.InputParameters)
-      .ToListAsync();
   }
 }

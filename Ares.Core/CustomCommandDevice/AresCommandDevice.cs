@@ -49,7 +49,8 @@ internal class AresCommandDevice : AresDevice
 
   protected override async Task<List<DeviceCommandDescriptor>> BuildCommandDescriptorsAsync()
   {
-    var commands = await _commandPersistenceService.GetSummariesAsync();
-    var descriptors = commands.Select(cmd => new DeviceCommandDescriptor { Name = cmd.Name, Description = cmd.Description, OutputSchema = cmd.OutputSummary })
+    throw new NotImplementedException();
+    //var commands = await _commandPersistenceService.GetSummariesAsync();
+    //var descriptors = commands.Select(cmd => new DeviceCommandDescriptor { Name = cmd.Name, Description = cmd.Description, OutputSchema = cmd.OutputSummary })
   }
 }

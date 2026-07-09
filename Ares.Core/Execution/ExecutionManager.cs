@@ -132,7 +132,7 @@ public class ExecutionManager : IExecutionManager
   {
     var experimentCommandsInvalid = _activeCampaignTemplateStore.CampaignTemplate!.ExperimentTemplate.StepTemplates
     .SelectMany(step => step.CommandTemplates)
-    .Any(cmd => cmd.Parameters.Any(param => param.IsPlanned() && param.GetPlanningMetadata() is null));
+    .Any(cmd => cmd.ArgumentBindings.Any(param => param.IsPlanned() && param.GetPlanningMetadata() is null));
 
     if(experimentCommandsInvalid)
       return false;

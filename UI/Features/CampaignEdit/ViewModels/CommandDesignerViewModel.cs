@@ -1,8 +1,7 @@
-﻿using Ares.Datamodel;
+﻿using Ares.Core.Grpc.Services;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Templates;
 using Ares.Services.Device;
-using Ares.Core.Grpc.Services;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using UI.Features.CampaignEdit.Factories;
@@ -41,7 +40,8 @@ public partial class CommandDesignerViewModel : ReactiveObject
 
     CommandTemplate = new CommandTemplate
     {
-      UniqueId = Guid.NewGuid().ToString()
+      UniqueId = Guid.NewGuid().ToString(),
+      DeviceCommand = new DeviceCommand()
     };
   }
 
@@ -52,7 +52,7 @@ public partial class CommandDesignerViewModel : ReactiveObject
     set
     {
       _commandTemplate = value;
-      CommandMetadata = value.Metadata;
+      CommandMetadata = value.DeviceCommand?.Metadata;
       InitTemplate(value);
     }
   }
@@ -61,7 +61,7 @@ public partial class CommandDesignerViewModel : ReactiveObject
 
   public string? TemplateDeviceName { get; private set; }
   public string? MetadataDeviceName { get; private set; }
-  public string? TemplateCommandName => CommandTemplate.Metadata?.Name;
+  public string? TemplateCommandName => CommandTemplate.DeviceCommand?.Metadata?.Name;
 
   public bool TemplateOutputProvider => CommandTemplate.HasOutputVarName;
 
@@ -71,7 +71,7 @@ public partial class CommandDesignerViewModel : ReactiveObject
 
   public string? OutputVariableName { get; set; }
 
-  public IEnumerable<Parameter> Arguments => CommandTemplate.Parameters;
+  public IEnumerable<Parameter> Arguments => CommandTemplate.ArgumentBindings;
 
   public CommandMetadata? CommandMetadata
   {
@@ -89,16 +89,18 @@ public partial class CommandDesignerViewModel : ReactiveObject
   [Reactive]
   public partial IEnumerable<CommandParameterDesignerViewModel> ArgumentDesigners { get; private set; }
 
+  // TODO: Ensure we handle the other command template types AB 7/9/2026
   public CommandTemplate Save()
   {
-    CommandTemplate.Parameters.Clear();
-    CommandTemplate.Parameters.AddRange(ArgumentDesigners.Select(model => model.Save()));
+    CommandTemplate.ArgumentBindings.Clear();
+    CommandTemplate.ArgumentBindings.AddRange(ArgumentDesigners.Select(model => model.Save()));
     if(CommandMetadata is not null)
     {
-      CommandTemplate.Metadata = CommandMetadata;
-      CommandTemplate.Metadata.DeviceType = MetadataDeviceName;
+      CommandTemplate.DeviceCommand ??= new DeviceCommand();
+      CommandTemplate.DeviceCommand.Metadata = CommandMetadata;
+      CommandTemplate.DeviceCommand.Metadata.DeviceType = MetadataDeviceName;
     }
-      
+
 
     CommandTemplate.Index = Index;
     CommandTemplate.ClearOutputVarName();
@@ -113,27 +115,28 @@ public partial class CommandDesignerViewModel : ReactiveObject
   private async Task InitTemplate(CommandTemplate existingTemplate)
   {
     Index = Convert.ToInt32(existingTemplate.Index);
-    var existingParamDesigners = existingTemplate.Parameters.Select(_commandParameterDesignerFactory.Create).ToArray();
+    var existingParamDesigners = existingTemplate.ArgumentBindings.Select(_commandParameterDesignerFactory.Create).ToArray();
     ArgumentDesigners = [.. existingParamDesigners];
     ApplyAvailableVariableReferences();
-    MetadataPickerViewModel = _metadataPickerFactory.Create(existingTemplate.Metadata);
+    MetadataPickerViewModel = _metadataPickerFactory.Create(existingTemplate.DeviceCommand?.Metadata);
 
     OutputProvider = existingTemplate.HasOutputVarName;
     OutputVariableName = existingTemplate.HasOutputVarName ? existingTemplate.OutputVarName : null;
 
     // Revisit this once we have some sort of caching on the UI end.
     // that way we don't have to bother the service every time
-    if(existingTemplate.Metadata?.DeviceId is not null)
+    if(existingTemplate.DeviceCommand?.Metadata?.DeviceId is not null)
     {
 
-      var deviceInfo = await _devicesClient.GetDeviceInfo(new DeviceInfoRequest { DeviceId = existingTemplate.Metadata.DeviceId }, null);
+      var deviceInfo = await _devicesClient.GetDeviceInfo(new DeviceInfoRequest { DeviceId = existingTemplate.DeviceCommand.Metadata.DeviceId }, null);
       TemplateDeviceName = string.IsNullOrEmpty(deviceInfo.Name) ? null : deviceInfo.Name;
     }
   }
 
   public async Task MetadataUpdated(CommandMetadata? metadata)
   {
-    CommandTemplate.Metadata = metadata;
+    CommandTemplate.DeviceCommand ??= new DeviceCommand();
+    CommandTemplate.DeviceCommand.Metadata = metadata;
     CommandMetadata = metadata;
   }
 

@@ -28,8 +28,8 @@ public static class CommandOutputVariableReferenceBuilder
   {
     if(!commandTemplate.HasOutputVarName)
       return [];
-
-    var outputSchema = commandTemplate.Metadata?.OutputMetadata?.DataSchema;
+    // TODO: Check if we need to do this to other command template types AB 7/9/2026
+    var outputSchema = commandTemplate.DeviceCommand?.Metadata?.OutputMetadata?.DataSchema;
     if(outputSchema is null)
       return [];
 

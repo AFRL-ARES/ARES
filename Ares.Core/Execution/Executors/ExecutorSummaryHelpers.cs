@@ -48,6 +48,7 @@ internal static class ExecutorSummaryHelpers
     DateTime startTime,
     DateTime endTime)
   {
+    // TODO: Handle the other potential command template command types AB 7/9/2026
     var commandExecutionSummary = new CommandExecutionSummary
     {
       UniqueId = Guid.NewGuid().ToString(),
@@ -55,8 +56,8 @@ internal static class ExecutorSummaryHelpers
       CommandId = Guid.NewGuid().ToString(),
       Result = deviceResult,
       TemplateId = template.UniqueId,
-      CommandDescription = template.Metadata.Description,
-      CommandName = template.Metadata.Name,
+      CommandDescription = template.DeviceCommand.Metadata.Description,
+      CommandName = template.DeviceCommand.Metadata.Name,
       StatusCode = deviceResult?.StatusCode ?? CommandStatusCode.StatusUnspecified
     };
 

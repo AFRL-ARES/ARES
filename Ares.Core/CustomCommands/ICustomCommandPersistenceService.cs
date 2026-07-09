@@ -6,11 +6,11 @@ public interface ICustomCommandPersistenceService
 {
   Task<IReadOnlyList<CustomCommandSummary>> GetSummariesAsync();
 
-  Task<IReadOnlyList<CustomCommand>> GetCommandsAsync();
+  Task<IReadOnlyList<CustomCommandVersion>> GetCommandsAsync();
 
-  Task<CustomCommand?> GetAsync(Guid id);
+  Task<CustomCommandVersion?> GetAsync(Guid id);
 
-  Task<Guid> SaveAsync(Guid? id, CustomCommand command);
+  Task<Guid> SaveAsync(Guid? id, CustomCommandVersion command);
 
   Task DeleteAsync(Guid id);
 }
