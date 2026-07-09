@@ -199,7 +199,7 @@ public class CampaignExecutor : ICampaignExecutor
       return (false, new ExperimentExecutionSummary());
     }
 
-    var startupSummary = await ExecuteTemplate(startupExecutorResult.ExperimentExecutor, token);
+    var startupSummary = await ExecuteTemplate(startupExecutorResult.ExperimentExecutor, true, false, token);
     startupSummary.ResultOutputPath = AresEnvironment.AresEnvironment.GetEnvironmentVariable(VariableType.CampaignStartupFolder);
     if(Template.StartupTemplate.StepTemplates.Any())
       await PostExperimentExecution(startupSummary);
@@ -371,7 +371,7 @@ public class CampaignExecutor : ICampaignExecutor
       return ExperimentPhase.Failed;
     }
 
-    _currentSummary = await ExecuteTemplate(_currentExecutorResult.ExperimentExecutor, token);
+    _currentSummary = await ExecuteTemplate(_currentExecutorResult.ExperimentExecutor, false, false, token);
     _currentSummary.ResultOutputPath = currentExperimentPath;
 
     if(token.IsCancelled)
@@ -645,7 +645,7 @@ public class CampaignExecutor : ICampaignExecutor
       throw new CloseoutScriptFailedException(closeoutExecutorResult?.ErrorString ?? "Closeout failed, but no reason for failure was provided.");
     }
 
-    var closeoutSummary = await ExecuteTemplate(closeoutExecutorResult.ExperimentExecutor, token);
+    var closeoutSummary = await ExecuteTemplate(closeoutExecutorResult.ExperimentExecutor, false, true, token);
     closeoutSummary.ResultOutputPath = AresEnvironment.AresEnvironment.GetEnvironmentVariable(VariableType.CampaignMiscFolder);
     if(Template.CloseoutTemplate.StepTemplates.Any())
       await PostExperimentExecution(closeoutSummary);
@@ -815,15 +815,21 @@ public class CampaignExecutor : ICampaignExecutor
     return result;
   }
 
-  private async Task<ExperimentExecutionSummary> ExecuteTemplate(ExperimentExecutor experimentExecutor, ExecutionControlToken token)
+  private async Task<ExperimentExecutionSummary> ExecuteTemplate(ExperimentExecutor experimentExecutor, bool isStartup, bool isCloseout, ExecutionControlToken token)
   {
     if(!Status.ExperimentExecutionStatuses.Any(s => s.ExperimentId == experimentExecutor.Status.ExperimentId))
     {
+      experimentExecutor.Status.IsStartup = isStartup;
+      experimentExecutor.Status.IsCloseout = isCloseout;
+
       Status.ExperimentExecutionStatuses.Add(experimentExecutor.Status);
     }
 
     using var statusSub = experimentExecutor.ExperimentStatusObservable.Subscribe(experimentStatus =>
     {
+      experimentStatus.IsStartup = isStartup;
+      experimentStatus.IsCloseout = isCloseout;
+
       _executionReporter.Report(experimentStatus);
 
       if(IsAwaitingResponse(experimentStatus))

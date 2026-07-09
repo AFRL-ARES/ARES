@@ -101,7 +101,7 @@
             <section class="execution-card">
               <div class="card-heading">
                 <div>
-                  <h3>Experiment Goals</h3>
+                  <h3>Stop Condition</h3>
                   <p>Choose one active stop condition. Applying either option replaces the current stop condition.</p>
                 </div>
               </div>
@@ -306,7 +306,29 @@
                     <div class="timeline-item @GetExperimentClass(experiment)" @key="experiment.ExperimentId">
                       <div class="timeline-marker"></div>
                       <div class="timeline-content">
-                        <h4>Experiment @(i + 1)</h4>
+                        @if(experiment.IsStartup)
+                        {
+                          <h4>Startup Script</h4>  
+                        }
+                          
+                        else if(experiment.IsCloseout)
+                        {
+                          <h4>Closeout Script</h4>
+                        }
+
+                        else
+                        {
+                          @if(ViewModel!.CampaignTemplate!.StartupTemplate.StepTemplates.Any())
+                          {
+                            <h4>Experiment @(i)</h4>
+                          }
+
+                          else
+                          {
+                            <h4>Experiment @(i + 1)</h4>
+                          }
+                        }
+
                         @foreach(var step in experiment.StepExecutionStatuses)
                         {
                           <details open="@experiment.IsActive()">
