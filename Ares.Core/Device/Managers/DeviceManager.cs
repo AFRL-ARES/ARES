@@ -1,4 +1,3 @@
-using Ares.Core.CoreDevice;
 using Ares.Core.Device.Providers;
 using Ares.Core.Device.Repos;
 using Ares.Core.Notifications;
@@ -48,9 +47,6 @@ public class DeviceManager : IDeviceManager
 
   public void Initialize()
   {
-    var coreDevice = new AresCoreDevice();
-    _deviceRepo.AddOrUpdate(coreDevice);
-
     _configProvider.Connect()
       .SelectMany(async changes =>
       {

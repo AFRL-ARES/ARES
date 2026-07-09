@@ -28,9 +28,22 @@ public class StepComposer : ICommandComposer<StepTemplate, StepExecutor>
         .OrderBy(t => t.Index)
         .Select
         (
-          // TODO make sure we handle the rest of command template types AB 7/9/2026
+          // TODO Support Custom Commands AB 7/9/2026
           commandTemplate =>
           {
+            if(commandTemplate.CommandTypeCase == CommandTemplate.CommandTypeOneofCase.SystemCommand)
+            {
+              Func<CancellationToken, Task<CommandResult>> systemAction = ct => SystemOperationExecutor.Execute(
+                commandTemplate.SystemCommand.Operation,
+                commandTemplate.ArgumentBindings,
+                ct);
+
+              return new CommandExecutor(systemAction, commandTemplate, _notifier, _settingsManager);
+            }
+
+            if(commandTemplate.CommandTypeCase != CommandTemplate.CommandTypeOneofCase.DeviceCommand)
+              throw new InvalidOperationException($"Unsupported command type: {commandTemplate.CommandTypeCase}");
+
             var metadata = commandTemplate.DeviceCommand?.Metadata;
             var deviceId = metadata?.DeviceId;
             if(deviceId is null)

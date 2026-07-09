@@ -1,8 +1,6 @@
 using Ares.Datamodel.Automation;
 using Ares.Datamodel.Extensions;
-using Google.Protobuf;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Cryptography;
 using CustomCommandModel = Ares.Datamodel.Automation.CustomCommand;
 using CustomCommandVersionModel = Ares.Datamodel.Automation.CustomCommandVersion;
 
@@ -153,16 +151,7 @@ internal sealed class CustomCommandPersistenceService(IDbContextFactory<CoreData
     version.UniqueId = string.Empty;
     version.CustomCommandId = commandId.ToString();
     version.VersionNumber = versionNumber;
-    version.ContentHash = ComputeContentHash(version);
     return version;
-  }
-
-  private static string ComputeContentHash(CustomCommandVersionModel version)
-  {
-    var hashInput = version.Clone();
-    hashInput.UniqueId = string.Empty;
-    hashInput.ContentHash = string.Empty;
-    return Convert.ToHexString(SHA256.HashData(hashInput.ToByteArray()));
   }
 
   private static string BuildInputSummary(CustomCommandVersionModel command)

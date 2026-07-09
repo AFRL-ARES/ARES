@@ -48,7 +48,18 @@ internal static class ExecutorSummaryHelpers
     DateTime startTime,
     DateTime endTime)
   {
-    // TODO: Handle the other potential command template command types AB 7/9/2026
+    var commandName = template.CommandTypeCase switch
+    {
+      CommandTemplate.CommandTypeOneofCase.DeviceCommand => template.DeviceCommand.Metadata.Name,
+      CommandTemplate.CommandTypeOneofCase.SystemCommand => template.SystemCommand.Operation.ToString(),
+      CommandTemplate.CommandTypeOneofCase.CustomCommandInvocation => "Custom Command", // TODO More descriptive AB 7/9/2026
+      _ => "Undefined Command"
+    };
+
+    var commandDescription = template.CommandTypeCase == CommandTemplate.CommandTypeOneofCase.DeviceCommand
+      ? template.DeviceCommand.Metadata.Description
+      : string.Empty;
+
     var commandExecutionSummary = new CommandExecutionSummary
     {
       UniqueId = Guid.NewGuid().ToString(),
@@ -56,8 +67,8 @@ internal static class ExecutorSummaryHelpers
       CommandId = Guid.NewGuid().ToString(),
       Result = deviceResult,
       TemplateId = template.UniqueId,
-      CommandDescription = template.DeviceCommand.Metadata.Description,
-      CommandName = template.DeviceCommand.Metadata.Name,
+      CommandDescription = commandDescription,
+      CommandName = commandName,
       StatusCode = deviceResult?.StatusCode ?? CommandStatusCode.StatusUnspecified
     };
 

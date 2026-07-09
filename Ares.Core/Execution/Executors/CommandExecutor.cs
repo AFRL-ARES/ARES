@@ -17,17 +17,28 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
   private readonly ISystemSettingsManager _settingsManager;
 
 
-  // TODO: Execute the system and custom commands in addition to device AB 7/9/2026
   public CommandExecutor(Func<CancellationToken, Task<CommandResult>> command, CommandTemplate template, INotifier notifier, ISystemSettingsManager settingsManager)
   {
     _command = command;
     Template = template;
 
+    var commandName = template.CommandTypeCase switch
+    {
+      CommandTemplate.CommandTypeOneofCase.DeviceCommand => template.DeviceCommand.Metadata.Name,
+      CommandTemplate.CommandTypeOneofCase.SystemCommand => template.SystemCommand.Operation.ToString(),
+      CommandTemplate.CommandTypeOneofCase.CustomCommandInvocation => "Custom Command",
+      _ => "Undefined Command"
+    };
+
+    var executionTarget = template.CommandTypeCase == CommandTemplate.CommandTypeOneofCase.DeviceCommand
+      ? template.DeviceCommand.Metadata.DeviceType
+      : "ARES";
+
     var executionStatus = new CommandExecutionStatus
     {
       CommandId = template.UniqueId,
-      CommandName = template.DeviceCommand.Metadata.Name,
-      DeviceName = template.DeviceCommand.Metadata.DeviceType,
+      CommandName = commandName,
+      DeviceName = executionTarget,
       State = ExecutionState.Undefined
     };
 

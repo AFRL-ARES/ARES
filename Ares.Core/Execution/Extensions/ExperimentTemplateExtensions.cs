@@ -81,11 +81,14 @@ public static class ExperimentTemplateExtensions
         var cmdTemplateId = Guid.NewGuid().ToString();
         var outputCmd = template.GetAllOutputCommands().FirstOrDefault(oc => oc.UniqueId == commandTemplate.UniqueId);
 
-        commandTemplate.DeviceCommand.Metadata.UniqueId = Guid.NewGuid().ToString();
         commandTemplate.UniqueId = cmdTemplateId;
 
-        foreach(var metadataParameterMetadata in commandTemplate.DeviceCommand.Metadata.ParameterMetadatas)
-          metadataParameterMetadata.UniqueId = Guid.NewGuid().ToString();
+        if(commandTemplate.DeviceCommand?.Metadata is not null)
+        {
+          commandTemplate.DeviceCommand.Metadata.UniqueId = Guid.NewGuid().ToString();
+          foreach(var metadataParameterMetadata in commandTemplate.DeviceCommand.Metadata.ParameterMetadatas)
+            metadataParameterMetadata.UniqueId = Guid.NewGuid().ToString();
+        }
 
         foreach(var argument in commandTemplate.ArgumentBindings)
         {
