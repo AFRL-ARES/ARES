@@ -85,13 +85,16 @@ internal class CommandVariableResolutionTests
       UniqueId = Guid.NewGuid().ToString(),
       Index = 0,
       OutputVarName = "sourceResult",
-      Metadata = new CommandMetadata
+      DeviceCommand = new DeviceCommand
       {
-        DeviceId = "device-id",
-        Name = "source",
-        OutputMetadata = new OutputMetadata
+        Metadata = new CommandMetadata
         {
-          DataSchema = new AresValueSchema { Type = AresDataType.Number }
+          DeviceId = "device-id",
+          Name = "source",
+          OutputMetadata = new OutputMetadata
+          {
+            DataSchema = new AresValueSchema { Type = AresDataType.Number }
+          }
         }
       }
     };
@@ -102,14 +105,17 @@ internal class CommandVariableResolutionTests
     {
       UniqueId = Guid.NewGuid().ToString(),
       Index = 1,
-      Metadata = new CommandMetadata
+      DeviceCommand = new DeviceCommand
       {
-        DeviceId = "device-id",
-        Name = "consumer"
+        Metadata = new CommandMetadata
+        {
+          DeviceId = "device-id",
+          Name = "consumer"
+        }
       }
     };
 
-    template.Parameters.Add(new Parameter
+    template.ArgumentBindings.Add(new Parameter
     {
       UniqueId = Guid.NewGuid().ToString(),
       CommandVariableSource = new CommandVariableParameterSource { VariableArgument = variableArgument },

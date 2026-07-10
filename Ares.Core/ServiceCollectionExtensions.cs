@@ -69,7 +69,8 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<IDriverDatabaseManager, DriverDatabaseManager>();
     services.AddSingleton<ISystemSettingsManager, SystemSettingsManager>();
     services.AddSingleton<IResourceConnectionArbiter, ResourceConnectionArbiter>();
-    services.AddScoped<ICustomCommandPersistenceService, CustomCommandPersistenceService>();
+    services.AddSingleton<ICustomCommandPersistenceService, CustomCommandPersistenceService>();
+    services.AddSingleton<CustomCommandExecutor>();
 
     services.AddSingleton<ISymbolProvider, DeviceSymbolProvider>();
     services.AddSingleton<ISymbolProvider, QuantitySymbolProvider>();

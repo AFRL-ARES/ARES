@@ -26,28 +26,28 @@ internal class StepComposerTests
     {
       Index = 0,
       UniqueId = Guid.NewGuid().ToString(),
-      Metadata = new CommandMetadata { UniqueId = Guid.NewGuid().ToString(), DeviceId = "TestDeviceId" }
+      DeviceCommand = new DeviceCommand { Metadata = new CommandMetadata { UniqueId = Guid.NewGuid().ToString(), DeviceId = "TestDeviceId" } }
     };
 
     var commandTemplate2 = new CommandTemplate
     {
       Index = 1,
       UniqueId = Guid.NewGuid().ToString(),
-      Metadata = new CommandMetadata { UniqueId = Guid.NewGuid().ToString(), DeviceId = "TestDeviceId" }
+      DeviceCommand = new DeviceCommand { Metadata = new CommandMetadata { UniqueId = Guid.NewGuid().ToString(), DeviceId = "TestDeviceId" } }
     };
 
     var commandTemplate3 = new CommandTemplate
     {
       Index = 2,
       UniqueId = Guid.NewGuid().ToString(),
-      Metadata = new CommandMetadata { UniqueId = Guid.NewGuid().ToString(), DeviceId = "TestDeviceId" }
+      DeviceCommand = new DeviceCommand { Metadata = new CommandMetadata { UniqueId = Guid.NewGuid().ToString(), DeviceId = "TestDeviceId" } }
     };
 
     var commandTemplate4 = new CommandTemplate
     {
       Index = 3,
       UniqueId = Guid.NewGuid().ToString(),
-      Metadata = new CommandMetadata { UniqueId = Guid.NewGuid().ToString(), DeviceId = "TestDeviceId" }
+      DeviceCommand = new DeviceCommand { Metadata = new CommandMetadata { UniqueId = Guid.NewGuid().ToString(), DeviceId = "TestDeviceId" } }
     };
 
     var stepTemplate = new StepTemplate

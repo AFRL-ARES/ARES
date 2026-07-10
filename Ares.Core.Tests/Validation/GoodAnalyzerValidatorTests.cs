@@ -96,11 +96,14 @@ internal class GoodAnalyzerValidatorTests
     stepTemplate.CommandTemplates.Add(new CommandTemplate
     {
       OutputVarName = "result",
-      Metadata = new CommandMetadata
+      DeviceCommand = new DeviceCommand
       {
-        OutputMetadata = new OutputMetadata
+        Metadata = new CommandMetadata
         {
-          DataSchema = outputSchema
+          OutputMetadata = new OutputMetadata
+          {
+            DataSchema = outputSchema
+          }
         }
       }
     });

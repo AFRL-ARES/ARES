@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 
 namespace AresScript.ScriptBuilding;
 
+// TODO: maybe move to the core instead also check if it can use some of the existing builders.
 public static class CustomCommandScriptBuilder
 {
   private const string FunctionPrefix = "custom_command_";

@@ -13,11 +13,17 @@ public class StepComposer : ICommandComposer<StepTemplate, StepExecutor>
   private readonly INotifier _notifier;
   private readonly IAresDeviceRepo _deviceRepo;
   private readonly ISystemSettingsManager _settingsManager;
-  public StepComposer(IAresDeviceRepo deviceRepo, INotifier notifier, ISystemSettingsManager settingsManager)
+  private readonly CustomCommandExecutor? _customCommandExecutor;
+  public StepComposer(
+    IAresDeviceRepo deviceRepo,
+    INotifier notifier,
+    ISystemSettingsManager settingsManager,
+    CustomCommandExecutor? customCommandExecutor = null)
   {
     _deviceRepo = deviceRepo;
     _notifier = notifier;
     _settingsManager = settingsManager;
+    _customCommandExecutor = customCommandExecutor;
   }
 
   public StepExecutor Compose(StepTemplate template)
@@ -28,7 +34,6 @@ public class StepComposer : ICommandComposer<StepTemplate, StepExecutor>
         .OrderBy(t => t.Index)
         .Select
         (
-          // TODO Support Custom Commands AB 7/9/2026
           commandTemplate =>
           {
             if(commandTemplate.CommandTypeCase == CommandTemplate.CommandTypeOneofCase.SystemCommand)
@@ -39,6 +44,19 @@ public class StepComposer : ICommandComposer<StepTemplate, StepExecutor>
                 ct);
 
               return new CommandExecutor(systemAction, commandTemplate, _notifier, _settingsManager);
+            }
+
+            if(commandTemplate.CommandTypeCase == CommandTemplate.CommandTypeOneofCase.CustomCommandInvocation)
+            {
+              if(_customCommandExecutor is null)
+                throw new InvalidOperationException("Custom command execution has not been configured.");
+
+              Func<CancellationToken, Task<CommandResult>> customCommandAction = ct => _customCommandExecutor.Execute(
+                commandTemplate.CustomCommandInvocation.CustomCommandId,
+                commandTemplate.ArgumentBindings,
+                ct);
+
+              return new CommandExecutor(customCommandAction, commandTemplate, _notifier, _settingsManager);
             }
 
             if(commandTemplate.CommandTypeCase != CommandTemplate.CommandTypeOneofCase.DeviceCommand)
