@@ -1,3 +1,4 @@
+using Ares.Core.Execution.Executors;
 using Ares.Datamodel;
 using Ares.Datamodel.Templates;
 
@@ -17,7 +18,7 @@ public static class CommandOutputVariableReferenceBuilder
     if(!commandDesigner.OutputProvider || string.IsNullOrWhiteSpace(commandDesigner.OutputVariableName))
       return [];
 
-    var outputSchema = commandDesigner.CommandMetadata?.OutputMetadata?.DataSchema;
+    var outputSchema = commandDesigner.OutputSchema;
     if(outputSchema is null)
       return [];
 
@@ -28,9 +29,14 @@ public static class CommandOutputVariableReferenceBuilder
   {
     if(!commandTemplate.HasOutputVarName)
       return [];
-    // TODO: Check if we need to do this to other command template types AB 7/9/2026
-    var outputSchema = commandTemplate.DeviceCommand?.Metadata?.OutputMetadata?.DataSchema;
-    if(outputSchema is null)
+
+    var outputSchema = commandTemplate.CommandTypeCase switch
+    {
+      CommandTemplate.CommandTypeOneofCase.DeviceCommand => commandTemplate.DeviceCommand.Metadata?.OutputMetadata?.DataSchema,
+      CommandTemplate.CommandTypeOneofCase.SystemCommand => SystemOperationCatalog.Find(commandTemplate.SystemCommand.Operation)?.OutputSchema,
+      _ => null
+    };
+    if(outputSchema is null || outputSchema.Type is AresDataType.Unit or AresDataType.UnspecifiedType)
       return [];
 
     return Build(commandTemplate.OutputVarName, outputSchema).ToArray();

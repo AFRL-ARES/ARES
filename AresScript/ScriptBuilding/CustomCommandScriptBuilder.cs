@@ -5,7 +5,6 @@ using System.Text.RegularExpressions;
 
 namespace AresScript.ScriptBuilding;
 
-// TODO: maybe move to the core instead also check if it can use some of the existing builders.
 public static class CustomCommandScriptBuilder
 {
   private const string FunctionPrefix = "custom_command_";
@@ -25,12 +24,6 @@ public static class CustomCommandScriptBuilder
     }
 
     return $"{FunctionPrefix}{safeName}";
-  }
-
-  public static string ToTypeHint(AresValueSchema schema)
-  {
-    ArgumentNullException.ThrowIfNull(schema);
-    return AresScriptSchemaFormatter.ToTypeHint(schema);
   }
 
   public static string BuildFunctionSignature(

@@ -102,10 +102,10 @@ if ! dotnet ef --help >/dev/null 2>&1; then
 fi
 
 script_dir="$(cd "$(dirname "$0")" && pwd)"
-root="$(cd "$script_dir/../../" && pwd)"
+root="$(cd "$script_dir/../../../.." && pwd)"
 migration_project_base="AresService.Migrations."
-startup_project="$script_dir/../AresService.csproj"
-solution="$root/AresOS.sln"
+startup_project="$script_dir/../../../UI.csproj"
+solution="$root/AresOS.slnx"
 contexts=("AresDbContext" "AresIdentityContext")
 
 echo "Building project in $configuration mode..."
