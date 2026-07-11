@@ -237,6 +237,9 @@ public partial class CommandDesignerViewModel : ReactiveObject
       ParameterSource.Variable when !argumentDesigner.HasSelectedVariableReference()
         => "Command output variable is no longer available.",
 
+      ParameterSource.Planned or ParameterSource.Variable
+        => null,
+
       ParameterSource.Unspecified or ParameterSource.Value or ParameterSource.Environment
         => null,
 
