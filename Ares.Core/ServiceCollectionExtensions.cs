@@ -1,5 +1,6 @@
 using Ares.Core.Analyzing;
 using Ares.Core.AresEnvironment;
+using Ares.Core.Campaigns;
 using Ares.Core.CustomCommands;
 using Ares.Core.DataManagement.DataMappers;
 using Ares.Core.Device.Managers;
@@ -70,6 +71,7 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<ISystemSettingsManager, SystemSettingsManager>();
     services.AddSingleton<IResourceConnectionArbiter, ResourceConnectionArbiter>();
     services.AddSingleton<ICustomCommandPersistenceService, CustomCommandPersistenceService>();
+    services.AddSingleton<ICampaignTemplatePersistenceService, CampaignTemplatePersistenceService>();
     services.AddSingleton<ICommandDisplayNameResolver, CommandDisplayNameResolver>();
     services.AddSingleton<CustomCommandExecutor>();
 

@@ -53,7 +53,6 @@ public static class GoodAnalyzerValidator
       if(matchingCommand is null)
         continue;
 
-      // TODO: Handle other command template types as well AB 7/9/2026
       var cmdSchema = matchingCommand.DeviceCommand?.Metadata?.OutputMetadata?.DataSchema;
       if(cmdSchema is null)
         continue;

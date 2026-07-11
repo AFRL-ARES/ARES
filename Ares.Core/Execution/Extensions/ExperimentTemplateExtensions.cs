@@ -75,11 +75,9 @@ public static class ExperimentTemplateExtensions
     foreach(var stepTemplate in newTemplate.StepTemplates)
     {
       stepTemplate.UniqueId = Guid.NewGuid().ToString();
-      // TODO ensure all the commands not just device commands are taken care of AB 7/9/2026
       foreach(var commandTemplate in stepTemplate.CommandTemplates)
       {
         var cmdTemplateId = Guid.NewGuid().ToString();
-        var outputCmd = template.GetAllOutputCommands().FirstOrDefault(oc => oc.UniqueId == commandTemplate.UniqueId);
 
         commandTemplate.UniqueId = cmdTemplateId;
 
