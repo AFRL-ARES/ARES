@@ -15,4 +15,5 @@
   <Project Path="DemoRemoteDevice/DemoRemoteDevice.csproj" />
   <Project Path="DemoRemotePlanner/DemoRemotePlanner.csproj" />
   <Project Path="UI/UI.csproj" />
+  <Project Path="UI.Tests/UI.Tests.csproj" />
 </Solution>

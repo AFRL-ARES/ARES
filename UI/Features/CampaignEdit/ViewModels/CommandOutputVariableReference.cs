@@ -25,7 +25,9 @@ public static class CommandOutputVariableReferenceBuilder
     return Build(commandDesigner.OutputVariableName, outputSchema).ToArray();
   }
 
-  public static CommandOutputVariableReference[] Build(CommandTemplate commandTemplate)
+  public static CommandOutputVariableReference[] Build(
+    CommandTemplate commandTemplate,
+    IReadOnlyDictionary<string, AresValueSchema> customCommandOutputSchemas)
   {
     if(!commandTemplate.HasOutputVarName)
       return [];
@@ -34,6 +36,8 @@ public static class CommandOutputVariableReferenceBuilder
     {
       CommandTemplate.CommandTypeOneofCase.DeviceCommand => commandTemplate.DeviceCommand.Metadata?.OutputMetadata?.DataSchema,
       CommandTemplate.CommandTypeOneofCase.SystemCommand => SystemOperationCatalog.Find(commandTemplate.SystemCommand.Operation)?.OutputSchema,
+      CommandTemplate.CommandTypeOneofCase.CustomCommandInvocation
+        => ResolveCustomCommandOutputSchema(commandTemplate.CustomCommandInvocation.CustomCommandId, customCommandOutputSchemas),
       _ => null
     };
     if(outputSchema is null || outputSchema.Type is AresDataType.Unit or AresDataType.UnspecifiedType)
@@ -41,6 +45,13 @@ public static class CommandOutputVariableReferenceBuilder
 
     return Build(commandTemplate.OutputVarName, outputSchema).ToArray();
   }
+
+  private static AresValueSchema? ResolveCustomCommandOutputSchema(
+    string customCommandId,
+    IReadOnlyDictionary<string, AresValueSchema> customCommandOutputSchemas)
+    => customCommandOutputSchemas.TryGetValue(customCommandId, out var outputSchema)
+      ? outputSchema
+      : null;
 
   public static CommandOutputVariableReference[] MarkCompatibility(
     IEnumerable<CommandOutputVariableReference> references,
