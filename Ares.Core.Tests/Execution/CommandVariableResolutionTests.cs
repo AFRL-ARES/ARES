@@ -39,7 +39,7 @@ internal class CommandVariableResolutionTests
     stepTemplate.CommandTemplates.Add(CreateSourceCommand());
     stepTemplate.CommandTemplates.Add(CreateConsumerCommand("sourceResult"));
 
-    var stepComposer = new StepComposer(deviceRepo, new Mock<INotifier>().Object, _systemSettingsManager);
+    var stepComposer = new StepComposer(deviceRepo, new Mock<INotifier>().Object, _systemSettingsManager, CreateNameResolver());
     var stepExecutor = stepComposer.Compose(stepTemplate);
 
     using var tokenSource = new ExecutionControlTokenSource();
@@ -65,6 +65,7 @@ internal class CommandVariableResolutionTests
         return Task.FromResult(new CommandResult { Success = true });
       },
       template,
+      "consumer",
       new Mock<INotifier>().Object,
       _systemSettingsManager);
 
@@ -77,6 +78,13 @@ internal class CommandVariableResolutionTests
       Assert.That(summary.Result.Success, Is.False);
       Assert.That(summary.Result.Error, Does.Contain("missingResult"));
     }
+  }
+
+  private static ICommandDisplayNameResolver CreateNameResolver()
+  {
+    var resolver = new Mock<ICommandDisplayNameResolver>();
+    resolver.Setup(value => value.Resolve(It.IsAny<CommandTemplate>())).Returns("Test command");
+    return resolver.Object;
   }
 
   private static CommandTemplate CreateSourceCommand()

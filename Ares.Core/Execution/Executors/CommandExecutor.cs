@@ -15,20 +15,14 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
   private readonly BehaviorSubject<CommandExecutionStatus> _stateSubject;
   private readonly INotifier _notifier;
   private readonly ISystemSettingsManager _settingsManager;
+  private readonly string _commandName;
 
 
-  public CommandExecutor(Func<CancellationToken, Task<CommandResult>> command, CommandTemplate template, INotifier notifier, ISystemSettingsManager settingsManager)
+  public CommandExecutor(Func<CancellationToken, Task<CommandResult>> command, CommandTemplate template, string commandName, INotifier notifier, ISystemSettingsManager settingsManager)
   {
     _command = command;
+    _commandName = commandName;
     Template = template;
-
-    var commandName = template.CommandTypeCase switch
-    {
-      CommandTemplate.CommandTypeOneofCase.DeviceCommand => template.DeviceCommand.Metadata.Name,
-      CommandTemplate.CommandTypeOneofCase.SystemCommand => template.SystemCommand.Operation.ToString(),
-      CommandTemplate.CommandTypeOneofCase.CustomCommandInvocation => "Custom Command",
-      _ => "Undefined Command"
-    };
 
     var executionTarget = template.CommandTypeCase == CommandTemplate.CommandTypeOneofCase.DeviceCommand
       ? template.DeviceCommand.Metadata.DeviceType
@@ -77,7 +71,7 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
       Status.State = ExecutionState.Failed;
       _stateSubject.OnNext(Status);
       _stateSubject.OnCompleted();
-      return ExecutorSummaryHelpers.CreateCommandExecutionSummary(Template, null, DateTime.UtcNow, DateTime.UtcNow);
+      return ExecutorSummaryHelpers.CreateCommandExecutionSummary(Template, _commandName, null, DateTime.UtcNow, DateTime.UtcNow);
     }
 
     var timeStarted = DateTime.UtcNow;
@@ -124,7 +118,7 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
     _stateSubject.OnNext(Status);
     _stateSubject.OnCompleted();
 
-    return ExecutorSummaryHelpers.CreateCommandExecutionSummary(Template, result, timeStarted, DateTime.UtcNow);
+    return ExecutorSummaryHelpers.CreateCommandExecutionSummary(Template, _commandName, result, timeStarted, DateTime.UtcNow);
   }
 
   private async Task<CommandResult> InternalExecute(CancellationToken token)

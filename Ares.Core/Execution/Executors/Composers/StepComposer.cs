@@ -14,15 +14,18 @@ public class StepComposer : ICommandComposer<StepTemplate, StepExecutor>
   private readonly IAresDeviceRepo _deviceRepo;
   private readonly ISystemSettingsManager _settingsManager;
   private readonly CustomCommandExecutor? _customCommandExecutor;
+  private readonly ICommandDisplayNameResolver _commandDisplayNameResolver;
   public StepComposer(
     IAresDeviceRepo deviceRepo,
     INotifier notifier,
     ISystemSettingsManager settingsManager,
+    ICommandDisplayNameResolver commandDisplayNameResolver,
     CustomCommandExecutor? customCommandExecutor = null)
   {
     _deviceRepo = deviceRepo;
     _notifier = notifier;
     _settingsManager = settingsManager;
+    _commandDisplayNameResolver = commandDisplayNameResolver;
     _customCommandExecutor = customCommandExecutor;
   }
 
@@ -36,6 +39,8 @@ public class StepComposer : ICommandComposer<StepTemplate, StepExecutor>
         (
           commandTemplate =>
           {
+            var commandName = _commandDisplayNameResolver.Resolve(commandTemplate);
+
             if(commandTemplate.CommandTypeCase == CommandTemplate.CommandTypeOneofCase.SystemCommand)
             {
               Func<CancellationToken, Task<CommandResult>> systemAction = ct => SystemOperationExecutor.Execute(
@@ -43,7 +48,7 @@ public class StepComposer : ICommandComposer<StepTemplate, StepExecutor>
                 commandTemplate.ArgumentBindings,
                 ct);
 
-              return new CommandExecutor(systemAction, commandTemplate, _notifier, _settingsManager);
+              return new CommandExecutor(systemAction, commandTemplate, commandName, _notifier, _settingsManager);
             }
 
             if(commandTemplate.CommandTypeCase == CommandTemplate.CommandTypeOneofCase.CustomCommandInvocation)
@@ -56,7 +61,7 @@ public class StepComposer : ICommandComposer<StepTemplate, StepExecutor>
                 commandTemplate.ArgumentBindings,
                 ct);
 
-              return new CommandExecutor(customCommandAction, commandTemplate, _notifier, _settingsManager);
+              return new CommandExecutor(customCommandAction, commandTemplate, commandName, _notifier, _settingsManager);
             }
 
             if(commandTemplate.CommandTypeCase != CommandTemplate.CommandTypeOneofCase.DeviceCommand)
@@ -77,7 +82,7 @@ public class StepComposer : ICommandComposer<StepTemplate, StepExecutor>
                   commandTemplate.ArgumentBindings.Select(p => new DeviceCommandArgument() { ArgName = p.Metadata.Name, ArgValue = p.GetValue() }).ToList(),
                   ct);
 
-              return new CommandExecutor(internalAction, commandTemplate, _notifier, _settingsManager);
+              return new CommandExecutor(internalAction, commandTemplate, commandName, _notifier, _settingsManager);
             }
 
             throw new InvalidOperationException("I'm not certain what to do here yet :(");
