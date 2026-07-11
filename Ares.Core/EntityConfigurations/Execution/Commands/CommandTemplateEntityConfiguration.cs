@@ -21,6 +21,9 @@ internal class CommandTemplateEntityConfiguration : AresEntityTypeBaseConfigurat
     builder.OwnsOne(template => template.SystemCommand);
     builder.OwnsOne(template => template.CustomCommandInvocation);
 
+    builder.Navigation(template => template.DeviceCommand)
+      .AutoInclude();
+
     builder.Navigation(commandTemplate => commandTemplate.ArgumentBindings)
       .AutoInclude();
   }
