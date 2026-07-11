@@ -2,10 +2,12 @@
 @page "/automation/campaignlist"
 @using Ares.Services
 @using Newtonsoft.Json
+@using UI.Application.Notifications
 @using UI.Features.CampaignEdit.ViewModels
 @inject DialogService DialogService
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<CampaignListViewModel>
 @inject IJSRuntime JS
+@inject IUiNotificationService NotificationService
 
 
 <div class="d-flex flex-column align-content-stretch">
@@ -15,6 +17,13 @@
       <a type="button" class="m-1 d-flex align-items-center btn btn-outline-light" href="automation/campaigndesigner">
         <RadzenIcon Icon="add"/>
       </a>
+      <RadzenUpload class="m-1"
+                    Accept=".json,application/json"
+                    Multiple="false"
+                    ChooseText="Import"
+                    Icon="upload"
+                    Disabled="@_isImporting"
+                    Change="ImportTemplate" />
       <button class="m-1 btn btn-outline-light" @onclick="Refresh">
         <RadzenIcon Icon="refresh" />
       </button>
@@ -55,6 +64,8 @@
 </div>
 
 @code {
+  private bool _isImporting;
+
   protected override async Task OnInitializedAsync()
   {
     await ViewModel!.RefreshCampaigns();
@@ -85,19 +96,45 @@
 
   private async void ExportTemplate(CampaignTemplateSummary templateSummary)
   {
-    //Generate a copy of the template, create a new unique ID and change the name to avoid collisions if the user adds it to their templates folder
-    var response = await ViewModel!.GetCopyOfCampaignTemplate(templateSummary.UniqueId);
-
-    if(response.HasSerializedJsonData)
+    try
     {
-      var templateCopy = response.Template;
-      var fileName = templateCopy.UniqueId;
-      await JS.InvokeVoidAsync("downloadJsonFile", fileName, response.SerializedJsonData);
+      var export = await ViewModel!.ExportCampaignTemplate(templateSummary.UniqueId);
+      if(export is null)
+      {
+        NotificationService.Error("The selected campaign could not be found.");
+        return;
+      }
+
+      await JS.InvokeVoidAsync("downloadJsonFile", export.SuggestedFileName, export.Json);
     }
-
-    else
+    catch(Exception exception)
     {
-      //Notify of failure..?
+      NotificationService.Error($"Failed to export campaign. {exception.Message}");
+    }
+  }
+
+  private async Task ImportTemplate(UploadChangeEventArgs args)
+  {
+    if(_isImporting || args.Files is null || !args.Files.Any())
+      return;
+
+    _isImporting = true;
+    try
+    {
+      var result = await ViewModel!.ImportCampaignTemplate(args.Files.Single());
+      await ViewModel.RefreshCampaigns();
+      NotificationService.Success($"Imported campaign '{result.Template.Name}'.");
+      if(result.Warnings.Count > 0)
+        NotificationService.Warning(string.Join(System.Environment.NewLine, result.Warnings), "Campaign imported with warnings");
+    }
+    catch(Exception exception)
+    {
+      NotificationService.Error($"Failed to import campaign. {exception.Message}");
+    }
+    finally
+    {
+      _isImporting = false;
+      StateHasChanged();
     }
   }
 

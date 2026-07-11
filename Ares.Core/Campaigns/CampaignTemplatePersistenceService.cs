@@ -55,6 +55,7 @@ internal class CampaignTemplatePersistenceService(IDbContextFactory<CoreDatabase
   public async Task AddAsync(CampaignTemplate template, CancellationToken cancellationToken = default)
   {
     await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
+    await CanonicalizePlannerReferencesAsync(context, template, cancellationToken);
     context.CampaignTemplates.Add(template);
     await context.SaveChangesAsync(cancellationToken);
   }
@@ -70,6 +71,7 @@ internal class CampaignTemplatePersistenceService(IDbContextFactory<CoreDatabase
 
     RemoveCampaignGraph(context, existingTemplate);
     await context.SaveChangesAsync(cancellationToken);
+    await CanonicalizePlannerReferencesAsync(context, template, cancellationToken);
     context.CampaignTemplates.Add(template);
     await context.SaveChangesAsync(cancellationToken);
     await transaction.CommitAsync(cancellationToken);
@@ -108,5 +110,22 @@ internal class CampaignTemplatePersistenceService(IDbContextFactory<CoreDatabase
       .ToArray();
     context.ExperimentTemplates.RemoveRange(experiments!);
     context.CampaignTemplates.Remove(template);
+  }
+
+  private static async Task CanonicalizePlannerReferencesAsync(
+    CoreDatabaseContext context,
+    CampaignTemplate template,
+    CancellationToken cancellationToken)
+  {
+    foreach(var allocation in template.PlannerAllocations)
+    {
+      var plannerId = allocation.Planner?.UniqueId;
+      if(string.IsNullOrWhiteSpace(plannerId))
+        continue;
+
+      var localPlanner = await context.PlannerInfos.FirstOrDefaultAsync(planner => planner.UniqueId == plannerId, cancellationToken);
+      if(localPlanner is not null)
+        allocation.Planner = localPlanner;
+    }
   }
 }

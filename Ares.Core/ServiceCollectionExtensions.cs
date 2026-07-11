@@ -72,6 +72,7 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<IResourceConnectionArbiter, ResourceConnectionArbiter>();
     services.AddSingleton<ICustomCommandPersistenceService, CustomCommandPersistenceService>();
     services.AddSingleton<ICampaignTemplatePersistenceService, CampaignTemplatePersistenceService>();
+    services.AddSingleton<ICampaignTemplateTransferService, CampaignTemplateTransferService>();
     services.AddSingleton<ICommandDisplayNameResolver, CommandDisplayNameResolver>();
     services.AddSingleton<CustomCommandExecutor>();
 

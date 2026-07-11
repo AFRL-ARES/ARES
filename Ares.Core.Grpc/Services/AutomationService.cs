@@ -4,11 +4,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Ares.Core.Analyzing;
 using Ares.Core.Campaigns;
-using Ares.Core.EntityConfigurations.Helpers;
 using Ares.Core.Execution;
 using Ares.Core.Execution.StartConditions;
 using Ares.Core.Execution.StopConditions;
@@ -36,11 +34,11 @@ public class AutomationService : AresAutomation.AresAutomationBase
   private readonly IEnumerable<IStartCondition> _startConditions;
   private readonly IEnumerable<INotificationHandler> _notificationHandlers;
   readonly IDesiredAnalysisResultFactory _desiredAnalysisResultFactory;
-  private JsonSerializerOptions _serializerSettings;
   private readonly IPlannerServiceRepo _plannerServiceRepo;
   private readonly IPlannerTransactionProvider _plannerTransactionProvider;
   private readonly IAnalyzerTransactionProvider _analyzerTransactionProvider;
   private readonly ICampaignTemplatePersistenceService _campaignTemplatePersistenceService;
+  private readonly ICampaignTemplateTransferService _campaignTemplateTransferService;
 
   public AutomationService(IDbContextFactory<CoreDatabaseContext> coreContextFactory,
     IExecutionManager executionManager,
@@ -52,7 +50,8 @@ public class AutomationService : AresAutomation.AresAutomationBase
     IPlannerServiceRepo plannerServiceRepo,
     IPlannerTransactionProvider plannerTransactionProvider,
     IAnalyzerTransactionProvider analyzerTransactionProvider,
-    ICampaignTemplatePersistenceService campaignTemplatePersistenceService)
+    ICampaignTemplatePersistenceService campaignTemplatePersistenceService,
+    ICampaignTemplateTransferService campaignTemplateTransferService)
   {
     _desiredAnalysisResultFactory = desiredAnalysisResultFactory;
     _coreContextFactory = coreContextFactory;
@@ -60,12 +59,12 @@ public class AutomationService : AresAutomation.AresAutomationBase
     _executionReportStore = executionReportStore;
     _activeCampaignTemplateStore = activeCampaignTemplateStore;
     _startConditions = startConditions;
-    _serializerSettings = SerializerSettingsHelper.CreateCustomSerializationSettings();
     _notificationHandlers = notificationHandlers;
     _plannerServiceRepo = plannerServiceRepo;
     _plannerTransactionProvider = plannerTransactionProvider;
     _analyzerTransactionProvider = analyzerTransactionProvider;
     _campaignTemplatePersistenceService = campaignTemplatePersistenceService;
+    _campaignTemplateTransferService = campaignTemplateTransferService;
   }
 
   public override async Task<ProjectsResponse> GetAllProjects(Empty request, ServerCallContext? context)
@@ -475,16 +474,12 @@ public class AutomationService : AresAutomation.AresAutomationBase
 
   public override async Task<GetCopyOfCampaignResponse> GetCopyOfCampaign(CampaignRequest request, ServerCallContext context)
   {
-    var template = await GetCampaignTemplate(request, context);
     var response = new GetCopyOfCampaignResponse();
-
-    if(template is not null)
+    var export = await _campaignTemplateTransferService.ExportAsync(request.UniqueId, context?.CancellationToken ?? CancellationToken.None);
+    if(export is not null)
     {
-      var templateCopy = template.Clone();
-      templateCopy.UniqueId = Guid.NewGuid().ToString();
-      templateCopy.Name = $"{template.Name}-Copy";
-      response.Template = templateCopy;
-      response.SerializedJsonData = JsonSerializer.Serialize(templateCopy, _serializerSettings);
+      response.Template = export.Template;
+      response.SerializedJsonData = export.Json;
     }
 
     return response;

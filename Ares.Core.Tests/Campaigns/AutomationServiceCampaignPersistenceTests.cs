@@ -65,22 +65,24 @@ internal class AutomationServiceCampaignPersistenceTests
   {
     var campaign = new CampaignTemplate { UniqueId = Guid.NewGuid().ToString(), Name = "Campaign" };
     var persistence = new Mock<ICampaignTemplatePersistenceService>();
-    persistence.Setup(service => service.GetByIdAsync(campaign.UniqueId, It.IsAny<CancellationToken>())).ReturnsAsync(campaign);
-    var service = CreateService(persistence.Object, new ActiveCampaignTemplateStore());
+    var transfer = new Mock<ICampaignTemplateTransferService>();
+    transfer.Setup(service => service.ExportAsync(campaign.UniqueId, It.IsAny<CancellationToken>()))
+      .ReturnsAsync(new CampaignTemplateExport(campaign, "{\"uniqueId\":\"campaign-id\"}", "Campaign.json"));
+    var service = CreateService(persistence.Object, new ActiveCampaignTemplateStore(), transfer.Object);
 
     var response = await service.GetCopyOfCampaign(new CampaignRequest { UniqueId = campaign.UniqueId }, null!);
 
     using(Assert.EnterMultipleScope())
     {
-      Assert.That(response.Template.UniqueId, Is.Not.EqualTo(campaign.UniqueId));
-      Assert.That(response.Template.Name, Is.EqualTo("Campaign-Copy"));
-      Assert.That(response.SerializedJsonData, Does.Contain(response.Template.UniqueId));
+      Assert.That(response.Template, Is.SameAs(campaign));
+      Assert.That(response.SerializedJsonData, Does.Contain("campaign-id"));
     }
   }
 
   private static AutomationService CreateService(
     ICampaignTemplatePersistenceService persistence,
-    IActiveCampaignTemplateStore activeStore)
+    IActiveCampaignTemplateStore activeStore,
+    ICampaignTemplateTransferService transferService = null)
     => new(
       Mock.Of<IDbContextFactory<CoreDatabaseContext>>(),
       Mock.Of<IExecutionManager>(),
@@ -92,5 +94,6 @@ internal class AutomationServiceCampaignPersistenceTests
       Mock.Of<IPlannerServiceRepo>(),
       Mock.Of<IPlannerTransactionProvider>(),
       Mock.Of<IAnalyzerTransactionProvider>(),
-      persistence);
+      persistence,
+      transferService ?? Mock.Of<ICampaignTemplateTransferService>());
 }
