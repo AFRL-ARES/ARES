@@ -326,12 +326,12 @@ public class AresScriptBuilderTests
 
     Assert.That(script, Does.Contain("def custom_command_Summarize_Samples(measurement: {reading: Number, unit: String}, tags: [String]) -> {reading: Number, unit: String}:"));
     Assert.That(script, Does.Contain("  total = measurement.reading"));
-    Assert.That(script, Does.Contain($"{System.Environment.NewLine}{System.Environment.NewLine}  return measurement"));
+    Assert.That(script, Does.Contain($"{System.Environment.NewLine}  {System.Environment.NewLine}  return measurement"));
     Assert.That(() => Parse(script), Throws.Nothing);
   }
 
   [Test]
-  public void CustomCommandScriptBuilder_BuildWrappedScript_UsesReturnFallbackForEmptyBody()
+  public void CustomCommandScriptBuilder_BuildWrappedScript_PreservesWhitespaceBeforeReturnFallback()
   {
     var script = CustomCommandScriptBuilder.BuildWrappedScript(
       "No Op",
@@ -339,7 +339,27 @@ public class AresScriptBuilderTests
       AresSchemaBuilder.Entry(AresDataType.Unit).Build(),
       "  ");
 
-    Assert.That(script, Is.EqualTo($"def custom_command_No_Op() -> Unit:{System.Environment.NewLine}  return"));
+    Assert.That(
+      script,
+      Is.EqualTo(
+        $"def custom_command_No_Op() -> Unit:{System.Environment.NewLine}    {System.Environment.NewLine}  return"));
+    Assert.That(() => Parse(script), Throws.Nothing);
+  }
+
+  [Test]
+  public void CustomCommandScriptBuilder_BuildWrappedScript_PreservesEveryBodyLine()
+  {
+    var script = CustomCommandScriptBuilder.BuildWrappedScript(
+      "Position Test",
+      [],
+      AresSchemaBuilder.Entry(AresDataType.Unit).Build(),
+      "\r\nsleep()\r\n\r\n");
+
+    var newline = System.Environment.NewLine;
+    Assert.That(
+      script,
+      Is.EqualTo(
+        $"def custom_command_Position_Test() -> Unit:{newline}  {newline}  sleep(){newline}  {newline}  {newline}"));
     Assert.That(() => Parse(script), Throws.Nothing);
   }
 

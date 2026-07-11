@@ -158,7 +158,7 @@
 
   private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
   {
-    var initialScript = string.IsNullOrWhiteSpace(InitialScript) ? DefaultScript : InitialScript;
+    var initialScript = InitialScript ?? DefaultScript;
 
     return new StandaloneEditorConstructionOptions
     {

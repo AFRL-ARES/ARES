@@ -48,29 +48,22 @@ public static class CustomCommandScriptBuilder
 
     foreach(var line in normalizedBody.Split('\n'))
     {
-      if(line.Length == 0)
-      {
-        output.AppendLine();
-      }
-      else
-      {
-        output.Append("  ").AppendLine(line);
-      }
+      output.Append("  ").AppendLine(line);
     }
 
-    return output.ToString().TrimEnd('\r', '\n');
+    if(string.IsNullOrWhiteSpace(normalizedBody))
+    {
+      output.Append("  ").Append(EmptyBodyFallback);
+    }
+
+    return output.ToString();
   }
 
   private static string NormalizeBody(string? scriptBody)
   {
-    if(string.IsNullOrWhiteSpace(scriptBody))
-    {
-      return EmptyBodyFallback;
-    }
-
-    return scriptBody
+    return scriptBody?
       .Replace("\r\n", "\n", StringComparison.Ordinal)
       .Replace('\r', '\n')
-      .Trim('\n');
+      ?? string.Empty;
   }
 }
