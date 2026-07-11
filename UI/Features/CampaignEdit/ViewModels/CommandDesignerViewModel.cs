@@ -384,13 +384,23 @@ public partial class CommandDesignerViewModel : ReactiveObject
     ArgumentDesigners = definitions.Select(definition =>
     {
       if(!bindingsByName.TryGetValue(definition.Name, out var binding))
-        return _commandParameterDesignerFactory.Create(definition.Clone());
+        return _commandParameterDesignerFactory.Create(CloneBindingMetadata(definition));
 
       var normalizedBinding = binding.Clone();
-      normalizedBinding.Metadata = definition.Clone();
+      normalizedBinding.Metadata = CloneBindingMetadata(definition, binding.Metadata?.UniqueId);
       return _commandParameterDesignerFactory.Create(normalizedBinding);
     }).ToArray();
     ApplyAvailableVariableReferences();
+  }
+
+  private static ParameterMetadata CloneBindingMetadata(ParameterMetadata definition, string? existingBindingMetadataId = null)
+  {
+    var metadata = definition.Clone();
+    metadata.UniqueId = !string.IsNullOrWhiteSpace(existingBindingMetadataId)
+      && !string.Equals(existingBindingMetadataId, definition.UniqueId, StringComparison.OrdinalIgnoreCase)
+        ? existingBindingMetadataId
+        : Guid.NewGuid().ToString();
+    return metadata;
   }
 
   private void SetExistingArguments(IEnumerable<Parameter> bindings)
