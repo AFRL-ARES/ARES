@@ -102,7 +102,7 @@ public class AutomationService : AresAutomation.AresAutomationBase
   {
     if(_activeCampaignTemplateStore.CampaignTemplate?.UniqueId == request.UniqueId)
     {
-      HandleNotification("Cannot Delete Active Campaign", $"ARES rejected a request to delete the campaign {_activeCampaignTemplateStore.CampaignTemplate.Name} as it is currently running.", NotificationSeverityEnum.Info);
+      HandleNotification("Cannot Delete Active Campaign", $"ARES rejected a request to delete the campaign {_activeCampaignTemplateStore.CampaignTemplate.Name} as it is currently set as the active campaign.", NotificationSeverityEnum.Info);
       return new Empty();
     }
 

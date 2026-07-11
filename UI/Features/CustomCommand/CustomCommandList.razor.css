@@ -28,7 +28,6 @@
 .custom-command-list__row-actions {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
 }
 
 .custom-command-list__actions {
@@ -37,34 +36,6 @@
 
 .custom-command-list__row-actions {
   justify-content: flex-end;
-}
-
-.custom-command-list__icon-link,
-.custom-command-list__icon-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  border: 1px solid var(--rz-base-400, #dee2e6);
-  border-radius: 6px;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  text-decoration: none;
-}
-
-.custom-command-list__icon-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-
-.custom-command-list__icon-button--danger {
-  color: var(--rz-danger, #dc3545);
-}
-
-.custom-command-list__icon-link:hover {
-  background: var(--rz-base-200, rgba(255, 255, 255, 0.08));
 }
 
 .custom-command-list__name-link {

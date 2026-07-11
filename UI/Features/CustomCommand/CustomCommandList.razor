@@ -14,10 +14,10 @@
     </div>
 
     <div class="custom-command-list__actions">
-      <a class="custom-command-list__icon-link" href="automation/custom-command-builder" title="New custom command">
+      <a class="m-1 d-flex align-items-center btn btn-outline-light" href="automation/custom-command-builder" title="New custom command">
         <RadzenIcon Icon="add" />
       </a>
-      <button class="custom-command-list__icon-button" type="button" title="Refresh custom commands" disabled="@_isLoading" @onclick="LoadCommandsAsync">
+      <button class="m-1 btn btn-outline-light" type="button" title="Refresh custom commands" disabled="@_isLoading" @onclick="LoadCommandsAsync">
         <RadzenIcon Icon="refresh" />
       </button>
     </div>
@@ -62,10 +62,10 @@
               <td>@command.OutputSummary</td>
               <td>
                 <div class="custom-command-list__row-actions">
-                  <a class="custom-command-list__icon-link" href="@($"automation/custom-command-builder/{command.Id}")" title="@($"Edit {command.Name}")">
+                  <a class="mx-1 btn btn-outline-light" href="@($"automation/custom-command-builder/{command.Id}")" title="@($"Edit {command.Name}")">
                     <RadzenIcon Icon="edit" />
                   </a>
-                  <button class="custom-command-list__icon-button custom-command-list__icon-button--danger"
+                  <button class="mx-1 btn btn-outline-light"
                           type="button"
                           title="@($"Delete {command.Name}")"
                           disabled="@_isDeleting"
