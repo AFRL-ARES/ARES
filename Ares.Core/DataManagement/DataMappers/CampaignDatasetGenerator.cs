@@ -608,6 +608,9 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
 
   private static string GetParameterColumnName(Parameter parameter)
   {
+    if(parameter.SourceCase == Parameter.SourceOneofCase.PlannedSource && parameter.PlannedSource is not null)
+      return parameter.PlannedSource.PlanningMetadata.Name;
+
     if(!string.IsNullOrWhiteSpace(parameter.Metadata?.Name))
       return $"{InputColumnPrefix}{parameter.Metadata.Name}";
 
