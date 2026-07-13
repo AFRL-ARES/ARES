@@ -287,7 +287,11 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
   public async Task AddTag()
   {
-    if(NewTagName is not null && AvailableTags.Any(t => t.TagName == NewTagName))
+    if(NewTagName is null || string.IsNullOrWhiteSpace(NewTagName))
+      return;
+    
+
+    if(AvailableTags.Any(t => t.TagName == NewTagName))
     {
       var notification = new AresNotification();
       notification.NotificationSeverity = Severity.Info;
