@@ -36,6 +36,7 @@ public class CampaignExecutor : ICampaignExecutor
   private readonly StateLoggerManager _stateLoggerManager;
   readonly AnalysisHelper _analysisHelper;
   readonly AnalysisRepo _analysisRepo;
+  readonly PlanningResponseRepo _planningResponseRepo;
   readonly IAnalyzerRepo _analyzerRepo;
   readonly ISystemSettingsManager _settingsManager;
   readonly IExecutionSafetyManager _executionSafetyManager;
@@ -56,6 +57,7 @@ public class CampaignExecutor : ICampaignExecutor
     CampaignTemplate template,
     IEnumerable<IExecutionSummaryHandler> resultHandlers,
     AnalysisRepo analysisRepo,
+    PlanningResponseRepo planningResponseRepo,
     INotifier notifier,
     IAnalyzerRepo analyzerRepo,
     ILogger<CampaignExecutor> logger,
@@ -66,6 +68,7 @@ public class CampaignExecutor : ICampaignExecutor
   {
     _analyzerRepo = analyzerRepo;
     _analysisRepo = analysisRepo;
+    _planningResponseRepo = planningResponseRepo;
     _analysisHelper = analysisHelper;
     _variableManager = variableManager;
     _stateLoggerManager = stateLoggerManager;
@@ -179,6 +182,8 @@ public class CampaignExecutor : ICampaignExecutor
     };
 
     _analysisRepo.ClearAnalyses();
+    _planningResponseRepo.ClearPlanResponses();
+
     ReportCampaignStatus(token.IsPaused ? ExecutionState.Paused : ExecutionState.Running);
   }
 

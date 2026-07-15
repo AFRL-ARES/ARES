@@ -113,11 +113,19 @@
                   <span>Stop after experiments</span>
                   <strong>Count based</strong>
                 </button>
+
                 <button type="button"
                         class="stop-mode-card @(ViewModel!.ActiveStopConditionMode == ExecutionStopConditionMode.AnalyzerResult ? "selected" : "")"
                         @onclick="() => ViewModel!.ActiveStopConditionMode = ExecutionStopConditionMode.AnalyzerResult">
                   <span>Stop at analyzer result</span>
-                  <strong>Target based</strong>
+                  <strong>Analyzer Target Based</strong>
+                </button>
+
+                <button type="button"
+                        class="stop-mode-card @(ViewModel!.ActiveStopConditionMode == ExecutionStopConditionMode.PlannerResult ? "selected" : "")"
+                        @onclick="() => ViewModel!.ActiveStopConditionMode = ExecutionStopConditionMode.PlannerResult">
+                  <span>Stop at planner result</span>
+                  <strong>Planner Target Based</strong>
                 </button>
               </div>
 
@@ -133,6 +141,19 @@
                   </div>
                 </div>
               }
+
+              else if(ViewModel!.ActiveStopConditionMode == ExecutionStopConditionMode.PlannerResult)
+              {
+                <div class="form-grid two">
+                  <div>
+                    <strong>Experiments will stop when the assigned planner reports it has achieved its objective.</strong>
+                  </div>
+                  <div class="apply-box">
+                    <RadzenButton Text="Apply Stop Condition" Icon="check" ButtonStyle="ButtonStyle.Primary" Click="@ViewModel!.ApplyActiveStopCondition" />
+                  </div>
+                </div>
+              }
+
               else
               {
                 <div class="form-grid three">

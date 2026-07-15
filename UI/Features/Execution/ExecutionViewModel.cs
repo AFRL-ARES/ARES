@@ -139,6 +139,12 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     StateChanged?.Invoke();
   }
 
+  public async Task SetPlannerStopCondition()
+  {
+    await _automationClient.SetPlannerLeadStopCondition(new Empty(), null);
+    CurrentStopCondition = await GetCurrentStopCondition();
+  }
+
   public Task<ExperimentStopConditionResponse> GetCurrentStopCondition()
   {
     return _automationClient.GetActiveStopCondition(new Empty(), null);
@@ -240,6 +246,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     return ActiveStopConditionMode switch
     {
       ExecutionStopConditionMode.AnalyzerResult => SetDesiredAnalysis(),
+      ExecutionStopConditionMode.PlannerResult => SetPlannerStopCondition(),
       _ => SetExperimentsToRun()
     };
   }
@@ -836,7 +843,8 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 public enum ExecutionStopConditionMode
 {
   NumExperiments,
-  AnalyzerResult
+  AnalyzerResult,
+  PlannerResult
 }
 
 public record ExecutionPreflightItem(string Label, bool IsReady, string Detail);
