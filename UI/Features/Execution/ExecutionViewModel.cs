@@ -143,6 +143,9 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   {
     await _automationClient.SetPlannerLeadStopCondition(new Empty(), null);
     CurrentStopCondition = await GetCurrentStopCondition();
+    ActiveStopConditionMode = ExecutionStopConditionMode.PlannerResult;
+    await RefreshExecutionEligibility();
+    StateChanged?.Invoke();
   }
 
   public Task<ExperimentStopConditionResponse> GetCurrentStopCondition()
