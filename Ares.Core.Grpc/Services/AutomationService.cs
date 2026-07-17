@@ -24,6 +24,7 @@ using Ares.Core.Execution.Extensions;
 using Ares.Core.Planning;
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Extensions;
+using Ares.Core.Execution.StopConditions.PlannerLead;
 
 namespace Ares.Core.Grpc.Services;
 
@@ -36,6 +37,7 @@ public class AutomationService : AresAutomation.AresAutomationBase
   private readonly IEnumerable<IStartCondition> _startConditions;
   private readonly IEnumerable<INotificationHandler> _notificationHandlers;
   readonly IDesiredAnalysisResultFactory _desiredAnalysisResultFactory;
+  private readonly IPlannerLeadStopConditionFactory _plannerLeadStopConditionFactory;
   private JsonSerializerOptions _serializerSettings;
   private readonly IPlannerServiceRepo _plannerServiceRepo;
   private readonly IPlannerTransactionProvider _plannerTransactionProvider;
@@ -48,11 +50,13 @@ public class AutomationService : AresAutomation.AresAutomationBase
     IEnumerable<IStartCondition> startConditions,
     IEnumerable<INotificationHandler> notificationHandlers,
     IDesiredAnalysisResultFactory desiredAnalysisResultFactory,
+    IPlannerLeadStopConditionFactory plannerLeadStopConditionFactory,
     IPlannerServiceRepo plannerServiceRepo,
     IPlannerTransactionProvider plannerTransactionProvider,
     IAnalyzerTransactionProvider analyzerTransactionProvider)
   {
     _desiredAnalysisResultFactory = desiredAnalysisResultFactory;
+    _plannerLeadStopConditionFactory = plannerLeadStopConditionFactory;
     _coreContextFactory = coreContextFactory;
     _executionManager = executionManager;
     _executionReportStore = executionReportStore;
@@ -410,6 +414,21 @@ public class AutomationService : AresAutomation.AresAutomationBase
     stopConditions.Clear();
 
     var stopCondition = _desiredAnalysisResultFactory.Create(request.DesiredResult, request.Leeway);
+    stopConditions.Add(stopCondition);
+
+    return Task.FromResult(new Empty());
+  }
+
+  public override Task<Empty> SetPlannerLeadStopCondition(Empty request, ServerCallContext context)
+  {
+    var stopConditions = _executionManager.CampaignStopConditions;
+
+    if(stopConditions is null)
+      return Task.FromResult(new Empty());
+
+    stopConditions.Clear();
+
+    var stopCondition = _plannerLeadStopConditionFactory.Create();
     stopConditions.Add(stopCondition);
 
     return Task.FromResult(new Empty());

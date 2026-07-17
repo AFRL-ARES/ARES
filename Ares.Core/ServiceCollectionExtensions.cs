@@ -28,6 +28,7 @@ using Ares.Core.Visualization.Repos;
 using Ares.Datamodel.Templates;
 using Microsoft.Extensions.DependencyInjection;
 using Ares.Core.Settings;
+using Ares.Core.Execution.StopConditions.PlannerLead;
 
 
 namespace Ares.Core;
@@ -63,6 +64,7 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<AresVariableManager>();
     services.AddSingleton<AnalysisHelper>();
     services.AddSingleton<IDesiredAnalysisResultFactory, DesiredAnalysisResultFactory>();
+    services.AddSingleton<IPlannerLeadStopConditionFactory, PlannerLeadStopConditionFactory>();
     services.AddSingleton<INotifier, Notifier>();
     services.AddSingleton<IDeviceConfigManager, DeviceConfigManager>();
     services.AddSingleton<IDriverDatabaseManager, DriverDatabaseManager>();
@@ -128,6 +130,7 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<IDeviceConfigRepo, DeviceConfigRepo>();
     services.AddSingleton<PlannerServiceRepo>();
     services.AddSingleton<AnalysisRepo>();
+    services.AddSingleton<PlanningResponseRepo>();
     services.AddSingleton<IAnalyzerRepo, AnalyzerRepo>();
     services.AddSingleton<IPlannerServiceRepo, PlannerServiceRepo>();
     services.AddSingleton<IDeviceVisualizationConfigRepo, DeviceVisualizationConfigRepo>();

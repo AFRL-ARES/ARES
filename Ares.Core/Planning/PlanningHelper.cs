@@ -18,16 +18,19 @@ public class PlanningHelper : IPlanningHelper
   private readonly ILogger<PlanningHelper> _logger;
   private readonly INotifier _notifier;
   private readonly IDbContextFactory<CoreDatabaseContext> _dbContextFactory;
+  private readonly PlanningResponseRepo _planningResponseRepo;
 
   public PlanningHelper(IPlannerServiceRepo plannerManager,
     ILogger<PlanningHelper> logger,
     INotifier notifier,
-    IDbContextFactory<CoreDatabaseContext> dbContextFactory)
+    IDbContextFactory<CoreDatabaseContext> dbContextFactory,
+    PlanningResponseRepo planningResponseRepo)
   {
     _plannerManager = plannerManager;
     _logger = logger;
     _notifier = notifier;
     _dbContextFactory = dbContextFactory;
+    _planningResponseRepo = planningResponseRepo;
   }
 
   public async Task<bool> TryResolveParameters(IEnumerable<PlannerAllocation> plannerAllocations,
@@ -112,6 +115,8 @@ public class PlanningHelper : IPlanningHelper
       var planResponse = await planner.Plan(planRequest, cancellationToken);
       planTransaction.TimeResponseReceived = DateTime.UtcNow.ToTimestamp();
       planTransaction.PlanningResponse = planResponse;
+
+      _planningResponseRepo.StorePlanResponse(planResponse);
 
       if(planResponse.Plans.Any())
       {

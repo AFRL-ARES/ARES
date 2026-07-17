@@ -111,6 +111,7 @@ internal class CampaignExecutorTests
       executionReporter,
       [],
       [],
+      [],
       _analyzerRepo,
       notifier,
       loggerFactory.Object,
