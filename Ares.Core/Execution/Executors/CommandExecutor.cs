@@ -116,7 +116,6 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
 
     Status.Result = result.Result;
     _stateSubject.OnNext(Status);
-    _stateSubject.OnCompleted();
 
     return ExecutorSummaryHelpers.CreateCommandExecutionSummary(Template, _commandName, result, timeStarted, DateTime.UtcNow);
   }

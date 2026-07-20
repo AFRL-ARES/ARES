@@ -408,12 +408,12 @@ internal class CampaignDatasetGeneratorTests
     using(Assert.EnterMultipleScope())
     {
       Assert.That(columns, Does.Contain("Input.Literal"));
-      Assert.That(columns, Does.Contain("Input.Planned"));
+      Assert.That(columns, Does.Contain("Planned"));
       Assert.That(columns, Does.Contain("Input.Environment.Temperature"));
       Assert.That(columns, Does.Contain("Input.Variable"));
       Assert.That(Array.IndexOf(columns, "Input.Literal"), Is.LessThan(Array.IndexOf(columns, "Output")));
       Assert.That(row.Data.Fields["Input.Literal"].StringValue, Is.EqualTo("literal"));
-      Assert.That(row.Data.Fields["Input.Planned"].NumberValue, Is.EqualTo(2));
+      Assert.That(row.Data.Fields["Planned"].NumberValue, Is.EqualTo(2));
       Assert.That(row.Data.Fields["Input.Environment.Temperature"].NumberValue, Is.EqualTo(22.5));
       Assert.That(row.Data.Fields["Input.Variable"].ListValue.Values.Select(value => value.NumberValue), Is.EqualTo([3, 4]));
       Assert.That(row.Data.Fields["Output"].NumberValue, Is.EqualTo(10));

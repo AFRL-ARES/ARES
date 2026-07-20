@@ -59,6 +59,8 @@ internal class CampaignExecutorTests
         It.IsAny<IEnumerable<Parameter>>(),
         It.IsAny<IEnumerable<Ares.Datamodel.Analyzing.Analysis>>(),
         It.IsAny<IEnumerable<ExperimentOverview>>(),
+        It.IsAny<int>(),
+        It.IsAny<List<PlanStatusCode>>(),
         It.IsAny<CancellationToken>()))
       .ReturnsAsync(true);
 
@@ -109,6 +111,7 @@ internal class CampaignExecutorTests
       experimentComposer,
       _planningHelper.Object,
       executionReporter,
+      [],
       [],
       [],
       _analyzerRepo,
@@ -220,6 +223,8 @@ internal class CampaignExecutorTests
       It.IsAny<IEnumerable<Parameter>>(),
       It.IsAny<IEnumerable<Ares.Datamodel.Analyzing.Analysis>>(),
       It.IsAny<IEnumerable<ExperimentOverview>>(),
+      It.IsAny<int>(),
+      It.IsAny<List<PlanStatusCode>>(),
       It.IsAny<CancellationToken>()), Times.Once);
   }
 

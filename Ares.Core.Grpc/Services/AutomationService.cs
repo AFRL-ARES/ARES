@@ -22,6 +22,8 @@ using Ares.Core.Execution.Extensions;
 using Ares.Core.Planning;
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Extensions;
+using Ares.Core.Execution.StopConditions.PlannerLead;
+using System.Text.Json;
 
 namespace Ares.Core.Grpc.Services;
 
@@ -34,6 +36,7 @@ public class AutomationService : AresAutomation.AresAutomationBase
   private readonly IEnumerable<IStartCondition> _startConditions;
   private readonly IEnumerable<INotificationHandler> _notificationHandlers;
   readonly IDesiredAnalysisResultFactory _desiredAnalysisResultFactory;
+  private readonly IPlannerLeadStopConditionFactory _plannerLeadStopConditionFactory;
   private readonly IPlannerServiceRepo _plannerServiceRepo;
   private readonly IPlannerTransactionProvider _plannerTransactionProvider;
   private readonly IAnalyzerTransactionProvider _analyzerTransactionProvider;
@@ -47,6 +50,7 @@ public class AutomationService : AresAutomation.AresAutomationBase
     IEnumerable<IStartCondition> startConditions,
     IEnumerable<INotificationHandler> notificationHandlers,
     IDesiredAnalysisResultFactory desiredAnalysisResultFactory,
+    IPlannerLeadStopConditionFactory plannerLeadStopConditionFactory,
     IPlannerServiceRepo plannerServiceRepo,
     IPlannerTransactionProvider plannerTransactionProvider,
     IAnalyzerTransactionProvider analyzerTransactionProvider,
@@ -54,6 +58,7 @@ public class AutomationService : AresAutomation.AresAutomationBase
     ICampaignTemplateTransferService campaignTemplateTransferService)
   {
     _desiredAnalysisResultFactory = desiredAnalysisResultFactory;
+    _plannerLeadStopConditionFactory = plannerLeadStopConditionFactory;
     _coreContextFactory = coreContextFactory;
     _executionManager = executionManager;
     _executionReportStore = executionReportStore;
@@ -202,18 +207,6 @@ public class AutomationService : AresAutomation.AresAutomationBase
     return observable.Where(status => status is not null).Do(status => responseStream.WriteAsync(status!)).ToTask((context?.CancellationToken ?? CancellationToken.None));
   }
 
-  public override Task GetStartupExecutionStatusStream(Empty request, IServerStreamWriter<CampaignStartupStatus> responseStream, ServerCallContext? context)
-  {
-    var observable = _executionReportStore.CampaignStartupStatusObservable;
-    return observable.Where(status => status is not null).Do(status => responseStream.WriteAsync(status!)).ToTask((context?.CancellationToken ?? CancellationToken.None));
-  }
-
-  public override Task GetCloseoutExecutionStatusStream(Empty request, IServerStreamWriter<CampaignCloseoutStatus> responseStream, ServerCallContext? context)
-  {
-    var observable = _executionReportStore.CampaignCloseoutStatusObservable;
-    return observable.Where(status => status is not null).Do(status => responseStream.WriteAsync(status!)).ToTask((context?.CancellationToken ?? CancellationToken.None));
-  }
-
   public override Task<CampaignExecutionStatusResponse> GetCampaignExecutionStatus(Empty request, ServerCallContext? context)
   {
     var status = _executionReportStore.CampaignExecutionStatus;
@@ -335,7 +328,18 @@ public class AutomationService : AresAutomation.AresAutomationBase
 
   public override Task<ReplicateRate> GetReplicateRate(Empty request, ServerCallContext? context)
   {
-    return Task.FromResult(new ReplicateRate { ReplicateRate_ = _executionManager.ReplanRate });
+    return Task.FromResult(new ReplicateRate { ReplicateRate_ = _executionManager.ReplicateRate });
+  }
+
+  public override Task<Empty> SetPlanningBatchSize(PlanningBatchSize request, ServerCallContext? context)
+  {
+    _executionManager.UpdateBatchPlanningSize(request.BatchSize);
+    return Task.FromResult(new Empty());
+  }
+
+  public override Task<PlanningBatchSize> GetPlanningBatchSize(Empty request, ServerCallContext? context)
+  {
+    return Task.FromResult(new PlanningBatchSize { BatchSize = _executionManager.PlanningBatchSize });
   }
 
   public override Task<Empty> SetAnalysisResultStopCondition(AnalysisResultCondition request, ServerCallContext? context)
@@ -347,6 +351,21 @@ public class AutomationService : AresAutomation.AresAutomationBase
     stopConditions.Clear();
 
     var stopCondition = _desiredAnalysisResultFactory.Create(request.DesiredResult, request.Leeway);
+    stopConditions.Add(stopCondition);
+
+    return Task.FromResult(new Empty());
+  }
+
+  public override Task<Empty> SetPlannerLeadStopCondition(Empty request, ServerCallContext context)
+  {
+    var stopConditions = _executionManager.CampaignStopConditions;
+
+    if(stopConditions is null)
+      return Task.FromResult(new Empty());
+
+    stopConditions.Clear();
+
+    var stopCondition = _plannerLeadStopConditionFactory.Create();
     stopConditions.Add(stopCondition);
 
     return Task.FromResult(new Empty());

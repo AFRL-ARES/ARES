@@ -258,6 +258,7 @@
     Tracker.OnSystemReady -= HandleSystemReady;
     notificationService.OnNotificationReceived -= HandleBackgroundNotification;
     _driverSubscription?.Dispose();
+
     _cts.Cancel();
     _cts.Dispose();
   }

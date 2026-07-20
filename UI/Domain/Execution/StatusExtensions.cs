@@ -33,14 +33,4 @@ public static class StatusExtensions
   {
     return experimentExecutionStatus.StepExecutionStatuses.SelectMany(stepStatus => stepStatus.CommandExecutionStatuses);
   }
-
-  public static IEnumerable<CommandExecutionStatus> GetStartupExecutionStatuses(this CampaignStartupStatus campaignStartupStatus)
-  {
-    return campaignStartupStatus.StartupExecutionStatuses.SelectMany(stepStatus => stepStatus.CommandExecutionStatuses);
-  }
-
-  public static IEnumerable<CommandExecutionStatus> GetStartupExecutionStatuses(this CampaignCloseoutStatus campaignCloseoutStatus)
-  {
-    return campaignCloseoutStatus.CloseoutExecutionStatuses.SelectMany(stepStatus => stepStatus.CommandExecutionStatuses);
-  }
 }
