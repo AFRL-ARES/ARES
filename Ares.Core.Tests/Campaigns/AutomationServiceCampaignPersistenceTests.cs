@@ -11,6 +11,7 @@ using Ares.Datamodel.Templates;
 using Ares.Services;
 using Microsoft.EntityFrameworkCore;
 using Moq;
+using Ares.Core.Execution.StopConditions.PlannerLead;
 
 namespace Ares.Core.Tests.Campaigns;
 
@@ -91,6 +92,7 @@ internal class AutomationServiceCampaignPersistenceTests
       [],
       [],
       Mock.Of<IDesiredAnalysisResultFactory>(),
+      Mock.Of<IPlannerLeadStopConditionFactory>(),
       Mock.Of<IPlannerServiceRepo>(),
       Mock.Of<IPlannerTransactionProvider>(),
       Mock.Of<IAnalyzerTransactionProvider>(),
