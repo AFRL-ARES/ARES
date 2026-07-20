@@ -10,7 +10,7 @@ namespace AresService.Migrations.Sqlite.Migrations.AresDb
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-          migrationBuilder.Sql("UPDATE Parameters SET Source = '{}' WHERE Source = '0'");
+          migrationBuilder.Sql("UPDATE Parameters SET Source = '{}' WHERE Source = '0';");
         }
 
         /// <inheritdoc />

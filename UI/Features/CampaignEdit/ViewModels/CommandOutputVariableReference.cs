@@ -1,3 +1,4 @@
+using Ares.Core.Execution.Executors;
 using Ares.Datamodel;
 using Ares.Datamodel.Templates;
 
@@ -17,24 +18,40 @@ public static class CommandOutputVariableReferenceBuilder
     if(!commandDesigner.OutputProvider || string.IsNullOrWhiteSpace(commandDesigner.OutputVariableName))
       return [];
 
-    var outputSchema = commandDesigner.CommandMetadata?.OutputMetadata?.DataSchema;
+    var outputSchema = commandDesigner.OutputSchema;
     if(outputSchema is null)
       return [];
 
     return Build(commandDesigner.OutputVariableName, outputSchema).ToArray();
   }
 
-  public static CommandOutputVariableReference[] Build(CommandTemplate commandTemplate)
+  public static CommandOutputVariableReference[] Build(
+    CommandTemplate commandTemplate,
+    IReadOnlyDictionary<string, AresValueSchema> customCommandOutputSchemas)
   {
     if(!commandTemplate.HasOutputVarName)
       return [];
 
-    var outputSchema = commandTemplate.Metadata?.OutputMetadata?.DataSchema;
-    if(outputSchema is null)
+    var outputSchema = commandTemplate.CommandTypeCase switch
+    {
+      CommandTemplate.CommandTypeOneofCase.DeviceCommand => commandTemplate.DeviceCommand.Metadata?.OutputMetadata?.DataSchema,
+      CommandTemplate.CommandTypeOneofCase.SystemCommand => SystemOperationCatalog.Find(commandTemplate.SystemCommand.Operation)?.OutputSchema,
+      CommandTemplate.CommandTypeOneofCase.CustomCommandInvocation
+        => ResolveCustomCommandOutputSchema(commandTemplate.CustomCommandInvocation.CustomCommandId, customCommandOutputSchemas),
+      _ => null
+    };
+    if(outputSchema is null || outputSchema.Type is AresDataType.Unit or AresDataType.UnspecifiedType)
       return [];
 
     return Build(commandTemplate.OutputVarName, outputSchema).ToArray();
   }
+
+  private static AresValueSchema? ResolveCustomCommandOutputSchema(
+    string customCommandId,
+    IReadOnlyDictionary<string, AresValueSchema> customCommandOutputSchemas)
+    => customCommandOutputSchemas.TryGetValue(customCommandId, out var outputSchema)
+      ? outputSchema
+      : null;
 
   public static CommandOutputVariableReference[] MarkCompatibility(
     IEnumerable<CommandOutputVariableReference> references,

@@ -1,5 +1,7 @@
 using Ares.Core.Analyzing;
 using Ares.Core.AresEnvironment;
+using Ares.Core.Campaigns;
+using Ares.Core.CustomCommands;
 using Ares.Core.DataManagement.DataMappers;
 using Ares.Core.Device.Managers;
 using Ares.Core.Device.Plugins.Drivers;
@@ -70,6 +72,11 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<IDriverDatabaseManager, DriverDatabaseManager>();
     services.AddSingleton<ISystemSettingsManager, SystemSettingsManager>();
     services.AddSingleton<IResourceConnectionArbiter, ResourceConnectionArbiter>();
+    services.AddSingleton<ICustomCommandPersistenceService, CustomCommandPersistenceService>();
+    services.AddSingleton<ICampaignTemplatePersistenceService, CampaignTemplatePersistenceService>();
+    services.AddSingleton<ICampaignTemplateTransferService, CampaignTemplateTransferService>();
+    services.AddSingleton<ICommandDisplayNameResolver, CommandDisplayNameResolver>();
+    services.AddSingleton<CustomCommandExecutor>();
 
     services.AddSingleton<ISymbolProvider, DeviceSymbolProvider>();
     services.AddSingleton<ISymbolProvider, QuantitySymbolProvider>();

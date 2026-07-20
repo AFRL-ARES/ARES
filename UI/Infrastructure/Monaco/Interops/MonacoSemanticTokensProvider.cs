@@ -1,5 +1,5 @@
-using Microsoft.JSInterop;
 using AresScript.ScriptAnalysis;
+using Microsoft.JSInterop;
 using UI.Application.Scripting;
 
 namespace UI.Infrastructure.Monaco.Interops;

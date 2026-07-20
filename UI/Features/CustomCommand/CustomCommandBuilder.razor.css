@@ -1,0 +1,311 @@
+.custom-command-builder {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.custom-command-builder__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.custom-command-builder__title {
+  margin: 0 0 0.25rem;
+}
+
+.custom-command-builder__back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+  color: inherit;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.custom-command-builder__back-link:hover {
+  color: var(--rz-primary, inherit);
+}
+
+.custom-command-builder__subtitle {
+  margin: 0;
+  color: var(--rz-text-secondary-color, #6c757d);
+}
+
+.custom-command-builder__actions,
+.custom-command-builder__section-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.custom-command-builder__actions {
+  flex: 0 0 auto;
+}
+
+.custom-command-builder__section-header {
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.custom-command-builder__metadata-grid,
+.custom-command-builder__schema-grid {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.custom-command-builder__metadata-grid {
+  grid-template-columns: minmax(16rem, 1fr) minmax(18rem, 2fr);
+}
+
+.custom-command-builder__schema-grid {
+  grid-template-columns: minmax(22rem, 1fr) minmax(22rem, 1fr);
+}
+
+.custom-command-builder__fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 1.125rem;
+  border: 1px solid var(--rz-base-300, #ced4da);
+  border-radius: 8px;
+  background: var(--rz-card-background-color, var(--rz-base-background-color, #fff));
+  box-shadow: 0 0.25rem 0.85rem rgba(0, 0, 0, 0.08);
+}
+
+.custom-command-builder__state {
+  padding: 1rem;
+  border: 1px solid var(--rz-base-300, #ced4da);
+  border-radius: 6px;
+  color: var(--rz-text-secondary-color, #6c757d);
+}
+
+.custom-command-builder__state--error {
+  border-color: var(--rz-danger, #dc3545);
+  color: var(--rz-danger, #dc3545);
+}
+
+.custom-command-builder__legend {
+  float: none;
+  width: auto;
+  margin: 0;
+  padding: 0 0.5rem;
+  color: var(--rz-text-color, inherit);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.custom-command-builder__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.custom-command-builder__label {
+  margin: 0;
+}
+
+.custom-command-builder__parameters-panel,
+.custom-command-builder__output-panel,
+.custom-command-builder__script-panel,
+.custom-command-builder__diagnostics-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.custom-command-builder__parameter-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.custom-command-builder__parameter-row {
+  display: grid;
+  grid-template-columns: minmax(9rem, 1fr) minmax(8rem, 1fr) auto;
+  gap: 0.5rem;
+  align-items: center;
+  min-width: 0;
+  padding: 0.5rem;
+  border: 1px solid var(--rz-base-300, #ced4da);
+  border-radius: 6px;
+}
+
+.custom-command-builder__parameter-row--selected {
+  border-color: var(--rz-primary, #0d6efd);
+  background: var(--rz-primary-lighter, rgba(13, 110, 253, 0.12));
+}
+
+.custom-command-builder__parameter-select {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+}
+
+.custom-command-builder__parameter-name,
+.custom-command-builder__parameter-type {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.custom-command-builder__parameter-name {
+  font-weight: 600;
+}
+
+.custom-command-builder__parameter-type {
+  color: var(--rz-text-secondary-color, #6c757d);
+  font-size: 0.85rem;
+}
+
+.custom-command-builder__parameter-name-input {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid var(--rz-base-400, #dee2e6);
+  border-radius: 6px;
+  background: var(--rz-input-background-color, transparent);
+  color: inherit;
+  padding: 0.45rem 0.55rem;
+}
+
+.custom-command-builder__icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid var(--rz-base-400, #dee2e6);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.custom-command-builder__icon-button--danger {
+  color: var(--rz-danger, #dc3545);
+}
+
+.custom-command-builder__empty-state {
+  border: 1px dashed var(--rz-base-400, #dee2e6);
+  border-radius: 6px;
+  color: var(--rz-text-secondary-color, #6c757d);
+  padding: 1rem;
+}
+
+.custom-command-builder__signature-preview {
+  min-width: 0;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--rz-base-300, #ced4da);
+  border-radius: 6px;
+  background: var(--rz-base-600, rgba(0, 0, 0, 0.03));
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.custom-command-builder__script-editor {
+  min-width: 0;
+  min-height: 28rem;
+  height: 45vh;
+  overflow: hidden;
+  border: 1px solid var(--rz-base-300, #ced4da);
+  border-radius: 6px;
+}
+
+.custom-command-builder__diagnostics-panel--has-items {
+  border-color: var(--rz-danger, #dc3545);
+}
+
+.custom-command-builder__diagnostics-empty {
+  color: var(--rz-text-secondary-color, #6c757d);
+}
+
+.custom-command-builder__diagnostics-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.custom-command-builder__diagnostic {
+  display: grid;
+  grid-template-columns: auto minmax(8rem, auto) minmax(0, 1fr);
+  align-items: start;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--rz-base-300, #ced4da);
+  border-radius: 6px;
+  background: var(--rz-base-600, rgba(0, 0, 0, 0.03));
+}
+
+.custom-command-builder__diagnostic--error {
+  border-color: var(--rz-danger, #dc3545);
+}
+
+.custom-command-builder__diagnostic--warning {
+  border-color: var(--rz-warning, #ffc107);
+}
+
+.custom-command-builder__diagnostic-severity {
+  font-weight: 700;
+}
+
+.custom-command-builder__diagnostic-location {
+  color: var(--rz-text-secondary-color, #6c757d);
+}
+
+.custom-command-builder__diagnostic-message {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1200px) {
+  .custom-command-builder__schema-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 840px) {
+  .custom-command-builder__metadata-grid,
+  .custom-command-builder__schema-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .custom-command-builder__header {
+    flex-direction: column;
+  }
+
+  .custom-command-builder__actions {
+    flex-wrap: wrap;
+  }
+
+  .custom-command-builder__parameter-row {
+    grid-template-columns: 1fr auto;
+  }
+
+  .custom-command-builder__parameter-name-input {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .custom-command-builder__diagnostic {
+    grid-template-columns: 1fr;
+  }
+}

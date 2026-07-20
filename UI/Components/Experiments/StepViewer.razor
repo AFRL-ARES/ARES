@@ -1,3 +1,4 @@
+@using Ares.Datamodel
 @using Ares.Datamodel.Templates
 @using UI.Features.CampaignEdit.ViewModels
 
@@ -68,6 +69,10 @@
   [Parameter]
   public IEnumerable<CommandOutputVariableReference> PriorVariableReferences { get; set; } = [];
 
+  [Parameter]
+  public IReadOnlyDictionary<string, AresValueSchema> CustomCommandOutputSchemas { get; set; }
+    = new Dictionary<string, AresValueSchema>(StringComparer.OrdinalIgnoreCase);
+
   private bool HasExperimentOutputs { get; set; }
 
   public IList<CommandTemplate> CommandTemplates { get; private set; } = Array.Empty<CommandTemplate>();
@@ -92,7 +97,7 @@
     {
       availableReferences.AddRange(CommandTemplates
         .Where(command => command.Index < template.Index)
-        .SelectMany(CommandOutputVariableReferenceBuilder.Build));
+        .SelectMany(command => CommandOutputVariableReferenceBuilder.Build(command, CustomCommandOutputSchemas)));
     }
 
     return availableReferences.ToArray();

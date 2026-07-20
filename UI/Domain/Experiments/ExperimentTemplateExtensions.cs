@@ -8,7 +8,7 @@ internal static class ExperimentTemplateExtensions
   public static IEnumerable<Parameter> GetAllParameters(this ExperimentTemplate template)
     => template.StepTemplates
       .SelectMany(stepTemplate => stepTemplate.CommandTemplates)
-      .SelectMany(commandTemplate => commandTemplate.Parameters);
+      .SelectMany(commandTemplate => commandTemplate.ArgumentBindings);
 
   public static IEnumerable<Parameter> GetAllPlannedParameters(this ExperimentTemplate template)
     => template.GetAllParameters().Where(parameter => parameter.IsPlanned());

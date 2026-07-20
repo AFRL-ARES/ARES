@@ -271,7 +271,7 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
 
     foreach(var commandRecord in commandRecords)
     {
-      foreach(var parameter in commandRecord.Template?.Parameters ?? [])
+      foreach(var parameter in commandRecord.Template?.ArgumentBindings ?? [])
       {
         cancellationToken.ThrowIfCancellationRequested();
         var value = parameter.GetValue();
@@ -474,7 +474,7 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     AddExecutionFields(data, record.Command.ExecutionInfo);
     AddString(data, StatusColumnName, record.Command.StatusCode.ToString());
 
-    foreach(var parameter in record.Template?.Parameters ?? [])
+    foreach(var parameter in record.Template?.ArgumentBindings ?? [])
     {
       cancellationToken.ThrowIfCancellationRequested();
       var value = parameter.GetValue();

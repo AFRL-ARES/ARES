@@ -89,7 +89,9 @@ internal class CampaignExecutorTests
 
     _deviceRepo = new AresDeviceRepo();
     _deviceRepo.AddOrUpdate(new ResultSequenceDevice([]));
-    var stepComposer = new StepComposer(_deviceRepo, notifier, _settingsManager.Object);
+    var commandDisplayNameResolver = new Mock<ICommandDisplayNameResolver>();
+    commandDisplayNameResolver.Setup(value => value.Resolve(It.IsAny<CommandTemplate>())).Returns("Test command");
+    var stepComposer = new StepComposer(_deviceRepo, notifier, _settingsManager.Object, commandDisplayNameResolver.Object);
     var experimentComposer = new ExperimentComposer(stepComposer, _analyzerRepo);
 
     var campaignLogger = new Mock<ILogger<CampaignExecutor>>();

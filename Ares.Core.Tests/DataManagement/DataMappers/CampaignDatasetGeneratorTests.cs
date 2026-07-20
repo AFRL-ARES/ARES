@@ -855,13 +855,16 @@ internal class CampaignDatasetGeneratorTests
     var template = new CommandTemplate
     {
       UniqueId = Guid.NewGuid().ToString(),
-      Metadata = new CommandMetadata
+      DeviceCommand = new DeviceCommand
       {
-        UniqueId = Guid.NewGuid().ToString(),
-        Name = uniqueId
+        Metadata = new CommandMetadata
+        {
+          UniqueId = Guid.NewGuid().ToString(),
+          Name = uniqueId
+        }
       }
     };
-    template.Parameters.AddRange(parameters);
+    template.ArgumentBindings.AddRange(parameters);
     return template;
   }
 

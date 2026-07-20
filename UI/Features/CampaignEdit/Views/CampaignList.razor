@@ -2,20 +2,32 @@
 @page "/automation/campaignlist"
 @using Ares.Services
 @using Newtonsoft.Json
+@using UI.Application.Notifications
 @using UI.Features.CampaignEdit.ViewModels
 @inject DialogService DialogService
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<CampaignListViewModel>
 @inject IJSRuntime JS
+@inject IUiNotificationService NotificationService
 
 
 <div class="d-flex flex-column align-content-stretch">
   <div class="d-flex justify-content-evenly">
     <h2>Campaigns</h2>
     <div class="d-flex flex-fill justify-content-end">
-      <a type="button" class="m-1 d-flex align-items-center btn btn-outline-light" href="automation/campaigndesigner">
+      <a type="button" class="m-1 d-flex align-items-center btn btn-outline-light" href="automation/campaigndesigner" title="Add campaign">
         <RadzenIcon Icon="add"/>
       </a>
-      <button class="m-1 btn btn-outline-light" @onclick="Refresh">
+      <InputFile id="campaign-template-import"
+                 class="d-none"
+                 accept=".json,application/json"
+                 OnChange="ImportTemplate" />
+      <label for="campaign-template-import"
+             class="m-1 d-flex align-items-center btn btn-outline-light @(_isImporting ? "disabled" : string.Empty)"
+             title="Import campaign"
+             aria-disabled="@_isImporting">
+        <RadzenIcon Icon="upload" />
+      </label>
+      <button class="m-1 btn btn-outline-light" @onclick="Refresh" title="Refresh campaigns">
         <RadzenIcon Icon="refresh" />
       </button>
     </div>
@@ -37,13 +49,13 @@
           <td style="padding: 10px;vertical-align: middle">@template.UniqueId</td>
           <td style="width: 12%;vertical-align: middle">
             <div class="d-flex justify-content-end">
-              <a type="button" class="mx-1 btn btn-outline-light" href="automation/campaigndesigner/@template.UniqueId">
+              <a type="button" class="mx-1 btn btn-outline-light" href="automation/campaigndesigner/@template.UniqueId" title="Edit campaign">
                 <RadzenIcon Icon="edit"/>
               </a>
-              <button class="mx-1 btn btn-outline-light" @onclick="() => DeleteClick(template)">
+              <button class="mx-1 btn btn-outline-light" @onclick="() => DeleteClick(template)" title="Delete campaign">
                 <RadzenIcon Icon="delete"/>
               </button>
-              <button class="mx-1 btn btn-outline-light" @onclick="() => ExportTemplate(template)">
+              <button class="mx-1 btn btn-outline-light" @onclick="() => ExportTemplate(template)" title="Export campaign">
                 <RadzenIcon Icon="download"/>
               </button>
             </div>
@@ -55,6 +67,8 @@
 </div>
 
 @code {
+  private bool _isImporting;
+
   protected override async Task OnInitializedAsync()
   {
     await ViewModel!.RefreshCampaigns();
@@ -85,19 +99,45 @@
 
   private async void ExportTemplate(CampaignTemplateSummary templateSummary)
   {
-    //Generate a copy of the template, create a new unique ID and change the name to avoid collisions if the user adds it to their templates folder
-    var response = await ViewModel!.GetCopyOfCampaignTemplate(templateSummary.UniqueId);
-
-    if(response.HasSerializedJsonData)
+    try
     {
-      var templateCopy = response.Template;
-      var fileName = templateCopy.UniqueId;
-      await JS.InvokeVoidAsync("downloadJsonFile", fileName, response.SerializedJsonData);
+      var export = await ViewModel!.ExportCampaignTemplate(templateSummary.UniqueId);
+      if(export is null)
+      {
+        NotificationService.Error("The selected campaign could not be found.");
+        return;
+      }
+
+      await JS.InvokeVoidAsync("downloadJsonFile", export.SuggestedFileName, export.Json);
     }
-
-    else
+    catch(Exception exception)
     {
-      //Notify of failure..?
+      NotificationService.Error($"Failed to export campaign. {exception.Message}");
+    }
+  }
+
+  private async Task ImportTemplate(InputFileChangeEventArgs args)
+  {
+    if(_isImporting)
+      return;
+
+    _isImporting = true;
+    try
+    {
+      var result = await ViewModel!.ImportCampaignTemplate(args.File);
+      await ViewModel.RefreshCampaigns();
+      NotificationService.Success($"Imported campaign '{result.Template.Name}'.");
+      if(result.Warnings.Count > 0)
+        NotificationService.Warning(string.Join(System.Environment.NewLine, result.Warnings), "Campaign imported with warnings");
+    }
+    catch(Exception exception)
+    {
+      NotificationService.Error($"Failed to import campaign. {exception.Message}");
+    }
+    finally
+    {
+      _isImporting = false;
+      StateHasChanged();
     }
   }
 

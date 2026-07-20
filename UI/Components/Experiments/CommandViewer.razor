@@ -9,20 +9,20 @@
 
 @if (CommandTemplate is not null)
 {
-    if (CommandTemplate.Metadata?.Name is not null)
+    if (CommandTemplate.DeviceCommand?.Metadata?.Name is not null)
     {
       <div class="d-flex align-items-center">
         <div class="border border-2 border-primary rounded px-2 py-1 mx-2">
           @(DeviceName ?? "UNKNOWN DEVICE")
         </div>
           <div class="border border-2 border-primary rounded px-2 py-1 mx-2">
-        @CommandTemplate.Metadata.Name
+        @CommandTemplate.DeviceCommand.Metadata.Name
       </div>
-          @if (CommandTemplate.Parameters.Any())
+          @if (CommandTemplate.ArgumentBindings.Any())
           {
             <RadzenIcon Icon="arrow_back"/>
           }
-          @foreach (var argument in CommandTemplate.Parameters)
+          @foreach (var argument in CommandTemplate.ArgumentBindings)
             {
                 var assignmentError = GetParameterAssignmentError(argument);
                 @if (assignmentError is not null)
@@ -138,7 +138,7 @@
   protected override Task OnInitializedAsync()
   {
     if(CommandTemplate is not null)
-      DeviceName = DeviceProvider.GetDevice(CommandTemplate.Metadata.DeviceId)?.Name ?? string.Empty;
+      DeviceName = DeviceProvider.GetDevice(CommandTemplate.DeviceCommand?.Metadata?.DeviceId ?? "")?.Name ?? string.Empty;
 
     return base.OnInitializedAsync();
   }
