@@ -90,11 +90,11 @@ internal class TestCampaignProvider
     var template = new CommandTemplate
     {
       Index = idx,
-      Metadata = metadata,
+      DeviceCommand = new DeviceCommand { Metadata = metadata },
       OutputVarName = "TestExperimentOutput"
     };
 
-    template.Parameters.AddRange(parameters);
+    template.ArgumentBindings.AddRange(parameters);
     template.UniqueId = metadata.UniqueId;
 
     return template;

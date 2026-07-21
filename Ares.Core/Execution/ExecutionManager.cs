@@ -23,6 +23,7 @@ public class ExecutionManager : IExecutionManager
   private readonly IEnumerable<IStartCondition> _startConditions;
   private readonly IExecutionSafetyManager _safetyManager;
   private readonly INotifier _notifier;
+  private readonly ICommandDisplayNameResolver _commandDisplayNameResolver;
   private readonly ILogger _logger;
   private ExecutionControlTokenSource? _executionControlTokenSource;
   private ICampaignExecutor? _activeExecutor;
@@ -32,6 +33,7 @@ public class ExecutionManager : IExecutionManager
     IActiveCampaignTemplateStore activeCampaignTemplateStore,
     IExecutionSafetyManager safetyManager,
     ICommandComposer<CampaignTemplate, ICampaignExecutor> campaignComposer,
+    ICommandDisplayNameResolver commandDisplayNameResolver,
     ILogger<ExecutionManager> logger,
     INotifier notifier)
   {
@@ -39,6 +41,7 @@ public class ExecutionManager : IExecutionManager
     _dbContextFactory = dbContextFactory;
     _activeCampaignTemplateStore = activeCampaignTemplateStore;
     _campaignComposer = campaignComposer;
+    _commandDisplayNameResolver = commandDisplayNameResolver;
     _safetyManager = safetyManager;
     _logger = logger;
     _notifier = notifier;
@@ -63,6 +66,7 @@ public class ExecutionManager : IExecutionManager
     {
       throw new InvalidOperationException(err);
     }
+    await _commandDisplayNameResolver.RefreshAsync();
     var executor = _campaignComposer.Compose(_activeCampaignTemplateStore.CampaignTemplate!);
     _activeExecutor = executor;
 
@@ -133,7 +137,7 @@ public class ExecutionManager : IExecutionManager
   {
     var experimentCommandsInvalid = _activeCampaignTemplateStore.CampaignTemplate!.ExperimentTemplate.StepTemplates
     .SelectMany(step => step.CommandTemplates)
-    .Any(cmd => cmd.Parameters.Any(param => param.IsPlanned() && param.GetPlanningMetadata() is null));
+    .Any(cmd => cmd.ArgumentBindings.Any(param => param.IsPlanned() && param.GetPlanningMetadata() is null));
 
     if(experimentCommandsInvalid)
       return false;

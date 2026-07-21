@@ -15,6 +15,7 @@ const legend: languages.SemanticTokensLegend = {
 };
 
 let semanticTokensDisposable: IDisposable | null = null;
+const semanticTokenListeners = new Set<() => void>();
 
 export function setupSemanticTokens(provider: DotNet.DotNetObject) {
   if (typeof monaco === 'undefined') {
@@ -27,10 +28,18 @@ export function setupSemanticTokens(provider: DotNet.DotNetObject) {
     getLegend() {
       return legend;
     },
+    onDidChange(listener) {
+      semanticTokenListeners.add(listener);
+      return {
+        dispose() {
+          semanticTokenListeners.delete(listener);
+        }
+      };
+    },
     provideDocumentSemanticTokens(model: editor.ITextModel) {
       return provider.invokeMethodAsync('GetSemanticTokens', model.getValue())
         .then((tokens) => {
-          const data = encodeSemanticTokens(tokens as SemanticToken[]);
+          const data = encodeSemanticTokens(model, tokens as SemanticToken[]);
           return { data };
         });
     },
@@ -40,14 +49,19 @@ export function setupSemanticTokens(provider: DotNet.DotNetObject) {
   });
 }
 
+export function refreshSemanticTokens() {
+  semanticTokenListeners.forEach(listener => listener());
+}
+
 export function disposeSemanticTokens() {
   semanticTokensDisposable?.dispose();
   semanticTokensDisposable = null;
+  semanticTokenListeners.clear();
 }
 
-function encodeSemanticTokens(tokens: SemanticToken[]): Uint32Array {
+function encodeSemanticTokens(model: editor.ITextModel, tokens: SemanticToken[]): Uint32Array {
   const sorted = tokens
-    .filter(t => t.length > 0)
+    .filter(t => t.length > 0 && t.line >= 0 && t.line < model.getLineCount() && t.startColumn >= 0)
     .sort((a, b) => a.line === b.line ? a.startColumn - b.startColumn : a.line - b.line);
 
   const data: number[] = [];
@@ -55,16 +69,22 @@ function encodeSemanticTokens(tokens: SemanticToken[]): Uint32Array {
   let lastChar = 0;
 
   for (const token of sorted) {
-    const line = Math.max(1, token.line);
-    const start = Math.max(1, token.startColumn);
+    const line = token.line;
+    const start = token.startColumn;
+    const lineLength = model.getLineLength(line + 1);
+    if (start >= lineLength) {
+      continue;
+    }
+
+    const length = Math.min(token.length, lineLength - start);
     const tokenType = legend.tokenTypes.indexOf(token.type);
     if (tokenType < 0) {
       continue;
     }
 
     const lineDelta = line - lastLine;
-    const charDelta = lineDelta === 0 ? start - lastChar : start - 1;
-    data.push(lineDelta, charDelta, token.length, tokenType, 0);
+    const charDelta = lineDelta === 0 ? start - lastChar : start;
+    data.push(lineDelta, charDelta, length, tokenType, 0);
 
     lastLine = line;
     lastChar = start;

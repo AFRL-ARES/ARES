@@ -7,8 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ARES.Datamodel" Version="0.31.0" />
-    <PackageReference Include="Grpc.AspNetCore" Version="2.76.0" />
+    <PackageReference Include="ARES.Datamodel" Version="0.33.0" />
+    <PackageReference Include="Grpc.AspNetCore" Version="2.80.0" />
   </ItemGroup>
 
 </Project>

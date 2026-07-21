@@ -1,5 +1,7 @@
 using Ares.Core.Analyzing;
 using Ares.Core.AresEnvironment;
+using Ares.Core.Campaigns;
+using Ares.Core.CustomCommands;
 using Ares.Core.DataManagement.DataMappers;
 using Ares.Core.Device.Managers;
 using Ares.Core.Device.Plugins.Drivers;
@@ -28,6 +30,7 @@ using Ares.Core.Visualization.Repos;
 using Ares.Datamodel.Templates;
 using Microsoft.Extensions.DependencyInjection;
 using Ares.Core.Settings;
+using Ares.Core.Execution.StopConditions.PlannerLead;
 
 
 namespace Ares.Core;
@@ -63,11 +66,17 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<AresVariableManager>();
     services.AddSingleton<AnalysisHelper>();
     services.AddSingleton<IDesiredAnalysisResultFactory, DesiredAnalysisResultFactory>();
+    services.AddSingleton<IPlannerLeadStopConditionFactory, PlannerLeadStopConditionFactory>();
     services.AddSingleton<INotifier, Notifier>();
     services.AddSingleton<IDeviceConfigManager, DeviceConfigManager>();
     services.AddSingleton<IDriverDatabaseManager, DriverDatabaseManager>();
     services.AddSingleton<ISystemSettingsManager, SystemSettingsManager>();
     services.AddSingleton<IResourceConnectionArbiter, ResourceConnectionArbiter>();
+    services.AddSingleton<ICustomCommandPersistenceService, CustomCommandPersistenceService>();
+    services.AddSingleton<ICampaignTemplatePersistenceService, CampaignTemplatePersistenceService>();
+    services.AddSingleton<ICampaignTemplateTransferService, CampaignTemplateTransferService>();
+    services.AddSingleton<ICommandDisplayNameResolver, CommandDisplayNameResolver>();
+    services.AddSingleton<CustomCommandExecutor>();
 
     services.AddSingleton<ISymbolProvider, DeviceSymbolProvider>();
     services.AddSingleton<ISymbolProvider, QuantitySymbolProvider>();
@@ -128,6 +137,7 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<IDeviceConfigRepo, DeviceConfigRepo>();
     services.AddSingleton<PlannerServiceRepo>();
     services.AddSingleton<AnalysisRepo>();
+    services.AddSingleton<PlanningResponseRepo>();
     services.AddSingleton<IAnalyzerRepo, AnalyzerRepo>();
     services.AddSingleton<IPlannerServiceRepo, PlannerServiceRepo>();
     services.AddSingleton<IDeviceVisualizationConfigRepo, DeviceVisualizationConfigRepo>();

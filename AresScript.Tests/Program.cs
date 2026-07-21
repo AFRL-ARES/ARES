@@ -393,7 +393,7 @@ public class InterpreterTests
     Assert.That(tokens, Has.Exactly(1).Matches<ScriptSemanticToken>(t =>
       t.Type == ScriptSemanticTokenType.Function
       && t.Line == 0
-      && t.StartColumn == 1
+      && t.StartColumn == 0
       && t.Length == 3));
   }
 
@@ -409,18 +409,30 @@ public class InterpreterTests
     Assert.That(tokens, Has.Some.Matches<ScriptSemanticToken>(t =>
       t.Type == ScriptSemanticTokenType.Variable
       && t.Line == 0
-      && t.StartColumn == 1
+      && t.StartColumn == 0
       && t.Length == 5));
     Assert.That(tokens, Has.Some.Matches<ScriptSemanticToken>(t =>
       t.Type == ScriptSemanticTokenType.Function
       && t.Line == 0
-      && t.StartColumn == 9
+      && t.StartColumn == 8
       && t.Length == 3));
     Assert.That(tokens, Has.Some.Matches<ScriptSemanticToken>(t =>
       t.Type == ScriptSemanticTokenType.Variable
       && t.Line == 0
-      && t.StartColumn == 13
+      && t.StartColumn == 12
       && t.Length == 3));
+  }
+
+  [Test]
+  public void SemanticTokens_ReturnsEmptyTokens_ForIncompleteMemberAccess()
+  {
+    var script = """
+      def custom_command_Test(value: Quantity.Temperature) -> Quantity.Temperature:
+        return Quantity.
+      """;
+
+    Assert.That(() => BuildSemanticTokens(script), Throws.Nothing);
+    Assert.That(BuildSemanticTokens(script), Is.Empty);
   }
 
   [Test]
@@ -1428,6 +1440,33 @@ public class InterpreterTests
 
     var steps = await BuildScriptSummaryAsync(script, includeUserFunctions: true);
     Assert.That(steps.Select(s => s.FunctionId), Is.EqualTo(["sleep", "main", "sleep", "meme", "print"]));
+  }
+
+  [Test]
+  public async Task Summary_Allows_Comment_As_First_Function_Body_Line()
+  {
+    var script = """
+      def main():
+        # test
+        print("ready")
+
+      main()
+      """;
+
+    var steps = await BuildScriptSummaryAsync(script, includeUserFunctions: true);
+    Assert.That(steps.Select(s => s.FunctionId), Is.EqualTo(["main"]));
+  }
+
+  [Test]
+  public async Task Summary_Allows_Comment_Only_Function_Body()
+  {
+    var script = """
+      def main():
+        # test
+      """;
+
+    var steps = await BuildScriptSummaryAsync(script, includeUserFunctions: true);
+    Assert.That(steps, Is.Empty);
   }
 
   [Test]

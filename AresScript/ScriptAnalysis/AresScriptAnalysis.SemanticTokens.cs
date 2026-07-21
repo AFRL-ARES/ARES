@@ -74,7 +74,7 @@ public static partial class AresScriptAnalysis
 
       Tokens.Add(new ScriptSemanticToken(
         token.Line - 1,
-        token.Column + 1,
+        token.Column,
         token.Text.Length,
         type));
     }

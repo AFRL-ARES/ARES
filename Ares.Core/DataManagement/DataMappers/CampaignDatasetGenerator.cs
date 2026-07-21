@@ -6,6 +6,7 @@ using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.EntityFrameworkCore;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Ares.Core.DataManagement.DataMappers;
 
@@ -109,7 +110,8 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
       Name = "Experiments"
     };
 
-    dataset.Columns.AddRange(CreateExperimentColumns(experiments, cancellationToken));
+    var createdColumns = CreateExperimentColumns(experiments, cancellationToken);
+    dataset.Columns.AddRange(createdColumns);
     dataset.Rows.AddRange(experiments.Select((experiment, index) => CreateExperimentRow(experiment, index + 1, cancellationToken)));
     return dataset;
   }
@@ -153,16 +155,19 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
 
   private static IEnumerable<AresDataColumn> CreateExperimentColumns(IEnumerable<ExperimentExecutionSummary> experiments, CancellationToken cancellationToken)
   {
-    return
-    [
+    var columns = new List<AresDataColumn>
+    {
       CreateColumn(ExperimentNumberColumnName, AresDataType.Int),
       CreateColumn(ExperimentTemplateColumnName, AresDataType.String, optional: true),
       CreateColumn(TimeStartedColumnName, AresDataType.Timestamp, optional: true),
       CreateColumn(TimeFinishedColumnName, AresDataType.Timestamp, optional: true),
       CreateColumn(DurationSecondsColumnName, AresDataType.Number, optional: true),
-      CreateColumn(AnalysisResultColumnName, AresDataType.Number, optional: true),
-      .. CreateExperimentDynamicColumns(experiments, cancellationToken)
-    ];
+      CreateColumn(AnalysisResultColumnName, AresDataType.Number, optional: true)
+    };
+
+    var dynamicColumns = CreateExperimentDynamicColumns(experiments, cancellationToken);
+    columns.AddRange(dynamicColumns);
+    return columns;
   }
 
   private static IEnumerable<AresDataColumn> CreateCommandColumns(IEnumerable<CommandRecord> commandRecords, CancellationToken cancellationToken)
@@ -247,19 +252,19 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
         }
       }
 
-      var parameters = experiment.ExperimentOverview?.Parameters.OrderBy(GetParameterColumnName)
-        ?? Enumerable.Empty<Parameter>();
-      foreach(var parameter in parameters)
+      var cleanedParameters = CleanParametersOfDuplicateNames(experiment, cancellationToken);
+
+      foreach(var item in cleanedParameters)
       {
         cancellationToken.ThrowIfCancellationRequested();
-        var parameterValue = parameter.GetValue();
+        var parameterValue = item.Item1.GetValue();
+
         if(parameterValue is null)
           continue;
 
-        foreach(var flattenedField in AresValueFlattener.Flatten(GetParameterColumnName(parameter), parameterValue))
-        {
+        // Use item.UniqueName here instead of calling GetParameterColumnName again
+        foreach(var flattenedField in AresValueFlattener.Flatten(item.Item2, parameterValue))
           TryAddDynamicColumn(columns, flattenedField.Key, flattenedField.Value);
-        }
       }
     }
 
@@ -276,7 +281,7 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
 
     foreach(var commandRecord in commandRecords)
     {
-      foreach(var parameter in commandRecord.Template?.Parameters ?? [])
+      foreach(var parameter in commandRecord.Template?.ArgumentBindings ?? [])
       {
         cancellationToken.ThrowIfCancellationRequested();
         var value = parameter.GetValue();
@@ -448,13 +453,18 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
       AddFlattenedValue(data, $"{OutputColumnPrefix}{field.Key}", field.Value, cancellationToken);
     }
 
-    foreach(var parameter in experiment.ExperimentOverview?.Parameters ?? [])
+    var cleanedParameters = CleanParametersOfDuplicateNames(experiment, cancellationToken);
+
+    foreach(var item in cleanedParameters)
     {
       cancellationToken.ThrowIfCancellationRequested();
+      var parameterValue = item.Item1.GetValue();
 
-      var parameterValue = parameter.GetValue();
-      if(parameterValue is not null)
-        AddFlattenedValue(data, GetParameterColumnName(parameter), parameterValue, cancellationToken);
+      if(parameterValue is null)
+        continue;
+
+      foreach(var flattenedField in AresValueFlattener.Flatten(item.Item2, parameterValue))
+        AddFlattenedValue(data, flattenedField.Key, flattenedField.Value, cancellationToken);
     }
 
     return new AresDataRow
@@ -477,7 +487,7 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     AddExecutionFields(data, record.Command.ExecutionInfo);
     AddString(data, StatusColumnName, record.Command.StatusCode.ToString());
 
-    foreach(var parameter in record.Template?.Parameters ?? [])
+    foreach(var parameter in record.Template?.ArgumentBindings ?? [])
     {
       cancellationToken.ThrowIfCancellationRequested();
       var value = parameter.GetValue();
@@ -525,11 +535,11 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
       }
     }
 
-    if(transaction.PlanningRequest?.AnalysisResults.Count > 0)
+    if(transaction.PlanningRequest?.AnalysisData.Count > 0)
     {
-      foreach(var analysisResponse in transaction.PlanningRequest.AnalysisResults)
+      foreach(var analysisDataEntry in transaction.PlanningRequest.AnalysisData)
       {
-        foreach(var objective in analysisResponse.Objectives)
+        foreach(var objective in analysisDataEntry.AnalysisObjectives)
           data.Fields[objective.ObjectiveName] = objective.ObjectiveValue;
       }
     }
@@ -627,8 +637,40 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     }
   }
 
+  private static IEnumerable<(Parameter, string)> CleanParametersOfDuplicateNames(ExperimentExecutionSummary experiment, CancellationToken cancellationToken)
+  {
+    var rawParameters = experiment.ExperimentOverview?.Parameters ?? Enumerable.Empty<Parameter>();
+
+    var orderedParameters = rawParameters
+        .Select(p => new { Parameter = p, BaseName = GetParameterColumnName(p) })
+        .OrderBy(x => x.BaseName)
+        .ToList();
+
+    var seenNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    var uniqueParameters = new List<(Parameter Parameter, string UniqueName)>();
+
+    foreach(var item in orderedParameters)
+    {
+      string uniqueName = item.BaseName;
+      int suffix = 1;
+
+      while(!seenNames.Add(uniqueName))
+      {
+        uniqueName = $"{item.BaseName}_{suffix}";
+        suffix++;
+      }
+
+      uniqueParameters.Add((item.Parameter, uniqueName));
+    }
+
+    return uniqueParameters;
+  }
+
   private static string GetParameterColumnName(Parameter parameter)
   {
+    if(parameter.SourceCase == Parameter.SourceOneofCase.PlannedSource && parameter.PlannedSource is not null)
+      return parameter.PlannedSource.PlanningMetadata.Name;
+
     if(!string.IsNullOrWhiteSpace(parameter.Metadata?.Name))
       return $"{InputColumnPrefix}{parameter.Metadata.Name}";
 

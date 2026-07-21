@@ -408,12 +408,12 @@ internal class CampaignDatasetGeneratorTests
     using(Assert.EnterMultipleScope())
     {
       Assert.That(columns, Does.Contain("Input.Literal"));
-      Assert.That(columns, Does.Contain("Input.Planned"));
+      Assert.That(columns, Does.Contain("Planned"));
       Assert.That(columns, Does.Contain("Input.Environment.Temperature"));
       Assert.That(columns, Does.Contain("Input.Variable"));
       Assert.That(Array.IndexOf(columns, "Input.Literal"), Is.LessThan(Array.IndexOf(columns, "Output")));
       Assert.That(row.Data.Fields["Input.Literal"].StringValue, Is.EqualTo("literal"));
-      Assert.That(row.Data.Fields["Input.Planned"].NumberValue, Is.EqualTo(2));
+      Assert.That(row.Data.Fields["Planned"].NumberValue, Is.EqualTo(2));
       Assert.That(row.Data.Fields["Input.Environment.Temperature"].NumberValue, Is.EqualTo(22.5));
       Assert.That(row.Data.Fields["Input.Variable"].ListValue.Values.Select(value => value.NumberValue), Is.EqualTo([3, 4]));
       Assert.That(row.Data.Fields["Output"].NumberValue, Is.EqualTo(10));
@@ -540,11 +540,12 @@ internal class CampaignDatasetGeneratorTests
       ("Temperature", nestedOutput));
     var objectiveOne = new Objective() { ObjectiveValue = AresValueHelper.CreateNumber(1.5), ObjectiveName = "ObjectiveOne" };
     var objectiveTwo = new Objective() { ObjectiveValue = AresValueHelper.CreateNumber(2.5), ObjectiveName = "ObjectiveTwo" };
-    var responseOne = new AnalysisResponse() { AnalysisOutcome = Outcome.Success, Objectives = { objectiveOne } };
-    var responseTwo = new AnalysisResponse() { AnalysisOutcome = Outcome.Success, Objectives = { objectiveTwo } };
-    transaction.PlanningRequest.AnalysisResults.AddRange([responseOne, responseTwo]);
-    transaction.PlanningResponse.PlanningOutcome = Outcome.Warning;
-    transaction.PlanningResponse.ErrorString = "planner warning";
+    var responseOne = new AnalysisData() { AnalysisObjectives = { objectiveOne } };
+    var responseTwo = new AnalysisData() { AnalysisObjectives = { objectiveTwo } };
+    var planOne = new Plan() { ErrorString = "planner warning", PlanningOutcome = Outcome.Warning };
+    var planTwo = new Plan() { ErrorString = "planner warning", PlanningOutcome = Outcome.Warning };
+    transaction.PlanningRequest.AnalysisData.AddRange([responseOne, responseTwo]);
+    transaction.PlanningResponse.Plans.AddRange([planOne, planTwo]);
     var generator = CreateGenerator(CreateCampaignSummary(summaryId, "Campaign A", experiment), [transaction]);
 
     var dataset = GetDataset(await generator.GenerateAsync(summaryId), "Planner Transactions");
@@ -865,13 +866,16 @@ internal class CampaignDatasetGeneratorTests
     var template = new CommandTemplate
     {
       UniqueId = Guid.NewGuid().ToString(),
-      Metadata = new CommandMetadata
+      DeviceCommand = new DeviceCommand
       {
-        UniqueId = Guid.NewGuid().ToString(),
-        Name = uniqueId
+        Metadata = new CommandMetadata
+        {
+          UniqueId = Guid.NewGuid().ToString(),
+          Name = uniqueId
+        }
       }
     };
-    template.Parameters.AddRange(parameters);
+    template.ArgumentBindings.AddRange(parameters);
     return template;
   }
 

@@ -11,11 +11,11 @@
 
   <ItemGroup>
     <PackageReference Include="Ares.Toolkit.Serial" Version="1.0.0" />
-    <PackageReference Include="DynamicData" Version="9.4.31" />
-    <PackageReference Include="Grpc.AspNetCore" Version="2.76.0" />
-    <PackageReference Include="Grpc.HealthCheck" Version="2.76.0" />
+    <PackageReference Include="DynamicData" Version="9.4.33" />
+    <PackageReference Include="Grpc.AspNetCore" Version="2.80.0" />
+    <PackageReference Include="Grpc.HealthCheck" Version="2.80.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-    <PackageReference Include="System.Reactive" Version="6.1.0" />
+    <PackageReference Include="System.Reactive" Version="7.0.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Ares.Core\Ares.Core.csproj" />

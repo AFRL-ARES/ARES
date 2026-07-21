@@ -14,18 +14,25 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
   private readonly Func<CancellationToken, Task<CommandResult>> _command;
   private readonly BehaviorSubject<CommandExecutionStatus> _stateSubject;
   private readonly INotifier _notifier;
-  private readonly ISystemSettingsManager _settingsManager; 
+  private readonly ISystemSettingsManager _settingsManager;
+  private readonly string _commandName;
 
-  public CommandExecutor(Func<CancellationToken, Task<CommandResult>> command, CommandTemplate template, INotifier notifier, ISystemSettingsManager settingsManager)
+
+  public CommandExecutor(Func<CancellationToken, Task<CommandResult>> command, CommandTemplate template, string commandName, INotifier notifier, ISystemSettingsManager settingsManager)
   {
     _command = command;
+    _commandName = commandName;
     Template = template;
+
+    var executionTarget = template.CommandTypeCase == CommandTemplate.CommandTypeOneofCase.DeviceCommand
+      ? template.DeviceCommand.Metadata.DeviceType
+      : "ARES";
 
     var executionStatus = new CommandExecutionStatus
     {
       CommandId = template.UniqueId,
-      CommandName = template.Metadata.Name,
-      DeviceName = template.Metadata.DeviceType,
+      CommandName = commandName,
+      DeviceName = executionTarget,
       State = ExecutionState.Undefined
     };
 
@@ -56,7 +63,7 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
         await token.WaitForResumeAsync();
       }
       catch(OperationCanceledException)
-      { 
+      {
       }
 
     if(token.IsCancelled)
@@ -64,12 +71,12 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
       Status.State = ExecutionState.Failed;
       _stateSubject.OnNext(Status);
       _stateSubject.OnCompleted();
-      return ExecutorSummaryHelpers.CreateCommandExecutionSummary(Template, null, DateTime.UtcNow, DateTime.UtcNow);
+      return ExecutorSummaryHelpers.CreateCommandExecutionSummary(Template, _commandName, null, DateTime.UtcNow, DateTime.UtcNow);
     }
 
     var timeStarted = DateTime.UtcNow;
     var execInfo = new ExecutionInfo { TimeStarted = DateTime.UtcNow.ToTimestamp() };
-    var variableResolutionError = CommandVariableResolver.ResolveParameters(Template.Parameters, variableScope);
+    var variableResolutionError = CommandVariableResolver.ResolveParameters(Template.ArgumentBindings, variableScope);
     CommandResult result;
 
     if(variableResolutionError is null)
@@ -110,7 +117,7 @@ public class CommandExecutor : IExecutor<CommandExecutionSummary, CommandExecuti
     Status.Result = result.Result;
     _stateSubject.OnNext(Status);
 
-    return ExecutorSummaryHelpers.CreateCommandExecutionSummary(Template, result, timeStarted, DateTime.UtcNow);
+    return ExecutorSummaryHelpers.CreateCommandExecutionSummary(Template, _commandName, result, timeStarted, DateTime.UtcNow);
   }
 
   private async Task<CommandResult> InternalExecute(CancellationToken token)

@@ -22,6 +22,7 @@ public class CampaignComposer : ICommandComposer<CampaignTemplate, ICampaignExec
   private readonly ILoggerFactory _loggerFactory;
   readonly AnalysisHelper _analysisHelper;
   readonly AnalysisRepo _analysisRepo;
+  readonly PlanningResponseRepo _planningResponseRepo;
   readonly IAnalyzerRepo _analyzerRepo;
   readonly ISystemSettingsManager _settingsManager;
   readonly IExecutionSafetyManager _safetyManager;
@@ -32,6 +33,7 @@ public class CampaignComposer : ICommandComposer<CampaignTemplate, ICampaignExec
     IExecutionReporter executionReporter,
     IEnumerable<IExecutionSummaryHandler> resultHandlers,
     AnalysisRepo analysisRepo,
+    PlanningResponseRepo planningResponseRepo,
     IAnalyzerRepo analyzerRepo,
     INotifier notifier,
     ILoggerFactory loggerFactory,
@@ -42,6 +44,7 @@ public class CampaignComposer : ICommandComposer<CampaignTemplate, ICampaignExec
   {
     _analyzerRepo = analyzerRepo;
     _analysisRepo = analysisRepo;
+    _planningResponseRepo = planningResponseRepo;
     _analysisHelper = analysisHelper;
     _variableManager = variableManager;
     _stateLoggerManager = stateLoggerManager;
@@ -56,5 +59,19 @@ public class CampaignComposer : ICommandComposer<CampaignTemplate, ICampaignExec
   }
 
   public ICampaignExecutor Compose(CampaignTemplate template)
-    => new CampaignExecutor(_experimentComposer, _planningHelper, _executionReporter, _analysisHelper, template, _resultHandlers, _analysisRepo, _notifier, _analyzerRepo, _loggerFactory.CreateLogger<CampaignExecutor>(), _variableManager, _stateLoggerManager, _settingsManager, _safetyManager);
+    => new CampaignExecutor(_experimentComposer, 
+      _planningHelper, 
+      _executionReporter, 
+      _analysisHelper, 
+      template, 
+      _resultHandlers, 
+      _analysisRepo,
+      _planningResponseRepo,
+      _notifier, 
+      _analyzerRepo, 
+      _loggerFactory.CreateLogger<CampaignExecutor>(),
+      _variableManager, 
+      _stateLoggerManager, 
+      _settingsManager, 
+      _safetyManager);
 }

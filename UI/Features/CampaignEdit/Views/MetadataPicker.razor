@@ -62,7 +62,7 @@
 </div>
 @code {
   [Parameter]
-  public EventCallback<CommandMetadata> CommandMetadataChanged { get; set; }
+  public EventCallback<CommandMetadata> DeviceCommandMetadataChanged { get; set; }
 
   protected override async Task OnInitializedAsync()
   {
@@ -77,7 +77,7 @@
         return;
         
     ViewModel!.SelectMetadata(metaName);
-    await CommandMetadataChanged.InvokeAsync(ViewModel!.SelectedCommandMetadata);
+    await DeviceCommandMetadataChanged.InvokeAsync(ViewModel!.SelectedCommandMetadata);
   }
 
   private async Task DeviceSelectionChanged(ChangeEventArgs obj)
@@ -87,7 +87,7 @@
         return;
         
     await ViewModel!.SelectDevice(deviceId);
-    await CommandMetadataChanged.InvokeAsync(ViewModel!.SelectedCommandMetadata);
+    await DeviceCommandMetadataChanged.InvokeAsync(ViewModel!.SelectedCommandMetadata);
   }
 
 }

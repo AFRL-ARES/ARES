@@ -1,14 +1,12 @@
 using System.Threading;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Ares.Core.Analyzing;
-using Ares.Core.EntityConfigurations.Helpers;
+using Ares.Core.Campaigns;
 using Ares.Core.Execution;
 using Ares.Core.Execution.StartConditions;
 using Ares.Core.Execution.StopConditions;
@@ -24,6 +22,8 @@ using Ares.Core.Execution.Extensions;
 using Ares.Core.Planning;
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Extensions;
+using Ares.Core.Execution.StopConditions.PlannerLead;
+using System.Text.Json;
 
 namespace Ares.Core.Grpc.Services;
 
@@ -36,10 +36,12 @@ public class AutomationService : AresAutomation.AresAutomationBase
   private readonly IEnumerable<IStartCondition> _startConditions;
   private readonly IEnumerable<INotificationHandler> _notificationHandlers;
   readonly IDesiredAnalysisResultFactory _desiredAnalysisResultFactory;
-  private JsonSerializerOptions _serializerSettings;
+  private readonly IPlannerLeadStopConditionFactory _plannerLeadStopConditionFactory;
   private readonly IPlannerServiceRepo _plannerServiceRepo;
   private readonly IPlannerTransactionProvider _plannerTransactionProvider;
   private readonly IAnalyzerTransactionProvider _analyzerTransactionProvider;
+  private readonly ICampaignTemplatePersistenceService _campaignTemplatePersistenceService;
+  private readonly ICampaignTemplateTransferService _campaignTemplateTransferService;
 
   public AutomationService(IDbContextFactory<CoreDatabaseContext> coreContextFactory,
     IExecutionManager executionManager,
@@ -48,21 +50,26 @@ public class AutomationService : AresAutomation.AresAutomationBase
     IEnumerable<IStartCondition> startConditions,
     IEnumerable<INotificationHandler> notificationHandlers,
     IDesiredAnalysisResultFactory desiredAnalysisResultFactory,
+    IPlannerLeadStopConditionFactory plannerLeadStopConditionFactory,
     IPlannerServiceRepo plannerServiceRepo,
     IPlannerTransactionProvider plannerTransactionProvider,
-    IAnalyzerTransactionProvider analyzerTransactionProvider)
+    IAnalyzerTransactionProvider analyzerTransactionProvider,
+    ICampaignTemplatePersistenceService campaignTemplatePersistenceService,
+    ICampaignTemplateTransferService campaignTemplateTransferService)
   {
     _desiredAnalysisResultFactory = desiredAnalysisResultFactory;
+    _plannerLeadStopConditionFactory = plannerLeadStopConditionFactory;
     _coreContextFactory = coreContextFactory;
     _executionManager = executionManager;
     _executionReportStore = executionReportStore;
     _activeCampaignTemplateStore = activeCampaignTemplateStore;
     _startConditions = startConditions;
-    _serializerSettings = SerializerSettingsHelper.CreateCustomSerializationSettings();
     _notificationHandlers = notificationHandlers;
     _plannerServiceRepo = plannerServiceRepo;
     _plannerTransactionProvider = plannerTransactionProvider;
     _analyzerTransactionProvider = analyzerTransactionProvider;
+    _campaignTemplatePersistenceService = campaignTemplatePersistenceService;
+    _campaignTemplateTransferService = campaignTemplateTransferService;
   }
 
   public override async Task<ProjectsResponse> GetAllProjects(Empty request, ServerCallContext? context)
@@ -77,83 +84,35 @@ public class AutomationService : AresAutomation.AresAutomationBase
   public override async Task<GetAllCampaignsResponse> GetAllCampaigns(GetAllCampaignsRequest request, ServerCallContext? context)
   {
     var campaignResponse = new GetAllCampaignsResponse();
-    foreach(var file in Directory.EnumerateFiles(AresConfig.TemplatePath, "*.json"))
-    {
-      try
-      {
-        var contents = await File.ReadAllTextAsync(file);
-        var campaignTemplate = JsonSerializer.Deserialize<CampaignTemplate>(contents, _serializerSettings);
-        if(campaignTemplate is not null)
-        {
-          var summary = new CampaignTemplateSummary { CampaignName  = campaignTemplate.Name, UniqueId = campaignTemplate.UniqueId };
-          campaignResponse.Campaigns.Add(summary);
-        }
-          
-
-        else
-          throw new Exception("Deserialization of campaign template failed");
-      }
-
-      catch(Exception ex)
-      {
-        HandleNotification("Error Loading Campaign Template", $"{file} - {ex.Message}", NotificationSeverityEnum.Error);
-      }
-    }
+    var campaigns = await _campaignTemplatePersistenceService.GetSummariesAsync(context?.CancellationToken ?? CancellationToken.None);
+    campaignResponse.Campaigns.AddRange(campaigns);
 
     return campaignResponse;
   }
 
-  public override Task<BoolValue> CampaignExists(CampaignRequest request, ServerCallContext? context)
+  public override async Task<BoolValue> CampaignExists(CampaignRequest request, ServerCallContext? context)
   {
+    var cancellationToken = context?.CancellationToken ?? CancellationToken.None;
     if(request.HasUniqueId)
-      return Task.FromResult(FindCampaignById(request));
+      return new BoolValue { Value = await _campaignTemplatePersistenceService.ExistsByIdAsync(request.UniqueId, cancellationToken) };
 
     else
-      return Task.FromResult(FindCampaignByName(request));
-  }
-
-  private BoolValue FindCampaignById(CampaignRequest request)
-  {
-    var directoryFiles = Directory.EnumerateFiles(AresConfig.TemplatePath, "*.json");
-
-    if(directoryFiles.Any(file => file.Contains(request.UniqueId)))
-      return new BoolValue { Value = true };
-
-    return new BoolValue { Value = false };
-  }
-
-  private BoolValue FindCampaignByName(CampaignRequest request)
-  {
-    var directoryFiles = Directory.EnumerateFiles(AresConfig.TemplatePath, "*.json");
-
-    foreach(var file in directoryFiles)
-    {
-      var jsonString = File.ReadAllText(Path.Combine(AresConfig.TemplatePath, file));
-      var templateObject = JsonSerializer.Deserialize<CampaignTemplate>(jsonString, _serializerSettings);
-      if(templateObject is not null && templateObject.Name == request.CampaignName)
-        return new BoolValue { Value = true };
-    }
-
-    return new BoolValue { Value = false };
+      return new BoolValue { Value = await _campaignTemplatePersistenceService.ExistsByNameAsync(request.CampaignName, cancellationToken) };
   }
 
   public override Task<CampaignTemplate?> GetSingleCampaign(CampaignRequest request, ServerCallContext? context)
   => GetCampaignTemplate(request, context);
 
-  public override Task<Empty> RemoveCampaign(CampaignRequest request, ServerCallContext? context)
+  public override async Task<Empty> RemoveCampaign(CampaignRequest request, ServerCallContext? context)
   {
     if(_activeCampaignTemplateStore.CampaignTemplate?.UniqueId == request.UniqueId)
     {
-      HandleNotification("Cannot Delete Active Campaign", $"ARES rejected a request to delete the campaign {_activeCampaignTemplateStore.CampaignTemplate.Name} as it is currently running.", NotificationSeverityEnum.Info);
-      return Task.FromResult(new Empty());
+      HandleNotification("Cannot Delete Active Campaign", $"ARES rejected a request to delete the campaign {_activeCampaignTemplateStore.CampaignTemplate.Name} as it is currently set as the active campaign.", NotificationSeverityEnum.Info);
+      return new Empty();
     }
 
-    var desiredCampaign = Directory.EnumerateFiles(AresConfig.TemplatePath, "*.json").FirstOrDefault(campaign => campaign.Contains(request.UniqueId));
-
-    if(desiredCampaign is not null)
-      File.Delete(Path.Combine(AresConfig.TemplatePath, desiredCampaign));
-
-    return Task.FromResult(new Empty());
+    await _campaignTemplatePersistenceService.DeleteAsync(request.UniqueId, context?.CancellationToken ?? CancellationToken.None);
+    return new Empty();
   }
 
   public override async Task<Project> GetProject(ProjectRequest request, ServerCallContext? context)
@@ -187,51 +146,33 @@ public class AutomationService : AresAutomation.AresAutomationBase
   /// </param>
   /// <param name="context"></param>
   /// <returns></returns>
-  public override Task<Empty> AddCampaign(AddOrUpdateCampaignRequest request, ServerCallContext? context)
+  public override async Task<Empty> AddCampaign(AddOrUpdateCampaignRequest request, ServerCallContext? context)
   {
-    //Save to data directory
-    var directoryFiles = Directory.EnumerateFiles(AresConfig.TemplatePath, "*.json");
-    var jsonString = JsonSerializer.Serialize(request.Template, _serializerSettings);
-    var fullFilePath = Path.Combine(AresConfig.TemplatePath, $"{request.Template.UniqueId}.json");
-    File.WriteAllText(fullFilePath, jsonString);
-    return Task.FromResult(new Empty());
+    await _campaignTemplatePersistenceService.AddAsync(request.Template, context?.CancellationToken ?? CancellationToken.None);
+    return new Empty();
   }
 
-  public override Task<CampaignTemplate> UpdateCampaign(AddOrUpdateCampaignRequest request, ServerCallContext? context)
+  public override async Task<CampaignTemplate> UpdateCampaign(AddOrUpdateCampaignRequest request, ServerCallContext? context)
   {
-    var directoryFiles = Directory.EnumerateFiles(AresConfig.TemplatePath, "*.json");
-    var campaignToUpdate = directoryFiles.FirstOrDefault(file => file.Contains(request.Template.UniqueId));
-
-    if(campaignToUpdate is null)
+    var updated = await _campaignTemplatePersistenceService.ReplaceAsync(request.Template, context?.CancellationToken ?? CancellationToken.None);
+    if(!updated)
     {
       var title = "Error Updating Campaign";
       var message = $"Attempted to update a campaign that didn't exist. {request.Template.Name} couldn't be found in your list of available campaign templates.";
       HandleNotification(title, message, NotificationSeverityEnum.Error);
-      return Task.FromResult(request.Template);
     }
 
-    var jsonString = JsonSerializer.Serialize(request.Template, _serializerSettings);
-    var fullPath = Path.Combine(AresConfig.TemplatePath, $"{request.Template.UniqueId}.json");
-    File.WriteAllText(fullPath, jsonString);
-    return Task.FromResult(request.Template);
+    return request.Template;
   }
 
   private async Task<CampaignTemplate?> GetCampaignTemplate(CampaignRequest request, ServerCallContext? context)
   {
-    var directoryFiles = Directory.EnumerateFiles(AresConfig.TemplatePath, "*.json");
-    var campaignFile = directoryFiles.FirstOrDefault(file => file.Contains(request.UniqueId));
-
-    if(campaignFile is not null)
-    {
-      var jsonString = await File.ReadAllTextAsync(Path.Combine(AresConfig.TemplatePath, campaignFile));
-      var campaignObject = JsonSerializer.Deserialize<CampaignTemplate>(jsonString, _serializerSettings);
-
-      if(campaignObject is not null)
-        return campaignObject;
-    }
+    var campaign = await _campaignTemplatePersistenceService.GetByIdAsync(request.UniqueId, context?.CancellationToken ?? CancellationToken.None);
+    if(campaign is not null)
+      return campaign;
 
     var title = "Error Fetching Campaign Template";
-    var message = $"Attempted to fetch a campaign that didn't exist. {request.CampaignName}'s UUID did not match any of the existing campaigns in your data directory. If you deleted a campaign this is expected.";
+    var message = $"Attempted to fetch a campaign that didn't exist. {request.CampaignName}'s UUID did not match any campaign in the database. If you deleted a campaign this is expected.";
     HandleNotification(title, message, NotificationSeverityEnum.Warning);
     return null;
   }
@@ -263,18 +204,6 @@ public class AutomationService : AresAutomation.AresAutomationBase
   public override Task GetExecutionStatusStream(Empty request, IServerStreamWriter<ExperimentExecutionStatus> responseStream, ServerCallContext? context)
   {
     var observable = _executionReportStore.ExperimentStatusObservable;
-    return observable.Where(status => status is not null).Do(status => responseStream.WriteAsync(status!)).ToTask((context?.CancellationToken ?? CancellationToken.None));
-  }
-
-  public override Task GetStartupExecutionStatusStream(Empty request, IServerStreamWriter<CampaignStartupStatus> responseStream, ServerCallContext? context)
-  {
-    var observable = _executionReportStore.CampaignStartupStatusObservable;
-    return observable.Where(status => status is not null).Do(status => responseStream.WriteAsync(status!)).ToTask((context?.CancellationToken ?? CancellationToken.None));
-  }
-
-  public override Task GetCloseoutExecutionStatusStream(Empty request, IServerStreamWriter<CampaignCloseoutStatus> responseStream, ServerCallContext? context)
-  {
-    var observable = _executionReportStore.CampaignCloseoutStatusObservable;
     return observable.Where(status => status is not null).Do(status => responseStream.WriteAsync(status!)).ToTask((context?.CancellationToken ?? CancellationToken.None));
   }
 
@@ -427,6 +356,21 @@ public class AutomationService : AresAutomation.AresAutomationBase
     return Task.FromResult(new Empty());
   }
 
+  public override Task<Empty> SetPlannerLeadStopCondition(Empty request, ServerCallContext context)
+  {
+    var stopConditions = _executionManager.CampaignStopConditions;
+
+    if(stopConditions is null)
+      return Task.FromResult(new Empty());
+
+    stopConditions.Clear();
+
+    var stopCondition = _plannerLeadStopConditionFactory.Create();
+    stopConditions.Add(stopCondition);
+
+    return Task.FromResult(new Empty());
+  }
+
   public override Task<ExperimentStopConditionResponse> GetActiveStopCondition(Empty request, ServerCallContext? context)
   {
     var stopConditions = _executionManager.CampaignStopConditions;
@@ -549,16 +493,12 @@ public class AutomationService : AresAutomation.AresAutomationBase
 
   public override async Task<GetCopyOfCampaignResponse> GetCopyOfCampaign(CampaignRequest request, ServerCallContext context)
   {
-    var template = await GetCampaignTemplate(request, context);
     var response = new GetCopyOfCampaignResponse();
-
-    if(template is not null)
+    var export = await _campaignTemplateTransferService.ExportAsync(request.UniqueId, context?.CancellationToken ?? CancellationToken.None);
+    if(export is not null)
     {
-      var templateCopy = template.Clone();
-      templateCopy.UniqueId = Guid.NewGuid().ToString();
-      templateCopy.Name = $"{template.Name}-Copy";
-      response.Template = templateCopy;
-      response.SerializedJsonData = JsonSerializer.Serialize(templateCopy, _serializerSettings);
+      response.Template = export.Template;
+      response.SerializedJsonData = export.Json;
     }
 
     return response;

@@ -1,24 +1,86 @@
-﻿@using Ares.Datamodel.Templates
+﻿@using Ares.Datamodel.Automation
+@using Ares.Datamodel.Templates
 @using UI.Features.CampaignEdit.ViewModels
-@inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Features.CampaignEdit.ViewModels.CommandDesignerViewModel>
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<CommandDesignerViewModel>
 
 <RadzenTemplateForm TItem="CommandDesignerViewModel" Data="@ViewModel" Submit="@OnCommandSubmit">
-  <MetadataPicker ViewModel="@ViewModel!.MetadataPickerViewModel" CommandMetadataChanged="CommandMetadataChanged"  />
+  <RadzenTabs RenderMode="TabRenderMode.Server"
+              SelectedIndex="@ViewModel!.SelectedCommandTabIndex"
+              Change="@CommandTypeChanged">
+    <Tabs>
+      <RadzenTabsItem Text="Device" Icon="precision_manufacturing">
+        @if(ViewModel.MetadataPickerViewModel is not null)
+        {
+          <MetadataPicker ViewModel="@ViewModel.MetadataPickerViewModel" DeviceCommandMetadataChanged="DeviceCommandMetadataChanged" />
+        }
+        else
+        {
+          <span>Loading device commands...</span>
+        }
+      </RadzenTabsItem>
 
-  @foreach (var argumentDesigner in ViewModel!.ArgumentDesigners)
+      <RadzenTabsItem Text="System" Icon="settings">
+        <div class="d-flex flex-column mb-2">
+          <label class="form-label" for="system-operation-picker">System Operation</label>
+          <RadzenDropDown id="system-operation-picker"
+                          TValue="SystemOperation"
+                          Data="@CommandDesignerViewModel.AvailableSystemOperations"
+                          Value="@ViewModel.SelectedSystemOperation"
+                          TextProperty="@nameof(Ares.Core.Execution.Executors.SystemOperationDefinition.DisplayName)"
+                          ValueProperty="@nameof(Ares.Core.Execution.Executors.SystemOperationDefinition.Operation)"
+                          Change="@SystemOperationChanged"
+                          Placeholder="Select a System Operation"
+                          Style="width: 100%;" />
+          @if(!string.IsNullOrWhiteSpace(ViewModel.TemplateCommandDescription))
+          {
+            <span class="mt-3">@ViewModel.TemplateCommandDescription</span>
+          }
+        </div>
+      </RadzenTabsItem>
+
+      <RadzenTabsItem Text="Custom" Icon="code">
+        <div class="d-flex flex-column mb-2">
+          <label class="form-label" for="custom-command-picker">Custom Command</label>
+          <RadzenDropDown id="custom-command-picker"
+                          TValue="string"
+                          Data="@ViewModel.AvailableCustomCommands"
+                          Value="@ViewModel.SelectedCustomCommandId"
+                          TextProperty="@nameof(CustomCommandVersion.Name)"
+                          ValueProperty="@nameof(CustomCommandVersion.CustomCommandId)"
+                          Change="@CustomCommandChanged"
+                          Placeholder="Select a Custom Command"
+                          Style="width: 100%;" />
+          @if(!string.IsNullOrWhiteSpace(ViewModel.CustomCommandLoadError))
+          {
+            <span class="text-danger mt-2">@ViewModel.CustomCommandLoadError</span>
+          }
+          else if(ViewModel.IsCommandUnavailable && !string.IsNullOrWhiteSpace(ViewModel.SelectedCustomCommandId))
+          {
+            <span class="text-danger mt-2">The selected custom command is no longer available.</span>
+          }
+          else if(!string.IsNullOrWhiteSpace(ViewModel.TemplateCommandDescription))
+          {
+            <span class="mt-3">@ViewModel.TemplateCommandDescription</span>
+          }
+        </div>
+      </RadzenTabsItem>
+    </Tabs>
+  </RadzenTabs>
+
+  @foreach(var argumentDesigner in ViewModel.ArgumentDesigners)
   {
-    <CommandParameterDesigner DisablePlanning=@DisablePlanningAndOutputCheck ViewModel="@argumentDesigner" @key="argumentDesigner"/>
+    <CommandParameterDesigner DisablePlanning="@DisablePlanningAndOutputCheck" ViewModel="@argumentDesigner" @key="argumentDesigner" />
   }
 
-  @if(!DisablePlanningAndOutputCheck && ViewModel!.HasOutputMetadata)
+  @if(!DisablePlanningAndOutputCheck && ViewModel.HasOutputMetadata)
   {
     <div class="mb-2">
-	    <RadzenCheckBox @bind-Value="ViewModel!.OutputProvider" id="output-check"/>
-	    <label for="output-check">Assign Output Variable</label>
-    </div>  
+      <RadzenCheckBox @bind-Value="ViewModel.OutputProvider" id="output-check" />
+      <label for="output-check">Assign Output Variable</label>
+    </div>
   }
 
-  @if(ViewModel!.OutputProvider && ViewModel.HasOutputMetadata)
+  @if(ViewModel.OutputProvider && ViewModel.HasOutputMetadata)
   {
     <div class="mb-2">
       <RadzenTextBox Style="width:100%"
@@ -32,18 +94,38 @@
   [Parameter]
   public bool DisablePlanningAndOutputCheck { get; set; }
 
-  private async Task CommandMetadataChanged(CommandMetadata? metadata)
+  protected override async Task OnInitializedAsync()
   {
-    await ViewModel!.MetadataUpdated(metadata);
+    await ViewModel!.EnsureInitializedAsync();
+  }
+
+  private void CommandTypeChanged(int tabIndex)
+  {
+    ViewModel!.SelectedCommandTabIndex = tabIndex;
+    StateHasChanged();
+  }
+
+  private async Task DeviceCommandMetadataChanged(CommandMetadata? metadata)
+  {
+    await ViewModel!.DeviceCommandMetadataUpdated(metadata);
+    StateHasChanged();
+  }
+
+  private void SystemOperationChanged(object? value)
+  {
+    if(value is SystemOperation operation)
+      ViewModel!.SelectSystemOperation(operation);
+    StateHasChanged();
+  }
+
+  private void CustomCommandChanged(object? value)
+  {
+    ViewModel!.SelectCustomCommand(value?.ToString());
     StateHasChanged();
   }
 
   private void OnCommandSubmit(CommandDesignerViewModel model)
   {
-    // This will ONLY fire if every single RadzenNumericRangeValidator
-    // down inside your AresValueDesigners comes back valid!
-
-    // Execute your save logic or close the dialog here
     model.Save();
   }
 }

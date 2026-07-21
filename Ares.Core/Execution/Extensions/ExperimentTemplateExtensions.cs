@@ -13,7 +13,7 @@ public static class ExperimentTemplateExtensions
   public static IEnumerable<Parameter> GetAllParameters(this ExperimentTemplate template)
     => template.StepTemplates
       .SelectMany(stepTemplate => stepTemplate.CommandTemplates)
-      .SelectMany(commandTemplate => commandTemplate.Parameters);
+      .SelectMany(commandTemplate => commandTemplate.ArgumentBindings);
 
   /// <summary>
   /// Gets all the <see cref="CommandTemplate"/>s that are mapped to provide output />
@@ -78,15 +78,17 @@ public static class ExperimentTemplateExtensions
       foreach(var commandTemplate in stepTemplate.CommandTemplates)
       {
         var cmdTemplateId = Guid.NewGuid().ToString();
-        var outputCmd = template.GetAllOutputCommands().FirstOrDefault(oc => oc.UniqueId == commandTemplate.UniqueId);
 
-        commandTemplate.Metadata.UniqueId = Guid.NewGuid().ToString();
         commandTemplate.UniqueId = cmdTemplateId;
 
-        foreach(var metadataParameterMetadata in commandTemplate.Metadata.ParameterMetadatas)
-          metadataParameterMetadata.UniqueId = Guid.NewGuid().ToString();
+        if(commandTemplate.DeviceCommand?.Metadata is not null)
+        {
+          commandTemplate.DeviceCommand.Metadata.UniqueId = Guid.NewGuid().ToString();
+          foreach(var metadataParameterMetadata in commandTemplate.DeviceCommand.Metadata.ParameterMetadatas)
+            metadataParameterMetadata.UniqueId = Guid.NewGuid().ToString();
+        }
 
-        foreach(var argument in commandTemplate.Parameters)
+        foreach(var argument in commandTemplate.ArgumentBindings)
         {
           argument.UniqueId = Guid.NewGuid().ToString();
           argument.Metadata.UniqueId = Guid.NewGuid().ToString();
@@ -108,7 +110,7 @@ public static class ExperimentTemplateExtensions
     {
       foreach(var cmd in step.CommandTemplates)
       {
-        foreach(var param in cmd.Parameters)
+        foreach(var param in cmd.ArgumentBindings)
         {
           var planningMetadata = param.GetPlanningMetadata();
           if(planningMetadata is not null)

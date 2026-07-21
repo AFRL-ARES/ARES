@@ -2,7 +2,9 @@
 @inject IJSRuntime JSRuntime
 @implements IAsyncDisposable
 
-<StandaloneCodeEditor CssClass="h-100" @ref="_editor" Id="ares-editor" ConstructionOptions="EditorConstructionOptions" />
+<div class="script-editor">
+  <StandaloneCodeEditor CssClass="script-editor__monaco" @ref="_editor" Id="ares-editor" ConstructionOptions="EditorConstructionOptions" />
+</div>
 
 @code {
   private const string DefaultScript = "# Welcome to ARES\ndef main():\n    return True\n";
@@ -44,6 +46,19 @@
     }
 
     await _editor.SetValue(script ?? string.Empty);
+  }
+
+  public async Task RefreshLanguageFeaturesAsync()
+  {
+    if(_diagnosticsModule is not null)
+    {
+      await _diagnosticsModule.InvokeVoidAsync("refreshDiagnostics");
+    }
+
+    if(_semanticModule is not null)
+    {
+      await _semanticModule.InvokeVoidAsync("refreshSemanticTokens");
+    }
   }
 
   protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -143,7 +158,7 @@
 
   private StandaloneEditorConstructionOptions EditorConstructionOptions(StandaloneCodeEditor editor)
   {
-    var initialScript = string.IsNullOrWhiteSpace(InitialScript) ? DefaultScript : InitialScript;
+    var initialScript = InitialScript ?? DefaultScript;
 
     return new StandaloneEditorConstructionOptions
     {

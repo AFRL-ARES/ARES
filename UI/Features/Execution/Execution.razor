@@ -101,7 +101,7 @@
             <section class="execution-card">
               <div class="card-heading">
                 <div>
-                  <h3>Experiment Goals</h3>
+                  <h3>Stop Condition</h3>
                   <p>Choose one active stop condition. Applying either option replaces the current stop condition.</p>
                 </div>
               </div>
@@ -113,11 +113,19 @@
                   <span>Stop after experiments</span>
                   <strong>Count based</strong>
                 </button>
+
                 <button type="button"
                         class="stop-mode-card @(ViewModel!.ActiveStopConditionMode == ExecutionStopConditionMode.AnalyzerResult ? "selected" : "")"
                         @onclick="() => ViewModel!.ActiveStopConditionMode = ExecutionStopConditionMode.AnalyzerResult">
                   <span>Stop at analyzer result</span>
-                  <strong>Target based</strong>
+                  <strong>Analyzer Target Based</strong>
+                </button>
+
+                <button type="button"
+                        class="stop-mode-card @(ViewModel!.ActiveStopConditionMode == ExecutionStopConditionMode.PlannerResult ? "selected" : "")"
+                        @onclick="() => ViewModel!.ActiveStopConditionMode = ExecutionStopConditionMode.PlannerResult">
+                  <span>Stop at planner result</span>
+                  <strong>Planner Target Based</strong>
                 </button>
               </div>
 
@@ -133,6 +141,19 @@
                   </div>
                 </div>
               }
+
+              else if(ViewModel!.ActiveStopConditionMode == ExecutionStopConditionMode.PlannerResult)
+              {
+                <div class="form-grid two">
+                  <div>
+                    <strong>Experiments will stop when the assigned planner reports it has achieved its objective.</strong>
+                  </div>
+                  <div class="apply-box">
+                    <RadzenButton Text="Apply Stop Condition" Icon="check" ButtonStyle="ButtonStyle.Primary" Click="@ViewModel!.ApplyActiveStopCondition" />
+                  </div>
+                </div>
+              }
+
               else
               {
                 <div class="form-grid three">
@@ -306,7 +327,29 @@
                     <div class="timeline-item @GetExperimentClass(experiment)" @key="experiment.ExperimentId">
                       <div class="timeline-marker"></div>
                       <div class="timeline-content">
-                        <h4>Experiment @(i + 1)</h4>
+                        @if(experiment.IsStartup)
+                        {
+                          <h4>Startup Script</h4>  
+                        }
+                          
+                        else if(experiment.IsCloseout)
+                        {
+                          <h4>Closeout Script</h4>
+                        }
+
+                        else
+                        {
+                          @if(ViewModel!.CampaignTemplate!.StartupTemplate.StepTemplates.Any())
+                          {
+                            <h4>Experiment @(i)</h4>
+                          }
+
+                          else
+                          {
+                            <h4>Experiment @(i + 1)</h4>
+                          }
+                        }
+
                         @foreach(var step in experiment.StepExecutionStatuses)
                         {
                           <details open="@experiment.IsActive()">
