@@ -1,3 +1,4 @@
+using Ares.Core.Execution.Extensions;
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Analyzing.Remote;
@@ -6,6 +7,7 @@ using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.EntityFrameworkCore;
+using YamlDotNet.Serialization.NodeDeserializers;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Ares.Core.DataManagement.DataMappers;
@@ -618,11 +620,27 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
 
   private static IEnumerable<(Parameter, string)> CleanParametersOfDuplicateNames(ExperimentExecutionSummary experiment, CancellationToken cancellationToken)
   {
-    var rawParameters = experiment.ExperimentOverview?.Parameters ?? Enumerable.Empty<Parameter>();
+    var stepTemplates = experiment.ExperimentOverview?.Template.StepTemplates ?? Enumerable.Empty<StepTemplate>();
 
-    var orderedParameters = rawParameters
-        .Select(p => new { Parameter = p, BaseName = GetParameterColumnName(p) })
+    var orderedParameters = stepTemplates
+        .OrderBy(step => step.Index) // Ensure steps are processed in order
+        .SelectMany(step => step.CommandTemplates
+            .OrderBy(cmd => cmd.Index) // Ensure commands within the step are in order
+            .SelectMany(cmd => cmd.ArgumentBindings
+                .Select((param, paramIndex) => new
+                {
+                  Parameter = param,
+                  BaseName = GetParameterColumnName(param),
+                  StepIndex = step.Index,
+                  CommandIndex = cmd.Index,
+                  BindingIndex = paramIndex
+                })))
+        
+        // Sort first by the BaseName to group duplicates, then resolve ties using the structural coordinates
         .OrderBy(x => x.BaseName)
+        .ThenBy(x => x.StepIndex)
+        .ThenBy(x => x.CommandIndex)
+        .ThenBy(x => x.BindingIndex)
         .ToList();
 
     var seenNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
