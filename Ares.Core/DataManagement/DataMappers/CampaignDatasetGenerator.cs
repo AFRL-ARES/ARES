@@ -620,12 +620,13 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
 
   private static IEnumerable<(Parameter, string)> CleanParametersOfDuplicateNames(ExperimentExecutionSummary experiment, CancellationToken cancellationToken)
   {
-    var stepTemplates = experiment.ExperimentOverview?.Template.StepTemplates ?? Enumerable.Empty<StepTemplate>();
+    var stepTemplates = experiment.ExperimentOverview?.Template?.StepTemplates ?? Enumerable.Empty<StepTemplate>();
+    var globalParameters = experiment.ExperimentOverview?.Parameters ?? Enumerable.Empty<Parameter>();
 
-    var orderedParameters = stepTemplates
-        .OrderBy(step => step.Index) // Ensure steps are processed in order
+    var hierarchicalParameters = stepTemplates
+        .OrderBy(step => step.Index)
         .SelectMany(step => step.CommandTemplates
-            .OrderBy(cmd => cmd.Index) // Ensure commands within the step are in order
+            .OrderBy(cmd => cmd.Index)
             .SelectMany(cmd => cmd.ArgumentBindings
                 .Select((param, paramIndex) => new
                 {
@@ -633,10 +634,25 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
                   BaseName = GetParameterColumnName(param),
                   StepIndex = step.Index,
                   CommandIndex = cmd.Index,
-                  BindingIndex = paramIndex
+                  BindingIndex = (long)paramIndex
                 })))
-        
-        // Sort first by the BaseName to group duplicates, then resolve ties using the structural coordinates
+        .ToList();
+
+    var structuredParamSet = new HashSet<Parameter>(hierarchicalParameters.Select(x => x.Parameter));
+
+    var unstructuredParameters = globalParameters
+        .Where(p => !structuredParamSet.Contains(p))
+        .Select((param, index) => new
+        {
+          Parameter = param,
+          BaseName = GetParameterColumnName(param),
+          StepIndex = -1L,
+          CommandIndex = -1L,
+          BindingIndex = (long)index
+        });
+
+    var finalOrderedParameters = hierarchicalParameters
+        .Concat(unstructuredParameters)
         .OrderBy(x => x.BaseName)
         .ThenBy(x => x.StepIndex)
         .ThenBy(x => x.CommandIndex)
@@ -646,8 +662,9 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     var seenNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
     var uniqueParameters = new List<(Parameter Parameter, string UniqueName)>();
 
-    foreach(var item in orderedParameters)
+    foreach(var item in finalOrderedParameters)
     {
+      cancellationToken.ThrowIfCancellationRequested();
       string uniqueName = item.BaseName;
       int suffix = 1;
 
