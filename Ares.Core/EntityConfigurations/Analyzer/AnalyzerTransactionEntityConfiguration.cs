@@ -11,6 +11,6 @@ internal class AnalyzerTransactionEntityConfiguration : AresEntityTypeBaseConfig
   {
     base.Configure(builder);
     builder.Property(transaction => transaction.AnalysisRequest).HasAnalysisRequest();
-    builder.Property(transaction => transaction.AnalysisResponse).HasAnalysis();
+    builder.Property(transaction => transaction.AnalyzerResponse).HasAnalysis();
   }
 }

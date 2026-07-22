@@ -66,7 +66,7 @@ public class AnalysisHelper
 
       var analysis = await analyzer.Analyze(analysisRequest, cancellationToken);
       transaction.TimeResponseReceived = DateTime.UtcNow.ToTimestamp();
-      transaction.AnalysisResponse = analysis;
+      transaction.AnalyzerResponse = analysis;
       
       experimentSummary.ExperimentOverview.AnalysisOverview = new AnalysisOverview
       {

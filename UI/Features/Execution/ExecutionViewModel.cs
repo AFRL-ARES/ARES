@@ -454,7 +454,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
   public void OnAnalyzerTransactionReceived(AnalyzerTransaction transaction, int currentTurn)
   {
-    foreach(var objective in transaction.AnalysisResponse.Objectives)
+    foreach(var objective in transaction.AnalyzerResponse.Objectives)
     {
       var found = objective.ObjectiveValue.TryGetNumericValue(out var numericValue);
       if(!found)

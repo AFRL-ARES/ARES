@@ -638,7 +638,7 @@ internal class CampaignDatasetGeneratorTests
       DateTime.UnixEpoch.AddSeconds(4),
       ("Measurement", nestedInput));
 
-    transaction.AnalysisResponse = new AnalysisResponse
+    transaction.AnalyzerResponse = new AnalysisResponse
     {
       Objectives = { new Objective() { ObjectiveName = "Result", ObjectiveValue = AresValueHelper.CreateNumber(9.5) } },
       AnalysisOutcome = Outcome.Success,
@@ -1003,7 +1003,7 @@ internal class CampaignDatasetGeneratorTests
           ExperimentId = experimentId
         }
       },
-      AnalysisResponse = new AnalysisResponse()
+      AnalyzerResponse = new AnalysisResponse()
     };
 
     foreach(var input in inputs)

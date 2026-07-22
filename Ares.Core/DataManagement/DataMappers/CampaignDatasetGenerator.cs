@@ -241,11 +241,22 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
 
       if(experiment.ExperimentOverview?.AnalysisOverview is not null)
       {
-        foreach(var objective in experiment.ExperimentOverview.AnalysisOverview.Objectives)
+        if(experiment.ExperimentOverview.AnalysisOverview.Objectives.Any())
         {
-          cancellationToken.ThrowIfCancellationRequested();
-          TryAddDynamicColumn(columns, $"Objective.{objective.ObjectiveName}", objective.ObjectiveValue);
+          foreach(var objective in experiment.ExperimentOverview.AnalysisOverview.Objectives)
+          {
+            cancellationToken.ThrowIfCancellationRequested();
+            TryAddDynamicColumn(columns, $"Objective.{objective.ObjectiveName}", objective.ObjectiveValue);
+          }
         }
+
+        // Handle the presence of deprecated result values gracefully
+        else if(experiment.ExperimentOverview.AnalysisOverview.AnalyzerInfo.Name != "NONE")
+        {
+          var aresValueResult = AresValueHelper.CreateNumber(experiment.ExperimentOverview.AnalysisOverview.Result);
+          TryAddDynamicColumn(columns, $"Objective.Result", aresValueResult);
+        }
+
       }
 
       var resultFields = experiment.ExperimentOverview?.Result?.Fields.OrderBy(field => field.Key)
@@ -454,8 +465,19 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
 
     if(experiment.ExperimentOverview?.AnalysisOverview is not null)
     {
-      foreach(var objective in experiment.ExperimentOverview.AnalysisOverview.Objectives)
-        data.Fields[$"Objective.{objective.ObjectiveName}"] = objective.ObjectiveValue;
+      if(experiment.ExperimentOverview.AnalysisOverview.Objectives.Any())
+      {
+        foreach(var objective in experiment.ExperimentOverview.AnalysisOverview.Objectives)
+          AddFlattenedValue(data, $"Objective.{objective.ObjectiveName}", objective.ObjectiveValue, cancellationToken);
+      }
+
+      //If we have no listed objectives AD
+      else if(experiment.ExperimentOverview.AnalysisOverview.AnalyzerInfo.Name != "NONE")
+      {
+        var aresValueResult = AresValueHelper.CreateNumber(experiment.ExperimentOverview.AnalysisOverview.Result);
+        AddFlattenedValue(data, $"Objective.Result", aresValueResult, cancellationToken);
+      }
+
     }
 
     foreach(var field in experiment.ExperimentOverview?.Result?.Fields ?? [])
@@ -599,13 +621,25 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     AddString(data, AnalyzerVersionColumnName, transaction.AnalyzerVersion);
     AddTransactionTimingFields(data, transaction.TimeRequestSent, transaction.TimeResponseReceived);
 
+    //if(transaction.AnalysisResponse is not null)
+    //{
+    //  foreach(var objective in transaction.AnalysisResponse.Objectives)
+    //    data.Fields[$"Objective.{objective.ObjectiveName}"] = objective.ObjectiveValue;
+
+    //  AddString(data, OutcomeColumnName, transaction.AnalysisResponse.AnalysisOutcome.ToString());
+    //  AddString(data, ErrorColumnName, transaction.AnalysisResponse.ErrorString);
+    //}
+
     if(transaction.AnalysisResponse is not null)
     {
-      foreach(var objective in transaction.AnalysisResponse.Objectives)
-        data.Fields[$"Objective.{objective.ObjectiveName}"] = objective.ObjectiveValue;
+      var aresValResult = AresValueHelper.CreateNumber(transaction.AnalysisResponse.Result);
+      AddFlattenedValue(data, "Objective.Result", aresValResult, cancellationToken);
+    }
 
-      AddString(data, OutcomeColumnName, transaction.AnalysisResponse.AnalysisOutcome.ToString());
-      AddString(data, ErrorColumnName, transaction.AnalysisResponse.ErrorString);
+    else if(transaction.AnalyzerResponse is not null)
+    {
+      foreach(var objective in transaction.AnalyzerResponse.Objectives)
+        AddFlattenedValue(data, $"Objective.{objective.ObjectiveName}", objective.ObjectiveValue, cancellationToken);
     }
 
     foreach(var input in transaction.AnalysisRequest?.Inputs?.Fields ?? [])
