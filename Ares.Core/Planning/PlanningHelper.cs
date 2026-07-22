@@ -130,10 +130,9 @@ public class PlanningHelper : IPlanningHelper
 
       else
       {
-        var legacyResponseProcessed = await HandleLegacyPlanResponse(planResponse, parameterArray);
-
-        if(!legacyResponseProcessed)
-          return false;
+        _logger.LogError("Received plan response, but no plans were returned.");
+        await _notifier.Notify("Planner Error!", "Plan response received, but no plans included in response!", NotificationSeverityEnum.Error);
+        return false;
       }
     }
 
@@ -207,59 +206,6 @@ public class PlanningHelper : IPlanningHelper
     }
 
     return plannerToMetadataMaps;
-  }
-
-  /// <summary>
-  /// Handles legacy plan responses
-  /// </summary>
-  /// <param name="planResponse"></param>
-  /// <param name="parameterArray"></param>
-  /// <returns>A bool indicating whether or not resolving variables was a success</returns>
-  private async Task<bool> HandleLegacyPlanResponse(PlanningResponse planResponse, Parameter[] parameterArray)
-  {
-#pragma warning disable CS0612 // Type or member is obsolete
-
-    if(planResponse.PlanningOutcome == Outcome.Failure)
-    {
-      if(string.IsNullOrWhiteSpace(planResponse.ErrorString))
-        await _notifier.Notify("Planner Error!", "Planner reported that planning failed, but did not provide any specific error as to why.", NotificationSeverityEnum.Error);
-
-      else
-        await _notifier.Notify($"Planner Reported Error: {planResponse.ErrorString}", "Planner Error!", NotificationSeverityEnum.Error);
-
-      return false;
-    }
-
-    if(planResponse.PlanningOutcome == Outcome.Warning)
-    {
-      if(string.IsNullOrWhiteSpace(planResponse.ErrorString))
-        await _notifier.Notify("Planner Warning", "Planner reported a warning, but did not provide specific context for that warning.", NotificationSeverityEnum.Warning);
-
-      else
-        await _notifier.Notify("Planner Warning", $"Planner successfully planned, but reported a warning: {planResponse.ErrorString}", NotificationSeverityEnum.Warning);
-    }
-
-    if(planResponse.PlanningOutcome == Outcome.Canceled)
-      await _notifier.Notify("Planning was canceled.", "Planning was canceled.", NotificationSeverityEnum.Info);
-
-    if(!planResponse.PlannedParameters.Any())
-    {
-      await _notifier.Notify("Planning Error!", "Tried to plan for experiment, but planning returned no plan results! Campaign will stop.", NotificationSeverityEnum.Error);
-      return false;
-    }
-
-    foreach(var result in planResponse.PlannedParameters)
-    {
-      var parameterPlanTarget = parameterArray.FirstOrDefault(parameter => parameter.GetPlanningMetadata()?.Name == result.ParameterName);
-
-      if(parameterPlanTarget is null)
-        continue;
-
-      parameterPlanTarget.SetResolvedValue(result.ParameterValue);
-    }
-
-    return true;
-#pragma warning restore CS0612 // Type or member is obsolete
   }
 
   /// <summary>

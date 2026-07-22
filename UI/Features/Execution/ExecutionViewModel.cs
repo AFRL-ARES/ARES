@@ -402,11 +402,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
   public void OnPlannerTransactionReceived(PlannerTransaction transaction, int currentTurn)
   {
-    if(transaction.PlanningResponse.PlannedParameters.Any())
-      foreach(var field in transaction.PlanningResponse.PlannedParameters)
-        ProcessTransactionParameterData(field, transaction, currentTurn);
-
-    else if(transaction.PlanningResponse.Plans.Any())
+    if(transaction.PlanningResponse.Plans.Any())
     {
       foreach(var plan in transaction.PlanningResponse.Plans)
       {
@@ -423,13 +419,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     var count = 0;
 
     foreach(var transaction in transactionList)
-    {
-      if(transaction.PlanningResponse.PlannedParameters.Any())
-        count++;
-
-      else
-        count += transaction.PlanningResponse.Plans.Count();
-    }
+     count += transaction.PlanningResponse.Plans.Count();
 
     return count;
   }

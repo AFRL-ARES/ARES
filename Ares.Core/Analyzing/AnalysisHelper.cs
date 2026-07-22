@@ -75,7 +75,7 @@ public class AnalysisHelper
         ExperimentOverviewId = experimentSummary.ExperimentOverview.UniqueId
       };
 
-      experimentSummary.ExperimentOverview.AnalysisOverview.Result.AddRange(analysis.Objectives);
+      experimentSummary.ExperimentOverview.AnalysisOverview.Objectives.AddRange(analysis.Objectives);
 
       _logger.LogInformation("Analysis completed {Result}", analysis.Objectives);
       await LogAnalyzerTransaction(transaction);
