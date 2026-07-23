@@ -29,7 +29,22 @@ public static class AnalysisInfoSerializeHelper
       .HasColumnType(SerializerSettingsHelper.DetermineColumnType());
   }
 
-  public static PropertyBuilder<AnalysisResponse> HasAnalysis(this PropertyBuilder<AnalysisResponse> value)
+  /// <summary>
+  /// A deprecated method used to keep compatability with older versions of ARES for now. Likely to be removed in future major version release.
+  /// </summary>
+  /// <param name="value"></param>
+  /// <returns></returns>
+  public static PropertyBuilder<Analysis> HasAnalysis(this PropertyBuilder<Analysis> value)
+  {
+    var settings = SerializerSettingsHelper.CreateCustomSerializationSettings();
+
+    return value.HasConversion(
+      v => JsonSerializer.Serialize(v, settings),
+      v => JsonSerializer.Deserialize<Analysis>(v, settings) ?? new Analysis())
+      .HasColumnType(SerializerSettingsHelper.DetermineColumnType());
+  }
+
+  public static PropertyBuilder<AnalysisResponse> HasAnalyzerResponse(this PropertyBuilder<AnalysisResponse> value)
   {
     var settings = SerializerSettingsHelper.CreateCustomSerializationSettings();
 

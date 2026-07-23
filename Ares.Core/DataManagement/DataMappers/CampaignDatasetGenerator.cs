@@ -34,7 +34,7 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
   private const string TimeResponseReceivedColumnName = "Time Response Received";
   private const string OutcomeColumnName = "Outcome";
   private const string ObjectiveStatusColumnName = "Objective Status";
-  private const string ResultColumnName = "Result";
+  private const string ResultColumnName = "Objective.Result";
   private const string InputColumnPrefix = "Input.";
   private const string OutputColumnPrefix = "Output.";
   private const string OutputColumnName = "Output";
@@ -565,7 +565,7 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     }
   }
 
-  private static AresDataRow BuildPlanRow(PlannerRecord record, dynamic? plan, int planIndex, CancellationToken cancellationToken)
+  private static AresDataRow BuildPlanRow(PlannerRecord record, Plan? plan, int planIndex, CancellationToken cancellationToken)
   {
     var transaction = record.Transaction;
     var data = new AresStruct();
@@ -574,7 +574,15 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     AddString(data, PlannerNameColumnName, transaction.PlannerName);
     AddString(data, PlannerTypeColumnName, transaction.PlannerType);
     AddString(data, PlannerVersionColumnName, transaction.PlannerVersion);
+    
+
     AddTransactionTimingFields(data, transaction.TimeRequestSent, transaction.TimeResponseReceived);
+
+    if(plan is not null)
+    {
+      AddString(data, OutcomeColumnName, plan.PlanningOutcome.ToString());
+      AddString(data, ErrorColumnName, plan.ErrorString);
+    }
 
     if(transaction.PlanningResponse is not null)
     {
@@ -621,25 +629,22 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     AddString(data, AnalyzerVersionColumnName, transaction.AnalyzerVersion);
     AddTransactionTimingFields(data, transaction.TimeRequestSent, transaction.TimeResponseReceived);
 
-    //if(transaction.AnalysisResponse is not null)
-    //{
-    //  foreach(var objective in transaction.AnalysisResponse.Objectives)
-    //    data.Fields[$"Objective.{objective.ObjectiveName}"] = objective.ObjectiveValue;
-
-    //  AddString(data, OutcomeColumnName, transaction.AnalysisResponse.AnalysisOutcome.ToString());
-    //  AddString(data, ErrorColumnName, transaction.AnalysisResponse.ErrorString);
-    //}
-
     if(transaction.AnalysisResponse is not null)
     {
       var aresValResult = AresValueHelper.CreateNumber(transaction.AnalysisResponse.Result);
       AddFlattenedValue(data, "Objective.Result", aresValResult, cancellationToken);
+
+      AddString(data, OutcomeColumnName, transaction.AnalysisResponse.AnalysisOutcome.ToString());
+      AddString(data, ErrorColumnName, transaction.AnalysisResponse.ErrorString);
     }
 
-    else if(transaction.AnalyzerResponse is not null)
+    else if(transaction.AnalyzerResponse.Objectives.Any())
     {
       foreach(var objective in transaction.AnalyzerResponse.Objectives)
         AddFlattenedValue(data, $"Objective.{objective.ObjectiveName}", objective.ObjectiveValue, cancellationToken);
+
+      AddString(data, OutcomeColumnName, transaction.AnalyzerResponse.AnalysisOutcome.ToString());
+      AddString(data, ErrorColumnName, transaction.AnalyzerResponse.ErrorString);
     }
 
     foreach(var input in transaction.AnalysisRequest?.Inputs?.Fields ?? [])
