@@ -3,17 +3,20 @@ using System;
 using AresService.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace AresService.Migrations.Postgres.Migrations
+namespace AresService.Migrations.Postgres.Migrations.AresIdentity
 {
     [DbContext(typeof(AresIdentityContext))]
-    partial class AresIdentityContextModelSnapshot : ModelSnapshot
+    [Migration("20260723132656_analyzer_map_template_fix_AresIdentityContext")]
+    partial class analyzer_map_template_fix_AresIdentityContext
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
