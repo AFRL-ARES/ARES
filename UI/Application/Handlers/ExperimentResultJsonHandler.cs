@@ -13,7 +13,7 @@ public class ExperimentResultJsonHandler : IExecutionSummaryHandler
 
   public ExperimentResultJsonHandler(IEnumerable<IDeviceStateExportStreamProvider> exportStreamProviders)
   {
-    _exportStreamProvider = exportStreamProviders.OfType<CombinedDeviceStateExportStreamProvider>().First();
+    _exportStreamProvider = exportStreamProviders.OfType<DeviceExportStreamProvider>().First();
     CampaignResultsDirectory = AresConfig.ResultsPath;
   }
 

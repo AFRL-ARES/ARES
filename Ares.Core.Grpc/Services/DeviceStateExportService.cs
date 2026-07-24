@@ -23,7 +23,7 @@ public class DeviceStateExportService : Ares.Services.DeviceStateExportService.D
 
   private Task<DeviceStateResponse> GetZippedStates(DeviceStateRequestFilter filter)
   {
-    var provider = _exportProviders.OfType<ZippedStatesExportStreamProvider>().First();
+    var provider = _exportProviders.OfType<DeviceExportStreamProvider>().First();
     return GenerateStateResponse(filter, provider);
   }
 

@@ -96,8 +96,7 @@ public static class ServiceCollectionExtensions
   {
     services.AddSingleton<StateLoggerManager>();
     services.AddSingleton<IDeviceStateStreamProvider, DeviceStateStreamProvider>();
-    services.AddSingleton<IDeviceStateExportStreamProvider, CombinedDeviceStateExportStreamProvider>();
-    services.AddSingleton<IDeviceStateExportStreamProvider, ZippedStatesExportStreamProvider>();
+    services.AddSingleton<IDeviceStateExportStreamProvider, DeviceExportStreamProvider>();
     services.AddSingleton<IDeviceStateLoggerRepository, DeviceStateLoggerRepository>();
     services.AddSingleton<IDeviceStateGetter, DeviceStateGetter>();
     services.AddSingleton<IDeviceStateLoggerFactory, AresDeviceStateLoggerFactory>();

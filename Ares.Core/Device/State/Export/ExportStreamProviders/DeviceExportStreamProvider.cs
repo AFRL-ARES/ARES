@@ -7,15 +7,13 @@ using CsvHelper.Configuration;
 namespace Ares.Core.Device.State.Export.ExportStreamProviders;
 
 /// <summary>
-/// Creates a single csv file containing all the device states
+/// Crafts a zip file of all relevant device state data
 /// </summary>
-public class CombinedDeviceStateExportStreamProvider : IDeviceStateExportStreamProvider
+public class DeviceExportStreamProvider : IDeviceStateExportStreamProvider
 {
   readonly DeviceStateDatasetGenerator _stateGetter;
 
-  public string Name => "Single File CSV Exporter";
-
-  public CombinedDeviceStateExportStreamProvider(DeviceStateDatasetGenerator dataProviders)
+  public DeviceExportStreamProvider(DeviceStateDatasetGenerator dataProviders)
   {
     _stateGetter = dataProviders;
   }
