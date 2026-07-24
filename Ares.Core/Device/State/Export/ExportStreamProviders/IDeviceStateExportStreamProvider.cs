@@ -16,11 +16,5 @@ public interface IDeviceStateExportStreamProvider
   ///         at every second from the given start time to the end time.
   ///         If start/end times are not given, the first and last timestamped state will be used</param>
   /// <returns>A stream that can be written/downloaded/etc. Not guaranteed to be at position 0.</returns>
-  public Task<ExportStateStream> Export(DeviceStateRequestFilter request);
-
-
-  /// <summary>
-  /// The name of the exporter that can be presented to the user if they had multiple exporters to pick from
-  /// </summary>
-  public string Name { get; }
+  public Task<MemoryStream> Export(DeviceStateRequestFilter request);
 }

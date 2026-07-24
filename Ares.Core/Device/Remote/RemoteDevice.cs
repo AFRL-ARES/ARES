@@ -51,8 +51,6 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
 
   public override IObservable<AresStruct> StateStream => _stateSubject.AsObservable();
   public AresStruct? CurrentState => _stateSubject.Value;
-  public AresStructSchema StateSchema { get; private set; } = new();
-
   public override async Task<List<DeviceCommandDescriptor>> GetCommandDescriptorsAsync()
   {
     return await BuildCommandDescriptorsAsync();
