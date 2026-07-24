@@ -41,11 +41,11 @@ public class ExperimentResultJsonHandler : IExecutionSummaryHandler
 
     var stream = await _exportStreamProvider.Export(filter);
     var fileName = $"{result.ExperimentId}_DeviceStates";
-    fileName = Path.ChangeExtension(fileName, stream.FileExtension);
+    fileName = Path.ChangeExtension(fileName, "zip");
     fileName = Path.Combine(destinationDirPath, fileName);
     using var fileStream = new FileStream(fileName, FileMode.OpenOrCreate);
-    await stream.Stream.CopyToAsync(fileStream);
-    await stream.Stream.DisposeAsync();
+    await stream.CopyToAsync(fileStream);
+    await stream.DisposeAsync();
   }
 
   public string CampaignResultsDirectory { get; private set; }

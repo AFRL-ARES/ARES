@@ -72,7 +72,7 @@
     }
 
     var fileName = $"{DateTime.Now}";
-    fileName = Path.ChangeExtension(fileName, ExportType.Combined.ToFileExtension());
+    fileName = Path.ChangeExtension(fileName, ".zip");
 
     using var stream = new MemoryStream(fileData);
     using var streamRef = new DotNetStreamReference(stream: stream);

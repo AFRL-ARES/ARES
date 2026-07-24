@@ -13,7 +13,7 @@ public class ZippedStatesExportStreamProvider : IDeviceStateExportStreamProvider
 
   public string Name => "Zipped Multi Device Exporter";
 
-  public async Task<ExportStateStream> Export(DeviceStateRequestFilter filter)
+  public async Task<MemoryStream> Export(DeviceStateRequestFilter filter)
   {
     var stateStreamGetters = _streamProviders.Select(provider => provider.GetStream(filter)).ToArray();
     var stateStreamsCollection = await Task.WhenAll(stateStreamGetters);
@@ -36,6 +36,6 @@ public class ZippedStatesExportStreamProvider : IDeviceStateExportStreamProvider
     }
 
     zipStream.Seek(0, SeekOrigin.Begin);
-    return new ExportStateStream(zipStream, "zip");
+    return zipStream;
   }
 }
