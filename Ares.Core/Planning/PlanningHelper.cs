@@ -176,6 +176,14 @@ public class PlanningHelper : IPlanningHelper
       if(currentAnalysis is null || currentExp is null)
         continue;
 
+      // Add values to the deprecated field for now to ensure backwards compatability
+      // TODO: REMOVE IN NEXT MAJOR VERSION OF ARES/PYARES
+      var defaultObjective = currentAnalysis.Objectives.FirstOrDefault().ObjectiveValue;
+
+      //If the objective doesn't have a number value, then the analyzer was build for running the newest system
+      if(defaultObjective.HasNumberValue)
+        planRequest.AnalysisResults.Add(defaultObjective.NumberValue);
+
       var analysisData = CreateAnalysisData(currentAnalysis, currentExp);
       planRequest.AnalysisData.Add(analysisData);
     }

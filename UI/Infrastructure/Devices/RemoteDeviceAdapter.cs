@@ -95,7 +95,7 @@ public sealed class RemoteDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
             return Task.CompletedTask;
         });
 
-        _logger.LogInformation("Started device state stream for device {}.", Name);
+        _logger.LogInformation("Started device state stream for device {name}.", Name);
         UpdateStatusIfChanged(ConnectionStatus.ConnectedToService);
 
         await _devicesClient.GetDeviceStateStream(new DeviceStateStreamRequest { DeviceId = Id, PollingSettings = _pollingSettings }, streamWriter, null);
