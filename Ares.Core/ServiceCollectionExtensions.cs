@@ -31,6 +31,7 @@ using Ares.Datamodel.Templates;
 using Microsoft.Extensions.DependencyInjection;
 using Ares.Core.Settings;
 using Ares.Core.Execution.StopConditions.PlannerLead;
+using Ares.Core.Execution.VersionChecking;
 
 
 namespace Ares.Core;
@@ -80,6 +81,7 @@ public static class ServiceCollectionExtensions
 
     services.AddSingleton<ISymbolProvider, DeviceSymbolProvider>();
     services.AddSingleton<ISymbolProvider, QuantitySymbolProvider>();
+    services.AddSingleton<IDatamodelVersionValidator, DatamodelVersionValidator>();
     services.AddSingleton<BaseEnvironmentBuilder>();
 
     services.AddSingleton<DeviceStateDatasetGenerator>();
@@ -96,8 +98,7 @@ public static class ServiceCollectionExtensions
   {
     services.AddSingleton<StateLoggerManager>();
     services.AddSingleton<IDeviceStateStreamProvider, DeviceStateStreamProvider>();
-    services.AddSingleton<IDeviceStateExportStreamProvider, CombinedDeviceStateExportStreamProvider>();
-    services.AddSingleton<IDeviceStateExportStreamProvider, ZippedStatesExportStreamProvider>();
+    services.AddSingleton<IDeviceStateExportStreamProvider, DeviceExportStreamProvider>();
     services.AddSingleton<IDeviceStateLoggerRepository, DeviceStateLoggerRepository>();
     services.AddSingleton<IDeviceStateGetter, DeviceStateGetter>();
     services.AddSingleton<IDeviceStateLoggerFactory, AresDeviceStateLoggerFactory>();

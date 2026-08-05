@@ -1,12 +1,32 @@
-﻿using Ares.Core.Notifications;
+﻿using Ares.Core.Execution.VersionChecking;
+using Ares.Core.Notifications;
 using Ares.Datamodel.Analyzing;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ares.Core.Analyzing;
-public class RemoteAnalyzerManager(IDbContextFactory<CoreDatabaseContext> _dbContextFactory, IAnalyzerRepo _analyzerRepo, INotificationHandler _notificationHandler, IAnalyzerCache _analyzerCache) : IRemoteAnalyzerManager
+public class RemoteAnalyzerManager : IRemoteAnalyzerManager
 {
+  private readonly IDbContextFactory<CoreDatabaseContext> _dbContextFactory;
+  private readonly IAnalyzerRepo _analyzerRepo;
+  private readonly INotificationHandler _notificationHandler;
+  private readonly IAnalyzerCache _analyzerCache;
+  private readonly IDatamodelVersionValidator _datamodelVersionValidator;
   private readonly List<RemoteAnalyzerMonitor> _analyzerMonitors = [];
   private static readonly string _demoAnalyzerUniqueId = "9e5a8f3b-5c7d-4a1b-9f0a-1a2b3c4d5e6f";
+
+  public RemoteAnalyzerManager(IDbContextFactory<CoreDatabaseContext> dbContextFactory, 
+    IAnalyzerRepo analyzerRepo, 
+    INotificationHandler notificationHandler, 
+    IAnalyzerCache analyzerCache,
+    IDatamodelVersionValidator datamodelVersionValidator)
+  {
+    _dbContextFactory = dbContextFactory;
+    _analyzerCache = analyzerCache;
+    _analyzerRepo = analyzerRepo;
+    _notificationHandler = notificationHandler;
+    _datamodelVersionValidator = datamodelVersionValidator;
+  }
+
 
   public async Task CreateAnalyzer(string name, string url)
   {
@@ -51,7 +71,7 @@ public class RemoteAnalyzerManager(IDbContextFactory<CoreDatabaseContext> _dbCon
       return null;
     }
 
-    var analyzer = new RemoteAnalyzer(config.Name, uri, config.UniqueId);
+    var analyzer = new RemoteAnalyzer(config.Name, uri, _datamodelVersionValidator, config.UniqueId);
 
     return analyzer;
   }

@@ -38,7 +38,9 @@ public partial class SystemSettingsViewModel : ReactiveObject
         ExperimentRetryLimit = ExperimentRetryLimit,
         RetryCooldown = new Duration() { Seconds = ExperimentRetryCooldown },
         CommandLatency = new Duration() { Seconds = CommandLatency },
-        CommandRetryLimit = CommandRetryLimit
+        CommandRetryLimit = CommandRetryLimit,
+        DisplayCompatabilityWarnings = DisplayCompatabilityWarnings,
+        DisplayDataCollectionWidget = DisplayDataCollectionWidget
       });
 
       await _notificationHandler.HandleNotification("Settings Updated!", "ARES successfully updated your settings.", NotificationSeverityEnum.Success);
@@ -66,6 +68,8 @@ public partial class SystemSettingsViewModel : ReactiveObject
       ExperimentRetryLimit = newGeneralSettings.ExperimentRetryLimit;
       CommandLatency = (int)newGeneralSettings.CommandLatency.Seconds;
       CommandRetryLimit = newGeneralSettings.CommandRetryLimit;
+      DisplayCompatabilityWarnings = newGeneralSettings.DisplayCompatabilityWarnings;
+      DisplayDataCollectionWidget = newGeneralSettings.DisplayDataCollectionWidget;
     }
   }
 
@@ -91,4 +95,10 @@ public partial class SystemSettingsViewModel : ReactiveObject
 
   [Reactive]
   public partial int CommandLatency { get; set; }
+
+  [Reactive]
+  public partial bool DisplayCompatabilityWarnings { get; set; }
+
+  [Reactive]
+  public partial bool DisplayDataCollectionWidget { get; set; }
 }

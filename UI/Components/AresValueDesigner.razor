@@ -139,43 +139,75 @@ else if(Schema?.Type is AresDataType.NumberArray)
   </RadzenFieldset>
   }
 
-  else if(Schema?.Type is AresDataType.NumberArray)
+  else if (Schema?.Type is AresDataType.Struct && Schema.StructSchema != null)
   {
+    <RadzenFieldset AllowCollapse="true" Collapsed="false" Text="@Name">
+      <RadzenStack Orientation="Orientation.Vertical" Gap="1rem">
+        @foreach (var field in Schema.StructSchema.Fields)
+        {
+          var fieldKey = field.Key;
+          var fieldSchema = field.Value;
+          
+          // Ensure we have a default state for this field
+          if (!_structValues.ContainsKey(fieldKey))
+          {
+            _structValues[fieldKey] = AresValueHelper.CreateDefault(fieldSchema.Type);
+          }
+
+          @* RECURSIVE CALL: The component renders itself! *@
+          <AresValueDesigner 
+              Name="@(string.IsNullOrEmpty(fieldSchema.Description) ? fieldKey : fieldSchema.Description)"
+              Schema="@fieldSchema"
+              Value="@_structValues[fieldKey]"
+              ValueEditCallback="@((val) => OnStructFieldChanged(fieldKey, val))" />
+        }
+      </RadzenStack>
+    </RadzenFieldset>
+  }
+
+
+  else if(Schema?.Type is AresDataType.List && Schema.ListElementSchema != null)
+  {
+    @* Lighten the summary card and make header white *@
     <RadzenFieldset AllowCollapse="true" Collapsed="true">
       <HeaderTemplate>
         <RadzenStack Orientation="Orientation.Horizontal" Gap="0.25rem">
-          <RadzenIcon Icon="data_array" /><b>@Name</b>
+          <RadzenIcon Icon="list" />
+          <b style="color: white;">@Name</b>
         </RadzenStack>
       </HeaderTemplate>
-      
+
       <ChildContent>
-        @for(var i = 0; i < _numberArray.Count; i++)
+        @for(var i = 0; i < _listValues.Count; i++)
         {
           var index = i;
-          <div class="mb-2 flex items-center">
-            @if(HasNumberChoices)
-            {
-              <RadzenDropDown TValue="double" Data="@Schema.NumberChoices.Numbers" Value="@_numberArray[index]" Change="@(value => OnNumberArrayItemChanged(value, index))" Style="width: 90%" />
-            }
-            else
-            {
-              <RadzenNumeric TValue="double" Value="@_numberArray[index]" Change="@(value => OnNumberArrayItemChanged(value, index))" Style="width: 90%" 
-                           Min="@(Schema.HasMinNumberValue ? (decimal?)Schema.MinNumberValue : null)"
-                           Max="@(Schema.HasMaxNumberValue ? (decimal?)Schema.MaxNumberValue : null)" />
-            }
-            <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(() => RemoveNumberItem(index))" />
-          </div>
+          @* Lighten the nested item card and add depth with borders and contrast *@
+          <RadzenCard class="mb-4" Style="background-color: #3a3a3a; border: 1px solid #444; border-radius: var(--rz-border-radius);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <b style="color: white;">Item @(index + 1)</b>
+              <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(() => RemoveListItem(index))" />
+            </div>
+
+          
+            @* RECURSIVE CALL: Render the item schema *@
+            <AresValueDesigner Name="@Schema.ListElementSchema.Description"
+                               Schema="@Schema.ListElementSchema"
+                               Value="@_listValues[index]"
+                               ValueEditCallback="@((val) => OnListItemChanged(index, val))" />
+          </RadzenCard>
         }
-        <RadzenButton Icon="add" Click="AddNumberItem" ButtonStyle="ButtonStyle.Secondary" />
+        <RadzenButton Icon="add" Click="AddListItem" ButtonStyle="ButtonStyle.Secondary" Text="Add Item" />
       </ChildContent>
 
       <SummaryTemplate>
-        <RadzenCard>
-          <b>@_numberArray.Count() Items</b>
+        @* Lighten the summary card *@
+        <RadzenCard class="text-white" Style="background-color: #3a3a3a;">
+          <b>@_listValues.Count Items</b>
         </RadzenCard>
       </SummaryTemplate>
     </RadzenFieldset>
   }
+
 
   else
   {
@@ -183,11 +215,20 @@ else if(Schema?.Type is AresDataType.NumberArray)
   }
 
 @code {
-  [Parameter] public AresValue? Value { get; set; }
-  [Parameter] public AresValueSchema? Schema { get; set; }
-  [Parameter] public string? Unit { get; set; }
-  [Parameter] public string? Name { get; set; }
-  [Parameter] public Func<AresValue, Task>? ValueEditCallback { get; set; }
+  [Parameter] 
+  public AresValue? Value { get; set; }
+  
+  [Parameter] 
+  public AresValueSchema? Schema { get; set; }
+  
+  [Parameter] 
+  public string? Unit { get; set; }
+  
+  [Parameter] 
+  public string? Name { get; set; }
+  
+  [Parameter] 
+  public Func<AresValue, Task>? ValueEditCallback { get; set; }
 
   private string _stringValue = string.Empty;
   private double _numberValue;
@@ -195,6 +236,8 @@ else if(Schema?.Type is AresDataType.NumberArray)
   private List<string> _stringArray = [];
   private List<double> _numberArray = [];
   private List<bool> _boolArray = [];
+  private Dictionary<string, AresValue> _structValues = new();
+  private List<AresValue> _listValues = [];
 
   // Helper properties to check for available choices
   private bool HasStringChoices => Schema?.StringChoices?.Strings?.Any() ?? false;
@@ -241,6 +284,16 @@ else if(Schema?.Type is AresDataType.NumberArray)
         break;
       case AresDataType.NumberArray:
         _numberArray = Value!.NumberArrayValue?.Numbers?.ToList() ?? [];
+        break;
+
+      case AresDataType.Struct:
+        // Safely extract existing struct fields into our dictionary
+        _structValues = Value!.StructValue?.Fields?.ToDictionary(k => k.Key, v => v.Value) ?? new();
+        break;
+        
+      case AresDataType.List:
+        // Assuming your Protobuf defines AresValueList containing a repeated AresValue
+        _listValues = Value!.ListValue?.Values?.ToList() ?? new();
         break;
     }
   }
@@ -313,9 +366,11 @@ else if(Schema?.Type is AresDataType.NumberArray)
       case AresDataType.String:
         aresValue.StringValue = _stringValue;
         break;
+
       case AresDataType.Number:
         aresValue.NumberValue = _numberValue;
         break;
+
       case AresDataType.Quantity:
         aresValue.QuantityValue = new QuantityValue
         {
@@ -324,18 +379,36 @@ else if(Schema?.Type is AresDataType.NumberArray)
           Unit = Unit ?? Schema?.QuantitySchema?.BoundsUnit ?? string.Empty
         };
         break;
+
       case AresDataType.Boolean:
         aresValue.BoolValue = _boolValue;
         break;
+
       case AresDataType.StringArray:
         var strArray = new StringArray();
         strArray.Strings.AddRange(_stringArray);
         aresValue.StringArrayValue = strArray;
         break;
+
       case AresDataType.NumberArray:
         var numArray = new NumberArray();
         numArray.Numbers.AddRange(_numberArray);
         aresValue.NumberArrayValue = numArray;
+        break;
+
+      case AresDataType.Struct:
+        var aresStruct = new AresStruct();
+        foreach(var kvp in _structValues)
+        {
+          aresStruct.Fields[kvp.Key] = kvp.Value;
+        }
+        aresValue.StructValue = aresStruct;
+        break;
+        
+      case AresDataType.List:
+        var aresList = new AresValueList();
+        aresList.Values.AddRange(_listValues);
+        aresValue.ListValue = aresList;
         break;
     }
     // Invoke the callback with the newly constructed AresValue object.
@@ -417,5 +490,38 @@ else if(Schema?.Type is AresDataType.NumberArray)
       return $"Value must be no more than {Schema.QuantitySchema.MaxScalarValue}.";
           
     return "Invalid value.";
+  }
+
+  private Task OnStructFieldChanged(string key, AresValue newValue)
+  {
+    _structValues[key] = newValue;
+    return UpdateAresValue();
+  }
+
+  private Task OnListItemChanged(int index, AresValue newValue)
+  {
+    if(index >= 0 && index < _listValues.Count)
+    {
+      _listValues[index] = newValue;
+    }
+    return UpdateAresValue();
+  }
+
+  private void AddListItem()
+  {
+    if(Schema?.ListElementSchema != null)
+    {
+      _listValues.Add(AresValueHelper.CreateDefault(Schema.ListElementSchema.Type));
+      UpdateAresValue();
+    }
+  }
+
+  private void RemoveListItem(int index)
+  {
+    if(index >= 0 && index < _listValues.Count)
+    {
+      _listValues.RemoveAt(index);
+      UpdateAresValue();
+    }
   }
 }

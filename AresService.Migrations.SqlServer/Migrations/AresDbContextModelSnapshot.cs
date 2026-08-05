@@ -17,7 +17,7 @@ namespace AresService.Migrations.SqlServer.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.8")
+                .HasAnnotation("ProductVersion", "10.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -291,6 +291,16 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
+
+                    b.Property<bool>("DisplayCompatabilityWarnings")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("DisplayDataCollectionWidget")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
 
                     b.Property<int>("ExperimentRetryLimit")
                         .HasColumnType("int");
@@ -1500,6 +1510,9 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("AnalyzerId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("AnalyzerMaps")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid?>("CampaignCloseoutId")

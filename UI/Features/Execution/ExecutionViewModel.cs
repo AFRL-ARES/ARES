@@ -28,7 +28,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   private readonly AutomationService _automationClient;
   private readonly AnalyzerService _analyzerService;
   public readonly ObservableCollection<CampaignTemplateSummary> CampaignTemplateSummaries = [];
-  private readonly INotificationReceivingService _notificationService;
+  private readonly IUiNotificationService _notificationService;
   private readonly IExecutionReportStore _executionReportStore;
   private readonly IAresDeviceProvider _deviceProvider;
   public event Action? StateChanged;
@@ -38,7 +38,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
   public ExecutionViewModel(AutomationService automationClient,
     IConfiguration configuration,
-    INotificationReceivingService notificationService,
+    IUiNotificationService notificationService,
     AnalyzerService analyzerService,
     IExecutionReportStore executionReportStore,
     IAresDeviceProvider deviceProvider)
@@ -205,15 +205,14 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
     if(!executionEligibility.IsEligible)
     {
-      var notification = new AresNotification
+      var notification = new UiNotificationMessage
       {
-        NotificationSeverity = Severity.Error,
-        Title = "Campaign Could Not Be Started!",
-        Message = $"ARES failed to start the requested campaign: {executionEligibility.Error}",
-        Timestamp = DateTime.UtcNow.ToTimestamp()
+        Severity = UiNotificationSeverity.Error,
+        Summary = "Campaign Could Not Be Started!",
+        Detail = $"ARES failed to start the requested campaign: {executionEligibility.Error}"
       };
 
-      _notificationService.PushNotification(notification);
+      _notificationService.Notify(notification);
       return;
     }
 
@@ -269,28 +268,26 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     }
     catch(Exception ex)
     {
-      var notification = new AresNotification
+      var notification = new UiNotificationMessage
       {
-        NotificationSeverity = Severity.Error,
-        Title = "Failed to Upload Experiment Notes",
-        Message = $"ARES failed to read the uploaded experiment notes file. {ex.Message}",
-        Timestamp = DateTime.UtcNow.ToTimestamp()
+        Severity = UiNotificationSeverity.Error,
+        Summary = "Failed to Upload Experiment Notes",
+        Detail = $"ARES failed to read the uploaded experiment notes file. {ex.Message}"
       };
 
-      _notificationService.PushNotification(notification);
+      _notificationService.Notify(notification);
     }
   }
 
   public Task RequestUserConfirmation()
   {
-    var notification = new AresNotification();
-    notification.NotificationSeverity = Severity.Info;
-    notification.Title = "User Confirmation Required to Proceed";
-    notification.Message = $"ARES has paused it's current experiment awaiting user input. Press the play button to continue experimenting.";
-    notification.Timestamp = DateTime.UtcNow.ToTimestamp();
-    notification.Loiter = true;
+    var notification = new UiNotificationMessage();
+    notification.Severity = UiNotificationSeverity.Info;
+    notification.Summary = "User Confirmation Required to Proceed";
+    notification.Detail = $"ARES has paused it's current experiment awaiting user input. Press the play button to continue experimenting.";
+    notification.CloseOnClick = true;
 
-    _notificationService.PushNotification(notification);
+    _notificationService.Notify(notification);
 
     return Task.CompletedTask;
   }
@@ -303,12 +300,14 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
     if(AvailableTags.Any(t => t.TagName == NewTagName))
     {
-      var notification = new AresNotification();
-      notification.NotificationSeverity = Severity.Info;
-      notification.Title = $"Could Not Add {NewTagName} Tag";
-      notification.Message = "ARES could not add a new experiment tag because it matched one that already existed!";
-      notification.Timestamp = DateTime.UtcNow.ToTimestamp();
-      _notificationService.PushNotification(notification);
+      var notification = new UiNotificationMessage
+      {
+        Severity = UiNotificationSeverity.Info,
+        Summary = $"Could Not Add {NewTagName} Tag",
+        Detail = "ARES could not add a new experiment tag because it matched one that already existed!"
+      };
+
+      _notificationService.Notify(notification);
       return;
     }
 
@@ -320,26 +319,26 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
     if(tags.AvailableTags.Count == currentTagCount + 1)
     {
-      var notification = new AresNotification
+      var notification = new UiNotificationMessage
       {
-        NotificationSeverity = Severity.Success,
-        Title = $"Successfully Added {NewTagName} Tag",
-        Message = "ARES has successfully added a new experiment tag, and it is now available for use",
-        Timestamp = DateTime.UtcNow.ToTimestamp()
+        Severity = UiNotificationSeverity.Success,
+        Summary = $"Successfully Added {NewTagName} Tag",
+        Detail = "ARES has successfully added a new experiment tag, and it is now available for use"
       };
-      _notificationService.PushNotification(notification);
+
+      _notificationService.Notify(notification);
     }
 
     else
     {
-      var notification = new AresNotification
+      var notification = new UiNotificationMessage
       {
-        NotificationSeverity = Severity.Error,
-        Title = $"Failed to Add {NewTagName} Tag",
-        Message = "ARES failed to add a new experiment tag",
-        Timestamp = DateTime.UtcNow.ToTimestamp()
+        Severity = UiNotificationSeverity.Error,
+        Summary = $"Failed to Add {NewTagName} Tag",
+        Detail = "ARES failed to add a new experiment tag"
       };
-      _notificationService.PushNotification(notification);
+
+      _notificationService.Notify(notification);
     }
 
     AvailableTags = tags.AvailableTags.ToList();

@@ -1,27 +1,24 @@
 using Ares.Services;
 using Ares.Core.Grpc.Services.Notifications;
 using Google.Protobuf.WellKnownTypes;
-using NuGet.Packaging;
 using UI.Application.Notifications;
 using UI.Infrastructure.Grpc;
+using Radzen;
 
 namespace UI.Infrastructure.Notifications;
 
 public class NotificationReceivingService : INotificationReceivingService
 {
   private readonly AresNotificationService _notificationClient;
-  private readonly IUiNotificationService _uiNotificationService;
-  private readonly INotificationRepository _notificationRepo;
+  private readonly INotificationRepo _notificationRepo;
+  private readonly NotificationService _radzenNotificationService;
   public event Action<UiNotificationMessage>? OnNotificationReceived;
 
-  public NotificationReceivingService(
-    AresNotificationService notificationClient,
-    IUiNotificationService uiNotificationService,
-    INotificationRepository notificationRepo)
+  public NotificationReceivingService(AresNotificationService notificationClient, INotificationRepo notificationRepo, NotificationService radzenNotificationService)
   {
     _notificationClient = notificationClient;
-    _uiNotificationService = uiNotificationService;
     _notificationRepo = notificationRepo;
+    _radzenNotificationService = radzenNotificationService;
     _ = GetLatestNotificationHistory();
   }
 
@@ -44,11 +41,22 @@ public class NotificationReceivingService : INotificationReceivingService
             Detail = notification.Message,
             Severity = ConvertToUiSeverity(notification.NotificationSeverity),
             DurationMs = DetermineDisplayTime(notification.NotificationSeverity, notification.Loiter),
-            CloseOnClick = notification.NotificationSeverity == Severity.Danger
+            CloseOnClick = notification.NotificationSeverity == Severity.Danger,
           };
 
-          //_uiNotificationService.Notify(userNotification);
-          _notificationRepo.Add(notification);
+          var radzenNotification = new NotificationMessage
+          {
+            Summary = notification.Title,
+            Detail = notification.Message,
+            Severity = ConvertToRadzenSeverity(notification.NotificationSeverity),
+            CloseOnClick = notification.NotificationSeverity == Severity.Danger,
+            Duration = DetermineDisplayTime(notification.NotificationSeverity, notification.Loiter)
+          };
+
+          //Add to the repo
+          _notificationRepo.AddOrUpdate(notification);
+          //Pass to Radzen (for popup toast)
+          _radzenNotificationService.Notify(radzenNotification);
           OnNotificationReceived?.Invoke(userNotification);
         }
       }
@@ -57,28 +65,6 @@ public class NotificationReceivingService : INotificationReceivingService
         Console.WriteLine($"Error receiving notifications: {ex.Message}");
       }
     });
-  }
-
-  public void PushNotification(AresNotification notification)
-  {
-    notification.Title ??= string.Empty;
-    notification.Message ??= string.Empty;
-
-    var uiNotification = new UiNotificationMessage
-    {
-      Summary = notification.Title,
-      Detail = notification.Message,
-      Severity = ConvertToUiSeverity(notification.NotificationSeverity),
-      DurationMs = DetermineDisplayTime(notification.NotificationSeverity, notification.Loiter),
-      CloseOnClick = true
-    };
-
-    if(notification.Timestamp is null)
-      notification.Timestamp = DateTime.UtcNow.ToTimestamp();
-
-    //_uiNotificationService.Notify(uiNotification);
-    _notificationRepo.Add(notification);
-    OnNotificationReceived?.Invoke(uiNotification);
   }
 
   public async Task GetLatestNotificationHistory()
@@ -114,6 +100,17 @@ public class NotificationReceivingService : INotificationReceivingService
       Severity.Warning => UiNotificationSeverity.Warning,
       Severity.Danger => UiNotificationSeverity.Error,
       _ => UiNotificationSeverity.Info
+    };
+  }
+
+  private static NotificationSeverity ConvertToRadzenSeverity(Severity severity)
+  {
+    return severity switch
+    {
+      Severity.Error => NotificationSeverity.Error,
+      Severity.Success => NotificationSeverity.Success,
+      Severity.Warning => NotificationSeverity.Warning,
+      _ => NotificationSeverity.Info
     };
   }
 }

@@ -718,18 +718,51 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
 
   private static IEnumerable<(Parameter, string)> CleanParametersOfDuplicateNames(ExperimentExecutionSummary experiment, CancellationToken cancellationToken)
   {
-    var rawParameters = experiment.ExperimentOverview?.Parameters ?? Enumerable.Empty<Parameter>();
+    var stepTemplates = experiment.ExperimentOverview?.Template?.StepTemplates ?? Enumerable.Empty<StepTemplate>();
+    var globalParameters = experiment.ExperimentOverview?.Parameters ?? Enumerable.Empty<Parameter>();
 
-    var orderedParameters = rawParameters
-        .Select(p => new { Parameter = p, BaseName = GetParameterColumnName(p) })
+    var hierarchicalParameters = stepTemplates
+        .OrderBy(step => step.Index)
+        .SelectMany(step => step.CommandTemplates
+            .OrderBy(cmd => cmd.Index)
+            .SelectMany(cmd => cmd.ArgumentBindings
+                .Select((param, paramIndex) => new
+                {
+                  Parameter = param,
+                  BaseName = GetParameterColumnName(param),
+                  StepIndex = step.Index,
+                  CommandIndex = cmd.Index,
+                  BindingIndex = (long)paramIndex
+                })))
+        .ToList();
+
+    var structuredParamSet = new HashSet<Parameter>(hierarchicalParameters.Select(x => x.Parameter));
+
+    var unstructuredParameters = globalParameters
+        .Where(p => !structuredParamSet.Contains(p))
+        .Select((param, index) => new
+        {
+          Parameter = param,
+          BaseName = GetParameterColumnName(param),
+          StepIndex = -1L,
+          CommandIndex = -1L,
+          BindingIndex = (long)index
+        });
+
+    var finalOrderedParameters = hierarchicalParameters
+        .Concat(unstructuredParameters)
         .OrderBy(x => x.BaseName)
+        .ThenBy(x => x.StepIndex)
+        .ThenBy(x => x.CommandIndex)
+        .ThenBy(x => x.BindingIndex)
         .ToList();
 
     var seenNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
     var uniqueParameters = new List<(Parameter Parameter, string UniqueName)>();
 
-    foreach(var item in orderedParameters)
+    foreach(var item in finalOrderedParameters)
     {
+      cancellationToken.ThrowIfCancellationRequested();
       string uniqueName = item.BaseName;
       int suffix = 1;
 

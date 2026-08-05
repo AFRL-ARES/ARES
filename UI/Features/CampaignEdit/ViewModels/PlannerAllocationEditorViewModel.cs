@@ -11,14 +11,14 @@ namespace UI.Features.CampaignEdit.ViewModels;
 public partial class PlannerAllocationEditorViewModel : ReactiveObject
 {
   private readonly PlannerService _plannerClient;
-  private readonly INotificationReceivingService _notificationService;
+  private readonly IUiNotificationService _notificationService;
   private PlannerServiceInfo? _selectedAdapter;
 
   public PlannerAllocationEditorViewModel(ParameterMetadata metadata,
     PlannerServiceInfo? plannerInfo,
     IEnumerable<PlannerServiceInfo> plannerAdapters,
     PlannerService plannerClient,
-    INotificationReceivingService notificationService)
+    IUiNotificationService notificationService)
   {
     var plannerArray = plannerAdapters.ToArray();
 
@@ -72,12 +72,13 @@ public partial class PlannerAllocationEditorViewModel : ReactiveObject
 
     else
     {
-      var notification = new AresNotification();
-      notification.Title = "Assigned Planner Unavailable!";
-      notification.Message = $"This template uses a planner that ARES no longer has a connection with. The template won't be usable until this is resolved.";
-      notification.NotificationSeverity = Severity.Warning;
-      notification.Loiter = true;
-      _notificationService.PushNotification(notification);
+      var notification = new UiNotificationMessage();
+      notification.Summary = "Assigned Planner Unavailable!";
+      notification.Detail = $"This template uses a planner that ARES no longer has a connection with. The template won't be usable until this is resolved.";
+      notification.Severity = UiNotificationSeverity.Warning;
+      notification.CloseOnClick = true;
+
+      _notificationService.Notify(notification);
     }
   }
 

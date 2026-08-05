@@ -1,14 +1,17 @@
 using Ares.Services;
 using ReactiveUI;
 using UI.Application.Notifications;
+using UI.Infrastructure.Notifications;
 
 namespace UI.Features.Notifications;
 
-public class NotificationHistoryViewModel : ReactiveObject
+public partial class NotificationHistoryViewModel : ReactiveObject
 {
-  public NotificationHistoryViewModel(INotificationRepository notificationRepo)
+  private readonly INotificationProvider _notificationProvider;
+
+  public NotificationHistoryViewModel(INotificationProvider notificationProvider)
   {
-    NotificationRepo = notificationRepo;
+   _notificationProvider = notificationProvider;
   }
 
   public string ConvertSeverityToCssClass(Severity severity)
@@ -56,13 +59,23 @@ public class NotificationHistoryViewModel : ReactiveObject
     }
   }
 
-  public INotificationRepository NotificationRepo { get; set; }
+
+  public void MarkAllAsRead()
+  {
+    _notificationProvider.MarkAllAsRead();
+
+    this.RaisePropertyChanged(nameof(Notifications));
+    this.RaisePropertyChanged(nameof(HasUnreadNotifications));
+  }
+
   public bool DisplayAllNotifications { get; set; } = true;
   public bool DisplayErrorNotifications { get; set; } = true;
   public bool DisplayWarningNotifications { get; set; } = true;
   public bool DisplayInfoNotifications { get; set; } = true;
   public bool DisplaySuccessNotifications { get; set; } = true;
   public int NotificationSortMethod { get; set; } = 0;
+  public bool HasUnreadNotifications => _notificationProvider.HasUnread();
+  public IReadOnlyCollection<AresNotification> Notifications => _notificationProvider.GetAllNotifications();
 }
 
 

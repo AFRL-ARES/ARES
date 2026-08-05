@@ -12,6 +12,8 @@ internal class GeneralSettingsEntityConfiguration : AresEntityTypeBaseConfigurat
     base.Configure(builder);
     builder.Property(b => b.CommandLatency).HasDuration();
     builder.Property(b => b.RetryCooldown).HasDuration();
+    builder.Property(b => b.DisplayCompatabilityWarnings).HasDefaultValue(true);
+    builder.Property(b => b.DisplayDataCollectionWidget).HasDefaultValue(true);
 
     builder.ToTable("AresGeneralSettingsConfig");
   }
