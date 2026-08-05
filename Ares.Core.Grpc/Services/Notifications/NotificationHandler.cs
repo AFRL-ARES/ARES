@@ -15,14 +15,16 @@ public class NotificationHandler : INotificationHandler
     _notificationService = notificationService;
   }
 
-  public async Task HandleNotification(string title, string message, NotificationSeverityEnum severity)
+  public async Task HandleNotification(string title, string message, NotificationSeverityEnum severity, bool loiter = false)
   {
     var notification = new AresNotification
     {
       Title = title,
       Message = message,
       NotificationSeverity = NotificationSeverityConverter(severity),
-      Timestamp = DateTime.UtcNow.ToTimestamp()
+      Timestamp = DateTime.UtcNow.ToTimestamp(),
+      Loiter = loiter,
+      UniqueId = Guid.NewGuid().ToString()
     };
 
     await _notificationService.SendNotification(notification);

@@ -37,6 +37,16 @@
               </RadzenFormField>
               <RadzenIcon Icon="help_outline" MouseEnter="@(args => ShowCommandLatencyTooltip(args, new TooltipOptions { Duration = null }))" Style="padding-top: 1.5rem" />
             </RadzenStack>
+            <RadzenStack Gap="1rem" Orientation="Orientation.Horizontal" Style="padding: 0.5rem">
+              <RadzenLabel Text="Display Compatibility Warnings" />
+              <RadzenSwitch @bind-Value="ViewModel!.DisplayCompatabilityWarnings" Style="align-self: center" />
+              <RadzenIcon Icon="help_outline" MouseEnter="@(args => ShowDisplayCompatabilityWarningsTooltip(args, new TooltipOptions { Duration = null }))" />
+            </RadzenStack>
+            <RadzenStack Gap="1rem" Orientation="Orientation.Horizontal" Style="padding: 0.5rem">
+              <RadzenLabel Text="Display Data Collection Widget" />
+              <RadzenSwitch @bind-Value="ViewModel!.DisplayDataCollectionWidget" Style="align-self: center"/>
+              <RadzenIcon Icon="help_outline" MouseEnter="@(args => ShowDisplayDataCollectionWidgetTooltip(args, new TooltipOptions { Duration = null }))" />
+            </RadzenStack>
           </RadzenCard>
         </RadzenTabsItem>
         <RadzenTabsItem Text="Error Handling" Icon="error_outline">
@@ -89,5 +99,6 @@
   void ShowCommandRetryLimitTooltip(ElementReference elementReference, TooltipOptions options = null) => tooltipService.Open(elementReference, "Sets the max times ARES will retry a failing command", options);
   void ShowRetryCooldownTooltip(ElementReference elementReference, TooltipOptions options = null) => tooltipService.Open(elementReference, "Sets the a cooldown value, in seconds, on how long ARES waits to re-attempt failed commands", options);
   void ShowCommandLatencyTooltip(ElementReference elementReference, TooltipOptions options = null) => tooltipService.Open(elementReference, "Sets whether a universal latency should be applied, in seconds, between commands (i.e. a one second universal latency results in a constant one second delay between commands being executed)", options);
-
+  void ShowDisplayCompatabilityWarningsTooltip(ElementReference elementReference, TooltipOptions options = null) => tooltipService.Open(elementReference, "Sets whether ARES will notify you of potential compatibility issues with external ARES services. This will not prevent notification when a major version mismatch is present.", options);
+  void ShowDisplayDataCollectionWidgetTooltip(ElementReference elementReference, TooltipOptions options = null) => tooltipService.Open(elementReference, "Sets whether the data collection widget is displayed on the ARES dashboard", options);
 }

@@ -40,7 +40,8 @@ else
     var result = await DialogService.OpenAsync("New Analyzer", ds =>
       @<AnalyzerConfigEditView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)" />);
 
-    var notification = new AresNotification();
+    var notification = new UiNotificationMessage();
+
     if (result is true)
     {
       SavingInProgress = true;
@@ -51,10 +52,10 @@ else
       }
       catch (Grpc.Core.RpcException e)
       {
-        notification.Title = $"Failed to add Analyzer {viewModel.Name}";
-        notification.Message = $"ARES was unable to add {viewModel.Name} as an available analyzer. {e.Message}";
-        notification.NotificationSeverity = Severity.Error;
-        notification.Timestamp = DateTime.UtcNow.ToTimestamp();
+        notification.Summary = $"Failed to add Analyzer {viewModel.Name}";
+        notification.Detail = $"ARES was unable to add {viewModel.Name} as an available analyzer. {e.Message}";
+        notification.Severity = UiNotificationSeverity.Error;
+        
         ViewModel!.PushNotification(notification);
       }
       finally

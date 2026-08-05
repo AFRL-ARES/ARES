@@ -1,4 +1,5 @@
-﻿using Ares.Datamodel;
+﻿using Ares.Core.Execution.VersionChecking;
+using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Analyzing.Remote;
 using Ares.Datamodel.Connection;
@@ -14,17 +15,21 @@ public class RemoteAnalyzer : AnalyzerBase
   private readonly GrpcChannel _channel;
   private AnalyzerCapabilities _capabilities = new();
   private AresStructSchema _parameters = new();
+  private Metadata? _latestReportedMetadata = null;
+  private IDatamodelVersionValidator _datamodelVersionValidator;
 
-  public RemoteAnalyzer(string name, Uri address, string id) : base(name, "", "_._._", id)
+  public RemoteAnalyzer(string name, Uri address, IDatamodelVersionValidator datamodelVersionValidator, string id) : base(name, "", "_._._", id)
   {
     _channel = GrpcChannel.ForAddress(address);
     Address = address;
+    _datamodelVersionValidator = datamodelVersionValidator;
   }
 
-  public RemoteAnalyzer(string name, Uri address) : base(name, "", "_._._")
+  public RemoteAnalyzer(string name, Uri address, IDatamodelVersionValidator datamodelVersionValidator) : base(name, "", "_._._")
   {
     _channel = GrpcChannel.ForAddress(address);
     Address = address;
+    _datamodelVersionValidator = datamodelVersionValidator;
   }
 
   public Uri Address { get; }
@@ -85,6 +90,7 @@ public class RemoteAnalyzer : AnalyzerBase
   public override async Task Init()
   {
     await UpdateInfo();
+    await VerifyDatamodelCompatability();
     await UpdateState();
     await UpdateParameters();
     await UpdateCapabilities();
@@ -95,7 +101,9 @@ public class RemoteAnalyzer : AnalyzerBase
     var client = GetClient();
     try
     {
-      var info = await client.GetInfoAsync(new Empty());
+      var call = client.GetInfoAsync(new Empty());
+      _latestReportedMetadata = await call.ResponseHeadersAsync;
+      var info = await call.ResponseAsync;
       Type = info.Name;
       Version = info.Version;
       Description = info.Description;
@@ -194,6 +202,14 @@ public class RemoteAnalyzer : AnalyzerBase
     Version = info.Version;
     _capabilities = info.Capabilities;
     await UpdateCapabilities();
+  }
+
+  internal async Task VerifyDatamodelCompatability()
+  {
+    if(_latestReportedMetadata is null)
+      return;
+
+    await _datamodelVersionValidator.CheckDatamodelVersionValidity(_latestReportedMetadata, Name);
   }
 
   private AresRemoteAnalyzerService.AresRemoteAnalyzerServiceClient GetClient()

@@ -54,11 +54,11 @@
     {
       await ViewModel!.Save();
       StateHasChanged();
-      var notification = new AresNotification();
-      notification.Message = $"ARES successfully saved the request changes to {ViewModel!.Name}'s settings.";
-      notification.Title = "Successfully Updated Analyzer Settings";
-      notification.NotificationSeverity = Severity.Success;
-      notification.Timestamp = DateTime.UtcNow.ToTimestamp();
+      var notification = new UiNotificationMessage();
+      notification.Detail = $"ARES successfully saved the request changes to {ViewModel!.Name}'s settings.";
+      notification.Summary = "Successfully Updated Analyzer Settings";
+      notification.Severity = UiNotificationSeverity.Success;
+
       ViewModel!.PushNotification(notification);
     }
   }

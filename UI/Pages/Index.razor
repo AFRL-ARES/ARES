@@ -1,4 +1,5 @@
 @page "/"
+@using Ares.Core.Settings
 @using Ares.Toolkit.Device.UI
 @using Components
 @using Microsoft.AspNetCore.Components.Web
@@ -9,14 +10,19 @@
 
 @inject IJSRuntime JS
 @inject IDeviceControlViewModelRepo ViewModelRepo
+@inject ISystemSettingsManager SettingsManager 
 @implements IAsyncDisposable
 
 <PageTitle>Dashboard</PageTitle>
 
 <div class="d-flex flex-column gap-2">
-  <div class="d-flex gap-2">
-    <ManualDeviceLoggerWidget />
-  </div>
+  @if(_shouldDisplayManualWidget)
+  {
+    <div class="d-flex gap-2">
+      <ManualDeviceLoggerWidget />
+    </div>
+  }
+
 
   <div class="grid-stack @(_isReady ? "dashboard-ready" : "")" id="my-dashboard">
     @foreach(var viewModel in ViewModelRepo.Items)
@@ -42,6 +48,7 @@
 
   private bool _isReady = false;
   private Dictionary<string, Dictionary<string, object>> _cachedViewArgs = new();
+  private bool _shouldDisplayManualWidget = true;
 
   private Dictionary<string, object> GetOrCreateArgs(IDeviceUnitControlViewModel vm)
   {
@@ -74,6 +81,20 @@
       {
         await _module.InvokeVoidAsync("refreshGrid", "my-dashboard");
       }
+    }
+
+    await UpdateManualWidgetDisplaySetting();
+  }
+
+  private async Task UpdateManualWidgetDisplaySetting()
+  {
+    var currentSettings = await SettingsManager.GetAresGeneralSettings();
+    var newValue = currentSettings?.DisplayDataCollectionWidget ?? true;
+
+    if(_shouldDisplayManualWidget != newValue)
+    {
+      _shouldDisplayManualWidget = newValue;
+      StateHasChanged();
     }
   }
 

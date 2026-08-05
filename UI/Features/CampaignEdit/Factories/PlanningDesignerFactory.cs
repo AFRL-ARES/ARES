@@ -11,9 +11,9 @@ namespace UI.Features.CampaignEdit.Factories;
 public class PlanningDesignerFactory
 {
   private readonly PlannerService _client;
-  private readonly INotificationReceivingService _notificationService;
+  private readonly IUiNotificationService _notificationService;
 
-  public PlanningDesignerFactory(PlannerService client, INotificationReceivingService notificationService)
+  public PlanningDesignerFactory(PlannerService client, IUiNotificationService notificationService)
   {
     _client = client;
     _notificationService = notificationService;

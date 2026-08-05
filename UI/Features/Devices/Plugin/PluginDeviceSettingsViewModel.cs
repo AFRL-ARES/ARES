@@ -18,13 +18,13 @@ public partial class PluginDeviceSettingsViewModel : ReactiveObject
   private readonly DeviceConfig _deviceConfig;
   private readonly DevicesService _devicesService;
   private readonly IAresDeviceProvider _deviceProvider;
-  private readonly INotificationReceivingService _notificationService;
+  private readonly IUiNotificationService _notificationService;
 
   public PluginDeviceSettingsViewModel(DeviceConfig deviceConfig, 
     DeviceDriver driver, 
     DevicesService devicesService,
     IAresDeviceProvider deviceProvider,
-    INotificationReceivingService notificationService,
+    IUiNotificationService notificationService,
     Func<Task> onRemoveCallback)
   {
     _deviceConfig = deviceConfig;
@@ -57,22 +57,22 @@ public partial class PluginDeviceSettingsViewModel : ReactiveObject
 
     if(response.Success)
     {
-      PushNotification(new AresNotification
+      PushNotification(new UiNotificationMessage
       {
-        Title = "Device Update",
-        Message = $"Device {deviceConfig.DeviceName} updated successfully.",
-        NotificationSeverity = Severity.Success
+        Summary = "Device Update",
+        Detail = $"Device {deviceConfig.DeviceName} updated successfully.",
+        Severity = UiNotificationSeverity.Success
       });
 
     }
 
     else
     {
-      PushNotification(new AresNotification
+      PushNotification(new UiNotificationMessage
       {
-        Title = "Device Update Failed",
-        Message = $"Device {deviceConfig.DeviceName} failed to update: {response.ErrorMessage}",
-        NotificationSeverity = Severity.Error
+        Summary = "Device Update Failed",
+        Detail = $"Device {deviceConfig.DeviceName} failed to update: {response.ErrorMessage}",
+        Severity = UiNotificationSeverity.Error
       });
     }
   }
@@ -100,33 +100,33 @@ public partial class PluginDeviceSettingsViewModel : ReactiveObject
       if(Device is not null)
         await Device.UpdateSettings(Settings);
 
-      var successNotification = new AresNotification()
+      var successNotification = new UiNotificationMessage
       {
-        Title = "Update Device Settings",
-        Message = $"ARES successfully updated the settings for {Device?.Name}!",
-        NotificationSeverity = Severity.Success
+        Summary = "Update Device Settings",
+        Detail = $"ARES successfully updated the settings for {Device?.Name}!",
+        Severity = UiNotificationSeverity.Success
       };
 
-      _notificationService.PushNotification(successNotification);
+      _notificationService.Notify(successNotification);
     }
 
     catch(Exception ex)
     {
-      var failedNotification = new AresNotification 
-      { 
-        Title = "Failed to Update Settings", 
-        Message = $"ARES failed to update the settings for {Device?.Name}. Reason: {ex.Message}", 
-        NotificationSeverity = Severity.Warning 
+      var failedNotification = new UiNotificationMessage
+      {
+        Summary = "Failed to Update Settings",
+        Detail = $"ARES failed to update the settings for {Device?.Name}. Reason: {ex.Message}", 
+        Severity = UiNotificationSeverity.Warning 
       };
 
-      _notificationService.PushNotification(failedNotification);
+      _notificationService.Notify(failedNotification);
     }
   }
 
   public AresValue? GetMatchingSettingValue(string key)
   => Settings?.Fields.FirstOrDefault(f => f.Key == key).Value ?? null;
 
-  private void PushNotification(AresNotification notification) => _notificationService.PushNotification(notification);
+  private void PushNotification(UiNotificationMessage notification) => _notificationService.Notify(notification);
 
   public PluginDeviceConfigEditViewModel EditViewModel { get; }
 

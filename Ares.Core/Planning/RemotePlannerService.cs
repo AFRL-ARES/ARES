@@ -1,9 +1,9 @@
-﻿using Ares.Datamodel;
+﻿using Ares.Core.Execution.VersionChecking;
+using Ares.Datamodel;
 using Ares.Datamodel.Connection;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Planning;
 using Ares.Datamodel.Planning.Remote;
-using Ares.Datamodel.Templates;
 using DynamicData;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
@@ -15,23 +15,28 @@ public class RemotePlannerService : PlannerServiceBase
 {
   private readonly GrpcChannel _channel;
   private PlannerServiceCapabilities _capabilities = new();
+  private readonly IDatamodelVersionValidator _versionValidator;
+  private Metadata? _latestMetadata = null;
 
-  public RemotePlannerService(string name, Uri address, string id) : base(name, "", "_._._", id)
+  public RemotePlannerService(string name, Uri address, string id, IDatamodelVersionValidator versionValidator) : base(name, "", "_._._", id)
   {
     _channel = GrpcChannel.ForAddress(address);
     Address = address;
+    _versionValidator = versionValidator;
   }
 
-  public RemotePlannerService(string name, Uri address) : base(name, "", "_._._")
+  public RemotePlannerService(string name, Uri address, IDatamodelVersionValidator versionValidator) : base(name, "", "_._._")
   {
     _channel = GrpcChannel.ForAddress(address);
     Address = address;
+    _versionValidator = versionValidator;
   }
 
   public override async Task Init()
   {
-    await UpdateState();
     await UpdateInfo();
+    await VerifyDatamodelCompatability();
+    await UpdateState();
     await UpdateCapabilities();
   }
 
@@ -83,7 +88,9 @@ public class RemotePlannerService : PlannerServiceBase
     var client = GetClient();
     try
     {
-      _capabilities = await client.GetPlannerServiceCapabilitiesAsync(new Empty());
+      using var call = client.GetPlannerServiceCapabilitiesAsync(new Empty());
+      _latestMetadata = await call.ResponseHeadersAsync;
+      _capabilities = await call.ResponseAsync;
     }
 
     catch(RpcException)
@@ -175,6 +182,14 @@ public class RemotePlannerService : PlannerServiceBase
     Version = info.Version;
     _capabilities = info.Capabilities;
     await UpdateCapabilities();
+  }
+
+  internal async Task VerifyDatamodelCompatability()
+  {
+    if(_latestMetadata is null)
+      return;
+
+    await _versionValidator.CheckDatamodelVersionValidity(_latestMetadata, Name);
   }
 
   public Uri Address { get; }

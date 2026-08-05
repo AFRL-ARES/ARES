@@ -12,12 +12,12 @@ public class PlanningViewModel : ReactiveObject
 {
   private readonly CampaignTemplate _template;
   private readonly PlannerService _client;
-  private readonly INotificationReceivingService _notificationService;
+  private readonly IUiNotificationService _notificationService;
 
   public PlanningViewModel(CampaignTemplate template, 
     IEnumerable<PlannerServiceInfo> plannerAdapters, 
     PlannerService client,
-    INotificationReceivingService notificationService)
+    IUiNotificationService notificationService)
   {
     _template = template;
     _client = client;
