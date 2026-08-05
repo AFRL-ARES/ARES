@@ -16,10 +16,10 @@ public partial class PluginDeviceSettingsListViewModel : ReactiveObject
   private readonly DevicesService _devicesService;
   private readonly IDeviceConfigProvider _configProvider;
   private readonly IAresDeviceProvider _deviceProvider;
-  private readonly INotificationReceivingService _notificationService;
+  private readonly IUiNotificationService _notificationService;
 
   public PluginDeviceSettingsListViewModel(DevicesService devicesClient, 
-    INotificationReceivingService notificationService, 
+    IUiNotificationService notificationService, 
     IAresDeviceProvider deviceProvider, 
     IDeviceConfigProvider configProvider)
   {
@@ -47,11 +47,11 @@ public partial class PluginDeviceSettingsListViewModel : ReactiveObject
     }
     catch (Exception e)
     {
-      _notificationService.PushNotification(new AresNotification
+      _notificationService.Notify(new UiNotificationMessage
       {
-          Message = $"Could not retrieve devices for {DeviceClassName}. {e.Message}",
-          Title = "Connection Error",
-          NotificationSeverity = Severity.Error
+          Detail = $"Could not retrieve devices for {DeviceClassName}. {e.Message}",
+          Summary = "Connection Error",
+          Severity = UiNotificationSeverity.Error
       });
       SettingsViewModels.Clear();
     }
@@ -77,33 +77,33 @@ public partial class PluginDeviceSettingsListViewModel : ReactiveObject
 
       if(response.Success)
       {
-        PushNotification(new AresNotification() 
-        { 
-          Message = $"Added new device {config.DeviceName}", 
-          NotificationSeverity = Severity.Success, 
-          Title = $"Successfully Added {config.DeviceName}" 
+        PushNotification(new UiNotificationMessage() 
+        {
+          Summary = $"Added new device {config.DeviceName}", 
+          Severity = UiNotificationSeverity.Success,
+          Detail = $"Successfully Added {config.DeviceName}" 
         });
         await UpdateAvailableDevices();
       }
 
       else
       {
-        PushNotification(new AresNotification() 
-        { 
-          Message = $"Failed to add device {config.DeviceName}. {response.ErrorMessage}", 
-          NotificationSeverity = Severity.Error,
-          Title = "Error Trying to Add Device" 
+        PushNotification(new UiNotificationMessage() 
+        {
+          Detail = $"Failed to add device {config.DeviceName}. {response.ErrorMessage}", 
+          Severity = UiNotificationSeverity.Error,
+          Summary = "Error Trying to Add Device" 
         });
       }
     }
 
     catch (Exception e)
     {
-      PushNotification(new AresNotification() 
+      PushNotification(new UiNotificationMessage() 
       { 
-        Message = $"Failed to add device {config.DeviceName}. {e.Message}", 
-        Title = "Error", 
-        NotificationSeverity = Severity.Error 
+        Detail = $"Failed to add device {config.DeviceName}. {e.Message}", 
+        Summary = "Error Adding Device", 
+        Severity = UiNotificationSeverity.Error 
       });
     }
   }
@@ -114,8 +114,8 @@ public partial class PluginDeviceSettingsListViewModel : ReactiveObject
   public PluginDeviceConfigEditViewModel GetNewConfigEditViewModel() 
     => new(new DeviceConfig(), Driver, true, _devicesService);
   
-  public void PushNotification(AresNotification notification) 
-    => _notificationService.PushNotification(notification);
+  public void PushNotification(UiNotificationMessage notification) 
+    => _notificationService.Notify(notification);
 
   [Reactive]
   public partial string DeviceClassName { get; set; }

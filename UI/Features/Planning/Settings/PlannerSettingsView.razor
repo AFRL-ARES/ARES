@@ -27,11 +27,11 @@ Name="@ViewModel!.PlannerAdapter.Name">
     if (result is true && viewModel.Modified)
     {
       await ViewModel!.Save();
-      var notification = new AresNotification();
-      notification.Message = $"ARES successfully added the planner {viewModel.Name} utilizing the address {viewModel.Address}.";
-      notification.Title = $"Successfully Added Planner {viewModel.Name}!";
-      notification.NotificationSeverity = Severity.Success;
-      notification.Timestamp = DateTime.UtcNow.ToTimestamp();
+      var notification = new UiNotificationMessage();
+      notification.Detail = $"ARES successfully added the planner {viewModel.Name} utilizing the address {viewModel.Address}.";
+      notification.Summary = $"Successfully Added Planner {viewModel.Name}!";
+      notification.Severity = UiNotificationSeverity.Success;
+
       ViewModel!.PushNotification(notification);
     }
   }
@@ -46,11 +46,11 @@ Name="@ViewModel!.PlannerAdapter.Name">
     {
       await ViewModel!.Save();
       StateHasChanged();
-      var notification = new AresNotification();
-      notification.Message = $"ARES successfully saved the request changes to {ViewModel!.PlannerAdapter.Name}'s settings.";
-      notification.Title = "Successfully Updated Planner Settings";
-      notification.NotificationSeverity = Severity.Success;
-      notification.Timestamp = DateTime.UtcNow.ToTimestamp();
+      var notification = new UiNotificationMessage();
+      notification.Detail = $"ARES successfully saved the request changes to {ViewModel!.PlannerAdapter.Name}'s settings.";
+      notification.Summary = "Successfully Updated Planner Settings";
+      notification.Severity = UiNotificationSeverity.Success;
+      
       ViewModel!.PushNotification(notification);
     }
   }

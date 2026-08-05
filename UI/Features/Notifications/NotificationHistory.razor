@@ -39,7 +39,7 @@
   </div>
 
   <div class="m-1 overflow-auto flex-fill">
-    @if(!ViewModel!.NotificationRepo.Any())
+    @if(!ViewModel!.Notifications.Any())
     {
       <RadzenCard class="rz-background-color-info-lighter rz-color-on-info-lighter ares-notification" Style="border: solid 3px #444; margin: 1rem;">
         <RadzenRow Style="width: 100%; overflow: hidden">
@@ -50,7 +50,7 @@
       </RadzenCard>
     }
 
-    @foreach(var notification in OrderItems(ViewModel!.NotificationRepo))
+    @foreach(var notification in OrderItems(ViewModel!.Notifications))
     {
       <RadzenCard Visible="ViewModel!.ShouldDisplayNotification(notification)" 
       class="@(ViewModel!.ConvertSeverityToCssClass(notification.NotificationSeverity))"
@@ -76,6 +76,17 @@
 
 @code {
   private string FormatTimeStamp(DateTime timeStamp) => timeStamp.ToString("hh:mm tt");
+
+  protected override void OnInitialized()
+  {
+    base.OnInitialized();
+
+    // Mark notifications as read when visiting the notification history page
+    if(ViewModel!.Notifications.Any())
+    {
+      ViewModel.MarkAllAsRead(); // Implement this logic in your ViewModel/Repo
+    }
+  }
   
   private string ErrorToggleText()
   {
@@ -109,7 +120,7 @@
     return "Show Success";
   }
 
-  private List<AresNotification> OrderItems(INotificationRepository aresNotifications)
+  private List<AresNotification> OrderItems(IReadOnlyCollection<AresNotification> aresNotifications)
   {
     if(ViewModel!.NotificationSortMethod == 0)
       return aresNotifications.OrderByDescending(n => n.Timestamp).ToList();

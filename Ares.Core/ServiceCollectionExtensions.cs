@@ -31,6 +31,7 @@ using Ares.Datamodel.Templates;
 using Microsoft.Extensions.DependencyInjection;
 using Ares.Core.Settings;
 using Ares.Core.Execution.StopConditions.PlannerLead;
+using Ares.Core.Execution.VersionChecking;
 
 
 namespace Ares.Core;
@@ -80,6 +81,7 @@ public static class ServiceCollectionExtensions
 
     services.AddSingleton<ISymbolProvider, DeviceSymbolProvider>();
     services.AddSingleton<ISymbolProvider, QuantitySymbolProvider>();
+    services.AddSingleton<IDatamodelVersionValidator, DatamodelVersionValidator>();
     services.AddSingleton<BaseEnvironmentBuilder>();
 
     services.AddSingleton<DeviceStateDatasetGenerator>();

@@ -223,7 +223,11 @@ public class DevicesService(
     try
     {
       var device = await remoteDeviceManager.CreateDevice(request.Name, request.Url);
-      return new AddRemoteDeviceResponse { Success = true, DeviceId = device.UniqueId };
+      if(device is not null)
+        return new AddRemoteDeviceResponse { Success = true, DeviceId = device.UniqueId };
+
+      else
+        return new AddRemoteDeviceResponse { Success = false, ErrorMessage = "Failed to add device, check event history page for details" };
     }
     catch(Exception e)
     {

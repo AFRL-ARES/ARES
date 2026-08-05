@@ -12,10 +12,10 @@ namespace UI.Features.Devices.Remote;
 
 public partial class RemoteDeviceSettingsListViewModel : ReactiveObject
 {
-  private readonly INotificationReceivingService _notificationService;
+  private readonly IUiNotificationService _notificationService;
   private readonly DevicesService _devicesService;
 
-  public RemoteDeviceSettingsListViewModel(DevicesService devicesService, INotificationReceivingService notificationService)
+  public RemoteDeviceSettingsListViewModel(DevicesService devicesService, IUiNotificationService notificationService)
   {
     _notificationService = notificationService;
     SettingsViewModels = [];
@@ -35,7 +35,7 @@ public partial class RemoteDeviceSettingsListViewModel : ReactiveObject
     }
     catch (Exception e)
     {
-      PushNotification(new AresNotification(){Message = $"Could not retrieve remote devices. {e.Message}", Title = "Connection Error", NotificationSeverity = Severity.Error});
+      PushNotification(new UiNotificationMessage { Detail = $"Could not retrieve remote devices. {e.Message}", Summary = "Connection Error", Severity = UiNotificationSeverity.Error });
       SettingsViewModels.Clear();
     }
     finally
@@ -58,22 +58,21 @@ public partial class RemoteDeviceSettingsListViewModel : ReactiveObject
   {
     try
     {
-      var request = new AddRemoteDeviceRequest() { Name = deviceConfig.Name, Url = deviceConfig.Url };
+      var request = new AddRemoteDeviceRequest { Name = deviceConfig.Name, Url = deviceConfig.Url };
       var response = await _devicesService.AddRemoteDevice(request, null);
       if (response.Success)
       {
-        PushNotification(new AresNotification() { Message = $"Added new device {deviceConfig.Name}", NotificationSeverity = Severity.Success, Title = "Successfully Added Remote Device" });
+        PushNotification(new UiNotificationMessage { Detail = $"Added new device {deviceConfig.Name}", Severity = UiNotificationSeverity.Success, Summary = "Successfully Added Remote Device" });
         await UpdateAvailableDevices();
       }
       else
       {
-        PushNotification(
-          new AresNotification() { Message = $"Failed to add device {deviceConfig.Name}. {response.ErrorMessage}", NotificationSeverity = Severity.Error, Title = "Error"});
+        PushNotification(new UiNotificationMessage { Detail = $"Failed to add device {deviceConfig.Name}. {response.ErrorMessage}", Severity = UiNotificationSeverity.Error, Summary = "Error Adding Device"});
       }
     }
     catch (Exception e)
     {
-      PushNotification(new AresNotification(){Message = $"Failed to add device {deviceConfig.Name}. {e.Message}", Title = "Error", NotificationSeverity = Severity.Error});
+      PushNotification(new UiNotificationMessage { Detail = $"Failed to add device {deviceConfig.Name}. {e.Message}", Summary = "Error Adding Device", Severity = UiNotificationSeverity.Error });
     }
   }
 
@@ -82,7 +81,7 @@ public partial class RemoteDeviceSettingsListViewModel : ReactiveObject
     await UpdateAvailableDevices();
   }
 
-  public void PushNotification(AresNotification notification) => _notificationService.PushNotification(notification);
+  public void PushNotification(UiNotificationMessage notification) => _notificationService.Notify(notification);
   
   [Reactive] 
   public partial bool IsLoading { get; private set; }

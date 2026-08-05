@@ -10,7 +10,7 @@ namespace Ares.Core.Device.Remote;
 public interface IRemoteDeviceManager
 {
   Task LoadDevices();
-  Task<RemoteDevice> CreateDevice(string name, string url);
+  Task<RemoteDevice?> CreateDevice(string name, string url);
   Task<bool> RemoveDevice(string deviceId);
   Task UpdateDevice(RemoteDeviceConfig config);
   Task UpdateDeviceSettings(DeviceSettings deviceSettings);

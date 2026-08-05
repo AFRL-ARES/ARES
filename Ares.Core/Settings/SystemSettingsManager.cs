@@ -26,7 +26,9 @@ public class SystemSettingsManager : ISystemSettingsManager
         CommandLatency = new Duration() { Seconds = 0 },
         ExperimentRetryLimit = 1,
         RetryCooldown = new Duration() { Seconds = 0 },
-        CommandRetryLimit = 1
+        CommandRetryLimit = 1,
+        DisplayCompatabilityWarnings = true,
+        DisplayDataCollectionWidget = true
       };
 
       context.GeneralSettingsConfigs.Add(newGeneralSettingsConfig);
@@ -139,6 +141,8 @@ public class SystemSettingsManager : ISystemSettingsManager
       existingConfig.CommandLatency = config.CommandLatency;
       existingConfig.ExperimentRetryLimit = config.ExperimentRetryLimit;
       existingConfig.CommandRetryLimit = config.CommandRetryLimit;
+      existingConfig.DisplayCompatabilityWarnings = config.DisplayCompatabilityWarnings;
+      existingConfig.DisplayDataCollectionWidget = config.DisplayDataCollectionWidget;
 
       await context.SaveChangesAsync();
     }

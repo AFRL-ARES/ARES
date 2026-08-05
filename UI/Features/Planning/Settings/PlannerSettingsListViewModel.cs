@@ -6,7 +6,6 @@ using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using UI.Application.Notifications;
 using System.Reactive.Linq;
-using System.Collections.ObjectModel;
 
 
 namespace UI.Features.Planning.Settings;
@@ -14,10 +13,9 @@ namespace UI.Features.Planning.Settings;
 public partial class PlannerSettingsListViewModel : ReactiveObject
 {
   private readonly PlannerService _planningService;
-  private readonly INotificationReceivingService _notificationService;
+  private readonly IUiNotificationService _notificationService;
 
-  public PlannerSettingsListViewModel(PlannerService planningService,
-    INotificationReceivingService notificationService)
+  public PlannerSettingsListViewModel(PlannerService planningService, IUiNotificationService notificationService)
   {
     _planningService = planningService;
     _notificationService = notificationService;
@@ -37,11 +35,11 @@ public partial class PlannerSettingsListViewModel : ReactiveObject
     }
     catch(Exception ex)
     {
-      PushNotification(new AresNotification
+      PushNotification(new UiNotificationMessage
       {
-        Title = "Error fetching planners",
-        Message = ex.Message,
-        NotificationSeverity = Severity.Error
+        Summary = "Error fetching planners",
+        Detail = ex.Message,
+        Severity = UiNotificationSeverity.Error
       });
     }
     finally
@@ -71,7 +69,7 @@ public partial class PlannerSettingsListViewModel : ReactiveObject
     await UpdateAvailablePlanners();
   }
 
-  public void PushNotification(AresNotification notification) => _notificationService.PushNotification(notification);
+  public void PushNotification(UiNotificationMessage notification) => _notificationService.Notify(notification);
 
   [Reactive]
   public partial IEnumerable<PlannerSettingsViewModel> SettingsViewModels { get; private set; }

@@ -1,6 +1,8 @@
 ﻿using System.Collections.Concurrent;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using Ares.Core.Execution.VersionChecking;
+using Ares.Core.Notifications;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
 using Ares.Datamodel.Device.Remote;
@@ -20,18 +22,23 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
   private readonly BehaviorSubject<AresStruct> _stateSubject = new(new AresStruct());
   private CancellationTokenSource _stateStreamCts = new();
   private readonly ILogger<RemoteDevice> _logger;
+  private readonly INotificationHandler _notificationHandler;
+  private Metadata? _latestMetadata = null;
+  private readonly IDatamodelVersionValidator _datamodelVersionValidator;
   private DevicePollingSettings _pollingSettings = new()
   {
     IntervalMs = 1000,
     PollingType = PollingType.Interval
   };
 
-  public RemoteDevice(RemoteConnectionInfo remoteInfo, ILogger<RemoteDevice> logger) : base(remoteInfo.ConnectionInfo)
+  public RemoteDevice(RemoteConnectionInfo remoteInfo, ILogger<RemoteDevice> logger, INotificationHandler notificationHandler, IDatamodelVersionValidator datamodelVersionValidator) : base(remoteInfo.ConnectionInfo)
   {
     _channel = GrpcChannel.ForAddress(remoteInfo.Address);
     UniqueId = remoteInfo.ConnectionInfo.DeviceId;
     Address = new Uri(remoteInfo.Address);
     _logger = logger;
+    _datamodelVersionValidator = datamodelVersionValidator;
+    _notificationHandler = notificationHandler;
   }
 
   public Uri Address { get; }
@@ -61,8 +68,10 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     await FetchOperationalStatus();
     if(Status.OperationalState != OperationalState.Active)
     {
+      await _notificationHandler.HandleNotification($"Failed to Activate Device: {Name}", "ARES tried to activate this device but failed, likely due to a connection issue", NotificationSeverityEnum.Error);
       return false;
     }
+    await VerifyDatamodelCompatability();
     await FetchInfo();
     await FetchCommands();
     await FetchSettings();
@@ -124,7 +133,7 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
 
   public override Task<AresStruct> GetState()
   {
-    return Task.FromResult(_stateSubject.Value ?? new AresStruct());
+    return Task.FromResult(_stateSubject.Value ?? new AresStruct()); 
   }
 
   internal async Task FetchOperationalStatus()
@@ -133,7 +142,9 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     {
       var callOpts = new CallOptions(deadline: DateTime.UtcNow.AddSeconds(5));
       var client = GetClient();
-      var status = await client.GetOperationalStatusAsync(new Empty(), callOpts);
+      var call = client.GetOperationalStatusAsync(new Empty(), callOpts);
+      _latestMetadata = await call.ResponseHeadersAsync;
+      var status = await call.ResponseAsync;
       Status = status;
     }
     catch(RpcException e)
@@ -146,6 +157,14 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
 
       _logger.LogWarning("Unable to connect to remote device {device_name}: {error}", Name, e.Message);
     }
+  }
+
+  internal async Task VerifyDatamodelCompatability()
+  {
+    if(_latestMetadata is null)
+      return;
+
+    await _datamodelVersionValidator.CheckDatamodelVersionValidity(_latestMetadata, Name);
   }
 
   internal async Task FetchCommands()

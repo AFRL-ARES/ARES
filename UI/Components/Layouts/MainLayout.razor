@@ -6,8 +6,10 @@
 @using Ares.Services
 @using Google.Protobuf.WellKnownTypes
 @using System.Reactive.Linq
+@using System.Collections.Specialized
 @using UI.Application.Dialog
 @using UI.Application.Notifications
+@using UI.Infrastructure.Notifications
 @using UI.Infrastructure.Startup
 
 @inherits LayoutComponentBase
@@ -16,7 +18,8 @@
 @inject INotificationReceivingService notificationService
 @inject IUiNotificationService uiNotificationService
 @inject IExecutionSafetyManager executionSafetyManager 
-@inject IDeviceDriverProvider deviceDriverRepo
+@inject IDeviceDriverProvider deviceDriverProvider
+@inject INotificationProvider notificationProvider
 @inject StartupStateTracker Tracker
 
 <HeadContent>
@@ -56,7 +59,9 @@
           </MainNavContent>
 
           <FooterContent>
-            <AresNavFooterItem Path="notifications" Icon="notifications" />
+            <NavLink type="button" class="px-4 py-2 btn btn-outline-light" href="notifications">
+              <RadzenIcon Icon="@(HasUnreadNotifications ? "notifications_active" : "notifications")" class="@(HasUnreadNotifications ? "bell-unread" : "")" />
+            </NavLink>
             <AresNavFooterItem Path="settings/device" Icon="settings" />
             <AresNavFooterItem Path="profile" Icon="person" />
           </FooterContent>
@@ -120,6 +125,7 @@
   private string _loadingMessage = "Initializing ARES OS...";
   private IDisposable? _driverSubscription;
   private List<string> _approvedCssPaths = new();
+  public bool HasUnreadNotifications = false;
 
   private readonly string[] _loadingMessageOptions = new[]
   {
@@ -145,13 +151,28 @@
   {
     Tracker.OnSystemReady += HandleSystemReady;
     notificationService.OnNotificationReceived += HandleBackgroundNotification;
+    HasUnreadNotifications = notificationProvider.GetAllNotifications().Any(n => !n.IsRead);
 
-    _driverSubscription = deviceDriverRepo.Connect()
-            .Throttle(TimeSpan.FromMilliseconds(500))
-            .Subscribe(_ => InvokeAsync(StateHasChanged));
+    notificationProvider.Connect()
+    .Throttle(TimeSpan.FromMilliseconds(500))
+    .Subscribe(_ => InvokeAsync(NotificationsUpdated));
+
+    _driverSubscription = deviceDriverProvider.Connect()
+    .Throttle(TimeSpan.FromMilliseconds(500))
+    .Subscribe(_ => InvokeAsync(StateHasChanged));
+
 
     _ = CycleLoadingMessagesAsync(_cts.Token);
+
   }
+
+  private Task NotificationsUpdated()
+  {
+    HasUnreadNotifications = notificationProvider.GetAllNotifications().Any(n => !n.IsRead);
+    StateHasChanged();
+    return Task.CompletedTask;
+  }
+
 
   private void HandleDriversChanged()
   {
@@ -162,7 +183,7 @@
   {
     InvokeAsync(() =>
     {
-      uiNotificationService.Notify(message);
+      HasUnreadNotifications = true;
       StateHasChanged();
     });
   }
@@ -198,41 +219,39 @@
     if(result)
     {
       var success = await executionSafetyManager.EnterSafeMode();
-      AresNotification notification;
+      UiNotificationMessage notificationMessage;
 
       if(success)
       {
-        notification = new AresNotification
+        notificationMessage = new UiNotificationMessage
         {
-          Loiter = true,
-          Message = "ARES has successfully processed an emergency shutdown request. All devices have entered safemode and any running campaigns have been completed.",
-          Title = "Successfully Processed Emergency Shutdown Request",
-          NotificationSeverity = Severity.Success,
-          Timestamp = DateTime.UtcNow.ToTimestamp()
+          Summary = "Successfully Processed Emergency Shutdown Request",
+          Detail = "ARES has successfully processed an emergency shutdown request. All devices have entered safemode and any running campaigns have been completed.",
+          Severity = UiNotificationSeverity.Success,
+          CloseOnClick = true
         };
       }
 
 
       else
       {
-        notification = new AresNotification
+        notificationMessage = new UiNotificationMessage
         {
-          Loiter = true,
-          Message = "ARES HAS FAILED TO ENTER SAFE MODE. DEVICES MAY BE IN AN UNSTABLE STATE AND SHOULD BE POWERED OFF IMMEDIATELY IF IT IS SAFE TO DO SO.",
-          Title = "FAILED TO PROCESS EMERGENCY SHUTDOWN REQUEST!",
-          NotificationSeverity = Severity.Danger,
-          Timestamp = DateTime.UtcNow.ToTimestamp()
+          Detail = "ARES HAS FAILED TO ENTER SAFE MODE. DEVICES MAY BE IN AN UNSTABLE STATE AND SHOULD BE POWERED OFF IMMEDIATELY IF IT IS SAFE TO DO SO.",
+          Summary = "FAILED TO PROCESS EMERGENCY SHUTDOWN REQUEST!",
+          CloseOnClick = true,
+          Severity = UiNotificationSeverity.Error
         };
       }
 
-      notificationService.PushNotification(notification);
+      uiNotificationService.Notify(notificationMessage);
     }
 
   }
 
   public IEnumerable<string> GetPluginStylesheetPaths()
   {
-    return deviceDriverRepo
+    return deviceDriverProvider
       .GetAllDeviceDrivers()
       .Select(driver =>
       {

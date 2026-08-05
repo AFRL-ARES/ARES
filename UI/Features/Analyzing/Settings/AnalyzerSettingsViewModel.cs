@@ -2,7 +2,6 @@ using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Connection;
 using Ares.Services;
 using Ares.Core.Grpc.Services;
-using Grpc.Core;
 using ReactiveUI;
 using UI.Application.Notifications;
 
@@ -11,11 +10,11 @@ namespace UI.Features.Analyzing.Settings;
 public class AnalyzerSettingsViewModel : ReactiveObject
 {
   private readonly AnalyzerService _analyzerService;
-  private readonly INotificationReceivingService _notificationService;
+  private readonly IUiNotificationService _notificationService;
   private AnalyzerInfo _analyzerInfo;
 
   public AnalyzerSettingsViewModel(AnalyzerService analyzerService,
-    INotificationReceivingService notificationService,
+    IUiNotificationService notificationService,
     AnalyzerInfo analyzerInfo,
     Func<Task> onRemoveCallback)
   {
@@ -30,7 +29,7 @@ public class AnalyzerSettingsViewModel : ReactiveObject
     _notificationService = notificationService;
   }
 
-  public void PushNotification(AresNotification notification) => _notificationService.PushNotification(notification);
+  public void PushNotification(UiNotificationMessage notification) => _notificationService.Notify(notification);
 
   public string Name { get; private set; }
 
@@ -67,21 +66,21 @@ public class AnalyzerSettingsViewModel : ReactiveObject
       Name = analyzerConfig.Name;
       Address = analyzerConfig.Url;
       PushNotification(
-        new AresNotification
+        new UiNotificationMessage
         {
-          Title = "Analyzer Update",
-          Message = $"Analyzer {Name} updated",
-          NotificationSeverity = Severity.Success
+          Summary = "Analyzer Update",
+          Detail = $"Analyzer {Name} updated",
+          Severity = UiNotificationSeverity.Success
         });
     }
     else
     {
       PushNotification(
-        new AresNotification
+        new UiNotificationMessage
         {
-          Title = "Analyzer Update",
-          Message = $"Analyzer {Name} failed to update.\n{response.ErrorMessage}",
-          NotificationSeverity = Severity.Error
+          Summary = "Analyzer Update",
+          Detail = $"Analyzer {Name} failed to update.\n{response.ErrorMessage}",
+          Severity = UiNotificationSeverity.Error
         });
     }
     await UpdateState();
