@@ -46,7 +46,7 @@ public class PlanningViewModel : ReactiveObject
 
   public List<KeyValuePair<string, AresValueSchema>> SelectedObjectives { get; private set; } = [];
 
-  public List<string> IncludedObjectives { get; private set; }
+  public List<string> IncludedObjectives { get; private set; } = [];
 
   public void Save()
   {
