@@ -41,4 +41,14 @@ public class TestReplyAnalyzer : AnalyzerBase
 
     return Task.FromResult(schema);
   }
+
+  public override Task<AresStructSchema> GetObjectiveOutputs(CancellationToken cancellationToken)
+  {
+    var schema = new AresStructSchema();
+    var testReplySchema = new AresValueSchema() { Optional = false, Type = AresDataType.Number };
+    
+    schema.Fields["TestObjective"] = testReplySchema;
+
+    return Task.FromResult(schema);
+  }
 }

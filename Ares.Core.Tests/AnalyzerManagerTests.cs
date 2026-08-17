@@ -44,5 +44,10 @@ internal class AnalyzerManagerTests
     {
       throw new NotImplementedException();
     }
+
+    public override Task<AresStructSchema> GetObjectiveOutputs(CancellationToken cancellationToken)
+    {
+      throw new NotImplementedException();
+    }
   }
 }

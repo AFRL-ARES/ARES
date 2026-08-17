@@ -57,6 +57,12 @@ public class RemoteAnalyzer : AnalyzerBase
     return client.AnalyzeAsync(request, cancellationToken: cancellationToken).ResponseAsync;
   }
 
+  public override async Task<AresStructSchema> GetObjectiveOutputs(CancellationToken cancellationToken)
+  {
+    var capabilities = await GetCapabilities();
+    return capabilities.ObjectiveOutputSchema;
+  }
+
   public override async Task<AnalyzerCapabilities> GetCapabilities(CancellationToken cancellationToken = default)
   {
     var client = GetClient();

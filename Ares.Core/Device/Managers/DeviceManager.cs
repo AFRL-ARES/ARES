@@ -26,8 +26,7 @@ public class DeviceManager : IDeviceManager
   private readonly IResourceConnectionArbiter _resourceConnectionArbiter;
   private readonly CompositeDisposable _cleanup = new();
 
-  public DeviceManager(
-    IDeviceDriverProvider driverProvider,
+  public DeviceManager(IDeviceDriverProvider driverProvider,
     IAresDeviceRepo deviceRepository,
     INotificationHandler notificationHandler,
     IDeviceConfigProvider configProvider,
@@ -113,14 +112,10 @@ public class DeviceManager : IDeviceManager
 
         if(!success)
         {
-          var owner = _resourceConnectionArbiter.GetResourceOwner(serialConnectionResource);
-          if(owner?.UniqueId == device.UniqueId)
-          {
-            var message = $"Failed to add device {device.Name} as the resource it tried to use ({serialConnectionResource.ResourceName}) was already in use by another device.";
-            _logger.LogError(message);
-            await _notificationHandler.HandleNotification("Failed to Add Device", message, NotificationSeverityEnum.Error);
-            return null;
-          }
+          var message = $"Failed to add device {device.Name} as the resource it tried to use ({serialConnectionResource.ResourceName}) was already in use by another device.";
+          _logger.LogError(message);
+          await _notificationHandler.HandleNotification("Failed to Add Device", message, NotificationSeverityEnum.Error);
+          return null; 
         }
       }
 

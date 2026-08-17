@@ -45,4 +45,9 @@ internal class NoneAnalyzer : AnalyzerBase
   {
     return Task.FromResult(new AresStructSchema());
   }
+
+  public override Task<AresStructSchema> GetObjectiveOutputs(CancellationToken cancellationToken)
+  {
+    return Task.FromResult(new AresStructSchema());
+  }
 }

@@ -1,16 +1,86 @@
-﻿@using UI.Features.CampaignEdit.ViewModels
+﻿@using Ares.Datamodel
+@using UI.Features.CampaignEdit.ViewModels
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<PlanningViewModel>
 
 
 <div>
-  <p>Planning</p>
-  @foreach (var editor in ViewModel!.PlannerAllocationEditors)
-  {
-    <PlannerAllocationEditor ViewModel="editor" />
-  }
+  <div class="two-column-container">
+    <div class="column left-column">
+      <h2>Planner Assignment</h2>
+      @if(ViewModel?.PlannerAllocationEditors is null)
+      {
+        <p><em>Loading allocations...</em></p>
+      }
+      else
+      {
+        @foreach(var editor in ViewModel.PlannerAllocationEditors)
+        {
+          <PlannerAllocationEditor ViewModel="editor" />
+        }
+      }
+    </div>
+
+    <div class="column right-column">
+      <h2>Analyzer Objectives</h2>
+      @if(ViewModel!.AvailableObjectives is not null)
+      {
+        @foreach(var item in ViewModel.AvailableObjectives.Fields)
+        {
+          var isSelected = ViewModel!.SelectedObjectives.Contains(item);
+
+          <div class="card border-primary rounded-1 p-2 m-1">
+            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Start" Gap="0.5rem">
+              <RadzenColumn>
+                <RadzenRow Style="padding-bottom: 0.5rem">
+                  Objective Name: @item.Key
+                </RadzenRow>
+
+                <RadzenRow Style="padding-bottom: 0.5rem">
+                  Objective Description: @item.Value.Description
+                </RadzenRow>
+
+                <RadzenRow Style="padding-bottom: 0.5rem">
+                    <RadzenLabel Component="IncludeInPlanningCheck" Text="Include in Planning? "/>
+                    <RadzenCheckBox TValue="bool"
+                                    Name="IncludeInPlanningCheck"
+                                    Value="@isSelected"
+                                    Change="@(_ => ToggleSelection(item))"
+                                    @onclick:stopPropagation="true" />
+                </RadzenRow>
+              </RadzenColumn>
+            </RadzenStack>
+          </div>
+        }
+      }
+
+      else
+      {
+        <p>Select an Analyzer to See Objectives</p>
+      }
+    </div>
+  </div>
+
+
 </div>
 
 
 @code {
-    
+  protected override async Task OnInitializedAsync()
+  {
+    if(ViewModel is not null)
+      await ViewModel!.UpdateAnalyzerObjectives();
+
+    await base.OnInitializedAsync();
+  }
+
+  private void ToggleSelection(KeyValuePair<string, AresValueSchema> item)
+  {
+    if(ViewModel!.SelectedObjectives.Contains(item))
+      ViewModel!.SelectedObjectives.Remove(item);
+
+    else
+      ViewModel!.SelectedObjectives.Add(item);
+
+    StateHasChanged();
+  }
 }

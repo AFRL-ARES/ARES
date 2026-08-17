@@ -94,6 +94,13 @@ public interface IAnalyzer
   Task<AnalyzerCapabilities> GetCapabilities(CancellationToken cancellationToken = default);
 
   /// <summary>
+  /// This will return the schema describing the analyzers objective outputs.
+  /// </summary>
+  /// <param name="cancellationToken"></param>
+  /// <returns></returns>
+  Task<AresStructSchema> GetObjectiveOutputs(CancellationToken cancellationToken = default);
+
+  /// <summary>
   /// Does the actual analysis work.
   /// </summary>
   /// <param name="request">The analysis request to be sent to the analyzer <see cref="AnalysisRequest" /> proto message</param>

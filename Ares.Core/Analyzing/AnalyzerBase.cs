@@ -75,6 +75,8 @@ public abstract class AnalyzerBase : IAnalyzer
 
   public abstract Task<AresStructSchema> GetParameters(CancellationToken cancellationToken);
 
+  public abstract Task<AresStructSchema> GetObjectiveOutputs(CancellationToken cancellationToken);
+
   private static ParameterValidationResult ValidateParameterTypes(KeyValuePair<string, AresValueSchema> analyzerField, AresStructSchema parameters)
   {
     var result = new ParameterValidationResult();
