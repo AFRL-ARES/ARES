@@ -33,7 +33,7 @@
 	  <PackageReference Include="Grpc.Net.Client" Version="2.80.0" />
 	  <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.10" />
 	  <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.10" />
-	  <PackageReference Include="NuGet.Versioning" Version="6.12.1" />
+	  <PackageReference Include="NuGet.Versioning" Version="7.9.0" />
 	  <PackageReference Include="Protobuf.System.Text.Json" Version="1.4.1" />
 	  <PackageReference Include="UnitsNet" Version="5.75.1" />
 	  <PackageReference Include="YamlDotNet" Version="18.1.0" />
