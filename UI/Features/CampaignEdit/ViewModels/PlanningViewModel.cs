@@ -28,6 +28,7 @@ public class PlanningViewModel : ReactiveObject
     _selectedAnalyzer = selectedAnalyzer;
     PlannerAdapters = new ReadOnlyCollection<PlannerServiceInfo>(plannerAdapters.ToList());
     PlannerAllocationEditors = template.PlannableParameters.Select(metadata => new PlannerAllocationEditorViewModel(metadata, template.PlannerAllocations.FirstOrDefault(allocation => allocation.Parameter.Equals(metadata))?.Planner, PlannerAdapters, client, notificationService)).ToArray();
+    AnalyzerName = _selectedAnalyzer?.Name ?? "NONE";
   }
 
   public async Task UpdateAnalyzerObjectives()
@@ -47,6 +48,8 @@ public class PlanningViewModel : ReactiveObject
   public List<KeyValuePair<string, AresValueSchema>> SelectedObjectives { get; private set; } = [];
 
   public List<string> IncludedObjectives { get; private set; } = [];
+
+  public string AnalyzerName { get; private set; } = "NONE";
 
   public void Save()
   {

@@ -55,7 +55,16 @@
 
       else
       {
-        <p>Select an Analyzer to See Objectives</p>
+        if(ViewModel!.AnalyzerName == "NONE")
+        {
+          <p>Select an Analyzer to See Objectives</p>
+        }
+
+        else
+        {
+          <p>Your Selected Analyer (@ViewModel!.AnalyzerName) Doesn't Report Any Objective Outputs</p>
+          <p>If your Analyzer was built prior to the multi-objective updates this is normal. Consider updating your Analyzer.</p>
+        }
       }
     </div>
   </div>

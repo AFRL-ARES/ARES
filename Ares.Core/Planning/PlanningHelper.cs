@@ -46,8 +46,6 @@ public class PlanningHelper : IPlanningHelper
     var parameterArray = parameters.ToArray();
     var plannerToMetadataMaps = MapParameterMetadataToPlanners(plannerAllocations);
 
-    var includedObjectives = currentTemplate.PlanObjectives.ToList();
-
     if(plannerToMetadataMaps is null)
       return false;
 
@@ -66,7 +64,7 @@ public class PlanningHelper : IPlanningHelper
         return true;
       }
 
-      return await RequestNewPlans(planner, grouping, seedExperiments, seedAnalysesArr, codes, metadata, planQueue, parameterArray, batchSize, includedObjectives, cancellationToken);
+      return await RequestNewPlans(planner, grouping, seedExperiments, seedAnalysesArr, codes, metadata, planQueue, parameterArray, batchSize, cancellationToken);
     });
 
     var results = await Task.WhenAll(planningTasks);
@@ -95,7 +93,6 @@ public class PlanningHelper : IPlanningHelper
     ConcurrentQueue<Plan> planQueue,
     Parameter[] parameterArray,
     int batchSize,
-    List<string> includedObjectives,
     CancellationToken cancellationToken)
   {
     var planTransaction = new PlannerTransaction()
@@ -113,7 +110,7 @@ public class PlanningHelper : IPlanningHelper
       planTransaction.TimeRequestSent = DateTime.UtcNow.ToTimestamp();
 
       //Create the plan request. Store it in the transaction.
-      var planRequest = CreatePlanningRequest(plannableParameters, seedExperiments, seedAnalysesArr, statusCodes, batchSize, includedObjectives, metadata);
+      var planRequest = CreatePlanningRequest(plannableParameters, seedExperiments, seedAnalysesArr, statusCodes, batchSize, metadata);
       planTransaction.PlanningRequest = planRequest;
 
       var planResponse = await planner.Plan(planRequest, cancellationToken);
@@ -165,7 +162,6 @@ public class PlanningHelper : IPlanningHelper
     AnalysisResponse[] seedAnalysesArr,
     List<PlanStatusCode> statusCodes,
     int batchSize,
-    List<string> includedObjectives,
     RequestMetadata metadata)
   {
     //Create the plan request. Store it in the transaction.
@@ -189,7 +185,7 @@ public class PlanningHelper : IPlanningHelper
       if(defaultObjective is not null && defaultObjective.HasNumberValue)
         planRequest.AnalysisResults.Add(defaultObjective.NumberValue);
 
-      var analysisData = CreateAnalysisData(currentAnalysis, currentExp, includedObjectives);
+      var analysisData = CreateAnalysisData(currentAnalysis, currentExp);
       planRequest.AnalysisData.Add(analysisData);
     }
     planRequest.PreviousPlanStatusCodes.AddRange(statusCodes);
@@ -286,14 +282,22 @@ public class PlanningHelper : IPlanningHelper
     return parameter;
   }
 
-  private AnalysisData CreateAnalysisData(AnalysisResponse analysis, ExperimentOverview experiment, List<string> includedObjectives)
+  private AnalysisData CreateAnalysisData(AnalysisResponse analysis, ExperimentOverview experiment)
   {
     var newData = new AnalysisData();
 
-    foreach(var objective in analysis.Objectives)
+    // If no objectives were specified, include all of them.
+    if(experiment.Template.PlanObjectives.Count == 0)
     {
-      if(experiment.Template.PlanObjectives.Any(obj => obj == objective.ObjectiveName) && includedObjectives.Contains(objective.ObjectiveName)) 
+      foreach(var objective in analysis.Objectives)
         newData.AnalysisObjectives.Add(objective);
+    }
+
+    else
+    {
+      foreach(var objective in analysis.Objectives)
+        if(experiment.Template.PlanObjectives.Any(obj => obj == objective.ObjectiveName))
+          newData.AnalysisObjectives.Add(objective);
     }
 
     return newData;
