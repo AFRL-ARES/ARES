@@ -54,7 +54,7 @@ public class DemoAnalyzerService : AresRemoteAnalyzerService.AresRemoteAnalyzerS
   {
     var response = new AnalysisParametersResponse
     {
-      ParameterSchema = new AresDataSchema
+      ParameterSchema = new AresStructSchema
       {
         Fields =
         {
@@ -71,7 +71,7 @@ public class DemoAnalyzerService : AresRemoteAnalyzerService.AresRemoteAnalyzerS
   {
     var capabilities = new AnalyzerCapabilities
     {
-      SettingsSchema = new AresDataSchema
+      SettingsSchema = new AresStructSchema
       {
         Fields =
         {

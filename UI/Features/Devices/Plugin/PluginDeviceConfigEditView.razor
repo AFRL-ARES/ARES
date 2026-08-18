@@ -1,0 +1,86 @@
+﻿@using Ares.Core.Resources
+@using Ares.Datamodel
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<PluginDeviceConfigEditViewModel>
+
+<RadzenTemplateForm TItem="PluginDeviceConfigEditViewModel" Data="@ViewModel" Submit="@OnValidSubmit">
+  <div class="d-flex flex-column gap-3">
+  <RadzenFormField Text="Device Name" Variant="Variant.Flat">
+          <RadzenTextBox @bind-Value="ViewModel!.Name" Disabled="@(!ViewModel!.NewConfig)"/>
+      </RadzenFormField>
+
+    @if(ViewModel!.ConnectionType == ConnectionType.Serial)
+    {
+      <RadzenTextBox @bind-Value="@ViewModel!.SelectedSerialPort" 
+                     Placeholder="Port" 
+                     list="port-list" 
+                     class="w-100" />
+
+      <datalist id="port-list">
+        @if(ViewModel!.AvailableSerialPorts is not null)
+        {
+          @foreach(var port in ViewModel!.AvailableSerialPorts)
+          {
+            <option value="@port">@port</option>
+          }
+        }
+      </datalist>
+
+      if(ViewModel!.BaudRateOptions.Any())
+      {
+        <RadzenLabel Text="Baud Rate" Component="BaudRateDropdown" Style="margin-right: 8px;" />
+        <RadzenDropDown TValue="int" 
+          Data="@ViewModel!.BaudRateOptions" 
+          @bind-Value="ViewModel!.SelectedBaudRate"
+          Style="width: 100%; max-width: 200px;" 
+          Name="BaudRateDropdown" />
+      }
+
+      if(ViewModel!.RequiresId)
+      {        
+        <RadzenLabel Text="Unit ID" Component="UnitIdInput" Style="display: block; margin-bottom: 4px;" />
+    
+        <RadzenTextBox @bind-Value="ViewModel!.SerialUnitId" 
+                        Name="UnitIdInput" 
+                        Style="width: 100%; max-width: 200px;" />
+
+        <RadzenRegexValidator Component="UnitIdInput" 
+                              Text="@ViewModel!.UnitIdHint" 
+                              Pattern="@ViewModel!.IdRegex" 
+                              Style="display: block; margin-top: 4px; font-size: 0.8em;" />
+      }
+    }
+
+    @foreach (var prop in ViewModel!.DriverSettingsSchema.Fields)
+    {
+      <AresValueDesigner Name="@prop.Key"
+        Value="@ViewModel!.GetMatchingSettingValue(prop.Key)"
+        Schema="prop.Value"
+        ValueEditCallback="@(value => ValueEditCallback(prop.Key, value))"/>
+    }
+
+    <RadzenRow Gap="1rem" AlignItems="AlignItems.Center" Style="padding-top: 0.5rem; padding-bottom: 0.5rem;">
+      <RadzenSwitch @bind-Value="ViewModel!.IsSimulated" Name="SimulatedDeviceSwitch" />
+      <RadzenLabel Text="Simulated Device" Component="SimulatedDeviceSwitch" />
+    </RadzenRow>
+  </div>
+  <button type="submit" class="btn my-3 btn-outline-primary">Save Device</button>
+</RadzenTemplateForm>
+
+@code
+{
+  [Parameter]
+  public Action OnValidSubmit { get; set; } = delegate { };
+
+  private Task ValueEditCallback(string name, AresValue value)
+  {
+    ViewModel!.DeviceSettings.Fields[name] = value;
+    return Task.CompletedTask;
+  }
+
+  private async Task PortChanged(ChangeEventArgs obj)
+  {
+    if(obj.Value is not string stringValue)
+      throw new InvalidOperationException($"{obj.Value} is not a string and cannot be used as a port name.");
+    ViewModel!.SelectedSerialPort = stringValue;
+  }
+}

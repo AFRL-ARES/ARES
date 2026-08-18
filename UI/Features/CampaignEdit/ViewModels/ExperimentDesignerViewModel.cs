@@ -1,0 +1,166 @@
+﻿using Ares.Datamodel.Templates;
+using Ares.Services;
+using Ares.Core.Grpc.Services;
+using Radzen;
+using ReactiveUI;
+using ReactiveUI.SourceGenerators;
+using UI.Features.CampaignEdit.Factories;
+
+namespace UI.Features.CampaignEdit.ViewModels;
+
+public partial class ExperimentDesignerViewModel : ReactiveObject
+{
+  private readonly StepDesignerFactory _stepDesignerFactory;
+  private readonly ValidationService _validationClient;
+  private ExperimentTemplate _experimentTemplate = null!;
+  readonly AutomationService _automationClient;
+  private readonly NotificationService _notificationService;
+
+  public ExperimentDesignerViewModel(StepDesignerFactory stepDesignerFactory,
+    AutomationService automationClient,
+    ValidationService validationClient,
+    NotificationService notificationService)
+  {
+    _automationClient = automationClient;
+    _stepDesignerFactory = stepDesignerFactory;
+    _validationClient = validationClient;
+    _notificationService = notificationService;
+    Name = "Unnamed Template";
+    ExperimentTemplate = new ExperimentTemplate
+    {
+      UniqueId = Guid.NewGuid().ToString(),
+      Name = "Experiment Template"
+    };
+  }
+
+  public ExperimentDesignerViewModel(ExperimentTemplate existingTemplate,
+    StepDesignerFactory stepDesignerFactory,
+    AutomationService automationClient,
+    ValidationService validationClient,
+    NotificationService notificationService) : this(stepDesignerFactory, automationClient, validationClient, notificationService)
+  {
+    ExperimentTemplate = existingTemplate;
+  }
+
+  private void Init(ExperimentTemplate existingTemplate)
+  {
+    Name = existingTemplate.Name;
+    StepDesigners = existingTemplate.StepTemplates.Select(template => _stepDesignerFactory.Create(template)).OrderBy(model => model.Index).ToList();
+    if(existingTemplate.StepTemplates.SelectMany(step => step.CommandTemplates).Any(cmd => cmd.HasOutputVarName))
+    {
+      var commandDesigners = StepDesigners.SelectMany(model => model.CommandDesigners).Where(model => model.CommandTemplate.HasOutputVarName);
+      foreach(var designer in commandDesigners)
+      {
+        designer.OutputProvider = true;
+      }
+
+      ExperimentOutputProviderCommand = commandDesigners.Select(designer => designer.CommandTemplate);
+    }
+
+    RefreshVariableReferences();
+  }
+
+  public ExperimentTemplate Save()
+  {
+    if(StepDesigners is null)
+    {
+      _notificationService.Notify(NotificationSeverity.Error, "A Step Designer was null! No data saved.");
+      return ExperimentTemplate;
+    }
+
+    RefreshVariableReferences();
+    ExperimentTemplate.Name = Name;
+    ExperimentTemplate.StepTemplates.Clear();
+    ExperimentTemplate.StepTemplates.AddRange(StepDesigners.Select(designer => designer.Save()));
+    return ExperimentTemplate;
+  }
+
+  public StepDesignerViewModel AddStep()
+  {
+    var stepDesigner = _stepDesignerFactory.Create();
+    stepDesigner.Index = StepDesigners.Count;
+    StepDesigners.Add(stepDesigner);
+    RefreshVariableReferences();
+    return stepDesigner;
+  }
+
+  public void RemoveStep(StepDesignerViewModel vm)
+  {
+    if(StepDesigners is not null)
+    {
+      StepDesigners.Remove(vm);
+      ReindexSteps();
+      RefreshVariableReferences();
+    }
+  }
+
+  public void MoveStepDesignerUp(StepDesignerViewModel vm)
+  {
+    if(StepDesigners is null || vm.Index == 0)
+      return;
+
+    StepDesigners.RemoveAt(vm.Index);
+    StepDesigners.Insert(vm.Index - 1, vm);
+    ReindexSteps();
+    RefreshVariableReferences();
+  }
+
+  public void MoveStepDesignerDown(StepDesignerViewModel vm)
+  {
+    if(StepDesigners is null || vm.Index == StepDesigners.Count - 1)
+      return;
+
+    StepDesigners.RemoveAt(vm.Index);
+    StepDesigners.Insert(vm.Index + 1, vm);
+    ReindexSteps();
+    RefreshVariableReferences();
+  }
+
+  private void ReindexSteps()
+  {
+    if(StepDesigners is not null)
+    {
+      var idx = 0;
+      foreach(var stepDesigner in StepDesigners)
+        stepDesigner.Index = idx++;
+    }
+  }
+
+  public ExperimentTemplate ExperimentTemplate
+  {
+    private get => _experimentTemplate;
+
+    set
+    {
+      _experimentTemplate = value;
+      Init(value);
+    }
+  }
+
+  [Reactive]
+  public partial string Name { get; set; }
+
+  public IList<StepDesignerViewModel> StepDesigners { get; private set; } = [];
+
+  public IEnumerable<CommandTemplate>? ExperimentOutputProviderCommand { get; set; }
+
+  public CommandOutputVariableReference[] GetPriorVariableReferences(StepDesignerViewModel stepDesigner)
+  {
+    var priorReferences = new List<CommandOutputVariableReference>();
+    foreach(var currentStep in StepDesigners.OrderBy(step => step.Index))
+    {
+      if(currentStep == stepDesigner)
+        return priorReferences.ToArray();
+
+      priorReferences.AddRange(currentStep.GetOutputVariableReferences());
+    }
+
+    return priorReferences.ToArray();
+  }
+
+  public void RefreshVariableReferences()
+  {
+    foreach(var stepDesigner in StepDesigners.OrderBy(step => step.Index))
+      stepDesigner.SetPriorVariableReferences(GetPriorVariableReferences(stepDesigner));
+  }
+}

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Ares.Core.Analyzing;
@@ -18,7 +18,7 @@ public class AnalyzerService(IAnalyzerRepo analyzerRepo, IRemoteAnalyzerManager 
   private readonly IAnalyzerRepo _analyzerRepo = analyzerRepo;
   private readonly IRemoteAnalyzerManager _remoteAnalyzerManager = remoteAnalyzerManager;
 
-  public override async Task<GetAllAnalyzersResponse> GetAllAnalyzers(Empty request, ServerCallContext context)
+  public override async Task<GetAllAnalyzersResponse> GetAllAnalyzers(Empty request, ServerCallContext? context)
   {
     var response = new GetAllAnalyzersResponse();
     var availableAnalyzers = _analyzerRepo.AvailableAnalyzers;
@@ -47,7 +47,7 @@ public class AnalyzerService(IAnalyzerRepo analyzerRepo, IRemoteAnalyzerManager 
 
   public override async Task<AddRemoteAnalyzerResponse> AddRemoteAnalyzer(
     AddRemoteAnalyzerRequest request,
-    ServerCallContext context)
+    ServerCallContext? context)
   {
     try
     {
@@ -71,7 +71,7 @@ public class AnalyzerService(IAnalyzerRepo analyzerRepo, IRemoteAnalyzerManager 
 
   public override async Task<UpdateRemoteAnalyzerResponse> UpdateRemoteAnalyzer(
     UpdateRemoteAnalyzerRequest request,
-    ServerCallContext context)
+    ServerCallContext? context)
   {
     try
     {
@@ -94,14 +94,14 @@ public class AnalyzerService(IAnalyzerRepo analyzerRepo, IRemoteAnalyzerManager 
     }
   }
 
-  public override async Task<Empty> RemoveRemoteAnalyzer(RemoveRemoteAnalyzerRequest request, ServerCallContext context)
+  public override async Task<Empty> RemoveRemoteAnalyzer(RemoveRemoteAnalyzerRequest request, ServerCallContext? context)
   {
     await _remoteAnalyzerManager.RemoveAnalyzer(request.AnalyzerId);
 
     return new Empty();
   }
 
-  public override Task<StateResponse> GetState(StateRequest request, ServerCallContext context)
+  public override Task<StateResponse> GetState(StateRequest request, ServerCallContext? context)
   {
     var response = new StateResponse();
     var analyzer = _analyzerRepo.GetAnalyzerById(request.Id) ?? throw new ItemNotFoundException(request.Id, typeof(IAnalyzer), "Failed to get state as requested analyzer was not found"); ;
@@ -112,7 +112,7 @@ public class AnalyzerService(IAnalyzerRepo analyzerRepo, IRemoteAnalyzerManager 
     return Task.FromResult(response);
   }
 
-  public override async Task<AnalyzerInfoResponse> GetInfo(AnalyzerInfoRequest request, ServerCallContext context)
+  public override async Task<AnalyzerInfoResponse> GetInfo(AnalyzerInfoRequest request, ServerCallContext? context)
   {
     var analyzer = _analyzerRepo.GetAnalyzerById(request.AnalyzerId);
     if(analyzer is null)
@@ -128,13 +128,13 @@ public class AnalyzerService(IAnalyzerRepo analyzerRepo, IRemoteAnalyzerManager 
     return response;
   }
 
-  public override Task<AresStruct> GetAnalyzerSettings(AnalyzerSettingsRequest request, ServerCallContext context)
+  public override Task<AresStruct> GetAnalyzerSettings(AnalyzerSettingsRequest request, ServerCallContext? context)
   {
     var analyzer = _analyzerRepo.GetAnalyzerById(request.AnalyzerId) ?? throw new ItemNotFoundException(request.AnalyzerId, typeof(IAnalyzer), "Failed to get settings as requested analyzer was not found");
     return Task.FromResult(analyzer.Settings);
   }
 
-  public override async Task<Empty> SetAnalyzerSettings(AnalyzerSettings request, ServerCallContext context)
+  public override async Task<Empty> SetAnalyzerSettings(AnalyzerSettings request, ServerCallContext? context)
   {
     var analyzer = _analyzerRepo.GetAnalyzerById(request.AnalyzerId);
     if(analyzer is null)

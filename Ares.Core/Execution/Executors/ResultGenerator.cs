@@ -1,37 +1,28 @@
 ﻿using Ares.Datamodel;
-using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Templates;
 
 namespace Ares.Core.Execution.Executors;
+
 internal static class ResultGenerator
 {
   public static AresStruct GenerateExperimentResult(IEnumerable<StepExecutionSummary> steps, IEnumerable<StepTemplate> stepTemplates)
   {
-    var commands = steps.SelectMany(step => step.CommandSummaries);
-    var deviceResults = commands
-      .Where(cmd => cmd.Result is not null && cmd.Result.Success)
-      .Select(cmd => cmd.Result.Result)
-      .OfType<AresStruct>();
-    
     var experimentResultStruct = new AresStruct();
 
-    if(!deviceResults.Any())
-      return experimentResultStruct;
+    var commandTemplates = stepTemplates
+        .SelectMany(st => st.CommandTemplates)
+        .ToDictionary(ct => ct.UniqueId);
 
-    var deviceResultStruct = deviceResults.Aggregate((total, next) => total.AppendStruct(next));
+    var successfulCommands = steps
+        .SelectMany(step => step.CommandSummaries)
+        .Where(cmd => cmd.Result?.Success == true && cmd.Result.Result is not null);
 
-    var outputMaps = stepTemplates.SelectMany(st => st.CommandTemplates).Select(ct => ct.UserOutputKeyMap);
-    var flattenedOutputMaps = outputMaps
-      .SelectMany(map => map)
-      .GroupBy(pair => pair.Key) // merge duplicates
-      .ToDictionary(group => group.Key, group => group.Last().Value);
+    var dict = successfulCommands
+      .Where(cmd => cmd.HasVarName && cmd.Result.Result.KindCase != AresValue.KindOneofCase.None)
+      .Select(cmd => KeyValuePair.Create(cmd.VarName, cmd.Result.Result))
+      .ToDictionary();
 
-    foreach(var field in deviceResultStruct.Fields)
-    {
-      var found = flattenedOutputMaps.TryGetValue(field.Key, out var expOutputKey);
-      if(found)
-        experimentResultStruct.AddValue(expOutputKey!, field.Value);
-    }
+    experimentResultStruct.Fields.Add(dict);
 
     return experimentResultStruct;
   }

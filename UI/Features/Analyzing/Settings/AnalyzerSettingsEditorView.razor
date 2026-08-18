@@ -1,0 +1,50 @@
+@using Ares.Datamodel
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Features.Analyzing.Settings.AnalyzerSettingsEditorViewModel>
+
+@inject TooltipService TooltipService
+
+<EditForm Model="@ViewModel" OnValidSubmit="OnValidSubmit">
+	<RadzenStack Orientation="Orientation.Vertical" Gap="5px">
+		@foreach(var settingField in ViewModel!.Settings.Fields)
+		{
+			<div style="display: inline-flex; align-items: center; gap: 8px;">
+
+				@{
+					var schema = ViewModel!.SettingsSchema.Fields[settingField.Key];
+
+					<div style="width:90%">
+						<AresValueDesigner Name="@settingField.Key"
+															 Value="@settingField.Value"
+															 Schema="@schema"
+															 ValueEditCallback="@(value => ValueEditCallback(settingField.Key, value))" />
+					</div>
+
+					if(schema.Description != "")
+					{
+						<RadzenIcon Icon="help_outline"
+												Style="cursor: pointer; font-size: 16px; color: var(--rz-text-secondary-color);"
+												MouseEnter="@(args => TooltipService.Open(args, schema.Description, new TooltipOptions { Position = TooltipPosition.Top }))" />
+					}
+				}
+			</div>
+		}
+	</RadzenStack>
+</EditForm>
+
+@code {
+	[Parameter]
+	public Action OnValidSubmit { get; set; } = delegate { };
+
+	private Task ValueEditCallback(string name, AresValue value)
+	{
+		ViewModel!.Settings.Fields[name] = value;
+		return ViewModel!.PushSettings();
+	}
+
+	protected override async Task OnInitializedAsync()
+	{
+		await ViewModel!.UpdateInfo();
+		await ViewModel!.FetchSettings();
+		await base.OnInitializedAsync();
+	}
+}

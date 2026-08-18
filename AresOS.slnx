@@ -1,0 +1,18 @@
+<Solution>
+  <Folder Name="/Migrations/">
+    <Project Path="AresService.Migrations.Postgres/AresService.Migrations.Postgres.csproj" />
+    <Project Path="AresService.Migrations.Sqlite/AresService.Migrations.Sqlite.csproj" />
+    <Project Path="AresService.Migrations.SqlServer/AresService.Migrations.SqlServer.csproj" />
+  </Folder>
+  <Project Path="Ares.Core.Grpc/Ares.Core.Grpc.csproj" />
+  <Project Path="Ares.Core.Tests/Ares.Core.Tests.csproj" />
+  <Project Path="Ares.Core/Ares.Core.csproj" />
+  <Project Path="AresScript.Tests/AresScript.Tests.csproj" />
+  <Project Path="AresScript/AresScript.csproj" />
+  <Project Path="AresService.Data/AresService.Data.csproj" />
+  <Project Path="DemoRemoteAnalyzer/DemoRemoteAnalyzer.csproj" />
+  <Project Path="DemoRemoteDevice/DemoRemoteDevice.csproj" />
+  <Project Path="DemoRemotePlanner/DemoRemotePlanner.csproj" />
+  <Project Path="UI/UI.csproj" />
+  <Project Path="UI.Tests/UI.Tests.csproj" />
+</Solution>

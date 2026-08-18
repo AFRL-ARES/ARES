@@ -1,0 +1,28 @@
+﻿@inherits LayoutComponentBase
+@layout MainLayout
+
+<ul class="nav nav-tabs">
+  <li class="nav-item">
+    <NavLink Match="NavLinkMatch.Prefix" class="nav-link" href="settings/device">Device</NavLink>
+  </li>
+  <li class="nav-item">
+    <NavLink Match="NavLinkMatch.Prefix" class="nav-link" href="settings/analysis">Analyzer</NavLink>
+  </li>
+  <li class="nav-item">
+    <NavLink Match="NavLinkMatch.Prefix" class="nav-link" href="settings/planning">Planner</NavLink>
+  </li>
+  <li class="nav-item">
+    <NavLink Match="NavLinkMatch.Prefix" class="nav-link" href="settings/logging">Logging</NavLink>
+  </li>
+  <li class="nav-item">
+    <NavLink Match="NavLinkMatch.Prefix" class="nav-link" href="settings/system">System</NavLink>
+  </li>
+
+</ul>
+<div class="m-1 d-flex overflow-auto flex-fill">
+  @Body
+</div>
+
+@code {
+
+}

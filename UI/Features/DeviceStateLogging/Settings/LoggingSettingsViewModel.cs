@@ -1,0 +1,143 @@
+using System.Reactive;
+using Ares.Datamodel;
+using Ares.Datamodel.Device;
+using Ares.Services.Device;
+using Ares.Core.Grpc.Services;
+using ReactiveUI;
+using ReactiveUI.SourceGenerators;
+
+namespace UI.Features.DeviceStateLogging.Settings;
+
+public partial class LoggingSettingsViewModel : ReactiveObject
+{
+  private readonly string _deviceId;
+  private readonly DevicesService _devicesClient;
+  private readonly ObservableAsPropertyHelper<bool> _updatedObservable;
+
+  public LoggingSettingsViewModel(string deviceId, string deviceName, DevicesService devicesClient)
+  {
+    _deviceId = deviceId;
+    DeviceName = deviceName;
+    _devicesClient = devicesClient;
+
+    this.WhenAnyValue(vm => vm.IntervalMs,
+      vm => vm.LoggingType,
+      vm => vm.CurrentSettings,
+      vm => vm.LoggingEnabled,
+      vm => vm.DeltasChanged,
+      (interval, logType, settings, loggingEnabled, deltasChanged) =>
+        (settings is not null && (interval != settings.IntervalMs || logType != settings.LoggingType || loggingEnabled != settings.LoggingEnabled)) || deltasChanged
+    ).ToProperty(this, vm => vm.Updated, out _updatedObservable);
+
+    FetchSettingsCommand = ReactiveCommand.CreateFromTask(Init);
+  }
+  public string DeviceName { get; }
+
+  [Reactive]
+  public partial bool Fetched { get; private set; }
+
+  [Reactive]
+  public partial DeviceLoggingSettings.Types.LoggingType LoggingType { get; set; }
+
+  [Reactive]
+  private partial DeviceLoggingSettings? CurrentSettings { get; set; }
+
+  [Reactive]
+  private partial bool DeltasChanged { get; set; }
+
+  [Reactive]
+  public partial bool LoggingEnabled { get; set; }
+
+  [Reactive]
+  public partial long IntervalMs { get; set; }
+
+  public Dictionary<string, double> Deltas { get; } = [];
+
+  public bool Updated => _updatedObservable.Value;
+
+  public ReactiveCommand<Unit, Unit> FetchSettingsCommand { get; }
+
+  public void UpdateDelta(string key, double delta)
+  {
+    var currentDelta = CurrentSettings?.Deltas.GetValueOrDefault(key);
+    if(currentDelta is null || currentDelta == delta)
+    {
+      return;
+    }
+
+    Deltas[key] = delta;
+    DeltasChanged = AnyDeltasChanged();
+  }
+
+  private bool AnyDeltasChanged()
+  {
+    if(CurrentSettings is null)
+      return false;
+
+    foreach(var item in Deltas)
+    {
+      var existingDelta = CurrentSettings.Deltas.GetValueOrDefault(item.Key);
+
+      if(item.Value != existingDelta)
+        return true;
+    }
+
+    return false;
+  }
+
+  public async Task Init()
+  {
+    Fetched = false;
+    var settings = await _devicesClient.GetDeviceLoggerSettings(new DeviceLoggerSettingsRequest { DeviceId = _deviceId }, null);
+
+    CurrentSettings = settings;
+    IntervalMs = settings.IntervalMs;
+    LoggingType = settings.LoggingType;
+    LoggingEnabled = settings.LoggingEnabled;
+
+    var stateSchema = await _devicesClient.GetDeviceStateSchema(new DeviceStateSchemaRequest { DeviceId = _deviceId }, null);
+    var numericFields = stateSchema.Schema?.Fields
+      .Where(f => f.Value.Type is AresDataType.Number or AresDataType.Float or AresDataType.Int)
+      .ToArray() ?? [];
+
+    var deviceDefaultDeltas = numericFields.Select(nf => new KeyValuePair<string, double>(nf.Key, 0)).ToDictionary();
+    foreach(var delta in deviceDefaultDeltas)
+    {
+      var hasSetting = settings.Deltas.TryGetValue(delta.Key, out var deltaSetting);
+      if(!hasSetting)
+      {
+        continue;
+      }
+
+      deviceDefaultDeltas[delta.Key] = deltaSetting;
+    }
+
+    Deltas.Clear();
+    foreach(var item in deviceDefaultDeltas)
+    {
+      Deltas[item.Key] = item.Value;
+    }
+
+    DeltasChanged = AnyDeltasChanged();
+    Fetched = true;
+  }
+
+  public async Task<bool> Save()
+  {
+    if(!Updated)
+      return false;
+
+    var settings = new DeviceLoggingSettings
+    {
+      DeviceId = _deviceId,
+      IntervalMs = IntervalMs,
+      LoggingType = LoggingType,
+      LoggingEnabled = LoggingEnabled
+    };
+
+    settings.Deltas.Add(Deltas);
+    await _devicesClient.SetDeviceLoggerSettings(settings, null);
+    await Init();
+    return true;
+  }
+}

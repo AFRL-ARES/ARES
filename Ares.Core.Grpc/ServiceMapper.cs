@@ -20,5 +20,6 @@ public static class ServiceMapper
     routeBuilder.MapGrpcService<AnalyzerService>();
     routeBuilder.MapGrpcService<AnalysisService>();
     routeBuilder.MapGrpcService<AresSafetyManagementService>();
+    routeBuilder.MapGrpcService<AresDriverService>();
   }
 }

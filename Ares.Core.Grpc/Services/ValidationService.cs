@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -24,7 +24,7 @@ public class ValidationService : AresValidation.AresValidationBase
     _validators = validators;
   }
 
-  public override async Task<ValidationResponse> ValidateAnalyzerSelection(AnalyzerValidationRequest request, ServerCallContext context)
+  public override async Task<ValidationResponse> ValidateAnalyzerSelection(AnalyzerValidationRequest request, ServerCallContext? context)
   {
     var analyzer = _analyzerRepo.GetAnalyzerById(request.AnalyzerId);
     if(request.ExperimentTemplate is null)
@@ -49,7 +49,7 @@ public class ValidationService : AresValidation.AresValidationBase
     return response;
   }
 
-  public override async Task<ValidationResponse> ValidateFullCampaign(CampaignTemplate request, ServerCallContext context)
+  public override async Task<ValidationResponse> ValidateFullCampaign(CampaignTemplate request, ServerCallContext? context)
   {
     var validatorResponses = await Task.WhenAll(_validators.Select(validator => validator.Validate(request)));
     var response = new ValidationResponse
@@ -62,7 +62,7 @@ public class ValidationService : AresValidation.AresValidationBase
     return response;
   }
 
-  public override Task<ValidationResponse> ValidateRegisteredDevices(Empty request, ServerCallContext context)
+  public override Task<ValidationResponse> ValidateRegisteredDevices(Empty request, ServerCallContext? context)
   {
     throw new NotImplementedException("Might not need this method");
   }

@@ -1,0 +1,31 @@
+.data-explorer-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  height: 100%;
+  min-height: 0;
+}
+
+.data-explorer-page h3 {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+::deep .data-explorer-tabs {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+::deep .data-explorer-tabs > .rz-tabview-nav {
+  flex: 0 0 auto;
+}
+
+::deep .data-explorer-tabs > .rz-tabview-panels,
+::deep .data-explorer-tabs .rz-tabview-panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}

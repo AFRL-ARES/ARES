@@ -1,0 +1,1516 @@
+using Antlr4.Runtime.Misc;
+using Ares.Datamodel;
+using Ares.Datamodel.Extensions;
+using AresScript.Environment;
+using AresScript.Generated;
+using AresScript.Symbols;
+using Google.Protobuf;
+
+namespace AresScript.Interpreters;
+
+/// <summary>
+/// The main script execution interpreter. It executes the system functions.
+/// </summary>
+public class AresBaseInterpreter : AresLangBaseVisitor<Task<AresValue>>
+{
+  protected readonly AresScriptEnvironment Environment;
+  private readonly ScriptExecutionControlToken _executionControlToken;
+  private readonly Action<AresFunctionInvocation>? _functionInvocationObserver;
+  private readonly Action<AresFunctionExecutionEvent>? _functionExecutionEventObserver;
+  private readonly AsyncLocal<Stack<string>> _callStack = new();
+  private readonly Stack<(string FunctionId, AresValueSchema ReturnSchema)> _activeFunctionReturnTypes = [];
+  private long _nextCallId;
+  private int _lvalueResolutionDepth;
+
+  protected override Task<AresValue> DefaultResult => Task.FromResult(AresValueHelper.CreateUnit());
+
+  public AresBaseInterpreter(CancellationToken cancellationToken = default)
+    : this(new AresScriptEnvironment(), new ScriptExecutionControlToken(cancellationToken), null)
+  {
+  }
+
+  public AresBaseInterpreter(AresScriptEnvironment aresScriptEnvironment, CancellationToken cancellationToken = default)
+    : this(aresScriptEnvironment, new ScriptExecutionControlToken(cancellationToken), null)
+  {
+  }
+
+  public AresBaseInterpreter(ScriptExecutionControlToken executionControlToken = default)
+    : this(new AresScriptEnvironment(), executionControlToken, null)
+  {
+  }
+
+  public AresBaseInterpreter(AresScriptEnvironment aresScriptEnvironment, ScriptExecutionControlToken executionControlToken)
+    : this(aresScriptEnvironment, executionControlToken, null)
+  {
+  }
+
+  public AresBaseInterpreter(
+    AresScriptEnvironment aresScriptEnvironment,
+    ScriptExecutionControlToken executionControlToken,
+    Action<AresFunctionInvocation>? functionInvocationObserver)
+    : this(aresScriptEnvironment, executionControlToken, functionInvocationObserver, null)
+  {
+  }
+
+  public AresBaseInterpreter(
+    AresScriptEnvironment aresScriptEnvironment,
+    ScriptExecutionControlToken executionControlToken,
+    Action<AresFunctionInvocation>? functionInvocationObserver,
+    Action<AresFunctionExecutionEvent>? functionExecutionEventObserver)
+  {
+    Environment = aresScriptEnvironment ?? throw new ArgumentNullException(nameof(aresScriptEnvironment));
+    _executionControlToken = executionControlToken;
+    _functionInvocationObserver = functionInvocationObserver;
+    _functionExecutionEventObserver = functionExecutionEventObserver;
+  }
+
+  private async Task CheckExecutionControlAsync()
+  {
+    _executionControlToken.ThrowIfCancellationRequested();
+    await _executionControlToken.WaitForResumeAsync();
+    _executionControlToken.ThrowIfCancellationRequested();
+  }
+
+  public override async Task<AresValue> VisitProgram(AresLangParser.ProgramContext context)
+  {
+    await CheckExecutionControlAsync();
+    // We must manually iterate and await to ensure statements run one after another.
+    foreach(var child in context.children)
+    {
+      await CheckExecutionControlAsync();
+      if(child is AresLangParser.StatementContext stmt)
+      {
+        await Visit(stmt);
+      }
+    }
+    return AresValueHelper.CreateUnit();
+  }
+
+  public override async Task<AresValue> VisitBlock(AresLangParser.BlockContext context)
+  {
+    await CheckExecutionControlAsync();
+    // Iterate over the statements in the block and await them
+    foreach(var stmt in context.statement())
+    {
+      await CheckExecutionControlAsync();
+      await Visit(stmt);
+    }
+    return AresValueHelper.CreateUnit();
+  }
+
+  public override async Task<AresValue> VisitFuncBlock(AresLangParser.FuncBlockContext context)
+  {
+    await CheckExecutionControlAsync();
+    // Iterate over the statements in the block and await them
+    foreach(var stmt in context.statement())
+    {
+      await CheckExecutionControlAsync();
+      try
+      {
+        await Visit(stmt);
+      }
+      catch(ReturnControlFlowException e)
+      {
+        return e.Value;
+      }
+    }
+
+    return AresValueHelper.CreateUnit();
+  }
+
+  public override async Task<AresValue> VisitLoopBlock(AresLangParser.LoopBlockContext context)
+  {
+    await CheckExecutionControlAsync();
+    foreach(var stmt in context.statement())
+    {
+      await CheckExecutionControlAsync();
+      await Visit(stmt);
+    }
+    return AresValueHelper.CreateUnit();
+  }
+
+  public override Task<AresValue> VisitBreakStmt(AresLangParser.BreakStmtContext context)
+  {
+    throw new LoopBreakException();
+  }
+
+  public override Task<AresValue> VisitContinueStmt(AresLangParser.ContinueStmtContext context)
+  {
+    throw new LoopContinueException();
+  }
+
+  public override async Task<AresValue> VisitReturnStmt(AresLangParser.ReturnStmtContext context)
+  {
+    await CheckExecutionControlAsync();
+    var expression = context.expression();
+    if(expression is null)
+    {
+      var unitReturn = AresValueHelper.CreateUnit();
+      ValidateCurrentFunctionReturnType(unitReturn, context.Start.Line, context.Start.Column);
+      throw new ReturnControlFlowException(unitReturn);
+    }
+
+    var val = await Visit(context.expression());
+    ValidateCurrentFunctionReturnType(val, context.Start.Line, context.Start.Column);
+    throw new ReturnControlFlowException(val);
+  }
+
+  public override async Task<AresValue> VisitAssertStmt(AresLangParser.AssertStmtContext context)
+  {
+    await CheckExecutionControlAsync();
+    var assertContext = context.assertStatement();
+    var condition = await Visit(assertContext.expression(0));
+    if(condition.KindCase != AresValue.KindOneofCase.BoolValue)
+    {
+      throw new AresInterpreterException(
+        "Assert condition must be boolean.",
+        assertContext.expression(0).Start.Line,
+        assertContext.expression(0).Start.Column
+      );
+    }
+
+    if(condition.BoolValue)
+    {
+      return AresValueHelper.CreateUnit();
+    }
+
+    var message = "Assertion failed";
+    if(assertContext.expression().Length > 1)
+    {
+      var messageValue = await Visit(assertContext.expression(1));
+      message = $"Assertion failed: {messageValue.Stringify()}";
+    }
+
+    throw new AresInterpreterException($"{message}.", context.Start.Line, context.Start.Column);
+  }
+
+  public override async Task<AresValue> VisitAssignStmt(AresLangParser.AssignStmtContext context)
+  {
+    await CheckExecutionControlAsync();
+    var assignment = context.assignment();
+    if(assignment.lvalue() is AresLangParser.LValueIndexContext indexContext)
+    {
+      _lvalueResolutionDepth++;
+      AresValue container;
+      try
+      {
+        container = await Visit(indexContext.lvalue());
+      }
+      finally
+      {
+        _lvalueResolutionDepth--;
+      }
+      var indexVal = await Visit(indexContext.expression());
+      if(container.KindCase == AresValue.KindOneofCase.StructValue)
+      {
+        if(!indexVal.HasStringValue)
+        {
+          throw new AresInterpreterException(
+            "Provided index expression was not a string.",
+            indexContext.expression().Start.Line,
+            indexContext.expression().Start.Column
+          );
+        }
+
+        var newValueForStruct = await Visit(assignment.expression());
+        container.StructValue.Fields[indexVal.StringValue] = newValueForStruct;
+        return AresValueHelper.CreateUnit();
+      }
+
+      if(!indexVal.HasNumberValue)
+      {
+        throw new AresInterpreterException(
+          "Provided index expression was not a number.",
+          indexContext.expression().Start.Line,
+          indexContext.expression().Start.Column
+        );
+      }
+
+      var index = Convert.ToInt32(indexVal.NumberValue);
+      var newValue = await Visit(assignment.expression());
+
+      switch(container.KindCase)
+      {
+        case AresValue.KindOneofCase.BytesValue:
+          {
+            if(!newValue.HasNumberValue)
+            {
+              throw new AresInterpreterException(
+                "Assigned value must be numeric for bytes.",
+                context.Start.Line,
+                context.Start.Column
+              );
+            }
+
+            var byteValue = newValue.NumberValue;
+            if(byteValue < byte.MinValue || byteValue > byte.MaxValue)
+            {
+              throw new AresInterpreterException(
+                "Assigned byte value is out of range.",
+                context.Start.Line,
+                context.Start.Column
+              );
+            }
+
+            var bytes = container.BytesValue.ToByteArray();
+            bytes[index] = (byte)byteValue;
+            container.BytesValue = ByteString.CopyFrom(bytes);
+            return AresValueHelper.CreateUnit();
+          }
+        case AresValue.KindOneofCase.StringArrayValue:
+          {
+            if(!newValue.HasStringValue)
+            {
+              throw new AresInterpreterException(
+                "Assigned value must be a string.",
+                context.Start.Line,
+                context.Start.Column
+              );
+            }
+
+            container.StringArrayValue.Strings[index] = newValue.StringValue;
+            return AresValueHelper.CreateUnit();
+          }
+        case AresValue.KindOneofCase.NumberArrayValue:
+          {
+            if(!newValue.HasNumberValue)
+            {
+              throw new AresInterpreterException(
+                "Assigned value must be numeric.",
+                context.Start.Line,
+                context.Start.Column
+              );
+            }
+
+            container.NumberArrayValue.Numbers[index] = newValue.NumberValue;
+            return AresValueHelper.CreateUnit();
+          }
+        case AresValue.KindOneofCase.ListValue:
+          {
+            var listValue = container.ListValue.Values[index];
+            listValue.ClearKind();
+            listValue.MergeFrom(newValue);
+            return AresValueHelper.CreateUnit();
+          }
+        default:
+          throw new AresInterpreterException(
+            $"Cannot assign to index of type {container.KindCase}.",
+            context.Start.Line,
+            context.Start.Column
+          );
+      }
+    }
+
+    var aresVal = await Visit(assignment.lvalue());
+    var assignedValue = await Visit(assignment.expression());
+    aresVal.ClearKind();
+    aresVal.MergeFrom(assignedValue);
+    return AresValueHelper.CreateUnit();
+  }
+
+  public override async Task<AresValue> VisitExprStmt(AresLangParser.ExprStmtContext context)
+  {
+    await CheckExecutionControlAsync();
+    await Visit(context.expression());
+    return AresValueHelper.CreateUnit();
+  }
+
+  public override async Task<AresValue> VisitWhileStmt([NotNull] AresLangParser.WhileStmtContext context)
+  {
+    while(true)
+    {
+      await CheckExecutionControlAsync();
+      var condition = await Visit(context.whileStatement().expression());
+      if(!condition.HasBoolValue || !condition.BoolValue)
+      {
+        break;
+      }
+
+      try
+      {
+        await Visit(context.whileStatement().loopBlock());
+      }
+      catch(LoopContinueException)
+      {
+      }
+      catch(LoopBreakException)
+      {
+        break;
+      }
+    }
+
+    return AresValueHelper.CreateUnit();
+  }
+
+  public override async Task<AresValue> VisitForStmt([NotNull] AresLangParser.ForStmtContext context)
+  {
+    await CheckExecutionControlAsync();
+    var iterable = await Visit(context.forStatement().expression());
+    var iterVar = context.forStatement().ID().GetText();
+
+    var items = iterable.KindCase switch
+    {
+      AresValue.KindOneofCase.ListValue => iterable.ListValue.Values,
+      AresValue.KindOneofCase.StringArrayValue => iterable.StringArrayValue.Strings.Select(AresValueHelper.CreateString),
+      AresValue.KindOneofCase.NumberArrayValue => iterable.NumberArrayValue.Numbers.Select(AresValueHelper.CreateNumber),
+      AresValue.KindOneofCase.BytesValue => iterable.BytesValue.Select(b => AresValueHelper.CreateNumber(b)),
+      _ => throw new AresInterpreterException(
+        $"Value is not iterable: {iterable.KindCase}.",
+        context.Start.Line,
+        context.Start.Column
+      )
+    };
+
+    foreach(var item in items)
+    {
+      await CheckExecutionControlAsync();
+      Environment[iterVar] = item;
+      try
+      {
+        await Visit(context.forStatement().loopBlock());
+      }
+      catch(LoopContinueException)
+      {
+      }
+      catch(LoopBreakException)
+      {
+        break;
+      }
+    }
+
+    return AresValueHelper.CreateUnit();
+  }
+
+  public override async Task<AresValue> VisitParallelBlock(AresLangParser.ParallelBlockContext context)
+  {
+    await CheckExecutionControlAsync();
+    var expContexts = context.expression();
+    var expTasks = expContexts.Select(Visit);
+    await Task.WhenAll(expTasks);
+    return AresValueHelper.CreateUnit();
+  }
+
+  public override Task<AresValue> VisitLValueId(AresLangParser.LValueIdContext context)
+  {
+    var baseId = context.ID().GetText();
+    if(Environment.TryGetValueCurrentScope(baseId, out var value))
+    {
+      return Task.FromResult(value);
+    }
+
+    if(_lvalueResolutionDepth > 0 && Environment.TryGetUserValue(baseId, out var outerValue))
+    {
+      return Task.FromResult(outerValue);
+    }
+
+    Environment[baseId] = AresValueHelper.CreateNull();
+    return Task.FromResult(Environment[baseId]);
+  }
+
+  public override async Task<AresValue> VisitLValueMember(AresLangParser.LValueMemberContext context)
+  {
+    _lvalueResolutionDepth++;
+    AresValue value;
+    try
+    {
+      value = await Visit(context.lvalue());
+    }
+    finally
+    {
+      _lvalueResolutionDepth--;
+    }
+
+    if(value.StructValue is null)
+    {
+      throw new AresInterpreterException(
+        $"Expected a struct value, currently {value.KindCase}.",
+        context.Start.Line,
+        context.Start.Column
+      );
+    }
+    var id = context.ID().GetText();
+    if(value.StructValue.Fields.TryGetValue(id, out var member))
+    {
+      return member;
+    }
+
+    var created = AresValueHelper.CreateNull();
+    value.StructValue.Fields[id] = created;
+    return created;
+  }
+
+  public override async Task<AresValue> VisitLValueIndex(AresLangParser.LValueIndexContext context)
+  {
+    _lvalueResolutionDepth++;
+    AresValue currentValue;
+    try
+    {
+      currentValue = await Visit(context.lvalue());
+    }
+    finally
+    {
+      _lvalueResolutionDepth--;
+    }
+
+    if(currentValue.KindCase != AresValue.KindOneofCase.BytesValue
+        && currentValue.KindCase != AresValue.KindOneofCase.StringArrayValue
+        && currentValue.KindCase != AresValue.KindOneofCase.NumberArrayValue
+        && currentValue.KindCase != AresValue.KindOneofCase.ListValue)
+    {
+      throw new AresInterpreterException(
+        "Cannot access index of a value that is not of list type.",
+        context.Start.Line,
+        context.Start.Column
+      );
+    }
+
+    var indexVal = await Visit(context.expression());
+    if(!indexVal.HasNumberValue)
+    {
+      throw new AresInterpreterException(
+        "Provided index expression was not a number.",
+        context.expression().Start.Line,
+        context.expression().Start.Column
+      );
+    }
+
+    var index = Convert.ToInt32(indexVal.NumberValue);
+
+    var val = currentValue.KindCase switch
+    {
+      AresValue.KindOneofCase.BytesValue => AresValueHelper.CreateNumber(currentValue.BytesValue[index]),
+      AresValue.KindOneofCase.StringArrayValue => AresValueHelper.CreateString(currentValue.StringArrayValue.Strings[index]),
+      AresValue.KindOneofCase.NumberArrayValue => AresValueHelper.CreateNumber(currentValue.NumberArrayValue.Numbers[index]),
+      AresValue.KindOneofCase.ListValue => currentValue.ListValue.Values[index],
+      _ => throw new AresInterpreterException(
+        $"Unsupported data type {currentValue.KindCase}.",
+        context.Start.Line,
+        context.Start.Column
+      )
+    };
+
+    return val;
+  }
+
+  public override async Task<AresValue> VisitIfStmt([NotNull] AresLangParser.IfStmtContext context)
+  {
+    var numExpressions = context.ifStatement().expression().Length;
+
+    if(numExpressions > 0)
+    {
+      for(var i = 0; i < numExpressions; i++)
+      {
+        var condition = await Visit(context.ifStatement().expression(i));
+        var isTrue = condition is { HasBoolValue: true, BoolValue: true };
+        if(isTrue)
+        {
+          await Visit(context.ifStatement().block(i));
+          return AresValueHelper.CreateUnit();
+        }
+      }
+    }
+
+    if(context.ifStatement().block().Length > numExpressions)
+    {
+      await Visit(context.ifStatement().block().Last()); // else block
+    }
+
+    return AresValueHelper.CreateUnit();
+  }
+
+  public override Task<AresValue> VisitFunctionDecl([NotNull] AresLangParser.FunctionDeclContext context)
+  {
+    var decl = context.functionDeclaration();
+    var functionId = decl.ID().GetText();
+    var parameters = (decl.parameterList()?.parameter() ?? [])
+      .Select(parameter =>
+      {
+        var parameterName = parameter.ID().GetText();
+        if(!AresScriptTypeHints.TryParseTypeHint(parameter.typeHint(), out var parsedSchema))
+        {
+          throw new AresInterpreterException(
+            $"Unknown type hint '{parameter.typeHint()?.GetText()}' for parameter '{parameterName}' in function '{functionId}'.",
+            parameter.Start.Line,
+            parameter.Start.Column
+          );
+        }
+
+        return new AresScriptParameter(parameterName, parsedSchema);
+      })
+      .ToArray();
+    var block = decl.funcBlock();
+    if(!AresScriptTypeHints.TryParseTypeHint(decl.typeHint(), out var returnSchema))
+    {
+      throw new AresInterpreterException(
+        $"Unknown return type hint '{decl.typeHint()?.GetText()}' in function '{functionId}'.",
+        decl.Start.Line,
+        decl.Start.Column
+      );
+    }
+
+    var userFunc = new AresScriptFunction(functionId, parameters, block, returnSchema);
+    Environment.AssignFunction(functionId, userFunc);
+
+    return Task.FromResult(AresValueHelper.CreateFunction(functionId));
+  }
+
+  #region Atoms
+  public override Task<AresValue> VisitInt([NotNull] AresLangParser.IntContext context)
+  {
+    var intText = context.INT().GetText().Replace("_", string.Empty, StringComparison.Ordinal);
+    var isInt = int.TryParse(intText, out var integer);
+    if(!isInt)
+    {
+      throw new AresInterpreterException("Unable to parse to int.", context.Start.Line, context.Start.Column);
+    }
+    return Task.FromResult(AresValueHelper.CreateNumber(integer));
+  }
+
+  public override Task<AresValue> VisitFloat([NotNull] AresLangParser.FloatContext context)
+  {
+    var floatText = context.FLOAT().GetText().Replace("_", string.Empty, StringComparison.Ordinal);
+    var isFloat = double.TryParse(floatText, out var doubleBoi);
+    if(!isFloat)
+    {
+      throw new AresInterpreterException("Unable to parse to float.", context.Start.Line, context.Start.Column);
+    }
+
+    return Task.FromResult(AresValueHelper.CreateNumber(doubleBoi));
+  }
+
+  public override Task<AresValue> VisitString([NotNull] AresLangParser.StringContext context)
+  {
+    var raw = context.STRING().GetText();
+    return Task.FromResult(AresValueHelper.CreateString(InterpreterHelpers.Unquote(raw)));
+  }
+
+  public override Task<AresValue> VisitBool([NotNull] AresLangParser.BoolContext context)
+  {
+    var boolText = context.BOOL().GetText();
+    var boolValue = boolText.Equals("true", StringComparison.OrdinalIgnoreCase);
+    return Task.FromResult(AresValueHelper.CreateBool(boolValue));
+  }
+
+  public override Task<AresValue> VisitNone(AresLangParser.NoneContext context)
+  {
+    return Task.FromResult(AresValueHelper.CreateNull());
+  }
+
+  public override Task<AresValue> VisitId(AresLangParser.IdContext context)
+  {
+    var id = context.ID().GetText();
+    if(Environment.TryGetSystemFunction(id, out var _)
+      || Environment.TryGetUserFunction(id, out var _)
+      || Environment.TryGetUserLambda(id, out var _))
+    {
+      return Task.FromResult(AresValueHelper.CreateFunction(id));
+    }
+
+    return Task.FromResult(Environment[context.ID().GetText()]);
+  }
+
+  public override async Task<AresValue> VisitParens([NotNull] AresLangParser.ParensContext context)
+  {
+    var exprValue = await Visit(context.expression());
+
+    return exprValue;
+  }
+
+  public override async Task<AresValue> VisitArray([NotNull] AresLangParser.ArrayContext context)
+  {
+    if(context.expression().Length == 0)
+    {
+      return AresValueHelper.CreateList();
+    }
+
+    var aresVals = new List<AresValue>();
+    foreach(var expr in context.expression())
+    {
+      var val = await Visit(expr);
+      aresVals.Add(val);
+    }
+
+    var initialType = aresVals.First().KindCase;
+    var sameType = aresVals.All(v => v.KindCase == initialType);
+    if(sameType && initialType == AresValue.KindOneofCase.NumberValue)
+    {
+      var nums = aresVals.Select(v => v.NumberValue).ToArray();
+      return AresValueHelper.CreateNumberArray(nums);
+    }
+
+    if(sameType && initialType == AresValue.KindOneofCase.StringValue)
+    {
+      var strings = aresVals.Select(v => v.StringValue).ToArray();
+      return AresValueHelper.CreateStringArray(strings);
+    }
+
+    return AresValueHelper.CreateList(aresVals);
+  }
+
+  public override Task<AresValue> VisitLambdaExpr(AresLangParser.LambdaExprContext context)
+  {
+    var lambdaContext = context.lambdaExpression();
+    var parameters = lambdaContext switch
+    {
+      AresLangParser.LambdaSingleParamContext singleParam => [singleParam.ID().GetText()],
+      AresLangParser.LambdaParamListContext paramList => paramList.ID().Select(id => id.GetText()).ToArray(),
+      _ => []
+    };
+
+    var body = lambdaContext switch
+    {
+      AresLangParser.LambdaSingleParamContext singleParam => singleParam.expression(),
+      AresLangParser.LambdaParamListContext paramList => paramList.expression(),
+      _ => throw new AresInterpreterException("Invalid lambda expression.", context.Start.Line, context.Start.Column)
+    };
+
+    var closure = Environment.GetAllUserVariableSymbols()
+      .ToDictionary(kv => kv.Key, kv => kv.Value.Value.Clone(), StringComparer.Ordinal);
+    var lambdaId = $"lambda::{Guid.NewGuid():N}";
+    Environment.AssignLambda(lambdaId, new AresScriptLambda(lambdaId, parameters, body, closure));
+    return Task.FromResult(AresValueHelper.CreateFunction(lambdaId));
+  }
+
+  public override async Task<AresValue> VisitStruct([NotNull] AresLangParser.StructContext context)
+  {
+    var aresStruct = new AresStruct();
+    foreach(var pair in context.structure().pair())
+    {
+      var key = pair.ID()?.GetText() ?? InterpreterHelpers.Unquote(pair.STRING().GetText());
+      var value = await Visit(pair.expression());
+      aresStruct.AddValue(key, value);
+    }
+
+    return AresValueHelper.CreateStruct(aresStruct);
+  }
+  #endregion
+
+  #region Expressions
+
+  public override async Task<AresValue> VisitMemberAccess([NotNull] AresLangParser.MemberAccessContext context)
+  {
+    var varWithMember = await Visit(context.expression());
+    var id = context.ID().GetText();
+    if(varWithMember.KindCase == AresValue.KindOneofCase.StructValue
+       && varWithMember.StructValue.Fields.TryGetValue(id, out var aresValue))
+    {
+      return aresValue;
+    }
+
+    if(varWithMember.KindCase == AresValue.KindOneofCase.QuantityValue)
+    {
+      if(nameof(varWithMember.QuantityValue.Scalar).Equals(id, StringComparison.OrdinalIgnoreCase))
+      {
+        return AresValueHelper.CreateNumber(varWithMember.QuantityValue.Scalar);
+      }
+    }
+    
+    throw new AresInterpreterException(
+      $"Trying to access a member of a value that has no members. Value type: {varWithMember.KindCase}.",
+      context.Start.Line,
+      context.Start.Column
+    );
+  }
+
+  public override async Task<AresValue> VisitIndexAccess([NotNull] AresLangParser.IndexAccessContext context)
+  {
+    var currentValue = await Visit(context.expression(0));
+    if(currentValue.KindCase != AresValue.KindOneofCase.BytesValue
+        && currentValue.KindCase != AresValue.KindOneofCase.StringArrayValue
+        && currentValue.KindCase != AresValue.KindOneofCase.NumberArrayValue
+        && currentValue.KindCase != AresValue.KindOneofCase.ListValue
+        && currentValue.KindCase != AresValue.KindOneofCase.StructValue)
+    {
+      throw new AresInterpreterException(
+        "Cannot access index of a value that is not of list or struct type.",
+        context.Start.Line,
+        context.Start.Column
+      );
+    }
+
+    var indexVal = await Visit(context.expression(1));
+    if(currentValue.KindCase == AresValue.KindOneofCase.StructValue)
+    {
+      if(!indexVal.HasStringValue)
+      {
+        throw new AresInterpreterException(
+          "Provided index expression was not a string.",
+          context.expression(1).Start.Line,
+          context.expression(1).Start.Column
+        );
+      }
+
+      return currentValue.StructValue.Fields.TryGetValue(indexVal.StringValue, out var fieldValue)
+        ? fieldValue
+        : AresValueHelper.CreateNull();
+    }
+
+    if(!indexVal.HasNumberValue)
+    {
+      throw new AresInterpreterException(
+        "Provided index expression was not a number.",
+        context.expression(1).Start.Line,
+        context.expression(1).Start.Column
+      );
+    }
+
+    var index = Convert.ToInt32(indexVal.NumberValue);
+    try
+    {
+      var val = currentValue.KindCase switch
+      {
+        AresValue.KindOneofCase.BytesValue => AresValueHelper.CreateNumber(currentValue.BytesValue[index]),
+        AresValue.KindOneofCase.StringArrayValue => AresValueHelper.CreateString(currentValue.StringArrayValue.Strings[index]),
+        AresValue.KindOneofCase.NumberArrayValue => AresValueHelper.CreateNumber(currentValue.NumberArrayValue.Numbers[index]),
+        AresValue.KindOneofCase.ListValue => currentValue.ListValue.Values[index],
+        _ => throw new AresInterpreterException(
+          $"Unsupported data type {currentValue.KindCase}.",
+          context.Start.Line,
+          context.Start.Column
+        )
+      };
+
+      return val;
+    }
+    catch(ArgumentOutOfRangeException)
+    {
+      throw new AresInterpreterException("Index was out of range.", context.Start.Line, context.Start.Column);
+    }
+  }
+
+  public override async Task<AresValue> VisitFunctionCall(AresLangParser.FunctionCallContext ctx)
+  {
+    await CheckExecutionControlAsync();
+
+    var positionalArgs = new List<AresValue>();
+    var positionalArgExpressions = new List<AresLangParser.ExpressionContext>();
+    var keywordArgs = new Dictionary<string, AresValue>(StringComparer.Ordinal);
+    var keywordArgContexts = new Dictionary<string, AresLangParser.KeywordArgContext>(StringComparer.Ordinal);
+    var seenKeywordArg = false;
+
+    var argContexts = ctx.argList()?.argument() ?? Enumerable.Empty<AresLangParser.ArgumentContext>();
+    foreach(var argCtx in argContexts)
+    {
+      await CheckExecutionControlAsync();
+      switch(argCtx)
+      {
+        case AresLangParser.PositionalArgContext positionalArg:
+          {
+            if(seenKeywordArg)
+            {
+              throw new AresInterpreterException(
+                "Positional argument follows keyword argument.",
+                positionalArg.Start.Line,
+                positionalArg.Start.Column
+              );
+            }
+
+            positionalArgExpressions.Add(positionalArg.expression());
+            positionalArgs.Add(await Visit(positionalArg.expression()));
+            break;
+          }
+        case AresLangParser.KeywordArgContext keywordArg:
+          {
+            seenKeywordArg = true;
+            var name = keywordArg.ID().GetText();
+            if(keywordArgs.ContainsKey(name))
+            {
+              throw new AresInterpreterException(
+                $"Duplicate keyword argument '{name}'.",
+                keywordArg.Start.Line,
+                keywordArg.Start.Column
+              );
+            }
+
+            keywordArgs[name] = await Visit(keywordArg.expression());
+            keywordArgContexts[name] = keywordArg;
+            break;
+          }
+        default:
+          throw new AresInterpreterException(
+            $"Unsupported argument type {argCtx.GetType().Name}.",
+            argCtx.Start.Line,
+            argCtx.Start.Column
+          );
+      }
+    }
+
+    var memberResolution = await TryResolveMemberCallee(ctx, ctx.expression(), positionalArgs, keywordArgs, keywordArgContexts);
+    if(memberResolution.ExtensionHandled)
+    {
+      return memberResolution.ExtensionResult!;
+    }
+
+    var callee = memberResolution.Callee ?? await Visit(ctx.expression());
+
+    if(callee.FunctionValue is null)
+      throw new AresInterpreterException("Attempted to call a non-function", ctx.Start.Line, ctx.Start.Column);
+
+    var id = callee.FunctionValue.FunctionId;
+
+    if(Environment.TryGetSystemFunction(id, out var aresFn))
+    {
+      if(keywordArgs.Count > 0)
+      {
+        var firstKeywordArg = keywordArgContexts.Values.First();
+        throw new AresInterpreterException(
+          $"Runtime function '{id}' does not support keyword arguments",
+          firstKeywordArg.Start.Line,
+          firstKeywordArg.Start.Column
+        );
+      }
+
+      await CheckExecutionControlAsync();
+      return await ExecuteFunctionInvocationAsync(ctx, aresFn.Id, aresFn.Name, AresFunctionInvocationKind.System, async () =>
+      {
+        return await aresFn.Body(positionalArgs, _executionControlToken);
+      });
+    }
+
+    if(!Environment.TryGetUserFunction(id, out var userFn))
+    {
+      if(!Environment.TryGetUserLambda(id, out var userLambda))
+      {
+        throw new AresInterpreterException($"Function '{id}' not found", ctx.Start.Line, ctx.Start.Column);
+      }
+
+      return await ExecuteFunctionInvocationAsync(ctx, id, id, AresFunctionInvocationKind.Lambda, async () =>
+      {
+        return await ExecuteLambda(ctx, userLambda, id, positionalArgs, keywordArgs, keywordArgContexts);
+      });
+    }
+
+    await CheckExecutionControlAsync();
+    if(Environment.Depth > 100)
+    {
+      throw new AresInterpreterException("Maximum function call depth reached.", ctx.Start.Line, ctx.Start.Column);
+    }
+    Environment.EnterScope();
+    try
+    {
+      if(positionalArgs.Count > userFn.ParameterNames.Count)
+      {
+        var extraArgument = positionalArgExpressions[userFn.ParameterNames.Count];
+        throw new AresInterpreterException(
+          $"Function '{id}' expected {userFn.ParameterNames.Count} arguments but got {positionalArgs.Count}",
+          extraArgument.Start.Line,
+          extraArgument.Start.Column
+        );
+      }
+
+      for(var i = 0; i < positionalArgs.Count; i++)
+      {
+        Environment[userFn.ParameterNames[i]] = positionalArgs[i];
+      }
+
+      foreach(var (name, value) in keywordArgs)
+      {
+        var index = FindParameterIndex(userFn.ParameterNames, name);
+        if(index < 0)
+        {
+          var keywordArg = keywordArgContexts[name];
+          throw new AresInterpreterException(
+            $"Function '{id}' got an unexpected keyword argument '{name}'",
+            keywordArg.Start.Line,
+            keywordArg.Start.Column
+          );
+        }
+
+        if(index < positionalArgs.Count)
+        {
+          var keywordArg = keywordArgContexts[name];
+          throw new AresInterpreterException(
+            $"Function '{id}' got multiple values for argument '{name}'",
+            keywordArg.Start.Line,
+            keywordArg.Start.Column
+          );
+        }
+
+        Environment[name] = value;
+      }
+
+      for(var i = positionalArgs.Count; i < userFn.ParameterNames.Count; i++)
+      {
+        var name = userFn.ParameterNames[i];
+        if(!Environment.TryGetValueCurrentScope(name, out var _))
+        {
+          throw new AresInterpreterException($"Function '{id}' missing required argument '{name}'", ctx.Start.Line, ctx.Start.Column);
+        }
+      }
+
+      ValidateUserFunctionArgumentTypeHints(id, userFn, positionalArgs, positionalArgExpressions, keywordArgs, keywordArgContexts);
+
+      var declaredReturnSchema = userFn.ReturnSchema;
+
+      var result = await ExecuteFunctionInvocationAsync(ctx, userFn.Name, userFn.Name, AresFunctionInvocationKind.User, async () =>
+      {
+        _activeFunctionReturnTypes.Push((id, declaredReturnSchema));
+        try
+        {
+          return await Visit(userFn.Body);
+        }
+        finally
+        {
+          _activeFunctionReturnTypes.Pop();
+        }
+      });
+
+      if(!AresScriptTypeHints.IsCompatibleWithTypeHint(result, declaredReturnSchema))
+      {
+        var actualSchema = result.ToAresValueSchema();
+        throw new AresInterpreterException(
+          $"Function '{id}' return type mismatch. Expected {declaredReturnSchema.Stringify()}, received {actualSchema.Stringify()}.",
+          ctx.Start.Line,
+          ctx.Start.Column
+        );
+      }
+
+      return result;
+
+      static int FindParameterIndex(IReadOnlyList<string> parameters, string name)
+      {
+        for(var i = 0; i < parameters.Count; i++)
+        {
+          if(string.Equals(parameters[i], name, StringComparison.Ordinal))
+            return i;
+        }
+
+        return -1;
+      }
+    }
+    finally
+    {
+      Environment.ExitScope();
+    }
+
+  }
+
+  private void ValidateCurrentFunctionReturnType(AresValue value, int line, int column)
+  {
+    if(_activeFunctionReturnTypes.Count == 0)
+    {
+      return;
+    }
+
+    var (functionId, declaredReturnSchema) = _activeFunctionReturnTypes.Peek();
+
+    if(AresScriptTypeHints.IsCompatibleWithTypeHint(value, declaredReturnSchema))
+    {
+      return;
+    }
+
+    var actualSchema = value.ToAresValueSchema();
+    throw new AresInterpreterException(
+      $"Function '{functionId}' return type mismatch. Expected {declaredReturnSchema.Stringify()}, received {actualSchema.Stringify()}.",
+      line,
+      column
+    );
+  }
+
+  private static void ValidateUserFunctionArgumentTypeHints(
+    string functionId,
+    AresScriptFunction userFunction,
+    IReadOnlyList<AresValue> positionalArgs,
+    IReadOnlyList<AresLangParser.ExpressionContext> positionalArgExpressions,
+    IReadOnlyDictionary<string, AresValue> keywordArgs,
+    IReadOnlyDictionary<string, AresLangParser.KeywordArgContext> keywordArgContexts)
+  {
+    for(var i = 0; i < userFunction.Parameters.Count; i++)
+    {
+      var parameter = userFunction.Parameters[i];
+      var parameterName = parameter.Name;
+      var expectedSchema = parameter.Schema;
+
+      AresValue? argument = null;
+      if(i < positionalArgs.Count)
+      {
+        argument = positionalArgs[i];
+        if(AresScriptTypeHints.IsCompatibleWithTypeHint(argument, expectedSchema))
+        {
+          continue;
+        }
+
+        var actualSchema = argument.ToAresValueSchema();
+        var argumentExpression = positionalArgExpressions[i];
+        throw new AresInterpreterException(
+          $"Function '{functionId}' argument '{parameterName}' type mismatch. Expected {expectedSchema.Stringify()}, received {actualSchema.Stringify()}.",
+          argumentExpression.Start.Line,
+          argumentExpression.Start.Column
+        );
+      }
+      else if(keywordArgs.TryGetValue(parameterName, out var keywordArgument))
+      {
+        argument = keywordArgument;
+        if(AresScriptTypeHints.IsCompatibleWithTypeHint(argument, expectedSchema))
+        {
+          continue;
+        }
+
+        var actualSchema = argument.ToAresValueSchema();
+        var keywordArg = keywordArgContexts[parameterName];
+        throw new AresInterpreterException(
+          $"Function '{functionId}' argument '{parameterName}' type mismatch. Expected {expectedSchema.Stringify()}, received {actualSchema.Stringify()}.",
+          keywordArg.expression().Start.Line,
+          keywordArg.expression().Start.Column
+        );
+      }
+
+      // Shouldn't be hit here, but should still check so it doesn't complain about nulls.
+      if(argument is null)
+      {
+        continue;
+      }
+
+    }
+  }
+
+  private async Task<(AresValue? Callee, bool ExtensionHandled, AresValue? ExtensionResult)> TryResolveMemberCallee(
+    AresLangParser.FunctionCallContext functionCallContext,
+    AresLangParser.ExpressionContext expression,
+    List<AresValue> positionalArgs,
+    IReadOnlyDictionary<string, AresValue> keywordArgs,
+    IReadOnlyDictionary<string, AresLangParser.KeywordArgContext> keywordArgContexts)
+  {
+    if(expression is not AresLangParser.MemberAccessContext memberAccess)
+    {
+      return (null, false, null);
+    }
+
+    var memberName = memberAccess.ID().GetText();
+    var receiver = await Visit(memberAccess.expression());
+    if(receiver.StructValue is not null && receiver.StructValue.Fields.TryGetValue(memberName, out var memberValue))
+    {
+      return (memberValue, false, null);
+    }
+
+    if(!Environment.TryGetExtensionFunction(receiver, memberName, out var extensionFunc))
+    {
+      return (null, false, null);
+    }
+
+    if(keywordArgs.Count > 0)
+    {
+      var firstKeywordArg = keywordArgContexts.Values.First();
+      throw new AresInterpreterException(
+        $"Runtime function '{memberName}' does not support keyword arguments",
+        firstKeywordArg.Start.Line,
+        firstKeywordArg.Start.Column
+      );
+    }
+
+    positionalArgs.Insert(0, receiver);
+    await CheckExecutionControlAsync();
+    var result = await ExecuteFunctionInvocationAsync(functionCallContext, extensionFunc.Id, extensionFunc.Name, AresFunctionInvocationKind.Extension, async () =>
+    {
+      return await extensionFunc.Body(positionalArgs, _executionControlToken);
+    });
+    return (null, true, result);
+  }
+
+  private async Task<AresValue> ExecuteFunctionInvocationAsync(
+    AresLangParser.FunctionCallContext context,
+    string functionId,
+    string functionName,
+    AresFunctionInvocationKind kind,
+    Func<Task<AresValue>> body)
+  {
+    var invocation = new AresFunctionInvocation(
+      functionId,
+      functionName,
+      context.GetText(),
+      context.Start.Line,
+      context.Start.Column + 1,
+      kind);
+
+    var callId = $"call::{Interlocked.Increment(ref _nextCallId):N0}";
+    var callStack = _callStack.Value ??= [];
+    var parentCallId = callStack.Count > 0 ? callStack.Peek() : string.Empty;
+    callStack.Push(callId);
+
+    _functionInvocationObserver?.Invoke(invocation);
+    _functionExecutionEventObserver?.Invoke(new AresFunctionExecutionEvent(
+      AresFunctionExecutionEventKind.Started,
+      callId,
+      parentCallId,
+      invocation));
+
+    try
+    {
+      var result = await body();
+      _functionExecutionEventObserver?.Invoke(new AresFunctionExecutionEvent(
+        AresFunctionExecutionEventKind.Completed,
+        callId,
+        parentCallId,
+        invocation,
+        result));
+      return result;
+    }
+    catch(Exception ex)
+    {
+      _functionExecutionEventObserver?.Invoke(new AresFunctionExecutionEvent(
+        AresFunctionExecutionEventKind.Failed,
+        callId,
+        parentCallId,
+        invocation,
+        null,
+        ex.ToString()));
+      throw;
+    }
+    finally
+    {
+      if(callStack.Count > 0)
+      {
+        callStack.Pop();
+      }
+    }
+  }
+
+  private async Task<AresValue> ExecuteLambda(
+    AresLangParser.FunctionCallContext context,
+    AresScriptLambda lambda,
+    string id,
+    IReadOnlyList<AresValue> positionalArgs,
+    IReadOnlyDictionary<string, AresValue> keywordArgs,
+    IReadOnlyDictionary<string, AresLangParser.KeywordArgContext> keywordArgContexts)
+  {
+    await CheckExecutionControlAsync();
+    if(Environment.Depth > 100)
+    {
+      throw new AresInterpreterException("Maximum function call depth reached.", context.Start.Line, context.Start.Column);
+    }
+
+    Environment.EnterScope();
+    try
+    {
+      foreach(var (name, value) in lambda.Closure)
+      {
+        Environment[name] = value.Clone();
+      }
+
+      if(positionalArgs.Count > lambda.Parameters.Count)
+      {
+        var extraArgument = context.argList()?.argument()
+          .OfType<AresLangParser.PositionalArgContext>()
+          .Skip(lambda.Parameters.Count)
+          .FirstOrDefault();
+        throw new AresInterpreterException(
+          $"Function '{id}' expected {lambda.Parameters.Count} arguments but got {positionalArgs.Count}",
+          extraArgument?.Start.Line ?? context.Start.Line,
+          extraArgument?.Start.Column ?? context.Start.Column
+        );
+      }
+
+      for(var i = 0; i < positionalArgs.Count; i++)
+      {
+        Environment[lambda.Parameters[i]] = positionalArgs[i];
+      }
+
+      foreach(var (name, value) in keywordArgs)
+      {
+        var index = FindParameterIndex(lambda.Parameters, name);
+        if(index < 0)
+        {
+          var keywordArg = keywordArgContexts[name];
+          throw new AresInterpreterException(
+            $"Function '{id}' got an unexpected keyword argument '{name}'",
+            keywordArg.Start.Line,
+            keywordArg.Start.Column
+          );
+        }
+
+        if(index < positionalArgs.Count)
+        {
+          var keywordArg = keywordArgContexts[name];
+          throw new AresInterpreterException(
+            $"Function '{id}' got multiple values for argument '{name}'",
+            keywordArg.Start.Line,
+            keywordArg.Start.Column
+          );
+        }
+
+        Environment[name] = value;
+      }
+
+      for(var i = positionalArgs.Count; i < lambda.Parameters.Count; i++)
+      {
+        var name = lambda.Parameters[i];
+        if(!Environment.TryGetValueCurrentScope(name, out var _))
+        {
+          throw new AresInterpreterException($"Function '{id}' missing required argument '{name}'", context.Start.Line, context.Start.Column);
+        }
+      }
+
+      return await Visit(lambda.Body);
+    }
+    finally
+    {
+      Environment.ExitScope();
+    }
+
+    static int FindParameterIndex(IReadOnlyList<string> parameters, string name)
+    {
+      for(var i = 0; i < parameters.Count; i++)
+      {
+        if(string.Equals(parameters[i], name, StringComparison.Ordinal))
+          return i;
+      }
+
+      return -1;
+    }
+  }
+
+  public override async Task<AresValue> VisitUnaryMinus([NotNull] AresLangParser.UnaryMinusContext context)
+  {
+    var value = await Visit(context.expression());
+    if(value.KindCase == AresValue.KindOneofCase.NumberValue)
+    {
+      return AresValueHelper.CreateNumber(-value.NumberValue);
+    }
+
+    try
+    {
+      if(QuantityUnitHelper.TryNegateQuantity(value, out var quantityResult))
+      {
+        return quantityResult!;
+      }
+    }
+    catch(AresQuantityException ex)
+    {
+      throw new AresInterpreterException(ex.Message, context.Start.Line, context.Start.Column);
+    }
+
+    throw new AresInterpreterException(
+      $"Cannot perform unary minus on type {value.KindCase}.",
+      context.Start.Line,
+      context.Start.Column
+    );
+  }
+
+  public override async Task<AresValue> VisitMulDiv(AresLangParser.MulDivContext context)
+  {
+    var left = await Visit(context.expression(0));
+    var right = await Visit(context.expression(1));
+
+    try
+    {
+      Func<double, double, double> op = context.op.Type switch
+      {
+        AresLangParser.MUL => (l, r) => l * r,
+        AresLangParser.DIV => (l, r) => l / r,
+        AresLangParser.MOD => (l, r) => l % r,
+        _ => throw new AresInterpreterException(
+          $"Wrong operation type {context.op.Type}.",
+          context.op.Line,
+          context.op.Column)
+      };
+
+      if(QuantityUnitHelper.TryApplyArithmeticOperation(left, right, op, allowRightNumberOperand: true, out var quantityResult))
+      {
+        return quantityResult;
+      }
+    }
+    catch(AresQuantityException ex)
+    {
+      throw new AresInterpreterException(ex.Message, context.expression(1).Start.Line, context.expression(1).Start.Column);
+    }
+
+    if(!left.HasNumberValue)
+    {
+      throw new AresInterpreterException("Left hand side is not numeric.", context.expression(0).Start.Line, context.expression(0).Start.Column);
+    }
+
+    if(!right.HasNumberValue)
+    {
+      throw new AresInterpreterException("Right hand side is not numeric.", context.expression(1).Start.Line, context.expression(1).Start.Column);
+    }
+
+    var result = context.op.Type switch
+    {
+      AresLangParser.MUL => left.NumberValue * right.NumberValue,
+      AresLangParser.DIV => left.NumberValue / right.NumberValue,
+      AresLangParser.MOD => left.NumberValue % right.NumberValue,
+      _ => throw new AresInterpreterException(
+        $"Wrong operation type {context.op.Type}.",
+        context.op.Line,
+        context.op.Column
+      )
+    };
+
+    return AresValueHelper.CreateNumber(result);
+  }
+
+  public override async Task<AresValue> VisitAdd(AresLangParser.AddContext context)
+  {
+    var left = await Visit(context.expression(0));
+    var right = await Visit(context.expression(1));
+
+    if(left.HasNumberValue && right.HasNumberValue)
+    {
+      return AresValueHelper.CreateNumber(left.NumberValue + right.NumberValue);
+    }
+
+    try
+    {
+      if(QuantityUnitHelper.TryApplyArithmeticOperation(left, right, static (l, r) => l + r, allowRightNumberOperand: false, out var quantityResult))
+      {
+        return quantityResult;
+      }
+    }
+    catch(AresQuantityException ex)
+    {
+      throw new AresInterpreterException(ex.Message, context.expression(1).Start.Line, context.expression(1).Start.Column);
+    }
+
+    var leftStr = left.Stringify();
+    var rightStr = right.Stringify();
+
+    return AresValueHelper.CreateString(leftStr + rightStr);
+  }
+
+  public override async Task<AresValue> VisitSub(AresLangParser.SubContext context)
+  {
+    var left = await Visit(context.expression(0));
+    var right = await Visit(context.expression(1));
+
+    try
+    {
+      if(QuantityUnitHelper.TryApplyArithmeticOperation(left, right, static (l, r) => l - r, allowRightNumberOperand: false, out var quantityResult))
+      {
+        return quantityResult;
+      }
+    }
+    catch(AresQuantityException ex)
+    {
+      throw new AresInterpreterException(ex.Message, context.expression(1).Start.Line, context.expression(1).Start.Column);
+    }
+
+    if(!left.HasNumberValue)
+    {
+      throw new AresInterpreterException("Left hand side is not numeric.", context.expression(0).Start.Line, context.expression(0).Start.Column);
+    }
+
+    if(!right.HasNumberValue)
+    {
+      throw new AresInterpreterException("Right hand side is not numeric.", context.expression(1).Start.Line, context.expression(1).Start.Column);
+    }
+
+    return AresValueHelper.CreateNumber(left.NumberValue - right.NumberValue);
+  }
+
+  public override async Task<AresValue> VisitRelational([NotNull] AresLangParser.RelationalContext context)
+  {
+    var left = await Visit(context.expression(0));
+    var right = await Visit(context.expression(1));
+
+    if(!left.HasNumberValue)
+    {
+      throw new AresInterpreterException("Left hand side is not numeric.", context.expression(0).Start.Line, context.expression(0).Start.Column);
+    }
+
+    if(!right.HasNumberValue)
+    {
+      throw new AresInterpreterException("Right hand side is not numeric.", context.expression(1).Start.Line, context.expression(1).Start.Column);
+    }
+
+    var result = context.op.Type switch
+    {
+      AresLangParser.GT => left.NumberValue > right.NumberValue,
+      AresLangParser.LT => left.NumberValue < right.NumberValue,
+      AresLangParser.GE => left.NumberValue >= right.NumberValue,
+      AresLangParser.LE => left.NumberValue <= right.NumberValue,
+      _ => throw new AresInterpreterException(
+        $"Wrong operation type {context.op.Type}.",
+        context.op.Line,
+        context.op.Column
+      )
+    };
+
+    return AresValueHelper.CreateBool(result);
+  }
+
+  public override async Task<AresValue> VisitEquality([NotNull] AresLangParser.EqualityContext context)
+  {
+    var left = await Visit(context.expression(0));
+    var right = await Visit(context.expression(1));
+
+    var result = context.op.Type switch
+    {
+      AresLangParser.EQ => left.Equals(right),
+      AresLangParser.NEQ => !left.Equals(right),
+      _ => throw new AresInterpreterException(
+        $"Wrong operation type {context.op.Type}.",
+        context.op.Line,
+        context.op.Column
+      )
+    };
+
+    return AresValueHelper.CreateBool(result);
+  }
+
+  public override async Task<AresValue> VisitLogicalNot([NotNull] AresLangParser.LogicalNotContext context)
+  {
+    var value = await Visit(context.expression());
+    if(value.KindCase == AresValue.KindOneofCase.BoolValue)
+    {
+      return AresValueHelper.CreateBool(!value.BoolValue);
+    }
+
+    throw new AresInterpreterException(
+      $"Cannot perform negation on type {value.KindCase}.",
+      context.Start.Line,
+      context.Start.Column
+    );
+  }
+
+  public override async Task<AresValue> VisitLogicAnd([NotNull] AresLangParser.LogicAndContext context)
+  {
+    var left = await Visit(context.expression(0));
+    var right = await Visit(context.expression(1));
+    if(left.KindCase != AresValue.KindOneofCase.BoolValue)
+    {
+      throw new AresInterpreterException(
+        $"Cannot perform AND on type {left.KindCase}.",
+        context.expression(0).Start.Line,
+        context.expression(0).Start.Column
+      );
+    }
+
+    if(right.KindCase != AresValue.KindOneofCase.BoolValue)
+    {
+      throw new AresInterpreterException(
+        $"Cannot perform AND on type {right.KindCase}.",
+        context.expression(1).Start.Line,
+        context.expression(1).Start.Column
+      );
+    }
+
+    return AresValueHelper.CreateBool(left.BoolValue && right.BoolValue);
+  }
+
+  public override async Task<AresValue> VisitLogicOr([NotNull] AresLangParser.LogicOrContext context)
+  {
+    var left = await Visit(context.expression(0));
+    var right = await Visit(context.expression(1));
+    if(left.KindCase != AresValue.KindOneofCase.BoolValue)
+    {
+      throw new AresInterpreterException(
+        $"Cannot perform OR on type {left.KindCase}.",
+        context.expression(0).Start.Line,
+        context.expression(0).Start.Column
+      );
+    }
+
+    if(right.KindCase != AresValue.KindOneofCase.BoolValue)
+    {
+      throw new AresInterpreterException(
+        $"Cannot perform OR on type {right.KindCase}.",
+        context.expression(1).Start.Line,
+        context.expression(1).Start.Column
+      );
+    }
+
+    return AresValueHelper.CreateBool(left.BoolValue || right.BoolValue);
+  }
+
+  #endregion
+}

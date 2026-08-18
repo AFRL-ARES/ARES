@@ -11,5 +11,5 @@ public interface IDeviceStateGetter
   /// <summary>
   /// Based on a state request, returns raw device states per device id
   /// </summary>
-  Task<IDictionary<string, IEnumerable<TState>>> GetStates<TState>(DeviceStateRequestFilter request) where TState : class, IDeviceState;
+  Task<IDictionary<string, TState[]>> GetStates<TState>(DeviceStateRequestFilter request, CancellationToken token = default) where TState : class, IDeviceState;
 }

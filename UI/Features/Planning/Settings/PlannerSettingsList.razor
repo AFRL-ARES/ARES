@@ -1,0 +1,82 @@
+@page "/settings/planning"
+@using Ares.Services
+@using Google.Protobuf.WellKnownTypes
+@using UI.Features.Planning.Settings.Layout
+@inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<PlannerSettingsListViewModel>
+@layout PlannerSettingsLayout
+
+@inject DialogService DialogService
+
+@if (ViewModel!.IsLoading)
+{
+  <LoadingSpinner />
+}
+else
+{
+  <div class="d-flex flex-column">
+    @foreach (var vm in ViewModel!.SettingsViewModels)
+    {
+      <div class="m-2">
+        <PlannerSettingsView ViewModel="vm"/>
+      </div>
+    }
+    <button class="m-2 align-self-end btn btn-outline-light" disabled="@SavingInProgress" @onclick="AddPlannerClick">
+      @if (SavingInProgress)
+      {
+        <LoadingSpinner SpinnerSize="SpinnerSize.Small" />
+      }
+      else
+      {
+        <RadzenIcon Icon="add"/> 
+      }
+    </button>
+  </div>
+}
+
+@code {
+  private async Task AddPlannerClick()
+  {
+    var viewModel = ViewModel!.GetNewConfigEditViewModel();
+    var result = await DialogService.OpenAsync("New Planner", ds =>
+      @<PlannerConfigEditView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)" />);
+
+    if (result is true)
+    {
+      SavingInProgress = true;
+      StateHasChanged();
+      try
+      {
+        await ViewModel!.AddNewPlanner(viewModel.Save());
+        var notification = new UiNotificationMessage();
+        notification.Detail = $"ARES successfully added {viewModel.Name} utilizing the address {viewModel.Address}.";
+        notification.Summary = $"Successfully Updated Planner {viewModel.Name}!";
+        notification.Severity = UiNotificationSeverity.Success;
+
+        ViewModel!.PushNotification(notification);
+      }
+      catch (Grpc.Core.RpcException e)
+      {
+        var notification = new UiNotificationMessage();
+        notification.Detail = e.Message;
+        notification.Summary = $"Failed to add {viewModel.Name}!";
+        notification.Severity = UiNotificationSeverity.Error;
+        ViewModel!.PushNotification(notification);
+      }
+      finally
+      {
+        SavingInProgress = false;
+        StateHasChanged();
+      }
+    }
+  }
+
+  protected override async Task OnInitializedAsync()
+  {
+    await base.OnInitializedAsync();
+
+    if(ViewModel is not null)
+      await ViewModel.UpdateAvailablePlanners();  
+  }
+
+  private bool SavingInProgress { get; set; }
+}

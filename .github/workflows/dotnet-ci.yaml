@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 env:
-  SOLUTION_FILE: 'AresOS.sln' 
+  SOLUTION_FILE: 'AresOS.slnx' 
 
 jobs:
   build-and-test:
@@ -19,17 +19,25 @@ jobs:
     
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
 
     - name: Set up .NET 10.x
-      uses: actions/setup-dotnet@v5
+      uses: actions/setup-dotnet@v6
       with:
         dotnet-version: '10.x'
+
+    - name: Setup Node.js Environment
+      uses: actions/setup-node@v7
+      with:
+        node-version: 24
+
+    - name: Install Node.js Dev Packages
+      run: npm ci
+      working-directory: UI
 
     - name: Restore Dependencies
       run: dotnet restore ${{ env.SOLUTION_FILE }}
       working-directory: .
-
       
     - name: Build All Projects
       run: dotnet build ${{ env.SOLUTION_FILE }} --configuration Release --no-restore

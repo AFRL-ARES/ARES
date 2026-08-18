@@ -1,0 +1,514 @@
+@page "/automation/custom-command-builder"
+@page "/automation/custom-command-builder/{CommandId:guid}"
+@using Ares.Core.CustomCommands
+@using Ares.Datamodel
+@using Ares.Datamodel.Automation
+@using AresScript.ScriptBuilding
+@using AresScript.Symbols
+@using UI.Application.Notifications
+@using UI.Application.Scripting
+@using CustomCommandModel = Ares.Datamodel.Automation.CustomCommandVersion
+@using CustomCommandParameterModel = Ares.Datamodel.Automation.CustomCommandParameter
+@inject IMonacoCompletionProvider CompletionProvider
+@inject IMonacoDiagnosticsProvider DiagnosticsProvider
+@inject IMonacoSemanticTokensProvider SemanticTokensProvider
+@inject IMonacoHoverProvider HoverProvider
+@inject ICustomCommandPersistenceService CustomCommandService
+@inject IUiNotificationService NotificationService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Custom Command Designer</PageTitle>
+
+<section class="custom-command-builder">
+  <div class="custom-command-builder__header">
+    <div>
+      <a class="custom-command-builder__back-link" href="automation/custom-commands">
+        <RadzenIcon Icon="arrow_back" />
+        <span>Custom Commands</span>
+      </a>
+      <h3 class="custom-command-builder__title">Custom Command Designer</h3>
+      <p class="custom-command-builder__subtitle">@Subtitle</p>
+    </div>
+
+    <div class="custom-command-builder__actions">
+      <RadzenButton Text="@SaveButtonText" Icon="save" ButtonStyle="ButtonStyle.Secondary" Disabled="@(_isSaving || _isLoading)" Click="SaveAsync" />
+    </div>
+  </div>
+
+  @if(_isLoading)
+  {
+    <div class="custom-command-builder__state">Loading custom command...</div>
+  }
+  else if(!string.IsNullOrWhiteSpace(_loadError))
+  {
+    <div class="custom-command-builder__state custom-command-builder__state--error">@_loadError</div>
+  }
+
+  <fieldset class="custom-command-builder__fieldset">
+    <legend class="custom-command-builder__legend">Command Metadata</legend>
+
+    <div class="custom-command-builder__metadata-grid">
+      <div class="custom-command-builder__field">
+        <label class="custom-command-builder__label" for="custom-command-name">Name</label>
+        <RadzenTextBox id="custom-command-name"
+                       @bind-Value="_commandName"
+                       Change="OnCommandNameChanged"
+                       Placeholder="e.g., Measure Temperature"
+                       Style="width: 100%;" />
+      </div>
+
+      <div class="custom-command-builder__field">
+        <label class="custom-command-builder__label" for="custom-command-description">Description</label>
+        <RadzenTextArea id="custom-command-description"
+                        @bind-Value="_commandDescription"
+                        Rows="4"
+                        Placeholder="Describe what this command does."
+                        Style="width: 100%;" />
+      </div>
+    </div>
+  </fieldset>
+
+  <div class="custom-command-builder__schema-grid">
+    <fieldset class="custom-command-builder__fieldset custom-command-builder__parameters-panel">
+      <legend class="custom-command-builder__legend">Input Parameters</legend>
+
+      <div class="custom-command-builder__section-header">
+        <span>@_inputParameters.Count parameter(s)</span>
+        <button class="custom-command-builder__icon-button" type="button" title="Add parameter" @onclick="AddParameter">
+          <RadzenIcon Icon="add" />
+        </button>
+      </div>
+
+      <div class="custom-command-builder__parameter-list">
+        @foreach(var parameter in _inputParameters)
+        {
+          <div class="@GetParameterRowClass(parameter)">
+            <button class="custom-command-builder__parameter-select"
+                    type="button"
+                    title="@($"Edit {parameter.Name}")"
+                    @onclick="() => SelectParameter(parameter)">
+              <span class="custom-command-builder__parameter-name">@parameter.Name</span>
+              <span class="custom-command-builder__parameter-type">@parameter.Schema.Type</span>
+            </button>
+
+            <input class="custom-command-builder__parameter-name-input"
+                   value="@parameter.Name"
+                   aria-label="@($"Parameter name for {parameter.Name}")"
+                   @onchange="args => OnParameterNameChanged(parameter, args)" />
+
+            <button class="custom-command-builder__icon-button custom-command-builder__icon-button--danger"
+                    type="button"
+                    title="@($"Remove {parameter.Name}")"
+                    @onclick="() => RemoveParameter(parameter)">
+              <RadzenIcon Icon="delete" />
+            </button>
+          </div>
+        }
+      </div>
+
+      @if(SelectedParameter is not null)
+      {
+        <AresValueSchemaDesigner Schema="@SelectedParameter.Schema"
+                                 SchemaChanged="OnSelectedParameterSchemaChanged"
+                                 Title="@($"{SelectedParameter.Name} Schema")"
+                                 Collapsible="true" />
+      }
+      else
+      {
+        <div class="custom-command-builder__empty-state">
+          Add a parameter to define its schema.
+        </div>
+      }
+    </fieldset>
+
+    <fieldset class="custom-command-builder__fieldset custom-command-builder__output-panel">
+      <legend class="custom-command-builder__legend">Output Value Schema</legend>
+      <AresValueSchemaDesigner Schema="@_outputSchema"
+                               SchemaChanged="OnOutputSchemaChanged"
+                               Title="Output Schema"
+                               Collapsible="true" />
+    </fieldset>
+  </div>
+
+  <fieldset class="@DiagnosticsPanelClass">
+    <legend class="custom-command-builder__legend">Command Diagnostics</legend>
+
+    @if(_commandDiagnostics.Count == 0)
+    {
+      <div class="custom-command-builder__diagnostics-empty">No command diagnostics.</div>
+    }
+    else
+    {
+      <div class="custom-command-builder__diagnostics-list">
+        @foreach(var diagnostic in _commandDiagnostics)
+        {
+          <div class="@GetDiagnosticClass(diagnostic)">
+            <span class="custom-command-builder__diagnostic-severity">@GetDiagnosticSeverityText(diagnostic)</span>
+            <span class="custom-command-builder__diagnostic-location">@diagnostic.Location</span>
+            <span class="custom-command-builder__diagnostic-message">@diagnostic.Message</span>
+          </div>
+        }
+      </div>
+    }
+  </fieldset>
+
+  <fieldset class="custom-command-builder__fieldset custom-command-builder__script-panel">
+    <legend class="custom-command-builder__legend">Script Body</legend>
+    <div class="custom-command-builder__signature-preview" aria-label="Generated custom command function signature">
+      @GeneratedFunctionSignature:
+    </div>
+    <div class="custom-command-builder__script-editor">
+      <ScriptEditor CompletionProvider="@LanguageProviderAdapter"
+                    DiagnosticsProvider="@LanguageProviderAdapter"
+                    SemanticTokensProvider="@LanguageProviderAdapter"
+                    HoverProvider="@LanguageProviderAdapter"
+                    InitialScript="@_scriptBody"
+                    @ref="_scriptEditor" />
+    </div>
+  </fieldset>
+</section>
+
+@code {
+  [Parameter]
+  public Guid? CommandId { get; set; }
+
+  private Guid? _selectedParameterId;
+  private Guid? _loadedCommandId;
+  private ScriptEditor? _scriptEditor;
+  private CustomCommandMonacoProviderAdapter? _languageProviderAdapter;
+  private IReadOnlyList<CustomCommandDiagnostic> _commandDiagnostics = [];
+  private bool _isLoading;
+  private bool _isSaving;
+  private string? _loadError;
+  private string _commandName = "New Custom Command";
+  private string _commandDescription = string.Empty;
+  private string _scriptBody = """
+return
+""";
+
+  private readonly List<CustomCommandParameterDraft> _inputParameters = [];
+
+  private AresValueSchema _outputSchema = new()
+  {
+    Type = AresDataType.Unit
+  };
+
+  private string Subtitle => CommandId is null
+    ? "Create a new custom command definition."
+    : $"Editing custom command {CommandId}.";
+
+  private string SaveButtonText => _isSaving ? "Saving" : "Save";
+
+  private string GeneratedFunctionSignature
+    => CustomCommandScriptBuilder.BuildFunctionSignature(_commandName, BuildScriptParameters(), _outputSchema);
+
+  private CustomCommandMonacoProviderAdapter LanguageProviderAdapter
+  {
+    get
+    {
+      _languageProviderAdapter ??= new CustomCommandMonacoProviderAdapter(
+        CompletionProvider,
+        DiagnosticsProvider,
+        SemanticTokensProvider,
+        HoverProvider,
+        BuildScriptContext,
+        OnCommandDiagnosticsChanged);
+      return _languageProviderAdapter;
+    }
+  }
+
+  private string DiagnosticsPanelClass
+    => _commandDiagnostics.Count == 0
+      ? "custom-command-builder__fieldset custom-command-builder__diagnostics-panel"
+      : "custom-command-builder__fieldset custom-command-builder__diagnostics-panel custom-command-builder__diagnostics-panel--has-items";
+
+  private CustomCommandParameterDraft? SelectedParameter
+    => _inputParameters.FirstOrDefault(parameter => parameter.Id == SelectedParameterId);
+
+  private Guid? SelectedParameterId
+  {
+    get
+    {
+      _selectedParameterId ??= _inputParameters.FirstOrDefault()?.Id;
+      return _selectedParameterId;
+    }
+    set => _selectedParameterId = value;
+  }
+
+  private void SelectParameter(CustomCommandParameterDraft parameter)
+  {
+    SelectedParameterId = parameter.Id;
+  }
+
+  protected override async Task OnParametersSetAsync()
+  {
+    if(CommandId == _loadedCommandId)
+    {
+      return;
+    }
+
+    if(CommandId is null)
+    {
+      ResetDraftState();
+      _loadedCommandId = null;
+      _loadError = null;
+      return;
+    }
+
+    await LoadCommandAsync(CommandId.Value);
+  }
+
+  private void AddParameter()
+  {
+    var parameter = new CustomCommandParameterDraft(GetNextParameterName(), new AresValueSchema
+    {
+      Type = AresDataType.String,
+      Description = "Describe this parameter."
+    });
+
+    _inputParameters.Add(parameter);
+    SelectedParameterId = parameter.Id;
+    _ = RefreshLanguageFeaturesAsync();
+  }
+
+  private void RemoveParameter(CustomCommandParameterDraft parameter)
+  {
+    _inputParameters.Remove(parameter);
+
+    if(SelectedParameterId == parameter.Id)
+      SelectedParameterId = _inputParameters.FirstOrDefault()?.Id;
+
+    _ = RefreshLanguageFeaturesAsync();
+  }
+
+  private void OnParameterNameChanged(CustomCommandParameterDraft parameter, ChangeEventArgs args)
+  {
+    var newName = args.Value?.ToString()?.Trim() ?? string.Empty;
+    if(!string.IsNullOrWhiteSpace(newName))
+    {
+      parameter.Name = newName;
+      _ = RefreshLanguageFeaturesAsync();
+    }
+  }
+
+  private void OnSelectedParameterSchemaChanged(AresValueSchema schema)
+  {
+    if(SelectedParameter is not null)
+    {
+      SelectedParameter.Schema = schema.Clone();
+      _ = RefreshLanguageFeaturesAsync();
+    }
+  }
+
+  private void OnOutputSchemaChanged(AresValueSchema schema)
+  {
+    _outputSchema = schema.Clone();
+    _ = RefreshLanguageFeaturesAsync();
+  }
+
+  private string GetParameterRowClass(CustomCommandParameterDraft parameter)
+  {
+    var selectedClass = parameter.Id == SelectedParameterId ? " custom-command-builder__parameter-row--selected" : string.Empty;
+    return $"custom-command-builder__parameter-row{selectedClass}";
+  }
+
+  private string GetNextParameterName()
+  {
+    var index = _inputParameters.Count + 1;
+    var name = $"parameter_{index}";
+
+    while(_inputParameters.Any(parameter => string.Equals(parameter.Name, name, StringComparison.OrdinalIgnoreCase)))
+    {
+      index++;
+      name = $"parameter_{index}";
+    }
+
+    return name;
+  }
+
+  private IEnumerable<AresScriptParameter> BuildScriptParameters()
+  {
+    return _inputParameters.Select(parameter => new AresScriptParameter(parameter.Name, parameter.Schema));
+  }
+
+  private CustomCommandScriptContext BuildScriptContext()
+  {
+    return new CustomCommandScriptContext(_commandName, BuildScriptParameters().ToArray(), _outputSchema);
+  }
+
+  private async Task OnCommandNameChanged(string _)
+  {
+    await RefreshLanguageFeaturesAsync();
+  }
+
+  private async Task LoadCommandAsync(Guid commandId)
+  {
+    _isLoading = true;
+    _loadError = null;
+
+    try
+    {
+      var command = await CustomCommandService.GetAsync(commandId);
+      if(command is null)
+      {
+        _loadError = $"Custom command {commandId} was not found.";
+        ResetDraftState();
+        return;
+      }
+
+      ApplyCommand(command);
+      _loadedCommandId = commandId;
+      await RefreshLanguageFeaturesAsync();
+    }
+    catch(Exception ex)
+    {
+      _loadError = $"Failed to load custom command. {ex.Message}";
+      NotificationService.Error(_loadError);
+    }
+    finally
+    {
+      _isLoading = false;
+    }
+  }
+
+  private async Task SaveAsync()
+  {
+    _isSaving = true;
+
+    try
+    {
+      var command = await BuildCommandAsync();
+      var savedId = await CustomCommandService.SaveAsync(CommandId, command);
+      CommandId = savedId;
+      _loadedCommandId = savedId;
+      NotificationService.Success("Custom command saved.");
+      NavigationManager.NavigateTo($"/automation/custom-command-builder/{savedId}", replace: true);
+    }
+    catch(Exception ex)
+    {
+      NotificationService.Error($"Failed to save custom command. {ex.Message}");
+    }
+    finally
+    {
+      _isSaving = false;
+    }
+  }
+
+  private async Task<CustomCommandModel> BuildCommandAsync()
+  {
+    if(_scriptEditor is not null)
+    {
+      _scriptBody = await _scriptEditor.GetScript();
+    }
+
+    var command = new CustomCommandModel
+    {
+      Name = _commandName,
+      Description = _commandDescription,
+      OutputSchema = _outputSchema.Clone(),
+      ScriptBody = _scriptBody
+    };
+
+    command.InputParameters.AddRange(_inputParameters.Select(parameter => new CustomCommandParameterModel
+    {
+      Name = parameter.Name,
+      Schema = parameter.Schema.Clone()
+    }));
+
+    return command;
+  }
+
+  private void ApplyCommand(CustomCommandModel command)
+  {
+    _commandName = command.Name;
+    _commandDescription = command.Description;
+    _scriptBody = command.ScriptBody;
+    _outputSchema = command.OutputSchema?.Clone() ?? new AresValueSchema { Type = AresDataType.Unit };
+
+    _inputParameters.Clear();
+    _inputParameters.AddRange(command.InputParameters.Select(parameter => new CustomCommandParameterDraft(
+      parameter.Name,
+      parameter.Schema?.Clone() ?? new AresValueSchema { Type = AresDataType.String })));
+
+    SelectedParameterId = _inputParameters.FirstOrDefault()?.Id;
+
+    if(_scriptEditor is not null)
+    {
+      _ = _scriptEditor.SetScript(_scriptBody);
+    }
+  }
+
+  private void ResetDraftState()
+  {
+    _commandName = "New Custom Command";
+    _commandDescription = string.Empty;
+    _scriptBody = """
+return
+""";
+    _outputSchema = new AresValueSchema
+    {
+      Type = AresDataType.Unit
+    };
+
+    _inputParameters.Clear();
+    SelectedParameterId = _inputParameters.FirstOrDefault()?.Id;
+
+    if(_scriptEditor is not null)
+    {
+      _ = _scriptEditor.SetScript(_scriptBody);
+    }
+  }
+
+  private async Task RefreshLanguageFeaturesAsync()
+  {
+    if(_scriptEditor is not null)
+    {
+      await _scriptEditor.RefreshLanguageFeaturesAsync();
+    }
+  }
+
+  private void OnCommandDiagnosticsChanged(IReadOnlyList<CustomCommandDiagnostic> diagnostics)
+  {
+    _ = InvokeAsync(() =>
+    {
+      _commandDiagnostics = diagnostics;
+      StateHasChanged();
+    });
+  }
+
+  private static string GetDiagnosticClass(CustomCommandDiagnostic diagnostic)
+  {
+    return diagnostic.Severity switch
+    {
+      0 => "custom-command-builder__diagnostic custom-command-builder__diagnostic--error",
+      1 => "custom-command-builder__diagnostic custom-command-builder__diagnostic--warning",
+      _ => "custom-command-builder__diagnostic"
+    };
+  }
+
+  private static string GetDiagnosticSeverityText(CustomCommandDiagnostic diagnostic)
+  {
+    return diagnostic.Severity switch
+    {
+      0 => "Error",
+      1 => "Warning",
+      2 => "Info",
+      3 => "Hint",
+      _ => "Diagnostic"
+    };
+  }
+
+  private sealed class CustomCommandParameterDraft
+  {
+    public CustomCommandParameterDraft(string name, AresValueSchema schema)
+    {
+      Id = Guid.NewGuid();
+      Name = name;
+      Schema = schema;
+    }
+
+    public Guid Id { get; }
+    public string Name { get; set; }
+    public AresValueSchema Schema { get; set; }
+  }
+}

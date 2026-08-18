@@ -1,0 +1,527 @@
+@using Ares.Datamodel
+@using Ares.Datamodel.Extensions
+
+@if(Schema?.Type is AresDataType.String)
+  {
+    <RadzenFormField Text="@GetFormFieldName()" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%">
+      @if(HasStringChoices)
+      {
+        <RadzenDropDown TValue="string" Data="@Schema.StringChoices.Strings" @bind-Value="_stringValue" Change="OnChanged" Style="width: 100%" />
+      }
+      else
+      {
+        <RadzenTextBox @bind-Value="_stringValue" Change="OnChanged" Style="width: 100%" />
+      }
+    </RadzenFormField>
+  }
+
+else if(Schema?.Type is AresDataType.Number)
+{
+  <RadzenFormField Text="@GetFormFieldName()" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%">
+    @if(HasNumberChoices)
+    {
+      <RadzenDropDown TValue="double" Data="@Schema.NumberChoices.Numbers" @bind-Value="_numberValue" Change="@OnNumberChanged" Style="width: 100%" />
+    }
+    else
+    {
+      <RadzenNumeric TValue="double" @bind-Value="_numberValue" Change="@OnNumericChanged" Style="width: 100%" Name="SchemaNumberInput" />
+
+      <RadzenNumericRangeValidator Component="SchemaNumberInput"
+        Min="@(Schema.HasMinNumberValue ? (decimal)Schema.MinNumberValue : decimal.MinValue)"
+        Max="@(Schema.HasMaxNumberValue ? (decimal)Schema.MaxNumberValue : decimal.MaxValue)"
+        Text="@GetNumberValidationMessage()"
+        Style="display: block; font-size: 12px;" />
+    }
+  </RadzenFormField>
+}
+
+else if(Schema?.Type is AresDataType.Quantity)
+{
+  <RadzenFormField Text="@GetFormFieldName()" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%">
+    <RadzenNumeric TValue="double" @bind-Value="_numberValue" Change="@OnNumericChanged" Style="width: 100%" Name="SchemaQuantityInput" />
+
+    <RadzenNumericRangeValidator Component="SchemaQuantityInput"
+      Min="@(Schema.QuantitySchema?.HasMinScalarValue == true ? (decimal)Schema.QuantitySchema.MinScalarValue : decimal.MinValue)"
+      Max="@(Schema.QuantitySchema?.HasMaxScalarValue == true ? (decimal)Schema.QuantitySchema.MaxScalarValue : decimal.MaxValue)"
+      Text="@GetQuantityValidationMessage()"
+      Style="display: block; font-size: 12px;" />
+  </RadzenFormField>
+}
+
+else if(Schema?.Type is AresDataType.NumberArray)
+{
+  <RadzenFieldset AllowCollapse="true" Collapsed="true">
+    <HeaderTemplate>
+      <RadzenStack Orientation="Orientation.Horizontal" Gap="0.25rem">
+        <RadzenIcon Icon="data_array" /><b>@Name</b>
+      </RadzenStack>
+    </HeaderTemplate>
+      
+    <ChildContent>
+      @for(var i = 0; i < _numberArray.Count; i++)
+      {
+        var index = i;
+        var inputName = $"NumberArrayInput_{index}";
+
+        <div class="mb-2 flex items-center">
+          @if(HasNumberChoices)
+          {
+            <RadzenDropDown TValue="double" Data="@Schema.NumberChoices.Numbers" Value="@_numberArray[index]" Change="@(value => OnNumberArrayItemChanged(value, index))" Style="width: 90%" />
+          }
+          else
+          {
+            <div>
+              <RadzenNumeric TValue="double" Value="@_numberArray[index]" Change="@(value => OnNumberArrayItemChanged(value, index))" Style="width: 90%" Name="@inputName" />
+                
+              <RadzenNumericRangeValidator Component="@inputName"
+                Min="@(Schema.HasMinNumberValue ? (decimal)Schema.MinNumberValue : decimal.MinValue)"
+                Max="@(Schema.HasMaxNumberValue ? (decimal)Schema.MaxNumberValue : decimal.MaxValue)"
+                Text="@GetNumberValidationMessage()"
+                Style="display: block; font-size: 12px;" />
+            </div>
+          }
+          <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(() => RemoveNumberItem(index))" />
+        </div>
+      }
+      <RadzenButton Icon="add" Click="AddNumberItem" ButtonStyle="ButtonStyle.Secondary" />
+    </ChildContent>
+
+    <SummaryTemplate>
+      <RadzenCard>
+        <b>@_numberArray.Count() Items</b>
+      </RadzenCard>
+    </SummaryTemplate>
+  </RadzenFieldset>
+}
+
+  else if(Schema?.Type is AresDataType.Boolean)
+  { 
+    <RadzenRow Gap="1rem" AlignItems="AlignItems.Center" Style="padding-top: 0.5rem; padding-bottom: 0.5rem;">
+      <RadzenSwitch @bind-Value="_boolValue" Name="@Name" Change="@OnBoolChanged" Style="width: 20px"/>
+      <RadzenLabel Text="@Name" Component="@Name" />
+    </RadzenRow>
+  }
+
+  else if(Schema?.Type is AresDataType.StringArray)
+  {
+    <RadzenFieldset AllowCollapse="true" Collapsed="true">
+      <HeaderTemplate>
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.25rem">
+          <RadzenIcon Icon="data_array" /><b>@Name</b>
+        </RadzenStack>
+      </HeaderTemplate>
+
+      <ChildContent>
+        @for(var i = 0; i < _stringArray.Count; i++)
+        {
+          var index = i;
+          <div class="mb-2 flex items-center">
+            @if(HasStringChoices)
+            {
+              <RadzenDropDown TValue="string" Data="@Schema.StringChoices.Strings" Value="@_stringArray[index]" Change="@(value => OnStringArrayItemChanged(value, index))" Style="width: 90%" />
+            }
+            else
+            {
+              <RadzenTextBox Value="@_stringArray[index]" Change="@(value => OnStringArrayItemChanged(value, index))" Style="width: 90%"/>
+            }
+            <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(() => RemoveStringItem(index))" />
+          </div>
+        }
+      <RadzenButton Icon="add" Click="AddStringItem" ButtonStyle="ButtonStyle.Secondary" />
+    </ChildContent>
+
+    <SummaryTemplate>
+      <RadzenCard>
+        <b>@_stringArray.Count() Items</b>
+      </RadzenCard>
+    </SummaryTemplate>
+
+  </RadzenFieldset>
+  }
+
+  else if (Schema?.Type is AresDataType.Struct && Schema.StructSchema != null)
+  {
+    <RadzenFieldset AllowCollapse="true" Collapsed="false" Text="@Name">
+      <RadzenStack Orientation="Orientation.Vertical" Gap="1rem">
+        @foreach (var field in Schema.StructSchema.Fields)
+        {
+          var fieldKey = field.Key;
+          var fieldSchema = field.Value;
+          
+          // Ensure we have a default state for this field
+          if (!_structValues.ContainsKey(fieldKey))
+          {
+            _structValues[fieldKey] = AresValueHelper.CreateDefault(fieldSchema.Type);
+          }
+
+          @* RECURSIVE CALL: The component renders itself! *@
+          <AresValueDesigner 
+              Name="@(string.IsNullOrEmpty(fieldSchema.Description) ? fieldKey : fieldSchema.Description)"
+              Schema="@fieldSchema"
+              Value="@_structValues[fieldKey]"
+              ValueEditCallback="@((val) => OnStructFieldChanged(fieldKey, val))" />
+        }
+      </RadzenStack>
+    </RadzenFieldset>
+  }
+
+
+  else if(Schema?.Type is AresDataType.List && Schema.ListElementSchema != null)
+  {
+    @* Lighten the summary card and make header white *@
+    <RadzenFieldset AllowCollapse="true" Collapsed="true">
+      <HeaderTemplate>
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.25rem">
+          <RadzenIcon Icon="list" />
+          <b style="color: white;">@Name</b>
+        </RadzenStack>
+      </HeaderTemplate>
+
+      <ChildContent>
+        @for(var i = 0; i < _listValues.Count; i++)
+        {
+          var index = i;
+          @* Lighten the nested item card and add depth with borders and contrast *@
+          <RadzenCard class="mb-4" Style="background-color: #3a3a3a; border: 1px solid #444; border-radius: var(--rz-border-radius);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <b style="color: white;">Item @(index + 1)</b>
+              <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(() => RemoveListItem(index))" />
+            </div>
+
+          
+            @* RECURSIVE CALL: Render the item schema *@
+            <AresValueDesigner Name="@Schema.ListElementSchema.Description"
+                               Schema="@Schema.ListElementSchema"
+                               Value="@_listValues[index]"
+                               ValueEditCallback="@((val) => OnListItemChanged(index, val))" />
+          </RadzenCard>
+        }
+        <RadzenButton Icon="add" Click="AddListItem" ButtonStyle="ButtonStyle.Secondary" Text="Add Item" />
+      </ChildContent>
+
+      <SummaryTemplate>
+        @* Lighten the summary card *@
+        <RadzenCard class="text-white" Style="background-color: #3a3a3a;">
+          <b>@_listValues.Count Items</b>
+        </RadzenCard>
+      </SummaryTemplate>
+    </RadzenFieldset>
+  }
+
+
+  else
+  {
+    <span>Unsupported type: @Schema?.Type</span>
+  }
+
+@code {
+  [Parameter] 
+  public AresValue? Value { get; set; }
+  
+  [Parameter] 
+  public AresValueSchema? Schema { get; set; }
+  
+  [Parameter] 
+  public string? Unit { get; set; }
+  
+  [Parameter] 
+  public string? Name { get; set; }
+  
+  [Parameter] 
+  public Func<AresValue, Task>? ValueEditCallback { get; set; }
+
+  private string _stringValue = string.Empty;
+  private double _numberValue;
+  private bool _boolValue;
+  private List<string> _stringArray = [];
+  private List<double> _numberArray = [];
+  private List<bool> _boolArray = [];
+  private Dictionary<string, AresValue> _structValues = new();
+  private List<AresValue> _listValues = [];
+
+  // Helper properties to check for available choices
+  private bool HasStringChoices => Schema?.StringChoices?.Strings?.Any() ?? false;
+  private bool HasNumberChoices => Schema?.NumberChoices?.Numbers?.Any() ?? false;
+
+  protected override Task OnInitializedAsync()
+  {
+    if(Value is not null && Value.KindCase != AresValue.KindOneofCase.None)
+      SetCurrentValue();
+
+    else if (Schema is not null)
+    {
+      Value = AresValueHelper.CreateDefault(Schema.Type);
+      SetCurrentValue();
+    }
+
+    if (Value is not null)
+      ValueEditCallback?.Invoke(Value);
+
+    else
+      throw new InvalidOperationException("How did you do this?");
+
+    return base.OnInitializedAsync();
+  }
+
+  private void SetCurrentValue()
+  {
+    switch (Schema?.Type)
+    {
+      case AresDataType.String:
+        _stringValue = Value!.StringValue ?? "";
+        break;
+      case AresDataType.Number:
+        _numberValue = Value!.NumberValue;
+        break;
+      case AresDataType.Quantity:
+        _numberValue = Value!.QuantityValue?.Scalar ?? 0.0;
+        break;
+      case AresDataType.Boolean:
+        _boolValue = Value!.BoolValue;
+        break;
+      case AresDataType.StringArray:
+        _stringArray = Value!.StringArrayValue?.Strings?.ToList() ?? [];
+        break;
+      case AresDataType.NumberArray:
+        _numberArray = Value!.NumberArrayValue?.Numbers?.ToList() ?? [];
+        break;
+
+      case AresDataType.Struct:
+        // Safely extract existing struct fields into our dictionary
+        _structValues = Value!.StructValue?.Fields?.ToDictionary(k => k.Key, v => v.Value) ?? new();
+        break;
+        
+      case AresDataType.List:
+        // Assuming your Protobuf defines AresValueList containing a repeated AresValue
+        _listValues = Value!.ListValue?.Values?.ToList() ?? new();
+        break;
+    }
+  }
+
+  private string GetFormFieldName() => string.IsNullOrEmpty(Unit) ? $"{Name}" : $"{Name} - {Unit}";
+
+  // Handler for single string, which is already correctly bound
+  private Task OnChanged(object? _ = null)
+  {
+    return UpdateAresValue();
+  }
+
+  // Handler for single number from RadzenDropDown (takes object)
+  private Task OnNumberChanged(object value)
+  {
+    _numberValue = (double)value;
+    return UpdateAresValue();
+  }
+
+  // Handler for single number from RadzenNumeric (takes double)
+  private Task OnNumericChanged(double value)
+  {
+    _numberValue = value;
+    return UpdateAresValue();
+  }
+
+  // Handler for single boolean
+  private Task OnBoolChanged(bool value)
+  {
+    _boolValue = value;
+    return UpdateAresValue();
+  }
+
+  // Handler for bool array items
+  private Task OnBoolArrayItemChanged(bool value, int index)
+  {
+    if (index >= 0 && index < _boolArray.Count)
+    {
+      _boolArray[index] = value;
+    }
+    return UpdateAresValue();
+  }
+
+  // Handler for string array items
+  private Task OnStringArrayItemChanged(object value, int index)
+  {
+    if (index >= 0 && index < _stringArray.Count)
+    {
+      _stringArray[index] = (string)value;
+    }
+    return UpdateAresValue();
+  }
+
+  // Handler for number array items
+  private Task OnNumberArrayItemChanged(object value, int index)
+  {
+    if (index >= 0 && index < _numberArray.Count)
+    {
+      _numberArray[index] = Convert.ToDouble(value);
+    }
+    return UpdateAresValue();
+  }
+
+  // Common method to create and invoke the callback
+  private Task UpdateAresValue()
+  {
+    var aresValue = new AresValue();
+    switch(Schema?.Type)
+    {
+      case AresDataType.String:
+        aresValue.StringValue = _stringValue;
+        break;
+
+      case AresDataType.Number:
+        aresValue.NumberValue = _numberValue;
+        break;
+
+      case AresDataType.Quantity:
+        aresValue.QuantityValue = new QuantityValue
+        {
+          Scalar = _numberValue,
+          Type = Schema?.QuantitySchema?.QuantityType ?? QuantityType.Unspecified,
+          Unit = Unit ?? Schema?.QuantitySchema?.BoundsUnit ?? string.Empty
+        };
+        break;
+
+      case AresDataType.Boolean:
+        aresValue.BoolValue = _boolValue;
+        break;
+
+      case AresDataType.StringArray:
+        var strArray = new StringArray();
+        strArray.Strings.AddRange(_stringArray);
+        aresValue.StringArrayValue = strArray;
+        break;
+
+      case AresDataType.NumberArray:
+        var numArray = new NumberArray();
+        numArray.Numbers.AddRange(_numberArray);
+        aresValue.NumberArrayValue = numArray;
+        break;
+
+      case AresDataType.Struct:
+        var aresStruct = new AresStruct();
+        foreach(var kvp in _structValues)
+        {
+          aresStruct.Fields[kvp.Key] = kvp.Value;
+        }
+        aresValue.StructValue = aresStruct;
+        break;
+        
+      case AresDataType.List:
+        var aresList = new AresValueList();
+        aresList.Values.AddRange(_listValues);
+        aresValue.ListValue = aresList;
+        break;
+    }
+    // Invoke the callback with the newly constructed AresValue object.
+    return ValueEditCallback?.Invoke(aresValue) ?? Task.CompletedTask;
+  }
+
+  private void AddStringItem()
+  {
+    // If there are string choices, add the first one by default. Otherwise, add an empty string.
+    _stringArray.Add(HasStringChoices && Schema is not null ? Schema.StringChoices.Strings.First() : "");
+    UpdateAresValue();
+  }
+
+  private void RemoveStringItem(int index)
+  {
+    if(index >= 0 && index < _stringArray.Count)
+    {
+      _stringArray.RemoveAt(index);
+      UpdateAresValue();
+    }
+  }
+
+  private void AddNumberItem()
+  {
+    // If there are number choices, add the first one by default. Otherwise, add 0.0.
+    _numberArray.Add(HasNumberChoices && Schema is not null ? Schema.NumberChoices.Numbers.First() : 0.0);
+    UpdateAresValue();
+  }
+
+  private void RemoveNumberItem(int index)
+  {
+    if(index >= 0 && index < _numberArray.Count)
+    {
+      _numberArray.RemoveAt(index);
+      UpdateAresValue();
+    }
+  }
+
+  private void AddBoolItem()
+  {
+    _boolArray.Add(false);
+    UpdateAresValue();
+  }
+
+  private void RemoveBoolItem(int index)
+  {
+    if(index >= 0 && index < _boolArray.Count)
+    {
+      _boolArray.RemoveAt(index);
+      UpdateAresValue();
+    }
+  }
+
+  private string GetNumberValidationMessage()
+  {
+    if(Schema == null)
+      return "Invalid value.";
+
+    if(Schema.HasMinNumberValue && Schema.HasMaxNumberValue)
+      return $"Value must be between {Schema.MinNumberValue} and {Schema.MaxNumberValue}.";
+    if(Schema.HasMinNumberValue)
+      return $"Value must be at least {Schema.MinNumberValue}.";
+    if(Schema.HasMaxNumberValue)
+      return $"Value must be no more than {Schema.MaxNumberValue}.";
+          
+    return "Invalid value.";
+  }
+
+  private string GetQuantityValidationMessage()
+  {
+    if(Schema?.QuantitySchema == null)
+      return "Invalid value.";
+
+    if(Schema.QuantitySchema.HasMinScalarValue && Schema.QuantitySchema.HasMaxScalarValue)
+      return $"Value must be between {Schema.QuantitySchema.MinScalarValue} and {Schema.QuantitySchema.MaxScalarValue}.";
+    if(Schema.QuantitySchema.HasMinScalarValue)
+      return $"Value must be at least {Schema.QuantitySchema.MinScalarValue}.";
+    if(Schema.QuantitySchema.HasMaxScalarValue)
+      return $"Value must be no more than {Schema.QuantitySchema.MaxScalarValue}.";
+          
+    return "Invalid value.";
+  }
+
+  private Task OnStructFieldChanged(string key, AresValue newValue)
+  {
+    _structValues[key] = newValue;
+    return UpdateAresValue();
+  }
+
+  private Task OnListItemChanged(int index, AresValue newValue)
+  {
+    if(index >= 0 && index < _listValues.Count)
+    {
+      _listValues[index] = newValue;
+    }
+    return UpdateAresValue();
+  }
+
+  private void AddListItem()
+  {
+    if(Schema?.ListElementSchema != null)
+    {
+      _listValues.Add(AresValueHelper.CreateDefault(Schema.ListElementSchema.Type));
+      UpdateAresValue();
+    }
+  }
+
+  private void RemoveListItem(int index)
+  {
+    if(index >= 0 && index < _listValues.Count)
+    {
+      _listValues.RemoveAt(index);
+      UpdateAresValue();
+    }
+  }
+}

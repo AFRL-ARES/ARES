@@ -1,4 +1,5 @@
-﻿using Ares.Services;
+using System.Threading;
+using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using System;
@@ -18,16 +19,17 @@ public class AresNotificationService : AresNotificationRpc.AresNotificationRpcBa
     _notificationRepo = notificationRepo;
   }
 
-  public override async Task Subscribe(SubscriptionRequest request, IServerStreamWriter<AresNotification> responseStream, ServerCallContext context)
+  public override async Task Subscribe(SubscriptionRequest request, IServerStreamWriter<AresNotification> responseStream, ServerCallContext? context)
   {
+    var cancellationToken = context?.CancellationToken ?? CancellationToken.None;
     string clientId = request.ClientId;
     _clients.TryAdd(clientId, responseStream);
 
     try
     {
-      while(!context.CancellationToken.IsCancellationRequested)
+      while(!cancellationToken.IsCancellationRequested)
       {
-        await Task.Delay(TimeSpan.FromSeconds(1), context.CancellationToken);
+        await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
       }
     }
 
@@ -42,7 +44,7 @@ public class AresNotificationService : AresNotificationRpc.AresNotificationRpcBa
     }
   }
 
-  public override Task<NotificationsList> GetUpdatedNotificationList(Empty request, ServerCallContext context)
+  public override Task<NotificationsList> GetUpdatedNotificationList(Empty request, ServerCallContext? context)
   {
     var response = new NotificationsList();
     response.Notifications.AddRange(_notificationRepo);

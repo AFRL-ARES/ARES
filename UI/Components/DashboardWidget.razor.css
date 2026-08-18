@@ -1,0 +1,7 @@
+﻿.ares-dashboard-widget {
+  background: rgba(224, 255, 255, 0.1);
+  padding: 10px;
+  max-height: fit-content;
+  border-radius: 5px;
+  box-shadow: 5px 5px 5px rgba(10, 10, 10, 0.7);
+}

@@ -15,16 +15,4 @@ public interface IExecutionReporter
   /// </summary>
   /// <param name="status"></param>
   void Report(ExperimentExecutionStatus status);
-
-  /// <summary>
-  /// Used to internally take in a campaign startup status and store it into some public object
-  /// </summary>
-  /// <param name="status"></param>
-  void Report(CampaignStartupStatus status);
-
-  /// <summary>
-  /// Used to internally take in a campaign closeout status and store it into some public object
-  /// </summary>
-  /// <param name="status"></param>
-  void Report(CampaignCloseoutStatus status);
 }

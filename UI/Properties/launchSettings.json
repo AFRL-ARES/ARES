@@ -1,21 +1,13 @@
 {
-  "iisSettings": {
-    "windowsAuthentication": false,
-    "anonymousAuthentication": true,
-    "iisExpress": {
-      "applicationUrl": "http://localhost:19253",
-      "sslPort": 44327
-    }
-  },
   "profiles": {
     "UI": {
       "commandName": "Project",
-      "dotnetRunMessages": true,
       "launchBrowser": true,
-      "applicationUrl": "https://localhost:7084;http://localhost:5084",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
-      }
+      },
+      "dotnetRunMessages": true,
+      "applicationUrl": "https://localhost:7084;http://localhost:5084"
     },
     "IIS Express": {
       "commandName": "IISExpress",
@@ -23,6 +15,22 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
+    },
+    "AresDbMigrate": {
+      "commandName": "Project",
+      "commandLineArgs": "--migrate",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "dotnetRunMessages": "true"
+    }
+  },
+  "iisSettings": {
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
+    "iisExpress": {
+      "applicationUrl": "http://localhost:19253",
+      "sslPort": 44327
     }
   }
 }

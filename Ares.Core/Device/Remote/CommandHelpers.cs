@@ -1,9 +1,10 @@
 ﻿using Ares.Datamodel;
 using Ares.Datamodel.Device;
+using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Templates;
 
 namespace Ares.Core.Device.Remote;
-internal static class CommandHelpers
+public static class CommandHelpers
 {
   public static CommandMetadata[] ToCommandMetadata(IEnumerable<DeviceCommandDescriptor> deviceCommandDescriptors, string deviceId)
   {
@@ -58,7 +59,7 @@ internal static class CommandHelpers
 
     foreach(var parameter in parameters)
     {
-      aresStruct.Fields[parameter.Metadata.Name] = parameter.Value;
+      aresStruct.Fields[parameter.Metadata.Name] = parameter.GetValue();
     }
 
     return aresStruct;

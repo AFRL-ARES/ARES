@@ -1,11 +1,9 @@
-﻿using Ares.Core.Execution.Extensions;
+﻿using Ares.Core.Execution.VersionChecking;
 using Ares.Datamodel;
-using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Connection;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Planning;
 using Ares.Datamodel.Planning.Remote;
-using Ares.Datamodel.Templates;
 using DynamicData;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
@@ -17,23 +15,28 @@ public class RemotePlannerService : PlannerServiceBase
 {
   private readonly GrpcChannel _channel;
   private PlannerServiceCapabilities _capabilities = new();
+  private readonly IDatamodelVersionValidator _versionValidator;
+  private Metadata? _latestMetadata = null;
 
-  public RemotePlannerService(string name, Uri address, string id) : base(name, "", "_._._", id)
+  public RemotePlannerService(string name, Uri address, string id, IDatamodelVersionValidator versionValidator) : base(name, "", "_._._", id)
   {
     _channel = GrpcChannel.ForAddress(address);
     Address = address;
+    _versionValidator = versionValidator;
   }
 
-  public RemotePlannerService(string name, Uri address) : base(name, "", "_._._")
+  public RemotePlannerService(string name, Uri address, IDatamodelVersionValidator versionValidator) : base(name, "", "_._._")
   {
     _channel = GrpcChannel.ForAddress(address);
     Address = address;
+    _versionValidator = versionValidator;
   }
 
   public override async Task Init()
   {
-    await UpdateState();
     await UpdateInfo();
+    await VerifyDatamodelCompatability();
+    await UpdateState();
     await UpdateCapabilities();
   }
 
@@ -85,7 +88,9 @@ public class RemotePlannerService : PlannerServiceBase
     var client = GetClient();
     try
     {
-      _capabilities = await client.GetPlannerServiceCapabilitiesAsync(new Empty());
+      using var call = client.GetPlannerServiceCapabilitiesAsync(new Empty());
+      _latestMetadata = await call.ResponseHeadersAsync;
+      _capabilities = await call.ResponseAsync;
     }
 
     catch(RpcException)
@@ -112,7 +117,12 @@ public class RemotePlannerService : PlannerServiceBase
 
     foreach(var newSetting in newSettings)
     {
-      if(newSetting.Value.Type == AresDataType.String)
+      if(newSetting.Value.DefaultValue is not null)
+      {
+        Settings.Fields[newSetting.Key] = newSetting.Value.DefaultValue;
+      }
+
+      else if(newSetting.Value.Type == AresDataType.String)
       {
         Settings.Fields[newSetting.Key] = AresValueHelper.CreateDefault(newSetting.Value.Type, newSetting.Value.StringChoices?.Strings);
       }
@@ -143,102 +153,21 @@ public class RemotePlannerService : PlannerServiceBase
     }
   }
 
-  public override async Task<PlanResponse> Plan(IEnumerable<ParameterMetadata> plannableParameters,
-    RequestMetadata metadata,
-    IEnumerable<ExperimentOverview> previousExperiments,
-    IEnumerable<Analysis> analysisHistory,
-    CancellationToken cancellationToken = default)
+  public override async Task<PlanningResponse> Plan(PlanningRequest planRequest, CancellationToken cancellationToken = default)
   {
     var client = GetClient();
-    var planRequest = new PlanningRequest() { AdapterSettings = Settings, Metadata = metadata };
-    planRequest.PlanningParameters.AddRange(plannableParameters.Select(parameter => ConvertToPlanningParameter(parameter, previousExperiments)));
-    planRequest.AnalysisResults.AddRange(analysisHistory.Select(a => (double)a.Result));
-    var result = await client.PlanAsync(planRequest, cancellationToken: cancellationToken);
+    planRequest.AdapterSettings = Settings;
 
-    var convertedResults = ToPlanResults(result, plannableParameters);
-    var response = new PlanResponse(convertedResults, result.PlanningOutcome, result.ErrorString);
-    return response;
+    var result = await client.PlanAsync(planRequest, cancellationToken: cancellationToken);
+    return result;
   }
 
-  public override async Task<PlanResponse> Plan(IEnumerable<ParameterMetadata> plannableParameters,
-    RequestMetadata metadata,
-    IEnumerable<ExperimentOverview> previousExperiments,
-    IEnumerable<Analysis> analysisHistory,
-    AresStruct settings,
-    CancellationToken cancellationToken = default)
+  public override async Task<PlanningResponse> Plan(PlanningRequest planRequest, AresStruct settings, CancellationToken cancellationToken = default)
   {
+    planRequest.AdapterSettings = settings;
     var client = GetClient();
-    var planRequest = new PlanningRequest() { AdapterSettings = settings, Metadata = metadata };
-    planRequest.PlanningParameters.AddRange(plannableParameters.Select(parameter => ConvertToPlanningParameter(parameter, previousExperiments)));
-    planRequest.AnalysisResults.AddRange(analysisHistory.Select(a => (double)a.Result));
     var result = await client.PlanAsync(planRequest, cancellationToken: cancellationToken);
-    
-    var convertedResults = ToPlanResults(result, plannableParameters);
-    var response = new PlanResponse(convertedResults, result.PlanningOutcome, result.ErrorString);
-    return response;
-  }
-
-  private static PlanningParameter ConvertToPlanningParameter(ParameterMetadata metadata, IEnumerable<ExperimentOverview> experimentHistory)
-  {
-    var parameter = new PlanningParameter
-    {
-      ParameterName = metadata.Name,
-      IsPlanned = true,
-      DataType = metadata.Schema.Type,
-      InitialValue = metadata.InitialValue
-    };
-
-    var paramHistory = experimentHistory.Select(exp =>
-    {
-      var plannedParameters = exp.Template.GetAllPlannedParameters();
-      var plannedValue = plannedParameters.FirstOrDefault(param => param.PlanningMetadata.Name == metadata.Name)?.Value;
-
-      var actualValue = string.IsNullOrEmpty(metadata.OutputName) ? null : exp.Result.Fields.FirstOrDefault(f => f.Key == metadata.OutputName).Value;
-
-      if(plannedValue is null)
-        return new ParameterHistoryInfo();
-
-      else
-        return new ParameterHistoryInfo
-        {
-          PlannedValue = plannedValue,
-          AchievedValue = actualValue ?? AresValueHelper.CreateNull()
-        };
-    });
-
-    parameter.ParameterHistory.AddRange(paramHistory);
-
-    if(metadata.Constraints.Any())
-    {
-      var constraint = metadata.Constraints.First();
-      parameter.MinimumValue = constraint.Minimum;
-      parameter.MaximumValue = constraint.Maximum;
-    }
-
-    parameter.PlannerName = metadata.PlannerName;
-    return parameter;
-  }
-
-  private static List<PlanResult> ToPlanResults(PlanningResponse result, IEnumerable<ParameterMetadata> plannableMetadata)
-  {
-    var planResults = new List<PlanResult>();
-
-    for(int i = 0; i < result.PlannedParameters.Count; i++)
-    {
-      var currentPlannedParameter = result.PlannedParameters[i];
-      var matchingMetadata = plannableMetadata.FirstOrDefault(data => data.Name == currentPlannedParameter.ParameterName);
-
-      //What do we do if we don't find the old metadata?
-      matchingMetadata ??= new ParameterMetadata
-      {
-        Name = currentPlannedParameter.ParameterName
-      };
-
-      var aresPlanResult = new PlanResult(matchingMetadata, currentPlannedParameter.ParameterValue);
-      planResults.Add(aresPlanResult);
-    }
-
-    return planResults;
+    return result;
   }
 
   private AresRemotePlannerService.AresRemotePlannerServiceClient GetClient()
@@ -253,6 +182,14 @@ public class RemotePlannerService : PlannerServiceBase
     Version = info.Version;
     _capabilities = info.Capabilities;
     await UpdateCapabilities();
+  }
+
+  internal async Task VerifyDatamodelCompatability()
+  {
+    if(_latestMetadata is null)
+      return;
+
+    await _versionValidator.CheckDatamodelVersionValidity(_latestMetadata, Name);
   }
 
   public Uri Address { get; }

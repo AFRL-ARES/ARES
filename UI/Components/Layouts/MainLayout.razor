@@ -1,0 +1,284 @@
+@implements IDisposable
+
+@using Ares.Core.Device.Providers
+@using Ares.Core.Execution.Safety
+@using Ares.Core.Device.Repos
+@using Ares.Services
+@using Google.Protobuf.WellKnownTypes
+@using System.Reactive.Linq
+@using System.Collections.Specialized
+@using UI.Application.Dialog
+@using UI.Application.Notifications
+@using UI.Infrastructure.Notifications
+@using UI.Infrastructure.Startup
+
+@inherits LayoutComponentBase
+
+@inject IUiDialogService dialogService
+@inject INotificationReceivingService notificationService
+@inject IUiNotificationService uiNotificationService
+@inject IExecutionSafetyManager executionSafetyManager 
+@inject IDeviceDriverProvider deviceDriverProvider
+@inject INotificationProvider notificationProvider
+@inject StartupStateTracker Tracker
+
+<HeadContent>
+  <link rel="icon" type="image/png" href="images/ARESLogo.png">
+</HeadContent>
+<PageTitle>ARES</PageTitle>
+
+<div class="page">
+  @foreach(var cssPath in GetPluginStylesheetPaths())
+  {
+    <link rel="stylesheet" href="@cssPath">
+  }
+  <RadzenComponents />
+
+  <main>
+    @* <AuthorizeView>
+          <Authorized> *@
+    <div class="main-layout-grid vh-100">
+      <div class="p-0 ares-sidebar">
+        <button @onclick="SidebarExpandClick" type="button" class="bg-dark btn hamburger-button">
+          <RadzenIcon Icon="menu"></RadzenIcon>
+        </button>
+        <AresNavMenu ExpandedMainNav="@SidebarExpanded">
+          <MainNavContent>
+            <AresNavItem Text="Dashboard" Icon="dvr" Path="/" />
+            <AresNavItem Match="NavLinkMatch.Prefix" Expandable="true" Icon="science" Text="Automation" Path="automation">
+              <AresNavItem Icon="brush" Text="Campaign Designer" Path="automation/campaignlist" />
+              <AresNavItem Icon="terminal" Text="Custom Commands" BadgeText="BETA" Path="automation/custom-commands" />
+              <AresNavItem Icon="directions_run" Text="Execution" Path="automation/execution" />
+              <AresNavItem Icon="history" Text="Execution History" Path="automation/executionhistory" />
+            </AresNavItem>
+            <AresNavItem Icon="assessment" Text="Data Explorer" Path="data-explorer" />
+            <AresNavItem Icon="bar_chart" Text="Visualization" Path="visualization"/>
+            <AresNavItem Icon="terminal" Text="Scripting" Path="scripting" />
+            @* Coming Soon *@
+            @* <AresNavItem Icon="detector" Text="Safety" Path="/safety"/> *@
+          </MainNavContent>
+
+          <FooterContent>
+            <NavLink type="button" class="px-4 py-2 btn btn-outline-light" href="notifications">
+              <RadzenIcon Icon="@(HasUnreadNotifications ? "notifications_active" : "notifications")" class="@(HasUnreadNotifications ? "bell-unread" : "")" />
+            </NavLink>
+            <AresNavFooterItem Path="settings/device" Icon="settings" />
+            <AresNavFooterItem Path="profile" Icon="person" />
+          </FooterContent>
+
+
+          <CollapsedNavContent>
+            <div class="first-nav-item">
+              <AresNavItem Icon="dvr" Path="#" />
+            </div>
+            <AresNavItem Icon="space_dashboard" Path="project" />
+            <AresNavItem Icon="science">
+              <AresNavItem Icon="brush" Path="automation/campaignlist" />
+              <AresNavItem Icon="terminal" Path="automation/custom-commands" />
+              <AresNavItem Icon="directions_run" Path="automation/execution" />
+              <AresNavItem Icon="history" Path="automation/executionhistory" />
+              <AresNavItem Icon="assessment" Path="data-explorer" />
+              @* Coming Soon *@
+              @* <AresNavItem Icon="detector" Text="Safety" Path="/safety" /> *@
+            </AresNavItem>
+          </CollapsedNavContent>
+        </AresNavMenu>
+
+      </div>
+      <div class="ares-content m-2">
+        @Body
+      </div>
+      <div class="ares-footer">
+        <AresFooter>
+          <div class="d-flex flex-row justify-content-end align-items-center">
+            @* <div>
+                        <span>Logged in as @context.User.Identity?.Name</span>
+                        <a href="Identity/Account/Logout" class="mx-2">Logout</a>
+                      </div> *@
+            <RadzenAppearanceToggle />
+            <RadzenButton Click="@ShowEmergencyStopDialog" Text="Emergency Stop" Icon="report" ButtonStyle="ButtonStyle.Danger" />
+          </div>
+        </AresFooter>
+      </div>
+    </div>
+    @*     </Authorized>
+          <NotAuthorized>
+              <article class="content px-4">
+                  <meta http-equiv="refresh" content="0.01; URL=Identity/Account/Login"/>
+              </article>
+          </NotAuthorized>
+      </AuthorizeView> *@
+  </main>
+</div>
+
+<div class="ares-throbber-overlay @(Tracker.IsReady ? "fade-out" : "")">
+  <div class="throbber-content-wrapper">
+    <img src="/images/ARESLogo.png" class="ares-throbber-pulse" alt="ARES OS Booting..." />
+    <h5 class="text-light mt-4 throbber-text-nudge">@_loadingMessage</h5>
+  </div>
+</div>
+
+@code {
+  public bool SidebarExpanded { get; set; } = true;
+  public bool BodyExpanded { get; set; }
+  private CancellationTokenSource _cts = new();
+  private string _loadingMessage = "Initializing ARES OS...";
+  private IDisposable? _driverSubscription;
+  private List<string> _approvedCssPaths = new();
+  public bool HasUnreadNotifications = false;
+
+  private readonly string[] _loadingMessageOptions = new[]
+  {
+    "Applying percussive maintenance to simulated hardware...",
+    "Negotiating peace treaties with the serial ports...",
+    "Convincing the lab equipment to cooperate...",
+    "Topping off the blinker fluid...",
+    "Herding the autonomous research agents...",
+    "Downloading more RAM...",
+    "Warming up the lasers...",
+    "Purging the digital fluid lines...",
+    "Waiting for the valves to make up their minds...",
+    "Dividing by zero... please wait...",
+    "Locating the missing 10mm socket...",
+    "Giving the planner a quick pep talk...",
+    "Sweeping up the broken simulated beakers...",
+    "Convincing the analyzer the sample isn't contaminated...",
+    "Checking the ceiling tiles for water spots...",
+    "Analyzing the files..."
+  };
+
+  protected override void OnInitialized()
+  {
+    Tracker.OnSystemReady += HandleSystemReady;
+    notificationService.OnNotificationReceived += HandleBackgroundNotification;
+    HasUnreadNotifications = notificationProvider.GetAllNotifications().Any(n => !n.IsRead);
+
+    notificationProvider.Connect()
+    .Throttle(TimeSpan.FromMilliseconds(500))
+    .Subscribe(_ => InvokeAsync(NotificationsUpdated));
+
+    _driverSubscription = deviceDriverProvider.Connect()
+    .Throttle(TimeSpan.FromMilliseconds(500))
+    .Subscribe(_ => InvokeAsync(StateHasChanged));
+
+
+    _ = CycleLoadingMessagesAsync(_cts.Token);
+
+  }
+
+  private Task NotificationsUpdated()
+  {
+    HasUnreadNotifications = notificationProvider.GetAllNotifications().Any(n => !n.IsRead);
+    StateHasChanged();
+    return Task.CompletedTask;
+  }
+
+
+  private void HandleDriversChanged()
+  {
+    InvokeAsync(StateHasChanged);
+  }
+
+  private void HandleBackgroundNotification(UiNotificationMessage message)
+  {
+    InvokeAsync(() =>
+    {
+      HasUnreadNotifications = true;
+      StateHasChanged();
+    });
+  }
+
+  private async Task CycleLoadingMessagesAsync(CancellationToken token)
+  {
+    var random = new Random();
+
+    while(!Tracker.IsReady && !token.IsCancellationRequested)
+    {
+      // Wait 4 seconds before swapping to a new message
+      await Task.Delay(2500, token);
+
+      if(!Tracker.IsReady)
+      {
+        _loadingMessage = _loadingMessageOptions[random.Next(_loadingMessageOptions.Length)];
+        await InvokeAsync(StateHasChanged);
+      }
+    }
+  }
+
+  private void SidebarExpandClick()
+  {
+    SidebarExpanded = !SidebarExpanded;
+    BodyExpanded = !BodyExpanded;
+  }
+
+  async Task ShowEmergencyStopDialog()
+  {
+    var confirmDialogOptions = new UiConfirmOptions { OkButtonText = "Yes", CancelButtonText = "No" };
+    var result = await dialogService.ConfirmAsync("Are you sure you want to trigger an emergency stop?", "Emergency Stop Confirmation", confirmDialogOptions);
+
+    if(result)
+    {
+      var success = await executionSafetyManager.EnterSafeMode();
+      UiNotificationMessage notificationMessage;
+
+      if(success)
+      {
+        notificationMessage = new UiNotificationMessage
+        {
+          Summary = "Successfully Processed Emergency Shutdown Request",
+          Detail = "ARES has successfully processed an emergency shutdown request. All devices have entered safemode and any running campaigns have been completed.",
+          Severity = UiNotificationSeverity.Success,
+          CloseOnClick = true
+        };
+      }
+
+
+      else
+      {
+        notificationMessage = new UiNotificationMessage
+        {
+          Detail = "ARES HAS FAILED TO ENTER SAFE MODE. DEVICES MAY BE IN AN UNSTABLE STATE AND SHOULD BE POWERED OFF IMMEDIATELY IF IT IS SAFE TO DO SO.",
+          Summary = "FAILED TO PROCESS EMERGENCY SHUTDOWN REQUEST!",
+          CloseOnClick = true,
+          Severity = UiNotificationSeverity.Error
+        };
+      }
+
+      uiNotificationService.Notify(notificationMessage);
+    }
+
+  }
+
+  public IEnumerable<string> GetPluginStylesheetPaths()
+  {
+    return deviceDriverProvider
+      .GetAllDeviceDrivers()
+      .Select(driver =>
+      {
+        var pluginFolder = Path.GetFileName(driver.ModulePath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+        var assemblyName = Path.GetFileNameWithoutExtension(driver.Manifest.AssemblyName);
+        if(string.IsNullOrWhiteSpace(pluginFolder) || string.IsNullOrWhiteSpace(assemblyName))
+          return null;
+
+        return $"/plugins/{Uri.EscapeDataString(pluginFolder)}/{Uri.EscapeDataString(assemblyName)}.styles.css";
+      })
+      .OfType<string>()
+      .Distinct(StringComparer.OrdinalIgnoreCase);
+  }
+
+  private void HandleSystemReady()
+  {
+    _cts.Cancel();
+    InvokeAsync(StateHasChanged);
+  }
+
+  public void Dispose()
+  {
+    Tracker.OnSystemReady -= HandleSystemReady;
+    notificationService.OnNotificationReceived -= HandleBackgroundNotification;
+    _driverSubscription?.Dispose();
+
+    _cts.Cancel();
+    _cts.Dispose();
+  }
+}

@@ -17,7 +17,7 @@ namespace AresService.Migrations.Postgres.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.0")
+                .HasAnnotation("ProductVersion", "10.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -105,7 +105,7 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("SettingsSchema")
-                        .HasColumnType("jsonb");
+                        .HasColumnType("text");
 
                     b.Property<long>("TimeoutSeconds")
                         .HasColumnType("bigint");
@@ -201,11 +201,56 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Settings")
-                        .HasColumnType("jsonb");
+                        .HasColumnType("text");
 
                     b.HasKey("UniqueId");
 
                     b.ToTable("AnalyzerSettings");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Analyzing.AnalyzerTransaction", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AnalysisRequest")
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("AnalysisResponse")
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("AnalyzerId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("AnalyzerName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("AnalyzerType")
+                        .HasColumnType("text");
+
+                    b.Property<string>("AnalyzerVersion")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<DateTime?>("TimeRequestSent")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("TimeResponseReceived")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("AnalyzerTransactions");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.AresCampaignTag", b =>
@@ -230,6 +275,147 @@ namespace AresService.Migrations.Postgres.Migrations
                     b.HasKey("UniqueId");
 
                     b.ToTable("CampaignTags");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.AresGeneralSettingsConfig", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CommandLatency")
+                        .HasColumnType("jsonb");
+
+                    b.Property<int>("CommandRetryLimit")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<bool>("DisplayCompatabilityWarnings")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("DisplayDataCollectionWidget")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<int>("ExperimentRetryLimit")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("RetryCooldown")
+                        .HasColumnType("jsonb");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("AresGeneralSettingsConfig", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Automation.CustomCommand", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("CurrentVersionId")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("CustomCommands", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Automation.CustomCommandParameter", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<Guid>("CustomCommandVersionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Schema")
+                        .HasColumnType("text");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("CustomCommandVersionId");
+
+                    b.ToTable("CustomCommandParameters", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Automation.CustomCommandVersion", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<Guid>("CustomCommandId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("text");
+
+                    b.Property<string>("OutputSchema")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ScriptBody")
+                        .HasColumnType("text");
+
+                    b.Property<long>("VersionNumber")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("CustomCommandId", "VersionNumber")
+                        .IsUnique();
+
+                    b.ToTable("CustomCommandVersions", (string)null);
                 });
 
             modelBuilder.Entity("Ares.Datamodel.CampaignExecutionSummary", b =>
@@ -300,12 +486,21 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
+                    b.Property<string>("Result")
+                        .HasColumnType("text");
+
                     b.Property<string>("State")
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("StatusMessage")
+                        .HasColumnType("text");
+
                     b.Property<Guid?>("StepExecutionStatusUniqueId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("VariableName")
+                        .HasColumnType("text");
 
                     b.HasKey("UniqueId");
 
@@ -339,8 +534,17 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
+                    b.Property<int>("StatusCode")
+                        .HasColumnType("integer");
+
                     b.Property<Guid?>("StepExecutionSummaryUniqueId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("TemplateId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("VarName")
+                        .HasColumnType("text");
 
                     b.HasKey("UniqueId");
 
@@ -375,7 +579,10 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Result")
-                        .HasColumnType("jsonb");
+                        .HasColumnType("text");
+
+                    b.Property<int>("StatusCode")
+                        .HasColumnType("integer");
 
                     b.Property<bool>("Success")
                         .HasColumnType("boolean");
@@ -406,7 +613,7 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("InputSchema")
-                        .HasColumnType("jsonb");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
@@ -417,7 +624,7 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("OutputSchema")
-                        .HasColumnType("jsonb");
+                        .HasColumnType("text");
 
                     b.HasKey("UniqueId");
 
@@ -437,18 +644,32 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
+                    b.Property<string>("DeviceId")
+                        .HasColumnType("text");
+
                     b.Property<string>("DeviceName")
                         .HasColumnType("text");
 
-                    b.Property<string>("DeviceType")
+                    b.Property<string>("DeviceSettings")
                         .HasColumnType("text");
+
+                    b.Property<string>("DriverId")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsSimulated")
+                        .HasColumnType("boolean");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
+                    b.Property<Guid?>("SerialInfoUniqueId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("UniqueId");
+
+                    b.HasIndex("SerialInfoUniqueId");
 
                     b.ToTable("DeviceConfigs", (string)null);
                 });
@@ -476,7 +697,7 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("SettingsSchema")
-                        .HasColumnType("jsonb");
+                        .HasColumnType("text");
 
                     b.Property<string>("Type")
                         .HasColumnType("text");
@@ -517,6 +738,9 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
+                    b.Property<bool>("LoggingEnabled")
+                        .HasColumnType("boolean");
+
                     b.Property<int>("LoggingType")
                         .HasColumnType("integer");
 
@@ -545,7 +769,7 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Settings")
-                        .HasColumnType("jsonb");
+                        .HasColumnType("text");
 
                     b.HasKey("UniqueId");
 
@@ -564,7 +788,7 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Data")
-                        .HasColumnType("jsonb");
+                        .HasColumnType("text");
 
                     b.Property<string>("DeviceId")
                         .HasColumnType("text");
@@ -607,6 +831,63 @@ namespace AresService.Migrations.Postgres.Migrations
                     b.HasKey("UniqueId");
 
                     b.ToTable("RemoteDevices", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Device.SerialConnection", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("BaudRate")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("PortName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SerialId")
+                        .HasColumnType("text");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("SerialConnection");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.DeviceErrorHandlingConfig", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Code")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<int>("Handling")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("ErrorHandlingConfigs", (string)null);
                 });
 
             modelBuilder.Entity("Ares.Datamodel.ExecutionInfo", b =>
@@ -718,7 +999,7 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Result")
-                        .HasColumnType("jsonb");
+                        .HasColumnType("text");
 
                     b.Property<Guid?>("TemplateUniqueId")
                         .HasColumnType("uuid");
@@ -744,19 +1025,16 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
-                    b.Property<long>("Index")
-                        .HasColumnType("bigint");
-
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
-                    b.Property<float>("Maximum")
-                        .HasColumnType("real");
+                    b.Property<double>("Maximum")
+                        .HasColumnType("double precision");
 
-                    b.Property<float>("Minimum")
-                        .HasColumnType("real");
+                    b.Property<double>("Minimum")
+                        .HasColumnType("double precision");
 
                     b.Property<Guid>("ParameterMetadataUniqueId")
                         .HasColumnType("uuid");
@@ -889,7 +1167,7 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("SettingsSchema")
-                        .HasColumnType("jsonb");
+                        .HasColumnType("text");
 
                     b.Property<long>("TimeoutSeconds")
                         .HasColumnType("bigint");
@@ -958,11 +1236,56 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Settings")
-                        .HasColumnType("jsonb");
+                        .HasColumnType("text");
 
                     b.HasKey("UniqueId");
 
                     b.ToTable("PlannerSettings");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Planning.PlannerTransaction", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("PlannerId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PlannerName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PlannerType")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PlannerVersion")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PlanningRequest")
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("PlanningResponse")
+                        .HasColumnType("jsonb");
+
+                    b.Property<DateTime?>("TimeRequestSent")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("TimeResponseReceived")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("PlannerTransactions");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Project", b =>
@@ -1081,9 +1404,6 @@ namespace AresService.Migrations.Postgres.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("CommandTemplateId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
@@ -1091,6 +1411,9 @@ namespace AresService.Migrations.Postgres.Migrations
 
                     b.Property<string>("Description")
                         .HasColumnType("text");
+
+                    b.Property<Guid?>("DeviceCommandId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("DeviceId")
                         .HasColumnType("text");
@@ -1108,7 +1431,7 @@ namespace AresService.Migrations.Postgres.Migrations
 
                     b.HasKey("UniqueId");
 
-                    b.HasIndex("CommandTemplateId")
+                    b.HasIndex("DeviceCommandId")
                         .IsUnique();
 
                     b.ToTable("CommandMetadata");
@@ -1133,6 +1456,9 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
+                    b.Property<string>("OutputVarName")
+                        .HasColumnType("text");
+
                     b.Property<Guid>("StepTemplateUniqueId")
                         .HasColumnType("uuid");
 
@@ -1143,6 +1469,33 @@ namespace AresService.Migrations.Postgres.Migrations
                     b.ToTable("CommandTemplates", (string)null);
                 });
 
+            modelBuilder.Entity("Ares.Datamodel.Templates.DeviceCommand", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("CommandTemplateId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("CommandTemplateId")
+                        .IsUnique();
+
+                    b.ToTable("DeviceCommands", (string)null);
+                });
+
             modelBuilder.Entity("Ares.Datamodel.Templates.ExperimentTemplate", b =>
                 {
                     b.Property<Guid>("UniqueId")
@@ -1150,6 +1503,9 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("AnalyzerId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("AnalyzerMaps")
                         .HasColumnType("text");
 
                     b.Property<Guid?>("CampaignCloseoutId")
@@ -1203,7 +1559,7 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("DataSchema")
-                        .HasColumnType("jsonb");
+                        .HasColumnType("text");
 
                     b.Property<string>("Description")
                         .HasColumnType("text");
@@ -1235,9 +1591,6 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
-                    b.Property<bool>("EnvironmentBased")
-                        .HasColumnType("boolean");
-
                     b.Property<Guid?>("ExperimentOverviewUniqueId")
                         .HasColumnType("uuid");
 
@@ -1249,28 +1602,15 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
-                    b.Property<bool>("Planned")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid?>("PlanningMetadataUniqueId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Value")
-                        .HasColumnType("jsonb");
-
-                    b.Property<string>("VariableArgument")
-                        .HasColumnType("text");
-
-                    b.Property<int>("VariableType")
-                        .HasColumnType("integer");
+                    b.Property<string>("SourceJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("Source");
 
                     b.HasKey("UniqueId");
 
                     b.HasIndex("CommandTemplateUniqueId");
 
                     b.HasIndex("ExperimentOverviewUniqueId");
-
-                    b.HasIndex("PlanningMetadataUniqueId");
 
                     b.ToTable("Parameters", (string)null);
                 });
@@ -1292,14 +1632,11 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
-                    b.Property<Guid?>("ExtraInfoUniqueId")
-                        .HasColumnType("uuid");
-
                     b.Property<long>("Index")
                         .HasColumnType("bigint");
 
                     b.Property<string>("InitialValue")
-                        .HasColumnType("jsonb");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
@@ -1325,7 +1662,7 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Schema")
-                        .HasColumnType("jsonb");
+                        .HasColumnType("text");
 
                     b.Property<string>("Unit")
                         .HasColumnType("text");
@@ -1338,8 +1675,6 @@ namespace AresService.Migrations.Postgres.Migrations
                     b.HasIndex("CampaignTemplateUniqueId");
 
                     b.HasIndex("CommandMetadataUniqueId");
-
-                    b.HasIndex("ExtraInfoUniqueId");
 
                     b.HasIndex("ParameterId")
                         .IsUnique();
@@ -1382,281 +1717,94 @@ namespace AresService.Migrations.Postgres.Migrations
                     b.ToTable("StepTemplates", (string)null);
                 });
 
-            modelBuilder.Entity("Ares.Messages.DeviceStates.Chiller.ChillerState", b =>
+            modelBuilder.Entity("Ares.Datamodel.Visualizing.Local.DeviceVisualizationConfig", b =>
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<string>("ChartTitle")
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
-                    b.Property<string>("DeviceId")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("NOW()");
-
-                    b.Property<double?>("ManifoldTemperature")
-                        .HasColumnType("double precision");
-
-                    b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("ChillerStates", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messages.DeviceStates.Mfc.MfcState", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<double?>("AbsolutePressure")
-                        .HasColumnType("double precision");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("NOW()");
-
-                    b.Property<string>("DeviceId")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Gas")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("NOW()");
-
-                    b.Property<double?>("MassFlow")
-                        .HasColumnType("double precision");
-
-                    b.Property<double?>("Setpoint")
-                        .HasColumnType("double precision");
-
-                    b.Property<string>("StatusCodes")
-                        .HasColumnType("text");
-
-                    b.Property<double?>("Temperature")
-                        .HasColumnType("double precision");
-
-                    b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<double?>("VolumetricFlow")
-                        .HasColumnType("double precision");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("MfcStates", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messages.DeviceStates.RestDevice.RestDeviceStateEntity", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("NOW()");
-
-                    b.Property<string>("DeviceId")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("NOW()");
-
-                    b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("RestDeviceStateEntities", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messages.DeviceStates.RestSerialDevice.RestSerialDeviceStateEntity", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("NOW()");
-
-                    b.Property<string>("DeviceId")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("NOW()");
-
-                    b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("RestSerialDeviceStateEntities", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messages.DeviceStates.SyringePump.SyringePumpState", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Address")
+                    b.Property<int>("GridH")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("NOW()");
-
-                    b.Property<string>("DeviceId")
-                        .HasColumnType("text");
-
-                    b.Property<double?>("DispensedVolume")
-                        .HasColumnType("double precision");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("NOW()");
-
-                    b.Property<string>("RateUnit")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("VolumeUnit")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<double?>("WithdrawnVolume")
-                        .HasColumnType("double precision");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("SyringePumpStates", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messages.DeviceStates.Tc0304.Tc0304State", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("NOW()");
-
-                    b.Property<string>("DeviceId")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("NOW()");
-
-                    b.Property<double?>("Probe1Temperature")
-                        .HasColumnType("double precision");
-
-                    b.Property<double?>("Probe2Temperature")
-                        .HasColumnType("double precision");
-
-                    b.Property<double?>("Probe3Temperature")
-                        .HasColumnType("double precision");
-
-                    b.Property<double?>("Probe4Temperature")
-                        .HasColumnType("double precision");
-
-                    b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("Tc0304States", (string)null);
-                });
-
-            modelBuilder.Entity("Ares.Messages.DeviceStates.TicStepperController.TicStepperControllerState", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("NOW()");
-
-                    b.Property<int>("CurrentPosition")
+                    b.Property<int>("GridW")
                         .HasColumnType("integer");
 
-                    b.Property<long>("CustomStepSize")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("DeviceId")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("NOW()");
-
-                    b.Property<long>("MaxAcceleration")
-                        .HasColumnType("bigint");
-
-                    b.Property<long>("MaxDeceleration")
-                        .HasColumnType("bigint");
-
-                    b.Property<long>("MaxSpeed")
-                        .HasColumnType("bigint");
-
-                    b.Property<long>("StartingSpeed")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("StatusMessages")
-                        .HasColumnType("text");
-
-                    b.Property<string>("StepMode")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("TargetPosition")
+                    b.Property<int>("GridX")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<int>("GridY")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<int>("NumberDisplayPoints")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Paths")
+                        .HasColumnType("jsonb");
+
+                    b.Property<int>("PollingRate")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("ShowDataLabels")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("ShowMarkers")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Style")
+                        .HasColumnType("integer");
 
                     b.HasKey("UniqueId");
 
-                    b.ToTable("TicStepperControllerStates", (string)null);
+                    b.ToTable("DeviceVisualizationConfigs");
                 });
 
-            modelBuilder.Entity("Ares.Messages.DeviceStates.TubeFurnace.TubeFurnaceStateEntity", b =>
+            modelBuilder.Entity("Ares.Datamodel.Visualizing.Local.VisualizationPath", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AssociatedDeviceId")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<int>("DataType")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsPlottable")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("Path")
+                        .HasColumnType("text");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("VisualizationPath");
+                });
+
+            modelBuilder.Entity("Ares.Services.DriverInfo", b =>
                 {
                     b.Property<Guid>("UniqueId")
                         .ValueGeneratedOnAdd()
@@ -1667,59 +1815,26 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
-                    b.Property<double>("CurrentTemp")
-                        .HasColumnType("double precision");
-
-                    b.Property<string>("DeviceId")
+                    b.Property<string>("DisplayName")
                         .HasColumnType("text");
+
+                    b.Property<string>("DriverId")
+                        .HasColumnType("text");
+
+                    b.Property<long>("FileSizeBytes")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
-                    b.Property<double>("SetPointTemp")
-                        .HasColumnType("double precision");
-
-                    b.Property<DateTime?>("Timestamp")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("TubeFurnaceStateEntities", (string)null);
-                });
-
-            modelBuilder.Entity("Google.Protobuf.WellKnownTypes.Any", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("NOW()");
-
-                    b.Property<Guid?>("DeviceConfigId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("NOW()");
-
-                    b.Property<string>("TypeUrl")
+                    b.Property<string>("Version")
                         .HasColumnType("text");
 
-                    b.Property<byte[]>("Value")
-                        .HasColumnType("bytea");
-
                     b.HasKey("UniqueId");
 
-                    b.HasIndex("DeviceConfigId")
-                        .IsUnique();
-
-                    b.ToTable("Any");
+                    b.ToTable("DeviceDrivers");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.AnalysisOverview", b =>
@@ -1735,6 +1850,24 @@ namespace AresService.Migrations.Postgres.Migrations
                     b.HasOne("Ares.Datamodel.Analyzing.AnalyzerInfo", null)
                         .WithOne("Capabilities")
                         .HasForeignKey("Ares.Datamodel.Analyzing.AnalyzerCapabilities", "AnalyzerInfoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Automation.CustomCommandParameter", b =>
+                {
+                    b.HasOne("Ares.Datamodel.Automation.CustomCommandVersion", null)
+                        .WithMany("InputParameters")
+                        .HasForeignKey("CustomCommandVersionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Automation.CustomCommandVersion", b =>
+                {
+                    b.HasOne("Ares.Datamodel.Automation.CustomCommand", null)
+                        .WithMany()
+                        .HasForeignKey("CustomCommandId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -1785,6 +1918,15 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasForeignKey("DeviceInfoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Device.DeviceConfig", b =>
+                {
+                    b.HasOne("Ares.Datamodel.Device.SerialConnection", "SerialInfo")
+                        .WithMany()
+                        .HasForeignKey("SerialInfoUniqueId");
+
+                    b.Navigation("SerialInfo");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.ExecutionInfo", b =>
@@ -1889,11 +2031,10 @@ namespace AresService.Migrations.Postgres.Migrations
 
             modelBuilder.Entity("Ares.Datamodel.Templates.CommandMetadata", b =>
                 {
-                    b.HasOne("Ares.Datamodel.Templates.CommandTemplate", null)
+                    b.HasOne("Ares.Datamodel.Templates.DeviceCommand", null)
                         .WithOne("Metadata")
-                        .HasForeignKey("Ares.Datamodel.Templates.CommandMetadata", "CommandTemplateId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("Ares.Datamodel.Templates.CommandMetadata", "DeviceCommandId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Templates.CommandTemplate", b =>
@@ -1903,6 +2044,50 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasForeignKey("StepTemplateUniqueId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.OwnsOne("Ares.Datamodel.Templates.CustomCommandInvocation", "CustomCommandInvocation", b1 =>
+                        {
+                            b1.Property<Guid>("CommandTemplateUniqueId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<string>("CustomCommandId")
+                                .HasColumnType("text");
+
+                            b1.HasKey("CommandTemplateUniqueId");
+
+                            b1.ToTable("CommandTemplates");
+
+                            b1.WithOwner()
+                                .HasForeignKey("CommandTemplateUniqueId");
+                        });
+
+                    b.OwnsOne("Ares.Datamodel.Templates.SystemCommand", "SystemCommand", b1 =>
+                        {
+                            b1.Property<Guid>("CommandTemplateUniqueId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<int>("Operation")
+                                .HasColumnType("integer");
+
+                            b1.HasKey("CommandTemplateUniqueId");
+
+                            b1.ToTable("CommandTemplates");
+
+                            b1.WithOwner()
+                                .HasForeignKey("CommandTemplateUniqueId");
+                        });
+
+                    b.Navigation("CustomCommandInvocation");
+
+                    b.Navigation("SystemCommand");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Templates.DeviceCommand", b =>
+                {
+                    b.HasOne("Ares.Datamodel.Templates.CommandTemplate", null)
+                        .WithOne("DeviceCommand")
+                        .HasForeignKey("Ares.Datamodel.Templates.DeviceCommand", "CommandTemplateId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Templates.ExperimentTemplate", b =>
@@ -1935,19 +2120,13 @@ namespace AresService.Migrations.Postgres.Migrations
             modelBuilder.Entity("Ares.Datamodel.Templates.Parameter", b =>
                 {
                     b.HasOne("Ares.Datamodel.Templates.CommandTemplate", null)
-                        .WithMany("Parameters")
+                        .WithMany("ArgumentBindings")
                         .HasForeignKey("CommandTemplateUniqueId")
                         .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("Ares.Datamodel.ExperimentOverview", null)
                         .WithMany("Parameters")
                         .HasForeignKey("ExperimentOverviewUniqueId");
-
-                    b.HasOne("Ares.Datamodel.Templates.ParameterMetadata", "PlanningMetadata")
-                        .WithMany()
-                        .HasForeignKey("PlanningMetadataUniqueId");
-
-                    b.Navigation("PlanningMetadata");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Templates.ParameterMetadata", b =>
@@ -1962,16 +2141,10 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasForeignKey("CommandMetadataUniqueId")
                         .OnDelete(DeleteBehavior.ClientCascade);
 
-                    b.HasOne("Google.Protobuf.WellKnownTypes.Any", "ExtraInfo")
-                        .WithMany()
-                        .HasForeignKey("ExtraInfoUniqueId");
-
                     b.HasOne("Ares.Datamodel.Templates.Parameter", null)
                         .WithOne("Metadata")
                         .HasForeignKey("Ares.Datamodel.Templates.ParameterMetadata", "ParameterId")
                         .OnDelete(DeleteBehavior.Cascade);
-
-                    b.Navigation("ExtraInfo");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Templates.StepTemplate", b =>
@@ -1982,17 +2155,14 @@ namespace AresService.Migrations.Postgres.Migrations
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 
-            modelBuilder.Entity("Google.Protobuf.WellKnownTypes.Any", b =>
-                {
-                    b.HasOne("Ares.Datamodel.Device.DeviceConfig", null)
-                        .WithOne("ConfigData")
-                        .HasForeignKey("Google.Protobuf.WellKnownTypes.Any", "DeviceConfigId")
-                        .OnDelete(DeleteBehavior.ClientCascade);
-                });
-
             modelBuilder.Entity("Ares.Datamodel.Analyzing.AnalyzerInfo", b =>
                 {
                     b.Navigation("Capabilities");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Automation.CustomCommandVersion", b =>
+                {
+                    b.Navigation("InputParameters");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.CampaignExecutionSummary", b =>
@@ -2007,11 +2177,6 @@ namespace AresService.Migrations.Postgres.Migrations
                     b.Navigation("ExecutionInfo");
 
                     b.Navigation("Result");
-                });
-
-            modelBuilder.Entity("Ares.Datamodel.Device.DeviceConfig", b =>
-                {
-                    b.Navigation("ConfigData");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Device.DeviceInfo", b =>
@@ -2079,9 +2244,14 @@ namespace AresService.Migrations.Postgres.Migrations
 
             modelBuilder.Entity("Ares.Datamodel.Templates.CommandTemplate", b =>
                 {
-                    b.Navigation("Metadata");
+                    b.Navigation("ArgumentBindings");
 
-                    b.Navigation("Parameters");
+                    b.Navigation("DeviceCommand");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Templates.DeviceCommand", b =>
+                {
+                    b.Navigation("Metadata");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Templates.ExperimentTemplate", b =>

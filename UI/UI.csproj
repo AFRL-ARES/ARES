@@ -1,5 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <TypeScriptTarget>ES6</TypeScriptTarget>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <TypeScriptTarget>ES6</TypeScriptTarget>
+  </PropertyGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
@@ -7,56 +15,72 @@
 	<UserSecretsId>aspnet-UI-87962D8C-B573-4F3B-852F-E1DA10F52308</UserSecretsId>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <WarningsAsErrors>RZ10012</WarningsAsErrors>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <WarningsAsErrors>RZ10012</WarningsAsErrors>
+  </PropertyGroup>
+
   <ItemGroup>
-    <PackageReference Include="ARES.Datamodel" Version="0.16.1" />
-    <PackageReference Include="BlazorMonaco" Version="3.4.0" />
-    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <Compile Remove="Pages\Settings\**" />
+    <Compile Remove="Services\**" />
+    <Content Remove="Pages\Settings\**" />
+    <Content Remove="Services\**" />
+    <EmbeddedResource Remove="Pages\Settings\**" />
+    <EmbeddedResource Remove="Services\**" />
+    <None Remove="Pages\Settings\**" />
+    <None Remove="Services\**" />
+    <TypeScriptCompile Remove="Pages\Settings\**" />
+    <TypeScriptCompile Remove="Services\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+		<PackageReference Include="ARES.Datamodel" Version="0.35.0" />
+		<PackageReference Include="BlazorMonaco" Version="3.5.0" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="CsvHelper" Version="33.1.0" />
-    <PackageReference Include="Grpc.AspNetCore.HealthChecks" Version="2.76.0" />
-    <PackageReference Include="Grpc.Net.Client" Version="2.76.0" />
-    <PackageReference Include="Humanizer" Version="3.0.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="10.0.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="10.0.1" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.1" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.1" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.1" />
-    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="10.0.1" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
-    <PackageReference Include="Radzen.Blazor" Version="8.5.1" />
-    <PackageReference Include="ReactiveUI.Blazor" Version="22.3.1" />
-    <PackageReference Include="ReactiveUI.SourceGenerators" Version="2.5.1" />
-    <PackageReference Include="Serilog" Version="4.3.0" />
+    <PackageReference Include="Grpc.AspNetCore.HealthChecks" Version="2.80.0" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.80.0" />
+    <PackageReference Include="Humanizer" Version="3.0.10" />
+    <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="10.0.10" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.10" />
+    <PackageReference Include="Microsoft.TypeScript.MSBuild" Version="7.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="10.0.2" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+    <PackageReference Include="ReactiveUI.SourceGenerators" Version="2.6.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Serilog" Version="4.4.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageReference Include="Serilog.Enrichers.Context" Version="4.6.5" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="10.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.0" />
-    <PackageReference Include="UnitsNet" Version="5.75.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
+    <PackageReference Include="System.CommandLine" Version="2.0.10" />
+    <PackageReference Include="UnitsNet" Version="5.75.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Backend\Devices\Remote\" />
-    <Folder Include="Pages\Settings\" />
+    <Folder Include="Features\Components\" />
+    <Folder Include="wwwroot\js\" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AlicatMFC\AlicatMFC.csproj" />
-    <ProjectReference Include="..\AresMessaging\AresMessaging.csproj" />
-    <ProjectReference Include="..\ChemyxPumpPlugin\ChemyxPumpPlugin.csproj" />
-    <ProjectReference Include="..\FlirCM3\FlirCM3.csproj" />
-    <ProjectReference Include="..\FlirCM3\FlirCM3.csproj" />
-    <ProjectReference Include="..\HerkulexDRS\HerkulexDRS.csproj" />
-    <ProjectReference Include="..\LaserChiller\LaserChiller.csproj" />
-    <ProjectReference Include="..\LindbergFurnace\LindbergFurnace.csproj" />
-    <ProjectReference Include="..\RestDevice\RestDevice.csproj" />
-    <ProjectReference Include="..\RestSerialDevice\RestSerialDevice.csproj" />
-    <ProjectReference Include="..\SyringePumpNE1000\SyringePumpNE1000.csproj" />
-    <ProjectReference Include="..\TC0304\TC0304.csproj" />
-    <ProjectReference Include="..\TicStepperController\TicStepperController.csproj" />
-    <ProjectReference Include="..\ValveController\ValveController.csproj" />
-    <ProjectReference Include="..\VerdiV6Laser\VerdiV6Laser.csproj" />
-  </ItemGroup>
+    <ProjectReference Include="..\Ares.Core\Ares.Core.csproj" />
+    <ProjectReference Include="..\Ares.Core.Grpc\Ares.Core.Grpc.csproj" />
+    <ProjectReference Include="..\AresScript\AresScript.csproj" />
+    <ProjectReference Include="..\AresService.Data\AresService.Data.csproj" />
+    <ProjectReference Include="..\AresService.Migrations.Postgres\AresService.Migrations.Postgres.csproj" />
+    <ProjectReference Include="..\AresService.Migrations.Sqlite\AresService.Migrations.Sqlite.csproj" />
+    <ProjectReference Include="..\AresService.Migrations.SqlServer\AresService.Migrations.SqlServer.csproj" />
+	</ItemGroup>
 
   <ItemGroup>
     <None Update="FC2ClientCert.pfx">
@@ -65,11 +89,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <UpToDateCheckInput Remove="Pages\Shared\Settings\Device\StepperController\StepperControllerSettingsView.razor" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <_ContentIncludedByDefault Remove="Pages\Shared\Settings\Device\StepperController\StepperControllerSettingsView.razor" />
+    <TypeScriptCompile Remove="Scripts\monaco\ares-autocomplete-setup.ts" />
+    <TypeScriptCompile Remove="Scripts\monaco\ares-diagnostics-setup.ts" />
+    <TypeScriptCompile Remove="Scripts\monaco\ares-hover-setup.ts" />
+    <TypeScriptCompile Remove="Scripts\monaco\ares-semantic-setup.ts" />
+    <TypeScriptCompile Remove="Scripts\monaco\ares-setup.ts" />
+    <TypeScriptCompile Remove="Scripts\monaco\areslang.language-configuration.ts" />
+    <TypeScriptCompile Remove="Scripts\monaco\areslang.monarch.ts" />
+    <TypeScriptCompile Remove="Scripts\globals.d.ts" />
+    <TypeScriptCompile Remove="Infrastructure\Scripts\globals.d.ts" />
   </ItemGroup>
 
 </Project>

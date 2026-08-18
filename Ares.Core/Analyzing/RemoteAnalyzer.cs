@@ -1,4 +1,5 @@
-﻿using Ares.Datamodel;
+﻿using Ares.Core.Execution.VersionChecking;
+using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Analyzing.Remote;
 using Ares.Datamodel.Connection;
@@ -13,33 +14,30 @@ public class RemoteAnalyzer : AnalyzerBase
 {
   private readonly GrpcChannel _channel;
   private AnalyzerCapabilities _capabilities = new();
-  private AresDataSchema _parameters = new();
+  private AresStructSchema _parameters = new();
+  private Metadata? _latestReportedMetadata = null;
+  private IDatamodelVersionValidator _datamodelVersionValidator;
 
-  public RemoteAnalyzer(string name, Uri address, string id) : base(name, "", "_._._", id)
+  public RemoteAnalyzer(string name, Uri address, IDatamodelVersionValidator datamodelVersionValidator, string id) : base(name, "", "_._._", id)
   {
     _channel = GrpcChannel.ForAddress(address);
     Address = address;
+    _datamodelVersionValidator = datamodelVersionValidator;
   }
 
-  public RemoteAnalyzer(string name, Uri address) : base(name, "", "_._._")
+  public RemoteAnalyzer(string name, Uri address, IDatamodelVersionValidator datamodelVersionValidator) : base(name, "", "_._._")
   {
     _channel = GrpcChannel.ForAddress(address);
     Address = address;
+    _datamodelVersionValidator = datamodelVersionValidator;
   }
 
   public Uri Address { get; }
 
-  public override async Task<Analysis> Analyze(AresStruct inputs, RequestMetadata metadata, CancellationToken cancellationToken = default)
+  public override async Task<Analysis> Analyze(AnalysisRequest request, CancellationToken cancellationToken = default)
   {
     var client = GetClient();
-    var analysisRequest = new AnalysisRequest
-    {
-      Inputs = inputs,
-      Settings = Settings,
-      Metadata = metadata
-    };
-    var analysis = await client.AnalyzeAsync(analysisRequest, cancellationToken: cancellationToken);
-
+    var analysis = await client.AnalyzeAsync(request, cancellationToken: cancellationToken);
     return analysis;
   }
 
@@ -51,17 +49,12 @@ public class RemoteAnalyzer : AnalyzerBase
   /// <param name="settings">These will add-to/override existing settings values if provided. </param>
   /// <param name="cancellationToken"></param>
   /// <returns></returns>
-  public override Task<Analysis> Analyze(AresStruct inputs, AresStruct settings, RequestMetadata metadata, CancellationToken cancellationToken = default)
+  public override Task<Analysis> Analyze(AnalysisRequest request, AresStruct settings, CancellationToken cancellationToken = default)
   {
     var client = GetClient();
     var mergedSettings = Settings.AppendStruct(settings);
-    var analysisRequest = new AnalysisRequest
-    {
-      Inputs = inputs,
-      Settings = mergedSettings,
-      Metadata = metadata
-    };
-    return client.AnalyzeAsync(analysisRequest, cancellationToken: cancellationToken).ResponseAsync;
+    request.Settings = mergedSettings;
+    return client.AnalyzeAsync(request, cancellationToken: cancellationToken).ResponseAsync;
   }
 
   public override async Task<AnalyzerCapabilities> GetCapabilities(CancellationToken cancellationToken = default)
@@ -79,7 +72,7 @@ public class RemoteAnalyzer : AnalyzerBase
     }
   }
 
-  public override async Task<AresDataSchema> GetParameters(CancellationToken cancellationToken)
+  public override async Task<AresStructSchema> GetParameters(CancellationToken cancellationToken)
   {
     var client = GetClient();
     try
@@ -97,6 +90,7 @@ public class RemoteAnalyzer : AnalyzerBase
   public override async Task Init()
   {
     await UpdateInfo();
+    await VerifyDatamodelCompatability();
     await UpdateState();
     await UpdateParameters();
     await UpdateCapabilities();
@@ -107,7 +101,9 @@ public class RemoteAnalyzer : AnalyzerBase
     var client = GetClient();
     try
     {
-      var info = await client.GetInfoAsync(new Empty());
+      var call = client.GetInfoAsync(new Empty());
+      _latestReportedMetadata = await call.ResponseHeadersAsync;
+      var info = await call.ResponseAsync;
       Type = info.Name;
       Version = info.Version;
       Description = info.Description;
@@ -163,10 +159,16 @@ public class RemoteAnalyzer : AnalyzerBase
 
     foreach(var newSetting in newSettings)
     {
-      if(newSetting.Value.Type == AresDataType.String)
+      if(newSetting.Value.DefaultValue is not null)
+      {
+        Settings.Fields[newSetting.Key] = newSetting.Value.DefaultValue;
+      }
+
+      else if(newSetting.Value.Type == AresDataType.String)
       {
         Settings.Fields[newSetting.Key] = AresValueHelper.CreateDefault(newSetting.Value.Type, newSetting.Value.StringChoices?.Strings);
       }
+
       else if(newSetting.Value.Type == AresDataType.Number)
       {
         Settings.Fields[newSetting.Key] = AresValueHelper.CreateDefault(
@@ -200,6 +202,14 @@ public class RemoteAnalyzer : AnalyzerBase
     Version = info.Version;
     _capabilities = info.Capabilities;
     await UpdateCapabilities();
+  }
+
+  internal async Task VerifyDatamodelCompatability()
+  {
+    if(_latestReportedMetadata is null)
+      return;
+
+    await _datamodelVersionValidator.CheckDatamodelVersionValidity(_latestReportedMetadata, Name);
   }
 
   private AresRemoteAnalyzerService.AresRemoteAnalyzerServiceClient GetClient()

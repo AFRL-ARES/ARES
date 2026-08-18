@@ -8,8 +8,7 @@ namespace Ares.Core.Execution.Executors;
 
 public class ExperimentExecutor : IExecutor<ExperimentExecutionSummary, ExperimentExecutionStatus>
 {
-  public ExperimentExecutor(ExperimentTemplate template,
-    IExecutor<StepExecutionSummary, StepExecutionStatus>[] experimentStepExecutors)
+  public ExperimentExecutor(ExperimentTemplate template, IExecutor<StepExecutionSummary, StepExecutionStatus>[] experimentStepExecutors)
   {
     ExperimentStepExecutors = experimentStepExecutors;
     Template = template;
@@ -21,16 +20,20 @@ public class ExperimentExecutor : IExecutor<ExperimentExecutionSummary, Experime
 
     Status.StepExecutionStatuses.AddRange(experimentStepExecutors.Select(executor => executor.Status));
 
+
     var experimentStepExecutionObservation = experimentStepExecutors.Select(executor =>
     {
       return executor.ExperimentStatusObservable.Select(_ =>
       {
-        var cmdResults = experimentStepExecutors.Select(cmdExecutor => cmdExecutor.Status);
-        Status.StepExecutionStatuses.Clear();
-        Status.StepExecutionStatuses.AddRange(cmdResults);
-        return Status;
+        var newStatus = new ExperimentExecutionStatus
+        {
+          ExperimentId = template.UniqueId
+        };
+
+        newStatus.StepExecutionStatuses.AddRange(experimentStepExecutors.Select(cmdExecutor => cmdExecutor.Status));
+        return newStatus;
       });
-    }).Concat();
+    }).Merge();
 
     ExperimentStatusObservable = experimentStepExecutionObservation;
   }
@@ -44,7 +47,9 @@ public class ExperimentExecutor : IExecutor<ExperimentExecutionSummary, Experime
       if(token.IsCancelled)
         break;
 
-      var stepResult = await executableStep.Execute(token);
+      var stepResult = executableStep is StepExecutor stepExecutor
+        ? await stepExecutor.Execute(token, CommandVariableResolver.CreateVariableScope(stepSummaries.SelectMany(step => step.CommandSummaries)))
+        : await executableStep.Execute(token);
 
       if(!stepResult.CommandSummaries.Any())
         break;

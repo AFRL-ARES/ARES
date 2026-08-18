@@ -1,0 +1,67 @@
+@using Ares.Datamodel
+
+@if (Value != null)
+{
+    @switch (Value.KindCase)
+    {
+        case AresValue.KindOneofCase.NullValue:
+            <RadzenText TextStyle="TextStyle.Subtitle2" Class="rz-color-secondary">N/A</RadzenText>
+            break;
+
+        case AresValue.KindOneofCase.BoolValue:
+            <RadzenSwitch Value="Value.BoolValue" Disabled="true" />
+            break;
+
+        case AresValue.KindOneofCase.StringValue:
+            <RadzenText>@Value.StringValue</RadzenText>
+            break;
+
+        case AresValue.KindOneofCase.NumberValue:
+            <RadzenNumeric ShowUpDown="false" Value="Value.NumberValue" ReadOnly="true"
+                     Min="@(Schema?.HasMinNumberValue == true ? (decimal?)Schema.MinNumberValue : null)"
+                     Max="@(Schema?.HasMaxNumberValue == true ? (decimal?)Schema.MaxNumberValue : null)" />
+            break;
+
+        case AresValue.KindOneofCase.QuantityValue:
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                <RadzenNumeric ShowUpDown="false" Value="Value.QuantityValue.Scalar" ReadOnly="true"
+                     Min="@(Schema?.QuantitySchema?.HasMinScalarValue == true ? (decimal?)Schema.QuantitySchema.MinScalarValue : null)"
+                     Max="@(Schema?.QuantitySchema?.HasMaxScalarValue == true ? (decimal?)Schema.QuantitySchema.MaxScalarValue : null)" />
+                <RadzenText>@Value.QuantityValue.Unit</RadzenText>
+            </RadzenStack>
+            break;
+
+        case AresValue.KindOneofCase.StringArrayValue:
+            <RadzenDataList WrapItems="true" AllowPaging="true" PageSize="5" Data="@Value.StringArrayValue.Strings">
+                <Template Context="str">
+                    <RadzenText>@str</RadzenText>
+                </Template>
+            </RadzenDataList>
+            break;
+
+        case AresValue.KindOneofCase.NumberArrayValue:
+            <RadzenDataList WrapItems="true" AllowPaging="true" PageSize="5" Data="@Value.NumberArrayValue.Numbers">
+                <Template Context="num">
+                    <RadzenText>@num.ToString()</RadzenText>
+                </Template>
+            </RadzenDataList>
+            break;
+
+        case AresValue.KindOneofCase.BytesValue:
+            <RadzenText TextStyle="TextStyle.Subtitle2" Class="rz-color-secondary">[Bytes data omitted]</RadzenText>
+            break;
+
+        case AresValue.KindOneofCase.None:
+        default:
+            <RadzenText TextStyle="TextStyle.Subtitle2" Class="rz-color-secondary">No Value</RadzenText>
+            break;
+    }
+}
+
+@code {
+    [Parameter]
+    public AresValue? Value { get; set; }
+
+    [Parameter]
+    public AresValueSchema? Schema { get; set; }
+}

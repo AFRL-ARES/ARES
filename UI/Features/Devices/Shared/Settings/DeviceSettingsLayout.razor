@@ -1,0 +1,27 @@
+﻿@using Ares.Core.Device.Providers
+@inherits LayoutComponentBase
+@layout SettingsLayout
+
+@inject IDeviceDriverProvider DriverRepository
+
+<div class="d-flex" style="min-width: 15%"> 
+  <div class="overflow-auto">
+    <nav class="nav nav-pills d-flex flex-column flex-sm-column">
+      <NavLink Match="NavLinkMatch.All" class="nav-link flex-sm-fill mt-2" href="settings/device/remote">Remote</NavLink>
+      <hr />
+      @foreach (var driver in DriverRepository.GetAllDeviceDrivers())
+      {
+        <NavLink Match="NavLinkMatch.All" class="nav-link flex-sm-fill" href="@($"settings/device/{driver.UniqueId}")">@driver.Manifest.DeviceTypeName</NavLink>
+      }
+    </nav>
+  </div>
+  <div class="vr">
+  </div>
+</div>
+<div class="m-1 overflow-auto flex-fill">
+  @Body
+</div>
+
+@code {
+
+}

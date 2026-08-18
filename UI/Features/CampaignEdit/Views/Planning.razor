@@ -1,0 +1,16 @@
+﻿@using UI.Features.CampaignEdit.ViewModels
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<PlanningViewModel>
+
+
+<div>
+  <p>Planning</p>
+  @foreach (var editor in ViewModel!.PlannerAllocationEditors)
+  {
+    <PlannerAllocationEditor ViewModel="editor" />
+  }
+</div>
+
+
+@code {
+    
+}

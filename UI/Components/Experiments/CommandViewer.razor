@@ -1,0 +1,145 @@
+﻿@using Ares.Core.Device.Providers
+@using Ares.Datamodel
+@using Ares.Datamodel.Extensions
+@using Ares.Datamodel.Templates
+@using Ares.Services.Device
+@using UI.Features.CampaignEdit.ViewModels
+
+@inject IAresDeviceProvider DeviceProvider;
+
+@if (CommandTemplate is not null)
+{
+    if (CommandTemplate.DeviceCommand?.Metadata?.Name is not null)
+    {
+      <div class="d-flex align-items-center">
+        <div class="border border-2 border-primary rounded px-2 py-1 mx-2">
+          @(DeviceName ?? "UNKNOWN DEVICE")
+        </div>
+          <div class="border border-2 border-primary rounded px-2 py-1 mx-2">
+        @CommandTemplate.DeviceCommand.Metadata.Name
+      </div>
+          @if (CommandTemplate.ArgumentBindings.Any())
+          {
+            <RadzenIcon Icon="arrow_back"/>
+          }
+          @foreach (var argument in CommandTemplate.ArgumentBindings)
+            {
+                var assignmentError = GetParameterAssignmentError(argument);
+                @if (assignmentError is not null)
+                {
+                  <div class="border border-2 border-danger rounded px-2 py-1 mx-2">
+                    @assignmentError
+                  </div>
+                }
+
+                else if (argument.GetPlanningMetadata() is not null)
+                {
+                  <div class="border border-2 border-warning rounded px-2 py-1 mx-2">
+                      @TryUnpackDisplayData(argument)
+                  </div>
+                }
+
+                else if(argument.GetVariableType() > 0)
+                {
+                  <div class="border border-2 border-secondary rounded px-2 py-1 mx-2">
+                    @argument.GetVariableType().ToString()
+                  </div>
+                }
+                else
+                {
+                  <div class="border border-2 rounded px-2 py-1 mx-2">
+                    @TryUnpackDisplayData(argument)
+                  </div>
+                }
+            }
+        </div>
+    }
+    else
+    {
+        <span>Undefined Command :^(</span>
+    }
+}
+@code {
+  [Parameter]
+  public CommandTemplate? CommandTemplate { get; set; }
+
+  [Parameter]
+  public IEnumerable<CommandOutputVariableReference> AvailableVariableReferences { get; set; } = [];
+
+  [Parameter]
+  public IEnumerable<ParameterMetadata> AvailablePlannedParameters { get; set; } = [];
+
+  public string? DeviceName { get; set; }
+
+  public string? GetParameterAssignmentError(Parameter argument)
+  {
+    if(argument.Metadata is null)
+      return "Parameter is no longer available for this command.";
+
+    return argument.GetParameterSource() switch
+    {
+      ParameterSource.Planned when !HasAvailablePlannedParameter(argument)
+        => "Planned parameter is no longer available.",
+
+      ParameterSource.Variable when !HasAvailableVariableReference(argument)
+        => "Command output variable is no longer available.",
+
+      _ => null
+    };
+  }
+
+  private bool HasAvailablePlannedParameter(Parameter argument)
+  {
+    var planningMetadata = argument.GetPlanningMetadata();
+    return planningMetadata is not null
+           && AvailablePlannedParameters.Any(metadata => metadata.UniqueId == planningMetadata.UniqueId);
+  }
+
+  private bool HasAvailableVariableReference(Parameter argument)
+  {
+    var variableArgument = argument.GetVariableArgument();
+    var parameterType = argument.Metadata.Schema?.Type ?? AresDataType.Any;
+    return AvailableVariableReferences.Any(reference =>
+      reference.Path == variableArgument && IsCompatible(parameterType, reference.Type));
+  }
+
+  private static bool IsCompatible(AresDataType parameterType, AresDataType variableType)
+    => parameterType == AresDataType.Any || variableType == AresDataType.Any || parameterType == variableType;
+
+  public object TryUnpackDisplayData(Parameter argument)
+  {
+    if(argument.GetPlanningMetadata() is not null)
+    {
+      return $"{argument.Metadata.Name}: {argument.GetPlanningMetadata()!.Name}";
+    }
+    var varArg = argument.GetVariableArgument();
+    if(!string.IsNullOrWhiteSpace(varArg))
+    {
+      return $"Variable: {varArg}";
+    }
+
+    var aresValue = argument.GetValue();
+    if(aresValue is null)
+      return $"{argument.Metadata.Name}: Unassigned";
+
+    if(aresValue.HasNumberValue)
+      return $"{argument.Metadata.Name}: {aresValue.NumberValue} {argument.Metadata.Unit}";
+
+    else if(aresValue.HasStringValue)
+      return $"{argument.Metadata.Name}: {aresValue.StringValue} {argument.Metadata.Unit}";
+
+    else if(aresValue.QuantityValue is not null)
+      return $"{argument.Metadata.Name}: {aresValue.QuantityValue.Scalar} {argument.Metadata.Schema.QuantitySchema.BoundsUnit}";
+
+    else
+      return $"{argument.Metadata.Name}: Custom Data";
+  }
+
+  protected override Task OnInitializedAsync()
+  {
+    if(CommandTemplate is not null)
+      DeviceName = DeviceProvider.GetDevice(CommandTemplate.DeviceCommand?.Metadata?.DeviceId ?? "")?.Name ?? string.Empty;
+
+    return base.OnInitializedAsync();
+  }
+}

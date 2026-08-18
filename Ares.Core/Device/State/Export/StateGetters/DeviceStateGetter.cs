@@ -1,4 +1,4 @@
-﻿using Ares.Core.Device.Helpers;
+﻿using Ares.Core.Device.Repos;
 using Ares.Core.Device.State.Logging;
 using Ares.Datamodel.Device;
 using Microsoft.EntityFrameworkCore;
@@ -8,22 +8,22 @@ namespace Ares.Core.Device.State.Export.StateGetters;
 public class DeviceStateGetter : IDeviceStateGetter
 {
   private readonly IDbContextFactory<CoreDatabaseContext> _dbContextFactory;
-  private readonly DeviceIdHelper _deviceIdHelper;
+  private readonly IAresDeviceRepo _deviceRepo;
 
-  public DeviceStateGetter(IDbContextFactory<CoreDatabaseContext> dbContextFactory, DeviceIdHelper deviceIdHelper)
+  public DeviceStateGetter(IAresDeviceRepo deviceRepo, IDbContextFactory<CoreDatabaseContext> dbContextFactory)
   {
     _dbContextFactory = dbContextFactory;
-    _deviceIdHelper = deviceIdHelper;
+    _deviceRepo = deviceRepo;
   }
 
-  public async Task<IDictionary<string, IEnumerable<TState>>> GetStates<TState>(DeviceStateRequestFilter request) where TState : class, IDeviceState
+  public async Task<IDictionary<string, TState[]>> GetStates<TState>(DeviceStateRequestFilter request, CancellationToken token) where TState : class, IDeviceState
   {
     using var context = _dbContextFactory.CreateDbContext();
     var stateQuery = await DeviceStateQueryBuilder.BuildQuery<TState>(request, context);
-    var stateMap = stateQuery
+    var stateMap = await stateQuery
       .GroupBy(s => s.DeviceId)
-      .ToDictionary(g => _deviceIdHelper.DeviceIdToName(g.Key), g => g.AsEnumerable());
-    
+      .ToDictionaryAsync(g => _deviceRepo.First(d => d.UniqueId == g.Key).Name, g => g.ToArray(), token);
+
     return stateMap;
   }
 }

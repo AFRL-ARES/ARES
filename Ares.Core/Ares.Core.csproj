@@ -11,28 +11,36 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Automation\**" />
+    <Compile Remove="Device\Remote\State\**" />
+    <EmbeddedResource Remove="Automation\**" />
+    <EmbeddedResource Remove="Device\Remote\State\**" />
+    <None Remove="Automation\**" />
+    <None Remove="Device\Remote\State\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
       <_Parameter1>$(ProjectName).Tests</_Parameter1>
     </AssemblyAttribute>
   </ItemGroup>
 
-
-  <ItemGroup>
-	  <PackageReference Include="ARES.Datamodel" Version="0.16.1" />
+	<ItemGroup>
+		<PackageReference Include="ARES.Datamodel" Version="0.35.0" />
+		<PackageReference Include="Ares.Toolkit.Device" Version="1.5.0" />
 	  <PackageReference Include="CsvHelper" Version="33.1.0" />
-	  <PackageReference Include="DynamicData" Version="9.4.1" />
-	  <PackageReference Include="Grpc.Net.Client" Version="2.76.0" />
-	  <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.1" />
-	  <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.1" />
-	  <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.1" />
+	  <PackageReference Include="DynamicData" Version="9.4.33" />
+	  <PackageReference Include="Grpc.Net.Client" Version="2.80.0" />
+	  <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.10" />
+	  <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.10" />
+	  <PackageReference Include="NuGet.Versioning" Version="6.12.1" />
 	  <PackageReference Include="Protobuf.System.Text.Json" Version="1.4.1" />
-	  <PackageReference Include="System.ServiceModel.Primitives" Version="10.0.652802" />
-	  <PackageReference Include="UnitsNet" Version="5.75.0" />
+	  <PackageReference Include="UnitsNet" Version="5.75.1" />
+	  <PackageReference Include="YamlDotNet" Version="18.1.0" />
 	</ItemGroup>
 
-
   <ItemGroup>
-    <ProjectReference Include="..\Ares.Device\AresDevicePluginBase\Ares.Device.csproj" />
-  </ItemGroup>
+    <ProjectReference Include="..\AresScript\AresScript.csproj" />
+	</ItemGroup>
 
 </Project>

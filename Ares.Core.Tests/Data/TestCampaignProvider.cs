@@ -44,9 +44,8 @@ internal class TestCampaignProvider
   {
     var parameter = new Parameter();
     parameter.Index = idx;
-    parameter.Planned = false;
     parameter.UniqueId = Guid.NewGuid().ToString();
-    parameter.Value = AresValueHelper.CreateString(value);
+    parameter.SetLiteralSource(AresValueHelper.CreateString(value));
 
     parameter.Metadata = new ParameterMetadata
     {
@@ -91,13 +90,12 @@ internal class TestCampaignProvider
     var template = new CommandTemplate
     {
       Index = idx,
-      Metadata = metadata
+      DeviceCommand = new DeviceCommand { Metadata = metadata },
+      OutputVarName = "TestExperimentOutput"
     };
 
-    template.Parameters.AddRange(parameters);
+    template.ArgumentBindings.AddRange(parameters);
     template.UniqueId = metadata.UniqueId;
-
-    template.UserOutputKeyMap["TestDeviceOutput"] = "TestExperimentOutput";
 
     return template;
   }
@@ -127,7 +125,7 @@ internal class TestCampaignProvider
   public static OutputMetadata GetOutputMetadata(string typeName, int idx = 0)
     => new()
     {
-      DataSchema = AresSchemaBuilder.Create("testCampaignProvider", AresDataType.Number).Build(),
+      DataSchema = new AresValueSchema() { Type = AresDataType.Number,  Description = "Test Campaign Provider"},
       Index = idx,
       UniqueId = Guid.NewGuid().ToString()
     };

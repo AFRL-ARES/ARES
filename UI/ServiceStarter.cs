@@ -1,87 +1,136 @@
-﻿using UI.Backend.Devices;
-using UI.Backend.Factories;
-using UI.Backend.Repos;
-using UI.Services.Notification;
+using Ares.Core.Analyzing;
+using Ares.Core.Device.Managers;
+using Ares.Core.Device.Plugins.Drivers;
+using Ares.Core.Device.Plugins.Drivers.Loading;
+using Ares.Core.Device.Remote;
+using Ares.Core.Device.State.Logging;
+using Ares.Core.Planning;
+using Ares.Core.Settings;
+using Ares.Core.Visualization.Managers;
+using UI.Application.Devices.Repos;
+using UI.Application.Notifications;
+using UI.Application.Settings;
+using UI.Infrastructure.Devices;
+using UI.Infrastructure.Startup;
 
 namespace UI;
 
-public class ServiceStarter : IHostedService
+public class ServiceStarter : BackgroundService
 {
   private readonly INotificationReceivingService _notificationReceivingService;
   private readonly IDeviceControlViewModelRepo _deviceControlViewModelRepo;
   private readonly DeviceAdapterManager _deviceAdapterManager;
-  private readonly MFCDeviceControlViewModelFactory _mfcViewModelFactory;
-  private readonly ServoDeviceControlViewModelFactory _servoViewModelFactory;
-  private readonly StepperControllerDeviceControlViewModelFactory _stepperControllerViewModelFactory;
-  private readonly SyringePumpDeviceControlViewModelFactory _syringePumpViewModelFactory;
-  private readonly Tc0304DeviceControlViewModelFactory _tc0304ViewModelFactory;
-  private readonly TubeFurnaceDeviceControlViewModelFactory _tubeFurnaceViewModelFactory;
-  private readonly ValveControllerDeviceControlViewModelFactory _valveControllerViewModelFactory;
-  private readonly CM3CamDeviceControlViewModelFactory _cm3CameraViewModelFactory;
-  private readonly RemoteDeviceControlViewModelFactory _remoteDeviceViewModelFactory;
-  private readonly ChemyxPumpControlViewModelFactory _chemyxPumpViewModelFactory;
+  private readonly IRemoteAnalyzerManager _analyzerManager;
+  private readonly IRemotePlannerManager _plannerManager;
+  private readonly IRemoteDeviceManager _remoteDeviceManager;
+  private readonly IDeviceConfigManager _deviceConfigManager;
+  private readonly IVisualizationConfigManager _visualizationConfigManager;
+  private readonly IDeviceDriverLoader _deviceDriverLoader;
+  private readonly IDeviceManager _deviceManager;
+  private readonly IDriverDatabaseManager _driverDbManager;
+  private readonly StateLoggerManager _stateLoggerManager;
+  private readonly IConfiguration _configuration;
+  private readonly StartupStateTracker _tracker;
+  private readonly ILogger<ServiceStarter> _logger;
+  private readonly ISystemSettingsManager _settingsManager;
+
+  private readonly string _dataPath;
+  private readonly string _resultsPath;
+  private readonly string _templatesPath;
+  private readonly string _devicesPath;
+  private readonly string _pluginsPath;
 
   public ServiceStarter(
+    IRemotePlannerManager plannerManager,
+    IDeviceDriverLoader deviceDriverLoader,
+    IRemoteAnalyzerManager analyzerManager,
+    IDeviceConfigManager deviceConfigManager,
+    IVisualizationConfigManager visualizationConfigManager,
+    IConfiguration configuration,
+    IRemoteDeviceManager remoteDeviceManager,
+    IDriverDatabaseManager driverDbManager,
+    IDeviceManager deviceManager,
     INotificationReceivingService notificationReceivingService,
     IServiceProvider serviceProvider,
     IDeviceControlViewModelRepo deviceControlViewModelRepo,
     DeviceAdapterManager deviceAdapterManager,
-    MFCDeviceControlViewModelFactory mfcViewModelFactory, 
-    ServoDeviceControlViewModelFactory servoViewModelFactory,
-    StepperControllerDeviceControlViewModelFactory stepperControllerViewModelFactory,
-    SyringePumpDeviceControlViewModelFactory syringePumpViewModelFactory,
-    Tc0304DeviceControlViewModelFactory tc0304ViewModelFactory,
-    TubeFurnaceDeviceControlViewModelFactory tubeFurnaceViewModelFactory,
-    ValveControllerDeviceControlViewModelFactory valveControllerViewModelFactory,
-    CM3CamDeviceControlViewModelFactory cm3CameraViewModelFactory,
-    RemoteDeviceControlViewModelFactory remoteDeviceViewModelFactory,
-    ChemyxPumpControlViewModelFactory chemyxPumpViewModelFactory)
+    StateLoggerManager stateLoggerManager,
+    StartupStateTracker tracker,
+    ISystemSettingsManager settingsManager,
+    ILogger<ServiceStarter> logger)
   {
     _notificationReceivingService = notificationReceivingService;
     _deviceControlViewModelRepo = deviceControlViewModelRepo;
     _deviceAdapterManager = deviceAdapterManager;
-    _mfcViewModelFactory = mfcViewModelFactory;
-    _servoViewModelFactory = servoViewModelFactory;
-    _stepperControllerViewModelFactory = stepperControllerViewModelFactory;
-    _syringePumpViewModelFactory = syringePumpViewModelFactory;
-    _tc0304ViewModelFactory = tc0304ViewModelFactory;
-    _tubeFurnaceViewModelFactory = tubeFurnaceViewModelFactory;
-    _valveControllerViewModelFactory = valveControllerViewModelFactory;
-    _cm3CameraViewModelFactory = cm3CameraViewModelFactory;
-    _remoteDeviceViewModelFactory = remoteDeviceViewModelFactory;
-    _chemyxPumpViewModelFactory = chemyxPumpViewModelFactory;
+    _deviceDriverLoader = deviceDriverLoader;
+    _stateLoggerManager = stateLoggerManager;
+
+    _analyzerManager = analyzerManager;
+    _plannerManager = plannerManager;
+    _remoteDeviceManager = remoteDeviceManager;
+    _visualizationConfigManager = visualizationConfigManager;
+    _configuration = configuration;
+    _deviceManager = deviceManager;
+    _deviceConfigManager = deviceConfigManager;
+    _driverDbManager = driverDbManager;
+    _tracker = tracker;
+    _settingsManager = settingsManager;
+
+    _dataPath = _configuration.Get<AppSettings>()?.AresDataPath ?? "";
+    _resultsPath = Path.Combine(_dataPath, AppSettings.ResultsFolder);
+    _templatesPath = Path.Combine(_dataPath, AppSettings.TemplatesFolder);
+    _devicesPath = Path.Combine(_dataPath, AppSettings.DevicesFolder);
+    _pluginsPath = PluginPathResolver.Resolve(_configuration.Get<AppSettings>());
+    _logger = logger;
   }
 
-  public async Task StartAsync(CancellationToken cancellationToken)
+  protected override async Task ExecuteAsync(CancellationToken cancellationToken)
   {
     _notificationReceivingService.StartNotificationStream();
-    _deviceControlViewModelRepo.Initialize();
-    _deviceAdapterManager.Activate();
-    _mfcViewModelFactory.Start(TimeSpan.FromSeconds(5));
-    _servoViewModelFactory.Start(TimeSpan.FromSeconds(5));
-    _stepperControllerViewModelFactory.Start(TimeSpan.FromSeconds(5));
-    _syringePumpViewModelFactory.Start(TimeSpan.FromSeconds(5));
-    _tc0304ViewModelFactory.Start(TimeSpan.FromSeconds(5));
-    _tubeFurnaceViewModelFactory.Start(TimeSpan.FromSeconds(5));
-    _valveControllerViewModelFactory.Start(TimeSpan.FromSeconds(5));
-    _cm3CameraViewModelFactory.Start(TimeSpan.FromSeconds(5));
-    _remoteDeviceViewModelFactory.Start(TimeSpan.FromSeconds(5));
-    _chemyxPumpViewModelFactory.Start(TimeSpan.FromSeconds(5));
+
+    var localTrack = Task.Run(async () =>
+    {
+      await _settingsManager.Initialize();
+      _stateLoggerManager.Initialize();
+      await _deviceDriverLoader.LoadModulesAsync(_pluginsPath);
+      _deviceControlViewModelRepo.Initialize();
+      _deviceManager.Initialize();
+      _deviceAdapterManager.Activate();
+      await _deviceConfigManager.LoadConfigs();
+      //It's important that we run this last. The archive serves as our bridge to update replaced drivers.
+      //If we overwrite it too early, our archive wipes out the references to the deleted drivers making
+      //it impossible to migrate devices to updated drivers.
+      await _driverDbManager.RefreshDriverArchive();
+      _logger.LogInformation("Finished loading the local startup track");
+    }, cancellationToken);
+
+    var infraTrack = EnsureDataPathsExist();
+
+    var remoteTrack = Task.WhenAll(
+      _plannerManager.LoadPlanners(),
+      _analyzerManager.LoadAnalyzers(),
+      _remoteDeviceManager.LoadDevices());
+
+    await _visualizationConfigManager.Initialize();
+    await Task.WhenAll(localTrack, infraTrack, remoteTrack);
+    await Task.Delay(TimeSpan.FromSeconds(6));
+    _logger.LogInformation("Successfully Finished the Loading Sequences");
+    _tracker.MarkAsReady();
   }
 
-  public async Task StopAsync(CancellationToken cancellationToken)
+  public override async Task StopAsync(CancellationToken cancellationToken)
   {
     _deviceControlViewModelRepo.Dispose();
     await _deviceAdapterManager.DisposeAsync();
-    await _mfcViewModelFactory.DisposeAsync();
-    await _servoViewModelFactory.DisposeAsync();
-    await _stepperControllerViewModelFactory.DisposeAsync();
-    await _syringePumpViewModelFactory.DisposeAsync();
-    await _tc0304ViewModelFactory.DisposeAsync();
-    await _tubeFurnaceViewModelFactory.DisposeAsync();
-    await _valveControllerViewModelFactory.DisposeAsync();
-    await _cm3CameraViewModelFactory.DisposeAsync();
-    await _remoteDeviceViewModelFactory.DisposeAsync();
-    await _chemyxPumpViewModelFactory.DisposeAsync();
+  }
+
+  public Task EnsureDataPathsExist()
+  {
+    Directory.CreateDirectory(_devicesPath);
+    Directory.CreateDirectory(_resultsPath);
+    Directory.CreateDirectory(_templatesPath);
+
+    return Task.CompletedTask;
   }
 }
+

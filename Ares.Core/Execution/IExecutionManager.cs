@@ -11,9 +11,14 @@ public interface IExecutionManager
   public IList<IStopCondition> CampaignStopConditions { get; }
 
   /// <summary>
-  /// A double value that determines how often a campaign will re-plan it's experiment, defaults to one
+  /// A int value that determines how often a campaign will re-plan it's experiment, defaults to one
   /// </summary>
-  public int ReplanRate { get; }
+  public int ReplicateRate { get; }
+
+  /// <summary>
+  /// An int value that determines how many experiments are planned for per planning request
+  /// </summary>
+  public int PlanningBatchSize { get; }
 
   /// <summary>
   /// Indicates whether the currently loaded campaign has all the prerequisites in order to start and run
@@ -49,14 +54,30 @@ public interface IExecutionManager
   void Resume();
 
   /// <summary>
-  /// Updates the replan rate of the campaign
+  /// Updates the replication rate of the campaign
   /// </summary>
   /// <param name="newRate"></param>
-  void UpdateReplanRate(int newRate);
+  void UpdateReplicateRate(int newRate);
+
+  /// <summary>
+  /// Updates the batch planning size
+  /// </summary>
+  /// <param name="batchSize"></param>
+  void UpdateBatchPlanningSize(int batchSize);
+
+  /// Submits a user decision for how to handle an error that has occurred during execution
+  /// </summary>
+  /// <param name="decision"></param>
+  void SubmitUserDecision(ErrorHandling decision);
 
   /// <summary>
   /// Checks whether the prerequisites to execution have been met
   /// </summary>
   /// <returns> An error string if the campaign is not executable, an empty string otherwise </returns>
   Task<string> CheckCampaignStartPrerequisites();
+
+  /// <summary>
+  /// The time the most recent execution was started.
+  /// </summary>
+  DateTime? ExecutionStartTime { get; set; }
 }

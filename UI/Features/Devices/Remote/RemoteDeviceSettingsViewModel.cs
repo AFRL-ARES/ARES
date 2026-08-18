@@ -1,0 +1,216 @@
+using Ares.Datamodel;
+using Ares.Datamodel.Device;
+using Ares.Services;
+using Ares.Services.Device;
+using Ares.Core.Grpc.Services;
+using Grpc.Core;
+using ReactiveUI;
+using ReactiveUI.SourceGenerators;
+using System.Reactive;
+using System.Reactive.Linq;
+using UI.Application.Notifications;
+
+namespace UI.Features.Devices.Remote;
+
+public partial class RemoteDeviceSettingsViewModel : ReactiveObject
+{
+  private readonly DevicesService _devicesClient;
+  private readonly IUiNotificationService _notificationService;
+  private readonly DeviceInfo _deviceInfo;
+  private readonly ObservableAsPropertyHelper<bool> _isBusy;
+
+  public RemoteDeviceSettingsViewModel(DevicesService devicesService,
+      IUiNotificationService notificationService,
+      DeviceInfo deviceInfo,
+      Func<Task> onRemoveCallback)
+  {
+    _devicesClient = devicesService;
+    _notificationService = notificationService;
+    _deviceInfo = deviceInfo;
+
+    Name = _deviceInfo.Name;
+    Address = _deviceInfo.Url;
+    Type = _deviceInfo.Type;
+    DeviceCommands = _deviceInfo.Commands.ToArray();
+    Version = "";
+    Description = "";
+    StateMessage = "";
+    SettingsSchema = new();
+    Settings = new();
+
+    var config = new RemoteDeviceConfig { Name = deviceInfo.Name, UniqueId = deviceInfo.UniqueId, Url = deviceInfo.Url };
+    EditViewModel = new RemoteDeviceConfigEditViewModel(config);
+    SaveCommand = ReactiveCommand.CreateFromTask(SaveAsync);
+    RemoveCommand = ReactiveCommand.CreateFromTask(() => RemoveAsync(onRemoveCallback));
+    FetchSettingsCommand = ReactiveCommand.CreateFromTask(FetchSettingsAsync);
+    PushSettingsCommand = ReactiveCommand.CreateFromTask(PushSettingsAsync);
+    UpdateStateCommand = ReactiveCommand.CreateFromTask(UpdateStateAsync);
+    UpdateInfoCommand = ReactiveCommand.CreateFromTask(UpdateInfoAsync);
+
+    var allExceptions = Observable.Merge(
+        SaveCommand.ThrownExceptions,
+        RemoveCommand.ThrownExceptions,
+        FetchSettingsCommand.ThrownExceptions,
+        PushSettingsCommand.ThrownExceptions,
+        UpdateStateCommand.ThrownExceptions,
+        UpdateInfoCommand.ThrownExceptions);
+
+    allExceptions.Subscribe(HandleError);
+
+    _isBusy = Observable.Merge(
+            SaveCommand.IsExecuting,
+            RemoveCommand.IsExecuting,
+            UpdateStateCommand.IsExecuting,
+            FetchSettingsCommand.IsExecuting,
+            PushSettingsCommand.IsExecuting,
+            UpdateInfoCommand.IsExecuting)
+        .ToProperty(this, x => x.IsBusy);
+  }
+
+  [Reactive]
+  public partial string Name { get; private set; }
+  [Reactive]
+  public partial string Address { get; private set; }
+  [Reactive]
+  public partial string Type { get; private set; }
+  [Reactive]
+  public partial string Version { get; private set; }
+  [Reactive]
+  public partial string Description { get; set; }
+  [Reactive]
+  public partial OperationalState OperationalState { get; private set; }
+  [Reactive]
+  public partial string StateMessage { get; private set; }
+  [Reactive]
+  public partial AresStructSchema SettingsSchema { get; private set; }
+  [Reactive]
+  public partial AresStruct Settings { get; private set; }
+  [Reactive]
+  public partial bool DeviceActive { get; private set; }
+  [Reactive]
+  public partial DeviceCommandDescriptor[] DeviceCommands { get; private set; }
+  public RemoteDeviceConfigEditViewModel EditViewModel { get; }
+  public bool IsBusy => _isBusy.Value;
+
+  public ReactiveCommand<Unit, Unit> SaveCommand { get; }
+  public ReactiveCommand<Unit, Unit> RemoveCommand { get; }
+  public ReactiveCommand<Unit, Unit> UpdateStateCommand { get; }
+  public ReactiveCommand<Unit, Unit> UpdateInfoCommand { get; }
+  public ReactiveCommand<Unit, Unit> FetchSettingsCommand { get; }
+  public ReactiveCommand<Unit, Unit> PushSettingsCommand { get; }
+
+  private async Task SaveAsync()
+  {
+    var deviceConfig = EditViewModel.Save();
+    var request = new UpdateRemoteDeviceRequest()
+    {
+      DeviceId = _deviceInfo.UniqueId,
+      Name = deviceConfig.Name,
+      Url = deviceConfig.Url
+    };
+    var response = await _devicesClient.UpdateRemoteDevice(request, null);
+    if(response.Success)
+    {
+      PushNotification(new UiNotificationMessage
+      {
+        Summary = "Device Update",
+        Detail = $"Device {deviceConfig.Name} updated successfully.",
+        Severity = UiNotificationSeverity.Success
+      });
+      // Refresh local state from the server
+      await UpdateInfoCommand.Execute();
+      await UpdateStateCommand.Execute();
+    }
+    else
+    {
+      PushNotification(new UiNotificationMessage
+      {
+        Summary = "Device Update Failed",
+        Detail = $"Device {deviceConfig.Name} failed to update: {response.ErrorMessage}",
+        Severity= UiNotificationSeverity.Error
+      });
+    }
+  }
+
+  private async Task RemoveAsync(Func<Task> onRemoveCallback)
+  {
+    var request = new RemoveRemoteDeviceRequest() { DeviceId = _deviceInfo.UniqueId };
+    await _devicesClient.RemoveRemoteDevice(request, null);
+    await onRemoveCallback();
+  }
+
+  private async Task UpdateStateAsync()
+  {
+    var request = new DeviceStatusRequest() { DeviceId = _deviceInfo.UniqueId };
+    var stateResponse = await _devicesClient.GetDeviceStatus(request, null);
+    StateMessage = stateResponse.Message;
+    OperationalState = stateResponse.OperationalState;
+  }
+
+  private async Task FetchSettingsAsync()
+  {
+    var request = new DeviceSettingsRequest() { DeviceId = _deviceInfo.UniqueId };
+    var deviceSettings = await _devicesClient.GetDeviceSettings(request, null);
+    Settings = deviceSettings;
+  }
+
+  private async Task PushSettingsAsync()
+  {
+    var settings = new DeviceSettings() { DeviceId = _deviceInfo.UniqueId, Settings = Settings };
+    try
+    {
+      await _devicesClient.SetDeviceSettings(settings, null);
+    }
+    catch(Exception e)
+    {
+      PushNotification(new UiNotificationMessage { Summary = "Error Updating Settings", Detail = $"Settings for {Name} failed to send. {e.Message}", Severity = UiNotificationSeverity.Error });
+    }
+  }
+
+  private async Task UpdateInfoAsync()
+  {
+    var request = new DeviceInfoRequest() { DeviceId = _deviceInfo.UniqueId };
+    var infoResponse = await _devicesClient.GetDeviceInfo(request, null);
+    Type = infoResponse.Type;
+    Name = infoResponse.Name;
+    Address = infoResponse.Url;
+    Version = infoResponse.Version;
+    Description = infoResponse.Description;
+    SettingsSchema = infoResponse.SettingsSchema ?? new AresStructSchema();
+  }
+
+  public async Task<DeviceOperationalStatus> GetOperationalStatus()
+  {
+    try
+    {
+      var status = await _devicesClient.GetDeviceStatus(new DeviceStatusRequest { DeviceId = _deviceInfo.UniqueId }, null);
+      DeviceActive = status.OperationalState is OperationalState.Active;
+      return status;
+    }
+    catch(Exception)
+    {
+      return new DeviceOperationalStatus { OperationalState = OperationalState.Error, Message = $"Unable to find a registered device with a name {_deviceInfo.Name}" };
+    }
+  }
+
+  private void HandleError(Exception ex)
+  {
+    var errorMessage = ex is RpcException rpcEx
+        ? $"A network error occurred: {rpcEx.Status.Detail}"
+        : $"An unexpected error occurred: {ex.Message}";
+
+    StateMessage = errorMessage;
+    OperationalState = OperationalState.Error;
+
+    PushNotification(new UiNotificationMessage
+    {
+      Summary = "Operation Failed",
+      Detail = errorMessage,
+      Severity = UiNotificationSeverity.Error
+    });
+  }
+
+  private void PushNotification(UiNotificationMessage notification) => _notificationService.Notify(notification);
+}
+
+

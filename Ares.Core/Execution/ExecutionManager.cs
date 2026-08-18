@@ -7,6 +7,7 @@ using Ares.Core.Execution.StartConditions;
 using Ares.Core.Execution.StopConditions;
 using Ares.Core.Notifications;
 using Ares.Datamodel;
+using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Templates;
 using DynamicData;
 using Microsoft.EntityFrameworkCore;
@@ -22,14 +23,17 @@ public class ExecutionManager : IExecutionManager
   private readonly IEnumerable<IStartCondition> _startConditions;
   private readonly IExecutionSafetyManager _safetyManager;
   private readonly INotifier _notifier;
+  private readonly ICommandDisplayNameResolver _commandDisplayNameResolver;
   private readonly ILogger _logger;
   private ExecutionControlTokenSource? _executionControlTokenSource;
+  private ICampaignExecutor? _activeExecutor;
 
   public ExecutionManager(IEnumerable<IStartCondition> startConditions,
     IDbContextFactory<CoreDatabaseContext> dbContextFactory,
     IActiveCampaignTemplateStore activeCampaignTemplateStore,
     IExecutionSafetyManager safetyManager,
     ICommandComposer<CampaignTemplate, ICampaignExecutor> campaignComposer,
+    ICommandDisplayNameResolver commandDisplayNameResolver,
     ILogger<ExecutionManager> logger,
     INotifier notifier)
   {
@@ -37,6 +41,7 @@ public class ExecutionManager : IExecutionManager
     _dbContextFactory = dbContextFactory;
     _activeCampaignTemplateStore = activeCampaignTemplateStore;
     _campaignComposer = campaignComposer;
+    _commandDisplayNameResolver = commandDisplayNameResolver;
     _safetyManager = safetyManager;
     _logger = logger;
     _notifier = notifier;
@@ -53,7 +58,7 @@ public class ExecutionManager : IExecutionManager
     var startConditions = await Task.WhenAll(startConditionTasks);
     return startConditions.All(condition => condition?.Success ?? true);
   }
-  public int ReplanRate { get; private set; } = 1;
+
   public async Task Start(string executionNotes, List<AresCampaignTag> campaignTags)
   {
     var err = await CheckCampaignStartPrerequisites();
@@ -61,7 +66,9 @@ public class ExecutionManager : IExecutionManager
     {
       throw new InvalidOperationException(err);
     }
+    await _commandDisplayNameResolver.RefreshAsync();
     var executor = _campaignComposer.Compose(_activeCampaignTemplateStore.CampaignTemplate!);
+    _activeExecutor = executor;
 
     if(!string.IsNullOrEmpty(executionNotes))
       executor.UpdateExecutionNotes(executionNotes);
@@ -69,10 +76,12 @@ public class ExecutionManager : IExecutionManager
     if(campaignTags.Any())
       executor.UpdateCampaignTags(campaignTags);
 
-    executor.StopConditions.Add(CampaignStopConditions);
-    executor.ReplanRate = ReplanRate;
+    executor.StopConditions.AddRange(CampaignStopConditions);
+    executor.ReplicateRate = ReplicateRate;
+    executor.BatchPlanningSize = PlanningBatchSize;
     _executionControlTokenSource = new ExecutionControlTokenSource();
     CampaignExecutionSummary campaignExecutionSummary;
+    ExecutionStartTime = DateTime.UtcNow;
 
     try
     {
@@ -107,7 +116,7 @@ public class ExecutionManager : IExecutionManager
   public async Task<string> CheckCampaignStartPrerequisites()
   {
     if(_activeCampaignTemplateStore.CampaignTemplate is null)
-      return "CampaignTemplate was not assigned to the active template store.";
+      return "Campaign Template was not assigned to the active template store.";
 
     if(!CampaignStopConditions.Any())
       return "The Campaign has no stop conditions, please set a stop condition before starting campaign.";
@@ -128,7 +137,7 @@ public class ExecutionManager : IExecutionManager
   {
     var experimentCommandsInvalid = _activeCampaignTemplateStore.CampaignTemplate!.ExperimentTemplate.StepTemplates
     .SelectMany(step => step.CommandTemplates)
-    .Any(cmd => cmd.Parameters.Any(param => param.Planned && param.PlanningMetadata is null));
+    .Any(cmd => cmd.ArgumentBindings.Any(param => param.IsPlanned() && param.GetPlanningMetadata() is null));
 
     if(experimentCommandsInvalid)
       return false;
@@ -136,9 +145,19 @@ public class ExecutionManager : IExecutionManager
     return true;
   }
 
-  public void UpdateReplanRate(int newRate)
+  public void UpdateReplicateRate(int newRate)
   {
-    ReplanRate = newRate;
+    ReplicateRate = newRate;
+  }
+
+  public void UpdateBatchPlanningSize(int newBatchSize)
+  {
+    PlanningBatchSize = newBatchSize;
+  }
+
+  public void SubmitUserDecision(ErrorHandling decision)
+  {
+    _activeExecutor?.SubmitUserDecision(decision);
   }
 
   private async Task PostExecution(CampaignExecutionSummary result)
@@ -146,6 +165,7 @@ public class ExecutionManager : IExecutionManager
     await StoreCompletedCampaign(result);
     _executionControlTokenSource?.Dispose();
     _executionControlTokenSource = null;
+    _activeExecutor = null;
   }
 
   private async Task StoreCompletedCampaign(CampaignExecutionSummary result)
@@ -161,6 +181,11 @@ public class ExecutionManager : IExecutionManager
     {
       throw;
     }
-
   }
+
+  public DateTime? ExecutionStartTime { get; set; }
+
+  public int ReplicateRate { get; private set; } = 1;
+
+  public int PlanningBatchSize { get; private set; } = 1;
 }

@@ -2,5 +2,5 @@
 
 public interface INotificationHandler
 {
-  Task HandleNotification(string title, string message, NotificationSeverityEnum severity);
+  Task HandleNotification(string title, string message, NotificationSeverityEnum severity, bool loiter = false);
 }

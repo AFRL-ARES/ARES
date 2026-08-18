@@ -1,4 +1,5 @@
-﻿using Ares.Datamodel.Templates;
+using Ares.Datamodel.Extensions;
+using Ares.Datamodel.Templates;
 
 namespace Ares.Core.Execution.Extensions;
 
@@ -12,7 +13,7 @@ public static class ExperimentTemplateExtensions
   public static IEnumerable<Parameter> GetAllParameters(this ExperimentTemplate template)
     => template.StepTemplates
       .SelectMany(stepTemplate => stepTemplate.CommandTemplates)
-      .SelectMany(commandTemplate => commandTemplate.Parameters);
+      .SelectMany(commandTemplate => commandTemplate.ArgumentBindings);
 
   /// <summary>
   /// Gets all the <see cref="CommandTemplate"/>s that are mapped to provide output />
@@ -22,7 +23,7 @@ public static class ExperimentTemplateExtensions
   public static CommandTemplate[] GetAllOutputCommands(this ExperimentTemplate template)
     => template.StepTemplates
     .SelectMany(step => step.CommandTemplates)
-    .Where(command => command.UserOutputKeyMap.Any()).ToArray();
+    .Where(command => command.HasOutputVarName).ToArray();
 
   /// <summary>
   /// Gets all the parameters that need to be planned from a given <see cref="ExperimentTemplate" />
@@ -30,7 +31,7 @@ public static class ExperimentTemplateExtensions
   /// <param name="template">The template to check for parameters</param>
   /// <returns>Collection of planned parameters</returns>
   public static IEnumerable<Parameter> GetAllPlannedParameters(this ExperimentTemplate template)
-    => template.GetAllParameters().Where(parameter => parameter.Planned);
+    => template.GetAllParameters().Where(parameter => parameter.IsPlanned());
 
   /// <summary>
   /// Checks whether or not every <see cref="Parameter" /> within an experiment has a value. If so then
@@ -39,7 +40,7 @@ public static class ExperimentTemplateExtensions
   /// <param name="template">The template to check if resolved</param>
   /// <returns>True if resolved, false otherwise</returns>
   public static bool IsResolved(this ExperimentTemplate template)
-    => template.GetAllParameters().All(parameter => parameter.Value is not null);
+    => template.GetAllParameters().All(parameter => parameter.GetValue() is not null);
 
   /// <summary>
   /// Checks whether or not every <see cref="Parameter" /> within an experiment has a value. If so then
@@ -54,7 +55,7 @@ public static class ExperimentTemplateExtensions
 
     foreach(var para in parameters)
     {
-      if(para.Value.StringValue == string.Empty)
+      if(para.GetValue()?.StringValue == string.Empty)
         resolved = false;
     }
 
@@ -77,25 +78,20 @@ public static class ExperimentTemplateExtensions
       foreach(var commandTemplate in stepTemplate.CommandTemplates)
       {
         var cmdTemplateId = Guid.NewGuid().ToString();
-        var outputCmd = template.GetAllOutputCommands().FirstOrDefault(oc => oc.UniqueId == commandTemplate.UniqueId);
 
-        commandTemplate.Metadata.UniqueId = Guid.NewGuid().ToString();
         commandTemplate.UniqueId = cmdTemplateId;
 
-        foreach(var metadataParameterMetadata in commandTemplate.Metadata.ParameterMetadatas)
+        if(commandTemplate.DeviceCommand?.Metadata is not null)
         {
-          metadataParameterMetadata.UniqueId = Guid.NewGuid().ToString();
-          foreach(var constraint in metadataParameterMetadata.Constraints)
-            constraint.UniqueId = Guid.NewGuid().ToString();
+          commandTemplate.DeviceCommand.Metadata.UniqueId = Guid.NewGuid().ToString();
+          foreach(var metadataParameterMetadata in commandTemplate.DeviceCommand.Metadata.ParameterMetadatas)
+            metadataParameterMetadata.UniqueId = Guid.NewGuid().ToString();
         }
 
-        foreach(var argument in commandTemplate.Parameters)
+        foreach(var argument in commandTemplate.ArgumentBindings)
         {
           argument.UniqueId = Guid.NewGuid().ToString();
           argument.Metadata.UniqueId = Guid.NewGuid().ToString();
-
-          foreach(var constraint in argument.Metadata.Constraints)
-            constraint.UniqueId = Guid.NewGuid().ToString();
         }
       }
     }
@@ -114,10 +110,11 @@ public static class ExperimentTemplateExtensions
     {
       foreach(var cmd in step.CommandTemplates)
       {
-        foreach(var param in cmd.Parameters)
+        foreach(var param in cmd.ArgumentBindings)
         {
-          if(param.PlanningMetadata is not null)
-            param.PlanningMetadata.UniqueId = Guid.NewGuid().ToString();
+          var planningMetadata = param.GetPlanningMetadata();
+          if(planningMetadata is not null)
+            planningMetadata.UniqueId = Guid.NewGuid().ToString();
         }
       }
     }
@@ -137,7 +134,7 @@ public static class ExperimentTemplateExtensions
     {
       param.UniqueId = Guid.NewGuid().ToString();
       param.Metadata.UniqueId = Guid.NewGuid().ToString();
-      param.PlanningMetadata.UniqueId = Guid.NewGuid().ToString();
+      param.GetPlanningMetadata()!.UniqueId = Guid.NewGuid().ToString();
       parameters.Add(param);
     }
 

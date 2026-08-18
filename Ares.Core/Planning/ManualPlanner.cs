@@ -1,10 +1,7 @@
 using Ares.Datamodel;
-using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Connection;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Planning;
-using Ares.Datamodel.Templates;
-using Grpc.Core;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 
@@ -28,27 +25,27 @@ public class ManualPlanner : IPlannerService
     .Select(result => (result.Name, result.Value)));
 
 
-  public Task<PlanResponse> Plan(IEnumerable<ParameterMetadata> plannableParameters,
-    RequestMetadata metadata,
-    IEnumerable<ExperimentOverview> experiments, 
-    IEnumerable<Analysis> _, 
-    CancellationToken __)
+  public Task<PlanningResponse> Plan(PlanningRequest request, CancellationToken __)
   {
     try
     {
       var currentParameterSet = _planResultsQueue.Dequeue().ToList();
-      var returnList = plannableParameters.Select(metadata => currentParameterSet.First(result => result.Name == metadata.Name).ToPlanResult(metadata)).ToList();
-      var response = new PlanResponse(returnList, Outcome.Success, string.Empty);
+      var returnList = request.PlanningParameters.Select(param => currentParameterSet.First(result => result.Name == param.ParameterName).ToPlannedParameter(param)).ToList();
+      var response = new PlanningResponse();
+      
+      response.PlannedParameters.AddRange(returnList);
+      response.PlanningOutcome = Outcome.Success;
       return Task.FromResult(response);
     }
     catch(InvalidOperationException e)
     {
-      return Task.FromResult(new PlanResponse([], Outcome.Failure, e.Message));
+      return Task.FromResult(new PlanningResponse() { ErrorString = $"Exception Occured in Manual Planner: {e.Message}", PlanningOutcome = Outcome.Failure});
     }
   }
 
   public Task Seed(ManualPlannerSeed seedParam)
   {
+    LatestManualPlannerSeed = seedParam;
     Reset();
     switch(seedParam.PlannerStuffCase)
     {
@@ -71,6 +68,12 @@ public class ManualPlanner : IPlannerService
     }
 
     return Task.CompletedTask;
+  }
+
+  public async Task Reseed()
+  {
+    if(LatestManualPlannerSeed is not null)
+      await Seed(LatestManualPlannerSeed);
   }
 
   public void Reset()
@@ -161,22 +164,22 @@ public class ManualPlanner : IPlannerService
 
   public Task<PlannerServiceCapabilities> GetCapabilities(CancellationToken cancellationToken = default)
   {
-    var response = new PlannerServiceCapabilities() { ServiceName = "Manual Planner", SettingsSchema = new AresDataSchema(), TimeoutSeconds = long.MaxValue };
+    var response = new PlannerServiceCapabilities() { ServiceName = "Manual Planner", SettingsSchema = new AresStructSchema(), TimeoutSeconds = long.MaxValue };
     response.AcceptedTypes.Add(AresDataType.Number);
     response.AcceptedTypes.Add(AresDataType.String);
     response.AvailablePlanners.AddRange(AvailablePlanners);
     return Task.FromResult(response);
   }
 
-  public async Task<PlanResponse> Plan(IEnumerable<ParameterMetadata> plannableParameters, RequestMetadata metadata, IEnumerable<ExperimentOverview> previousExperiments, IEnumerable<Analysis> analysisHistory, AresStruct settings, CancellationToken cancellationToken = default)
+  public async Task<PlanningResponse> Plan(PlanningRequest request, AresStruct settings, CancellationToken cancellationToken = default)
   {
-    return await Plan(plannableParameters, metadata, previousExperiments, analysisHistory, cancellationToken);
+    return await Plan(request, cancellationToken);
   }
 
   private record ManualPlanResult(string Name, AresValue Value)
   {
-    public PlanResult ToPlanResult(ParameterMetadata metadata)
-      => new(metadata, Value);
+    public PlannedParameter ToPlannedParameter(PlanningParameter param)
+      => new PlannedParameter { ParameterName = param.ParameterName, ParameterValue = Value, Metadata = new PlannerMetadata { MetadataName = "Manual Planner" } };
   }
 
   public string UniqueId { get; set; } = new Guid().ToString();
@@ -192,4 +195,5 @@ public class ManualPlanner : IPlannerService
   public string StateMessage { get; } = "Manual Planner is active!";
   public AresStruct Settings { get; } = new AresStruct();
   public TimeSpan PlanningTimeout { get; } = TimeSpan.MaxValue;
+  public ManualPlannerSeed? LatestManualPlannerSeed { get; set; }
 }

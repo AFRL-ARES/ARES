@@ -1,0 +1,119 @@
+@using Ares.Datamodel.Extensions
+@using Ares.Datamodel.Templates
+@using UI.Application.Notifications
+@using CommandDesignerViewModel=UI.Features.CampaignEdit.ViewModels.CommandDesignerViewModel
+
+@inject IUiNotificationService notificationService;
+
+@if (CommandDesignerViewModel is not null)
+{
+  if (CommandDesignerViewModel.TemplateCommandName is not null)
+  {
+    <div class="d-flex align-items-center">
+      @if(CommandDesignerViewModel.CommandTargetName is null)
+      {
+        <div class="border border-2 border-danger rounded px-2 py-1 mx-2">
+          UNKNOWN TARGET
+        </div>  
+      }
+      else
+      {
+        <div class="border border-2 border-primary rounded px-2 py-1 mx-2">
+          @CommandDesignerViewModel.CommandTargetName
+        </div>        
+      }
+      <div class="border border-2 @(CommandDesignerViewModel.IsCommandUnavailable ? "border-danger" : "border-primary") rounded px-2 py-1 mx-2">
+        @CommandDesignerViewModel.TemplateCommandName
+      </div>
+      @if (CommandDesignerViewModel.Arguments.Any())
+      {
+        <RadzenIcon Icon="arrow_back"/>
+      }
+      <div class="flex-grow-0">
+        @foreach (var argument in CommandDesignerViewModel.Arguments)
+        {
+          var assignmentError = CommandDesignerViewModel.GetParameterAssignmentError(argument);
+          @if (assignmentError is not null)
+          {
+            NotifyOfParameterError(assignmentError);
+            <div class="border border-2 border-danger rounded px-2 py-1 mx-2">
+              @assignmentError
+            </div>
+          }
+
+          else if (argument.GetPlanningMetadata() is not null)
+          {
+            <div class="border border-2 border-warning rounded px-2 py-1 mx-2">
+              @ConvertToDisplayData(argument)
+            </div>
+          }
+
+          else if(argument.GetVariableType() > 0)
+          {
+            <div class="border border-2 border-secondary rounded px-2 py-1 mx-2">
+              @argument.GetVariableType().ToString()
+            </div>
+          }
+
+          else
+          {
+            <div class="border border-2 rounded px-2 py-1 mx-2">
+              @ConvertToDisplayData(argument)
+            </div>
+          }
+        }
+      </div>
+      <div class="flex-grow-1" />
+      <div hidden="@(!CommandDesignerViewModel.TemplateOutputProvider)" class="col-1 px-2 py-1 ms-2 text-end">
+        <ExperimentOutputIcon />
+      </div>
+    </div>
+  }
+  else
+  {
+    <span>Undefined Command</span>
+  }
+}
+@code {
+  [Parameter]
+  public CommandDesignerViewModel? CommandDesignerViewModel { get; set; }
+
+  protected override async Task OnParametersSetAsync()
+  {
+    if(CommandDesignerViewModel is not null)
+      await CommandDesignerViewModel.EnsureInitializedAsync();
+  }
+
+  public void NotifyOfParameterError(string message)
+  {
+    notificationService.Error(message, "Experiment Parameter Assignment Error");
+  }
+
+  public object ConvertToDisplayData(Parameter argument)
+  {
+    if(argument.GetPlanningMetadata() is not null)
+    {
+      return $"{argument.Metadata.Name}: {argument.GetPlanningMetadata()!.Name}";
+    }
+    var varArg = argument.GetVariableArgument();
+    if(!string.IsNullOrWhiteSpace(varArg))
+    {
+      return $"Variable: {varArg}";
+    }
+    var aresValue = argument.GetValue();
+    if(aresValue is null)
+      return $"{argument.Metadata.Name}: Unassigned";
+
+    if(aresValue.HasNumberValue)
+      return $"{argument.Metadata.Name}: {aresValue.NumberValue} {argument.Metadata.Unit}";
+
+    else if(aresValue.HasStringValue)
+      return $"{argument.Metadata.Name}: {aresValue.StringValue} {argument.Metadata.Unit}";
+
+    else if(aresValue.QuantityValue is not null)
+      return $"{argument.Metadata.Name}: {aresValue.QuantityValue.Scalar} {argument.Metadata.Schema.QuantitySchema.BoundsUnit}";
+
+    else
+      return $"{argument.Metadata.Name}: Custom Data";
+  }
+}

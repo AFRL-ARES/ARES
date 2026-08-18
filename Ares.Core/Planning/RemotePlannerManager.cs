@@ -1,16 +1,33 @@
-﻿using Ares.Core.Notifications;
+﻿using Ares.Core.Execution.VersionChecking;
+using Ares.Core.Notifications;
+using Ares.Core.Settings;
 using Ares.Datamodel.Planning;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ares.Core.Planning;
 
-public class RemotePlannerManager(IDbContextFactory<CoreDatabaseContext> _dbContextFactory, 
-  IPlannerServiceRepo _plannerRepo, 
-  INotificationHandler _notificationHandler,
-  IPlannerServiceCache _plannerCache) : IRemotePlannerManager
+public class RemotePlannerManager : IRemotePlannerManager
 {
   private readonly List<RemotePlannerMonitor> _plannerMonitors = [];
   private readonly string _demoPlannerUniqueId = "4b14d5e9-1c9f-4f01-8b2b-4d4d1e2e3e4e";
+  private readonly IPlannerServiceRepo _plannerRepo;
+  private readonly INotificationHandler _notificationHandler;
+  private readonly IPlannerServiceCache _plannerCache;
+  private readonly IDatamodelVersionValidator _versionValidator;
+  private readonly IDbContextFactory<CoreDatabaseContext> _dbContextFactory;
+
+  public RemotePlannerManager(IPlannerServiceRepo plannerRepo, 
+    INotificationHandler notificationHandler, 
+    IPlannerServiceCache plannerCache, 
+    IDatamodelVersionValidator versionValidator,
+    IDbContextFactory<CoreDatabaseContext> dbContextFactory)
+  {
+    _plannerRepo = plannerRepo;
+    _notificationHandler = notificationHandler;
+    _plannerCache = plannerCache;
+    _versionValidator = versionValidator;
+    _dbContextFactory = dbContextFactory;
+  }
 
   public async Task CreatePlanner(string name, string url)
   {
@@ -55,7 +72,7 @@ public class RemotePlannerManager(IDbContextFactory<CoreDatabaseContext> _dbCont
       return null;
     }
 
-    var planner = new RemotePlannerService(config.Name, uri, config.UniqueId);
+    var planner = new RemotePlannerService(config.Name, uri, config.UniqueId, _versionValidator);
 
     return planner;
   }

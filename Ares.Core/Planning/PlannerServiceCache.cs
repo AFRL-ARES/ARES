@@ -1,6 +1,5 @@
 ﻿using Ares.Datamodel;
 using Ares.Datamodel.Planning;
-using DynamicData;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ares.Core.Planning;

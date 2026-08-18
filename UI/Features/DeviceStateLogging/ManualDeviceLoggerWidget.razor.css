@@ -1,0 +1,18 @@
+﻿.stopwatch {
+  font-size: 1.5em;
+}
+
+.collection-date {
+  font-size: 0.7em;
+}
+
+.date-label {
+  font-size: 0.5em;
+  opacity: 0.8;
+  align-self: center;
+}
+
+.date-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+}

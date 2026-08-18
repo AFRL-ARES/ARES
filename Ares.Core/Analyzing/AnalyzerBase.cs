@@ -69,13 +69,13 @@ public abstract class AnalyzerBase : IAnalyzer
     }
   }
 
-  public abstract Task<Analysis> Analyze(AresStruct inputs, RequestMetadata metadata, CancellationToken cancellationToken);
+  public abstract Task<Analysis> Analyze(AnalysisRequest request, CancellationToken cancellationToken);
 
-  public abstract Task<Analysis> Analyze(AresStruct inputs, AresStruct settings, RequestMetadata metadata, CancellationToken cancellationToken);
+  public abstract Task<Analysis> Analyze(AnalysisRequest request, AresStruct settings, CancellationToken cancellationToken);
 
-  public abstract Task<AresDataSchema> GetParameters(CancellationToken cancellationToken);
+  public abstract Task<AresStructSchema> GetParameters(CancellationToken cancellationToken);
 
-  private static ParameterValidationResult ValidateParameterTypes(KeyValuePair<string, SchemaEntry> analyzerField, AresDataSchema parameters)
+  private static ParameterValidationResult ValidateParameterTypes(KeyValuePair<string, AresValueSchema> analyzerField, AresStructSchema parameters)
   {
     var result = new ParameterValidationResult();
     var matchingAnalysisParameter = parameters.Fields.GetValueOrDefault(analyzerField.Key);
@@ -100,7 +100,7 @@ public abstract class AnalyzerBase : IAnalyzer
     return result;
   }
 
-  private static ParameterValidationResult ValidateRequiredParams(AresDataSchema inputSchema, AresDataSchema parameters)
+  private static ParameterValidationResult ValidateRequiredParams(AresStructSchema inputSchema, AresStructSchema parameters)
   {
     var requiredParams = parameters.Fields.Where(p => !p.Value.Optional).ToArray();
     var unfulfilledParams = requiredParams.Where(rp => !inputSchema.Fields.Any(input => input.Key == rp.Key && input.Value.Type == rp.Value.Type));
@@ -115,7 +115,7 @@ public abstract class AnalyzerBase : IAnalyzer
     return result;
   }
 
-  public virtual async Task<ParameterValidationResult> ValidateInputs(AresDataSchema inputSchema, CancellationToken cancellationToken)
+  public virtual async Task<ParameterValidationResult> ValidateInputs(AresStructSchema inputSchema, CancellationToken cancellationToken)
   {
     var analysisSchema = await GetParameters(cancellationToken);
     var paramValidationResults = analysisSchema.Fields.Select(analyzerField => ValidateParameterTypes(analyzerField, analysisSchema)).ToArray();

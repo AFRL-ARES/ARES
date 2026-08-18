@@ -1,21 +1,35 @@
-﻿using Ares.Core.Device;
+﻿using Ares.Core.Device.Repos;
+using Microsoft.Extensions.Logging;
 
 namespace Ares.Core.Execution.Safety;
 
 public class ExecutionSafetyManager : IExecutionSafetyManager
 {
-  private readonly IDeviceCommandInterpreterRepo _deviceCommandInterpreterRepo;
+  private readonly IAresDeviceRepo _deviceRepo;
+  private readonly ILogger<ExecutionSafetyManager> _logger;
   
-  public ExecutionSafetyManager(IDeviceCommandInterpreterRepo deviceCommandInterpreterRepo)
+  public ExecutionSafetyManager(IAresDeviceRepo deviceRepo, ILogger<ExecutionSafetyManager> logger)
   {
-    _deviceCommandInterpreterRepo = deviceCommandInterpreterRepo;
+    _deviceRepo = deviceRepo;
+    _logger = logger;
   }
 
-  public async Task EnterSafeMode()
+  public async Task<bool> EnterSafeMode()
   {
-    foreach(var device in _deviceCommandInterpreterRepo.GetAresDevices())
+    try
     {
-      await device.EnterSafeMode();
+      foreach(var device in _deviceRepo)
+      {
+        await device.EnterSafeMode();
+      }
+
+      return true;
+    }
+
+    catch(Exception ex)
+    {
+      _logger.LogError($"FAILED TO ENTER SAFE MODE! REASON: {ex.Message}");
+      return false;
     }
   }
 }
