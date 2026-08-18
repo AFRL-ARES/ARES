@@ -4,72 +4,78 @@
 
 
 <div>
-  <div class="two-column-container">
-    <div class="column left-column">
-      <h2>Planner Assignment</h2>
-      @if(ViewModel?.PlannerAllocationEditors is null)
-      {
-        <p><em>Loading allocations...</em></p>
-      }
-      else
-      {
-        @foreach(var editor in ViewModel.PlannerAllocationEditors)
+  @if(ViewModel is null)
+  {
+    <LoadingSpinner SpinnerSize="SpinnerSize.Large" />
+  }
+
+  else
+  {
+    <div class="two-column-container">
+      <div class="column left-column">
+        <h2>Planner Assignment</h2>
+        @if(ViewModel?.PlannerAllocationEditors is null)
         {
-          <PlannerAllocationEditor ViewModel="editor" />
+          <p><em>Loading allocations...</em></p>
         }
-      }
-    </div>
-
-    <div class="column right-column">
-      <h2>Analyzer Objectives</h2>
-      @if(ViewModel?.AvailableObjectives is not null)
-      {
-        @foreach(var item in ViewModel.AvailableObjectives.Fields)
+        else
         {
-          var isSelected = ViewModel!.SelectedObjectives.Contains(item);
+          @foreach(var editor in ViewModel.PlannerAllocationEditors)
+          {
+            <PlannerAllocationEditor ViewModel="editor" />
+          }
+        }
+      </div>
 
-          <div class="card border-primary rounded-1 p-2 m-1">
-            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Start" Gap="0.5rem">
-              <RadzenColumn>
-                <RadzenRow Style="padding-bottom: 0.5rem">
-                  Objective Name: @item.Key
-                </RadzenRow>
+      <div class="column right-column">
+        <h2>Analyzer Objectives</h2>
+        @if(ViewModel?.AvailableObjectives is not null)
+        {
+          @foreach(var item in ViewModel.AvailableObjectives.Fields)
+          {
+            var isSelected = ViewModel!.SelectedObjectives.Contains(item);
 
-                <RadzenRow Style="padding-bottom: 0.5rem">
-                  Objective Description: @item.Value.Description
-                </RadzenRow>
+            <div class="card border-primary rounded-1 p-2 m-1">
+              <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Start" Gap="0.5rem">
+                <RadzenColumn>
+                  <RadzenRow Style="padding-bottom: 0.5rem">
+                    Objective Name: @item.Key
+                  </RadzenRow>
 
-                <RadzenRow Style="padding-bottom: 0.5rem">
-                    <RadzenLabel Component="IncludeInPlanningCheck" Text="Include in Planning? "/>
+                  <RadzenRow Style="padding-bottom: 0.5rem">
+                    Objective Description: @item.Value.Description
+                  </RadzenRow>
+
+                  <RadzenRow Style="padding-bottom: 0.5rem">
+                    <RadzenLabel Component="IncludeInPlanningCheck" Text="Include in Planning? " />
                     <RadzenCheckBox TValue="bool"
                                     Name="IncludeInPlanningCheck"
                                     Value="@isSelected"
                                     Change="@(_ => ToggleSelection(item))"
                                     @onclick:stopPropagation="true" />
-                </RadzenRow>
-              </RadzenColumn>
-            </RadzenStack>
-          </div>
-        }
-      }
-
-      else
-      {
-        if(ViewModel!.AnalyzerName == "NONE")
-        {
-          <p>Select an Analyzer to See Objectives</p>
+                  </RadzenRow>
+                </RadzenColumn>
+              </RadzenStack>
+            </div>
+          }
         }
 
         else
         {
-          <p>Your Selected Analyer (@ViewModel!.AnalyzerName) Doesn't Report Any Objective Outputs</p>
-          <p>If your Analyzer was built prior to the multi-objective updates this is normal. Consider updating your Analyzer.</p>
+          if(ViewModel!.AnalyzerName == "NONE")
+          {
+            <p>Select an Analyzer to See Objectives</p>
+          }
+
+          else
+          {
+            <p>Your Selected Analyer (@ViewModel!.AnalyzerName) Doesn't Report Any Objective Outputs</p>
+            <p>If your Analyzer was built prior to the multi-objective updates this is normal. Consider updating your Analyzer.</p>
+          }
         }
-      }
+      </div>
     </div>
-  </div>
-
-
+  }
 </div>
 
 
