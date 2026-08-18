@@ -659,7 +659,7 @@ internal class CampaignDatasetGeneratorTests
         "Time Request Sent",
         "Time Response Received",
         "Duration Seconds",
-        "Result",
+        "Objective.Result",
         "Outcome",
         "Error",
         "Input.Measurement.Mass"
