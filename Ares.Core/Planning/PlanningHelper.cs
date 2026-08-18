@@ -35,15 +35,18 @@ public class PlanningHelper : IPlanningHelper
 
   public async Task<bool> TryResolveParameters(IEnumerable<PlannerAllocation> plannerAllocations,
   RequestMetadata metadata,
-  IEnumerable<Parameter> parameters,
+  ExperimentTemplate currentTemplate,
   IEnumerable<AnalysisResponse> seedAnalyses,
   IEnumerable<ExperimentOverview> seedExperiments,
   int batchSize,
   List<PlanStatusCode> codes,
   CancellationToken cancellationToken)
   {
+    var parameters = currentTemplate.GetAllPlannedParameters();
     var parameterArray = parameters.ToArray();
     var plannerToMetadataMaps = MapParameterMetadataToPlanners(plannerAllocations);
+
+    var includedObjectives = currentTemplate.PlanObjectives.ToList();
 
     if(plannerToMetadataMaps is null)
       return false;
@@ -63,7 +66,7 @@ public class PlanningHelper : IPlanningHelper
         return true;
       }
 
-      return await RequestNewPlans(planner, grouping, seedExperiments, seedAnalysesArr, codes, metadata, planQueue, parameterArray, batchSize, cancellationToken);
+      return await RequestNewPlans(planner, grouping, seedExperiments, seedAnalysesArr, codes, metadata, planQueue, parameterArray, batchSize, includedObjectives, cancellationToken);
     });
 
     var results = await Task.WhenAll(planningTasks);
@@ -92,6 +95,7 @@ public class PlanningHelper : IPlanningHelper
     ConcurrentQueue<Plan> planQueue,
     Parameter[] parameterArray,
     int batchSize,
+    List<string> includedObjectives,
     CancellationToken cancellationToken)
   {
     var planTransaction = new PlannerTransaction()
@@ -109,7 +113,7 @@ public class PlanningHelper : IPlanningHelper
       planTransaction.TimeRequestSent = DateTime.UtcNow.ToTimestamp();
 
       //Create the plan request. Store it in the transaction.
-      var planRequest = CreatePlanningRequest(plannableParameters, seedExperiments, seedAnalysesArr, statusCodes, batchSize, metadata);
+      var planRequest = CreatePlanningRequest(plannableParameters, seedExperiments, seedAnalysesArr, statusCodes, batchSize, includedObjectives, metadata);
       planTransaction.PlanningRequest = planRequest;
 
       var planResponse = await planner.Plan(planRequest, cancellationToken);
@@ -161,6 +165,7 @@ public class PlanningHelper : IPlanningHelper
     AnalysisResponse[] seedAnalysesArr,
     List<PlanStatusCode> statusCodes,
     int batchSize,
+    List<string> includedObjectives,
     RequestMetadata metadata)
   {
     //Create the plan request. Store it in the transaction.
@@ -171,20 +176,20 @@ public class PlanningHelper : IPlanningHelper
     for(int i = 0; i < seedAnalysesArr.Length; i++)
     {
       var currentAnalysis = seedAnalysesArr.ElementAtOrDefault(i);
-      var currentExp = relevantExperiments.ElementAtOrDefault(i + 1);
+      var currentExp = relevantExperiments.ElementAtOrDefault(i);
 
       if(currentAnalysis is null || currentExp is null)
         continue;
 
       // Add values to the deprecated field for now to ensure backwards compatability
       // TODO: REMOVE IN NEXT MAJOR VERSION OF ARES/PYARES
-      var defaultObjective = currentAnalysis.Objectives.FirstOrDefault().ObjectiveValue;
+      var defaultObjective = currentAnalysis.Objectives.FirstOrDefault()?.ObjectiveValue;
 
-      //If the objective doesn't have a number value, then the analyzer was build for running the newest system
-      if(defaultObjective.HasNumberValue)
+      //If the objective doesn't have a number value, then the analyzer was built for running the newest system
+      if(defaultObjective is not null && defaultObjective.HasNumberValue)
         planRequest.AnalysisResults.Add(defaultObjective.NumberValue);
 
-      var analysisData = CreateAnalysisData(currentAnalysis, currentExp);
+      var analysisData = CreateAnalysisData(currentAnalysis, currentExp, includedObjectives);
       planRequest.AnalysisData.Add(analysisData);
     }
     planRequest.PreviousPlanStatusCodes.AddRange(statusCodes);
@@ -281,13 +286,13 @@ public class PlanningHelper : IPlanningHelper
     return parameter;
   }
 
-  private AnalysisData CreateAnalysisData(AnalysisResponse analysis, ExperimentOverview experiment)
+  private AnalysisData CreateAnalysisData(AnalysisResponse analysis, ExperimentOverview experiment, List<string> includedObjectives)
   {
     var newData = new AnalysisData();
 
     foreach(var objective in analysis.Objectives)
     {
-      if(experiment.Template.PlanObjectives.Any(obj => obj == objective.ObjectiveName)) 
+      if(experiment.Template.PlanObjectives.Any(obj => obj == objective.ObjectiveName) && includedObjectives.Contains(objective.ObjectiveName)) 
         newData.AnalysisObjectives.Add(objective);
     }
 

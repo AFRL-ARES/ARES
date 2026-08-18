@@ -551,7 +551,7 @@ public class CampaignExecutor : ICampaignExecutor
 
     var resolveSuccess = await _planningHelper.TryResolveParameters(Template.PlannerAllocations,
       metadata,
-      currentExperimentTemplate.GetAllPlannedParameters(),
+      currentExperimentTemplate,
       analyses,
       experimentSummaries.Select(es => es.ExperimentOverview),
       BatchPlanningSize,
@@ -772,7 +772,7 @@ public class CampaignExecutor : ICampaignExecutor
 
         var resolveSuccess = await _planningHelper.TryResolveParameters(Template.PlannerAllocations, 
           metadata, 
-          experimentTemplate.GetAllPlannedParameters(), 
+          experimentTemplate, 
           analyses, 
           previousExperiments,
           BatchPlanningSize,

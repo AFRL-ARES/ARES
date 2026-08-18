@@ -22,7 +22,7 @@
 
     <div class="column right-column">
       <h2>Analyzer Objectives</h2>
-      @if(ViewModel!.AvailableObjectives is not null)
+      @if(ViewModel?.AvailableObjectives is not null)
       {
         @foreach(var item in ViewModel.AvailableObjectives.Fields)
         {

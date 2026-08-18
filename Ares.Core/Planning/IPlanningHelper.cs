@@ -20,7 +20,7 @@ public interface IPlanningHelper
   /// <returns>True if planning succeeded, false otherwise</returns>
   Task<bool> TryResolveParameters(IEnumerable<PlannerAllocation> plannerAllocations,
     RequestMetadata metadata,
-    IEnumerable<Parameter> parameters,
+    ExperimentTemplate currentTemplate,
     IEnumerable<AnalysisResponse> seedAnalyses,
     IEnumerable<ExperimentOverview> seedExperiments,
     int batchSize,
