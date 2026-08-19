@@ -6,10 +6,11 @@ using Ares.Core.Grpc.Services;
 using UI.Application.Notifications;
 using Ares.Core.Analyzing;
 using Ares.Datamodel;
+using ReactiveUI.SourceGenerators;
 
 namespace UI.Features.CampaignEdit.ViewModels;
 
-public class PlanningViewModel : ReactiveObject
+public partial class PlanningViewModel : ReactiveObject
 {
   private readonly CampaignTemplate _template;
   private readonly PlannerService _client;
@@ -28,7 +29,6 @@ public class PlanningViewModel : ReactiveObject
     _selectedAnalyzer = selectedAnalyzer;
     PlannerAdapters = new ReadOnlyCollection<PlannerServiceInfo>(plannerAdapters.ToList());
     PlannerAllocationEditors = template.PlannableParameters.Select(metadata => new PlannerAllocationEditorViewModel(metadata, template.PlannerAllocations.FirstOrDefault(allocation => allocation.Parameter.Equals(metadata))?.Planner, PlannerAdapters, client, notificationService)).ToArray();
-    AnalyzerName = _selectedAnalyzer?.Name ?? "NONE";
   }
 
   public async Task UpdateAnalyzerObjectives()
@@ -39,17 +39,29 @@ public class PlanningViewModel : ReactiveObject
     SelectedObjectives = AvailableObjectives?.Fields.Where(obj => _template.ExperimentTemplate.PlanObjectives.Contains(obj.Key)).ToList() ?? [];
   }
 
-  public IEnumerable<PlannerAllocationEditorViewModel> PlannerAllocationEditors { get; private set; } = [];
+  public void RefreshMultiObjectiveCompatability()
+    => MultiObjectiveAllowed = PlannerAllocationEditors.All(editor => editor.SelectedService?.Capabilities.MultiObjectiveCapable ?? false);
+  
 
-  public IEnumerable<PlannerServiceInfo> PlannerAdapters { get; } = [];
+  [Reactive]
+  public partial IEnumerable<PlannerAllocationEditorViewModel> PlannerAllocationEditors { get; private set; } = [];
 
-  public AresStructSchema? AvailableObjectives { get; private set; }
+  [Reactive]
+  public partial IEnumerable<PlannerServiceInfo> PlannerAdapters { get; private set; } = [];
 
-  public List<KeyValuePair<string, AresValueSchema>> SelectedObjectives { get; private set; } = [];
+  [Reactive]
+  public partial AresStructSchema? AvailableObjectives { get; private set; }
 
-  public List<string> IncludedObjectives { get; private set; } = [];
+  [Reactive]
+  public partial List<KeyValuePair<string, AresValueSchema>> SelectedObjectives { get; private set; } = [];
 
-  public string AnalyzerName { get; private set; } = "NONE";
+  [Reactive]
+  public partial List<string> IncludedObjectives { get; private set; } = [];
+
+  public string AnalyzerName => _selectedAnalyzer?.Name ?? "NONE";
+
+  [Reactive]
+  public partial bool MultiObjectiveAllowed { get; private set; } = false;
 
   public void Save()
   {

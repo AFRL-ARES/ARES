@@ -81,6 +81,9 @@ public class ManualPlanner : IPlannerService
       await Seed(LatestManualPlannerSeed);
   }
 
+  public Task Refresh() 
+    => Task.CompletedTask;
+
   public void Reset()
   {
     _planResultsQueue.Clear();

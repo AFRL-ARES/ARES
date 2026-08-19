@@ -2,13 +2,11 @@
 @using UI.Features.CampaignEdit.ViewModels
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<PlanningViewModel>
 
-
 <div>
   @if(ViewModel is null)
   {
     <LoadingSpinner SpinnerSize="SpinnerSize.Large" />
   }
-
   else
   {
     <div class="two-column-container">
@@ -22,13 +20,21 @@
         {
           @foreach(var editor in ViewModel.PlannerAllocationEditors)
           {
-            <PlannerAllocationEditor ViewModel="editor" />
+            <PlannerAllocationEditor ViewModel="editor" OnPlannerChanged="HandlePlannerAllocationChanged" />
           }
         }
       </div>
 
       <div class="column right-column">
         <h2>Analyzer Objectives</h2>
+
+        @if(ViewModel is not null && !ViewModel.MultiObjectiveAllowed)
+        {
+          <RadzenAlert AlertStyle="AlertStyle.Info" Variant="Variant.Flat" Shade="Shade.Lighter" Size="AlertSize.Small" AllowClose="false" class="mb-2">
+            The currently selected planner does not support multi-objective optimization. Selecting an objective will replace your current selection.
+          </RadzenAlert>
+        }
+
         @if(ViewModel?.AvailableObjectives is not null)
         {
           @foreach(var item in ViewModel.AvailableObjectives.Fields)
@@ -59,14 +65,12 @@
             </div>
           }
         }
-
         else
         {
           if(ViewModel!.AnalyzerName == "NONE")
           {
             <p>Select an Analyzer to See Objectives</p>
           }
-
           else
           {
             <p>Your Selected Analyer (@ViewModel!.AnalyzerName) Doesn't Report Any Objective Outputs</p>
@@ -78,23 +82,55 @@
   }
 </div>
 
-
 @code {
   protected override async Task OnInitializedAsync()
   {
     if(ViewModel is not null)
+    {
       await ViewModel!.UpdateAnalyzerObjectives();
+      ViewModel!.RefreshMultiObjectiveCompatability();
+    }
+    
 
     await base.OnInitializedAsync();
   }
 
   private void ToggleSelection(KeyValuePair<string, AresValueSchema> item)
   {
-    if(ViewModel!.SelectedObjectives.Contains(item))
-      ViewModel!.SelectedObjectives.Remove(item);
+    if(ViewModel is null)
+      return;
 
+    if(ViewModel.SelectedObjectives.Contains(item))
+    {
+      ViewModel.SelectedObjectives.Remove(item);
+    }
     else
-      ViewModel!.SelectedObjectives.Add(item);
+    {
+      if(!ViewModel.MultiObjectiveAllowed)
+      {
+        ViewModel.SelectedObjectives.Clear();
+      }
+
+      ViewModel.SelectedObjectives.Add(item);
+    }
+
+    StateHasChanged();
+  }
+
+  private async Task HandlePlannerAllocationChanged()
+  {
+    if(ViewModel is null)
+      return;
+
+    ViewModel!.RefreshMultiObjectiveCompatability();
+
+    // If switching to a single-objective planner while multiple are selected, trim down to the first selection
+    if(!ViewModel.MultiObjectiveAllowed && ViewModel.SelectedObjectives.Count > 1)
+    {
+      var primarySelection = ViewModel.SelectedObjectives.First();
+      ViewModel.SelectedObjectives.Clear();
+      ViewModel.SelectedObjectives.Add(primarySelection);
+    }
 
     StateHasChanged();
   }
