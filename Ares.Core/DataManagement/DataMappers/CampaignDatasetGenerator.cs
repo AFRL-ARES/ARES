@@ -471,7 +471,7 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
           AddFlattenedValue(data, $"Objective.{objective.ObjectiveName}", objective.ObjectiveValue, cancellationToken);
       }
 
-      //If we have no listed objectives AD
+      //If we have no listed objectives AND there is an Analyzer assigned, assume it's using the legacy standard
       else if(experiment.ExperimentOverview.AnalysisOverview.AnalyzerInfo.Name != "NONE")
       {
         var aresValueResult = AresValueHelper.CreateNumber(experiment.ExperimentOverview.AnalysisOverview.Result);
