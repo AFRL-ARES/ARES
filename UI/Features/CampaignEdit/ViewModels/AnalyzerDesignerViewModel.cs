@@ -143,6 +143,9 @@ public partial class AnalyzerDesignerViewModel : ReactiveObject
 
     _experimentTemplate.AnalyzerMaps.Clear();
     _experimentTemplate.AnalyzerMaps.AddRange(analyzerMappings);
+    if(_experimentTemplate.AnalyzerId != AnalyzerId)
+      _experimentTemplate.PlanObjectives.Clear();
+
     _experimentTemplate.AnalyzerId = AnalyzerId;
   }
 

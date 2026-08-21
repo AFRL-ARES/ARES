@@ -124,6 +124,8 @@
   private CancellationTokenSource _cts = new();
   private string _loadingMessage = "Initializing ARES OS...";
   private IDisposable? _driverSubscription;
+  private IDisposable? _notificationSubscription;
+  private bool _isDisposed;
   private List<string> _approvedCssPaths = new();
   public bool HasUnreadNotifications = false;
 
@@ -153,7 +155,7 @@
     notificationService.OnNotificationReceived += HandleBackgroundNotification;
     HasUnreadNotifications = notificationProvider.GetAllNotifications().Any(n => !n.IsRead);
 
-    notificationProvider.Connect()
+    _notificationSubscription = notificationProvider.Connect()
     .Throttle(TimeSpan.FromMilliseconds(500))
     .Subscribe(_ => InvokeAsync(NotificationsUpdated));
 
@@ -168,6 +170,9 @@
 
   private Task NotificationsUpdated()
   {
+    if(_isDisposed)
+      return Task.CompletedTask;
+
     HasUnreadNotifications = notificationProvider.GetAllNotifications().Any(n => !n.IsRead);
     StateHasChanged();
     return Task.CompletedTask;
@@ -274,8 +279,12 @@
 
   public void Dispose()
   {
+    _isDisposed = true;
+
     Tracker.OnSystemReady -= HandleSystemReady;
     notificationService.OnNotificationReceived -= HandleBackgroundNotification;
+
+    _notificationSubscription?.Dispose();
     _driverSubscription?.Dispose();
 
     _cts.Cancel();

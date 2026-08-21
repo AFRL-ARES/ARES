@@ -39,6 +39,9 @@ namespace AresService.Migrations.Sqlite.Migrations
                         .HasColumnType("TEXT")
                         .HasDefaultValueSql("DATETIME('now')");
 
+                    b.Property<string>("Objectives")
+                        .HasColumnType("TEXT");
+
                     b.Property<double>("Result")
                         .HasColumnType("REAL");
 
@@ -80,6 +83,36 @@ namespace AresService.Migrations.Sqlite.Migrations
                     b.ToTable("Analyses", (string)null);
                 });
 
+            modelBuilder.Entity("Ares.Datamodel.Analyzing.AnalysisResponse", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("AnalysisOutcome")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
+
+                    b.Property<string>("ErrorString")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
+
+                    b.Property<string>("Objectives")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("AnalysisResponses", (string)null);
+                });
+
             modelBuilder.Entity("Ares.Datamodel.Analyzing.AnalyzerCapabilities", b =>
                 {
                     b.Property<Guid>("UniqueId")
@@ -98,6 +131,9 @@ namespace AresService.Migrations.Sqlite.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("TEXT")
                         .HasDefaultValueSql("DATETIME('now')");
+
+                    b.Property<string>("ObjectiveOutputSchema")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("SettingsSchema")
                         .HasColumnType("TEXT");
@@ -219,6 +255,9 @@ namespace AresService.Migrations.Sqlite.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("AnalyzerName")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AnalyzerResponse")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("AnalyzerType")
@@ -1155,6 +1194,9 @@ namespace AresService.Migrations.Sqlite.Migrations
                         .HasColumnType("TEXT")
                         .HasDefaultValueSql("DATETIME('now')");
 
+                    b.Property<bool>("MultiObjectiveCapable")
+                        .HasColumnType("INTEGER");
+
                     b.Property<Guid>("PlannerInfoId")
                         .HasColumnType("TEXT");
 
@@ -1523,6 +1565,9 @@ namespace AresService.Migrations.Sqlite.Migrations
                         .HasDefaultValueSql("DATETIME('now')");
 
                     b.Property<string>("Name")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PlanObjectives")
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("Resolved")

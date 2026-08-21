@@ -40,6 +40,11 @@ public class RemotePlannerService : PlannerServiceBase
     await UpdateCapabilities();
   }
 
+  public override async Task Refresh()
+  {
+    await UpdateState();
+  }
+
   internal async Task UpdateInfo()
   {
     var client = GetClient();

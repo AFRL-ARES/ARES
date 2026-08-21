@@ -6,9 +6,9 @@ namespace Ares.Core.Analyzing;
 // This is a non-persistent storage of analyses as they come out of analyzers
 // mainly used to instanced functionality like tracking the analysis results to
 // decide when to stop the campaign
-public class AnalysisRepo : Collection<Analysis>
+public class AnalysisRepo : Collection<AnalysisResponse>
 {
-  public void StoreAnalysis(Analysis analysis)
+  public void StoreAnalysis(AnalysisResponse analysis)
   {
     Add(analysis);
   }

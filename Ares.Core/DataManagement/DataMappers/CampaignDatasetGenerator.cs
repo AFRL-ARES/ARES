@@ -1,14 +1,10 @@
-using Ares.Core.Execution.Extensions;
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
-using Ares.Datamodel.Analyzing.Remote;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.EntityFrameworkCore;
-using YamlDotNet.Serialization.NodeDeserializers;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Ares.Core.DataManagement.DataMappers;
 
@@ -24,10 +20,10 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
   private const string TimeStartedColumnName = "Time Started";
   private const string TimeFinishedColumnName = "Time Finished";
   private const string DurationSecondsColumnName = "Duration Seconds";
-  private const string AnalysisResultColumnName = "Analysis Result";
   private const string StatusColumnName = "Status";
   private const string SuccessColumnName = "Success";
   private const string ErrorColumnName = "Error";
+  private const string PlanNumberColumnName = "Plan Number";
   private const string PlannerNameColumnName = "Planner Name";
   private const string PlannerTypeColumnName = "Planner Type";
   private const string PlannerVersionColumnName = "Planner Version";
@@ -37,8 +33,8 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
   private const string TimeRequestSentColumnName = "Time Request Sent";
   private const string TimeResponseReceivedColumnName = "Time Response Received";
   private const string OutcomeColumnName = "Outcome";
-  private const string AnalysisResultsColumnName = "Analysis Results";
-  private const string ResultColumnName = "Result";
+  private const string ObjectiveStatusColumnName = "Objective Status";
+  private const string ResultColumnName = "Objective.Result";
   private const string InputColumnPrefix = "Input.";
   private const string OutputColumnPrefix = "Output.";
   private const string OutputColumnName = "Output";
@@ -66,15 +62,25 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     var campaignEnd = summary.ExecutionInfo?.TimeFinished;
     if(campaignStart is not null && campaignEnd is not null)
     {
-      var plannerTransactions = await ctx.PlannerTransactions
-        .Where(transaction => transaction.TimeRequestSent >= campaignStart && transaction.TimeResponseReceived <= campaignEnd)
-        .ToListAsync(cancellationToken);
-      foreach(var transaction in plannerTransactions)
+      try
       {
-        cancellationToken.ThrowIfCancellationRequested();
-        if(TryCreatePlannerRecord(transaction, summary, experimentNumbers, out var record))
-          plannerRecords.Add(record);
+        var plannerTransactions = await ctx.PlannerTransactions
+          .Where(transaction => transaction.TimeRequestSent >= campaignStart && transaction.TimeResponseReceived <= campaignEnd)
+          .ToListAsync(cancellationToken);
+
+        foreach(var transaction in plannerTransactions)
+        {
+          cancellationToken.ThrowIfCancellationRequested();
+          if(TryCreatePlannerRecord(transaction, summary, experimentNumbers, out var record))
+            plannerRecords.Add(record);
+        }
       }
+      catch(Exception e)
+      {
+        throw e;
+      }
+
+
 
       var analyzerTransactions = await ctx.AnalyzerTransactions
         .Where(transaction => transaction.TimeRequestSent >= campaignStart && transaction.TimeResponseReceived <= campaignEnd)
@@ -129,7 +135,8 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     };
 
     dataset.Columns.AddRange(CreatePlannerTransactionColumns(records, cancellationToken));
-    dataset.Rows.AddRange(records.Select(record => CreatePlannerTransactionRow(record, cancellationToken)));
+    dataset.Rows.AddRange(records.SelectMany(record => CreatePlannerTransactionRows(record, cancellationToken)));
+
     return dataset;
   }
 
@@ -153,8 +160,7 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
       CreateColumn(ExperimentTemplateColumnName, AresDataType.String, optional: true),
       CreateColumn(TimeStartedColumnName, AresDataType.Timestamp, optional: true),
       CreateColumn(TimeFinishedColumnName, AresDataType.Timestamp, optional: true),
-      CreateColumn(DurationSecondsColumnName, AresDataType.Number, optional: true),
-      CreateColumn(AnalysisResultColumnName, AresDataType.Number, optional: true)
+      CreateColumn(DurationSecondsColumnName, AresDataType.Number, optional: true)
     };
 
     var dynamicColumns = CreateExperimentDynamicColumns(experiments, cancellationToken);
@@ -188,13 +194,13 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     return
     [
       CreateColumn(ExperimentNumberColumnName, AresDataType.Int),
+      CreateColumn(PlanNumberColumnName, AresDataType.Int, optional: true),
       CreateColumn(PlannerNameColumnName, AresDataType.String, optional: true),
       CreateColumn(PlannerTypeColumnName, AresDataType.String, optional: true),
       CreateColumn(PlannerVersionColumnName, AresDataType.String, optional: true),
       .. CreateTransactionTimingColumns(),
       CreateColumn(OutcomeColumnName, AresDataType.String, optional: true),
       CreateColumn(ErrorColumnName, AresDataType.String, optional: true),
-      CreateColumn(AnalysisResultsColumnName, AresDataType.List, optional: true),
       .. CreatePlannerDynamicColumns(records, cancellationToken)
     ];
   }
@@ -232,6 +238,26 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     foreach(var experiment in experiments)
     {
       cancellationToken.ThrowIfCancellationRequested();
+
+      if(experiment.ExperimentOverview?.AnalysisOverview is not null)
+      {
+        if(experiment.ExperimentOverview.AnalysisOverview.Objectives.Any())
+        {
+          foreach(var objective in experiment.ExperimentOverview.AnalysisOverview.Objectives)
+          {
+            cancellationToken.ThrowIfCancellationRequested();
+            TryAddDynamicColumn(columns, $"Objective.{objective.ObjectiveName}", objective.ObjectiveValue);
+          }
+        }
+
+        // Handle the presence of deprecated result values gracefully
+        else if(experiment.ExperimentOverview.AnalysisOverview.AnalyzerInfo.Name != "NONE")
+        {
+          var aresValueResult = AresValueHelper.CreateNumber(experiment.ExperimentOverview.AnalysisOverview.Result);
+          TryAddDynamicColumn(columns, $"Objective.Result", aresValueResult);
+        }
+
+      }
 
       var resultFields = experiment.ExperimentOverview?.Result?.Fields.OrderBy(field => field.Key)
         ?? Enumerable.Empty<KeyValuePair<string, AresValue>>();
@@ -316,11 +342,15 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
 
     foreach(var record in records)
     {
-      foreach(var parameter in record.Transaction.PlanningResponse?.PlannedParameters ?? [])
+      var plans = record.Transaction.PlanningResponse?.Plans ?? Enumerable.Empty<Plan>();
+      foreach(var plan in plans)
       {
-        cancellationToken.ThrowIfCancellationRequested();
-        if(parameter.ParameterValue is not null)
-          AddDynamicColumns(columns, $"{OutputColumnPrefix}{parameter.ParameterName}", parameter.ParameterValue);
+        foreach(var parameter in plan.PlannedParameters ?? [])
+        {
+          cancellationToken.ThrowIfCancellationRequested();
+          if(parameter.ParameterValue is not null)
+            AddDynamicColumns(columns, $"{OutputColumnPrefix}{parameter.ParameterName}", parameter.ParameterValue);
+        }
       }
     }
 
@@ -434,7 +464,21 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     AddExecutionFields(data, experiment.ExecutionInfo);
 
     if(experiment.ExperimentOverview?.AnalysisOverview is not null)
-      data.Fields[AnalysisResultColumnName] = AresValueHelper.CreateNumber(experiment.ExperimentOverview.AnalysisOverview.Result);
+    {
+      if(experiment.ExperimentOverview.AnalysisOverview.Objectives.Any())
+      {
+        foreach(var objective in experiment.ExperimentOverview.AnalysisOverview.Objectives)
+          AddFlattenedValue(data, $"Objective.{objective.ObjectiveName}", objective.ObjectiveValue, cancellationToken);
+      }
+
+      //If we have no listed objectives AND there is an Analyzer assigned, assume it's using the legacy standard
+      else if(experiment.ExperimentOverview.AnalysisOverview.AnalyzerInfo.Name != "NONE")
+      {
+        var aresValueResult = AresValueHelper.CreateNumber(experiment.ExperimentOverview.AnalysisOverview.Result);
+        AddFlattenedValue(data, $"Objective.Result", aresValueResult, cancellationToken);
+      }
+
+    }
 
     foreach(var field in experiment.ExperimentOverview?.Result?.Fields ?? [])
     {
@@ -499,33 +543,76 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     };
   }
 
-  private static AresDataRow CreatePlannerTransactionRow(PlannerRecord record, CancellationToken cancellationToken)
+  private static IEnumerable<AresDataRow> CreatePlannerTransactionRows(PlannerRecord record, CancellationToken cancellationToken)
   {
     cancellationToken.ThrowIfCancellationRequested();
 
     var transaction = record.Transaction;
+    var plans = transaction.PlanningResponse?.Plans;
+
+    // If there are no plans, we still output the transaction metadata
+    if(plans is null || plans.Count == 0)
+    {
+      yield return BuildPlanRow(record, null, 0, cancellationToken);
+      yield break;
+    }
+
+    // Yield one row per plan
+    int planIndex = 1;
+    foreach(var plan in plans)
+    {
+      yield return BuildPlanRow(record, plan, planIndex++, cancellationToken);
+    }
+  }
+
+  private static AresDataRow BuildPlanRow(PlannerRecord record, Plan? plan, int planIndex, CancellationToken cancellationToken)
+  {
+    var transaction = record.Transaction;
     var data = new AresStruct();
+
     data.Fields[ExperimentNumberColumnName] = AresValueHelper.CreateInt(record.ExperimentNumber);
     AddString(data, PlannerNameColumnName, transaction.PlannerName);
     AddString(data, PlannerTypeColumnName, transaction.PlannerType);
     AddString(data, PlannerVersionColumnName, transaction.PlannerVersion);
+    
+
     AddTransactionTimingFields(data, transaction.TimeRequestSent, transaction.TimeResponseReceived);
+
+    if(plan is not null)
+    {
+      AddString(data, OutcomeColumnName, plan.PlanningOutcome.ToString());
+      AddString(data, ErrorColumnName, plan.ErrorString);
+    }
 
     if(transaction.PlanningResponse is not null)
     {
-      AddString(data, OutcomeColumnName, transaction.PlanningResponse.PlanningOutcome.ToString());
-      AddString(data, ErrorColumnName, transaction.PlanningResponse.ErrorString);
+      AddString(data, ObjectiveStatusColumnName, transaction.PlanningResponse.ObjectiveStatus.ToString());
+    }
 
-      foreach(var parameter in transaction.PlanningResponse.PlannedParameters)
+    // Base AnalysisData
+    if(transaction.PlanningRequest?.AnalysisData.Count > 0)
+    {
+      foreach(var analysisDataEntry in transaction.PlanningRequest.AnalysisData)
+      {
+        foreach(var objective in analysisDataEntry.AnalysisObjectives)
+          data.Fields[$"Objective.{objective.ObjectiveName}"] = objective.ObjectiveValue;
+      }
+    }
+
+    // Plan-specific data
+    if(plan is not null)
+    {
+      data.Fields["Plan Number"] = AresValueHelper.CreateInt(planIndex);
+      AddString(data, OutcomeColumnName, plan.PlanningOutcome.ToString());
+      AddString(data, ErrorColumnName, plan.ErrorString);
+
+      foreach(var parameter in plan.PlannedParameters)
       {
         cancellationToken.ThrowIfCancellationRequested();
         if(parameter.ParameterValue is not null)
           AddFlattenedValue(data, $"{OutputColumnPrefix}{parameter.ParameterName}", parameter.ParameterValue, cancellationToken);
       }
     }
-
-    if(transaction.PlanningRequest?.AnalysisResults.Count > 0)
-      data.Fields[AnalysisResultsColumnName] = AresValueHelper.CreateList(transaction.PlanningRequest.AnalysisResults.Select(AresValueHelper.CreateNumber));
 
     return new AresDataRow { Data = data };
   }
@@ -544,9 +631,20 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
 
     if(transaction.AnalysisResponse is not null)
     {
-      data.Fields[ResultColumnName] = AresValueHelper.CreateNumber(transaction.AnalysisResponse.Result);
+      var aresValResult = AresValueHelper.CreateNumber(transaction.AnalysisResponse.Result);
+      AddFlattenedValue(data, "Objective.Result", aresValResult, cancellationToken);
+
       AddString(data, OutcomeColumnName, transaction.AnalysisResponse.AnalysisOutcome.ToString());
       AddString(data, ErrorColumnName, transaction.AnalysisResponse.ErrorString);
+    }
+
+    else if(transaction.AnalyzerResponse.Objectives.Any())
+    {
+      foreach(var objective in transaction.AnalyzerResponse.Objectives)
+        AddFlattenedValue(data, $"Objective.{objective.ObjectiveName}", objective.ObjectiveValue, cancellationToken);
+
+      AddString(data, OutcomeColumnName, transaction.AnalyzerResponse.AnalysisOutcome.ToString());
+      AddString(data, ErrorColumnName, transaction.AnalyzerResponse.ErrorString);
     }
 
     foreach(var input in transaction.AnalysisRequest?.Inputs?.Fields ?? [])

@@ -34,14 +34,15 @@ public class PlanningHelper : IPlanningHelper
   }
 
   public async Task<bool> TryResolveParameters(IEnumerable<PlannerAllocation> plannerAllocations,
-    RequestMetadata metadata,
-    IEnumerable<Parameter> parameters,
-    IEnumerable<Analysis> seedAnalyses,
-    IEnumerable<ExperimentOverview> seedExperiments,
-    int batchSize,
-    List<PlanStatusCode> statusCodes,
-    CancellationToken cancellationToken)
+  RequestMetadata metadata,
+  ExperimentTemplate currentTemplate,
+  IEnumerable<AnalysisResponse> seedAnalyses,
+  IEnumerable<ExperimentOverview> seedExperiments,
+  int batchSize,
+  List<PlanStatusCode> codes,
+  CancellationToken cancellationToken)
   {
+    var parameters = currentTemplate.GetAllPlannedParameters();
     var parameterArray = parameters.ToArray();
     var plannerToMetadataMaps = MapParameterMetadataToPlanners(plannerAllocations);
 
@@ -63,7 +64,7 @@ public class PlanningHelper : IPlanningHelper
         return true;
       }
 
-      return await RequestNewPlans(planner, grouping, seedExperiments, seedAnalysesArr, statusCodes, metadata, planQueue, parameterArray, batchSize, cancellationToken);
+      return await RequestNewPlans(planner, grouping, seedExperiments, seedAnalysesArr, codes, metadata, planQueue, parameterArray, batchSize, cancellationToken);
     });
 
     var results = await Task.WhenAll(planningTasks);
@@ -86,7 +87,7 @@ public class PlanningHelper : IPlanningHelper
   private async Task<bool> RequestNewPlans(IPlannerService planner,
     IGrouping<IPlannerService, (IPlannerService, ParameterMetadata)> grouping,
     IEnumerable<ExperimentOverview> seedExperiments,
-    Analysis[] seedAnalysesArr,
+    AnalysisResponse[] seedAnalysesArr,
     List<PlanStatusCode> statusCodes,
     RequestMetadata metadata,
     ConcurrentQueue<Plan> planQueue,
@@ -130,10 +131,9 @@ public class PlanningHelper : IPlanningHelper
 
       else
       {
-        var legacyResponseProcessed = await HandleLegacyPlanResponse(planResponse, parameterArray);
-
-        if(!legacyResponseProcessed)
-          return false;
+        _logger.LogError("Received plan response, but no plans were returned.");
+        await _notifier.Notify("Planner Error!", "Plan response received, but no plans included in response!", NotificationSeverityEnum.Error);
+        return false;
       }
     }
 
@@ -159,15 +159,35 @@ public class PlanningHelper : IPlanningHelper
   /// <returns>An ARES <cref><see cref="PlanningRequest"/></cref></returns>
   private PlanningRequest CreatePlanningRequest(ParameterMetadata[] plannableParameters,
     IEnumerable<ExperimentOverview> seedExperiments,
-    Analysis[] seedAnalysesArr,
+    AnalysisResponse[] seedAnalysesArr,
     List<PlanStatusCode> statusCodes,
     int batchSize,
     RequestMetadata metadata)
   {
     //Create the plan request. Store it in the transaction.
+    var relevantExperiments = seedExperiments.ToList();
     var planRequest = new PlanningRequest();
+
     planRequest.PlanningParameters.AddRange(plannableParameters.Select(parameter => ConvertToPlanningParameter(parameter, seedExperiments)));
-    planRequest.AnalysisResults.AddRange(seedAnalysesArr.Select(a => (double)a.Result));
+    for(int i = 0; i < seedAnalysesArr.Length; i++)
+    {
+      var currentAnalysis = seedAnalysesArr.ElementAtOrDefault(i);
+      var currentExp = relevantExperiments.ElementAtOrDefault(i);
+
+      if(currentAnalysis is null || currentExp is null)
+        continue;
+
+      // Add values to the deprecated field for now to ensure backwards compatability
+      // TODO: REMOVE IN NEXT MAJOR VERSION OF ARES/PYARES
+      var defaultObjective = currentAnalysis.Objectives.FirstOrDefault()?.ObjectiveValue;
+
+      //If the objective doesn't have a number value, then the analyzer was built for running the newest system
+      if(defaultObjective is not null && defaultObjective.HasNumberValue)
+        planRequest.AnalysisResults.Add(defaultObjective.NumberValue);
+
+      var analysisData = CreateAnalysisData(currentAnalysis, currentExp);
+      planRequest.AnalysisData.Add(analysisData);
+    }
     planRequest.PreviousPlanStatusCodes.AddRange(statusCodes);
     planRequest.Metadata = metadata;
     planRequest.BatchSize = batchSize;
@@ -195,59 +215,6 @@ public class PlanningHelper : IPlanningHelper
     }
 
     return plannerToMetadataMaps;
-  }
-
-  /// <summary>
-  /// Handles legacy plan responses
-  /// </summary>
-  /// <param name="planResponse"></param>
-  /// <param name="parameterArray"></param>
-  /// <returns>A bool indicating whether or not resolving variables was a success</returns>
-  private async Task<bool> HandleLegacyPlanResponse(PlanningResponse planResponse, Parameter[] parameterArray)
-  {
-#pragma warning disable CS0612 // Type or member is obsolete
-
-    if(planResponse.PlanningOutcome == Outcome.Failure)
-    {
-      if(string.IsNullOrWhiteSpace(planResponse.ErrorString))
-        await _notifier.Notify("Planner Error!", "Planner reported that planning failed, but did not provide any specific error as to why.", NotificationSeverityEnum.Error);
-
-      else
-        await _notifier.Notify($"Planner Reported Error: {planResponse.ErrorString}", "Planner Error!", NotificationSeverityEnum.Error);
-
-      return false;
-    }
-
-    if(planResponse.PlanningOutcome == Outcome.Warning)
-    {
-      if(string.IsNullOrWhiteSpace(planResponse.ErrorString))
-        await _notifier.Notify("Planner Warning", "Planner reported a warning, but did not provide specific context for that warning.", NotificationSeverityEnum.Warning);
-
-      else
-        await _notifier.Notify("Planner Warning", $"Planner successfully planned, but reported a warning: {planResponse.ErrorString}", NotificationSeverityEnum.Warning);
-    }
-
-    if(planResponse.PlanningOutcome == Outcome.Canceled)
-      await _notifier.Notify("Planning was canceled.", "Planning was canceled.", NotificationSeverityEnum.Info);
-
-    if(!planResponse.PlannedParameters.Any())
-    {
-      await _notifier.Notify("Planning Error!", "Tried to plan for experiment, but planning returned no plan results! Campaign will stop.", NotificationSeverityEnum.Error);
-      return false;
-    }
-
-    foreach(var result in planResponse.PlannedParameters)
-    {
-      var parameterPlanTarget = parameterArray.FirstOrDefault(parameter => parameter.GetPlanningMetadata()?.Name == result.ParameterName);
-
-      if(parameterPlanTarget is null)
-        continue;
-
-      parameterPlanTarget.SetResolvedValue(result.ParameterValue);
-    }
-
-    return true;
-#pragma warning restore CS0612 // Type or member is obsolete
   }
 
   /// <summary>
@@ -313,6 +280,27 @@ public class PlanningHelper : IPlanningHelper
 
     parameter.PlannerName = metadata.PlannerName;
     return parameter;
+  }
+
+  private AnalysisData CreateAnalysisData(AnalysisResponse analysis, ExperimentOverview experiment)
+  {
+    var newData = new AnalysisData();
+
+    // If no objectives were specified, include all of them.
+    if(experiment.Template.PlanObjectives.Count == 0)
+    {
+      foreach(var objective in analysis.Objectives)
+        newData.AnalysisObjectives.Add(objective);
+    }
+
+    else
+    {
+      foreach(var objective in analysis.Objectives)
+        if(experiment.Template.PlanObjectives.Any(obj => obj == objective.ObjectiveName))
+          newData.AnalysisObjectives.Add(objective);
+    }
+
+    return newData;
   }
 
   /// <summary>

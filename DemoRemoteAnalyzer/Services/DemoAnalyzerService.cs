@@ -2,6 +2,7 @@ using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Analyzing.Remote;
 using Ares.Datamodel.Connection;
+using Ares.Datamodel.Extensions;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 
@@ -17,17 +18,18 @@ public class DemoAnalyzerService : AresRemoteAnalyzerService.AresRemoteAnalyzerS
     return Task.FromResult(new StateResponse { State = State.Active, StateMessage = "The Demo Analyzer is Active!" });
   }
 
-  public override Task<Analysis> Analyze(AnalysisRequest request, ServerCallContext context)
+  public override Task<AnalysisResponse> Analyze(AnalysisRequest request, ServerCallContext context)
   {
     Console.WriteLine("Analysis requested");
     var numInput = request.Inputs.Fields[DemoDataTypes.InputNumber.Key];
     var input = numInput.NumberValue;
     Console.WriteLine($"Analysis input: {input}");
-    var analysis = new Analysis
+    var analysis = new AnalysisResponse
     {
-      Result = (float)input,
       AnalysisOutcome = Outcome.Success,
     };
+
+    analysis.Objectives.Add(new Objective() { ObjectiveName = "Result", ObjectiveValue = AresValueHelper.CreateNumber(input) });
 
     var numOperand = request.Inputs.Fields.GetValueOrDefault(DemoDataTypes.Operand.Key);
     if(numOperand is null)
@@ -40,12 +42,14 @@ public class DemoAnalyzerService : AresRemoteAnalyzerService.AresRemoteAnalyzerS
     var operation = request.Settings.Fields[DemoDataTypes.Operation.Key];
     var operationValue = operation.StringValue;
 
-    analysis.Result = operationValue switch
+    var resultValue = operationValue switch
     {
-      "Multiply" => (float)(analysis.Result * operand),
-      "Divide" => (float)(analysis.Result / operand),
-      _ => 0,// you broke it :(
+      "Multiply" => AresValueHelper.CreateNumber(analysis.Objectives.First().ObjectiveValue.NumberValue * operand),
+      "Divide" => AresValueHelper.CreateNumber(analysis.Objectives.First().ObjectiveValue.NumberValue / operand),
+      _ => AresValueHelper.CreateNumber(0),// you broke it :(
     };
+
+    analysis.Objectives.Add(new Objective() { ObjectiveValue = resultValue, ObjectiveName = "Result"});
 
     return Task.FromResult(analysis);
   }

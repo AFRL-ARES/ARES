@@ -34,8 +34,8 @@ internal class CampaignDatasetGeneratorTests
     var summary = CreateCampaignSummary(
       summaryId,
       "Campaign A",
-      CreateExperiment(secondStart, secondEnd, analysisResult: 2.5),
-      CreateExperiment(firstStart, firstEnd, analysisResult: 1.5));
+      CreateExperiment(secondStart, secondEnd, analysisResult: new List<Objective> { new Objective { ObjectiveName = "Result", ObjectiveValue = AresValueHelper.CreateNumber(2.5) } }),
+      CreateExperiment(firstStart, firstEnd, analysisResult: new List<Objective> { new Objective { ObjectiveName = "Result", ObjectiveValue = AresValueHelper.CreateNumber(1.5) } }));
     var generator = CreateGenerator(summary);
 
     var dataset = GetDataset(await generator.GenerateAsync(summaryId), "Experiments");
@@ -43,30 +43,28 @@ internal class CampaignDatasetGeneratorTests
     using(Assert.EnterMultipleScope())
     {
       Assert.That(dataset.Name, Is.EqualTo("Experiments"));
-      Assert.That(dataset.Columns.Take(6).Select(column => column.Name), Is.EqualTo([
+      Assert.That(dataset.Columns.Take(5).Select(column => column.Name), Is.EqualTo([
         "Experiment Number",
         "Experiment Template",
         "Time Started",
         "Time Finished",
-        "Duration Seconds",
-        "Analysis Result"
-      ]));
+        "Duration Seconds"
+        ]));
       Assert.That(ColumnSchema(dataset, "Experiment Number").Type, Is.EqualTo(AresDataType.Int));
       Assert.That(ColumnSchema(dataset, "Time Started").Type, Is.EqualTo(AresDataType.Timestamp));
       Assert.That(ColumnSchema(dataset, "Time Finished").Type, Is.EqualTo(AresDataType.Timestamp));
       Assert.That(ColumnSchema(dataset, "Duration Seconds").Type, Is.EqualTo(AresDataType.Number));
-      Assert.That(ColumnSchema(dataset, "Analysis Result").Type, Is.EqualTo(AresDataType.Number));
-      Assert.That(ColumnSchema(dataset, "Analysis Result").Optional, Is.True);
+      Assert.That(ColumnSchema(dataset, "Objective.Result").Optional, Is.True);
       Assert.That(dataset.Rows[0].Data.Fields["Experiment Number"].IntValue, Is.EqualTo(1));
       Assert.That(dataset.Rows[0].Data.Fields["Time Started"].TimestampValue, Is.EqualTo(Timestamp.FromDateTime(firstStart)));
       Assert.That(dataset.Rows[0].Data.Fields["Time Finished"].TimestampValue, Is.EqualTo(Timestamp.FromDateTime(firstEnd)));
       Assert.That(dataset.Rows[0].Data.Fields["Duration Seconds"].NumberValue, Is.EqualTo(1));
-      Assert.That(dataset.Rows[0].Data.Fields["Analysis Result"].NumberValue, Is.EqualTo(1.5));
+      Assert.That(dataset.Rows[0].Data.Fields["Objective.Result"].NumberValue, Is.EqualTo(1.5));
       Assert.That(dataset.Rows[1].Data.Fields["Experiment Number"].IntValue, Is.EqualTo(2));
       Assert.That(dataset.Rows[1].Data.Fields["Time Started"].TimestampValue, Is.EqualTo(Timestamp.FromDateTime(secondStart)));
       Assert.That(dataset.Rows[1].Data.Fields["Time Finished"].TimestampValue, Is.EqualTo(Timestamp.FromDateTime(secondEnd)));
       Assert.That(dataset.Rows[1].Data.Fields["Duration Seconds"].NumberValue, Is.EqualTo(1));
-      Assert.That(dataset.Rows[1].Data.Fields["Analysis Result"].NumberValue, Is.EqualTo(2.5));
+      Assert.That(dataset.Rows[1].Data.Fields["Objective.Result"].NumberValue, Is.EqualTo(2.5));
     }
   }
 
@@ -532,42 +530,98 @@ internal class CampaignDatasetGeneratorTests
     var summaryId = Guid.NewGuid().ToString();
     var experiment = CreateExperiment(DateTime.UnixEpoch, DateTime.UnixEpoch.AddSeconds(5));
     var nestedOutput = AresValueHelper.CreateStruct();
-    nestedOutput.StructValue.Fields["Value"] = AresValueHelper.CreateNumber(12.5);
+    nestedOutput.StructValue.Fields["Value"] = AresValueHelper.CreateInt(100);
+
+    var nestConcentration = AresValueHelper.CreateStruct();
+    nestConcentration.StructValue.Fields["Value"] = AresValueHelper.CreateFloat(1.6);
+
+    // This helper creates Plan 1 with the Temperature output
     var transaction = CreatePlannerTransaction(
       experiment.ExperimentId,
       DateTime.UnixEpoch.AddSeconds(1),
       DateTime.UnixEpoch.AddSeconds(3),
-      ("Temperature", nestedOutput));
-    transaction.PlanningRequest.AnalysisResults.AddRange([1.5, 2.5]);
-    transaction.PlanningResponse.PlanningOutcome = Outcome.Warning;
-    transaction.PlanningResponse.ErrorString = "planner warning";
+      ("Temperature", nestedOutput),
+      ("Concentration", nestConcentration));
+
+    var objectiveOne = new Objective() 
+    { 
+      ObjectiveValue = AresValueHelper.CreateNumber(1.5), 
+      ObjectiveName = "ObjectiveOne" 
+    };
+
+    var objectiveTwo = new Objective() 
+    { 
+      ObjectiveValue = AresValueHelper.CreateNumber(2.5), 
+      ObjectiveName = "ObjectiveTwo" 
+    };
+
+    var responseOne = new AnalysisData() { AnalysisObjectives = { objectiveOne } };
+    var responseTwo = new AnalysisData() { AnalysisObjectives = { objectiveTwo } };
+
+    var planOne = new Plan() { ErrorString = "planner warning", PlanningOutcome = Outcome.Warning };
+    planOne.PlannedParameters.Add(new PlannedParameter() { ParameterName = "Temperature", ParameterValue = AresValueHelper.CreateInt(200) });
+    planOne.PlannedParameters.Add(new PlannedParameter() { ParameterName = "Concentration", ParameterValue = AresValueHelper.CreateFloat(2.6) });
+
+    var planTwo = new Plan() { ErrorString = "planner error", PlanningOutcome = Outcome.Failure };
+    planTwo.PlannedParameters.Add(new PlannedParameter() { ParameterName = "Temperature", ParameterValue = AresValueHelper.CreateInt(300) });
+    planTwo.PlannedParameters.Add(new PlannedParameter() { ParameterName = "Concentration", ParameterValue = AresValueHelper.CreateFloat(3.6) });
+
+    transaction.PlanningRequest.AnalysisData.AddRange([responseOne, responseTwo]);
+    transaction.PlanningResponse.Plans.AddRange([planOne, planTwo]);
+
     var generator = CreateGenerator(CreateCampaignSummary(summaryId, "Campaign A", experiment), [transaction]);
 
     var dataset = GetDataset(await generator.GenerateAsync(summaryId), "Planner Transactions");
-    var row = dataset.Rows.Single();
+
+    // We now expect 3 distinct rows
+    var rows = dataset.Rows.ToList();
 
     using(Assert.EnterMultipleScope())
     {
+      Assert.That(rows, Has.Count.EqualTo(3));
+
       Assert.That(dataset.Columns.Take(11).Select(column => column.Name), Is.EqualTo([
-        "Experiment Number",
-        "Planner Name",
-        "Planner Type",
-        "Planner Version",
-        "Time Request Sent",
-        "Time Response Received",
-        "Duration Seconds",
-        "Outcome",
-        "Error",
-        "Analysis Results",
-        "Output.Temperature.Value"
+      "Experiment Number",
+      "Plan Number",
+      "Planner Name",
+      "Planner Type",
+      "Planner Version",
+      "Time Request Sent",
+      "Time Response Received",
+      "Duration Seconds",
+      "Outcome",
+      "Error",
+      "Output.Temperature.Value"
       ]));
-      Assert.That(row.Data.Fields["Experiment Number"].IntValue, Is.EqualTo(1));
-      Assert.That(row.Data.Fields["Planner Name"].StringValue, Is.EqualTo("Planner A"));
-      Assert.That(row.Data.Fields["Duration Seconds"].NumberValue, Is.EqualTo(2));
-      Assert.That(row.Data.Fields["Outcome"].StringValue, Is.EqualTo(Outcome.Warning.ToString()));
-      Assert.That(row.Data.Fields["Error"].StringValue, Is.EqualTo("planner warning"));
-      Assert.That(row.Data.Fields["Analysis Results"].ListValue.Values.Select(value => value.NumberValue), Is.EqualTo([1.5, 2.5]));
-      Assert.That(row.Data.Fields["Output.Temperature.Value"].NumberValue, Is.EqualTo(12.5));
+
+      // Transaction-level fields should be identical across all 3 rows
+      foreach(var row in rows)
+      {
+        Assert.That(row.Data.Fields["Experiment Number"].IntValue, Is.EqualTo(1));
+        Assert.That(row.Data.Fields["Planner Name"].StringValue, Is.EqualTo("Planner A"));
+        Assert.That(row.Data.Fields["Duration Seconds"].NumberValue, Is.EqualTo(2));
+        Assert.That(row.Data.Fields["Objective.ObjectiveOne"].NumberValue, Is.EqualTo(1.5));
+        Assert.That(row.Data.Fields["Objective.ObjectiveTwo"].NumberValue, Is.EqualTo(2.5));
+      }
+
+      var rowOne = rows[0];
+      Assert.That(rowOne.Data.Fields["Plan Number"].IntValue, Is.EqualTo(1));
+      Assert.That(rowOne.Data.Fields["Output.Temperature.Value"].IntValue, Is.EqualTo(100));
+      Assert.That(rowOne.Data.Fields["Output.Concentration.Value"].FloatValue, Is.EqualTo(1.6));
+
+      var rowTwo = rows[1];
+      Assert.That(rowTwo.Data.Fields["Plan Number"].IntValue, Is.EqualTo(2));
+      Assert.That(rowTwo.Data.Fields["Outcome"].StringValue, Is.EqualTo(Outcome.Warning.ToString()));
+      Assert.That(rowTwo.Data.Fields["Error"].StringValue, Is.EqualTo("planner warning"));
+      Assert.That(rowTwo.Data.Fields["Output.Temperature"].IntValue, Is.EqualTo(200));
+      Assert.That(rowTwo.Data.Fields["Output.Concentration"].FloatValue, Is.EqualTo(2.6));
+
+      var rowThree = rows[2];
+      Assert.That(rowThree.Data.Fields["Plan Number"].IntValue, Is.EqualTo(3));
+      Assert.That(rowThree.Data.Fields["Outcome"].StringValue, Is.EqualTo(Outcome.Failure.ToString()));
+      Assert.That(rowThree.Data.Fields["Error"].StringValue, Is.EqualTo("planner error"));
+      Assert.That(rowThree.Data.Fields["Output.Temperature"].IntValue, Is.EqualTo(300));
+      Assert.That(rowThree.Data.Fields["Output.Concentration"].FloatValue, Is.EqualTo(3.6));
     }
   }
 
@@ -583,9 +637,10 @@ internal class CampaignDatasetGeneratorTests
       DateTime.UnixEpoch.AddSeconds(2),
       DateTime.UnixEpoch.AddSeconds(4),
       ("Measurement", nestedInput));
-    transaction.AnalysisResponse = new Analysis
+
+    transaction.AnalyzerResponse = new AnalysisResponse
     {
-      Result = 9.5f,
+      Objectives = { new Objective() { ObjectiveName = "Result", ObjectiveValue = AresValueHelper.CreateNumber(9.5) } },
       AnalysisOutcome = Outcome.Success,
       ErrorString = "analysis note"
     };
@@ -604,14 +659,14 @@ internal class CampaignDatasetGeneratorTests
         "Time Request Sent",
         "Time Response Received",
         "Duration Seconds",
-        "Result",
+        "Objective.Result",
         "Outcome",
         "Error",
         "Input.Measurement.Mass"
       ]));
       Assert.That(row.Data.Fields["Analyzer Version"].StringValue, Is.EqualTo("2.0"));
       Assert.That(row.Data.Fields["Duration Seconds"].NumberValue, Is.EqualTo(2));
-      Assert.That(row.Data.Fields["Result"].NumberValue, Is.EqualTo(9.5));
+      Assert.That(row.Data.Fields["Objective.Result"].NumberValue, Is.EqualTo(9.5));
       Assert.That(row.Data.Fields["Outcome"].StringValue, Is.EqualTo(Outcome.Success.ToString()));
       Assert.That(row.Data.Fields["Input.Measurement.Mass"].QuantityValue.Scalar, Is.EqualTo(4.5));
     }
@@ -741,7 +796,7 @@ internal class CampaignDatasetGeneratorTests
   private static ExperimentExecutionSummary CreateExperiment(
     DateTime timeStarted,
     DateTime timeFinished,
-    double? analysisResult = null,
+    List<Objective>? analysisResult = null,
     (string Name, AresValue Value)[] resultFields = null,
     Parameter[] parameters = null,
     StepExecutionSummary[] steps = null)
@@ -752,7 +807,12 @@ internal class CampaignDatasetGeneratorTests
     };
 
     if(analysisResult is not null)
-      overview.AnalysisOverview = new AnalysisOverview { Result = analysisResult.Value };
+    {
+      overview.AnalysisOverview = new AnalysisOverview();
+      overview.AnalysisOverview.Objectives.AddRange(analysisResult);
+
+    }
+      
 
     foreach(var field in resultFields ?? [])
     {
@@ -906,14 +966,17 @@ internal class CampaignDatasetGeneratorTests
           ExperimentId = experimentId
         }
       },
-      PlanningResponse = new PlanningResponse()
+      PlanningResponse = new PlanningResponse() { ObjectiveStatus = ObjectiveStatus.ObjectiveUnachieved }
     };
 
-    transaction.PlanningResponse.PlannedParameters.AddRange(outputs.Select(output => new PlannedParameter
+    var plan = new Plan();
+    plan.PlannedParameters.AddRange(outputs.Select(output => new PlannedParameter
     {
       ParameterName = output.Name,
       ParameterValue = output.Value
     }));
+
+    transaction.PlanningResponse.Plans.Add(plan);
     return transaction;
   }
 
@@ -940,7 +1003,7 @@ internal class CampaignDatasetGeneratorTests
           ExperimentId = experimentId
         }
       },
-      AnalysisResponse = new Analysis()
+      AnalyzerResponse = new AnalysisResponse()
     };
 
     foreach(var input in inputs)

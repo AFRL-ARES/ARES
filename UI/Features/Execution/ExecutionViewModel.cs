@@ -401,11 +401,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
   public void OnPlannerTransactionReceived(PlannerTransaction transaction, int currentTurn)
   {
-    if(transaction.PlanningResponse.PlannedParameters.Any())
-      foreach(var field in transaction.PlanningResponse.PlannedParameters)
-        ProcessTransactionParameterData(field, transaction, currentTurn);
-
-    else if(transaction.PlanningResponse.Plans.Any())
+    if(transaction.PlanningResponse.Plans.Any())
     {
       foreach(var plan in transaction.PlanningResponse.Plans)
       {
@@ -422,13 +418,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     var count = 0;
 
     foreach(var transaction in transactionList)
-    {
-      if(transaction.PlanningResponse.PlannedParameters.Any())
-        count++;
-
-      else
-        count += transaction.PlanningResponse.Plans.Count();
-    }
+     count += transaction.PlanningResponse.Plans.Count();
 
     return count;
   }
@@ -463,11 +453,22 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
   public void OnAnalyzerTransactionReceived(AnalyzerTransaction transaction, int currentTurn)
   {
-    AnalyzerMetrics.Add(new ChartMetricPoint
+    foreach(var objective in transaction.AnalyzerResponse.Objectives)
     {
-      ExecutionIndex = currentTurn,
-      RawValue = transaction.AnalysisResponse.Result
-    }); 
+      var found = objective.ObjectiveValue.TryGetNumericValue(out var numericValue);
+      if(!found)
+        return;
+
+      if(!AnalyzerMetrics.ContainsKey(objective.ObjectiveName))
+        AnalyzerMetrics[objective.ObjectiveName] = new List<ChartMetricPoint>();
+
+      AnalyzerMetrics[objective.ObjectiveName].Add(new ChartMetricPoint
+      {
+        ExecutionIndex = currentTurn,
+        RawValue = numericValue,
+        PlotValue = numericValue
+      });      
+    }
   }
 
   public bool TryGetChartableValue(AresValue aresValue, out double result)
@@ -813,7 +814,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   [Reactive]
   public partial Dictionary<string, List<ChartMetricPoint>> PlannerMetricsMap { get; private set; }
   [Reactive]
-  public partial List<ChartMetricPoint> AnalyzerMetrics { get; private set; }
+  public partial Dictionary<string, List<ChartMetricPoint>> AnalyzerMetrics { get; private set; }
   [Reactive]
   public partial IList<ExperimentExecutionStatus> ExperimentExecutionStatuses { get; private set; }
   [Reactive]

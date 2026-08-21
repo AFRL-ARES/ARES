@@ -94,13 +94,20 @@ public interface IAnalyzer
   Task<AnalyzerCapabilities> GetCapabilities(CancellationToken cancellationToken = default);
 
   /// <summary>
+  /// This will return the schema describing the analyzers objective outputs.
+  /// </summary>
+  /// <param name="cancellationToken"></param>
+  /// <returns></returns>
+  Task<AresStructSchema> GetObjectiveOutputs(CancellationToken cancellationToken = default);
+
+  /// <summary>
   /// Does the actual analysis work.
   /// </summary>
   /// <param name="request">The analysis request to be sent to the analyzer <see cref="AnalysisRequest" /> proto message</param>
   /// <param name="cancellationToken"></param>
   /// <param name="settings">Optional list of settings to influence the analysis</param>
   /// <returns><see cref="Analysis" /> which is the outcome of the analysis performed.</returns>
-  Task<Analysis> Analyze(AnalysisRequest request, AresStruct settings, CancellationToken cancellationToken = default);
+  Task<AnalysisResponse> Analyze(AnalysisRequest request, AresStruct settings, CancellationToken cancellationToken = default);
 
   /// <summary>
   /// Does the actual analysis work.
@@ -108,7 +115,7 @@ public interface IAnalyzer
   /// <param name="request">The analysis request to be sent to the analyzer <see cref="AnalysisRequest" /> proto message</param>
   /// <param name="cancellationToken"></param>
   /// <returns><see cref="Analysis" /> which is the outcome of the analysis performed.</returns>
-  Task<Analysis> Analyze(AnalysisRequest request, CancellationToken cancellationToken);
+  Task<AnalysisResponse> Analyze(AnalysisRequest request, CancellationToken cancellationToken);
 
   /// <summary>
   /// How long do we expect the analyzer to do its analysis before ARES decides that analyzing has failed.

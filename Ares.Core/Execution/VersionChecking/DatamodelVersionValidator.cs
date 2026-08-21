@@ -86,5 +86,5 @@ public class DatamodelVersionValidator : IDatamodelVersionValidator
     return Pep440ToSemVerRegex.Replace(rawVersion.Trim(), "$1-$2");
   }
 
-  public static SemanticVersion MinimumRequiredDatamodelVersion { get; set; } = SemanticVersion.Parse("0.33.0");
+  public static SemanticVersion MinimumRequiredDatamodelVersion { get; set; } = SemanticVersion.Parse("0.36.0");
 }

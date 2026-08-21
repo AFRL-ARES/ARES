@@ -10,7 +10,13 @@
       </RadzenRow>
       <RadzenRow AlignItems="AlignItems.Center">
           <RadzenLabel Text="Select Service:" Component="PlannerServiceDropDown" Style="min-width: 115px"/>
-          <RadzenDropDown TValue="PlannerServiceInfo" Data="@ViewModel!.PlannerServices" @bind-Value="@ViewModel!.SelectedService" Name="PlannerServiceDropDown" Style="min-width: 15rem">
+          <RadzenDropDown TValue="PlannerServiceInfo" 
+            Data="@ViewModel!.PlannerServices" 
+            @bind-Value="@ViewModel!.SelectedService"
+            Change="@OnSelectionChanged"
+            Name="PlannerServiceDropDown" 
+            Style="min-width: 15rem">
+            
             <Template>
               @context.Name (@context.Version)
             </Template>
@@ -21,7 +27,12 @@
         @if(ViewModel!.PlannerOptions.Count() > 1)
         {
           <RadzenLabel Text="Select Planner:" Component="PlannerOptionDropDown" Style="min-width: 115px" />
-          <RadzenDropDown TValue="Planner" Data="@ViewModel!.PlannerOptions" @bind-Value="@ViewModel!.SelectedPlannerOption" Name="PlannerOptionDropDown" Style="min-width: 15rem">
+          <RadzenDropDown TValue="Planner" 
+            Data="@ViewModel!.PlannerOptions" 
+            @bind-Value="@ViewModel!.SelectedPlannerOption" 
+            Change="@OnSelectionChanged"
+            Name="PlannerOptionDropDown" 
+            Style="min-width: 15rem">
             <Template>
               @context.PlannerName
             </Template>
@@ -43,14 +54,25 @@
 </div>
 
 @code {
+
+  [Parameter]
+  public EventCallback OnPlannerChanged { get; set; }
+
+  private async Task OnSelectionChanged()
+  {
+    if(OnPlannerChanged.HasDelegate)
+    {
+      await OnPlannerChanged.InvokeAsync();
+    }
+  }
+
   private async Task ShowPlannerOptionTip()
   {
     await DialogService.OpenAsync("Planner Selection", ds =>
-  @<div>
-   In ARES, some planner services report the capability of using multiple types of planners. 
-   In this scenario, a seperate dropdown allows you to choose what planning method to use from the services advertised options.
-  </div>
-  , new DialogOptions() { CloseDialogOnOverlayClick = true });
+      @<div>
+        In ARES, some planner services report the capability of using multiple types of planners. 
+        In this scenario, a seperate dropdown allows you to choose what planning method to use from the services advertised options.
+      </div>
+    , new DialogOptions() { CloseDialogOnOverlayClick = true });
   }
-
 }

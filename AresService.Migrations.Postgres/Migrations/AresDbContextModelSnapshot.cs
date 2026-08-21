@@ -44,6 +44,9 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
+                    b.Property<string>("Objectives")
+                        .HasColumnType("jsonb");
+
                     b.Property<double>("Result")
                         .HasColumnType("double precision");
 
@@ -85,6 +88,36 @@ namespace AresService.Migrations.Postgres.Migrations
                     b.ToTable("Analyses", (string)null);
                 });
 
+            modelBuilder.Entity("Ares.Datamodel.Analyzing.AnalysisResponse", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("AnalysisOutcome")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("ErrorString")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("Objectives")
+                        .HasColumnType("jsonb");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("AnalysisResponses", (string)null);
+                });
+
             modelBuilder.Entity("Ares.Datamodel.Analyzing.AnalyzerCapabilities", b =>
                 {
                     b.Property<Guid>("UniqueId")
@@ -103,6 +136,9 @@ namespace AresService.Migrations.Postgres.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("ObjectiveOutputSchema")
+                        .HasColumnType("text");
 
                     b.Property<string>("SettingsSchema")
                         .HasColumnType("text");
@@ -225,6 +261,9 @@ namespace AresService.Migrations.Postgres.Migrations
 
                     b.Property<string>("AnalyzerName")
                         .HasColumnType("text");
+
+                    b.Property<string>("AnalyzerResponse")
+                        .HasColumnType("jsonb");
 
                     b.Property<string>("AnalyzerType")
                         .HasColumnType("text");
@@ -1160,6 +1199,9 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
 
+                    b.Property<bool>("MultiObjectiveCapable")
+                        .HasColumnType("boolean");
+
                     b.Property<Guid>("PlannerInfoId")
                         .HasColumnType("uuid");
 
@@ -1528,6 +1570,9 @@ namespace AresService.Migrations.Postgres.Migrations
                         .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Name")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PlanObjectives")
                         .HasColumnType("text");
 
                     b.Property<bool>("Resolved")
