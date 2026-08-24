@@ -17,7 +17,7 @@ namespace AresService.Migrations.SqlServer.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.8")
+                .HasAnnotation("ProductVersion", "10.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -43,6 +43,9 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Objectives")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<double>("Result")
                         .HasColumnType("float");
@@ -86,6 +89,36 @@ namespace AresService.Migrations.SqlServer.Migrations
                     b.ToTable("Analyses", (string)null);
                 });
 
+            modelBuilder.Entity("Ares.Datamodel.Analyzing.AnalysisResponse", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("AnalysisOutcome")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("ErrorString")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Objectives")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("AnalysisResponses", (string)null);
+                });
+
             modelBuilder.Entity("Ares.Datamodel.Analyzing.AnalyzerCapabilities", b =>
                 {
                     b.Property<Guid>("UniqueId")
@@ -104,6 +137,9 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("ObjectiveOutputSchema")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("SettingsSchema")
                         .HasColumnType("nvarchar(max)");
@@ -227,6 +263,9 @@ namespace AresService.Migrations.SqlServer.Migrations
                     b.Property<string>("AnalyzerName")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("AnalyzerResponse")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("AnalyzerType")
                         .HasColumnType("nvarchar(max)");
 
@@ -295,6 +334,16 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
 
+                    b.Property<bool>("DisplayCompatabilityWarnings")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("DisplayDataCollectionWidget")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
                     b.Property<int>("ExperimentRetryLimit")
                         .HasColumnType("int");
 
@@ -309,6 +358,104 @@ namespace AresService.Migrations.SqlServer.Migrations
                     b.HasKey("UniqueId");
 
                     b.ToTable("AresGeneralSettingsConfig", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Automation.CustomCommand", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("CurrentVersionId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("CustomCommands", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Automation.CustomCommandParameter", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<Guid>("CustomCommandVersionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Schema")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("CustomCommandVersionId");
+
+                    b.ToTable("CustomCommandParameters", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Automation.CustomCommandVersion", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<Guid>("CustomCommandId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OutputSchema")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ScriptBody")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long>("VersionNumber")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("CustomCommandId", "VersionNumber")
+                        .IsUnique();
+
+                    b.ToTable("CustomCommandVersions", (string)null);
                 });
 
             modelBuilder.Entity("Ares.Datamodel.CampaignExecutionSummary", b =>
@@ -1059,6 +1206,9 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
 
+                    b.Property<bool>("MultiObjectiveCapable")
+                        .HasColumnType("bit");
+
                     b.Property<Guid>("PlannerInfoId")
                         .HasColumnType("uniqueidentifier");
 
@@ -1304,9 +1454,6 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("CommandTemplateId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<DateTime>("CreationTime")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
@@ -1314,6 +1461,9 @@ namespace AresService.Migrations.SqlServer.Migrations
 
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("DeviceCommandId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("DeviceId")
                         .HasColumnType("nvarchar(max)");
@@ -1331,8 +1481,9 @@ namespace AresService.Migrations.SqlServer.Migrations
 
                     b.HasKey("UniqueId");
 
-                    b.HasIndex("CommandTemplateId")
-                        .IsUnique();
+                    b.HasIndex("DeviceCommandId")
+                        .IsUnique()
+                        .HasFilter("[DeviceCommandId] IS NOT NULL");
 
                     b.ToTable("CommandMetadata");
                 });
@@ -1369,6 +1520,34 @@ namespace AresService.Migrations.SqlServer.Migrations
                     b.ToTable("CommandTemplates", (string)null);
                 });
 
+            modelBuilder.Entity("Ares.Datamodel.Templates.DeviceCommand", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CommandTemplateId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("CommandTemplateId")
+                        .IsUnique()
+                        .HasFilter("[CommandTemplateId] IS NOT NULL");
+
+                    b.ToTable("DeviceCommands", (string)null);
+                });
+
             modelBuilder.Entity("Ares.Datamodel.Templates.ExperimentTemplate", b =>
                 {
                     b.Property<Guid>("UniqueId")
@@ -1376,6 +1555,9 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("AnalyzerId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("AnalyzerMaps")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid?>("CampaignCloseoutId")
@@ -1398,6 +1580,9 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .HasDefaultValueSql("getdate()");
 
                     b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PlanObjectives")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("Resolved")
@@ -1728,6 +1913,24 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Ares.Datamodel.Automation.CustomCommandParameter", b =>
+                {
+                    b.HasOne("Ares.Datamodel.Automation.CustomCommandVersion", null)
+                        .WithMany("InputParameters")
+                        .HasForeignKey("CustomCommandVersionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Automation.CustomCommandVersion", b =>
+                {
+                    b.HasOne("Ares.Datamodel.Automation.CustomCommand", null)
+                        .WithMany()
+                        .HasForeignKey("CustomCommandId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Ares.Datamodel.CampaignExecutionSummary", b =>
                 {
                     b.HasOne("Ares.Datamodel.ExperimentExecutionSummary", "CloseoutExecutionSummary")
@@ -1887,11 +2090,10 @@ namespace AresService.Migrations.SqlServer.Migrations
 
             modelBuilder.Entity("Ares.Datamodel.Templates.CommandMetadata", b =>
                 {
-                    b.HasOne("Ares.Datamodel.Templates.CommandTemplate", null)
+                    b.HasOne("Ares.Datamodel.Templates.DeviceCommand", null)
                         .WithOne("Metadata")
-                        .HasForeignKey("Ares.Datamodel.Templates.CommandMetadata", "CommandTemplateId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("Ares.Datamodel.Templates.CommandMetadata", "DeviceCommandId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Templates.CommandTemplate", b =>
@@ -1901,6 +2103,50 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .HasForeignKey("StepTemplateUniqueId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.OwnsOne("Ares.Datamodel.Templates.CustomCommandInvocation", "CustomCommandInvocation", b1 =>
+                        {
+                            b1.Property<Guid>("CommandTemplateUniqueId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("CustomCommandId")
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.HasKey("CommandTemplateUniqueId");
+
+                            b1.ToTable("CommandTemplates");
+
+                            b1.WithOwner()
+                                .HasForeignKey("CommandTemplateUniqueId");
+                        });
+
+                    b.OwnsOne("Ares.Datamodel.Templates.SystemCommand", "SystemCommand", b1 =>
+                        {
+                            b1.Property<Guid>("CommandTemplateUniqueId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<int>("Operation")
+                                .HasColumnType("int");
+
+                            b1.HasKey("CommandTemplateUniqueId");
+
+                            b1.ToTable("CommandTemplates");
+
+                            b1.WithOwner()
+                                .HasForeignKey("CommandTemplateUniqueId");
+                        });
+
+                    b.Navigation("CustomCommandInvocation");
+
+                    b.Navigation("SystemCommand");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Templates.DeviceCommand", b =>
+                {
+                    b.HasOne("Ares.Datamodel.Templates.CommandTemplate", null)
+                        .WithOne("DeviceCommand")
+                        .HasForeignKey("Ares.Datamodel.Templates.DeviceCommand", "CommandTemplateId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Templates.ExperimentTemplate", b =>
@@ -1933,7 +2179,7 @@ namespace AresService.Migrations.SqlServer.Migrations
             modelBuilder.Entity("Ares.Datamodel.Templates.Parameter", b =>
                 {
                     b.HasOne("Ares.Datamodel.Templates.CommandTemplate", null)
-                        .WithMany("Parameters")
+                        .WithMany("ArgumentBindings")
                         .HasForeignKey("CommandTemplateUniqueId")
                         .OnDelete(DeleteBehavior.Cascade);
 
@@ -1971,6 +2217,11 @@ namespace AresService.Migrations.SqlServer.Migrations
             modelBuilder.Entity("Ares.Datamodel.Analyzing.AnalyzerInfo", b =>
                 {
                     b.Navigation("Capabilities");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Automation.CustomCommandVersion", b =>
+                {
+                    b.Navigation("InputParameters");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.CampaignExecutionSummary", b =>
@@ -2052,9 +2303,14 @@ namespace AresService.Migrations.SqlServer.Migrations
 
             modelBuilder.Entity("Ares.Datamodel.Templates.CommandTemplate", b =>
                 {
-                    b.Navigation("Metadata");
+                    b.Navigation("ArgumentBindings");
 
-                    b.Navigation("Parameters");
+                    b.Navigation("DeviceCommand");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Templates.DeviceCommand", b =>
+                {
+                    b.Navigation("Metadata");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Templates.ExperimentTemplate", b =>

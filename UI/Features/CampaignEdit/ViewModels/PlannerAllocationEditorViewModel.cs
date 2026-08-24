@@ -11,14 +11,14 @@ namespace UI.Features.CampaignEdit.ViewModels;
 public partial class PlannerAllocationEditorViewModel : ReactiveObject
 {
   private readonly PlannerService _plannerClient;
-  private readonly INotificationReceivingService _notificationService;
-  private PlannerServiceInfo? _selectedAdapter;
+  private readonly IUiNotificationService _notificationService;
+  private PlannerServiceInfo? _selectedService;
 
   public PlannerAllocationEditorViewModel(ParameterMetadata metadata,
     PlannerServiceInfo? plannerInfo,
     IEnumerable<PlannerServiceInfo> plannerAdapters,
     PlannerService plannerClient,
-    INotificationReceivingService notificationService)
+    IUiNotificationService notificationService)
   {
     var plannerArray = plannerAdapters.ToArray();
 
@@ -27,13 +27,26 @@ public partial class PlannerAllocationEditorViewModel : ReactiveObject
     _plannerClient = plannerClient;
     _notificationService = notificationService;
 
+    // Initialize to empty by default
+    PlannerOptions = Enumerable.Empty<Planner>();
+
     if(plannerInfo is not null)
     {
-      SelectedService = plannerInfo;
-      SelectedPlannerOption = plannerInfo.Capabilities.AvailablePlanners.FirstOrDefault(p => p.PlannerName == metadata.PlannerName);
-    }
+      // Match against the fresh live adapter collection instead of using the stale deserialized snapshot
+      var liveService = plannerArray.FirstOrDefault(p => p.UniqueId == plannerInfo.UniqueId || p.Name == plannerInfo.Name);
 
-    PlannerOptions = Enumerable.Empty<Planner>();
+      SelectedService = liveService ?? plannerInfo;
+
+      // Restore specific planner option selection if specified in metadata
+      if(!string.IsNullOrEmpty(metadata.PlannerName))
+      {
+        var matchedOption = PlannerOptions.FirstOrDefault(p => p.PlannerName == metadata.PlannerName);
+        if(matchedOption != null)
+        {
+          SelectedPlannerOption = matchedOption;
+        }
+      }
+    }
   }
 
   public PlannerAllocation? Save()
@@ -61,40 +74,34 @@ public partial class PlannerAllocationEditorViewModel : ReactiveObject
 
     var updatedInfo = await _plannerClient.GetInfo(new PlannerInfoRequest { PlannerId = SelectedService.UniqueId }, null);
 
-    if(updatedInfo.Info.Name != string.Empty)
+    if(updatedInfo?.Info is not null && !string.IsNullOrEmpty(updatedInfo.Info.Name))
     {
-      PlannerOptions = updatedInfo.Info.Capabilities.AvailablePlanners;
-
-      //Not all adapters will have multiple options, if not auto assign the value
-      if(PlannerOptions.Count() == 1)
-        SelectedPlannerOption = SelectedService.Capabilities.AvailablePlanners.First();  
+      // Update the SelectedService reference with the fresh gRPC response
+      SelectedService = updatedInfo.Info;
     }
-
     else
     {
-      var notification = new AresNotification();
-      notification.Title = "Assigned Planner Unavailable!";
-      notification.Message = $"This template uses a planner that ARES no longer has a connection with. The template won't be usable until this is resolved.";
-      notification.NotificationSeverity = Severity.Warning;
-      notification.Loiter = true;
-      _notificationService.PushNotification(notification);
+      var notification = new UiNotificationMessage
+      {
+        Summary = "Assigned Planner Unavailable!",
+        Detail = "This template uses a planner that ARES no longer has a connection with. The template won't be usable until this is resolved.",
+        Severity = UiNotificationSeverity.Warning,
+        CloseOnClick = true
+      };
+
+      _notificationService.Notify(notification);
     }
   }
 
   public PlannerServiceInfo? SelectedService
   {
-    get => _selectedAdapter;
-
+    get => _selectedService;
     set
     {
-      if(value is null || _selectedAdapter == value)
-        return;
+      this.RaiseAndSetIfChanged(ref _selectedService, value);
 
-      if(_selectedAdapter is not null)
-        SelectedPlannerOption = _selectedAdapter.Capabilities.AvailablePlanners.FirstOrDefault();
-
-      _selectedAdapter = value;
-      _ = UpdatePlannerOptions();
+      PlannerOptions = _selectedService?.Capabilities?.AvailablePlanners?.ToList() ?? new List<Planner>();
+      SelectedPlannerOption = PlannerOptions.FirstOrDefault();
     }
   }
 
@@ -106,5 +113,3 @@ public partial class PlannerAllocationEditorViewModel : ReactiveObject
   [Reactive]
   public partial Planner? SelectedPlannerOption { get; set; }
 }
-
-

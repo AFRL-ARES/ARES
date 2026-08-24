@@ -15,12 +15,12 @@ namespace UI.Features.Devices.Remote;
 public partial class RemoteDeviceSettingsViewModel : ReactiveObject
 {
   private readonly DevicesService _devicesClient;
-  private readonly INotificationReceivingService _notificationService;
+  private readonly IUiNotificationService _notificationService;
   private readonly DeviceInfo _deviceInfo;
   private readonly ObservableAsPropertyHelper<bool> _isBusy;
 
   public RemoteDeviceSettingsViewModel(DevicesService devicesService,
-      INotificationReceivingService notificationService,
+      IUiNotificationService notificationService,
       DeviceInfo deviceInfo,
       Func<Task> onRemoveCallback)
   {
@@ -111,11 +111,11 @@ public partial class RemoteDeviceSettingsViewModel : ReactiveObject
     var response = await _devicesClient.UpdateRemoteDevice(request, null);
     if(response.Success)
     {
-      PushNotification(new AresNotification
+      PushNotification(new UiNotificationMessage
       {
-        Title = "Device Update",
-        Message = $"Device {deviceConfig.Name} updated successfully.",
-        NotificationSeverity = Severity.Success
+        Summary = "Device Update",
+        Detail = $"Device {deviceConfig.Name} updated successfully.",
+        Severity = UiNotificationSeverity.Success
       });
       // Refresh local state from the server
       await UpdateInfoCommand.Execute();
@@ -123,11 +123,11 @@ public partial class RemoteDeviceSettingsViewModel : ReactiveObject
     }
     else
     {
-      PushNotification(new AresNotification
+      PushNotification(new UiNotificationMessage
       {
-        Title = "Device Update Failed",
-        Message = $"Device {deviceConfig.Name} failed to update: {response.ErrorMessage}",
-        NotificationSeverity = Severity.Error
+        Summary = "Device Update Failed",
+        Detail = $"Device {deviceConfig.Name} failed to update: {response.ErrorMessage}",
+        Severity= UiNotificationSeverity.Error
       });
     }
   }
@@ -163,7 +163,7 @@ public partial class RemoteDeviceSettingsViewModel : ReactiveObject
     }
     catch(Exception e)
     {
-      PushNotification(new AresNotification { Title = "Update Error", Message = $"Settings for {Name} failed to send. {e.Message}", NotificationSeverity = Severity.Error });
+      PushNotification(new UiNotificationMessage { Summary = "Error Updating Settings", Detail = $"Settings for {Name} failed to send. {e.Message}", Severity = UiNotificationSeverity.Error });
     }
   }
 
@@ -202,15 +202,15 @@ public partial class RemoteDeviceSettingsViewModel : ReactiveObject
     StateMessage = errorMessage;
     OperationalState = OperationalState.Error;
 
-    PushNotification(new AresNotification
+    PushNotification(new UiNotificationMessage
     {
-      Title = "Operation Failed",
-      Message = errorMessage,
-      NotificationSeverity = Severity.Error
+      Summary = "Operation Failed",
+      Detail = errorMessage,
+      Severity = UiNotificationSeverity.Error
     });
   }
 
-  private void PushNotification(AresNotification notification) => _notificationService.PushNotification(notification);
+  private void PushNotification(UiNotificationMessage notification) => _notificationService.Notify(notification);
 }
 
 

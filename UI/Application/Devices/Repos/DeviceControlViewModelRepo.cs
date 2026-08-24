@@ -1,4 +1,3 @@
-using Ares.Core.CoreDevice;
 using Ares.Core.Device.Providers;
 using Ares.Core.Device.Remote;
 using Ares.Core.Device.Sila;
@@ -50,7 +49,7 @@ namespace UI.Application.Devices.Repos
     }
 
     private bool IsPluginDevice(IAresDevice device)
-      => device is not RemoteDevice && device is not AresCoreDevice && device is not SilaDevice;
+      => device is not RemoteDevice && device is not SilaDevice;
 
     public IObservable<IChangeSet<IDeviceUnitControlViewModel>> Connect(Func<IDeviceUnitControlViewModel, bool>? predicate = null)
         => _viewModelCache.Connect().Filter(predicate ?? (_ => true)).RemoveKey();

@@ -24,7 +24,8 @@ public class DesiredAnalysisResult : IStopCondition
     if (latestAnalysis is null)
       return false;
 
-    var analysisVal = latestAnalysis.Result;
+    //TODO: Fix to check things properly
+    var analysisVal = latestAnalysis.Objectives.FirstOrDefault()?.ObjectiveValue.FloatValue;
     var resultAchieved = analysisVal >= _desiredResult - _leeway && analysisVal <= _desiredResult + _leeway;
     if (resultAchieved)
       Message = $"Achieved result {analysisVal} which is within {_leeway} of {_desiredResult}";

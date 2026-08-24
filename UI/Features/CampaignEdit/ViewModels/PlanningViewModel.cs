@@ -1,34 +1,67 @@
 using ReactiveUI;
 using System.Collections.ObjectModel;
 using Ares.Datamodel.Templates;
-using Ares.Services;
 using Ares.Datamodel.Planning;
 using Ares.Core.Grpc.Services;
 using UI.Application.Notifications;
+using Ares.Core.Analyzing;
+using Ares.Datamodel;
+using ReactiveUI.SourceGenerators;
 
 namespace UI.Features.CampaignEdit.ViewModels;
 
-public class PlanningViewModel : ReactiveObject
+public partial class PlanningViewModel : ReactiveObject
 {
   private readonly CampaignTemplate _template;
   private readonly PlannerService _client;
-  private readonly INotificationReceivingService _notificationService;
+  private readonly IUiNotificationService _notificationService;
+  private readonly IAnalyzer? _selectedAnalyzer;
 
   public PlanningViewModel(CampaignTemplate template, 
     IEnumerable<PlannerServiceInfo> plannerAdapters, 
     PlannerService client,
-    INotificationReceivingService notificationService)
+    IUiNotificationService notificationService,
+    IAnalyzer? selectedAnalyzer)
   {
     _template = template;
     _client = client;
     _notificationService = notificationService;
+    _selectedAnalyzer = selectedAnalyzer;
     PlannerAdapters = new ReadOnlyCollection<PlannerServiceInfo>(plannerAdapters.ToList());
     PlannerAllocationEditors = template.PlannableParameters.Select(metadata => new PlannerAllocationEditorViewModel(metadata, template.PlannerAllocations.FirstOrDefault(allocation => allocation.Parameter.Equals(metadata))?.Planner, PlannerAdapters, client, notificationService)).ToArray();
   }
 
-  public IEnumerable<PlannerAllocationEditorViewModel> PlannerAllocationEditors { get; private set; }
+  public async Task UpdateAnalyzerObjectives()
+  {
+    if(_selectedAnalyzer is not null)
+      AvailableObjectives = await _selectedAnalyzer.GetObjectiveOutputs();
 
-  public IEnumerable<PlannerServiceInfo> PlannerAdapters { get; }
+    SelectedObjectives = AvailableObjectives?.Fields.Where(obj => _template.ExperimentTemplate.PlanObjectives.Contains(obj.Key)).ToList() ?? [];
+  }
+
+  public void RefreshMultiObjectiveCompatability()
+    => MultiObjectiveAllowed = PlannerAllocationEditors.All(editor => editor.SelectedService?.Capabilities.MultiObjectiveCapable ?? false);
+  
+
+  [Reactive]
+  public partial IEnumerable<PlannerAllocationEditorViewModel> PlannerAllocationEditors { get; private set; } = [];
+
+  [Reactive]
+  public partial IEnumerable<PlannerServiceInfo> PlannerAdapters { get; private set; } = [];
+
+  [Reactive]
+  public partial AresStructSchema? AvailableObjectives { get; private set; }
+
+  [Reactive]
+  public partial List<KeyValuePair<string, AresValueSchema>> SelectedObjectives { get; private set; } = [];
+
+  [Reactive]
+  public partial List<string> IncludedObjectives { get; private set; } = [];
+
+  public string AnalyzerName => _selectedAnalyzer?.Name ?? "NONE";
+
+  [Reactive]
+  public partial bool MultiObjectiveAllowed { get; private set; } = false;
 
   public void Save()
   {
@@ -39,6 +72,8 @@ public class PlanningViewModel : ReactiveObject
       .Select(editor => editor.Save())
       .Where(allocation => allocation is not null)
       .Where(allocation => _template.PlannableParameters.Any(meta => meta.UniqueId == allocation!.Parameter.UniqueId)));
+
+    _template.ExperimentTemplate.PlanObjectives.AddRange(SelectedObjectives.Select(obj => obj.Key));
 
     PlannerAllocationEditors = _template.PlannableParameters
     .Select(metadata => new PlannerAllocationEditorViewModel(metadata, _template.PlannerAllocations

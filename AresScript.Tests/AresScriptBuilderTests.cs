@@ -274,6 +274,95 @@ public class AresScriptBuilderTests
     Assert.That(builder.Build(), Is.Empty);
   }
 
+  [Test]
+  public void CustomCommandScriptBuilder_BuildFunctionName_SanitizesCommandName()
+  {
+    var functionName = CustomCommandScriptBuilder.BuildFunctionName("  123 Measure Temperature!! ");
+
+    Assert.That(functionName, Is.EqualTo("custom_command_123_Measure_Temperature"));
+  }
+
+  [Test]
+  public void CustomCommandScriptBuilder_BuildFunctionSignature_WritesParameterAndReturnTypeHints()
+  {
+    var outputSchema = AresSchemaBuilder.Entry(AresDataType.Quantity)
+      .WithQuantityRange(QuantityType.Temperature, "degC", minScalarValue: 0, maxScalarValue: 100)
+      .Build();
+
+    var signature = CustomCommandScriptBuilder.BuildFunctionSignature(
+      "Measure Temperature",
+      [
+        new AresScriptParameter("sample_id", AresDataType.String),
+        new AresScriptParameter("timeout_seconds", AresDataType.Number)
+      ],
+      outputSchema);
+
+    Assert.That(signature, Is.EqualTo("def custom_command_Measure_Temperature(sample_id: String, timeout_seconds: Number) -> Quantity.Temperature[unit=\"degC\", min=0, max=100]"));
+  }
+
+  [Test]
+  public void CustomCommandScriptBuilder_BuildWrappedScript_WritesNestedSchemaTypeHints()
+  {
+    var structSchema = AresSchemaBuilder.Entry(AresDataType.Struct).Build();
+    structSchema.StructSchema = new AresStructSchema();
+    structSchema.StructSchema.Fields["reading"] = AresSchemaBuilder.Entry(AresDataType.Number).Build();
+    structSchema.StructSchema.Fields["unit"] = AresSchemaBuilder.Entry(AresDataType.String).Build();
+
+    var listSchema = AresSchemaBuilder.Entry(AresDataType.List).Build();
+    listSchema.ListElementSchema = AresSchemaBuilder.Entry(AresDataType.String).Build();
+
+    var script = CustomCommandScriptBuilder.BuildWrappedScript(
+      "Summarize Samples",
+      [
+        new AresScriptParameter("measurement", structSchema),
+        new AresScriptParameter("tags", listSchema)
+      ],
+      structSchema,
+      """
+      total = measurement.reading
+
+      return measurement
+      """);
+
+    Assert.That(script, Does.Contain("def custom_command_Summarize_Samples(measurement: {reading: Number, unit: String}, tags: [String]) -> {reading: Number, unit: String}:"));
+    Assert.That(script, Does.Contain("  total = measurement.reading"));
+    Assert.That(script, Does.Contain($"{System.Environment.NewLine}  {System.Environment.NewLine}  return measurement"));
+    Assert.That(() => Parse(script), Throws.Nothing);
+  }
+
+  [Test]
+  public void CustomCommandScriptBuilder_BuildWrappedScript_PreservesWhitespaceBeforeReturnFallback()
+  {
+    var script = CustomCommandScriptBuilder.BuildWrappedScript(
+      "No Op",
+      [],
+      AresSchemaBuilder.Entry(AresDataType.Unit).Build(),
+      "  ");
+
+    Assert.That(
+      script,
+      Is.EqualTo(
+        $"def custom_command_No_Op() -> Unit:{System.Environment.NewLine}    {System.Environment.NewLine}  return"));
+    Assert.That(() => Parse(script), Throws.Nothing);
+  }
+
+  [Test]
+  public void CustomCommandScriptBuilder_BuildWrappedScript_PreservesEveryBodyLine()
+  {
+    var script = CustomCommandScriptBuilder.BuildWrappedScript(
+      "Position Test",
+      [],
+      AresSchemaBuilder.Entry(AresDataType.Unit).Build(),
+      "\r\nsleep()\r\n\r\n");
+
+    var newline = System.Environment.NewLine;
+    Assert.That(
+      script,
+      Is.EqualTo(
+        $"def custom_command_Position_Test() -> Unit:{newline}  {newline}  sleep(){newline}  {newline}  {newline}"));
+    Assert.That(() => Parse(script), Throws.Nothing);
+  }
+
   private static void Parse(string script)
   {
     var input = new AntlrInputStream(script);

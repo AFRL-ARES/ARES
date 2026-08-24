@@ -18,32 +18,19 @@ public class DeviceStateExportService : Ares.Services.DeviceStateExportService.D
   }
 
   public override Task<DeviceStateResponse> GetStateExport(DeviceStateRequest request, ServerCallContext? context)
-  {
-    return request.ExportType switch
-    {
-      ExportType.Unspecified => GetZippedStates(request.Filter),
-      ExportType.Combined => GetCombinedStates(request.Filter),
-      ExportType.Zipped => GetZippedStates(request.Filter),
-      _ => throw new System.NotImplementedException(),
-    };
-  }
+    => GetZippedStates(request.Filter);
+  
 
   private Task<DeviceStateResponse> GetZippedStates(DeviceStateRequestFilter filter)
   {
-    var provider = _exportProviders.OfType<ZippedStatesExportStreamProvider>().First();
-    return GenerateStateResponse(filter, provider);
-  }
-
-  private Task<DeviceStateResponse> GetCombinedStates(DeviceStateRequestFilter filter)
-  {
-    var provider = _exportProviders.OfType<CombinedDeviceStateExportStreamProvider>().First();
+    var provider = _exportProviders.OfType<DeviceExportStreamProvider>().First();
     return GenerateStateResponse(filter, provider);
   }
 
   private static async Task<DeviceStateResponse> GenerateStateResponse(DeviceStateRequestFilter filter, IDeviceStateExportStreamProvider streamProvider)
   {
     var stream = await streamProvider.Export(filter);
-    var byteString = await ByteString.FromStreamAsync(stream.Stream);
+    var byteString = await ByteString.FromStreamAsync(stream);
     return new DeviceStateResponse() { Data = byteString };
   }
 }

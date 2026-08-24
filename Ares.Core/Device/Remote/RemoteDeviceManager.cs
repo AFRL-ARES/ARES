@@ -1,5 +1,6 @@
 ﻿using Ares.Core.Device.Repos;
 using Ares.Core.Device.State.Logging;
+using Ares.Core.Execution.VersionChecking;
 using Ares.Core.Notifications;
 using Ares.Datamodel.Device;
 using Microsoft.EntityFrameworkCore;
@@ -14,11 +15,12 @@ internal class RemoteDeviceManager(
   IDbContextFactory<CoreDatabaseContext> _dbContextFactory,
   StateLoggerManager _stateLoggerManager,
   ILoggerFactory _loggerFactory,
+  IDatamodelVersionValidator _datamodelVersionValidator,
   ILogger<RemoteDeviceManager> _logger) : IRemoteDeviceManager
 {
   private readonly List<RemoteDeviceMonitor> _deviceMonitors = [];
 
-  public async Task<RemoteDevice> CreateDevice(string name, string url)
+  public async Task<RemoteDevice?> CreateDevice(string name, string url)
   {
     var config = new RemoteDeviceConfig 
     { 
@@ -28,20 +30,25 @@ internal class RemoteDeviceManager(
     };
 
     var device = ConfigToDevice(config);
-    _deviceRepo.AddOrUpdate(device);
+    var activated = await device.Activate(CancellationToken.None);
 
-    var monitor = new RemoteDeviceMonitor(device, _deviceCache, _loggerFactory.CreateLogger<RemoteDeviceMonitor>());
-    _deviceMonitors.Add(monitor);
+    if(activated)
+    {
+      _deviceRepo.AddOrUpdate(device);
 
-    var ctx = _dbContextFactory.CreateDbContext();
-    ctx.RemoteDeviceConfigs.Add(config);
+      var monitor = new RemoteDeviceMonitor(device, _deviceCache, _loggerFactory.CreateLogger<RemoteDeviceMonitor>());
+      _deviceMonitors.Add(monitor);
 
-    await device.Activate(CancellationToken.None);
+      var ctx = _dbContextFactory.CreateDbContext();
+      ctx.RemoteDeviceConfigs.Add(config);
 
-    await _stateLoggerManager.SetupLogger(device);
+      await _stateLoggerManager.SetupLogger(device);
 
-    await ctx.SaveChangesAsync();
-    return device;
+      await ctx.SaveChangesAsync();
+      return device;
+    }
+
+    return null;
   }
 
   private RemoteDevice ConfigToDevice(RemoteDeviceConfig config)
@@ -69,7 +76,7 @@ internal class RemoteDeviceManager(
     };
 
     var logger = _loggerFactory.CreateLogger<RemoteDevice>();
-    var device = new RemoteDevice(remoteInfo, logger);
+    var device = new RemoteDevice(remoteInfo, logger, _notificationHandler, _datamodelVersionValidator);
     return device;
   }
 

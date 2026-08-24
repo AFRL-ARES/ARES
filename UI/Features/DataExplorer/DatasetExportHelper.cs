@@ -35,5 +35,3 @@ public static class DatasetExportHelper
     return DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
   }
 }
-
-public record DatasetExport(Stream Stream, string FileName);

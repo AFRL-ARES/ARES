@@ -1,9 +1,16 @@
 ﻿@inject DialogService DialogService
+@inject Ares.Core.CustomCommands.ICustomCommandPersistenceService CustomCommandService
+@using Ares.Datamodel
 @using Ares.Datamodel.Templates
 @using UI.Features.CampaignEdit.ViewModels
 
 @if (CampaignTemplate is not null)
 {
+  @if(!string.IsNullOrWhiteSpace(_customCommandLoadError))
+  {
+    <div class="alert alert-warning" role="alert">@_customCommandLoadError</div>
+  }
+
   <div class="d-flex h-100">
     <div class="d-flex flex-column flex-grow-1 overflow-auto">
       <div class="d-flex flex-column">
@@ -13,6 +20,7 @@
             <div class="flex-grow-1">
               <StepViewer StepTemplate="@startupStep"
                           AvailablePlannedParameters="@CampaignTemplate.PlannableParameters"
+                          CustomCommandOutputSchemas="@_customCommandOutputSchemas"
                           PriorVariableReferences="@GetPriorVariableReferences(CampaignTemplate.StartupTemplate, startupStep)" />
             </div>
           </div>
@@ -25,6 +33,7 @@
               
               <StepViewer StepTemplate="@stepTemplate"
                           AvailablePlannedParameters="@CampaignTemplate.PlannableParameters"
+                          CustomCommandOutputSchemas="@_customCommandOutputSchemas"
                           PriorVariableReferences="@GetPriorVariableReferences(CampaignTemplate.ExperimentTemplate, stepTemplate)" />
             </div>
           </div>
@@ -36,6 +45,7 @@
             <div class="flex-grow-1">
               <StepViewer StepTemplate="@closeoutStep"
                           AvailablePlannedParameters="@CampaignTemplate.PlannableParameters"
+                          CustomCommandOutputSchemas="@_customCommandOutputSchemas"
                           PriorVariableReferences="@GetPriorVariableReferences(CampaignTemplate.CloseoutTemplate, closeoutStep)" />
             </div>
           </div>
@@ -49,7 +59,29 @@
   [Parameter]
   public CampaignTemplate? CampaignTemplate { get; set; }
 
-  private static CommandOutputVariableReference[] GetPriorVariableReferences(
+  private IReadOnlyDictionary<string, AresValueSchema> _customCommandOutputSchemas
+    = new Dictionary<string, AresValueSchema>(StringComparer.OrdinalIgnoreCase);
+  private string? _customCommandLoadError;
+
+  protected override async Task OnInitializedAsync()
+  {
+    try
+    {
+      _customCommandOutputSchemas = (await CustomCommandService.GetCommandsAsync())
+        .Where(command => !string.IsNullOrWhiteSpace(command.CustomCommandId) && command.OutputSchema is not null)
+        .ToDictionary(
+          command => command.CustomCommandId,
+          command => command.OutputSchema,
+          StringComparer.OrdinalIgnoreCase);
+    }
+    catch(Exception exception)
+    {
+      _customCommandOutputSchemas = new Dictionary<string, AresValueSchema>(StringComparer.OrdinalIgnoreCase);
+      _customCommandLoadError = $"Custom command output schemas could not be loaded. {exception.Message}";
+    }
+  }
+
+  private CommandOutputVariableReference[] GetPriorVariableReferences(
     ExperimentTemplate experimentTemplate,
     StepTemplate stepTemplate)
   {
@@ -60,7 +92,8 @@
       if(currentStep == stepTemplate)
         return references.ToArray();
 
-      references.AddRange(currentStep.CommandTemplates.SelectMany(CommandOutputVariableReferenceBuilder.Build));
+      references.AddRange(currentStep.CommandTemplates
+        .SelectMany(command => CommandOutputVariableReferenceBuilder.Build(command, _customCommandOutputSchemas)));
     }
 
     return references.ToArray();

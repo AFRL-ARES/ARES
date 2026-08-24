@@ -28,7 +28,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   private readonly AutomationService _automationClient;
   private readonly AnalyzerService _analyzerService;
   public readonly ObservableCollection<CampaignTemplateSummary> CampaignTemplateSummaries = [];
-  private readonly INotificationReceivingService _notificationService;
+  private readonly IUiNotificationService _notificationService;
   private readonly IExecutionReportStore _executionReportStore;
   private readonly IAresDeviceProvider _deviceProvider;
   public event Action? StateChanged;
@@ -38,7 +38,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
   public ExecutionViewModel(AutomationService automationClient,
     IConfiguration configuration,
-    INotificationReceivingService notificationService,
+    IUiNotificationService notificationService,
     AnalyzerService analyzerService,
     IExecutionReportStore executionReportStore,
     IAresDeviceProvider deviceProvider)
@@ -139,9 +139,23 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     StateChanged?.Invoke();
   }
 
+  public async Task SetPlannerStopCondition()
+  {
+    await _automationClient.SetPlannerLeadStopCondition(new Empty(), null);
+    CurrentStopCondition = await GetCurrentStopCondition();
+    ActiveStopConditionMode = ExecutionStopConditionMode.PlannerResult;
+    await RefreshExecutionEligibility();
+    StateChanged?.Invoke();
+  }
+
   public Task<ExperimentStopConditionResponse> GetCurrentStopCondition()
   {
     return _automationClient.GetActiveStopCondition(new Empty(), null);
+  }
+
+  public Task<PlanningBatchSize> GetCurrentPlanningBatchSize()
+  {
+    return _automationClient.GetPlanningBatchSize(new Empty(), null);
   }
 
   public Task<ReplicateRate> GetCurrentReplicateRate()
@@ -164,11 +178,19 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     StateChanged?.Invoke();
   }
 
-  public async Task SetReplanRate()
+  public async Task SetReplicateRate()
   {
     await _automationClient.SetReplicateRate(new ReplicateRate { ReplicateRate_ = DesiredReplicationRate }, null);
     var replanRateResponse = await GetCurrentReplicateRate();
     DesiredReplicationRate = replanRateResponse.ReplicateRate_;
+
+  }
+
+  public async Task SetPlanningBatchSize()
+  {
+    await _automationClient.SetPlanningBatchSize(new PlanningBatchSize { BatchSize = PlanningBatchSize }, null);
+    var planningBatchSizeResponse = await GetCurrentPlanningBatchSize();
+    PlanningBatchSize = planningBatchSizeResponse.BatchSize;
   }
 
   public async Task StartCampaign()
@@ -176,22 +198,21 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     await ApplyActiveStopCondition();
 
     if(!CampaignActive)
-      await SetReplanRate();
+      await SetReplicateRate();
 
     var executionEligibility = await _automationClient.CheckExecutionEligibility(new Empty(), null);
     LastExecutionEligibility = executionEligibility;
 
     if(!executionEligibility.IsEligible)
     {
-      var notification = new AresNotification
+      var notification = new UiNotificationMessage
       {
-        NotificationSeverity = Severity.Error,
-        Title = "Campaign Could Not Be Started!",
-        Message = $"ARES failed to start the requested campaign: {executionEligibility.Error}",
-        Timestamp = DateTime.UtcNow.ToTimestamp()
+        Severity = UiNotificationSeverity.Error,
+        Summary = "Campaign Could Not Be Started!",
+        Detail = $"ARES failed to start the requested campaign: {executionEligibility.Error}"
       };
 
-      _notificationService.PushNotification(notification);
+      _notificationService.Notify(notification);
       return;
     }
 
@@ -227,6 +248,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     return ActiveStopConditionMode switch
     {
       ExecutionStopConditionMode.AnalyzerResult => SetDesiredAnalysis(),
+      ExecutionStopConditionMode.PlannerResult => SetPlannerStopCondition(),
       _ => SetExperimentsToRun()
     };
   }
@@ -235,6 +257,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   {
     LastExecutionEligibility = await _automationClient.CheckExecutionEligibility(new Empty(), null);
   }
+
 
   public async Task ExecutionNotesUploaded(Stream fileStream)
   {
@@ -245,42 +268,46 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     }
     catch(Exception ex)
     {
-      var notification = new AresNotification
+      var notification = new UiNotificationMessage
       {
-        NotificationSeverity = Severity.Error,
-        Title = "Failed to Upload Experiment Notes",
-        Message = $"ARES failed to read the uploaded experiment notes file. {ex.Message}",
-        Timestamp = DateTime.UtcNow.ToTimestamp()
+        Severity = UiNotificationSeverity.Error,
+        Summary = "Failed to Upload Experiment Notes",
+        Detail = $"ARES failed to read the uploaded experiment notes file. {ex.Message}"
       };
 
-      _notificationService.PushNotification(notification);
+      _notificationService.Notify(notification);
     }
   }
 
   public Task RequestUserConfirmation()
   {
-    var notification = new AresNotification();
-    notification.NotificationSeverity = Severity.Info;
-    notification.Title = "User Confirmation Required to Proceed";
-    notification.Message = $"ARES has paused it's current experiment awaiting user input. Press the play button to continue experimenting.";
-    notification.Timestamp = DateTime.UtcNow.ToTimestamp();
-    notification.Loiter = true;
+    var notification = new UiNotificationMessage();
+    notification.Severity = UiNotificationSeverity.Info;
+    notification.Summary = "User Confirmation Required to Proceed";
+    notification.Detail = $"ARES has paused it's current experiment awaiting user input. Press the play button to continue experimenting.";
+    notification.CloseOnClick = true;
 
-    _notificationService.PushNotification(notification);
+    _notificationService.Notify(notification);
 
     return Task.CompletedTask;
   }
 
   public async Task AddTag()
   {
-    if(NewTagName is not null && AvailableTags.Any(t => t.TagName == NewTagName))
+    if(NewTagName is null || string.IsNullOrWhiteSpace(NewTagName))
+      return;
+    
+
+    if(AvailableTags.Any(t => t.TagName == NewTagName))
     {
-      var notification = new AresNotification();
-      notification.NotificationSeverity = Severity.Info;
-      notification.Title = $"Could Not Add {NewTagName} Tag";
-      notification.Message = "ARES could not add a new experiment tag because it matched one that already existed!";
-      notification.Timestamp = DateTime.UtcNow.ToTimestamp();
-      _notificationService.PushNotification(notification);
+      var notification = new UiNotificationMessage
+      {
+        Severity = UiNotificationSeverity.Info,
+        Summary = $"Could Not Add {NewTagName} Tag",
+        Detail = "ARES could not add a new experiment tag because it matched one that already existed!"
+      };
+
+      _notificationService.Notify(notification);
       return;
     }
 
@@ -292,26 +319,26 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
     if(tags.AvailableTags.Count == currentTagCount + 1)
     {
-      var notification = new AresNotification
+      var notification = new UiNotificationMessage
       {
-        NotificationSeverity = Severity.Success,
-        Title = $"Successfully Added {NewTagName} Tag",
-        Message = "ARES has successfully added a new experiment tag, and it is now available for use",
-        Timestamp = DateTime.UtcNow.ToTimestamp()
+        Severity = UiNotificationSeverity.Success,
+        Summary = $"Successfully Added {NewTagName} Tag",
+        Detail = "ARES has successfully added a new experiment tag, and it is now available for use"
       };
-      _notificationService.PushNotification(notification);
+
+      _notificationService.Notify(notification);
     }
 
     else
     {
-      var notification = new AresNotification
+      var notification = new UiNotificationMessage
       {
-        NotificationSeverity = Severity.Error,
-        Title = $"Failed to Add {NewTagName} Tag",
-        Message = "ARES failed to add a new experiment tag",
-        Timestamp = DateTime.UtcNow.ToTimestamp()
+        Severity = UiNotificationSeverity.Error,
+        Summary = $"Failed to Add {NewTagName} Tag",
+        Detail = "ARES failed to add a new experiment tag"
       };
-      _notificationService.PushNotification(notification);
+
+      _notificationService.Notify(notification);
     }
 
     AvailableTags = tags.AvailableTags.ToList();
@@ -367,48 +394,81 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
         if(newestTransaction is null)
           continue;
 
-        OnPlannerTransactionReceived(newestTransaction, transactionList.Count());
+        OnPlannerTransactionReceived(newestTransaction, DeterminePlanCount(transactionList.SkipLast(1)));
       }
     }
   }
 
   public void OnPlannerTransactionReceived(PlannerTransaction transaction, int currentTurn)
   {
-    foreach(var field in transaction.PlanningResponse.PlannedParameters)
+    if(transaction.PlanningResponse.Plans.Any())
     {
-      var metricName = field.ParameterName;
-      var metricData = field.ParameterValue;
-      var matchingParam = transaction.PlanningRequest.PlanningParameters.FirstOrDefault(p => p.ParameterName == field.ParameterName);
-
-      if(TryGetChartableValue(metricData, out double numericValue) && matchingParam is not null)
+      foreach(var plan in transaction.PlanningResponse.Plans)
       {
-        var minBound = matchingParam.MinimumValue;
-        var maxBound = matchingParam.MaximumValue;
-        var normalizedValue = 0.0;
-
-        if(maxBound > minBound)
-          normalizedValue = ((numericValue - minBound) / (maxBound - minBound)) * 100;
-
-        if(!PlannerMetricsMap.ContainsKey(metricName))
-          PlannerMetricsMap[metricName] = new List<ChartMetricPoint>();
-
-        PlannerMetricsMap[metricName].Add(new ChartMetricPoint
-        {
-          ExecutionIndex = currentTurn,
-          PlotValue = normalizedValue,  // Charting Value
-          RawValue = numericValue       // Tooltip Display Value
-        });
+        foreach(var param in plan.PlannedParameters)
+          ProcessTransactionParameterData(param, transaction, currentTurn);
+        
+        currentTurn++;
       }
     }
   }
 
+  private int DeterminePlanCount(IEnumerable<PlannerTransaction> transactionList)
+  {
+    var count = 0;
+
+    foreach(var transaction in transactionList)
+     count += transaction.PlanningResponse.Plans.Count();
+
+    return count;
+  }
+
+  private void ProcessTransactionParameterData(PlannedParameter field, PlannerTransaction transaction, int currentTurn)
+  {
+    var metricName = field.ParameterName;
+    var metricData = field.ParameterValue;
+    var matchingParam = transaction.PlanningRequest.PlanningParameters.FirstOrDefault(p => p.ParameterName == field.ParameterName);
+
+    if(TryGetChartableValue(metricData, out double numericValue) && matchingParam is not null)
+    {
+      var minBound = matchingParam.MinimumValue;
+      var maxBound = matchingParam.MaximumValue;
+      var normalizedValue = 0.0;
+
+      if(maxBound > minBound)
+        normalizedValue = ((numericValue - minBound) / (maxBound - minBound)) * 100;
+
+      if(!PlannerMetricsMap.ContainsKey(metricName))
+        PlannerMetricsMap[metricName] = new List<ChartMetricPoint>();
+
+      PlannerMetricsMap[metricName].Add(new ChartMetricPoint
+      {
+        ExecutionIndex = currentTurn,
+        PlotValue = normalizedValue,  // Charting Value
+        RawValue = numericValue       // Tooltip Display Value
+      });
+    }
+
+  }
+
   public void OnAnalyzerTransactionReceived(AnalyzerTransaction transaction, int currentTurn)
   {
-    AnalyzerMetrics.Add(new ChartMetricPoint
+    foreach(var objective in transaction.AnalyzerResponse.Objectives)
     {
-      ExecutionIndex = currentTurn,
-      RawValue = transaction.AnalysisResponse.Result
-    }); 
+      var found = objective.ObjectiveValue.TryGetNumericValue(out var numericValue);
+      if(!found)
+        return;
+
+      if(!AnalyzerMetrics.ContainsKey(objective.ObjectiveName))
+        AnalyzerMetrics[objective.ObjectiveName] = new List<ChartMetricPoint>();
+
+      AnalyzerMetrics[objective.ObjectiveName].Add(new ChartMetricPoint
+      {
+        ExecutionIndex = currentTurn,
+        RawValue = numericValue,
+        PlotValue = numericValue
+      });      
+    }
   }
 
   public bool TryGetChartableValue(AresValue aresValue, out double result)
@@ -530,9 +590,6 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     if(CampaignExecutionState == ExecutionState.AwaitingUser)
       _ = RequestUserConfirmation();
 
-    //if(CampaignActive)
-    //  SelectedExecutionTabIndex = 1;
-
     StateChanged?.Invoke();
   }
 
@@ -621,8 +678,10 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
   public async Task RefreshPlannerTransactionData()
   {
+    PlannerMetricsMap.Clear();
     var plannerTransactions = await _automationClient.GetLatestPlanningTransactions();
 
+    var transactionNumber = 0;
     foreach(var transactionList in plannerTransactions)
     {
       if(transactionList is null)
@@ -630,19 +689,24 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
       foreach(var (index, item) in transactionList.Index())
       {
-        OnPlannerTransactionReceived(item, index);
+        OnPlannerTransactionReceived(item, transactionNumber);
+
+        if(item.PlanningResponse.Plans.Any())
+          transactionNumber += item.PlanningResponse.Plans.Count();
+
+        else
+          transactionNumber++;
       }
     }
   }
 
   public async Task RefreshAnalyzerTransactionData()
   {
+    AnalyzerMetrics.Clear();
     var analyzerTransactions = await _automationClient.GetLatestAnalyzerTransactions();
 
     foreach(var (index, item) in analyzerTransactions.Index())
-    {
       OnAnalyzerTransactionReceived(item, index);
-    }
   }
 
   public async Task RefreshCampaignSetup()
@@ -722,6 +786,9 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   public partial ExperimentStopConditionResponse? CurrentStopCondition { get; set; }
   public double DesiredResult { get; set; }
   public double DesiredLeeway { get; set; }
+  [Reactive]
+  public partial int PlanningBatchSize { get; set; } = 1;
+  [Reactive]
   public int DesiredReplicationRate { get; set; } = 1;
 
   [Reactive]
@@ -747,7 +814,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   [Reactive]
   public partial Dictionary<string, List<ChartMetricPoint>> PlannerMetricsMap { get; private set; }
   [Reactive]
-  public partial List<ChartMetricPoint> AnalyzerMetrics { get; private set; }
+  public partial Dictionary<string, List<ChartMetricPoint>> AnalyzerMetrics { get; private set; }
   [Reactive]
   public partial IList<ExperimentExecutionStatus> ExperimentExecutionStatuses { get; private set; }
   [Reactive]
@@ -779,7 +846,8 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 public enum ExecutionStopConditionMode
 {
   NumExperiments,
-  AnalyzerResult
+  AnalyzerResult,
+  PlannerResult
 }
 
 public record ExecutionPreflightItem(string Label, bool IsReady, string Detail);

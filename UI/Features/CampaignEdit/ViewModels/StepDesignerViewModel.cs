@@ -82,6 +82,12 @@ public class StepDesignerViewModel : ReactiveObject
     return StepTemplate;
   }
 
+  public async Task EnsureInitializedAsync()
+  {
+    await Task.WhenAll(CommandDesigners.Select(command => command.EnsureInitializedAsync()));
+    RefreshAvailableVariableReferences();
+  }
+
   public CommandDesignerViewModel AddCommandDesigner()
   {
     var newDesigner = _commandDesignerFactory.Create();

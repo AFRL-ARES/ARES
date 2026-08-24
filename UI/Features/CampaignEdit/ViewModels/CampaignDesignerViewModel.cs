@@ -50,41 +50,86 @@ public partial class CampaignDesignerViewModel : ReactiveObject
     };
   }
 
-  [Reactive] public partial bool IsCreatingCampaign { get; set; }
+  [Reactive] 
+  public partial bool IsCreatingCampaign { get; set; }
 
-  [Reactive] public partial bool IsNotCreatingCampaign { get; set; }
+  [Reactive] 
+  public partial bool IsNotCreatingCampaign { get; set; }
 
-  [Reactive] public partial string Placeholder { get; set; }
+  [Reactive] 
+  public partial string Placeholder { get; set; }
 
-  public PlannableParameterDesignerViewModel? PlannableParameterDesigner { get; private set; }
+  [Reactive]
+  public partial PlannableParameterDesignerViewModel? PlannableParameterDesigner { get; private set; }
 
-  public ExperimentDesignerViewModel? ExperimentDesigner { get; private set; }
+  [Reactive]
+  public partial ExperimentDesignerViewModel? ExperimentDesigner { get; private set; }
 
-  public StartupDesignerViewModel? StartupDesigner { get; private set; }
+  [Reactive]
+  public partial StartupDesignerViewModel? StartupDesigner { get; private set; }
 
-  public CloseoutDesignerViewModel? CloseoutDesigner { get; private set; }
+  [Reactive]
+  public partial CloseoutDesignerViewModel? CloseoutDesigner { get; private set; }
 
-  public PlanningViewModel? PlanningDesigner { get; private set; }
+  [Reactive]
+  public partial PlanningViewModel? PlanningDesigner { get; private set; }
 
-  public AnalyzerDesignerViewModel? AnalyzerDesignerViewModel { get; private set; }
+  [Reactive]
+  public partial AnalyzerDesignerViewModel? AnalyzerDesignerViewModel { get; private set; }
 
   public string CampaignName { get; set; } = "Unnamed Campaign";
 
-  public CampaignTemplate CampaignTemplate
-  {
-    private get => _campaignTemplate;
+  public CampaignTemplate CampaignTemplate { get; private set; } = null!;
 
-    set
+  [Reactive] 
+  public partial bool CreationIsErrorFree { get; set; }
+
+  [Reactive] 
+  public partial string? CreationErrorText { get; set; }
+
+  public async Task InitializeNewCampaignAsync()
+  {
+    var template = new CampaignTemplate
     {
-      _campaignTemplate = value;
-      _editContext.CurrentlyEditingCampaign = value;
-      _ = Init(value);
-    }
+      Name = Placeholder,
+      UniqueId = Guid.NewGuid().ToString(),
+      ExperimentTemplate = new ExperimentTemplate { UniqueId = Guid.NewGuid().ToString(), Name = "New Experiment" }
+    };
+
+    await LoadCampaignTemplateAsync(template);
   }
 
-  [Reactive] public partial bool CreationIsErrorFree { get; set; }
+  public async Task SelectCampaignById(Guid campaignId)
+  {
+    var request = new CampaignRequest
+    {
+      UniqueId = campaignId.ToString(),
+    };
 
-  [Reactive] public partial string? CreationErrorText { get; set; }
+    var template = await _automationClient.GetSingleCampaign(request, null);
+    await LoadCampaignTemplateAsync(template);
+  }
+
+  public async Task LoadCampaignTemplateAsync(CampaignTemplate campaignTemplate)
+  {
+    CampaignTemplate = campaignTemplate;
+    _editContext.CurrentlyEditingCampaign = campaignTemplate;
+    CampaignName = campaignTemplate.Name;
+
+    PlannableParameterDesigner = _plannableParameterDesignerFactory.Create(campaignTemplate.PlannableParameters, campaignTemplate.ExperimentTemplate);
+    ExperimentDesigner = _experimentDesignerFactory.Create(campaignTemplate.ExperimentTemplate);
+    StartupDesigner = _startupDesignerFactory.Create(campaignTemplate.StartupTemplate);
+    CloseoutDesigner = _closeoutDesignerFactory.Create(campaignTemplate.CloseoutTemplate);
+    PlanningDesigner = await _planningDesignerFactory.Create(campaignTemplate);
+
+    var commandDesigners = ExperimentDesigner?.StepDesigners?.SelectMany(sd => sd.CommandDesigners) ?? [];
+    var startupDesigners = StartupDesigner?.StartupStepDesigners?.SelectMany(ssd => ssd.CommandDesigners) ?? [];
+
+    if(campaignTemplate.ExperimentTemplate is not null)
+    {
+      AnalyzerDesignerViewModel = _analyzerInputDesignerFactory.Create(campaignTemplate.ExperimentTemplate, commandDesigners, startupDesigners);
+    }
+  }
 
   private async Task Init(CampaignTemplate campaignTemplate)
   {
@@ -124,16 +169,6 @@ public partial class CampaignDesignerViewModel : ReactiveObject
     PlanningDesigner?.Save();
     AnalyzerDesignerViewModel?.Save();
     return CampaignTemplate;
-  }
-
-  public async Task SelectCampaignById(Guid campaignId)
-  {
-    var request = new CampaignRequest
-    {
-      UniqueId = campaignId.ToString(),
-    };
-
-    CampaignTemplate = await _automationClient.GetSingleCampaign(request, null);
   }
 
   public async Task Update()

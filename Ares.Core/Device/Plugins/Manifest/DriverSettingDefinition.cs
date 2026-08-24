@@ -34,4 +34,16 @@ public class DriverSettingDefinition
   /// </summary>
   [JsonPropertyName("constraints")]
   public Constraints Constraints { get; set; } = new();
+
+  /// <summary>
+  /// If the Type is "struct", this defines the inner fields of that struct.
+  /// </summary>
+  [JsonPropertyName("fields")]
+  public List<DriverSettingDefinition>? Fields { get; set; }
+
+  /// <summary>
+  /// If the Type is "list", this defines the schema of a single item in that list.
+  /// </summary>
+  [JsonPropertyName("item_schema")]
+  public DriverSettingDefinition? ItemSchema { get; set; }
 }

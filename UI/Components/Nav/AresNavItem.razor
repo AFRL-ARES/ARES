@@ -6,6 +6,10 @@
             <RadzenIcon Icon="@Icon"/>
 
             <span class="m-1 my-auto">@Text</span>
+            @if(!string.IsNullOrWhiteSpace(BadgeText))
+            {
+                <span class="badge rounded-pill bg-warning text-dark my-auto">@BadgeText</span>
+            }
             @if (ChildContent is not null)
             {
                 <div class="m-1 d-flex flex-row my-auto flex-fill justify-content-end">
@@ -39,6 +43,9 @@
 
   [Parameter]
   public string? Text { get; set; }
+
+  [Parameter]
+  public string? BadgeText { get; set; }
 
   [Parameter]
   public NavLinkMatch Match { get; set; } = NavLinkMatch.All;

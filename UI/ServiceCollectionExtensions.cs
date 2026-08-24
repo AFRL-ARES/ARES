@@ -69,7 +69,8 @@ internal static class ServiceCollectionExtensions
     services.BindViewModels();
     services.BindViewModelFactories();
     services.AddSingleton<IDeviceControlViewModelRepo, DeviceControlViewModelRepo>();
-    services.AddSingleton<INotificationRepository, NotificationRepository>();
+    services.AddSingleton<INotificationRepo, NotificationRepo>();
+    services.AddSingleton<INotificationProvider, NotificationProvider>();
 
     services.AddSingleton<IDeviceAdapterRepository, DeviceAdapterRepository>();
     services.AddSingleton<DeviceAdapterManager>();

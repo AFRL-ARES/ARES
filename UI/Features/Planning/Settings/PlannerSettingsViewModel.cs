@@ -12,10 +12,10 @@ namespace UI.Features.Planning.Settings;
 public class PlannerSettingsViewModel : ReactiveObject
 {
   private readonly PlannerService _planningClient;
-  private readonly INotificationReceivingService _notificationService;
+  private readonly IUiNotificationService _notificationService;
 
   public PlannerSettingsViewModel(PlannerService planningClient,
-    INotificationReceivingService notificationService,
+    IUiNotificationService notificationService,
     PlannerServiceInfo genericAdapter,
     Func<Task> onRemoveCallback)
   {
@@ -73,7 +73,7 @@ public class PlannerSettingsViewModel : ReactiveObject
     }
   }
 
-  public void PushNotification(AresNotification notification) => _notificationService.PushNotification(notification);
+  public void PushNotification(UiNotificationMessage notification) => _notificationService.Notify(notification);
 }
 
 

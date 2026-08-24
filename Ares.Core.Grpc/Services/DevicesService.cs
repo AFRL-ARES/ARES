@@ -114,10 +114,10 @@ public class DevicesService(
     try
     {
       var arguments = new List<DeviceCommandArgument>();
-      arguments.AddRange(request.Parameters.Select(p => new DeviceCommandArgument() { ArgName = p.Metadata.Name, ArgValue = p.GetValue() }));
+      arguments.AddRange(request.ArgumentBindings.Select(p => new DeviceCommandArgument() { ArgName = p.Metadata.Name, ArgValue = p.GetValue() }));
 
       Func<CancellationToken, Task<CommandResult>> internalAction = async (ct) 
-        => await device.ExecuteCommand(request.Metadata.Name, arguments, ct);
+        => await device.ExecuteCommand(request.DeviceCommand.Metadata.Name, arguments, ct);
 
       var result = await internalAction(token);
 
@@ -223,7 +223,11 @@ public class DevicesService(
     try
     {
       var device = await remoteDeviceManager.CreateDevice(request.Name, request.Url);
-      return new AddRemoteDeviceResponse { Success = true, DeviceId = device.UniqueId };
+      if(device is not null)
+        return new AddRemoteDeviceResponse { Success = true, DeviceId = device.UniqueId };
+
+      else
+        return new AddRemoteDeviceResponse { Success = false, ErrorMessage = "Failed to add device, check event history page for details" };
     }
     catch(Exception e)
     {

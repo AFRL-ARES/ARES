@@ -49,6 +49,10 @@ public partial class AnalyzerDesignerViewModel : ReactiveObject
     var parameters = await _analysisService.GetAnalyzerParameters(
       new AnalyzerParametersRequest { AnalyzerId = AnalyzerId }, null);
 
+    await Task.WhenAll(_commandDesignerViewModels
+      .Concat(_startupCommandDesignerViewModels)
+      .Select(command => command.EnsureInitializedAsync()));
+
     var inputMappings = parameters.AnalysisSchema.Fields.Select(field => new ExperimentOutputAnalyzerInputMapping(field.Key, field.Value.Type, !field.Value.Optional)).ToArray();
 
     CalculateAppropriateOutputs(inputMappings);
@@ -110,7 +114,7 @@ public partial class AnalyzerDesignerViewModel : ReactiveObject
     if(!commandDesigner.OutputProvider || string.IsNullOrWhiteSpace(commandDesigner.OutputVariableName))
       return [];
 
-    var outputSchema = commandDesigner.CommandMetadata?.OutputMetadata?.DataSchema;
+    var outputSchema = commandDesigner.OutputSchema;
     if(outputSchema is null)
       return [];
 
@@ -139,6 +143,9 @@ public partial class AnalyzerDesignerViewModel : ReactiveObject
 
     _experimentTemplate.AnalyzerMaps.Clear();
     _experimentTemplate.AnalyzerMaps.AddRange(analyzerMappings);
+    if(_experimentTemplate.AnalyzerId != AnalyzerId)
+      _experimentTemplate.PlanObjectives.Clear();
+
     _experimentTemplate.AnalyzerId = AnalyzerId;
   }
 

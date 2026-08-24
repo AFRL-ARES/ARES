@@ -1,4 +1,5 @@
-﻿using Ares.Datamodel.Templates;
+﻿using Ares.Core.EntityConfigurations.Helpers;
+using Ares.Datamodel.Templates;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -11,11 +12,15 @@ internal class ExperimentTemplateEntityConfiguration : AresEntityTypeBaseConfigu
     base.Configure(builder);
     builder.ToTable("ExperimentTemplates");
 
+    builder.Property(template => template.AnalyzerMaps).HasSerializedMap();
+
     builder.HasMany(experimentTemplate => experimentTemplate.StepTemplates)
       .WithOne()
       .OnDelete(DeleteBehavior.Cascade);
 
     builder.Navigation(experimentTemplate => experimentTemplate.StepTemplates)
       .AutoInclude();
+
+    builder.Property(template => template.PlanObjectives).HasSerializedRepeatedField();
   }
 }

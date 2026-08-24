@@ -44,10 +44,15 @@ internal static class ExecutorSummaryHelpers
     return new StepExecutionSummary { UniqueId = Guid.NewGuid().ToString(), ExecutionInfo = MakeExecutionInfo(startTime, endTime) };
   }
   public static CommandExecutionSummary CreateCommandExecutionSummary(CommandTemplate template,
+    string commandName,
     CommandResult? deviceResult,
     DateTime startTime,
     DateTime endTime)
   {
+    var commandDescription = template.CommandTypeCase == CommandTemplate.CommandTypeOneofCase.DeviceCommand
+      ? template.DeviceCommand.Metadata.Description
+      : string.Empty;
+
     var commandExecutionSummary = new CommandExecutionSummary
     {
       UniqueId = Guid.NewGuid().ToString(),
@@ -55,10 +60,11 @@ internal static class ExecutorSummaryHelpers
       CommandId = Guid.NewGuid().ToString(),
       Result = deviceResult,
       TemplateId = template.UniqueId,
-      CommandDescription = template.Metadata.Description,
-      CommandName = template.Metadata.Name,
+      CommandDescription = commandDescription,
+      CommandName = commandName,
       StatusCode = deviceResult?.StatusCode ?? CommandStatusCode.StatusUnspecified
-    };
+     };
+
 
     if(template.HasOutputVarName)
       commandExecutionSummary.VarName = template.OutputVarName;

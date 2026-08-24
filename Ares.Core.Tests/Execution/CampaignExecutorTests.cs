@@ -56,9 +56,11 @@ internal class CampaignExecutorTests
       .Setup(helper => helper.TryResolveParameters(
         It.IsAny<IEnumerable<PlannerAllocation>>(),
         It.IsAny<RequestMetadata>(),
-        It.IsAny<IEnumerable<Parameter>>(),
-        It.IsAny<IEnumerable<Ares.Datamodel.Analyzing.Analysis>>(),
+        It.IsAny<ExperimentTemplate>(),
+        It.IsAny<IEnumerable<Datamodel.Analyzing.AnalysisResponse>>(),
         It.IsAny<IEnumerable<ExperimentOverview>>(),
+        It.IsAny<int>(),
+        It.IsAny<List<PlanStatusCode>>(),
         It.IsAny<CancellationToken>()))
       .ReturnsAsync(true);
 
@@ -87,7 +89,9 @@ internal class CampaignExecutorTests
 
     _deviceRepo = new AresDeviceRepo();
     _deviceRepo.AddOrUpdate(new ResultSequenceDevice([]));
-    var stepComposer = new StepComposer(_deviceRepo, notifier, _settingsManager.Object);
+    var commandDisplayNameResolver = new Mock<ICommandDisplayNameResolver>();
+    commandDisplayNameResolver.Setup(value => value.Resolve(It.IsAny<CommandTemplate>())).Returns("Test command");
+    var stepComposer = new StepComposer(_deviceRepo, notifier, _settingsManager.Object, commandDisplayNameResolver.Object);
     var experimentComposer = new ExperimentComposer(stepComposer, _analyzerRepo);
 
     var campaignLogger = new Mock<ILogger<CampaignExecutor>>();
@@ -107,6 +111,7 @@ internal class CampaignExecutorTests
       experimentComposer,
       _planningHelper.Object,
       executionReporter,
+      [],
       [],
       [],
       _analyzerRepo,
@@ -215,9 +220,11 @@ internal class CampaignExecutorTests
     _planningHelper.Verify(helper => helper.TryResolveParameters(
       It.IsAny<IEnumerable<PlannerAllocation>>(),
       It.IsAny<RequestMetadata>(),
-      It.IsAny<IEnumerable<Parameter>>(),
-      It.IsAny<IEnumerable<Ares.Datamodel.Analyzing.Analysis>>(),
+      It.IsAny<ExperimentTemplate>(),
+      It.IsAny<IEnumerable<Datamodel.Analyzing.AnalysisResponse>>(),
       It.IsAny<IEnumerable<ExperimentOverview>>(),
+      It.IsAny<int>(),
+      It.IsAny<List<PlanStatusCode>>(),
       It.IsAny<CancellationToken>()), Times.Once);
   }
 

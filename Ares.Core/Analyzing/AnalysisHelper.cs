@@ -28,7 +28,7 @@ public class AnalysisHelper
     _notificationHandler = notificationHandler;
   }
 
-  public async Task<Analysis> Analyze(ExperimentTemplate template, ExperimentExecutionSummary experimentSummary, ExperimentExecutionSummary startupSummary, RequestMetadata metadata, CancellationToken cancellationToken)
+  public async Task<AnalysisResponse> Analyze(ExperimentTemplate template, ExperimentExecutionSummary experimentSummary, ExperimentExecutionSummary startupSummary, RequestMetadata metadata, CancellationToken cancellationToken)
   {
     try
     {
@@ -40,7 +40,13 @@ public class AnalysisHelper
       var analyzerInputs = ExperimentOutputToAnalyzerInputs(combinedResult, template.AnalyzerMaps);
 
       if(analyzerInputs is null)
-        return new Analysis { Result = float.NaN, AnalysisOutcome = Outcome.Failure, ErrorString = "Analysis Failure: Failed to assign analysis " };
+      {
+        return new AnalysisResponse
+        {
+          AnalysisOutcome = Outcome.Failure,
+          ErrorString = "Analysis Failure: Failed to assign analysis "
+        };
+      }
 
       var analysisRequest = new AnalysisRequest 
       { 
@@ -60,34 +66,48 @@ public class AnalysisHelper
 
       var analysis = await analyzer.Analyze(analysisRequest, cancellationToken);
       transaction.TimeResponseReceived = DateTime.UtcNow.ToTimestamp();
-      transaction.AnalysisResponse = analysis;
+      transaction.AnalyzerResponse = analysis;
       
       experimentSummary.ExperimentOverview.AnalysisOverview = new AnalysisOverview
       {
         UniqueId = Guid.NewGuid().ToString(),
-        Result = analysis.Result,
         AnalyzerInfo = await analyzer.CreateAnalyzerInfo(),
         ExperimentOverviewId = experimentSummary.ExperimentOverview.UniqueId
       };
 
-      _logger.LogInformation("Analysis completed {Result}", analysis.Result);
+      experimentSummary.ExperimentOverview.AnalysisOverview.Objectives.AddRange(analysis.Objectives);
+
+      _logger.LogInformation("Analysis completed {Result}", analysis.Objectives);
       await LogAnalyzerTransaction(transaction);
       return analysis;
     }
+
     catch(RpcException e)
     {
       if(e.InnerException is OperationCanceledException oce)
       {
-        return new Analysis { Result = float.NaN, AnalysisOutcome = Outcome.Canceled, ErrorString = $" Analysis has been canceled" };
+        return new AnalysisResponse 
+        { 
+          AnalysisOutcome = Outcome.Canceled, 
+          ErrorString = $" Analysis has been canceled" 
+        };
       }
-      return new Analysis {Result = float.NaN, AnalysisOutcome = Outcome.Failure, ErrorString = $"Call to analyzer has failed: {e}" };
-    }
-    catch(Exception e)
-    {
-      return new Analysis { Result = float.NaN, AnalysisOutcome = Outcome.Failure, ErrorString = $"Call to analyzer has failed: {e}" };
+
+      return new AnalysisResponse 
+      { 
+        AnalysisOutcome = Outcome.Failure, 
+        ErrorString = $"Call to analyzer has failed: {e}" 
+      };
     }
 
-    
+    catch(Exception e)
+    {
+      return new AnalysisResponse 
+      { 
+        AnalysisOutcome = Outcome.Failure, 
+        ErrorString = $"Call to analyzer has failed: {e}" 
+      };
+    }
   }
 
   private IAnalyzer GetAnalyzer(string? analyzerId)

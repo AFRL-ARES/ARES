@@ -4,7 +4,6 @@
     <Project Path="AresService.Migrations.Sqlite/AresService.Migrations.Sqlite.csproj" />
     <Project Path="AresService.Migrations.SqlServer/AresService.Migrations.SqlServer.csproj" />
   </Folder>
-  <Project Path="../ARES-datamodel/dotnet/ARES.Datamodel/ARES.Datamodel.csproj" />
   <Project Path="Ares.Core.Grpc/Ares.Core.Grpc.csproj" />
   <Project Path="Ares.Core.Tests/Ares.Core.Tests.csproj" />
   <Project Path="Ares.Core/Ares.Core.csproj" />
@@ -15,4 +14,5 @@
   <Project Path="DemoRemoteDevice/DemoRemoteDevice.csproj" />
   <Project Path="DemoRemotePlanner/DemoRemotePlanner.csproj" />
   <Project Path="UI/UI.csproj" />
+  <Project Path="UI.Tests/UI.Tests.csproj" />
 </Solution>

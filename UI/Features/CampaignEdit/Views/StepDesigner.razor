@@ -76,8 +76,9 @@
 
     private bool ContainsExperimentOutput => ViewModel!.CommandDesigners.Any(cmd => cmd.TemplateOutputProvider);
 
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
+        await ViewModel!.EnsureInitializedAsync();
         ViewModel!.SetPriorVariableReferences(PriorVariableReferences);
     }
 
@@ -146,7 +147,7 @@
 
     private async void CommandDeleteClick(CommandDesignerViewModel vm)
     {
-        var result = await DialogService.OpenAsync($"Delete command {vm.CommandMetadata?.DeviceId}:{vm.CommandMetadata?.Name}?", ds =>
+        var result = await DialogService.OpenAsync($"Delete command {vm.CommandTargetName}:{vm.TemplateCommandName}?", ds =>
             @<div class="d-flex flex-column">
                 <div class="d-flex">
                     <button class="btn btn-danger btn-outline-light" @onclick="() => ds.Close(true)">Delete</button>

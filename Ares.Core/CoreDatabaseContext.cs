@@ -2,6 +2,7 @@ using System.Reflection;
 using Ares.Core.EntityConfigurations.Helpers;
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
+using Ares.Datamodel.Automation;
 using Ares.Datamodel.Device;
 using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
@@ -45,6 +46,8 @@ public class CoreDatabaseContext : DbContext
   public DbSet<AnalyzerTransaction> AnalyzerTransactions => Set<AnalyzerTransaction>();
   public DbSet<DeviceErrorHandlingConfig> DeviceErrorHandlingConfigs => Set<DeviceErrorHandlingConfig>();
   public DbSet<AresGeneralSettingsConfig> GeneralSettingsConfigs => Set<AresGeneralSettingsConfig>();
+  public DbSet<CustomCommand> CustomCommands => Set<CustomCommand>();
+  public DbSet<CustomCommandVersion> CustomCommandVersions => Set<CustomCommandVersion>();
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
     var assembly = Assembly.GetAssembly(typeof(CoreDatabaseContext));
@@ -67,6 +70,9 @@ public class CoreDatabaseContext : DbContext
 
     // Utilities
     configurationBuilder.Properties<Timestamp>().HaveConversion<AresTimestampConverter>();
+
+    // Ignores
+    configurationBuilder.IgnoreAny<Objective>();
 
     base.ConfigureConventions(configurationBuilder);
   }

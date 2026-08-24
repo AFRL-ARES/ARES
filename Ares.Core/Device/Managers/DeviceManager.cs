@@ -1,4 +1,3 @@
-using Ares.Core.CoreDevice;
 using Ares.Core.Device.Providers;
 using Ares.Core.Device.Repos;
 using Ares.Core.Notifications;
@@ -27,8 +26,7 @@ public class DeviceManager : IDeviceManager
   private readonly IResourceConnectionArbiter _resourceConnectionArbiter;
   private readonly CompositeDisposable _cleanup = new();
 
-  public DeviceManager(
-    IDeviceDriverProvider driverProvider,
+  public DeviceManager(IDeviceDriverProvider driverProvider,
     IAresDeviceRepo deviceRepository,
     INotificationHandler notificationHandler,
     IDeviceConfigProvider configProvider,
@@ -48,9 +46,6 @@ public class DeviceManager : IDeviceManager
 
   public void Initialize()
   {
-    var coreDevice = new AresCoreDevice();
-    _deviceRepo.AddOrUpdate(coreDevice);
-
     _configProvider.Connect()
       .SelectMany(async changes =>
       {
@@ -117,14 +112,10 @@ public class DeviceManager : IDeviceManager
 
         if(!success)
         {
-          var owner = _resourceConnectionArbiter.GetResourceOwner(serialConnectionResource);
-          if(owner?.UniqueId == device.UniqueId)
-          {
-            var message = $"Failed to add device {device.Name} as the resource it tried to use ({serialConnectionResource.ResourceName}) was already in use by another device.";
-            _logger.LogError(message);
-            await _notificationHandler.HandleNotification("Failed to Add Device", message, NotificationSeverityEnum.Error);
-            return null;
-          }
+          var message = $"Failed to add device {device.Name} as the resource it tried to use ({serialConnectionResource.ResourceName}) was already in use by another device.";
+          _logger.LogError(message);
+          await _notificationHandler.HandleNotification("Failed to Add Device", message, NotificationSeverityEnum.Error);
+          return null; 
         }
       }
 

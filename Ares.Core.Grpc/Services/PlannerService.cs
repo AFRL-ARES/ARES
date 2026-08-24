@@ -88,15 +88,16 @@ public class PlannerService(IPlannerServiceRepo plannerRepo, IRemotePlannerManag
     return new Empty();
   }
 
-  public override Task<StateResponse> GetState(StateRequest request, ServerCallContext? context)
+  public override async Task<StateResponse> GetState(StateRequest request, ServerCallContext? context)
   {
     var response = new StateResponse();
     var planner = _plannerRepo.GetPlannerById(request.Id) ?? throw new ItemNotFoundException(request.Id, typeof(IPlannerService), "Failed to get state as planned was not found.");
 
+    await planner.Refresh();
     response.State = planner.PlannerServiceState;
     response.StateMessage = planner.StateMessage;
 
-    return Task.FromResult(response);
+    return response;
   }
 
   public override async Task<PlannerInfoResponse> GetInfo(PlannerInfoRequest request, ServerCallContext? context)
