@@ -41,10 +41,10 @@ public class SilaDeviceManager : ISilaDeviceManager
     _deviceRepo.AddOrUpdate(newSilaDevice);
 
     await newSilaDevice.Activate(CancellationToken.None);
-    //Commenting out for testing
-    //using var context = _dbContextFactory.CreateDbContext();
-    //await context.SilaConfigs.AddAsync(newConfig);
-    //await context.SaveChangesAsync();
+
+    using var context = _dbContextFactory.CreateDbContext();
+    await context.SilaConfigs.AddAsync(newConfig);
+    await context.SaveChangesAsync();
     return newSilaDevice;
   }
 

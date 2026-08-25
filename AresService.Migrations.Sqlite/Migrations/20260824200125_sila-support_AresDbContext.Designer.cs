@@ -3,16 +3,19 @@ using System;
 using AresService.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace AresService.Migrations.Sqlite.Migrations
+namespace AresService.Migrations.Sqlite.Migrations.AresDb
 {
     [DbContext(typeof(AresDbContext))]
-    partial class AresDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260824200125_sila-support_AresDbContext")]
+    partial class silasupport_AresDbContext
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.10");
