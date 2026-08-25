@@ -33,10 +33,17 @@ public partial class PlanningViewModel : ReactiveObject
 
   public async Task UpdateAnalyzerObjectives()
   {
-    if(_selectedAnalyzer is not null)
-      AvailableObjectives = await _selectedAnalyzer.GetObjectiveOutputs();
+    if(_selectedAnalyzer is null || _template?.ExperimentTemplate?.PlanObjectives is null)
+    {
+      SelectedObjectives = [];
+      return;
+    }
 
-    SelectedObjectives = AvailableObjectives?.Fields.Where(obj => _template.ExperimentTemplate.PlanObjectives.Contains(obj.Key)).ToList() ?? [];
+    AvailableObjectives = await _selectedAnalyzer.GetObjectiveOutputs();
+
+    SelectedObjectives = AvailableObjectives?.Fields?
+        .Where(obj => _template.ExperimentTemplate.PlanObjectives.Contains(obj.Key))
+        .ToList() ?? [];
   }
 
   public void RefreshMultiObjectiveCompatability()
