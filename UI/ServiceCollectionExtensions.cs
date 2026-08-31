@@ -48,6 +48,7 @@ using ManualPlannerViewModel = UI.Features.Execution.Planning.ManualPlannerViewM
 using RemoteDeviceSettingsListViewModel = UI.Features.Devices.Remote.RemoteDeviceSettingsListViewModel;
 using ScriptPlaygroundViewModel = UI.Features.ScriptPlayground.ScriptPlaygroundViewModel;
 using UI.Features.Settings;
+using UI.Features.Devices.Sila.Factory;
 
 namespace UI;
 
@@ -145,6 +146,7 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<AnalyzerInputDesignerVmFactory>();
     services.AddSingleton<IAresDeviceViewModelFactory,  AresDeviceViewModelFactory>();
     services.AddSingleton<IRemoteDeviceControlViewModelFactory, RemoteDeviceControlViewModelFactory>();
+    services.AddSingleton<ISilaDeviceControlViewModelFactory,  SilaDeviceControlViewModelFactory>();
   }
 
   public static void LoadService(this IServiceCollection services, IConfiguration configuration)

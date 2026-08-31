@@ -28,6 +28,7 @@ public class ServiceStarter : BackgroundService
   private readonly IVisualizationConfigManager _visualizationConfigManager;
   private readonly IDeviceDriverLoader _deviceDriverLoader;
   private readonly IDeviceManager _deviceManager;
+  private readonly ISilaDeviceManager _silaDeviceManager;
   private readonly IDriverDatabaseManager _driverDbManager;
   private readonly StateLoggerManager _stateLoggerManager;
   private readonly IConfiguration _configuration;
@@ -50,6 +51,7 @@ public class ServiceStarter : BackgroundService
     IVisualizationConfigManager visualizationConfigManager,
     IConfiguration configuration,
     IRemoteDeviceManager remoteDeviceManager,
+    ISilaDeviceManager silaDeviceManager,
     IDriverDatabaseManager driverDbManager,
     IDeviceManager deviceManager,
     INotificationReceivingService notificationReceivingService,
@@ -71,6 +73,7 @@ public class ServiceStarter : BackgroundService
     _analyzerManager = analyzerManager;
     _plannerManager = plannerManager;
     _remoteDeviceManager = remoteDeviceManager;
+    _silaDeviceManager = silaDeviceManager;
     _visualizationConfigManager = visualizationConfigManager;
     _configuration = configuration;
     _deviceManager = deviceManager;
@@ -91,6 +94,8 @@ public class ServiceStarter : BackgroundService
   protected override async Task ExecuteAsync(CancellationToken cancellationToken)
   {
     _notificationReceivingService.StartNotificationStream();
+    //Initialize the sila client first, this prevents situations where we load devices but the client hasn't created our components yet
+    _silaClient.Init();
 
     var localTrack = Task.Run(async () =>
     {
@@ -101,7 +106,6 @@ public class ServiceStarter : BackgroundService
       _deviceManager.Initialize();
       _deviceAdapterManager.Activate();
       await _deviceConfigManager.LoadConfigs();
-      _silaClient.Init();
       //It's important that we run this last. The archive serves as our bridge to update replaced drivers.
       //If we overwrite it too early, our archive wipes out the references to the deleted drivers making
       //it impossible to migrate devices to updated drivers.
@@ -114,7 +118,9 @@ public class ServiceStarter : BackgroundService
     var remoteTrack = Task.WhenAll(
       _plannerManager.LoadPlanners(),
       _analyzerManager.LoadAnalyzers(),
-      _remoteDeviceManager.LoadDevices());
+      _remoteDeviceManager.LoadDevices(),
+      _silaDeviceManager.LoadSilaDevices()
+      );
 
     await _visualizationConfigManager.Initialize();
     await Task.WhenAll(localTrack, infraTrack, remoteTrack);
