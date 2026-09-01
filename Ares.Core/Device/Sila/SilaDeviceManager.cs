@@ -4,6 +4,7 @@ using Ares.Datamodel;
 using Ares.Datamodel.Device;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using ProtoBuf.Meta;
 using System.Net;
 using Tecan.Sila2;
 
@@ -78,6 +79,10 @@ public class SilaDeviceManager : ISilaDeviceManager
     using var context = _dbContextFactory.CreateDbContext();
     await context.SilaConfigs.AddAsync(newConfig);
     await context.SaveChangesAsync();
+
+    var monitor = new SilaDeviceMonitor(newSilaDevice, _loggerFactory.CreateLogger<SilaDeviceMonitor>());
+    _monitors.Add(monitor);
+
     return newSilaDevice;
   }
 
@@ -88,20 +93,8 @@ public class SilaDeviceManager : ISilaDeviceManager
     if(server is null)
       return null;
 
-    var newConfig = new SilaDeviceConfig()
-    {
-      UniqueId = server.Config.Uuid.ToString(),
-      ServerName = server.Config.Name,
-      Description = server.Info.Description,
-      Type = server.Info.Type,
-      VendorUri = server.Info.VendorUri,
-      Version = server.Info.Version
-    };
-
-    var newSilaDevice = ConfigToDevice(newConfig, server);
-    _deviceRepo.AddOrUpdate(newSilaDevice);
-    await newSilaDevice.Activate(CancellationToken.None);
-    return newSilaDevice;
+    var device = await Create(server);
+    return device;
   }
 
 
