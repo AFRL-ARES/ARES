@@ -1,3 +1,5 @@
+@using System
+@using System.Linq
 @using UI.Application.Devices
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<SilaDeviceUnitViewModel>
 @inject TooltipService TooltipService
@@ -15,16 +17,26 @@
   <ChildContent>
     @if(ViewModel!.DeviceState is not null)
     {
-      @foreach(var field in ViewModel!.DeviceState.Fields)
+      var groupedFields = ViewModel!.DeviceState.Fields
+        .Where(field => !field.Key.StartsWith("ConnectionConfigurationService", StringComparison.Ordinal))
+        .GroupBy(field => GetPrefix(field.Key));
+
+      @foreach(var group in groupedFields)
       {
-        <RadzenRow AlignItems="AlignItems.Center" Gap="1rem" class="rz-mb-4">
-          <RadzenColumn Size="4" class="d-flex justify-content-end">
-            <RadzenLabel Text="@field.Key" />
-          </RadzenColumn>
-          <RadzenColumn Size="8">
-            <AresValueDisplay Value="@field.Value" />
-          </RadzenColumn>
-        </RadzenRow>
+        <RadzenStack Orientation="Orientation.Vertical" Gap="0.25rem" class="rz-mb-4">
+          <RadzenText Text="@group.Key" TItem="string" class="sila-device-prefix-label" />
+          @foreach(var field in group)
+          {
+            <RadzenRow AlignItems="AlignItems.Center" Gap="1rem" class="sila-device-row">
+              <RadzenColumn Size="4" class="sila-device-label-column">
+                <RadzenLabel Text="@GetSuffix(field.Key)" class="sila-device-field-label" />
+              </RadzenColumn>
+              <RadzenColumn Size="8" class="sila-device-value-column">
+                <AresValueDisplay Value="@field.Value" />
+              </RadzenColumn>
+            </RadzenRow>
+          }
+        </RadzenStack>
       }
     }
   </ChildContent>
@@ -36,5 +48,23 @@
   void ShowTooltip(ElementReference elementReference, string text)
   {
     TooltipService.Open(elementReference, text, new TooltipOptions { Position = TooltipPosition.Top });
+  }
+
+  private static string GetPrefix(string key)
+  {
+    var index = key.IndexOf('.');
+    if(index <= 0)
+      return key;
+
+    return key[..index];
+  }
+
+  private static string GetSuffix(string key)
+  {
+    var index = key.IndexOf('.');
+    if(index < 0 || index == key.Length - 1)
+      return key;
+
+    return key[(index + 1)..];
   }
 }

@@ -1,0 +1,32 @@
+::deep .device-fieldset.rz-fieldset {
+    border: none;
+    margin: 0;
+}
+
+::deep .device-fieldset .rz-fieldset-legend {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+::deep .device-fieldset .rz-fieldset-content {
+    padding: 0;
+}
+
+::deep .sila-device-prefix-label {
+    font-weight: 600;
+}
+
+::deep .sila-device-field-label {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    display: inline-block;
+}
+
+::deep .sila-device-label-column {
+    text-align: right;
+    padding-right: 0.5rem;
+}
+
+::deep .sila-device-value-column {
+    min-width: 0;
+}

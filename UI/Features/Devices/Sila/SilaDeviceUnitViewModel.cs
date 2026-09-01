@@ -18,7 +18,7 @@ public partial class SilaDeviceUnitViewModel : ReactiveObject, IDeviceUnitContro
     StartStateUpdater();
 
     ViewType = typeof(SilaDeviceUnitView);
-    DefaultWidth = 20;
+    DefaultWidth = 40;
   }
 
   private void StartStateUpdater()
