@@ -9,9 +9,9 @@
 
 @if(!IsLoading)
 {
-  <RadzenTextBox @bind-Value="Address" />
-  <RadzenNumeric @bind-Value="Port" />
-  <RadzenButton Click="AddManually" />
+  <RadzenTextBox @bind-Value="Address" Placeholder="Address (i.e. 192.168.1.1)"/>
+  <RadzenNumeric @bind-Value="Port" Placeholder="Port (i.e. 8080)"/>
+  <RadzenButton Click="AddManually" Icon="Add"/>
 
   <RadzenDataGrid Data="@DiscoveredServerDisplayObjects" TItem="SilaServer" AllowSorting="true" AllowPaging="true" PageSize="10">
     <Columns>
@@ -75,7 +75,7 @@ else
   private Task _serverSearchTask = Task.CompletedTask;
 
   private string Address { get; set; } = "";
-  private int Port {get; set; }
+  private int? Port { get; set; } = null;
 
   protected override void OnInitialized()
   {
@@ -103,7 +103,8 @@ else
 
   private async Task AddManually()
   {
-    await ViewModel!.AddManualSilaDevice(Address, Port);
+    if(!string.IsNullOrWhiteSpace(Address) && Port is not null)
+      await ViewModel!.AddManualSilaDevice(Address, (int)Port);
   }
 
 
