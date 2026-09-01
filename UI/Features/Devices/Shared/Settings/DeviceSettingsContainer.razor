@@ -54,10 +54,22 @@
   }
   <div class="d-flex device-settings-actions">
     <vr />
-    <button class="btn btn-sm btn-outline-primary rounded-2 device-action-button" type="button" disabled="@(ShowDeviceInfoCallback is null)" @onclick="InfoClicked"><RadzenIcon Icon="info" /></button>
-    <button class="btn btn-sm btn-outline-primary rounded-2 device-action-button" type="button" disabled="@(EditCallback is null)" @onclick="EditClicked"><RadzenIcon Icon="edit"/></button>
-    <button class="btn btn-sm btn-outline-primary rounded-2 device-action-button" type="button" disabled="@(SettingsCallback is null)" @onclick="SettingsClicked"><RadzenIcon Icon="settings" /></button>
-    <button class="btn btn-sm btn-outline-danger rounded-2 device-action-button" type="button" disabled="@(RemoveCallback is null)" @onclick="RemoveClicked"><RadzenIcon Icon="delete_outline" /></button>
+    @if(ShowDeviceInfoCallback is not null)
+    {
+      <button class="btn btn-sm btn-outline-primary rounded-2 device-action-button" type="button" @onclick="InfoClicked"><RadzenIcon Icon="info" /></button>
+    }
+    @if(EditCallback is not null)
+    {
+      <button class="btn btn-sm btn-outline-primary rounded-2 device-action-button" type="button" @onclick="EditClicked"><RadzenIcon Icon="edit"/></button>
+    }
+    @if(SettingsCallback is not null)
+    {
+      <button class="btn btn-sm btn-outline-primary rounded-2 device-action-button" type="button" @onclick="SettingsClicked"><RadzenIcon Icon="settings" /></button>
+    }
+    @if(RemoveCallback is not null)
+    {
+      <button class="btn btn-sm btn-outline-danger rounded-2 device-action-button" type="button" @onclick="RemoveClicked"><RadzenIcon Icon="delete_outline" /></button>
+    }
   </div>
   <hr class="device-settings-separator" />
   <div class="device-settings-content">
