@@ -33,7 +33,7 @@
     var status = await ViewModel!.GetOperationalStatus();
     await ViewModel!.LoadDeviceCommandsAsync();
 
-    var options = new DialogOptions() { Width = "800px" };
+    var options = new DialogOptions() { Width = "1100px" };
     await DialogService.OpenAsync("Device Capabilities", ds => @<DeviceInfoContainer DeviceName="@ViewModel!.Name" DeviceCommands="@ViewModel!.DeviceCommands" OperationalState="@status.OperationalState"/>, options);
   }
 }
