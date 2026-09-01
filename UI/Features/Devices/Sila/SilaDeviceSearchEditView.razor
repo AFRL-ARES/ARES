@@ -1,4 +1,4 @@
-﻿@page "/discovered-sila-servers"
+@page "/discovered-sila-servers"
 @using Radzen
 @using Radzen.Blazor
 @using Tecan.Sila2
@@ -7,50 +7,61 @@
   Discover SiLA Servers
 </RadzenText>
 
-@if(!IsLoading)
-{
-  <RadzenTextBox @bind-Value="Address" Placeholder="Address (i.e. 192.168.1.1)"/>
-  <RadzenNumeric @bind-Value="Port" Placeholder="Port (i.e. 8080)"/>
-  <RadzenButton Click="AddManually" Icon="Add"/>
+<!-- Manual add section: always visible and clearly separated -->
+<RadzenCard Style="margin-bottom: 1rem;">
+  <RadzenText TextStyle="TextStyle.H5" class="rz-mb-2">
+    Add SiLA Server Manually
+  </RadzenText>
+  <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.End" Gap="1rem">
+    <RadzenTextBox @bind-Value="Address" Placeholder="Address (i.e. 192.168.1.1)" Style="flex: 1;" />
+    <RadzenNumeric @bind-Value="Port" Placeholder="Port (i.e. 8080)" Style="width: 150px;" />
+    <RadzenButton Click="AddManually" Icon="add" Text="Add" ButtonStyle="ButtonStyle.Primary" />
+  </RadzenStack>
+</RadzenCard>
 
-  <RadzenDataGrid Data="@DiscoveredServerDisplayObjects" TItem="SilaServer" AllowSorting="true" AllowPaging="true" PageSize="10">
-    <Columns>
-      <RadzenDataGridColumn TItem="SilaServer" Property="Name" Title="Server Name" Width="200px" />
-        
-      <RadzenDataGridColumn TItem="SilaServer" Property="Description" Title="Description" />
-        
-      <RadzenDataGridColumn TItem="SilaServer" Title="Action" Sortable="false" Filterable="false" Width="120px" TextAlign="TextAlign.Center">
-        <Template Context="server">
-          @if(server.Status == Status.Available)
-          {
-            <RadzenButton Icon="add_circle_outline" Text="Add" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.Small"
-                          Click="@(() => AddToAres(server))" title="Add this server to ARES" />
-          }
+<!-- Discovered servers section -->
+<RadzenCard>
+  <RadzenText TextStyle="TextStyle.H5" class="rz-mb-2">
+    Discovered SiLA Servers
+  </RadzenText>
 
-          @if(server.Status == Status.Adding)
-          {
-            <LoadingSpinner SpinnerSize="SpinnerSize.Small" />
-          }
+  @if(IsLoading)
+  {
+    <LoadingSpinner SpinnerSize="SpinnerSize.Large" />
+  }
+  else
+  {
+    <RadzenDataGrid Data="@DiscoveredServerDisplayObjects" TItem="SilaServer" AllowSorting="true" AllowPaging="true" PageSize="10" @ref="serverGrid">
+      <Columns>
+        <RadzenDataGridColumn TItem="SilaServer" Property="Name" Title="Server Name" Width="200px" />
+        <RadzenDataGridColumn TItem="SilaServer" Property="Description" Title="Description" />
+        <RadzenDataGridColumn TItem="SilaServer" Title="Action" Sortable="false" Filterable="false" Width="120px" TextAlign="TextAlign.Center">
+          <Template Context="server">
+            @if(server.Status == Status.Available)
+            {
+              <RadzenButton Icon="add_circle_outline" Text="Add" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.Small"
+                            Click="@(() => AddToAres(server))" title="Add this server to ARES" />
+            }
+            @if(server.Status == Status.Adding)
+            {
+              <LoadingSpinner SpinnerSize="SpinnerSize.Small" />
+            }
+            @if(server.Status == Status.Added)
+            {
+              <RadzenIcon Icon="check" IconColor="#4BB543" />
+            }
+          </Template>
+        </RadzenDataGridColumn>
+      </Columns>
+    </RadzenDataGrid>
+  }
+</RadzenCard>
 
-          @if(server.Status == Status.Added)
-          {
-            <RadzenIcon Icon="check" IconColor="#4BB543" /> 
-          }
-        </Template>
-      </RadzenDataGridColumn>
-    </Columns>
-  </RadzenDataGrid>
-}
-
-else
-{
-  <LoadingSpinner SpinnerSize="SpinnerSize.Large"/>
-}
-
-
-@code {
+  @code {
   [Parameter]
   public SilaDeviceSettingsListViewModel? ViewModel { get; set; }
+
+  private RadzenDataGrid<SilaServer>? serverGrid;
 
   public bool IsLoading { get; set; }
 
@@ -60,6 +71,7 @@ else
     public string Name { get; set; } = "Unknown";
     public string Description { get; set; } = "Failed to fetch info from server";
     public Status Status { get; set; } = Status.Available;
+    public string Address { get; set; } = string.Empty;
   }
 
   public enum Status
@@ -89,12 +101,14 @@ else
     var newServers = await ViewModel!.SearchForSilaServers();
     DiscoveredServerData = newServers.ToList();
     DiscoveredServerDisplayObjects = newServers
-      .OfType<ServerData>() // In case we get "null" servers for some reason
+      .OfType<ServerData>()
       .Select(s => new SilaServer
       {
         Name = s.Config.Name,
         ServerId = s.Config.Uuid.ToString(),
-        Description = s.Info.Description
+        Description = s.Info.Description,
+        Status = Status.Available,
+        Address = s.Address
       }).ToList();
 
     IsLoading = false;
@@ -103,10 +117,47 @@ else
 
   private async Task AddManually()
   {
-    if(!string.IsNullOrWhiteSpace(Address) && Port is not null)
-      await ViewModel!.AddManualSilaDevice(Address, (int)Port);
-  }
+    if(string.IsNullOrWhiteSpace(Address) || Port is null)
+      return;
 
+    var server = new SilaServer
+    {
+      Name = $"{Address}:{Port}",
+      ServerId = $"{Address}:{Port}",
+      Description = "Manually added SiLA server",
+      Status = Status.Adding
+    };
+
+    DiscoveredServerDisplayObjects.Add(server);
+
+    var matchingDiscoveredServer = DiscoveredServerDisplayObjects.FirstOrDefault(s => s.Address == $"{Address}:{Port}");
+
+    if(matchingDiscoveredServer is not null)
+      DiscoveredServerDisplayObjects.Remove(matchingDiscoveredServer);
+
+    if(serverGrid is not null)
+      await serverGrid.Reload();
+
+    StateHasChanged();
+
+    try
+    {
+      await ViewModel!.AddManualSilaDevice(Address, (int)Port);
+      server.Status = Status.Added;
+    }
+    catch(Exception ex)
+    {
+      server.Description = $"Failed to add: {ex.Message}";
+      server.Status = Status.Available;
+    }
+
+    Address = string.Empty;
+    Port = null;
+
+    if(serverGrid is not null)
+      await serverGrid.Reload();
+    StateHasChanged();
+  }
 
   private async Task AddToAres(SilaServer server)
   {
@@ -118,7 +169,6 @@ else
       await ViewModel!.AddNewSilaDevice(correspondingData);
       Console.WriteLine($"Triggered add to ARES for: {server.Name}");
       server.Status = Status.Added;
-      // DiscoveredServerDisplayObjects.Remove(server);
       DiscoveredServerData.Remove(correspondingData);
     }
 
