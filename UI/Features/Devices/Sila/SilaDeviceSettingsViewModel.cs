@@ -1,15 +1,22 @@
 ﻿using Ares.Core.Device.Sila;
+using Ares.Core.Grpc.Services;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
+using Ares.Services.Device;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
+using System.Reactive;
 
 namespace UI.Features.Devices.Sila;
 
 public partial class SilaDeviceSettingsViewModel : ReactiveObject
 {
-  public SilaDeviceSettingsViewModel(SilaDevice silaDevice)
+  private readonly ISilaDeviceManager _silaDeviceManager;
+
+  public SilaDeviceSettingsViewModel(SilaDevice silaDevice, ISilaDeviceManager silaDeviceManager, Func<Task> onRemoveCallback)
   {
+    _silaDeviceManager = silaDeviceManager;
+
     Name = silaDevice.Name;
     Id = silaDevice.UniqueId;
     Device = silaDevice;
@@ -18,6 +25,14 @@ public partial class SilaDeviceSettingsViewModel : ReactiveObject
     Description = Device?.Description ?? string.Empty;
     SettingsSchema = Device?.SettingSchema ?? new AresStructSchema();
     Settings = new AresStruct();
+
+    RemoveCommand = ReactiveCommand.CreateFromTask(() => RemoveAsync(onRemoveCallback));
+  }
+
+  private async Task RemoveAsync(Func<Task> onRemoveCallback)
+  {
+    await _silaDeviceManager.RemoveDevice(Id);
+    await onRemoveCallback();
   }
 
   public Task<DeviceOperationalStatus> GetOperationalStatus()
@@ -45,5 +60,7 @@ public partial class SilaDeviceSettingsViewModel : ReactiveObject
 
   [Reactive]
   public partial string Address { get; private set; }
+
+  public ReactiveCommand<Unit, Unit> RemoveCommand { get; }
 }
 

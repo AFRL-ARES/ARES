@@ -1,6 +1,5 @@
 ﻿using Ares.Core.Device.Providers;
 using Ares.Core.Device.Sila;
-using Ares.Services;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System.Collections.ObjectModel;
@@ -69,11 +68,16 @@ public partial class SilaDeviceSettingsListViewModel : ReactiveObject
   private void UpdateViewModels(IEnumerable<SilaDevice> silaDevices)
   {
     SettingsViewModels.Clear();
-    var viewModels = silaDevices.Select(info => new SilaDeviceSettingsViewModel(info)).ToArray();
+    var viewModels = silaDevices.Select(info => new SilaDeviceSettingsViewModel(info, _silaDeviceManager, OnDeviceRemoved)).ToArray();
     foreach(var vm in viewModels)
     {
       SettingsViewModels.Add(vm);
     }
+  }
+
+  public async Task OnDeviceRemoved()
+  {
+    await UpdateAvailableDevices();
   }
 
   public void PushNotification(UiNotificationMessage notification) => _notificationService.Notify(notification);

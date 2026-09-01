@@ -32,6 +32,31 @@ public class SilaDeviceManager : ISilaDeviceManager
     _stateLoggerManager = stateLoggerManager;
   }
 
+  public async Task<bool> RemoveDevice(string deviceId)
+  {
+    var matchingDevice = _deviceRepo.FirstOrDefault(d => d.UniqueId == deviceId);
+    if(matchingDevice is null || matchingDevice is not SilaDevice)
+      return false;
+
+    _deviceRepo.Remove(deviceId);
+    using var ctx = _dbContextFactory.CreateDbContext();
+    var matchingConfig = ctx.SilaConfigs.FirstOrDefault(d => d.UniqueId.Equals(deviceId));
+
+    if(matchingConfig is not null)
+    {
+      ctx.Remove(matchingConfig);
+      await ctx.SaveChangesAsync();
+    }
+
+    var monitor = _monitors.First(m => m.DeviceId == deviceId);
+    monitor.Dispose();
+    _monitors.Remove(monitor);
+
+    await _stateLoggerManager.RemoveLogger(deviceId, removeSettings: true);
+
+    return true;
+  }
+
   public async Task<SilaDevice?> Create(ServerData data)
   {
     var newConfig = new SilaDeviceConfig()

@@ -6,7 +6,7 @@
 <DeviceSettingsContainer 
   EditCallback="null"
   SettingsCallback="null"
-  RemoveCallback="null"
+  RemoveCallback="RemoveCallback"
   ShowDeviceInfoCallback="null"
   Name="@ViewModel!.Name" 
   DeviceOperationalStatusGetter="@ViewModel!.GetOperationalStatus">
@@ -19,4 +19,12 @@
 </DeviceSettingsContainer>
 
 @code {
+  private async Task RemoveCallback()
+  {
+    var result = await DialogService.Confirm($"Delete {ViewModel!.Name}?");
+    if(result is true)
+    {
+      await ViewModel!.RemoveCommand.Execute();
+    }
+  }
 }
