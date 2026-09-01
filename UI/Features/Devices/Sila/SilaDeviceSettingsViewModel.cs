@@ -1,4 +1,4 @@
-﻿using Ares.Core.Device.Sila;
+using Ares.Core.Device.Sila;
 using Ares.Core.Grpc.Services;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
@@ -25,6 +25,7 @@ public partial class SilaDeviceSettingsViewModel : ReactiveObject
     Description = Device?.Description ?? string.Empty;
     SettingsSchema = Device?.SettingSchema ?? new AresStructSchema();
     Settings = new AresStruct();
+    DeviceCommands = [];
 
     RemoveCommand = ReactiveCommand.CreateFromTask(() => RemoveAsync(onRemoveCallback));
   }
@@ -38,8 +39,20 @@ public partial class SilaDeviceSettingsViewModel : ReactiveObject
   public Task<DeviceOperationalStatus> GetOperationalStatus()
     => Task.FromResult(Device?.Status ?? new DeviceOperationalStatus { OperationalState = OperationalState.Inactive, Message = "Status Current Unknown"});
 
+  public async Task LoadDeviceCommandsAsync()
+  {
+    if(Device is null)
+    {
+      DeviceCommands = [];
+      return;
+    }
+
+    var descriptors = await Device.GetCommandDescriptorsAsync();
+    DeviceCommands = descriptors.ToArray();
+  }
+
   public AresValue? GetMatchingSettingValue(string key)
-  => Settings?.Fields.FirstOrDefault(f => f.Key == key).Value ?? null;
+    => Settings?.Fields.FirstOrDefault(f => f.Key == key).Value ?? null;
 
   public SilaDevice? Device { get; set; }
 
@@ -61,6 +74,8 @@ public partial class SilaDeviceSettingsViewModel : ReactiveObject
   [Reactive]
   public partial string Address { get; private set; }
 
+  [Reactive]
+  public partial DeviceCommandDescriptor[] DeviceCommands { get; private set; }
+
   public ReactiveCommand<Unit, Unit> RemoveCommand { get; }
 }
-

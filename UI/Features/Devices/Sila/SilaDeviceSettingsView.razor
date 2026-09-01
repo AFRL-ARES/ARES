@@ -1,4 +1,4 @@
-﻿@using System.Reactive.Linq
+@using System.Reactive.Linq
 @using System.Reactive.Threading.Tasks
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<SilaDeviceSettingsViewModel>
 @inject DialogService DialogService
@@ -7,7 +7,7 @@
   EditCallback="null"
   SettingsCallback="null"
   RemoveCallback="RemoveCallback"
-  ShowDeviceInfoCallback="null"
+  ShowDeviceInfoCallback="DisplayDeviceInfoCallback"
   Name="@ViewModel!.Name" 
   DeviceOperationalStatusGetter="@ViewModel!.GetOperationalStatus">
   <div style="display: flex; flex-direction: column">
@@ -26,5 +26,14 @@
     {
       await ViewModel!.RemoveCommand.Execute();
     }
+  }
+
+  private async Task DisplayDeviceInfoCallback()
+  {
+    var status = await ViewModel!.GetOperationalStatus();
+    await ViewModel!.LoadDeviceCommandsAsync();
+
+    var options = new DialogOptions() { Width = "800px" };
+    await DialogService.OpenAsync("Device Capabilities", ds => @<DeviceInfoContainer DeviceName="@ViewModel!.Name" DeviceCommands="@ViewModel!.DeviceCommands" OperationalState="@status.OperationalState"/>, options);
   }
 }
