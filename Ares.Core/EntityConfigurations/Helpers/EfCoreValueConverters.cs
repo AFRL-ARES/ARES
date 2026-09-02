@@ -40,11 +40,19 @@ public static class EfCoreValueConverters
 
   private static MapField<TKey, TValue> DeserializeMapFromJson<TKey, TValue>(string json) where TKey : notnull
   {
-    var dict = JsonSerializer.Deserialize<Dictionary<TKey, TValue>>(json) ?? [];
-    var map = new MapField<TKey, TValue>
+    if(string.IsNullOrWhiteSpace(json))
     {
-      dict
-    };
+      return new MapField<TKey, TValue>();
+    }
+
+    var dict = JsonSerializer.Deserialize<Dictionary<TKey, TValue>>(json, JsonSerializerOptions.Default);
+    var map = new MapField<TKey, TValue>();
+
+    if(dict is not null)
+    {
+      map.Add(dict);
+    }
+
     return map;
   }
 
@@ -101,14 +109,22 @@ public static class EfCoreValueConverters
     }
     return clone;
   }
-  
+
   private static RepeatedField<T> DeserializeRepeatedFieldFromJson<T>(string json)
   {
-    var arr = JsonSerializer.Deserialize<T[]>(json, JsonSerializerOptions.Default) ?? [];
-    var rf = new RepeatedField<T>
+    if(string.IsNullOrWhiteSpace(json))
     {
-      arr
-    };
+      return new RepeatedField<T>();
+    }
+
+    var arr = JsonSerializer.Deserialize<T[]>(json, JsonSerializerOptions.Default);
+    var rf = new RepeatedField<T>();
+
+    if(arr is not null)
+    {
+      rf.Add(arr);
+    }
+
     return rf;
   }
 }
