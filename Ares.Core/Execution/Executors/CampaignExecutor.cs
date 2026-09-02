@@ -595,7 +595,18 @@ public class CampaignExecutor : ICampaignExecutor
     // The following are top level checks for analysis failure in case the
     // failure is not properly handled on the Analysis itself
     // which also has support for "success" and "error" message
-    if(analysis.AnalysisOutcome == Outcome.Failure)
+
+    var currentAnalyzer = _analyzerRepo.GetAnalyzerById(Template.ExperimentTemplate.AnalyzerId);
+
+    if(analysis is null)
+    {
+      Status.AnalysisState = AnalysisState.AnalysisError;
+      await _notifier.Notify("Analysis Failure", $"Analysis came back null, no actual analysis was provided. {analysis?.ErrorString ?? "No error string provided"}", NotificationSeverityEnum.Error);
+      _logger.LogError("Failed to analyze. The analysis result came back as {Result}", analysis?.Objectives);
+      return (false, false);
+    }
+
+    else if(analysis.AnalysisOutcome == Outcome.Failure)
     {
       Status.AnalysisState = AnalysisState.AnalysisError;
       await _notifier.Notify("Analysis Failure", $"Failed to analyze experiment result: {analysis.ErrorString}", NotificationSeverityEnum.Error);
@@ -617,12 +628,12 @@ public class CampaignExecutor : ICampaignExecutor
       _logger.LogWarning("Analysis completed successfully, but the analyzer emitted a warning! {Warning}", analysis.ErrorString);
     }
 
-    if(analysis is null || !analysis.Objectives.Any())
+
+    else if(analysis.Objectives.Count == 0 && currentAnalyzer is not NoneAnalyzer)
     {
-      Status.AnalysisState = AnalysisState.AnalysisError;
-      await _notifier.Notify("Analysis Failure", $"Analysis was reported as successful, but no actual analysis was provided. {analysis?.ErrorString ?? "No error string provided"}", NotificationSeverityEnum.Error);
-      _logger.LogError("Failed to analyze. The analysis result came back as {Result}", analysis?.Objectives);
-      return (false, false);
+      var noObjectivesMessage = "Analysis completed successfully, but the analyzer didn't include any objectives.";
+      await _notifier.Notify("No Analysis Objectives Received", noObjectivesMessage, NotificationSeverityEnum.Warning);
+      _logger.LogWarning(noObjectivesMessage);
     }
 
     Status.AnalysisState = AnalysisState.AnalysisComplete;
