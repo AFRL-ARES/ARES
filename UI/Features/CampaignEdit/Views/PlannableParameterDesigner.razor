@@ -3,7 +3,7 @@
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<PlannableParameterDesignerViewModel>
 
 <div>
-    @foreach (var parameterEditorVm in ViewModel!.ParameterEditors ?? [])
+    @foreach (var parameterEditorVm in ViewModel?.ParameterEditors ?? [])
     {
       <PlannableParameterEditor ViewModel="@parameterEditorVm" DeleteParameterCallback="DeleteParameterCallback" />
     }
