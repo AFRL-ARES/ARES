@@ -1,6 +1,5 @@
-﻿using Ares.Core.Execution.VersionChecking;
+using Ares.Core.Execution.VersionChecking;
 using Ares.Core.Notifications;
-using Ares.Core.Settings;
 using Ares.Datamodel.Planning;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,9 +15,9 @@ public class RemotePlannerManager : IRemotePlannerManager
   private readonly IDatamodelVersionValidator _versionValidator;
   private readonly IDbContextFactory<CoreDatabaseContext> _dbContextFactory;
 
-  public RemotePlannerManager(IPlannerServiceRepo plannerRepo, 
-    INotificationHandler notificationHandler, 
-    IPlannerServiceCache plannerCache, 
+  public RemotePlannerManager(IPlannerServiceRepo plannerRepo,
+    INotificationHandler notificationHandler,
+    IPlannerServiceCache plannerCache,
     IDatamodelVersionValidator versionValidator,
     IDbContextFactory<CoreDatabaseContext> dbContextFactory)
   {
@@ -123,6 +122,17 @@ public class RemotePlannerManager : IRemotePlannerManager
       var monitor = new RemotePlannerMonitor(planner, _plannerCache);
       _plannerMonitors.Add(monitor);
     }
+
+    if(AresConfig.DemoMode)
+    {
+      var existingDemoPlanner = _plannerRepo.GetPlannerById(_demoPlannerUniqueId);
+      if(existingDemoPlanner is null)
+      {
+        // Default demo planner endpoint from DemoRemotePlanner launch settings.
+        var demoUrl = "http://localhost:5036";
+        await CreateDemoPlanner(demoUrl);
+      }
+    }
   }
 
   public async Task RemovePlanner(string plannerId)
@@ -149,7 +159,7 @@ public class RemotePlannerManager : IRemotePlannerManager
     var plannerConfig = ctx.Planners.Where(a => a.UniqueId == config.UniqueId).FirstOrDefault();
     if(plannerConfig is null)
       return;
-    
+
 
     plannerConfig.Name = config.Name;
     plannerConfig.Url = config.Url;
@@ -175,7 +185,7 @@ public class RemotePlannerManager : IRemotePlannerManager
     var planner = _plannerRepo.GetPlannerById(plannerSettings.PlannerId);
     if(planner is null)
       return Task.CompletedTask;
-    
+
 
     planner.UpdateSettings(plannerSettings.Settings);
 

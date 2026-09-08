@@ -13,6 +13,7 @@ public class DemoPlannerService : AresRemotePlannerService.AresRemotePlannerServ
   private readonly Random _random;
   private readonly Planner _randomPlanner;
   private readonly Planner _gradualPlanner;
+  private readonly Planner _hillClimbingPlanner;
 
   public DemoPlannerService()
   {
@@ -29,6 +30,13 @@ public class DemoPlannerService : AresRemotePlannerService.AresRemotePlannerServ
     {
       PlannerName = "Gradual Planner",
       Description = "A planner that returns a temperature value that gradually increases from the previously provided value by 5 degrees.",
+      Version = "1.0.0"
+    };
+
+    _hillClimbingPlanner = new Planner()
+    {
+      PlannerName = "Hill Climbing Planner",
+      Description = "A planner that uses a simple hill-climbing step based on previous parameter history.",
       Version = "1.0.0"
     };
   }
@@ -55,6 +63,12 @@ public class DemoPlannerService : AresRemotePlannerService.AresRemotePlannerServ
           {
             var gradualPlannedParam = await GradualPlanner(parameter);
             newPlan.PlannedParameters.Add(gradualPlannedParam);
+            break;
+          }
+        case "Hill Climbing Planner":
+          {
+            var hillClimbingParam = await HillClimbingPlanner(parameter);
+            newPlan.PlannedParameters.Add(hillClimbingParam);
             break;
           }
         default:
@@ -102,6 +116,7 @@ public class DemoPlannerService : AresRemotePlannerService.AresRemotePlannerServ
 
     capabilitesResponse.AvailablePlanners.Add(_randomPlanner);
     capabilitesResponse.AvailablePlanners.Add(_gradualPlanner);
+    capabilitesResponse.AvailablePlanners.Add(_hillClimbingPlanner);
     capabilitesResponse.ServiceName = "Demo Planner Service";
     capabilitesResponse.TimeoutSeconds = 30;
     capabilitesResponse.AcceptedTypes.Add(AresDataType.Number);
@@ -156,6 +171,74 @@ public class DemoPlannerService : AresRemotePlannerService.AresRemotePlannerServ
         response.ParameterValue = AresValueHelper.CreateNumber((float)incrementedValue);
     }
 
+    return Task.FromResult(response);
+  }
+
+  public Task<PlannedParameter> HillClimbingPlanner(PlanningParameter aresParameter)
+  {
+    var response = new PlannedParameter();
+    response.ParameterName = aresParameter.ParameterName;
+
+    if(aresParameter.ParameterHistory.Count < 2)
+    {
+      if(aresParameter.InitialValue is not null && aresParameter.InitialValue.HasNumberValue)
+        response.ParameterValue = AresValueHelper.CreateNumber((float)aresParameter.InitialValue.NumberValue);
+
+      else
+        response.ParameterValue = AresValueHelper.CreateNumber((float)aresParameter.MinimumValue);
+
+      return Task.FromResult(response);
+    }
+
+    var numericHistory = aresParameter.ParameterHistory
+      .Where(h => h.PlannedValue is not null
+                  && h.PlannedValue.HasNumberValue
+                  && h.AchievedValue is not null
+                  && h.AchievedValue.HasNumberValue)
+      .ToList();
+
+    if(numericHistory.Count < 2)
+    {
+      var lastHistory = numericHistory.LastOrDefault() ?? aresParameter.ParameterHistory.Last();
+
+      if(lastHistory.PlannedValue is not null && lastHistory.PlannedValue.HasNumberValue)
+        response.ParameterValue = AresValueHelper.CreateNumber((float)lastHistory.PlannedValue.NumberValue);
+
+      else
+        response.ParameterValue = AresValueHelper.CreateNumber((float)aresParameter.MinimumValue);
+
+      return Task.FromResult(response);
+    }
+
+    var previous = numericHistory[numericHistory.Count - 2];
+    var latest = numericHistory[numericHistory.Count - 1];
+
+    var previousValue = previous.PlannedValue.NumberValue;
+    var latestValue = latest.PlannedValue.NumberValue;
+    var previousObjective = previous.AchievedValue.NumberValue;
+    var latestObjective = latest.AchievedValue.NumberValue;
+
+    var deltaValue = latestValue - previousValue;
+    if(Math.Abs(deltaValue) < 1e-6)
+    {
+      deltaValue = (aresParameter.MaximumValue - aresParameter.MinimumValue) / 10.0;
+      if(deltaValue == 0)
+        deltaValue = 1;
+    }
+
+    var direction = latestObjective >= previousObjective ? Math.Sign(deltaValue) : -Math.Sign(deltaValue);
+    if(direction == 0)
+      direction = 1;
+
+    var stepSize = Math.Abs(deltaValue);
+    var proposedValue = latestValue + (direction * stepSize);
+
+    if(proposedValue < aresParameter.MinimumValue)
+      proposedValue = aresParameter.MinimumValue;
+    else if(proposedValue > aresParameter.MaximumValue)
+      proposedValue = aresParameter.MaximumValue;
+
+    response.ParameterValue = AresValueHelper.CreateNumber((float)proposedValue);
     return Task.FromResult(response);
   }
 }

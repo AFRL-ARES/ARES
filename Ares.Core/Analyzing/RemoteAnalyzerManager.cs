@@ -1,4 +1,5 @@
-﻿using Ares.Core.Execution.VersionChecking;
+using Ares.Core;
+using Ares.Core.Execution.VersionChecking;
 using Ares.Core.Notifications;
 using Ares.Datamodel.Analyzing;
 using Microsoft.EntityFrameworkCore;
@@ -14,9 +15,9 @@ public class RemoteAnalyzerManager : IRemoteAnalyzerManager
   private readonly List<RemoteAnalyzerMonitor> _analyzerMonitors = [];
   private static readonly string _demoAnalyzerUniqueId = "9e5a8f3b-5c7d-4a1b-9f0a-1a2b3c4d5e6f";
 
-  public RemoteAnalyzerManager(IDbContextFactory<CoreDatabaseContext> dbContextFactory, 
-    IAnalyzerRepo analyzerRepo, 
-    INotificationHandler notificationHandler, 
+  public RemoteAnalyzerManager(IDbContextFactory<CoreDatabaseContext> dbContextFactory,
+    IAnalyzerRepo analyzerRepo,
+    INotificationHandler notificationHandler,
     IAnalyzerCache analyzerCache,
     IDatamodelVersionValidator datamodelVersionValidator)
   {
@@ -114,6 +115,17 @@ public class RemoteAnalyzerManager : IRemoteAnalyzerManager
       var monitor = new RemoteAnalyzerMonitor(analyzer, _analyzerCache);
       _analyzerMonitors.Add(monitor);
     }
+
+    if(AresConfig.DemoMode)
+    {
+      var existingDemoAnalyzer = _analyzerRepo.GetAnalyzerById(_demoAnalyzerUniqueId);
+      if(existingDemoAnalyzer is null)
+      {
+        // Default demo analyzer endpoint from DemoRemoteAnalyzer launch settings.
+        var demoUrl = "http://localhost:5026";
+        await CreateDemoAnalyzer(demoUrl);
+      }
+    }
   }
 
   public async Task RemoveAnalyzer(string analyzerId)
@@ -165,7 +177,7 @@ public class RemoteAnalyzerManager : IRemoteAnalyzerManager
   public Task UpdateAnalyzerSettings(AnalyzerSettings analyzerSettings)
   {
     var analyzer = _analyzerRepo.GetAnalyzerById(analyzerSettings.AnalyzerId);
-    if (analyzer is null)
+    if(analyzer is null)
     {
       return Task.CompletedTask;
     }
