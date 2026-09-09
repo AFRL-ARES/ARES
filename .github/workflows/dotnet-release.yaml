@@ -73,6 +73,28 @@ jobs:
       run: |
         echo "Publishing ARES Project for ${{ matrix.os_name_tag }}  (${{ matrix.runtime_id }})"
         dotnet publish ${{ env.UI_PROJECT_FILE }} --configuration Release --output ${{ env.OUTPUT_PATH }} /p:UseAppHost=true -r ${{ matrix.runtime_id }} --self-contained true
+
+    # NEW: publish demo analyzer
+    - name: Publish Demo Remote Analyzer
+      run: |
+        echo "Publishing Demo Remote Analyzer for ${{ matrix.os_name_tag }} (${{ matrix.runtime_id }})"
+        dotnet publish DemoRemoteAnalyzer/DemoRemoteAnalyzer.csproj \
+          --configuration Release \
+          --output ${{ env.OUTPUT_PATH }}/demo/DemoRemoteAnalyzer \
+          /p:UseAppHost=true \
+          -r ${{ matrix.runtime_id }} \
+          --self-contained true
+
+    # NEW: publish demo planner
+    - name: Publish Demo Remote Planner
+      run: |
+        echo "Publishing Demo Remote Planner for ${{ matrix.os_name_tag }} (${{ matrix.runtime_id }})"
+        dotnet publish DemoRemotePlanner/DemoRemotePlanner.csproj \
+          --configuration Release \
+          --output ${{ env.OUTPUT_PATH }}/demo/DemoRemotePlanner \
+          /p:UseAppHost=true \
+          -r ${{ matrix.runtime_id }} \
+          --self-contained true
         
     - name: Copy Driver Plugins to ARES Output
       shell: bash

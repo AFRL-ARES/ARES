@@ -1,4 +1,5 @@
-﻿using Ares.Core.Device.Repos;
+using Ares.Core;
+using Ares.Core.Device.Repos;
 using Ares.Core.Device.State.Logging;
 using Ares.Core.Execution.VersionChecking;
 using Ares.Core.Notifications;
@@ -19,6 +20,17 @@ internal class RemoteDeviceManager(
   ILogger<RemoteDeviceManager> _logger) : IRemoteDeviceManager
 {
   private readonly List<RemoteDeviceMonitor> _deviceMonitors = [];
+
+  // Static demo remote devices for demo mode
+  private static readonly RemoteDeviceConfig[] _demoDeviceConfigs =
+  [
+    new RemoteDeviceConfig
+    {
+      UniqueId = "7f9c8b28-4c2e-4d6f-9f1a-3a2b1c0d9e8f",
+      Name = "Demo Remote Device",
+      Url = "http://localhost:5257"
+    }
+  ];
 
   public async Task<RemoteDevice?> CreateDevice(string name, string url)
   {
@@ -88,6 +100,38 @@ internal class RemoteDeviceManager(
 
       await _stateLoggerManager.SetupLogger(device);
     }
+
+    // In demo mode, ensure static demo remote devices are present
+    if(AresConfig.DemoMode)
+    {
+      foreach(var demoConfig in _demoDeviceConfigs)
+      {
+        var existingDemo = _deviceRepo.GetDevice(demoConfig.UniqueId);
+        if(existingDemo is not null)
+        {
+          continue;
+        }
+
+        try
+        {
+          var demoDevice = await LoadExistingDevice(demoConfig);
+          if(demoDevice is null)
+          {
+            continue;
+          }
+
+          _deviceRepo.AddOrUpdate(demoDevice);
+          var demoMonitor = new RemoteDeviceMonitor(demoDevice, _deviceCache, _loggerFactory.CreateLogger<RemoteDeviceMonitor>());
+          _deviceMonitors.Add(demoMonitor);
+
+          await _stateLoggerManager.SetupLogger(demoDevice);
+        }
+        catch(Exception ex)
+        {
+          _logger.LogError(ex, "Failed to initialize demo remote device {DeviceName}", demoConfig.Name);
+        }
+      }
+    }
   }
 
   public async Task<bool> RemoveDevice(string deviceId)
@@ -150,7 +194,7 @@ internal class RemoteDeviceManager(
     var remoteDevice = _deviceRepo.OfType<RemoteDevice>().FirstOrDefault(d => d.UniqueId == deviceSettings.DeviceId);
     if(remoteDevice is null)
       return;
-    
+
 
     await remoteDevice.UpdateSettings(deviceSettings.Settings);
     await _deviceCache.CacheDeviceSettings(remoteDevice);
@@ -178,7 +222,7 @@ internal class RemoteDeviceManager(
         await device.UpdateSettings(deviceSettings);
       }
 
-      catch(Exception ex) 
+      catch(Exception ex)
       {
         _logger.LogError(ex.Message);
       }

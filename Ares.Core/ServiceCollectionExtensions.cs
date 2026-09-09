@@ -57,8 +57,16 @@ public static class ServiceCollectionExtensions
     services.AddTransient<ICampaignValidator, RequiredDeviceInterpretersValidator>();
     services.AddSingleton<IDeviceDriverLoader, DeviceDriverLoader>();
     services.AddSingleton<IDeviceManager, DeviceManager>();
-    services.AddSingleton<IRemoteAnalyzerManager, RemoteAnalyzerManager>();
-    services.AddSingleton<IRemotePlannerManager, RemotePlannerManager>();
+    if (AresConfig.DemoMode)
+    {
+      services.AddSingleton<IRemoteAnalyzerManager, DemoRemoteAnalyzerManager>();
+      services.AddSingleton<IRemotePlannerManager, DemoRemotePlannerManager>();
+    }
+    else
+    {
+      services.AddSingleton<IRemoteAnalyzerManager, RemoteAnalyzerManager>();
+      services.AddSingleton<IRemotePlannerManager, RemotePlannerManager>();
+    }
     services.AddSingleton<IVisualizationConfigManager, VisualizationConfigManager>();
     services.AddSingleton<IAnalyzerCache, AnalyzerCache>();
     services.AddSingleton<IRemoteDeviceManager, RemoteDeviceManager>();

@@ -13,7 +13,6 @@ public class RemoteAnalyzerManager : IRemoteAnalyzerManager
   private readonly IAnalyzerCache _analyzerCache;
   private readonly IDatamodelVersionValidator _datamodelVersionValidator;
   private readonly List<RemoteAnalyzerMonitor> _analyzerMonitors = [];
-  private static readonly string _demoAnalyzerUniqueId = "9e5a8f3b-5c7d-4a1b-9f0a-1a2b3c4d5e6f";
 
   public RemoteAnalyzerManager(IDbContextFactory<CoreDatabaseContext> dbContextFactory,
     IAnalyzerRepo analyzerRepo,
@@ -48,16 +47,8 @@ public class RemoteAnalyzerManager : IRemoteAnalyzerManager
 
   public Task CreateDemoAnalyzer(string url)
   {
-    var config = new AnalyzerConfig { UniqueId = _demoAnalyzerUniqueId, Name = "Demo Remote Analyzer", Url = url };
-    var analyzer = ConfigToAnalyzer(config);
-    if(analyzer is null)
-      return Task.CompletedTask;
-
-    _analyzerRepo.AddAnalyzer(analyzer);
-    var monitor = new RemoteAnalyzerMonitor(analyzer, _analyzerCache);
-    _analyzerMonitors.Add(monitor);
-
-    return Task.CompletedTask;
+    // In non-demo runs, treat demo analyzer creation as a regular analyzer creation.
+    return CreateAnalyzer("Demo Remote Analyzer", url);
   }
 
   private RemoteAnalyzer? ConfigToAnalyzer(AnalyzerConfig config)
@@ -114,17 +105,6 @@ public class RemoteAnalyzerManager : IRemoteAnalyzerManager
       _analyzerRepo.AddAnalyzer(analyzer);
       var monitor = new RemoteAnalyzerMonitor(analyzer, _analyzerCache);
       _analyzerMonitors.Add(monitor);
-    }
-
-    if(AresConfig.DemoMode)
-    {
-      var existingDemoAnalyzer = _analyzerRepo.GetAnalyzerById(_demoAnalyzerUniqueId);
-      if(existingDemoAnalyzer is null)
-      {
-        // Default demo analyzer endpoint from DemoRemoteAnalyzer launch settings.
-        var demoUrl = "http://localhost:5026";
-        await CreateDemoAnalyzer(demoUrl);
-      }
     }
   }
 

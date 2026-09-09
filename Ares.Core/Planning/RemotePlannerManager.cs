@@ -8,7 +8,6 @@ namespace Ares.Core.Planning;
 public class RemotePlannerManager : IRemotePlannerManager
 {
   private readonly List<RemotePlannerMonitor> _plannerMonitors = [];
-  private readonly string _demoPlannerUniqueId = "4b14d5e9-1c9f-4f01-8b2b-4d4d1e2e3e4e";
   private readonly IPlannerServiceRepo _plannerRepo;
   private readonly INotificationHandler _notificationHandler;
   private readonly IPlannerServiceCache _plannerCache;
@@ -47,16 +46,8 @@ public class RemotePlannerManager : IRemotePlannerManager
 
   public Task CreateDemoPlanner(string url)
   {
-    var config = new PlannerConfig { UniqueId = _demoPlannerUniqueId, Name = "Demo Remote Planner", Url = url };
-    var planner = ConfigToPlanner(config);
-    if(planner is null)
-      return Task.CompletedTask;
-
-    _plannerRepo.AddPlanner(planner);
-    var monitor = new RemotePlannerMonitor(planner, _plannerCache);
-    _plannerMonitors.Add(monitor);
-
-    return Task.CompletedTask;
+    // In non-demo runs, treat demo planner creation as a regular planner creation.
+    return CreatePlanner("Demo Remote Planner", url);
   }
 
   private RemotePlannerService? ConfigToPlanner(PlannerConfig config)
@@ -121,17 +112,6 @@ public class RemotePlannerManager : IRemotePlannerManager
       _plannerRepo.AddPlanner(planner);
       var monitor = new RemotePlannerMonitor(planner, _plannerCache);
       _plannerMonitors.Add(monitor);
-    }
-
-    if(AresConfig.DemoMode)
-    {
-      var existingDemoPlanner = _plannerRepo.GetPlannerById(_demoPlannerUniqueId);
-      if(existingDemoPlanner is null)
-      {
-        // Default demo planner endpoint from DemoRemotePlanner launch settings.
-        var demoUrl = "http://localhost:5036";
-        await CreateDemoPlanner(demoUrl);
-      }
     }
   }
 
