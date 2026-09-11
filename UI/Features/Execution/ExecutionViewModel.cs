@@ -474,26 +474,29 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
   private void NormalizeAllAnalyzerMetrics()
   {
-    foreach(var seriesEntry in AnalyzerMetrics)
+    // Compute a global min/max across all analyzer objectives so relative scale between
+    // objectives is preserved. This avoids early frames where different objectives
+    // collapse onto the same normalized value when each series only has one point.
+    var allPoints = AnalyzerMetrics.Values
+      .Where(series => series is not null && series.Count > 0)
+      .SelectMany(series => series)
+      .ToList();
+
+    if(allPoints.Count == 0)
+      return;
+
+    var min = allPoints.Min(point => point.RawValue);
+    var max = allPoints.Max(point => point.RawValue);
+
+    if(Math.Abs(max - min) < double.Epsilon)
     {
-      var series = seriesEntry.Value;
-      if(series is null || series.Count == 0)
-        continue;
-
-      var min = series.Min(point => point.RawValue);
-      var max = series.Max(point => point.RawValue);
-
-      if(Math.Abs(max - min) < double.Epsilon)
-      {
-        foreach(var point in series)
-          point.PlotValue = 50;
-      }
-      else
-      {
-        foreach(var point in series)
-          point.PlotValue = ((point.RawValue - min) / (max - min)) * 100.0;
-      }
+      foreach(var point in allPoints)
+        point.PlotValue = 50;
+      return;
     }
+
+    foreach(var point in allPoints)
+      point.PlotValue = ((point.RawValue - min) / (max - min)) * 100.0;
   }
   public bool TryGetChartableValue(AresValue aresValue, out double result)
   {
