@@ -434,15 +434,18 @@
               {
                 <RadzenChart Style="height: 260px; width: 100%;">
                   <RadzenChartTooltipOptions Shared="false" />
+                  @{ var plannerSeriesIndex = 0; }
                   @foreach(var plannerSeries in ViewModel!.PlannerMetricsMap)
                   {
                     var currentSeries = plannerSeries;
+                    var seriesColor = GetAnalyzerSeriesColor(plannerSeriesIndex);
+                    plannerSeriesIndex++;
                     <RadzenLineSeries Data="@currentSeries.Value"
                                       TItem="ChartMetricPoint"
                                       CategoryProperty="ExecutionIndex"
                                       ValueProperty="PlotValue"
                                       Title="@currentSeries.Key"
-                                      Stroke="#5b9dff">
+                                      Stroke="@seriesColor">
                       <ChildContent>
                         <RadzenMarkers Visible="true" MarkerType="MarkerType.Circle" Size="6" />
                       </ChildContent>
@@ -494,9 +497,12 @@
                 {
                   <RadzenChart Style="height: 260px; width: 100%;">
                     <RadzenChartTooltipOptions Shared="false" />
+                    @{ var analyzerSeriesIndex = 0; }
                     @foreach(var analyzerSeries in ViewModel!.AnalyzerMetrics)
                     {
-                      <RadzenLineSeries Data="@analyzerSeries.Value" TItem="ChartMetricPoint" CategoryProperty="ExecutionIndex" ValueProperty="PlotValue" Title="@analyzerSeries.Key" Stroke="#ff8db3">
+                      var seriesColor = GetAnalyzerSeriesColor(analyzerSeriesIndex);
+                      analyzerSeriesIndex++;
+                      <RadzenLineSeries Data="@analyzerSeries.Value" TItem="ChartMetricPoint" CategoryProperty="ExecutionIndex" ValueProperty="PlotValue" Title="@analyzerSeries.Key" Stroke="@seriesColor">
                         <ChildContent>
                           <RadzenMarkers Visible="true" MarkerType="MarkerType.Circle" Size="6"/>
                         </ChildContent>
@@ -726,6 +732,24 @@
 
   public int ViewMode { get; set; } = 1;
 
+  private static readonly string[] AnalyzerSeriesColors = [
+    "#ff8db3", // pink
+    "#5b9dff", // blue
+    "#7ad3a6", // green
+    "#f4c95d", // yellow
+    "#c792ea", // purple
+    "#ffb74d"  // orange
+  ];
+
+  private static string GetAnalyzerSeriesColor(int seriesIndex)
+  {
+    if(seriesIndex < 0)
+      return AnalyzerSeriesColors[0];
+
+    var index = seriesIndex;
+    index %= AnalyzerSeriesColors.Length;
+    return AnalyzerSeriesColors[index];
+  }
   private string GetAnalyzerMetricLabel()
   {
     return ViewModel!.ActiveStopConditionMode == ExecutionStopConditionMode.AnalyzerResult
@@ -766,3 +790,4 @@
     _ = InvokeAsync(StateHasChanged);
   }
 }
+

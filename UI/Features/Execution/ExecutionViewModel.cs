@@ -376,6 +376,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
       return;
 
     OnAnalyzerTransactionReceived(newestTransaction, analyzerTransactions.Count());
+    NormalizeAllAnalyzerMetrics();
   }
 
   public async Task UpdatePlannerTransactions()
@@ -471,6 +472,29 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     }
   }
 
+  private void NormalizeAllAnalyzerMetrics()
+  {
+    foreach(var seriesEntry in AnalyzerMetrics)
+    {
+      var series = seriesEntry.Value;
+      if(series is null || series.Count == 0)
+        continue;
+
+      var min = series.Min(point => point.RawValue);
+      var max = series.Max(point => point.RawValue);
+
+      if(Math.Abs(max - min) < double.Epsilon)
+      {
+        foreach(var point in series)
+          point.PlotValue = 50;
+      }
+      else
+      {
+        foreach(var point in series)
+          point.PlotValue = ((point.RawValue - min) / (max - min)) * 100.0;
+      }
+    }
+  }
   public bool TryGetChartableValue(AresValue aresValue, out double result)
   {
     result = 0;
@@ -707,6 +731,8 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
     foreach(var (index, item) in analyzerTransactions.Index())
       OnAnalyzerTransactionReceived(item, index);
+
+    NormalizeAllAnalyzerMetrics();
   }
 
   public async Task RefreshCampaignSetup()
@@ -858,3 +884,4 @@ public class ChartMetricPoint
   public double RawValue { get; set; }
   public double PlotValue { get; set; }
 }
+
