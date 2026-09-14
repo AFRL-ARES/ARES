@@ -51,7 +51,10 @@ public class DeviceConfigManager : IDeviceConfigManager
       if(otherDevicesUsingSerialPorts.Any())
       {
         var device = otherDevicesUsingSerialPorts.First();
-        throw new InvalidOperationException($"Tried to create a new device, but the serial port {config.SerialInfo.PortName} is already in use by another device, specifically {device.DeviceName}.");
+        throw new InvalidOperationException($"Tried to create a new device, but the serial port {config.SerialInfo.PortName} is already in use by another device, " +
+          $"specifically {device.DeviceName}. " +
+          $"Only devices that share a protocol can share a serial resource. Your new device uses the protocol {config.SerialInfo.Protocol}, " +
+          $"but the existing device uses the protocol {device.SerialInfo.Protocol}");
       }
 
       //Ensure No Serial ID Conflicts First
