@@ -1,3 +1,4 @@
+using Ares.Core.Device.Providers;
 using Ares.Device;
 using System.Collections.Concurrent;
 
@@ -9,6 +10,12 @@ namespace Ares.Core.Resources;
 public class ResourceConnectionArbiter : IResourceConnectionArbiter
 {
   private readonly ConcurrentDictionary<ConnectionResource, List<IAresDevice>> _resourceLocks = new ConcurrentDictionary<ConnectionResource, List<IAresDevice>>();
+  private readonly IDeviceConfigProvider _deviceConfigProvider;
+
+  public ResourceConnectionArbiter(IDeviceConfigProvider deviceConfigProvider)
+  {
+    _deviceConfigProvider = deviceConfigProvider;
+  }
 
   /// <inheritdoc />
   public bool TryAcquireResource(ConnectionResource resource, IAresDevice requester)
@@ -23,14 +30,21 @@ public class ResourceConnectionArbiter : IResourceConnectionArbiter
     {
       var resourceOwners = GetResourceOwners(resource);
 
-      if(resourceOwners is null)
+      if(resourceOwners is null || resourceOwners.Count == 0)
         return _resourceLocks.TryAdd(resource, [requester]);
 
-      var requestingDeviceType = requester.GetType();
-      var resourceOwnerType = resourceOwners?.First().GetType();
+      var resourceOwnerConfig = _deviceConfigProvider.GetConfigByDeviceId(resourceOwners.First().UniqueId);
+      var requesterConfig = _deviceConfigProvider.GetConfigByDeviceId(requester.UniqueId);
 
-      // If the device is of the exact same type, allow the resource allocation to pass.
-      if(requestingDeviceType.Name == resourceOwnerType?.Name)
+      if(resourceOwnerConfig is null || requesterConfig is null)
+        return false;
+
+      //Dedicated is a specialized key term that signifies the connection cannot be shared with ANY other device
+      if(resourceOwnerConfig.SerialInfo.Protocol == "Dedicated")
+        return false;
+
+      // If the device shares the same protocol, allow the resource allocation to pass.
+      if(resourceOwnerConfig.SerialInfo.Protocol == requesterConfig.SerialInfo.Protocol)
         return true;
 
       return false;

@@ -896,6 +896,9 @@ namespace AresService.Migrations.SqlServer.Migrations
                     b.Property<string>("PortName")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Protocol")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("SerialId")
                         .HasColumnType("nvarchar(max)");
 

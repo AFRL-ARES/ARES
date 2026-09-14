@@ -36,6 +36,7 @@ public class DeviceConfigManager : IDeviceConfigManager
   {
     await using var context = _dbContextFactory.CreateDbContext();
     await HandleMissingDriver(context);
+    await HandleMissingProtocols(context);
     var existingDeviceConfigs = await context.DeviceConfigs.ToListAsync();
     existingDeviceConfigs.ForEach(_configRepo.AddOrUpdate);
   }
@@ -57,7 +58,7 @@ public class DeviceConfigManager : IDeviceConfigManager
       if(config.SerialInfo.HasSerialId)
       {
         var matchingDeviceTypes = _configRepo.Where(c => c.DriverId == config.DriverId);
-        if(matchingDeviceTypes.Any(c => c.SerialInfo.SerialId == config.SerialInfo.SerialId))
+        if(matchingDeviceTypes.Any(c => c.SerialInfo.SerialId == config.SerialInfo.SerialId && c.SerialInfo.PortName == config.SerialInfo.PortName))
           throw new InvalidOperationException("Tried to create a new device, but the device was requested with a Serial ID already assigned to another device of the same type.");
       }
     }
@@ -154,6 +155,30 @@ public class DeviceConfigManager : IDeviceConfigManager
       _logger.LogWarning(message);
       await _notificationHandler.HandleNotification("Device Automatically Deleted", message, NotificationSeverityEnum.Warning);
       await Remove(config.UniqueId);
+    }
+
+    if(hasUpdates)
+      await context.SaveChangesAsync();
+  }
+
+  private async Task HandleMissingProtocols(CoreDatabaseContext context)
+  {
+    var configs = await context.DeviceConfigs.ToListAsync();
+    var currentDrivers = _driverProvider.GetAllDeviceDrivers();
+    var hasUpdates = false;
+
+    foreach(var config in configs)
+    {
+      var matchingDriver = currentDrivers.FirstOrDefault(d => d.UniqueId == config.DriverId);
+
+      if(matchingDriver is null)
+        continue;
+
+      if(config.SerialInfo is not null)
+      {
+        config.SerialInfo.Protocol = matchingDriver?.Manifest?.SerialSettings?.DefaultProtocol ?? "";
+        hasUpdates = true;
+      }
     }
 
     if(hasUpdates)

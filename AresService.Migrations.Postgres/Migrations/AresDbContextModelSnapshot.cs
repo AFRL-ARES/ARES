@@ -894,6 +894,9 @@ namespace AresService.Migrations.Postgres.Migrations
                     b.Property<string>("PortName")
                         .HasColumnType("text");
 
+                    b.Property<string>("Protocol")
+                        .HasColumnType("text");
+
                     b.Property<string>("SerialId")
                         .HasColumnType("text");
 
