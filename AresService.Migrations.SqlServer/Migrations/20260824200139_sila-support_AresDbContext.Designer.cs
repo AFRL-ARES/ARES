@@ -4,16 +4,19 @@ using AresService.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace AresService.Migrations.SqlServer.Migrations
+namespace AresService.Migrations.SqlServer.Migrations.AresDb
 {
     [DbContext(typeof(AresDbContext))]
-    partial class AresDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260824200139_sila-support_AresDbContext")]
+    partial class silasupport_AresDbContext
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -894,9 +897,6 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .HasDefaultValueSql("getdate()");
 
                     b.Property<string>("PortName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Protocol")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("SerialId")
