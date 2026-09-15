@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: If you use this software, please cite it as below.
+title: 'ARES OS 2.0: An Orchestration Software Suite for Autonomous Experimentation Systems and Self-Driving
+  Labs'
+type: software
+authors:
+- given-names: Arthur W. N.
+  family-names: Sloan
+  orcid: https://orcid.org/0000-0002-7066-1678
+- given-names: Robert W.
+  family-names: Waelder
+  orcid: https://orcid.org/0000-0001-6958-2932
+- given-names: Morgen L.
+  family-names: Smith
+  orcid: https://orcid.org/0009-0003-1849-7051
+- given-names: Nicholas
+  family-names: Kleiner
+- given-names: Arnas
+  family-names: Babeckis
+- given-names: Jason
+  family-names: Wheeler
+- given-names: Daylond
+  family-names: Hooper
+  orcid: https://orcid.org/0009-0002-1849-5833
+- given-names: Benji
+  family-names: Maruyama
+  orcid: https://orcid.org/0000-0002-3832-628X
+repository-code: https://github.com/AFRL-ARES/ARES
+license: MIT

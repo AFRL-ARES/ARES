@@ -1,4 +1,4 @@
-﻿using Ares.Core.Device.Plugins.Drivers;
+using Ares.Core.Device.Plugins.Drivers;
 using Ares.Core.Grpc.Services;
 using Ares.Core.Resources;
 using Ares.Datamodel;
@@ -25,6 +25,8 @@ public partial class PluginDeviceConfigEditViewModel : ReactiveObject
     UnitIdHint = string.Empty;
     SerialUnitId = string.Empty;
     SelectedSerialPort = string.Empty;
+    ProtocolOptions = [];
+    SelectedProtocol = string.Empty;
 
     NewConfig = isNew;
     Driver = driver;
@@ -43,7 +45,6 @@ public partial class PluginDeviceConfigEditViewModel : ReactiveObject
     DeviceSettings = isNew ? new AresStruct() : deviceConfig.DeviceSettings;
     IsSimulated = isNew ? false : deviceConfig.IsSimulated;
 
-
     if(ConnectionType == ConnectionType.Serial)
       InitializeSerialSettings();
   }
@@ -53,6 +54,7 @@ public partial class PluginDeviceConfigEditViewModel : ReactiveObject
     var serialSettings = Driver.Manifest.SerialSettings;
     AvailableSerialPorts = _devicesService.GetServerSerialPorts(new Empty(), null).Result.SerialPorts.ToList();
     SelectedSerialPort = _originalConfig.SerialInfo?.PortName ?? string.Empty;
+
     if(serialSettings is not null)
     {
       if(serialSettings.VariableBaudRate)
@@ -67,10 +69,26 @@ public partial class PluginDeviceConfigEditViewModel : ReactiveObject
 
       if(serialSettings.RequiresUnitId && _originalConfig.SerialInfo is not null)
         SerialUnitId = _originalConfig.SerialInfo.HasSerialId ? _originalConfig.SerialInfo.SerialId : string.Empty;
-    }  
+
+      VariableProtocol = serialSettings.VariableProtocol;
+
+      if(serialSettings.VariableProtocol)
+      {
+        ProtocolOptions = serialSettings.ProtocolOptions ?? [];
+        if(_originalConfig.SerialInfo is not null && !string.IsNullOrWhiteSpace(_originalConfig.SerialInfo.Protocol))
+          SelectedProtocol = _originalConfig.SerialInfo.Protocol;
+        else
+          SelectedProtocol = serialSettings.DefaultProtocol;
+      }
+      else
+      {
+        DefaultProtocol = serialSettings.DefaultProtocol;
+        SelectedProtocol = serialSettings.DefaultProtocol;
+      }
+    }
   }
 
-  public AresValue? GetMatchingSettingValue(string key) 
+  public AresValue? GetMatchingSettingValue(string key)
     => _originalConfig.DeviceSettings?.Fields.FirstOrDefault(f => f.Key == key).Value ?? null;
 
   public DeviceConfig Save()
@@ -85,10 +103,18 @@ public partial class PluginDeviceConfigEditViewModel : ReactiveObject
 
       if(ConnectionType == ConnectionType.Serial)
       {
-        newConfig.SerialInfo = new SerialConnection();
-        newConfig.SerialInfo.PortName = SelectedSerialPort;
-        newConfig.SerialInfo.BaudRate = SelectedBaudRate;
-        
+        newConfig.SerialInfo = new SerialConnection
+        {
+          PortName = SelectedSerialPort,
+          BaudRate = SelectedBaudRate
+        };
+
+        if(!string.IsNullOrWhiteSpace(SelectedProtocol))
+          newConfig.SerialInfo.Protocol = SelectedProtocol;
+
+        else
+          newConfig.SerialInfo.Protocol = DefaultProtocol;
+
         if(RequiresId)
           newConfig.SerialInfo.SerialId = SerialUnitId; 
       }
@@ -110,26 +136,48 @@ public partial class PluginDeviceConfigEditViewModel : ReactiveObject
   public DeviceDriver Driver { get; }
   public AresStructSchema DriverSettingsSchema { get; }
   public ConnectionType ConnectionType { get; }
+
   [Reactive]
   public partial AresStruct DeviceSettings { get; set; }
+
   [Reactive]
   public partial List<string> AvailableSerialPorts { get; set; }
+
   [Reactive]
   public partial SerialConnection SerialConnection { get; set; }
+
   [Reactive]
   public partial bool RequiresId { get; set; }
+
   [Reactive]
   public partial string? IdRegex { get; set; }
+
   [Reactive]
   public partial List<int> BaudRateOptions { get; set; }
+
   [Reactive]
   public partial string UnitIdHint { get; set; }
+
   [Reactive]
   public partial string SerialUnitId { get; set; }
+
   [Reactive]
   public partial int SelectedBaudRate { get; set; }
+
   [Reactive]
   public partial string SelectedSerialPort { get; set; }
+
+  [Reactive]
+  public partial bool VariableProtocol { get; set; }
+
+  [Reactive]
+  public partial List<string> ProtocolOptions { get; set; }
+  [Reactive]
+  public partial string DefaultProtocol { get; set; }
+
+  [Reactive]
+  public partial string SelectedProtocol { get; set; }
+
   [Reactive]
   public partial bool IsSimulated { get; set; }
 }

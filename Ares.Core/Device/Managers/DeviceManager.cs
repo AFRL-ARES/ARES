@@ -112,7 +112,7 @@ public class DeviceManager : IDeviceManager
 
         if(!success)
         {
-          var message = $"Failed to add device {device.Name} as the resource it tried to use ({serialConnectionResource.ResourceName}) was already in use by another device.";
+          var message = $"Failed to add device {device.Name} as the resource it tried to use ({serialConnectionResource.ResourceName}) was already in use by another device that reported a different serial protocol than the one you tried to add.";
           _logger.LogError(message);
           await _notificationHandler.HandleNotification("Failed to Add Device", message, NotificationSeverityEnum.Error);
           return null; 

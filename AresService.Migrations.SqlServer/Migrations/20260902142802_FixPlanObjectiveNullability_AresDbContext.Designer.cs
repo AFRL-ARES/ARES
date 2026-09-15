@@ -4,16 +4,19 @@ using AresService.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace AresService.Migrations.SqlServer.Migrations
+namespace AresService.Migrations.SqlServer.Migrations.AresDb
 {
     [DbContext(typeof(AresDbContext))]
-    partial class AresDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260902142802_FixPlanObjectiveNullability_AresDbContext")]
+    partial class FixPlanObjectiveNullability_AresDbContext
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -896,54 +899,12 @@ namespace AresService.Migrations.SqlServer.Migrations
                     b.Property<string>("PortName")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Protocol")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("SerialId")
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("UniqueId");
 
                     b.ToTable("SerialConnection");
-                });
-
-            modelBuilder.Entity("Ares.Datamodel.Device.SilaDeviceConfig", b =>
-                {
-                    b.Property<Guid>("UniqueId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Address")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreationTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("LastModified")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("getdate()");
-
-                    b.Property<string>("ServerName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Type")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("VendorUri")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Version")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("UniqueId");
-
-                    b.ToTable("SilaConfigs");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.DeviceErrorHandlingConfig", b =>

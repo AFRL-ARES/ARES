@@ -889,6 +889,9 @@ namespace AresService.Migrations.Sqlite.Migrations
                     b.Property<string>("PortName")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Protocol")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("SerialId")
                         .HasColumnType("TEXT");
 
