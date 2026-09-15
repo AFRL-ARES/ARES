@@ -5,7 +5,7 @@ namespace UI.Infrastructure.Grpc;
 
 public class LocalStream<T> : IAsyncStreamReader<T>, IServerStreamWriter<T>
 {
-  private readonly Channel<T> _channel = Channel.CreateUnbounded<T>();
+  private readonly Channel<T> _channel = System.Threading.Channels.Channel.CreateUnbounded<T>();
   public T Current { get; private set; } = default!;
 
   public WriteOptions? WriteOptions { get; set; }

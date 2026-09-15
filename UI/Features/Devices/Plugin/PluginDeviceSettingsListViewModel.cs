@@ -2,7 +2,6 @@ using Ares.Core.Device.Plugins.Drivers;
 using Ares.Core.Device.Providers;
 using Ares.Core.Grpc.Services;
 using Ares.Datamodel.Device;
-using Ares.Services;
 using Ares.Services.Device;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;

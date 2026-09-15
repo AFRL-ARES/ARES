@@ -894,12 +894,54 @@ namespace AresService.Migrations.Postgres.Migrations
                     b.Property<string>("PortName")
                         .HasColumnType("text");
 
+                    b.Property<string>("Protocol")
+                        .HasColumnType("text");
+
                     b.Property<string>("SerialId")
                         .HasColumnType("text");
 
                     b.HasKey("UniqueId");
 
                     b.ToTable("SerialConnection");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Device.SilaDeviceConfig", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Address")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("ServerName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Type")
+                        .HasColumnType("text");
+
+                    b.Property<string>("VendorUri")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Version")
+                        .HasColumnType("text");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("SilaConfigs");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.DeviceErrorHandlingConfig", b =>

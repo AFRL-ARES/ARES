@@ -376,6 +376,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
       return;
 
     OnAnalyzerTransactionReceived(newestTransaction, analyzerTransactions.Count());
+    NormalizeAllAnalyzerMetrics();
   }
 
   public async Task UpdatePlannerTransactions()
@@ -471,6 +472,32 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     }
   }
 
+  private void NormalizeAllAnalyzerMetrics()
+  {
+    // Compute a global min/max across all analyzer objectives so relative scale between
+    // objectives is preserved. This avoids early frames where different objectives
+    // collapse onto the same normalized value when each series only has one point.
+    var allPoints = AnalyzerMetrics.Values
+      .Where(series => series is not null && series.Count > 0)
+      .SelectMany(series => series)
+      .ToList();
+
+    if(allPoints.Count == 0)
+      return;
+
+    var min = allPoints.Min(point => point.RawValue);
+    var max = allPoints.Max(point => point.RawValue);
+
+    if(Math.Abs(max - min) < double.Epsilon)
+    {
+      foreach(var point in allPoints)
+        point.PlotValue = 50;
+      return;
+    }
+
+    foreach(var point in allPoints)
+      point.PlotValue = ((point.RawValue - min) / (max - min)) * 100.0;
+  }
   public bool TryGetChartableValue(AresValue aresValue, out double result)
   {
     result = 0;
@@ -707,6 +734,8 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
     foreach(var (index, item) in analyzerTransactions.Index())
       OnAnalyzerTransactionReceived(item, index);
+
+    NormalizeAllAnalyzerMetrics();
   }
 
   public async Task RefreshCampaignSetup()
@@ -858,3 +887,4 @@ public class ChartMetricPoint
   public double RawValue { get; set; }
   public double PlotValue { get; set; }
 }
+

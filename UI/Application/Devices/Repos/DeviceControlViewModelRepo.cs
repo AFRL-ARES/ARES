@@ -1,5 +1,7 @@
 using Ares.Core.Device.Providers;
 using Ares.Core.Device.Remote;
+using Ares.Core.Device.Sila;
+using Ares.Device;
 using Ares.Toolkit.Device.UI;
 using DynamicData;
 using DynamicData.PLinq;
@@ -7,6 +9,7 @@ using System.Reactive.Disposables;
 using System.Reactive.Disposables.Fluent;
 using UI.Features.Devices;
 using UI.Features.Devices.Remote.Factory;
+using UI.Features.Devices.Sila.Factory;
 
 namespace UI.Application.Devices.Repos
 {
@@ -16,25 +19,35 @@ namespace UI.Application.Devices.Repos
     private readonly IDeviceAdapterRepository _deviceAdapterRepo;
     private readonly IAresDeviceViewModelFactory _factory;
     private readonly IRemoteDeviceControlViewModelFactory _remoteVmFactory;
+    private readonly ISilaDeviceControlViewModelFactory _silaVmFactory;
     private readonly SourceCache<IDeviceUnitControlViewModel, string> _viewModelCache = new(vm => vm.DeviceId);
     private readonly CompositeDisposable _cleanup = new();
 
     public DeviceControlViewModelRepo(IAresDeviceProvider deviceProvider,
       IAresDeviceViewModelFactory factory,
       IRemoteDeviceControlViewModelFactory remoteVmFactory,
-      IDeviceAdapterRepository deviceAdapterRepo)
+      IDeviceAdapterRepository deviceAdapterRepo,
+      ISilaDeviceControlViewModelFactory silaVmFactory)
     {
       _deviceProvider = deviceProvider;
       _factory = factory;
       _deviceAdapterRepo = deviceAdapterRepo;
       _remoteVmFactory = remoteVmFactory;
+      _silaVmFactory = silaVmFactory;
     }
 
     public void Initialize()
     {
       _deviceProvider.Connect()
-        .Filter(d => d is not RemoteDevice)
+        .Filter(IsPluginDevice)
         .Transform(_factory.CreateUnitControlViewModel)
+        .DisposeMany()
+        .PopulateInto(_viewModelCache)
+        .DisposeWith(_cleanup);
+
+      _deviceProvider.Connect()
+        .Filter(d => d is SilaDevice)
+        .Transform(d => _silaVmFactory.Create((SilaDevice)d))
         .DisposeMany()
         .PopulateInto(_viewModelCache)
         .DisposeWith(_cleanup);
@@ -45,6 +58,9 @@ namespace UI.Application.Devices.Repos
         .PopulateInto (_viewModelCache)
         .DisposeWith(_cleanup);
     }
+
+    private bool IsPluginDevice(IAresDevice device)
+      => device is not RemoteDevice && device is not SilaDevice;
 
     public IObservable<IChangeSet<IDeviceUnitControlViewModel>> Connect(Func<IDeviceUnitControlViewModel, bool>? predicate = null)
         => _viewModelCache.Connect().Filter(predicate ?? (_ => true)).RemoveKey();

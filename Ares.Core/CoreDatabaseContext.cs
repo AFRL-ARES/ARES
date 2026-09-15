@@ -40,6 +40,7 @@ public class CoreDatabaseContext : DbContext
   public DbSet<Parameter> Parameters => Set<Parameter>();
   public DbSet<DeviceLoggingSettings> DeviceLoggingSettings => Set<DeviceLoggingSettings>();
   public DbSet<DeviceState> DeviceStates => Set<DeviceState>();
+  public DbSet<SilaDeviceConfig> SilaConfigs => Set<SilaDeviceConfig>();
   public DbSet<DeviceVisualizationConfig> DeviceVisualizationConfigs => Set<DeviceVisualizationConfig>();
   public DbSet<PlannerTransaction> PlannerTransactions => Set<PlannerTransaction>();
   public DbSet<AnalyzerTransaction> AnalyzerTransactions => Set<AnalyzerTransaction>();

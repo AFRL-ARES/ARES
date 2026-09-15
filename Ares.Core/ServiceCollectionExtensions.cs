@@ -29,6 +29,7 @@ using Ares.Core.Visualization.Providers;
 using Ares.Core.Visualization.Repos;
 using Ares.Datamodel.Templates;
 using Microsoft.Extensions.DependencyInjection;
+using Ares.Core.Device.Sila;
 using Ares.Core.Settings;
 using Ares.Core.Execution.StopConditions.PlannerLead;
 using Ares.Core.Execution.VersionChecking;
@@ -100,6 +101,7 @@ public static class ServiceCollectionExtensions
     services.BindStartConditions();
     services.BindStateLogging();
     services.BindProviders();
+    services.BindSilaComponents();
   }
 
   private static void BindStateLogging(this IServiceCollection services)
@@ -122,6 +124,12 @@ public static class ServiceCollectionExtensions
     services.AddTransient<IStartCondition, GoodAnalyzerForExperimentOutputCondition>();
     services.AddTransient<IStartCondition, RequiredDeviceInterpretersStartCondition>();
     services.AddTransient<IStartCondition, AssignedPlannersActiveStartCondition>();
+  }
+
+  private static void BindSilaComponents(this IServiceCollection services)
+  {
+    services.AddSingleton<SilaClient>();
+    services.AddSingleton<ISilaDeviceManager, SilaDeviceManager>();
   }
 
   private static void BindComposers(this IServiceCollection services)
