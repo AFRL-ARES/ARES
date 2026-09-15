@@ -1,4 +1,3 @@
-using Ares.Core;
 using Ares.Core.Device.Repos;
 using Ares.Core.Device.State.Logging;
 using Ares.Core.Execution.VersionChecking;
