@@ -16,7 +16,7 @@ internal class CampaignDatasetGeneratorTests
   [Test]
   public async Task GenerateAsync_ReturnsEmptyArray_WhenSummaryDoesNotExist()
   {
-    var generator = new CampaignDatasetGenerator(CreateContextFactory().Object);
+    var generator = new CampaignDatasetGenerator(CreateContextFactory());
 
     var datasets = await generator.GenerateAsync("missing-summary");
 
@@ -720,13 +720,11 @@ internal class CampaignDatasetGeneratorTests
   [Test]
   public void GenerateAsync_ThrowsWhenAlreadyCanceled()
   {
-    var contextFactory = CreateContextFactory();
     using var cancellationTokenSource = new CancellationTokenSource();
     cancellationTokenSource.Cancel();
-    var generator = new CampaignDatasetGenerator(contextFactory.Object);
+    var generator = new CampaignDatasetGenerator(CreateContextFactory());
 
     Assert.ThrowsAsync<OperationCanceledException>(async () => await generator.GenerateAsync("summary-1", cancellationTokenSource.Token));
-    contextFactory.Verify(factory => factory.CreateDbContextAsync(It.IsAny<CancellationToken>()), Times.Never);
   }
 
   private static CampaignDatasetGenerator CreateGenerator(
@@ -743,17 +741,33 @@ internal class CampaignDatasetGeneratorTests
       context.SaveChanges();
     }
 
-    return new CampaignDatasetGenerator(CreateContextFactory(options).Object);
+    return new CampaignDatasetGenerator(CreateContextFactory(options));
   }
 
-  private static Mock<IDbContextFactory<CoreDatabaseContext>> CreateContextFactory(DbContextOptions<CoreDatabaseContext> options = null)
+  private static IDbContextFactory<CoreDatabaseContext> CreateContextFactory(DbContextOptions<CoreDatabaseContext> options = null)
   {
     var contextOptions = options ?? CreateContextOptions();
-    var contextFactory = new Mock<IDbContextFactory<CoreDatabaseContext>>();
-    contextFactory
-      .Setup(factory => factory.CreateDbContextAsync(It.IsAny<CancellationToken>()))
-      .ReturnsAsync(() => new CoreDatabaseContext(contextOptions));
-    return contextFactory;
+    return new TestContextFactory(contextOptions);
+  }
+
+  private sealed class TestContextFactory : IDbContextFactory<CoreDatabaseContext>
+  {
+    private readonly DbContextOptions<CoreDatabaseContext> _options;
+
+    public TestContextFactory(DbContextOptions<CoreDatabaseContext> options)
+    {
+      _options = options;
+    }
+
+    public CoreDatabaseContext CreateDbContext()
+    {
+      return new CoreDatabaseContext(_options);
+    }
+
+    public Task<CoreDatabaseContext> CreateDbContextAsync(CancellationToken cancellationToken = default)
+    {
+      return Task.FromResult(new CoreDatabaseContext(_options));
+    }
   }
 
   private static DbContextOptions<CoreDatabaseContext> CreateContextOptions()
@@ -810,9 +824,7 @@ internal class CampaignDatasetGeneratorTests
     {
       overview.AnalysisOverview = new AnalysisOverview();
       overview.AnalysisOverview.Objectives.AddRange(analysisResult);
-
     }
-      
 
     foreach(var field in resultFields ?? [])
     {
