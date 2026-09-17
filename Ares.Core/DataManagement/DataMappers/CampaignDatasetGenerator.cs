@@ -43,14 +43,49 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
   {
     cancellationToken.ThrowIfCancellationRequested();
 
-    await using var ctx = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
-    var summary = await ctx.CampaignExecutionSummaries.FirstOrDefaultAsync(ces => ces.UniqueId == summaryId, cancellationToken);
+    using var ctx =_dbContextFactory.CreateDbContext();
+    var summary = await ctx.CampaignExecutionSummaries
+    .IgnoreAutoIncludes()
+    .Include(ces => ces.ExecutionInfo)
+    .Include(ces => ces.ExperimentSummaries)
+    .AsNoTracking()
+    .FirstOrDefaultAsync(ces => ces.UniqueId == summaryId, cancellationToken);
+
     if(summary is null)
       return [];
 
-    var experiments = summary.ExperimentSummaries
-      .OrderBy(experiment => experiment.ExecutionInfo?.TimeStarted)
-      .ToArray();
+    // summary has already been loaded earlier in GenerateAsync
+
+    var experimentsQuery = ctx.Entry(summary)
+        .Collection(s => s.ExperimentSummaries)
+        .Query()                             // start from the navigation, use DB relationship
+        .IgnoreAutoIncludes()
+        .Include(e => e.ExperimentOverview)
+            .ThenInclude(eo => eo.AnalysisOverview)
+        .Include(e => e.ExperimentOverview)
+          .ThenInclude(eo => eo.Parameters)
+            .ThenInclude(p => p.Metadata)
+        .Include(e => e.ExperimentOverview)
+            .ThenInclude(eo => eo.Template)
+              .ThenInclude(template => template.StepTemplates)
+                .ThenInclude(st => st.CommandTemplates)
+                  .ThenInclude(ct => ct.ArgumentBindings)
+                    .ThenInclude(ab => ab.Metadata)
+        .Include(e => e.ExecutionInfo)
+        .Include(e => e.StepSummaries)
+            .ThenInclude(ss => ss.ExecutionInfo)
+        .Include(e => e.StepSummaries)
+            .ThenInclude(ss => ss.CommandSummaries)
+                .ThenInclude(cs => cs.ExecutionInfo)
+        .Include(e => e.StepSummaries)
+          .ThenInclude(ss => ss.CommandSummaries)
+            .ThenInclude(cs => cs.Result)
+        .AsNoTracking()
+        .OrderBy(e => e.ExecutionInfo!.TimeStarted); // or handle nulls if needed
+
+    var experiments = await experimentsQuery
+        .ToArrayAsync(cancellationToken);
+
     var experimentNumbers = experiments
       .Select((experiment, index) => new { experiment.ExperimentId, ExperimentNumber = index + 1 })
       .Where(item => !string.IsNullOrWhiteSpace(item.ExperimentId))
@@ -93,12 +128,12 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
       }
     }
 
-    return [
-      CreateExperimentsDataset(experiments, cancellationToken),
-      CreateCommandsDataset(experiments, cancellationToken),
-      CreatePlannerTransactionsDataset(plannerRecords.OrderBy(record => record.Transaction.TimeRequestSent).ToArray(), cancellationToken),
-      CreateAnalyzerTransactionsDataset(analyzerRecords.OrderBy(record => record.Transaction.TimeRequestSent).ToArray(), cancellationToken)
-    ];
+    var expSet = CreateExperimentsDataset(experiments, cancellationToken);
+    var cmdSet = CreateCommandsDataset(experiments, cancellationToken);
+    var plannerSet = CreatePlannerTransactionsDataset(plannerRecords.OrderBy(record => record.Transaction.TimeRequestSent).ToArray(), cancellationToken);
+    var analyzerSet = CreateAnalyzerTransactionsDataset(analyzerRecords.OrderBy(record => record.Transaction.TimeRequestSent).ToArray(), cancellationToken);
+
+    return [expSet, cmdSet, plannerSet, analyzerSet];
   }
 
   private static AresDataset CreateExperimentsDataset(ExperimentExecutionSummary[] experiments, CancellationToken cancellationToken)
@@ -214,11 +249,27 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
       CreateColumn(AnalyzerTypeColumnName, AresDataType.String, optional: true),
       CreateColumn(AnalyzerVersionColumnName, AresDataType.String, optional: true),
       .. CreateTransactionTimingColumns(),
-      CreateColumn(ResultColumnName, AresDataType.Number, optional: true),
+      .. CreateObjectiveColumns(records),
       CreateColumn(OutcomeColumnName, AresDataType.String, optional: true),
       CreateColumn(ErrorColumnName, AresDataType.String, optional: true),
       .. CreateAnalyzerDynamicColumns(records, cancellationToken)
     ];
+  }
+
+  private static IEnumerable<AresDataColumn> CreateObjectiveColumns(IEnumerable<AnalyzerRecord> analyzerRecords)
+  {
+    var objectiveColumns = new List<AresDataColumn>();
+    var analyzerRecord = analyzerRecords.FirstOrDefault();
+
+    if(analyzerRecord is not null && analyzerRecord.Transaction.AnalyzerResponse.Objectives.Any())
+    {
+      foreach(var objective in analyzerRecord.Transaction.AnalyzerResponse.Objectives)
+      {
+        objectiveColumns.Add(CreateColumn($"Objective.{objective.ObjectiveName}", objective.ObjectiveValue.GetAresDataType(), optional: true));
+      }
+    }
+
+    return objectiveColumns;
   }
 
   private static IEnumerable<AresDataColumn> CreateTransactionTimingColumns()
