@@ -14,17 +14,21 @@ public class DemoRemotePlannerManager : IRemotePlannerManager
   private readonly IPlannerServiceRepo _plannerRepo;
   private readonly INotificationHandler _notificationHandler;
   private readonly IDatamodelVersionValidator _versionValidator;
+  private readonly IPlannerServiceCache _plannerCache;
+  private RemotePlannerMonitor? _remotePlannerMonitor;
 
   private readonly string _demoPlannerUniqueId = "4b14d5e9-1c9f-4f01-8b2b-4d4d1e2e3e4e";
 
   public DemoRemotePlannerManager(
     IPlannerServiceRepo plannerRepo,
     INotificationHandler notificationHandler,
-    IDatamodelVersionValidator versionValidator)
+    IDatamodelVersionValidator versionValidator,
+    IPlannerServiceCache plannerCache)
   {
     _plannerRepo = plannerRepo;
     _notificationHandler = notificationHandler;
     _versionValidator = versionValidator;
+    _plannerCache = plannerCache;
   }
 
   public async Task LoadPlanners()
@@ -47,6 +51,7 @@ public class DemoRemotePlannerManager : IRemotePlannerManager
 
     if(planner is not null)
     {
+      _remotePlannerMonitor = new RemotePlannerMonitor(planner, _plannerCache);
       _plannerRepo.AddPlanner(planner);
     }
 
@@ -61,6 +66,7 @@ public class DemoRemotePlannerManager : IRemotePlannerManager
     if(planner is not null)
     {
       _plannerRepo.AddPlanner(planner);
+      _remotePlannerMonitor = new RemotePlannerMonitor(planner, _plannerCache);
     }
 
     return Task.CompletedTask;

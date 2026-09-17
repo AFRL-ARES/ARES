@@ -14,17 +14,21 @@ public class DemoRemoteAnalyzerManager : IRemoteAnalyzerManager
   private readonly IAnalyzerRepo _analyzerRepo;
   private readonly INotificationHandler _notificationHandler;
   private readonly IDatamodelVersionValidator _datamodelVersionValidator;
+  private readonly List<RemoteAnalyzerMonitor> _analyzerMonitors = [];
+  private readonly IAnalyzerCache _analyzerCache;
 
   private static readonly string _demoAnalyzerUniqueId = "9e5a8f3b-5c7d-4a1b-9f0a-1a2b3c4d5e6f";
 
   public DemoRemoteAnalyzerManager(
     IAnalyzerRepo analyzerRepo,
     INotificationHandler notificationHandler,
-    IDatamodelVersionValidator datamodelVersionValidator)
+    IDatamodelVersionValidator datamodelVersionValidator,
+    IAnalyzerCache analyzerCache)
   {
     _analyzerRepo = analyzerRepo;
     _notificationHandler = notificationHandler;
     _datamodelVersionValidator = datamodelVersionValidator;
+    _analyzerCache = analyzerCache;
   }
 
   public async Task LoadAnalyzers()
@@ -60,6 +64,7 @@ public class DemoRemoteAnalyzerManager : IRemoteAnalyzerManager
 
     if(analyzer is not null)
     {
+      _analyzerMonitors.Add(new RemoteAnalyzerMonitor(analyzer, _analyzerCache));
       _analyzerRepo.AddAnalyzer(analyzer);
     }
 
