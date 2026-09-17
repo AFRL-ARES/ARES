@@ -232,7 +232,13 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     }
     else if(lvalue is AresLangParser.LValueIndexContext indexContext)
     {
-      if(!TryResolveLValue(indexContext.lvalue(), out var baseValue) || baseValue?.StructValue is null)
+      // Validation for index assignments should align with runtime behavior.
+      // The runtime supports indexing into structs (string keys), lists, and arrays.
+      // Here we treat an unknown base identifier as an error, but allow any indexable
+      // type to pass without marking the lvalue as unknown.
+
+      // First, resolve the base lvalue to a value (if possible).
+      if(!TryResolveLValue(indexContext.lvalue(), out var baseValue))
       {
         if(_mode == ValidationMode.Strict)
         {
@@ -246,23 +252,46 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
         return;
       }
 
-      var indexValue = TryBuildAssignmentValue(indexContext.expression());
-      if(indexValue?.HasStringValue != true)
+      // Use type inference to determine whether the base is indexable.
+      var baseSchema = _typeInference.Visit(indexContext.lvalue());
+      if(!IsIndexableSchema(baseSchema) && _mode == ValidationMode.Strict)
       {
-        if(_mode == ValidationMode.Strict)
-        {
-          throw new AresInterpreterException(
-            "Provided index expression was not a string.",
-            indexContext.expression().Start.Line,
-            indexContext.expression().Start.Column
-          );
-        }
-
-        return;
+        throw new AresInterpreterException(
+          "Cannot access index of a value that is not of list or struct type.",
+          indexContext.lvalue().Start.Line,
+          indexContext.lvalue().Start.Column
+        );
       }
 
-      var assignedValue = TryBuildAssignmentValue(expr) ?? AresValueHelper.CreateNull();
-      baseValue.StructValue.Fields[indexValue.StringValue] = assignedValue;
+      // For struct indexing, enforce string keys as before.
+      var indexValue = TryBuildAssignmentValue(indexContext.expression());
+      if(baseValue?.StructValue is not null)
+      {
+        if(indexValue?.HasStringValue != true)
+        {
+          if(_mode == ValidationMode.Strict)
+          {
+            throw new AresInterpreterException(
+              "Provided index expression was not a string.",
+              indexContext.expression().Start.Line,
+              indexContext.expression().Start.Column
+            );
+          }
+
+          return;
+        }
+
+        var assignedValue = TryBuildAssignmentValue(expr) ?? AresValueHelper.CreateNull();
+        baseValue.StructValue.Fields[indexValue.StringValue] = assignedValue;
+      }
+      else
+      {
+        // Non-struct index assignment (lists and arrays) is validated by
+        // type inference above; runtime handles the actual assignment.
+        // No additional static error is needed here.
+        await Visit(indexContext.expression());
+        await Visit(expr);
+      }
     }
   }
 
@@ -386,24 +415,47 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       return;
     }
 
-    await Visit(expression);
-    var iterableSchema = _typeInference.Visit(expression);
-    if(!IsIterableSchema(iterableSchema) && _mode == ValidationMode.Strict)
-    {
-      throw new AresInterpreterException(
-        $"Value is not iterable: {iterableSchema.Type}.",
-        expression.Start.Line,
-        expression.Start.Column
-      );
-    }
+      await Visit(expression);
+      var iterableSchema = _typeInference.Visit(expression);
+      if(!IsIterableSchema(iterableSchema) && _mode == ValidationMode.Strict)
+      {
+        throw new AresInterpreterException(
+          $"Value is not iterable: {iterableSchema.Type}.",
+          expression.Start.Line,
+          expression.Start.Column
+        );
+      }
 
-    _environment.EnterScope();
-    try
-    {
-      _environment.AssignVariable(id.GetText(), AresValueHelper.CreateNull());
-      await Visit(block);
-    }
-    finally
+      _environment.EnterScope();
+      try
+      {
+        // Assign the loop variable with a schema that reflects the element type
+        // of the iterable, so numeric validations (e.g., total = total + value)
+        // do not incorrectly flag the loop variable as non-numeric.
+        AresValueSchema loopVarSchema;
+        if(iterableSchema.Type == AresDataType.NumberArray)
+        {
+          loopVarSchema = AresSchemaBuilder.Entry(AresDataType.Number).Build();
+        }
+        else if(iterableSchema.Type == AresDataType.StringArray)
+        {
+          loopVarSchema = AresSchemaBuilder.Entry(AresDataType.String).Build();
+        }
+        else if(iterableSchema.Type == AresDataType.List && iterableSchema.ListElementSchema is not null)
+        {
+          loopVarSchema = iterableSchema.ListElementSchema;
+        }
+        else
+        {
+          // Fallback to Any so validations remain permissive when the
+          // element type cannot be determined statically.
+          loopVarSchema = AresSchemaBuilder.Entry(AresDataType.Any).Build();
+        }
+
+        _environment.AssignVariable(id.GetText(), AresValueHelper.CreateNull(), loopVarSchema);
+        await Visit(block);
+      }
+      finally
     {
       _environment.ExitScope();
     }
@@ -1347,10 +1399,13 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     var leftSchema = _typeInference.Visit(leftExpression);
     var rightSchema = _typeInference.Visit(rightExpression);
 
-    if(leftSchema.Type is AresDataType.Any or AresDataType.UnspecifiedType)
-    {
-      return;
-    }
+      // If the left-hand side is untyped or treated as a generic value (Any,
+      // Unspecified, or String), skip strict numeric/quantity validation and
+      // allow the runtime to determine whether the operation is valid.
+      if(leftSchema.Type is AresDataType.Any or AresDataType.UnspecifiedType or AresDataType.String)
+      {
+        return;
+      }
 
     if(leftSchema.Type == AresDataType.Number)
     {
