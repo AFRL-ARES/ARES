@@ -1,3 +1,4 @@
+using Ares.Core;
 using Ares.Core.Execution.VersionChecking;
 using Ares.Core.Notifications;
 using Ares.Datamodel.Planning;
@@ -17,8 +18,6 @@ public class DemoRemotePlannerManager : IRemotePlannerManager
   private readonly IPlannerServiceCache _plannerCache;
   private RemotePlannerMonitor? _remotePlannerMonitor;
 
-  private readonly string _demoPlannerUniqueId = "4b14d5e9-1c9f-4f01-8b2b-4d4d1e2e3e4e";
-
   public DemoRemotePlannerManager(
     IPlannerServiceRepo plannerRepo,
     INotificationHandler notificationHandler,
@@ -34,7 +33,7 @@ public class DemoRemotePlannerManager : IRemotePlannerManager
   public async Task LoadPlanners()
   {
     // In demo mode we only ensure that the static demo planner exists.
-    var existingDemoPlanner = _plannerRepo.GetPlannerById(_demoPlannerUniqueId);
+    var existingDemoPlanner = _plannerRepo.GetPlannerById(DemoIds.PlannerId);
     if(existingDemoPlanner is null)
     {
       // Default demo planner endpoint from DemoRemotePlanner launch settings.
@@ -60,13 +59,13 @@ public class DemoRemotePlannerManager : IRemotePlannerManager
 
   public Task CreateDemoPlanner(string url)
   {
-    var config = new PlannerConfig { UniqueId = _demoPlannerUniqueId, Name = "Demo Remote Planner", Url = url };
+    var config = new PlannerConfig { UniqueId = DemoIds.PlannerId, Name = DemoIds.PlannerName, Url = url };
     var planner = ConfigToPlanner(config);
 
     if(planner is not null)
     {
-      _plannerRepo.AddPlanner(planner);
       _remotePlannerMonitor = new RemotePlannerMonitor(planner, _plannerCache);
+      _plannerRepo.AddPlanner(planner);
     }
 
     return Task.CompletedTask;
@@ -75,6 +74,8 @@ public class DemoRemotePlannerManager : IRemotePlannerManager
   public Task RemovePlanner(string plannerId)
   {
     _plannerRepo.RemovePlanner(plannerId);
+    _remotePlannerMonitor?.Dispose();
+    _remotePlannerMonitor = null;
     return Task.CompletedTask;
   }
 
@@ -83,11 +84,12 @@ public class DemoRemotePlannerManager : IRemotePlannerManager
     var existing = _plannerRepo.GetPlannerById(config.UniqueId);
     if(existing is not null)
     {
-      _plannerRepo.RemovePlanner(config.UniqueId);
+      RemovePlanner(config.UniqueId);
       var updated = ConfigToPlanner(config);
       if(updated is not null)
       {
         _plannerRepo.AddPlanner(updated);
+        _remotePlannerMonitor = new RemotePlannerMonitor(updated, _plannerCache);
       }
     }
 

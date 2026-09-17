@@ -62,11 +62,13 @@ public static class ServiceCollectionExtensions
     {
       services.AddSingleton<IRemoteAnalyzerManager, DemoRemoteAnalyzerManager>();
       services.AddSingleton<IRemotePlannerManager, DemoRemotePlannerManager>();
+      services.AddSingleton<ICampaignTemplatePersistenceService, DemoCampaignTemplatePersistenceService>();
     }
     else
     {
       services.AddSingleton<IRemoteAnalyzerManager, RemoteAnalyzerManager>();
       services.AddSingleton<IRemotePlannerManager, RemotePlannerManager>();
+      services.AddSingleton<ICampaignTemplatePersistenceService, CampaignTemplatePersistenceService>();
     }
     services.AddSingleton<IVisualizationConfigManager, VisualizationConfigManager>();
     services.AddSingleton<IAnalyzerCache, AnalyzerCache>();
@@ -83,7 +85,6 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<ISystemSettingsManager, SystemSettingsManager>();
     services.AddSingleton<IResourceConnectionArbiter, ResourceConnectionArbiter>();
     services.AddSingleton<ICustomCommandPersistenceService, CustomCommandPersistenceService>();
-    services.AddSingleton<ICampaignTemplatePersistenceService, CampaignTemplatePersistenceService>();
     services.AddSingleton<ICampaignTemplateTransferService, CampaignTemplateTransferService>();
     services.AddSingleton<ICommandDisplayNameResolver, CommandDisplayNameResolver>();
     services.AddSingleton<CustomCommandExecutor>();
@@ -161,3 +162,4 @@ public static class ServiceCollectionExtensions
   }
 
 }
+

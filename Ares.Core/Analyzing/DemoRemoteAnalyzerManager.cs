@@ -1,3 +1,4 @@
+using Ares.Core;
 using Ares.Core.Execution.VersionChecking;
 using Ares.Core.Notifications;
 using Ares.Datamodel.Analyzing;
@@ -17,8 +18,6 @@ public class DemoRemoteAnalyzerManager : IRemoteAnalyzerManager
   private readonly List<RemoteAnalyzerMonitor> _analyzerMonitors = [];
   private readonly IAnalyzerCache _analyzerCache;
 
-  private static readonly string _demoAnalyzerUniqueId = "9e5a8f3b-5c7d-4a1b-9f0a-1a2b3c4d5e6f";
-
   public DemoRemoteAnalyzerManager(
     IAnalyzerRepo analyzerRepo,
     INotificationHandler notificationHandler,
@@ -34,7 +33,7 @@ public class DemoRemoteAnalyzerManager : IRemoteAnalyzerManager
   public async Task LoadAnalyzers()
   {
     // In demo mode we only ensure that the static demo analyzer exists.
-    var existingDemo = _analyzerRepo.GetAnalyzerById(_demoAnalyzerUniqueId);
+    var existingDemo = _analyzerRepo.GetAnalyzerById(DemoIds.AnalyzerId);
     if(existingDemo is null)
     {
       // Default demo analyzer endpoint from DemoRemoteAnalyzer launch settings.
@@ -52,6 +51,7 @@ public class DemoRemoteAnalyzerManager : IRemoteAnalyzerManager
     if(analyzer is not null)
     {
       _analyzerRepo.AddAnalyzer(analyzer);
+      _analyzerMonitors.Add(new RemoteAnalyzerMonitor(analyzer, _analyzerCache));
     }
 
     return Task.CompletedTask;
@@ -59,7 +59,7 @@ public class DemoRemoteAnalyzerManager : IRemoteAnalyzerManager
 
   public Task CreateDemoAnalyzer(string url)
   {
-    var config = new AnalyzerConfig { UniqueId = _demoAnalyzerUniqueId, Name = "Demo Remote Analyzer", Url = url };
+    var config = new AnalyzerConfig { UniqueId = DemoIds.AnalyzerId, Name = DemoIds.AnalyzerName, Url = url };
     var analyzer = ConfigToAnalyzer(config);
 
     if(analyzer is not null)
@@ -74,6 +74,13 @@ public class DemoRemoteAnalyzerManager : IRemoteAnalyzerManager
   public Task RemoveAnalyzer(string analyzerId)
   {
     _analyzerRepo.RemoveAnalyzer(analyzerId);
+    var monitor = _analyzerMonitors.FirstOrDefault(m => m.AnalyzerId == analyzerId);
+    if(monitor is not null)
+    {
+      monitor.Dispose();
+      _analyzerMonitors.Remove(monitor);
+    }
+
     return Task.CompletedTask;
   }
 
@@ -84,11 +91,12 @@ public class DemoRemoteAnalyzerManager : IRemoteAnalyzerManager
     var existing = _analyzerRepo.GetAnalyzerById(config.UniqueId);
     if(existing is not null)
     {
-      _analyzerRepo.RemoveAnalyzer(config.UniqueId);
+      RemoveAnalyzer(config.UniqueId);
       var updated = ConfigToAnalyzer(config);
       if(updated is not null)
       {
         _analyzerRepo.AddAnalyzer(updated);
+        _analyzerMonitors.Add(new RemoteAnalyzerMonitor(updated, _analyzerCache));
       }
     }
 

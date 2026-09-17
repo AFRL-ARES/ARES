@@ -1,6 +1,10 @@
-﻿<div class="ares-nav-menu border-end p-2 bg-dark vh-100 flex-column @(ExpandedMainNav ? "d-flex" : "hamburger-closed")">
+<div class="ares-nav-menu border-end p-2 bg-dark vh-100 flex-column @(ExpandedMainNav ? "d-flex" : "hamburger-closed")">
     <a href="\">
         <img src="images/ARESLogo.png" alt="Ares Logo" class="img-fluid"/>
+        @if (Ares.Core.AresConfig.DemoMode)
+        {
+            <div class="mt-2 text-warning fw-bold">DEMO MODE</div>
+        }
     </a>
     <div class="flex-grow-1">
         <ul class="nav nav-pills">
