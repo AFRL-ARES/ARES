@@ -1,4 +1,4 @@
-﻿@page "/settings/device/remote"
+@page "/settings/device/remote"
 @layout DeviceSettingsLayout
 @using Ares.Services
 @using Google.Protobuf.WellKnownTypes
@@ -19,7 +19,7 @@ else
         <RemoteDeviceSettingsView ViewModel="vm"/>
       </div>
     }
-    <button class="m-2 align-self-end btn btn-outline-light" disabled="@SavingInProgress" @onclick="AddDeviceClick">
+    <button class="m-2 align-self-end btn btn-outline-light" disabled="@IsAddDisabled" @onclick="AddDeviceClick">
       @if (SavingInProgress)
       {
         <LoadingSpinner SpinnerSize="SpinnerSize.Small" />
@@ -35,6 +35,11 @@ else
 @code {
   private async Task AddDeviceClick()
   {
+    if (IsAddDisabled)
+    {
+      return;
+    }
+
     var viewModel = ViewModel!.GetNewConfigEditViewModel();
     var result = await DialogService.OpenAsync("New Device", ds =>
       @<RemoteDeviceConfigEditView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)" />);
@@ -66,4 +71,6 @@ else
   }
 
   private bool SavingInProgress { get; set; }
+
+  private bool IsAddDisabled => Ares.Core.AresConfig.DemoMode || SavingInProgress;
 }
