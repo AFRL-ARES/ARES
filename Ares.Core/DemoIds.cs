@@ -19,6 +19,14 @@ public static class DemoIds
   public const string RemoteDeviceId = "7f9c8b28-4c2e-4d6f-9f1a-3a2b1c0d9e8f";
   public const string RemoteDeviceName = "Demo Remote Device";
 
+  // Demo MFC
+  public const string DemoMFCId = "7f9c8b28-4c2e-4d6f-9f1a-3a2b1c0d9e8e";
+  public const string DemoMFCName = "Demo Flow Controller";
+
+  // Demo Syringe Pump
+  public const string DemoSyringePumpId = "8f9c8b28-4c2e-4d6f-9f1a-3a2b1c0d9e8f";
+  public const string DemoSyringePumpName = "Demo Syringe Pump";
+
   // Campaign
   public const string CampaignId = "c0a2bb1b-2f38-4e68-bde5-4e9ad6d9e001";
   public const string CampaignName = "Demo Campaign";

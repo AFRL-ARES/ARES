@@ -1,5 +1,3 @@
-using Ares.Datamodel;
-using Ares.Datamodel.Device;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Templates;
 

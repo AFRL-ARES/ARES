@@ -20,17 +20,6 @@ internal class RemoteDeviceManager(
 {
   private readonly List<RemoteDeviceMonitor> _deviceMonitors = [];
 
-  // Static demo remote devices for demo mode
-  private static readonly RemoteDeviceConfig[] _demoDeviceConfigs =
-  [
-    new RemoteDeviceConfig
-    {
-      UniqueId = "7f9c8b28-4c2e-4d6f-9f1a-3a2b1c0d9e8f",
-      Name = "Demo Remote Device",
-      Url = "http://localhost:5257"
-    }
-  ];
-
   public async Task<RemoteDevice?> CreateDevice(string name, string url)
   {
     var config = new RemoteDeviceConfig 
@@ -109,21 +98,20 @@ internal class RemoteDeviceManager(
     // In demo mode, ensure static demo remote devices are present
     if(AresConfig.DemoMode)
     {
-      foreach(var demoConfig in _demoDeviceConfigs)
+      var existingDemo = _deviceRepo.GetDevice(DemoIds.RemoteDeviceId);
+      if(existingDemo is null)
       {
-        var existingDemo = _deviceRepo.GetDevice(demoConfig.UniqueId);
-        if(existingDemo is not null)
-        {
-          continue;
-        }
-
         try
         {
-          var demoDevice = await LoadExistingDevice(demoConfig);
+          var demoDevice = await LoadExistingDevice(new RemoteDeviceConfig 
+          { 
+            Name = DemoIds.RemoteDeviceName, 
+            UniqueId = DemoIds.RemoteDeviceId, 
+            Url = "http://localhost:5257" 
+          });
+
           if(demoDevice is null)
-          {
-            continue;
-          }
+            return;
 
           _deviceRepo.AddOrUpdate(demoDevice);
           var demoMonitor = new RemoteDeviceMonitor(demoDevice, _deviceCache, _loggerFactory.CreateLogger<RemoteDeviceMonitor>());
@@ -133,9 +121,12 @@ internal class RemoteDeviceManager(
         }
         catch(Exception ex)
         {
-          _logger.LogError(ex, "Failed to initialize demo remote device {DeviceName}", demoConfig.Name);
+          _logger.LogError(ex, "Failed to initialize demo remote device {DeviceName}", DemoIds.RemoteDeviceName);
         }
       }
+
+
+      
     }
   }
 
