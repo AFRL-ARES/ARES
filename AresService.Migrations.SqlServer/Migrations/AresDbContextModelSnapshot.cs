@@ -347,6 +347,9 @@ namespace AresService.Migrations.SqlServer.Migrations
                     b.Property<int>("ExperimentRetryLimit")
                         .HasColumnType("int");
 
+                    b.Property<bool>("HideDemoModeIntro")
+                        .HasColumnType("bit");
+
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime2")

@@ -341,6 +341,9 @@ namespace AresService.Migrations.Sqlite.Migrations
                     b.Property<int>("ExperimentRetryLimit")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("HideDemoModeIntro")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("TEXT")
