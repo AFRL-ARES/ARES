@@ -9,8 +9,10 @@
   <ItemGroup>
     <PackageReference Include="Antlr4.Runtime.Standard" Version="4.13.1" />
     <PackageReference Include="Antlr4BuildTasks" Version="12.14.0" />
-    <PackageReference Include="ARES.Datamodel" Version="0.37.1" />
-    <PackageReference Include="System.Reactive" Version="7.0.0" /> 
+    <PackageReference Include="ARES.Datamodel" Version="0.37.2" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.84.0" />
+    <PackageReference Include="System.Reactive" Version="7.0.0" />
+    <PackageReference Include="UnitsNet" Version="5.75.1" /> 
   </ItemGroup>
 
   <ItemGroup>
