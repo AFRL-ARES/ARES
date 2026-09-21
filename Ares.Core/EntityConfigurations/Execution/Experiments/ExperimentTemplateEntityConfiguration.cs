@@ -20,5 +20,7 @@ internal class ExperimentTemplateEntityConfiguration : AresEntityTypeBaseConfigu
 
     builder.Navigation(experimentTemplate => experimentTemplate.StepTemplates)
       .AutoInclude();
+
+    builder.Property(template => template.PlanObjectives).HasSerializedRepeatedField();
   }
 }

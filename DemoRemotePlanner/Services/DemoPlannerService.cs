@@ -39,6 +39,7 @@ public class DemoPlannerService : AresRemotePlannerService.AresRemotePlannerServ
     var inputs = request.PlanningParameters;
     Console.WriteLine($"Received a total of {inputs.Count} parameters to plan for.");
     var response = new PlanningResponse();
+    var newPlan = new Plan();
 
     foreach(var parameter in inputs)
     {
@@ -47,25 +48,27 @@ public class DemoPlannerService : AresRemotePlannerService.AresRemotePlannerServ
         case "Random Planner":
           {
             var plannedParam = await RandomPlanner(parameter);
-            response.PlannedParameters.Add(plannedParam);
+            newPlan.PlannedParameters.Add(plannedParam);
             break;
           }
         case "Gradual Planner":
           {
             var gradualPlannedParam = await GradualPlanner(parameter);
-            response.PlannedParameters.Add(gradualPlannedParam);
+            newPlan.PlannedParameters.Add(gradualPlannedParam);
             break;
           }
         default:
           {
             Console.WriteLine("Unrecognized Planned Requested! Defaulting to random planner...");
             var plannedParam = await RandomPlanner(parameter);
-            response.PlannedParameters.Add(plannedParam);
+            newPlan.PlannedParameters.Add(plannedParam);
             break;
           }
       }
     }
 
+    newPlan.PlanningOutcome = Outcome.Success;
+    response.Plans.Add(newPlan);
     return response;
   }
 

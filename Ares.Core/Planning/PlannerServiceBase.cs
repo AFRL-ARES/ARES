@@ -65,6 +65,8 @@ public abstract class PlannerServiceBase : IPlannerService
 
   public abstract Task<PlannerServiceCapabilities> GetCapabilities(CancellationToken cancellationToken);
 
+  public abstract Task Refresh();
+
   public virtual Task Init()
   {
     return Task.CompletedTask;

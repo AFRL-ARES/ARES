@@ -48,6 +48,16 @@
                               Pattern="@ViewModel!.IdRegex" 
                               Style="display: block; margin-top: 4px; font-size: 0.8em;" />
       }
+
+      if(ViewModel!.VariableProtocol)
+      {
+        <RadzenLabel Text="Communication Protocol" Component="ProtocolDropdown" Style="margin-right: 8px;" />
+        <RadzenDropDown TValue="string" 
+          Data="@ViewModel!.ProtocolOptions" 
+          @bind-Value="ViewModel!.SelectedProtocol"
+          Style="width: 100%; max-width: 200px;"
+          Name="ProtocolDropdown" />
+      }
     }
 
     @foreach (var prop in ViewModel!.DriverSettingsSchema.Fields)

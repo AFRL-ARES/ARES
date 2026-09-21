@@ -25,12 +25,12 @@ internal class AnalyzerManagerTests
     {
     }
 
-    public override Task<Analysis> Analyze(AnalysisRequest request, CancellationToken cancellationToken)
+    public override Task<AnalysisResponse> Analyze(AnalysisRequest request, CancellationToken cancellationToken)
     {
       throw new NotImplementedException();
     }
 
-    public override Task<Analysis> Analyze(AnalysisRequest request, AresStruct settings, CancellationToken cancellationToken)
+    public override Task<AnalysisResponse> Analyze(AnalysisRequest request, AresStruct settings, CancellationToken cancellationToken)
     {
       throw new NotImplementedException();
     }
@@ -41,6 +41,11 @@ internal class AnalyzerManagerTests
     }
 
     public override Task<AresStructSchema> GetParameters(CancellationToken cancellationToken)
+    {
+      throw new NotImplementedException();
+    }
+
+    public override Task<AresStructSchema> GetObjectiveOutputs(CancellationToken cancellationToken)
     {
       throw new NotImplementedException();
     }

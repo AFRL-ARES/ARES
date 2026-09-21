@@ -56,8 +56,8 @@ internal class CampaignExecutorTests
       .Setup(helper => helper.TryResolveParameters(
         It.IsAny<IEnumerable<PlannerAllocation>>(),
         It.IsAny<RequestMetadata>(),
-        It.IsAny<IEnumerable<Parameter>>(),
-        It.IsAny<IEnumerable<Ares.Datamodel.Analyzing.Analysis>>(),
+        It.IsAny<ExperimentTemplate>(),
+        It.IsAny<IEnumerable<Datamodel.Analyzing.AnalysisResponse>>(),
         It.IsAny<IEnumerable<ExperimentOverview>>(),
         It.IsAny<int>(),
         It.IsAny<List<PlanStatusCode>>(),
@@ -220,8 +220,8 @@ internal class CampaignExecutorTests
     _planningHelper.Verify(helper => helper.TryResolveParameters(
       It.IsAny<IEnumerable<PlannerAllocation>>(),
       It.IsAny<RequestMetadata>(),
-      It.IsAny<IEnumerable<Parameter>>(),
-      It.IsAny<IEnumerable<Ares.Datamodel.Analyzing.Analysis>>(),
+      It.IsAny<ExperimentTemplate>(),
+      It.IsAny<IEnumerable<Datamodel.Analyzing.AnalysisResponse>>(),
       It.IsAny<IEnumerable<ExperimentOverview>>(),
       It.IsAny<int>(),
       It.IsAny<List<PlanStatusCode>>(),

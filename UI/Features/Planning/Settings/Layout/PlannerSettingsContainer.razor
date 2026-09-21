@@ -4,8 +4,8 @@
   <h5 class="planner-settings-name">@Name</h5>
   @if(PlannerStatusGetter is not null)
   {
-    <div class="planner-status d-flex">
-      <button class="btn btn-sm border-0 rounded-circle btn-outline-primary mx-1" @onclick="UpdatePlannerStatus">
+    <div class="planner-status d-flex align-items-start">
+      <button class="btn btn-sm border-0 rounded-circle btn-outline-primary mx-1" @onclick="UpdatePlannerStatus" title="Refresh Status">
         <RadzenIcon Icon="refresh" />
       </button>
       @if(_plannerStatus is not null)
@@ -14,22 +14,34 @@
           <div class="planner-status-@_plannerStatus.State.ToString().ToLower()">
             @_plannerStatus.State.ToString()
           </div>
-          <div>
-            @if(_plannerStatus.State == State.Active && _plannerStatus.StateMessage == string.Empty)
+          
+          <div class="d-flex align-items-center gap-1">
+            @if(_plannerStatus.State == State.Active)
             {
-              <div>
-                Planner is Active!
-              </div>
+              <span>Planner is Active!</span>
             }
-
             else
             {
-              <div>
-                @_plannerStatus.StateMessage
-              </div>  
+              <span>Planner is Inactive</span>
+
+              <button class="btn btn-sm text-white d-inline-flex align-items-center gap-1 px-2 py-1 rounded"
+                      style="background-color: #343a40; border: 1px solid #222222; font-size: 0.85rem; color: #ffffff"
+                      type="button"
+                      @onclick="ToggleMessage"
+                      title="@(_isMessageExpanded ? "Hide Details" : "Show Details")">
+
+                <RadzenIcon Icon="@(_isMessageExpanded ? "expand_less" : "expand_more")" Style="font-size: 1rem; color: #ffffff;" />
+              </button>
             }
-            
           </div>
+
+          @if(_isMessageExpanded && !string.IsNullOrWhiteSpace(_plannerStatus.StateMessage))
+          {
+            <div class="small rounded p-2 mt-1 text-break text-white"
+                 style="max-width: 320px; background-color: #212529; border: 1px solid #343a40;">
+              @_plannerStatus.StateMessage
+            </div>
+          }
         </div>
       }
       else
@@ -72,6 +84,9 @@
   [Parameter]
   public Func<Task<StateResponse?>>? PlannerStatusGetter { get; set; }
 
+  private StateResponse? _plannerStatus;
+  private bool _isMessageExpanded;
+
   protected override async Task OnInitializedAsync()
   {
     if(PlannerStatusGetter is not null)
@@ -81,7 +96,10 @@
     }
   }
 
-  private StateResponse? _plannerStatus; 
+  private void ToggleMessage()
+  {
+    _isMessageExpanded = !_isMessageExpanded;
+  }
 
   private Task EditClicked()
   {

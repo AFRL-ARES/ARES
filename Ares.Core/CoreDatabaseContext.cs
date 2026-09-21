@@ -25,6 +25,7 @@ public class CoreDatabaseContext : DbContext
   public DbSet<ExperimentTemplate> ExperimentTemplates => Set<ExperimentTemplate>();
   public DbSet<CommandTemplate> CommandTemplates => Set<CommandTemplate>();
   public DbSet<CampaignExecutionSummary> CampaignExecutionSummaries => Set<CampaignExecutionSummary>();
+  public DbSet<ExperimentExecutionSummary> ExperimentExecutionSummaries => Set<ExperimentExecutionSummary>();
   public DbSet<DeviceConfig> DeviceConfigs => Set<DeviceConfig>();
   public DbSet<RemoteDeviceConfig> RemoteDeviceConfigs => Set<RemoteDeviceConfig>();
   public DbSet<DeviceSettings> DeviceSettings => Set<DeviceSettings>();
@@ -69,6 +70,9 @@ public class CoreDatabaseContext : DbContext
 
     // Utilities
     configurationBuilder.Properties<Timestamp>().HaveConversion<AresTimestampConverter>();
+
+    // Ignores
+    configurationBuilder.IgnoreAny<Objective>();
 
     base.ConfigureConventions(configurationBuilder);
   }

@@ -44,6 +44,9 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
 
+                    b.Property<string>("Objectives")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<double>("Result")
                         .HasColumnType("float");
 
@@ -86,6 +89,36 @@ namespace AresService.Migrations.SqlServer.Migrations
                     b.ToTable("Analyses", (string)null);
                 });
 
+            modelBuilder.Entity("Ares.Datamodel.Analyzing.AnalysisResponse", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("AnalysisOutcome")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("ErrorString")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Objectives")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("AnalysisResponses", (string)null);
+                });
+
             modelBuilder.Entity("Ares.Datamodel.Analyzing.AnalyzerCapabilities", b =>
                 {
                     b.Property<Guid>("UniqueId")
@@ -104,6 +137,9 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("ObjectiveOutputSchema")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("SettingsSchema")
                         .HasColumnType("nvarchar(max)");
@@ -225,6 +261,9 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("AnalyzerName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("AnalyzerResponse")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("AnalyzerType")
@@ -857,6 +896,9 @@ namespace AresService.Migrations.SqlServer.Migrations
                     b.Property<string>("PortName")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Protocol")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("SerialId")
                         .HasColumnType("nvarchar(max)");
 
@@ -1166,6 +1208,9 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
+
+                    b.Property<bool>("MultiObjectiveCapable")
+                        .HasColumnType("bit");
 
                     b.Property<Guid>("PlannerInfoId")
                         .HasColumnType("uniqueidentifier");
@@ -1538,6 +1583,9 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .HasDefaultValueSql("getdate()");
 
                     b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PlanObjectives")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("Resolved")

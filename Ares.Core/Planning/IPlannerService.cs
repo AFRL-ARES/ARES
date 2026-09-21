@@ -41,6 +41,12 @@ public interface IPlannerService
   Task Init();
 
   /// <summary>
+  /// Refreshes the planners connection, calling this prior to reporting updated information about a planner is ideal
+  /// </summary>
+  /// <returns></returns>
+  Task Refresh();
+
+  /// <summary>
   /// Provides an observable for the <see cref="State"/>
   /// </summary>
   IObservable<State> PlannerServiceStateObservable { get; }

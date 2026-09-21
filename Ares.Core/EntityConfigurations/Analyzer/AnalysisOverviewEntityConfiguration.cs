@@ -10,5 +10,6 @@ public class AnalysisOverviewEntityConfiguration : AresEntityTypeBaseConfigurati
   {
     base.Configure(builder);
     builder.Property(overview => overview.AnalyzerInfo).HasAnalyzerInfo();
+    builder.Property(overview => overview.Objectives).HasObjectives();
   }
 }

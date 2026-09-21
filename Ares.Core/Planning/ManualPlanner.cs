@@ -32,14 +32,19 @@ public class ManualPlanner : IPlannerService
       var currentParameterSet = _planResultsQueue.Dequeue().ToList();
       var returnList = request.PlanningParameters.Select(param => currentParameterSet.First(result => result.Name == param.ParameterName).ToPlannedParameter(param)).ToList();
       var response = new PlanningResponse();
-      
-      response.PlannedParameters.AddRange(returnList);
-      response.PlanningOutcome = Outcome.Success;
+
+      var plan = new Plan() { PlanningOutcome = Outcome.Success };
+      plan.PlannedParameters.AddRange(returnList);
+      response.Plans.Add(plan);
       return Task.FromResult(response);
     }
     catch(InvalidOperationException e)
     {
-      return Task.FromResult(new PlanningResponse() { ErrorString = $"Exception Occured in Manual Planner: {e.Message}", PlanningOutcome = Outcome.Failure});
+      var errorResponse = new PlanningResponse();
+      var errorPlan = new Plan() { ErrorString = $"Exception Occured in Manual Planner: {e.Message}", PlanningOutcome = Outcome.Failure };
+      errorResponse.Plans.Add(errorPlan);
+
+      return Task.FromResult(errorResponse);
     }
   }
 
@@ -75,6 +80,9 @@ public class ManualPlanner : IPlannerService
     if(LatestManualPlannerSeed is not null)
       await Seed(LatestManualPlannerSeed);
   }
+
+  public Task Refresh() 
+    => Task.CompletedTask;
 
   public void Reset()
   {

@@ -19,18 +19,17 @@ internal class NoneAnalyzer : AnalyzerBase
     AnalyzerState = State.Active;
   }
 
-  public override Task<Analysis> Analyze(AnalysisRequest request, CancellationToken cancellationToken)
+  public override Task<AnalysisResponse> Analyze(AnalysisRequest request, CancellationToken cancellationToken)
   {
-    var analysis = new Analysis
+    var analysis = new AnalysisResponse
     {
-      AnalysisOutcome = Outcome.Success,
-      Result = 0
+      AnalysisOutcome = Outcome.Success
     };
 
     return Task.FromResult(analysis);
   }
 
-  public override Task<Analysis> Analyze(AnalysisRequest request, AresStruct _settings, CancellationToken cancellationToken)
+  public override Task<AnalysisResponse> Analyze(AnalysisRequest request, AresStruct _settings, CancellationToken cancellationToken)
   {
     return Analyze(request, cancellationToken);
   }
@@ -43,6 +42,11 @@ internal class NoneAnalyzer : AnalyzerBase
   }
 
   public override Task<AresStructSchema> GetParameters(CancellationToken cancellationToken)
+  {
+    return Task.FromResult(new AresStructSchema());
+  }
+
+  public override Task<AresStructSchema> GetObjectiveOutputs(CancellationToken cancellationToken)
   {
     return Task.FromResult(new AresStructSchema());
   }

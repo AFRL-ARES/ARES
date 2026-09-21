@@ -101,13 +101,59 @@ else
             : column.Name;
     }
 
-    private static string GetCellDisplayValue(AresDataRow row, AresDataColumn column)
+  private static string GetCellDisplayValue(AresDataRow row, AresDataColumn column)
+  {
+    if(row.Data?.Fields is null || string.IsNullOrEmpty(column.Name))
+      return string.Empty;
+
+    if(row.Data.Fields.TryGetValue(column.Name, out var directValue))
+      return directValue.Stringify();
+
+    if(column.Name.Contains('.'))
     {
-        if (row.Data?.Fields.TryGetValue(column.Name, out var value) != true)
+      var parts = column.Name.Split('.');
+      var currentStruct = row.Data;
+      AresValue? targetValue = null;
+
+      for(var i = 0; i < parts.Length; i++)
+      {
+        var part = parts[i];
+        if(currentStruct is null)
+          break;
+
+        if(!currentStruct.Fields.TryGetValue(part, out var childValue))
         {
-            return string.Empty;
+          var matchedKey = currentStruct.Fields.Keys
+              .FirstOrDefault(k => string.Equals(k, part, StringComparison.OrdinalIgnoreCase));
+
+          if(matchedKey is null || !currentStruct.Fields.TryGetValue(matchedKey, out childValue))
+            break;
         }
 
-        return value.Stringify();
+        if(i == parts.Length - 1)
+        {
+          targetValue = childValue;
+        }
+        else if(childValue.KindCase == AresValue.KindOneofCase.StructValue)
+        {
+          currentStruct = childValue.StructValue;
+        }
+        else
+        {
+          break;
+        }
+      }
+
+      if(targetValue is not null)
+        return targetValue.Stringify();
     }
+
+    var fallbackKey = row.Data.Fields.Keys
+        .FirstOrDefault(k => string.Equals(k, column.Name, StringComparison.OrdinalIgnoreCase));
+
+    if(fallbackKey is not null && row.Data.Fields.TryGetValue(fallbackKey, out var fallbackValue))
+      return fallbackValue.Stringify();
+
+    return string.Empty;
+  }
 }

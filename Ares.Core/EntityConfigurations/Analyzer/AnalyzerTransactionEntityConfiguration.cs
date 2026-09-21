@@ -1,6 +1,5 @@
 ﻿using Ares.Core.EntityConfigurations.Helpers;
 using Ares.Datamodel.Analyzing;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Ares.Core.EntityConfigurations.Analyzer;
@@ -11,6 +10,7 @@ internal class AnalyzerTransactionEntityConfiguration : AresEntityTypeBaseConfig
   {
     base.Configure(builder);
     builder.Property(transaction => transaction.AnalysisRequest).HasAnalysisRequest();
-    builder.Property(transaction => transaction.AnalysisResponse).HasAnalysis();
+    builder.Property(transaction => transaction.AnalysisResponse).HasAnalysis(); //Known depricated field, kept for backwards compatability
+    builder.Property(transaction => transaction.AnalyzerResponse).HasAnalyzerResponse();
   }
 }

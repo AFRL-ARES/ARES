@@ -2,10 +2,11 @@
 
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Features.CampaignEdit.ViewModels.AnalyzerDesignerViewModel>
 
-@if(DesignerLoading)
+@if(_designerLoading)
 {
-  <div>Loading...</div>
+  <LoadingSpinner SpinnerSize="SpinnerSize.Large" />
 }
+
 else
 {
   <div class="d-flex flex-column h-100">
@@ -37,14 +38,27 @@ else
 }
 
 @code {
-  protected bool DesignerLoading { get; set; } = false;
+  private bool _designerLoading = true;
+  private AnalyzerDesignerViewModel? _lastViewModel;
 
-  protected override async Task OnInitializedAsync()
+  protected override async Task OnParametersSetAsync()
   {
-    DesignerLoading = true;
-    await ViewModel!.UpdateAvailableAnalyzers();
-    await ViewModel!.UpdateMappings();
-    DesignerLoading = false;
-    StateHasChanged();
+    // Only run if ViewModel is present and has actually changed
+    if(ViewModel is not null && ViewModel != _lastViewModel)
+    {
+      _lastViewModel = ViewModel;
+      _designerLoading = true;
+
+      try
+      {
+        await ViewModel.UpdateAvailableAnalyzers();
+        await ViewModel.UpdateMappings();
+      }
+      finally
+      {
+        _designerLoading = false;
+        StateHasChanged();
+      }
+    }
   }
 }

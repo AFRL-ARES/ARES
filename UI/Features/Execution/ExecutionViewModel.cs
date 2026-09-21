@@ -376,6 +376,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
       return;
 
     OnAnalyzerTransactionReceived(newestTransaction, analyzerTransactions.Count());
+    NormalizeAllAnalyzerMetrics();
   }
 
   public async Task UpdatePlannerTransactions()
@@ -401,11 +402,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
   public void OnPlannerTransactionReceived(PlannerTransaction transaction, int currentTurn)
   {
-    if(transaction.PlanningResponse.PlannedParameters.Any())
-      foreach(var field in transaction.PlanningResponse.PlannedParameters)
-        ProcessTransactionParameterData(field, transaction, currentTurn);
-
-    else if(transaction.PlanningResponse.Plans.Any())
+    if(transaction.PlanningResponse.Plans.Any())
     {
       foreach(var plan in transaction.PlanningResponse.Plans)
       {
@@ -422,13 +419,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     var count = 0;
 
     foreach(var transaction in transactionList)
-    {
-      if(transaction.PlanningResponse.PlannedParameters.Any())
-        count++;
-
-      else
-        count += transaction.PlanningResponse.Plans.Count();
-    }
+     count += transaction.PlanningResponse.Plans.Count();
 
     return count;
   }
@@ -463,13 +454,50 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
   public void OnAnalyzerTransactionReceived(AnalyzerTransaction transaction, int currentTurn)
   {
-    AnalyzerMetrics.Add(new ChartMetricPoint
+    foreach(var objective in transaction.AnalyzerResponse.Objectives)
     {
-      ExecutionIndex = currentTurn,
-      RawValue = transaction.AnalysisResponse.Result
-    }); 
+      var found = objective.ObjectiveValue.TryGetNumericValue(out var numericValue);
+      if(!found)
+        return;
+
+      if(!AnalyzerMetrics.ContainsKey(objective.ObjectiveName))
+        AnalyzerMetrics[objective.ObjectiveName] = new List<ChartMetricPoint>();
+
+      AnalyzerMetrics[objective.ObjectiveName].Add(new ChartMetricPoint
+      {
+        ExecutionIndex = currentTurn,
+        RawValue = numericValue,
+        PlotValue = numericValue
+      });      
+    }
   }
 
+  private void NormalizeAllAnalyzerMetrics()
+  {
+    // Compute a global min/max across all analyzer objectives so relative scale between
+    // objectives is preserved. This avoids early frames where different objectives
+    // collapse onto the same normalized value when each series only has one point.
+    var allPoints = AnalyzerMetrics.Values
+      .Where(series => series is not null && series.Count > 0)
+      .SelectMany(series => series)
+      .ToList();
+
+    if(allPoints.Count == 0)
+      return;
+
+    var min = allPoints.Min(point => point.RawValue);
+    var max = allPoints.Max(point => point.RawValue);
+
+    if(Math.Abs(max - min) < double.Epsilon)
+    {
+      foreach(var point in allPoints)
+        point.PlotValue = 50;
+      return;
+    }
+
+    foreach(var point in allPoints)
+      point.PlotValue = ((point.RawValue - min) / (max - min)) * 100.0;
+  }
   public bool TryGetChartableValue(AresValue aresValue, out double result)
   {
     result = 0;
@@ -706,6 +734,8 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
     foreach(var (index, item) in analyzerTransactions.Index())
       OnAnalyzerTransactionReceived(item, index);
+
+    NormalizeAllAnalyzerMetrics();
   }
 
   public async Task RefreshCampaignSetup()
@@ -813,7 +843,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   [Reactive]
   public partial Dictionary<string, List<ChartMetricPoint>> PlannerMetricsMap { get; private set; }
   [Reactive]
-  public partial List<ChartMetricPoint> AnalyzerMetrics { get; private set; }
+  public partial Dictionary<string, List<ChartMetricPoint>> AnalyzerMetrics { get; private set; }
   [Reactive]
   public partial IList<ExperimentExecutionStatus> ExperimentExecutionStatuses { get; private set; }
   [Reactive]
@@ -857,3 +887,4 @@ public class ChartMetricPoint
   public double RawValue { get; set; }
   public double PlotValue { get; set; }
 }
+

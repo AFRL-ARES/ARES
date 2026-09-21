@@ -15,7 +15,7 @@
     </RadzenFormField>
   }
 
-else if(Schema?.Type is AresDataType.Number)
+else if(Schema?.Type is AresDataType.Number || Schema?.Type is AresDataType.Float)
 {
   <RadzenFormField Text="@GetFormFieldName()" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%">
     @if(HasNumberChoices)
@@ -29,6 +29,25 @@ else if(Schema?.Type is AresDataType.Number)
       <RadzenNumericRangeValidator Component="SchemaNumberInput"
         Min="@(Schema.HasMinNumberValue ? (decimal)Schema.MinNumberValue : decimal.MinValue)"
         Max="@(Schema.HasMaxNumberValue ? (decimal)Schema.MaxNumberValue : decimal.MaxValue)"
+        Text="@GetNumberValidationMessage()"
+        Style="display: block; font-size: 12px;" />
+    }
+  </RadzenFormField>
+}
+
+else if(Schema?.Type is AresDataType.Int)
+{
+  <RadzenFormField Text="@GetFormFieldName()" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%">
+    @if(HasNumberChoices)
+    {
+      <RadzenDropDown TValue="int" Data="@Schema.NumberChoices.Numbers" @bind-Value="_intValue" Change="@OnIntChanged" Style="width: 100%" />
+    }
+    else
+    {
+      <RadzenNumeric TValue="int" @bind-Value="_intValue" Change="@OnIntNumberChanged" Style="width: 100%" Name="SchemaNumberInput" />
+      <RadzenNumericRangeValidator Component="SchemaNumberInput"
+        Min="@(Schema.HasMinNumberValue ? (int)Schema.MinNumberValue : int.MinValue)"
+        Max="@(Schema.HasMaxNumberValue ? (int)Schema.MaxNumberValue : int.MaxValue)"
         Text="@GetNumberValidationMessage()"
         Style="display: block; font-size: 12px;" />
     }
@@ -217,21 +236,22 @@ else if(Schema?.Type is AresDataType.NumberArray)
 @code {
   [Parameter] 
   public AresValue? Value { get; set; }
-  
+
   [Parameter] 
   public AresValueSchema? Schema { get; set; }
-  
+
   [Parameter] 
   public string? Unit { get; set; }
-  
+
   [Parameter] 
   public string? Name { get; set; }
-  
+
   [Parameter] 
   public Func<AresValue, Task>? ValueEditCallback { get; set; }
 
   private string _stringValue = string.Empty;
   private double _numberValue;
+  private int _intValue;
   private bool _boolValue;
   private List<string> _stringArray = [];
   private List<double> _numberArray = [];
@@ -273,6 +293,12 @@ else if(Schema?.Type is AresDataType.NumberArray)
       case AresDataType.Number:
         _numberValue = Value!.NumberValue;
         break;
+      case AresDataType.Float:
+        _numberValue = Value!.FloatValue;
+        break;
+      case AresDataType.Int:
+        _intValue = (int)Value!.IntValue;
+        break;
       case AresDataType.Quantity:
         _numberValue = Value!.QuantityValue?.Scalar ?? 0.0;
         break;
@@ -290,7 +316,7 @@ else if(Schema?.Type is AresDataType.NumberArray)
         // Safely extract existing struct fields into our dictionary
         _structValues = Value!.StructValue?.Fields?.ToDictionary(k => k.Key, v => v.Value) ?? new();
         break;
-        
+
       case AresDataType.List:
         // Assuming your Protobuf defines AresValueList containing a repeated AresValue
         _listValues = Value!.ListValue?.Values?.ToList() ?? new();
@@ -313,10 +339,23 @@ else if(Schema?.Type is AresDataType.NumberArray)
     return UpdateAresValue();
   }
 
-  // Handler for single number from RadzenNumeric (takes double)
+  // Handler for single double from RadzenNumeric
   private Task OnNumericChanged(double value)
   {
     _numberValue = value;
+    return UpdateAresValue();
+  }
+
+  // Handler for a single integer value from RadzenNumberic
+  private Task OnIntNumberChanged(int value)
+  {
+    _intValue = value;
+    return UpdateAresValue();
+  }
+
+  private Task OnIntChanged(object value)
+  {
+    _intValue = Convert.ToInt32(value);
     return UpdateAresValue();
   }
 
@@ -369,6 +408,14 @@ else if(Schema?.Type is AresDataType.NumberArray)
 
       case AresDataType.Number:
         aresValue.NumberValue = _numberValue;
+        break;
+
+      case AresDataType.Float:
+        aresValue.FloatValue = _numberValue;
+        break;
+
+      case AresDataType.Int:
+        aresValue.IntValue = _intValue;
         break;
 
       case AresDataType.Quantity:

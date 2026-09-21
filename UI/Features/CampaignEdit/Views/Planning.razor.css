@@ -1,0 +1,28 @@
+﻿.two-column-container {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 1.5rem;
+	width: 100%;
+	min-height: calc(100vh - 4rem);
+	padding: 0.5rem;
+	box-sizing: border-box;
+}
+
+.column {
+	border-radius: 1px;
+	overflow-y: auto;
+}
+
+.rz-switch .rz-switch-circle {
+	background: green !important;
+}
+
+.rz-switch.rz-switch-checked .rz-switch-circle {
+	background: red !important;
+}
+
+@media (max-width: 768px) {
+	.two-column-container {
+		grid-template-columns: 1fr;
+	}
+}
