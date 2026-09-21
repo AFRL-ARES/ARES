@@ -31,7 +31,7 @@ authors:
    affiliation: 1
 
 affiliations:
- - name: Air Force Research Laboratory, Materials & Manufacturing Directorate, United States of America
+ - name: Air Force Research Laboratory, Foundational Technologies Directorate, United States of America
    index: 1
  - name: The National Research Council, United States of America
    index: 2
