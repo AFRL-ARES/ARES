@@ -24,6 +24,7 @@ authors:
  - name: Jason Wheeler
    affiliation: 5
  - name: Daylond Hooper
+   orcid: 0009-0002-1849-5833
    affiliation: 5
  - name: Benji Maruyama
    orcid: 0000-0002-3832-628X
