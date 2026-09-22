@@ -44,8 +44,13 @@
             </RadzenStack>
             <RadzenStack Gap="1rem" Orientation="Orientation.Horizontal" Style="padding: 0.5rem">
               <RadzenLabel Text="Display Data Collection Widget" />
-              <RadzenSwitch @bind-Value="ViewModel!.DisplayDataCollectionWidget" Style="align-self: center"/>
+              <RadzenSwitch @bind-Value="ViewModel!.DisplayDataCollectionWidget" Style="align-self: center" />
               <RadzenIcon Icon="help_outline" MouseEnter="@(args => ShowDisplayDataCollectionWidgetTooltip(args, new TooltipOptions { Duration = null }))" />
+            </RadzenStack>
+            <RadzenStack Gap="1rem" Orientation="Orientation.Horizontal" Style="padding: 0.5rem">
+              <RadzenLabel Text="Hide Demo Mode Welcome Prompt" />
+              <RadzenSwitch @bind-Value="ViewModel!.HideDemoModeWelcomePrompt" Style="align-self: center" />
+              <RadzenIcon Icon="help_outline" MouseEnter="@(args => ShowHideDemoModeTooltip(args, new TooltipOptions { Duration = null }))" />
             </RadzenStack>
           </RadzenCard>
         </RadzenTabsItem>
@@ -101,4 +106,5 @@
   void ShowCommandLatencyTooltip(ElementReference elementReference, TooltipOptions options = null) => tooltipService.Open(elementReference, "Sets whether a universal latency should be applied, in seconds, between commands (i.e. a one second universal latency results in a constant one second delay between commands being executed)", options);
   void ShowDisplayCompatabilityWarningsTooltip(ElementReference elementReference, TooltipOptions options = null) => tooltipService.Open(elementReference, "Sets whether ARES will notify you of potential compatibility issues with external ARES services. This will not prevent notification when a major version mismatch is present.", options);
   void ShowDisplayDataCollectionWidgetTooltip(ElementReference elementReference, TooltipOptions options = null) => tooltipService.Open(elementReference, "Sets whether the data collection widget is displayed on the ARES dashboard", options);
+  void ShowHideDemoModeTooltip(ElementReference elementReference, TooltipOptions options = null) => tooltipService.Open(elementReference, "Sets whether the welcome tile appears when launching ARES in demo mode", options);
 }

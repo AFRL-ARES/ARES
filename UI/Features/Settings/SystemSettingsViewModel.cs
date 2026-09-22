@@ -40,7 +40,8 @@ public partial class SystemSettingsViewModel : ReactiveObject
         CommandLatency = new Duration() { Seconds = CommandLatency },
         CommandRetryLimit = CommandRetryLimit,
         DisplayCompatabilityWarnings = DisplayCompatabilityWarnings,
-        DisplayDataCollectionWidget = DisplayDataCollectionWidget
+        DisplayDataCollectionWidget = DisplayDataCollectionWidget,
+        HideDemoModeIntro = HideDemoModeWelcomePrompt
       });
 
       await _notificationHandler.HandleNotification("Settings Updated!", "ARES successfully updated your settings.", NotificationSeverityEnum.Success);
@@ -70,6 +71,7 @@ public partial class SystemSettingsViewModel : ReactiveObject
       CommandRetryLimit = newGeneralSettings.CommandRetryLimit;
       DisplayCompatabilityWarnings = newGeneralSettings.DisplayCompatabilityWarnings;
       DisplayDataCollectionWidget = newGeneralSettings.DisplayDataCollectionWidget;
+      HideDemoModeWelcomePrompt = newGeneralSettings.HideDemoModeIntro;
     }
   }
 
@@ -101,4 +103,7 @@ public partial class SystemSettingsViewModel : ReactiveObject
 
   [Reactive]
   public partial bool DisplayDataCollectionWidget { get; set; }
+
+  [Reactive]
+  public partial bool HideDemoModeWelcomePrompt { get; set; }
 }
