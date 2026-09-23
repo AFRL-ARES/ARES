@@ -1,8 +1,7 @@
-# ARES OS 2.0: Autonomous Research Software
-The next generation of autonomous research software, serving as the central hub for integrating devices, planners, and analyzers for self-directed scientific campaigns. This is our general research software.
+# ARES OS 2.0: Autonomous Self-Driving Lab Orchestration Software
+ARES OS is a self-driving lab (SDL) orchestration software designed for closed-loop autonomous research and discovery. ARES serves as the central hub for integrating devices, planners, and analyzers for self-directed scientific campaigns.
 
 ## Documentation
-
 You can find our main documentation on ARES as well as the rest of the ARES ecosystem by visting https://afrl-ares.github.io/ to browse our centralized documentation site.
 
 ## CLEARANCE
