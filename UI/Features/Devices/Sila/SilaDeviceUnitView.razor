@@ -1,0 +1,70 @@
+@using System
+@using System.Linq
+@using UI.Application.Devices
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<SilaDeviceUnitViewModel>
+@inject TooltipService TooltipService
+
+<RadzenFieldset class="device-fieldset">
+  <HeaderTemplate>
+    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
+      <RadzenText Text="@ViewModel!.DeviceName" TItem="string" />
+      <RadzenLabel Text="SiLA Device" />
+      <RadzenLabel Text="@($"Address: {ViewModel!.Address}")" />
+      <RadzenIcon @ref="_connectedIcon" Icon="link" class="rz-color-success"
+        @onmouseenter="@(args => ShowTooltip(_connectedIcon!.Element, "Connected to SiLA Service and Device"))" />
+    </RadzenStack>
+  </HeaderTemplate>
+  <ChildContent>
+    @if(ViewModel!.DeviceState is not null)
+    {
+      var groupedFields = ViewModel!.DeviceState.Fields
+        .Where(field => !field.Key.StartsWith("ConnectionConfigurationService", StringComparison.Ordinal))
+        .GroupBy(field => GetPrefix(field.Key));
+
+      @foreach(var group in groupedFields)
+      {
+        <RadzenStack Orientation="Orientation.Vertical" Gap="0.25rem" class="rz-mb-4">
+          <RadzenText Text="@group.Key" TItem="string" class="sila-device-prefix-label" />
+          @foreach(var field in group)
+          {
+            <RadzenRow AlignItems="AlignItems.Center" Gap="1rem" class="sila-device-row">
+              <RadzenColumn Size="4" class="sila-device-label-column">
+                <RadzenLabel Text="@GetSuffix(field.Key)" class="sila-device-field-label" />
+              </RadzenColumn>
+              <RadzenColumn Size="8" class="sila-device-value-column">
+                <AresValueDisplay Value="@field.Value" />
+              </RadzenColumn>
+            </RadzenRow>
+          }
+        </RadzenStack>
+      }
+    }
+  </ChildContent>
+</RadzenFieldset>
+
+@code {
+  private RadzenIcon? _connectedIcon;
+
+  void ShowTooltip(ElementReference elementReference, string text)
+  {
+    TooltipService.Open(elementReference, text, new TooltipOptions { Position = TooltipPosition.Top });
+  }
+
+  private static string GetPrefix(string key)
+  {
+    var index = key.IndexOf('.');
+    if(index <= 0)
+      return key;
+
+    return key[..index];
+  }
+
+  private static string GetSuffix(string key)
+  {
+    var index = key.IndexOf('.');
+    if(index < 0 || index == key.Length - 1)
+      return key;
+
+    return key[(index + 1)..];
+  }
+}

@@ -3,6 +3,7 @@ using Ares.Core.Device.Managers;
 using Ares.Core.Device.Plugins.Drivers;
 using Ares.Core.Device.Plugins.Drivers.Loading;
 using Ares.Core.Device.Remote;
+using Ares.Core.Device.Sila;
 using Ares.Core.Device.State.Logging;
 using Ares.Core.Planning;
 using Ares.Core.Settings;
@@ -27,10 +28,12 @@ public class ServiceStarter : BackgroundService
   private readonly IVisualizationConfigManager _visualizationConfigManager;
   private readonly IDeviceDriverLoader _deviceDriverLoader;
   private readonly IDeviceManager _deviceManager;
+  private readonly ISilaDeviceManager _silaDeviceManager;
   private readonly IDriverDatabaseManager _driverDbManager;
   private readonly StateLoggerManager _stateLoggerManager;
   private readonly IConfiguration _configuration;
   private readonly StartupStateTracker _tracker;
+  private readonly SilaClient _silaClient;
   private readonly ILogger<ServiceStarter> _logger;
   private readonly ISystemSettingsManager _settingsManager;
 
@@ -48,6 +51,7 @@ public class ServiceStarter : BackgroundService
     IVisualizationConfigManager visualizationConfigManager,
     IConfiguration configuration,
     IRemoteDeviceManager remoteDeviceManager,
+    ISilaDeviceManager silaDeviceManager,
     IDriverDatabaseManager driverDbManager,
     IDeviceManager deviceManager,
     INotificationReceivingService notificationReceivingService,
@@ -56,6 +60,7 @@ public class ServiceStarter : BackgroundService
     DeviceAdapterManager deviceAdapterManager,
     StateLoggerManager stateLoggerManager,
     StartupStateTracker tracker,
+    SilaClient silaClient,
     ISystemSettingsManager settingsManager,
     ILogger<ServiceStarter> logger)
   {
@@ -68,12 +73,14 @@ public class ServiceStarter : BackgroundService
     _analyzerManager = analyzerManager;
     _plannerManager = plannerManager;
     _remoteDeviceManager = remoteDeviceManager;
+    _silaDeviceManager = silaDeviceManager;
     _visualizationConfigManager = visualizationConfigManager;
     _configuration = configuration;
     _deviceManager = deviceManager;
     _deviceConfigManager = deviceConfigManager;
     _driverDbManager = driverDbManager;
     _tracker = tracker;
+    _silaClient = silaClient;
     _settingsManager = settingsManager;
 
     _dataPath = _configuration.Get<AppSettings>()?.AresDataPath ?? "";
@@ -87,6 +94,8 @@ public class ServiceStarter : BackgroundService
   protected override async Task ExecuteAsync(CancellationToken cancellationToken)
   {
     _notificationReceivingService.StartNotificationStream();
+    //Initialize the sila client first, this prevents situations where we load devices but the client hasn't created our components yet
+    _silaClient.Init();
 
     var localTrack = Task.Run(async () =>
     {
@@ -109,7 +118,9 @@ public class ServiceStarter : BackgroundService
     var remoteTrack = Task.WhenAll(
       _plannerManager.LoadPlanners(),
       _analyzerManager.LoadAnalyzers(),
-      _remoteDeviceManager.LoadDevices());
+      _remoteDeviceManager.LoadDevices(),
+      _silaDeviceManager.LoadSilaDevices()
+      );
 
     await _visualizationConfigManager.Initialize();
     await Task.WhenAll(localTrack, infraTrack, remoteTrack);

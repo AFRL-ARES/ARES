@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <TypeScriptTarget>ES6</TypeScriptTarget>
@@ -80,7 +80,6 @@
     <ProjectReference Include="..\AresService.Migrations.Postgres\AresService.Migrations.Postgres.csproj" />
     <ProjectReference Include="..\AresService.Migrations.Sqlite\AresService.Migrations.Sqlite.csproj" />
     <ProjectReference Include="..\AresService.Migrations.SqlServer\AresService.Migrations.SqlServer.csproj" />
-		<ProjectReference Include="C:\ARES\ARES-datamodel\dotnet\ARES.Datamodel\ARES.Datamodel.csproj" />
 	</ItemGroup>
 
   <ItemGroup>

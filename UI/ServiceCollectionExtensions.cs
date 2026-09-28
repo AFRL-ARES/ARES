@@ -26,6 +26,7 @@ using UI.Features.CampaignEdit.ViewModels;
 using UI.Features.Devices;
 using UI.Features.Devices.Plugin;
 using UI.Features.Devices.Remote.Factory;
+using UI.Features.Devices.Sila;
 using UI.Features.DeviceStateLogging;
 using UI.Features.DeviceStateLogging.Settings;
 using UI.Features.Notifications;
@@ -47,6 +48,7 @@ using ManualPlannerViewModel = UI.Features.Execution.Planning.ManualPlannerViewM
 using RemoteDeviceSettingsListViewModel = UI.Features.Devices.Remote.RemoteDeviceSettingsListViewModel;
 using ScriptPlaygroundViewModel = UI.Features.ScriptPlayground.ScriptPlaygroundViewModel;
 using UI.Features.Settings;
+using UI.Features.Devices.Sila.Factory;
 
 namespace UI;
 
@@ -122,6 +124,7 @@ internal static class ServiceCollectionExtensions
     services.AddTransient<RemoteDeviceSettingsListViewModel>();
     services.AddTransient<PluginDeviceSettingsListViewModel>();
     services.AddTransient<SystemSettingsViewModel>();
+    services.AddTransient<SilaDeviceSettingsListViewModel>();
 
     //Other View Models
     services.AddScoped<ManualPlannerViewModel>();
@@ -143,6 +146,7 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<AnalyzerInputDesignerVmFactory>();
     services.AddSingleton<IAresDeviceViewModelFactory,  AresDeviceViewModelFactory>();
     services.AddSingleton<IRemoteDeviceControlViewModelFactory, RemoteDeviceControlViewModelFactory>();
+    services.AddSingleton<ISilaDeviceControlViewModelFactory,  SilaDeviceControlViewModelFactory>();
   }
 
   public static void LoadService(this IServiceCollection services, IConfiguration configuration)

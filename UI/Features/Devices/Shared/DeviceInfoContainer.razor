@@ -1,4 +1,4 @@
-﻿@using Ares.Datamodel
+@using Ares.Datamodel
 @using Ares.Datamodel.Device
 @using Ares.Datamodel.Extensions
 
@@ -36,7 +36,7 @@
       <RadzenDataGridColumn TItem="DeviceCommandDescriptor" Property="Name" Title="Command" Width="150px">
         <Template Context="cmd">
           <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
-            <strong>@cmd.Name</strong>
+            <span class="device-command-name" title="@cmd.Name">@cmd.Name</span>
           </RadzenStack>
         </Template>
       </RadzenDataGridColumn>
