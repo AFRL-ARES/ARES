@@ -633,7 +633,7 @@ internal static class DemoCampaignTemplateFactory
         {
           Type = AresDataType.Number,
           Optional = false
-        }
+        },
       },
       PlannedSource = new PlannedParameterSource
       {
@@ -647,7 +647,7 @@ internal static class DemoCampaignTemplateFactory
           UseDefault = false,
           PlannerName = "Hill Climbing Planner",
           PlannerDescription = "A planner that uses a simple hill-climbing step based on previous parameter history.",
-          Schema = new AresValueSchema { Type = (AresDataType)15, Optional = false, MaxNumberValue = 200, MinNumberValue = 10 }
+          Schema = new AresValueSchema { Type = (AresDataType)15, Optional = false }
         }
       }
     };
@@ -658,6 +658,9 @@ internal static class DemoCampaignTemplateFactory
       parameter.Metadata.Schema.MinNumberValue = (double)minValue;
       parameter.Metadata.Constraints.Add(new Limits() { Maximum = (double)maxValue, Minimum = (double)minValue });
     }
+
+    else
+      Console.WriteLine("Oopsie no stuff :(");
 
     return parameter;
   }
