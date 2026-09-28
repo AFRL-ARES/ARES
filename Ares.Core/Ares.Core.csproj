@@ -38,8 +38,6 @@
 	  <PackageReference Include="Tecan.Sila2" Version="4.4.7" />
 	  <PackageReference Include="Tecan.Sila2.Client" Version="4.4.7" />
 	  <PackageReference Include="Tecan.Sila2.DynamicClient" Version="4.4.7" />
-	  <PackageReference Include="UnitsNet" Version="5.75.0" />
-	  <PackageReference Include="YamlDotNet" Version="16.3.0" />
 	  <PackageReference Include="UnitsNet" Version="5.75.1" />
 	  <PackageReference Include="YamlDotNet" Version="18.1.0" />
 	</ItemGroup>
