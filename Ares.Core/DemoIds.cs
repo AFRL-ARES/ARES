@@ -19,13 +19,21 @@ public static class DemoIds
   public const string RemoteDeviceId = "7f9c8b28-4c2e-4d6f-9f1a-3a2b1c0d9e8f";
   public const string RemoteDeviceName = "Demo Remote Device";
 
-  // Demo MFC
-  public const string DemoMFCId = "7f9c8b28-4c2e-4d6f-9f1a-3a2b1c0d9e8e";
-  public const string DemoMFCName = "Demo Flow Controller";
+  // Demo Catalyst MFC
+  public const string DemoCatalystMFCUniqueID = "7f9c8b28-4c2e-4d6f-9f1a-3a2b1c0d9e8e";
+  public const string DemoCatalystMFCName = "Catalyst MFC";
+
+  // Demo Nitrogen MFC
+  public const string DemoNitrogenMFCUniqueID = "7f9c8b28-4c2e-4d6f-9f1a-3a2b1c0d9e6e";
+  public const string DemoNitrogenMFCName = "Nitrogen MFC";
 
   // Demo Syringe Pump
   public const string DemoSyringePumpId = "8f9c8b28-4c2e-4d6f-9f1a-3a2b1c0d9e8f";
   public const string DemoSyringePumpName = "Demo Syringe Pump";
+
+  // Demo Tube Furnace
+  public const string DemoTubeFurnaceId = "8d9c8b28-4c2e-4d6f-9f1a-3a2b1c0d9e8f";
+  public const string DemoTubeFurnaceName = "Demo Tube Furance";
 
   // Campaign
   public const string CampaignId = "c0a2bb1b-2f38-4e68-bde5-4e9ad6d9e001";

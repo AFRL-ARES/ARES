@@ -40,6 +40,7 @@ internal class RemoteAnalyzerMonitor : IDisposable
               await _analyzer.UpdateInfo();
               await _analyzer.UpdateParameters();
               await _analyzer.UpdateCapabilities();
+              await _analyzer.GetObjectiveOutputs(token);
               await _analyzerCache.CacheAnalyzerInfo(_analyzer);
               await _analyzerCache.CacheAnalyzerSettings(_analyzer);
             }
