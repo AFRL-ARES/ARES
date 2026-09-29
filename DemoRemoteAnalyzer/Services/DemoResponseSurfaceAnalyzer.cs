@@ -23,7 +23,7 @@ public class DemoResponseSurfaceAnalyzer
 
   private Pcg64 _randomizer = new((ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds());
 
-  public Config Cfg { get; set; } = new();
+  public List<string> ResponseNames { get; set; } = new();
 
   /// <summary>
   /// Processes an analysis request and generates synthetic objective values.
@@ -56,11 +56,8 @@ public class DemoResponseSurfaceAnalyzer
         var inputBounds = ReadInputBounds(request, inputNames);
         var outputBounds = ReadOutputBounds(request);
 
-        var objectives = Cfg.Objectives ?? new List<ObjectiveSchema>();
-        if(objectives.Count == 0)
-          throw new FormatException("At least one analyzer objective is required.");
+        _responseNames = ResponseNames ?? [];
 
-        _responseNames = objectives.Select(objective => objective.ObjectiveName).ToList();
         if(_responseNames.Any(string.IsNullOrWhiteSpace) || _responseNames.Distinct(StringComparer.Ordinal).Count() != _responseNames.Count)
           throw new FormatException("Objective names must be nonempty and unique.");
 
@@ -84,9 +81,7 @@ public class DemoResponseSurfaceAnalyzer
           Objectives = _responseNames
         });
 
-        if(_responseSpaces.Count != objectives.Count ||
-           _currentRngSeed != rngSeed ||
-           !string.Equals(_currentConfigurationKey, configurationKey, StringComparison.Ordinal))
+        if(_currentRngSeed != rngSeed || !string.Equals(_currentConfigurationKey, configurationKey, StringComparison.Ordinal))
         {
           _responseSpaces.Clear();
           _previousPoints.Clear();
@@ -96,7 +91,7 @@ public class DemoResponseSurfaceAnalyzer
           _currentRngSeed = rngSeed;
           _currentConfigurationKey = configurationKey;
 
-          for(int i = 0; i < objectives.Count; i++)
+          for(int i = 0; i < _responseNames.Count; i++)
           {
             var numGaussians = _randomizer.Next(4, 12);
             var noiseScale = _randomizer.NextDouble(0.08, 0.25);

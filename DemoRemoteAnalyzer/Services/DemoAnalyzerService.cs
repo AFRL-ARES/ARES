@@ -12,16 +12,10 @@ namespace DemoRemoteAnalyzer.Services;
 public class DemoAnalyzerService : AresRemoteAnalyzerService.AresRemoteAnalyzerServiceBase
 {
   private readonly DemoResponseSurfaceAnalyzer _demoResponseSurfaceAnalyzer;
-  private readonly Config _demoAnalyzerConfig;
 
   public DemoAnalyzerService()
   {
-    _demoAnalyzerConfig = new Config() { Objectives = new List<ObjectiveSchema>()
-    {
-      new ObjectiveSchema() { ObjectiveName = "Yield" }
-    }};
-
-    _demoResponseSurfaceAnalyzer = new DemoResponseSurfaceAnalyzer() { Cfg = _demoAnalyzerConfig };
+    _demoResponseSurfaceAnalyzer = new DemoResponseSurfaceAnalyzer() { ResponseNames = [ "Yield" ] };
   }
 
   public override Task<AnalysisObjectivesResponse> GetAnalysisObjectives(Empty request, ServerCallContext context)
