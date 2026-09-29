@@ -6,6 +6,9 @@ on:
 
 env:
   UI_PROJECT_FILE: 'UI/UI.csproj'
+  DEMO_PLANNER_PROJECT_FILE: 'DemoRemotePlanner/DemoRemotePlanner.csproj'
+  DEMO_ANALYZER_PROJECT_FILE: 'DemoRemoteAnalyzer/DemoRemoteAnalyzer.csproj'
+  DEMO_DEVICE_PROJECT_FILE: 'DemoRemoteDevice/DemoRemoteDevice.csproj'
   OUTPUT_PATH: 'publish'
 
 jobs:
@@ -75,6 +78,36 @@ jobs:
       run: |
         echo "Publishing UI Project for ${{ matrix.os_name_tag }}  (${{ matrix.runtime_id }})"
         dotnet publish ${{ env.UI_PROJECT_FILE }} --configuration Release --output ${{ env.OUTPUT_PATH }} /p:UseAppHost=true -r ${{ matrix.runtime_id }} --self-contained true
+
+    - name: Publish Demo Remote Analyzer
+      run: |
+        echo "Publishing Demo Remote Analyzer for ${{ matrix.os_name_tag }} (${{ matrix.runtime_id }})"
+        dotnet publish ${{ env.DEMO_ANALYZER_PROJECT_FILE }} \
+          --configuration Release \
+          --output ${{ env.OUTPUT_PATH }}/demo/DemoRemoteAnalyzer \
+          /p:UseAppHost=true \
+          -r ${{ matrix.runtime_id }} \
+          --self-contained true
+
+    - name: Publish Demo Remote Planner
+      run: |
+        echo "Publishing Demo Remote Planner for ${{ matrix.os_name_tag }} (${{ matrix.runtime_id }})"
+        dotnet publish ${{ env.DEMO_PLANNER_PROJECT_FILE }} \
+          --configuration Release \
+          --output ${{ env.OUTPUT_PATH }}/demo/DemoRemotePlanner \
+          /p:UseAppHost=true \
+          -r ${{ matrix.runtime_id }} \
+          --self-contained true
+
+    - name: Publish Demo Remote Planner
+      run: |
+        echo "Publishing Demo Remote Device for ${{ matrix.os_name_tag }} (${{ matrix.runtime_id }})"
+        dotnet publish ${{ env.DEMO_DEVICE_PROJECT_FILE }} \
+          --configuration Release \
+          --output ${{ env.OUTPUT_PATH }}/demo/DemoRemoteDevice \
+          /p:UseAppHost=true \
+          -r ${{ matrix.runtime_id }} \
+          --self-contained true
 
     - name: Copy Driver Plugins to ARES Output
       shell: bash
