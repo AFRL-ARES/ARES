@@ -236,8 +236,7 @@ public class DemoResponseSurfaceAnalyzer
        !double.IsFinite(bounds[1]) ||
        bounds[0] >= bounds[1])
     {
-      throw new FormatException(
-          $"Bounds for '{name}' must contain two finite values in ascending order.");
+      throw new FormatException($"Bounds for '{name}' must contain two finite values in ascending order.");
     }
   }
 }
