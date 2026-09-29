@@ -1,5 +1,4 @@
 using Ares.Datamodel;
-using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Connection;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
@@ -29,35 +28,26 @@ public class DemoPlannerService : AresRemotePlannerService.AresRemotePlannerServ
   public override async Task<PlanningResponse> Plan(PlanningRequest request, ServerCallContext context)
   {
     Console.WriteLine("Planning Requested!");
-    var inputs = request.PlanningParameters;
+
+    var inputs = request.PlanningParameters.ToList();
+    var analysisData = request.AnalysisData.ToList();
+
     Console.WriteLine($"Received a total of {inputs.Count} parameters to plan for.");
+
     var response = new PlanningResponse();
     var newPlan = new Plan();
-    var objectives = request.AnalysisData.ToList();
 
+    var hillClimbingParameters = inputs.Where(parameter => parameter.PlannerName == "Hill Climbing Planner").ToList();
 
-    foreach(var parameter in inputs)
+    if(hillClimbingParameters.Count > 0)
     {
-      switch(parameter.PlannerName)
-      {
-        case "Hill Climbing Planner":
-        {
-          var hillClimbingParam = await HillClimbingPlanner(parameter, objectives);
-          newPlan.PlannedParameters.Add(hillClimbingParam);
-          break;
-        }
-        default:
-        {
-          Console.WriteLine("Unrecognized Planned Requested! Defaulting to random planner...");
-          var plannedParam = await RandomPlanner(parameter);
-          newPlan.PlannedParameters.Add(plannedParam);
-          break;
-        }
-      }
+      var hillClimbingPlan = await JointHillClimbingPlanner(hillClimbingParameters, analysisData);
+      newPlan.PlannedParameters.AddRange(hillClimbingPlan);
     }
 
     newPlan.PlanningOutcome = Outcome.Success;
     response.Plans.Add(newPlan);
+
     return response;
   }
 
@@ -117,6 +107,251 @@ public class DemoPlannerService : AresRemotePlannerService.AresRemotePlannerServ
     return Task.FromResult(plannedParam);
   }
 
+  private async Task<List<PlannedParameter>> JointHillClimbingPlanner(IReadOnlyList<PlanningParameter> parameters, List<AnalysisData> analysisData)
+  {
+    const double executionResolution = 1.0;
+    const double objectiveTolerance = 1e-9;
+
+    if(parameters.Count == 0)
+      return [];
+
+    ValidateJointParameterBounds(parameters);
+
+    var samples = ExtractJointSamples(parameters, analysisData);
+
+    if(samples.Count == 0)
+      return await CreateInitialJointPlan(parameters);
+
+    var latest = samples[^1];
+    var best = samples.MaxBy(sample => sample.Objective);
+    Dictionary<string, double> proposedPoint;
+
+    if(samples.Count == 1)
+      proposedPoint = CreateInitialStep(parameters, latest.Values, executionResolution);
+    
+    else
+    {
+      var previous = samples[^2];
+      var objectiveImproved = latest.Objective > previous.Objective + objectiveTolerance;
+
+      proposedPoint = CreateHillClimbStep(
+          parameters,
+          previous.Values,
+          latest.Values,
+          objectiveImproved,
+          executionResolution);
+    }
+
+    if(HasEvaluatedJointPoint(proposedPoint, samples, executionResolution / 2.0))
+      proposedPoint = FindUnseenJointCandidate(parameters, best.Values, samples, executionResolution);
+
+    return CreatePlannedParameters(parameters, proposedPoint);
+  }
+
+  private List<JointSample> ExtractJointSamples(IReadOnlyList<PlanningParameter> parameters, IReadOnlyList<AnalysisData> analysisData)
+  {
+    var sampleCount = analysisData.Count;
+
+    foreach(var parameter in parameters)
+      sampleCount = Math.Min(sampleCount, parameter.ParameterHistory.Count);
+
+    var samples = new List<JointSample>();
+
+    for(var index = 0; index < sampleCount; index++)
+    {
+      var objectives = analysisData[index].AnalysisObjectives;
+
+      if(objectives is null || objectives.Count == 0)
+        continue;
+
+      var objectiveValue = objectives.First().ObjectiveValue;
+
+      if(objectiveValue is null || 
+        !AresValueHelper.IsNumericType(objectiveValue) || 
+        !objectiveValue.TryGetNumericValue(out var objective) || 
+        !double.IsFinite(objective))
+        continue;
+
+      var values = new Dictionary<string, double>();
+      var validPoint = true;
+
+      foreach(var parameter in parameters)
+      {
+        var plannedValue = parameter.ParameterHistory[index].PlannedValue;
+
+        if(plannedValue is null ||
+           !AresValueHelper.IsNumericType(plannedValue) ||
+           !plannedValue.TryGetNumericValue(out var parameterValue) ||
+           !double.IsFinite(parameterValue))
+        {
+          validPoint = false;
+          break;
+        }
+
+        values[parameter.ParameterName] = parameterValue;
+      }
+
+      if(validPoint)
+        samples.Add(new JointSample(values, objective));
+    }
+
+    return samples;
+  }
+
+  private async Task<List<PlannedParameter>> CreateInitialJointPlan(IReadOnlyList<PlanningParameter> parameters)
+  {
+    var plannedParameters = new List<PlannedParameter>();
+
+    foreach(var parameter in parameters)
+    {
+      if(parameter.InitialValue is not null && parameter.InitialValue.TryGetNumericValue(out var initialValue) && double.IsFinite(initialValue))
+      {
+        var clampedValue = Math.Clamp(initialValue, parameter.MinimumValue, parameter.MaximumValue);
+
+        plannedParameters.Add(new PlannedParameter
+        {
+          ParameterName = parameter.ParameterName,
+          ParameterValue = AresValueHelper.CreateNumber((float)clampedValue)
+        });
+
+        continue;
+      }
+
+      plannedParameters.Add(await RandomPlanner(parameter));
+    }
+
+    return plannedParameters;
+  }
+
+  private static Dictionary<string, double> CreateInitialStep(
+      IReadOnlyList<PlanningParameter> parameters,
+      IReadOnlyDictionary<string, double> latestPoint,
+      double resolution)
+  {
+    var proposedPoint = new Dictionary<string, double>();
+
+    foreach(var parameter in parameters)
+    {
+      var range = parameter.MaximumValue - parameter.MinimumValue;
+      var minimumStep = Math.Max(resolution, range / 100.0);
+      var initialStep = Math.Max(range / 10.0, minimumStep);
+      var latestValue = latestPoint[parameter.ParameterName];
+      var direction = latestValue >= parameter.MaximumValue - resolution ? -1.0 : 1.0;
+      var proposedValue = latestValue + direction * initialStep;
+
+      proposedPoint[parameter.ParameterName] = SnapToResolution(Math.Clamp(proposedValue, parameter.MinimumValue, parameter.MaximumValue), resolution);
+    }
+
+    return proposedPoint;
+  }
+
+  private static Dictionary<string, double> CreateHillClimbStep(
+      IReadOnlyList<PlanningParameter> parameters,
+      IReadOnlyDictionary<string, double> previousPoint,
+      IReadOnlyDictionary<string, double> latestPoint,
+      bool objectiveImproved,
+      double resolution)
+  {
+    var proposedPoint = new Dictionary<string, double>();
+
+    foreach(var parameter in parameters)
+    {
+      var parameterName = parameter.ParameterName;
+      var range = parameter.MaximumValue - parameter.MinimumValue;
+      var minimumStep = Math.Max(resolution, range / 100.0);
+
+      var movement = latestPoint[parameterName] - previousPoint[parameterName];
+
+      var direction = Math.Sign(movement);
+      var stepSize = Math.Abs(movement);
+
+      if(stepSize < minimumStep)
+      {
+        stepSize = Math.Max(range / 10.0, minimumStep);
+        direction = latestPoint[parameterName] >= parameter.MaximumValue - minimumStep ? -1 : 1;
+      }
+
+      if(!objectiveImproved)
+      {
+        direction = -direction;
+        stepSize *= 0.5;
+      }
+
+      stepSize = Math.Max(stepSize, minimumStep);
+      var proposedValue = latestPoint[parameterName] + direction * stepSize;
+      proposedPoint[parameterName] = SnapToResolution(Math.Clamp(proposedValue, parameter.MinimumValue, parameter.MaximumValue), resolution);
+    }
+
+    return proposedPoint;
+  }
+
+  private static bool HasEvaluatedJointPoint(IReadOnlyDictionary<string, double> candidate, IEnumerable<JointSample> samples, double tolerance)
+    => samples.Any(sample =>
+        candidate.All(pair =>
+            sample.Values.TryGetValue(pair.Key, out var sampleValue) && Math.Abs(sampleValue - pair.Value) <= tolerance));
+
+  private Dictionary<string, double> FindUnseenJointCandidate(
+      IReadOnlyList<PlanningParameter> parameters,
+      IReadOnlyDictionary<string, double> bestPoint,
+      IReadOnlyList<JointSample> samples,
+      double resolution)
+  {
+    for(var attempt = 0; attempt < 16; attempt++)
+    {
+      var candidate = new Dictionary<string, double>();
+
+      foreach(var parameter in parameters)
+      {
+        var range = parameter.MaximumValue - parameter.MinimumValue;
+        var stepSize = Math.Max(range / 10.0, resolution);
+
+        var direction = _random.Next(0, 2) == 0 ? -1.0 : 1.0;
+
+        var value = bestPoint[parameter.ParameterName] + direction * stepSize;
+
+        candidate[parameter.ParameterName] = SnapToResolution(Math.Clamp(value, parameter.MinimumValue, parameter.MaximumValue), resolution);
+      }
+
+      if(!HasEvaluatedJointPoint(candidate, samples, resolution / 2.0))
+        return candidate;
+    }
+
+    for(var attempt = 0; attempt < 100; attempt++)
+    {
+      var candidate = new Dictionary<string, double>();
+
+      foreach(var parameter in parameters)
+      {
+        var value = parameter.MinimumValue + _random.NextDouble() * (parameter.MaximumValue - parameter.MinimumValue);
+        candidate[parameter.ParameterName] = SnapToResolution(value, resolution);
+      }
+
+      if(!HasEvaluatedJointPoint(candidate, samples, resolution / 2.0))
+        return candidate;
+    }
+
+    // The grid is probably exhausted. Return the best known complete point.
+    return new Dictionary<string, double>(bestPoint);
+  }
+
+  private static List<PlannedParameter> CreatePlannedParameters(IReadOnlyList<PlanningParameter> parameters, IReadOnlyDictionary<string, double> point)
+    => parameters.Select(parameter => new PlannedParameter
+    {
+      ParameterName = parameter.ParameterName,
+      ParameterValue = AresValueHelper.CreateNumber((float)point[parameter.ParameterName])
+    }).ToList();
+  
+  private static void ValidateJointParameterBounds(IEnumerable<PlanningParameter> parameters)
+  {
+    foreach(var parameter in parameters)
+    {
+      if(parameter.MaximumValue < parameter.MinimumValue)
+        throw new ArgumentException($"MaximumValue must be greater than or equal to MinimumValue for '{parameter.ParameterName}'.");
+    }
+  }
+
+  private sealed record JointSample(Dictionary<string, double> Values, double Objective);
+
   public Task<PlannedParameter> GradualPlanner(PlanningParameter aresParameter)
   {
     var response = new PlannedParameter();
@@ -149,194 +384,6 @@ public class DemoPlannerService : AresRemotePlannerService.AresRemotePlannerServ
     return Task.FromResult(response);
   }
 
-  public async Task<PlannedParameter> HillClimbingPlanner(PlanningParameter aresParameter, List<AnalysisData> analysisData)
-  {
-    var response = new PlannedParameter
-    {
-      ParameterName = aresParameter.ParameterName
-    };
-
-    var minimum = aresParameter.MinimumValue;
-    var maximum = aresParameter.MaximumValue;
-
-    if(maximum < minimum)
-      throw new ArgumentException(
-        "MaximumValue must be greater than or equal to MinimumValue.");
-
-    var range = maximum - minimum;
-
-    if(Math.Abs(range) < 1e-12)
-    {
-      response.ParameterValue =
-        AresValueHelper.CreateNumber((float)minimum);
-
-      return response;
-    }
-
-    /*
-     * Pair parameter history and analysis data before filtering.
-     *
-     * This assumes ParameterHistory[i] corresponds to analysisData[i].
-     * Matching them by a shared run/iteration ID would be safer if one exists.
-     */
-    var sampleCount = Math.Min(
-      aresParameter.ParameterHistory.Count,
-      analysisData.Count);
-
-    var samples = new List<(double Parameter, double Objective)>();
-
-    for(var i = 0; i < sampleCount; i++)
-    {
-      var parameterHistory = aresParameter.ParameterHistory[i];
-      var analysis = analysisData[i];
-
-      if(parameterHistory.PlannedValue is null ||
-          !AresValueHelper.IsNumericType(parameterHistory.PlannedValue))
-      {
-        continue;
-      }
-
-      if(analysis.AnalysisObjectives is null ||
-          analysis.AnalysisObjectives.Count == 0)
-      {
-        continue;
-      }
-
-      var objectiveValue = analysis.AnalysisObjectives.First().ObjectiveValue;
-
-      if(objectiveValue is null ||
-          !AresValueHelper.IsNumericType(objectiveValue))
-      {
-        continue;
-      }
-
-      if(!parameterHistory.PlannedValue.TryGetNumericValue(
-            out var parameter) ||
-          !objectiveValue.TryGetNumericValue(out var objective))
-      {
-        continue;
-      }
-
-      if(double.IsNaN(parameter) ||
-          double.IsInfinity(parameter) ||
-          double.IsNaN(objective) ||
-          double.IsInfinity(objective))
-      {
-        continue;
-      }
-
-      samples.Add((parameter, objective));
-    }
-
-    /*
-     * No completed numeric samples yet: use the configured initial value,
-     * or fall back to the random planner.
-     */
-    if(samples.Count == 0)
-    {
-      if(aresParameter.InitialValue is not null &&
-          aresParameter.InitialValue.HasNumberValue)
-      {
-        var initialValue = Math.Clamp(
-          aresParameter.InitialValue.NumberValue,
-          minimum,
-          maximum);
-
-        response.ParameterValue =
-          AresValueHelper.CreateNumber((float)initialValue);
-      }
-      else
-      {
-        var randomParameter = await RandomPlanner(aresParameter);
-        response.ParameterValue = randomParameter.ParameterValue;
-      }
-
-      return response;
-    }
-
-    /*
-     * One sample is not enough to establish whether a direction improves the
-     * objective. Take an initial exploratory step.
-     */
-    double direction = 0;
-
-    if(samples.Count == 1)
-    {
-      var currentValue = samples[0].Parameter;
-      var initialStep = Math.Abs(range) / 10.0;
-
-      // Move toward the center if the first value is already at a boundary.
-      direction = currentValue >= maximum - 1e-6 ? -1.0 : 1.0;
-      var proposedValue = currentValue + direction * initialStep;
-
-      proposedValue = Math.Clamp(proposedValue, minimum, maximum);
-
-      response.ParameterValue =
-        AresValueHelper.CreateNumber((float)proposedValue);
-
-      return response;
-    }
-
-    var previous = samples[^2];
-    var latest = samples[^1];
-
-    var lastMovement = latest.Parameter - previous.Parameter;
-    var stepSize = Math.Abs(lastMovement);
-    direction = Math.Sign(lastMovement);
-
-    const double parameterTolerance = 1e-6;
-    const double objectiveTolerance = 1e-9;
-
-    /*
-     * A zero movement can occur after clamping or from duplicate history
-     * entries. Select a fresh step and ensure it points inward at a boundary.
-     */
-    if(stepSize < parameterTolerance)
-    {
-      stepSize = Math.Abs(range) / 10.0;
-
-      if(latest.Parameter >= maximum - parameterTolerance)
-        direction = -1;
-      else if(latest.Parameter <= minimum + parameterTolerance)
-        direction = 1;
-      else
-        direction = 1;
-    }
-
-    /*
-     * This assumes a larger objective is better.
-     *
-     * If the objective improved, continue in the direction of the last move.
-     * Otherwise reverse direction and reduce the step size.
-     */
-    var objectiveImproved =
-      latest.Objective > previous.Objective + objectiveTolerance;
-
-    if(!objectiveImproved)
-    {
-      direction = -direction;
-      stepSize *= 0.5;
-    }
-
-    var proposed = latest.Parameter + direction * stepSize;
-
-    /*
-     * Do not simply clamp an out-of-range proposal. Clamping can repeatedly
-     * produce the same boundary value. Instead, reflect inward and reduce the
-     * step.
-     */
-    if(proposed > maximum || proposed < minimum)
-    {
-      direction = -direction;
-      stepSize *= 0.5;
-      proposed = latest.Parameter + direction * stepSize;
-    }
-
-    proposed = Math.Clamp(proposed, minimum, maximum);
-
-    response.ParameterValue =
-      AresValueHelper.CreateNumber((float)proposed);
-
-    return response;
-  }
+  private static double SnapToResolution(double value, double resolution)
+    => Math.Round(value / resolution, MidpointRounding.AwayFromZero) * resolution;
 }

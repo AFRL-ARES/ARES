@@ -2,11 +2,11 @@ using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Analyzing.Remote;
 using Ares.Datamodel.Connection;
+using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
 using DemoRemoteAnalyzer.Models;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
-using UnitsNet;
 
 namespace DemoRemoteAnalyzer.Services;
 public class DemoAnalyzerService : AresRemoteAnalyzerService.AresRemoteAnalyzerServiceBase
@@ -48,20 +48,14 @@ public class DemoAnalyzerService : AresRemoteAnalyzerService.AresRemoteAnalyzerS
     Console.WriteLine("[Demo Analyzer] - Analysis Requested");
 
     var temperatureInput = request.Inputs.Fields[DemoDataTypes.Temperature.Key];
-    var temperature = temperatureInput.FloatValue;
-    Console.WriteLine($"[Demo Analyzer] - Temperature Input: {temperature}");
-
-    //var reactionStartTimeInput = request.Inputs.Fields[DemoDataTypes.ReactionStartTime.Key];
-    //var reactionStartTime = reactionStartTimeInput.TimestampValue;
-    //Console.WriteLine($"[Demo Analyzer] - Reaction Start Time Input: {reactionStartTime}");
-
-    //var reactionEndTimeInput = request.Inputs.Fields[DemoDataTypes.ReactionEndTime.Key];
-    //var reactionEndTime = reactionEndTimeInput.TimestampValue;
-    //Console.WriteLine($"[Demo Analyzer] - Reaction End Time Input: {reactionEndTime}");
+    var temperatureFound = temperatureInput.TryGetNumericValue(out var numericTemperatureValue);
+    if(temperatureFound)
+      Console.WriteLine($"[Demo Analyzer] - Temperature Input: {numericTemperatureValue}");
 
     var flowRateInput = request.Inputs.Fields[DemoDataTypes.FlowRate.Key];
-    var flowRate = flowRateInput.FloatValue;
-    Console.WriteLine($"[Demo Analyzer] - Flow Rate Input: {flowRate}");
+    var flowRateFound = flowRateInput.TryGetNumericValue(out var flowRateValue);
+    if(flowRateFound)
+      Console.WriteLine($"[Demo Analyzer] - Flow Rate Input: {flowRateValue}");
 
     var analysisResponse = _demoResponseSurfaceAnalyzer.DemoResponse(request);
 
@@ -104,8 +98,10 @@ public class DemoAnalyzerService : AresRemoteAnalyzerService.AresRemoteAnalyzerS
       {
         Fields =
         {
-          [DemoDataTypes.Temperature.Key] = DemoDataTypes.Temperature.Value,
-          [DemoDataTypes.FlowRate.Key] = DemoDataTypes.FlowRate.Value
+          [DemoSettings.TemperatureMax.Key] = DemoSettings.TemperatureMax.Value,
+          [DemoSettings.TemperatureMin.Key] = DemoSettings.TemperatureMin.Value,
+          [DemoSettings.FlowRateMax.Key] = DemoSettings.FlowRateMax.Value,
+          [DemoSettings.FlowRateMin.Key] = DemoSettings.FlowRateMin.Value
         }
       },
       ObjectiveOutputSchema = objectiveSchema
@@ -126,7 +122,7 @@ public class DemoAnalyzerService : AresRemoteAnalyzerService.AresRemoteAnalyzerS
   {
     var infoResponse = new InfoResponse
     {
-      Description = "Generates a synthetic process space for samplin with ARES OS",
+      Description = "Generates a synthetic process space for sampling with ARES OS",
       Name = "Demo Response Surface Analyzer",
       Version = "0.8.0"
     };
@@ -147,28 +143,6 @@ public class DemoAnalyzerService : AresRemoteAnalyzerService.AresRemoteAnalyzerS
       foreach(var schemaItem in request.InputSchema.Fields)
         Console.WriteLine($"{schemaItem.Key}:{schemaItem.Value}");
     }
-
-    //if(request.InputSchema.Fields.ContainsKey(DemoDataTypes.ReactionStartTime.Key))
-    //  Console.WriteLine($"[Demo Analyzer] - Validation Found Data Key: {DemoDataTypes.ReactionStartTime.Key}");
-
-    //else
-    //{
-    //  Console.WriteLine($"[Demo Analyzer]: Could Not Find Data with a Key of: {DemoDataTypes.ReactionStartTime.Key}.");
-    //  Console.WriteLine("[Demo Analyzer] - Found following items:");
-    //  foreach(var schemaItem in request.InputSchema.Fields)
-    //    Console.WriteLine($"{schemaItem.Key}:{schemaItem.Value}");
-    //}
-
-    //if(request.InputSchema.Fields.ContainsKey(DemoDataTypes.ReactionEndTime.Key))
-    //  Console.WriteLine($"[Demo Analyzer] - Validation Found Data Key: {DemoDataTypes.ReactionEndTime.Key}");
-
-    //else
-    //{
-    //  Console.WriteLine($"[Demo Analyzer]: Could Not Find Data with a Key of: {DemoDataTypes.ReactionEndTime.Key}.");
-    //  Console.WriteLine("[Demo Analyzer] - Found following items:");
-    //  foreach(var schemaItem in request.InputSchema.Fields)
-    //    Console.WriteLine($"{schemaItem.Key}:{schemaItem.Value}");
-    //}
 
     if(request.InputSchema.Fields.ContainsKey(DemoDataTypes.FlowRate.Key))
       Console.WriteLine($"[Demo Analyzer] - Validation Found Data Key: {DemoDataTypes.FlowRate.Key}");

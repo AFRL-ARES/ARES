@@ -1,12 +1,14 @@
-﻿namespace DemoRemoteAnalyzer.Models;
+﻿using DemoRemoteAnalyzer.Tools;
+
+namespace DemoRemoteAnalyzer.Models;
 
 /// <summary>
-/// Generates a synthetic process response space using Gaussian peaks/valleys 
+/// Generates a synthetic process response space using Gaussian peaks/valleys
 /// and Perlin noise across N dimensions.
 /// </summary>
 public class SyntheticProcessResponse
 {
-  private readonly Random _rng;
+  private readonly Pcg64 _rng;
   private readonly Dictionary<string, (double Low, double High)> _paramBounds;
   private readonly (double Min, double Max) _outputBounds;
   private readonly (double Min, double Max) _responseBounds;
@@ -19,266 +21,514 @@ public class SyntheticProcessResponse
 
   private double _rawMin = 0.0;
   private double _rawMax = 1.0;
-  private PlottingGridData _plottingGrid = null;
+  private PlottingGridData? _plottingGrid;
 
   public IReadOnlyList<string> ParamNames => _paramNames.AsReadOnly();
   public int Dimensions => _dims;
   public double RawMin => _rawMin;
   public double RawMax => _rawMax;
 
-  public SyntheticProcessResponse(
-      IDictionary<string, (double Low, double High)> paramBounds,
-      (double Min, double Max)? outputBounds = null,
-      int numGaussians = 5,
-      double noiseScale = 0.1,
-      double noiseFrequency = 2.0,
-      (double Min, double Max)? responseBounds = null,
-      int? seed = null,
-      int calibrationSamples = 10000)
+  public SyntheticProcessResponse(IDictionary<string, (double Low, double High)> paramBounds,
+    (double Min, double Max)? outputBounds = null,
+    int numGaussians = 5,
+    double noiseScale = 0.1,
+    double noiseFrequency = 2.0,
+    (double Min, double Max)? responseBounds = null,
+    ulong? seed = null,
+    int calibrationSamples = 10000)
   {
-    _rng = seed.HasValue ? new Random(seed.Value) : new Random();
+    ValidateConstructorArguments(
+        paramBounds,
+        numGaussians,
+        noiseScale,
+        noiseFrequency,
+        calibrationSamples);
+
+    _rng = seed.HasValue
+        ? new Pcg64(seed.Value)
+        : new Pcg64((ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+
     _paramBounds = new Dictionary<string, (double Low, double High)>(paramBounds);
     _outputBounds = outputBounds ?? (0.0, 1.0);
     _responseBounds = responseBounds ?? (0.0, 1.0);
     _noiseScale = noiseScale;
     _noiseFreq = noiseFrequency;
 
-    _paramNames = _paramBounds.Keys.OrderBy(k => k, StringComparer.Ordinal).ToList();
+    ValidateRange(
+        "Output",
+        _outputBounds.Min,
+        _outputBounds.Max);
+
+    ValidateRange(
+        "Response",
+        _responseBounds.Min,
+        _responseBounds.Max);
+
+    foreach(var entry in _paramBounds)
+    {
+      ValidateRange(
+          entry.Key,
+          entry.Value.Low,
+          entry.Value.High);
+    }
+
+    _paramNames = _paramBounds.Keys
+        .OrderBy(key => key, StringComparer.Ordinal)
+        .ToList();
+
     _dims = _paramNames.Count;
 
-    // --- Generate Random Gaussians ---
     _gaussians = new List<GaussianSpec>();
 
-    for(int g = 0; g < numGaussians; g++)
+    // Generate Gaussian peaks and valleys.
+    for(int gaussianIndex = 0; gaussianIndex < numGaussians; gaussianIndex++)
     {
-      double[] center = new double[_dims];
-      double[] bandwidths = new double[_dims];
+      var center = new double[_dims];
+      var bandwidths = new double[_dims];
 
-      for(int i = 0; i < _dims; i++)
+      for(int dimension = 0; dimension < _dims; dimension++)
       {
-        string p = _paramNames[i];
-        var bounds = _paramBounds[p];
+        var parameterName = _paramNames[dimension];
+        var bounds = _paramBounds[parameterName];
 
-        center[i] = NextUniform(_rng, bounds.Low, bounds.High);
-        bandwidths[i] = (bounds.High - bounds.Low) * NextUniform(_rng, 0.1, 0.5);
+        center[dimension] = NextUniform(
+            _rng,
+            bounds.Low,
+            bounds.High);
+
+        bandwidths[dimension] =
+            (bounds.High - bounds.Low) *
+            NextUniform(_rng, 0.05, 0.25);
       }
 
-      double amplitude = NextUniform(_rng, -1.0, 2.0);
-      _gaussians.Add(new GaussianSpec(center, bandwidths, amplitude));
+      var amplitude = NextUniform(_rng, -1.0, 2.0);
+
+      _gaussians.Add(new GaussianSpec(
+          center,
+          bandwidths,
+          amplitude));
     }
 
-    // Random offset for Perlin noise across dimensions
+    // Generate random Perlin-noise offsets.
     _noiseOffset = new double[_dims];
-    for(int i = 0; i < _dims; i++)
+
+    for(int dimension = 0; dimension < _dims; dimension++)
     {
-      _noiseOffset[i] = NextUniform(_rng, 0.0, 100.0);
+      _noiseOffset[dimension] = NextUniform(_rng, 0.0, 100.0);
     }
 
-    // Calibrate output scale
     CalibrateBounds(calibrationSamples);
   }
 
   /// <summary>
-  /// Convenience constructor supporting dictionary values as lists/arrays [low, high].
+  /// Convenience constructor supporting dictionary values as [low, high] lists.
   /// </summary>
-  public SyntheticProcessResponse(
-      IDictionary<string, List<double>> paramBounds,
-      IList<double> outputBounds = null,
-      int numGaussians = 5,
-      double noiseScale = 0.1,
-      double noiseFrequency = 2.0,
-      long? seed = null,
-      int calibrationSamples = 10000)
-      : this(
-          paramBounds.ToDictionary(k => k.Key, v => (v.Value[0], v.Value[1])),
-          outputBounds != null && outputBounds.Count >= 2 ? (outputBounds[0], outputBounds[1]) : (0.0, 1.0),
-          numGaussians,
-          noiseScale,
-          noiseFrequency,
-          (0.0, 1.0),
-          seed.HasValue ? (int)(seed.Value % int.MaxValue) : null,
-          calibrationSamples)
+  public SyntheticProcessResponse(IDictionary<string, List<double>> paramBounds,
+    IList<double>? outputBounds = null,
+    int numGaussians = 5,
+    double noiseScale = 0.1,
+    double noiseFrequency = 2.0,
+    ulong? seed = null,
+    int calibrationSamples = 10000) : this(ConvertParameterBounds(paramBounds), 
+      ConvertOutputBounds(outputBounds),
+      numGaussians,
+      noiseScale,
+      noiseFrequency,
+      (0.0, 1.0),
+      seed,
+      calibrationSamples)
   {
   }
 
   /// <summary>
-  /// Internal method to compute the unscaled response for an N-dimensional point array.
+  /// Computes the unscaled response for a point.
   /// </summary>
   private double RawEvaluate(double[] point)
   {
-    // 1. Gaussian Component
     double gaussianSum = 0.0;
-    foreach(var g in _gaussians)
+
+    foreach(var gaussian in _gaussians)
     {
       double exponentSum = 0.0;
-      for(int i = 0; i < _dims; i++)
+
+      for(int dimension = 0; dimension < _dims; dimension++)
       {
-        double diff = point[i] - g.Center[i];
-        double diffSq = diff * diff;
-        double width = 2.0 * (g.Bandwidth[i] * g.Bandwidth[i]);
-        exponentSum += diffSq / width;
+        double difference = point[dimension] - gaussian.Center[dimension];
+        double width =
+            2.0 *
+            gaussian.Bandwidth[dimension] *
+            gaussian.Bandwidth[dimension];
+
+        exponentSum +=
+            (difference * difference) / width;
       }
-      gaussianSum += g.Amplitude * Math.Exp(-exponentSum);
+
+      gaussianSum +=
+          gaussian.Amplitude *
+          Math.Exp(-exponentSum);
     }
 
-    // 2. Perlin Noise Component
-    double[] normPoint = new double[_dims];
-    for(int i = 0; i < _dims; i++)
+    var normalizedPoint = new double[_dims];
+
+    for(int dimension = 0; dimension < _dims; dimension++)
     {
-      string pName = _paramNames[i];
-      var (low, high) = _paramBounds[pName];
-      double normVal = ((point[i] - low) / (high - low)) * _noiseFreq;
-      normPoint[i] = normVal + _noiseOffset[i];
+      var parameterName = _paramNames[dimension];
+      var bounds = _paramBounds[parameterName];
+
+      normalizedPoint[dimension] =
+          ((point[dimension] - bounds.Low) /
+           (bounds.High - bounds.Low)) *
+          _noiseFreq +
+          _noiseOffset[dimension];
     }
 
-    double noiseVal;
+    double noiseValue;
+
     if(_dims == 1)
     {
-      noiseVal = PerlinNoise.PNoise1(normPoint[0]);
+      noiseValue = PerlinNoise.PNoise1(normalizedPoint[0]);
     }
     else if(_dims == 2)
     {
-      noiseVal = PerlinNoise.PNoise2(normPoint[0], normPoint[1]);
+      noiseValue = PerlinNoise.PNoise2(
+          normalizedPoint[0],
+          normalizedPoint[1]);
     }
     else if(_dims == 3)
     {
-      noiseVal = PerlinNoise.PNoise3(normPoint[0], normPoint[1], normPoint[2]);
+      noiseValue = PerlinNoise.PNoise3(
+          normalizedPoint[0],
+          normalizedPoint[1],
+          normalizedPoint[2]);
     }
     else
     {
       double tailSum = 0.0;
-      for(int i = 2; i < _dims; i++)
+
+      for(int dimension = 2; dimension < _dims; dimension++)
       {
-        tailSum += normPoint[i];
+        tailSum += normalizedPoint[dimension];
       }
-      noiseVal = PerlinNoise.PNoise3(normPoint[0], normPoint[1], tailSum);
+
+      noiseValue = PerlinNoise.PNoise3(
+          normalizedPoint[0],
+          normalizedPoint[1],
+          tailSum);
     }
 
-    return gaussianSum + (noiseVal * _noiseScale);
+    return gaussianSum + noiseValue * _noiseScale;
   }
 
   /// <summary>
-  /// Samples the parameter space to estimate global empirical min and max.
+  /// Samples the parameter space to estimate the global response bounds.
   /// </summary>
   private void CalibrateBounds(int numSamples)
   {
     double rawMin = double.MaxValue;
     double rawMax = double.MinValue;
+    var samplePoint = new double[_dims];
 
-    double[] samplePoint = new double[_dims];
-
-    for(int s = 0; s < numSamples; s++)
+    // This follows the same broad sampling strategy as the Python implementation.
+    for(int sampleIndex = 0; sampleIndex < numSamples; sampleIndex++)
     {
-      for(int i = 0; i < _dims; i++)
+      for(int dimension = 0; dimension < _dims; dimension++)
       {
-        string pName = _paramNames[i];
-        var (low, high) = _paramBounds[pName];
-        samplePoint[i] = NextUniform(_rng, low, high);
+        var parameterName = _paramNames[dimension];
+        var bounds = _paramBounds[parameterName];
+
+        samplePoint[dimension] = NextUniform(
+            _rng,
+            bounds.Low,
+            bounds.High);
       }
 
-      double val = RawEvaluate(samplePoint);
-      if(val < rawMin) rawMin = val;
-      if(val > rawMax) rawMax = val;
+      var value = RawEvaluate(samplePoint);
+
+      if(!double.IsFinite(value))
+      {
+        throw new InvalidOperationException(
+            "Calibration produced a nonfinite response.");
+      }
+
+      if(value < rawMin)
+      {
+        rawMin = value;
+      }
+
+      if(value > rawMax)
+      {
+        rawMax = value;
+      }
     }
 
     _rawMin = rawMin;
     _rawMax = rawMax;
 
-    if(Math.Abs(_rawMax - _rawMin) < 1e-12)
+    // Prevent division by zero for a flat response surface.
+    if(Math.Abs(_rawMax - _rawMin) <=
+       1e-12 *
+       Math.Max(
+           1.0,
+           Math.Max(
+               Math.Abs(_rawMin),
+               Math.Abs(_rawMax))))
     {
       _rawMax = _rawMin + 1e-9;
     }
   }
 
   /// <summary>
-  /// Queries the synthetic space and returns a scaled, bound-clipped response.
+  /// Evaluates and scales a point into the configured output bounds.
   /// </summary>
   public double Evaluate(IDictionary<string, double> paramsDict)
   {
-    double[] point = new double[_dims];
-    for(int i = 0; i < _dims; i++)
+    if(paramsDict is null)
     {
-      string pName = _paramNames[i];
-      if(!paramsDict.TryGetValue(pName, out double val))
-      {
-        throw new KeyNotFoundException($"Missing parameter in input: '{pName}'");
-      }
-      point[i] = val;
+      throw new ArgumentNullException(nameof(paramsDict));
     }
 
-    // 1. Get raw response
-    double rawVal = RawEvaluate(point);
+    var point = new double[_dims];
 
-    // 2. Scale to target bounds
-    double tMin = _outputBounds.Min;
-    double tMax = _outputBounds.Max;
-    double scaledVal = tMin + ((rawVal - _rawMin) * (tMax - tMin)) / (_rawMax - _rawMin);
+    for(int dimension = 0; dimension < _dims; dimension++)
+    {
+      var parameterName = _paramNames[dimension];
 
-    // 3. Clip the output
-    return Math.Clamp(scaledVal, tMin, tMax);
+      if(!paramsDict.TryGetValue(parameterName, out var value))
+      {
+        throw new KeyNotFoundException(
+            $"Missing parameter in input: '{parameterName}'");
+      }
+
+      if(!double.IsFinite(value))
+      {
+        throw new ArgumentException(
+            $"Parameter '{parameterName}' must be finite.");
+      }
+
+      point[dimension] = value;
+    }
+
+    var rawValue = RawEvaluate(point);
+
+    if(!double.IsFinite(rawValue))
+    {
+      throw new InvalidOperationException(
+          "Response evaluation produced a nonfinite value.");
+    }
+
+    var targetMinimum = _outputBounds.Min;
+    var targetMaximum = _outputBounds.Max;
+
+    var scaledValue =
+        targetMinimum +
+        ((rawValue - _rawMin) *
+         (targetMaximum - targetMinimum)) /
+        (_rawMax - _rawMin);
+
+    return Math.Clamp(
+        scaledValue,
+        targetMinimum,
+        targetMaximum);
   }
 
   /// <summary>
-  /// Generates or returns cached N-dimensional grid evaluation results.
+  /// Generates or returns cached N-dimensional meshgrid evaluation results.
   /// </summary>
   public PlottingGridData PlottingMeshgrid(int pointsPerAxis = 100)
   {
-    if(_plottingGrid != null)
-      return _plottingGrid;
-
-    var axisPoints = new List<double[]>();
-    int[] shape = new int[_dims];
-
-    for(int i = 0; i < _dims; i++)
+    if(pointsPerAxis < 2)
     {
-      string pName = _paramNames[i];
-      var (low, high) = _paramBounds[pName];
-      axisPoints.Add(LinSpace(low, high, pointsPerAxis));
-      shape[i] = pointsPerAxis;
+      throw new ArgumentOutOfRangeException(
+          nameof(pointsPerAxis),
+          "At least two points per axis are required.");
     }
 
-    int totalPoints = (int)Math.Pow(pointsPerAxis, _dims);
-    double[] evalResults = new double[totalPoints];
-
-    // Evaluate over cartesian grid
-    for(int flatIdx = 0; flatIdx < totalPoints; flatIdx++)
+    if(_plottingGrid is not null)
     {
-      var currentParams = new Dictionary<string, double>();
-      int temp = flatIdx;
+      return _plottingGrid;
+    }
 
-      for(int dim = _dims - 1; dim >= 0; dim--)
+    var axisPoints = new List<double[]>();
+    var shape = new int[_dims];
+
+    for(int dimension = 0; dimension < _dims; dimension++)
+    {
+      var parameterName = _paramNames[dimension];
+      var bounds = _paramBounds[parameterName];
+
+      axisPoints.Add(LinSpace(
+          bounds.Low,
+          bounds.High,
+          pointsPerAxis));
+
+      shape[dimension] = pointsPerAxis;
+    }
+
+    long totalPointCount = 1;
+
+    for(int dimension = 0; dimension < _dims; dimension++)
+    {
+      totalPointCount *= pointsPerAxis;
+
+      if(totalPointCount > int.MaxValue)
       {
-        int axisIdx = temp % pointsPerAxis;
-        temp /= pointsPerAxis;
-        currentParams[_paramNames[dim]] = axisPoints[dim][axisIdx];
+        throw new InvalidOperationException(
+            "The requested plotting grid is too large.");
+      }
+    }
+
+    var evaluatedValues = new double[(int)totalPointCount];
+
+    for(int flatIndex = 0; flatIndex < evaluatedValues.Length; flatIndex++)
+    {
+      var currentParameters = new Dictionary<string, double>();
+      var remainingIndex = flatIndex;
+
+      for(int dimension = _dims - 1; dimension >= 0; dimension--)
+      {
+        var axisIndex = remainingIndex % pointsPerAxis;
+        remainingIndex /= pointsPerAxis;
+
+        currentParameters[_paramNames[dimension]] =
+            axisPoints[dimension][axisIndex];
       }
 
-      evalResults[flatIdx] = Evaluate(currentParams);
+      evaluatedValues[flatIndex] =
+          Evaluate(currentParameters);
     }
 
     _plottingGrid = new PlottingGridData
     {
       AxisPoints = axisPoints,
       Shape = shape,
-      EvaluatedValues = evalResults
+      EvaluatedValues = evaluatedValues
     };
 
     return _plottingGrid;
   }
 
-  private static double NextUniform(Random rng, double min, double max)
+  private static Dictionary<string, (double Low, double High)> ConvertParameterBounds(
+      IDictionary<string, List<double>> paramBounds)
   {
-    return rng.NextDouble() * (max - min) + min;
+    if(paramBounds is null)
+    {
+      throw new ArgumentNullException(nameof(paramBounds));
+    }
+
+    var convertedBounds =
+        new Dictionary<string, (double Low, double High)>();
+
+    foreach(var entry in paramBounds)
+    {
+      if(entry.Value is null || entry.Value.Count < 2)
+      {
+        throw new ArgumentException(
+            $"Bounds for '{entry.Key}' must contain [low, high].",
+            nameof(paramBounds));
+      }
+
+      convertedBounds[entry.Key] =
+          (entry.Value[0], entry.Value[1]);
+    }
+
+    return convertedBounds;
   }
 
-  private static double[] LinSpace(double start, double stop, int num)
+  private static (double Min, double Max) ConvertOutputBounds(
+      IList<double>? outputBounds)
   {
-    double[] result = new double[num];
-    double step = (stop - start) / (num - 1);
-    for(int i = 0; i < num; i++)
+    if(outputBounds is null)
     {
-      result[i] = start + i * step;
+      return (0.0, 1.0);
     }
+
+    if(outputBounds.Count < 2)
+    {
+      throw new ArgumentException(
+          "Output bounds must contain [low, high].",
+          nameof(outputBounds));
+    }
+
+    return (outputBounds[0], outputBounds[1]);
+  }
+
+  private static void ValidateConstructorArguments(
+      IDictionary<string, (double Low, double High)> paramBounds,
+      int numGaussians,
+      double noiseScale,
+      double noiseFrequency,
+      int calibrationSamples)
+  {
+    if(paramBounds is null || paramBounds.Count == 0)
+    {
+      throw new ArgumentException(
+          "At least one parameter bound is required.",
+          nameof(paramBounds));
+    }
+
+    if(numGaussians < 1)
+    {
+      throw new ArgumentOutOfRangeException(nameof(numGaussians));
+    }
+
+    if(calibrationSamples < 1)
+    {
+      throw new ArgumentOutOfRangeException(nameof(calibrationSamples));
+    }
+
+    if(!double.IsFinite(noiseScale) || noiseScale < 0.0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(noiseScale));
+    }
+
+    if(!double.IsFinite(noiseFrequency) || noiseFrequency <= 0.0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(noiseFrequency));
+    }
+  }
+
+  private static void ValidateRange(
+      string name,
+      double minimum,
+      double maximum)
+  {
+    if(!double.IsFinite(minimum) ||
+       !double.IsFinite(maximum) ||
+       minimum >= maximum)
+    {
+      throw new ArgumentException(
+          $"Bounds for '{name}' must contain two finite values in ascending order.");
+    }
+  }
+
+  private static double NextUniform(
+      Pcg64 rng,
+      double minimum,
+      double maximum)
+  {
+    return rng.NextDouble() * (maximum - minimum) + minimum;
+  }
+
+  private static double[] LinSpace(
+      double start,
+      double stop,
+      int count)
+  {
+    if(count < 2)
+    {
+      throw new ArgumentOutOfRangeException(
+          nameof(count),
+          "At least two points are required.");
+    }
+
+    var result = new double[count];
+    var step = (stop - start) / (count - 1);
+
+    for(int index = 0; index < count; index++)
+    {
+      result[index] = start + index * step;
+    }
+
     return result;
   }
 }

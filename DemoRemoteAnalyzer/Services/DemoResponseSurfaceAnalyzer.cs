@@ -1,178 +1,243 @@
-﻿using Ares.Datamodel;
+using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Analyzing.Remote;
 using Ares.Datamodel.Extensions;
 using DemoRemoteAnalyzer.Models;
+using DemoRemoteAnalyzer.Tools;
 using Google.Protobuf.Collections;
 using System.Text.Json;
 
 namespace DemoRemoteAnalyzer.Services;
 
 /// <summary>
-/// This is a C# based implementation of the Demo Response Surface Analyzer created by Arthur W. N. Sloan.
-/// The original code for this logic can be found by visting https://github.com/AFRL-ARES/pyares-demo-response
+/// Generates synthetic response surfaces for the demo analyzer.
 /// </summary>
 public class DemoResponseSurfaceAnalyzer
 {
-  private static List<SyntheticProcessResponse> _responseSpaces = new List<SyntheticProcessResponse>();
-  private static List<Dictionary<string, double>> _previousPoints = new List<Dictionary<string, double>>();
-  private static List<string> _responseNames = new List<string>();
-  private static int? _currentRngSeed = null;
+  private readonly List<SyntheticProcessResponse> _responseSpaces = new();
+  private readonly List<Dictionary<string, double>> _previousPoints = new();
+  private List<string> _responseNames = new();
+  private ulong? _currentRngSeed;
+  private string? _currentConfigurationKey;
+  private readonly object _sync = new();
 
-  public Config Cfg { get; set; } = new Config();
+  private Pcg64 _randomizer = new((ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+
+  public Config Cfg { get; set; } = new();
 
   /// <summary>
-  /// Process an analysis request and generate a synthetic process response.
+  /// Processes an analysis request and generates synthetic objective values.
   /// </summary>
   public AnalysisResponse? DemoResponse(AnalysisRequest request)
   {
     if(request is null)
+    {
       return null;
-
-    Console.WriteLine("Received Requests with inputs:");
-    if(request?.Inputs != null)
-    {
-      foreach(var entry in request.Inputs.Fields)
-      {
-        Console.WriteLine($"\t{entry.Key}: {entry.Value}");
-      }
     }
 
-    try
+    lock(_sync)
     {
-      // Extract inputs and settings from request
-      var inputDict = request!.Inputs.Fields ?? new MapField<string, AresValue>();
-      var convertedInputDict = inputDict.ToDictionary(kvp => kvp.Key, kvp => ExtractNumericValue(kvp.Value));
-      var inputNames = inputDict.Keys.ToList();
-
-      // Handle random seed configuration (user provided or Unix timestamp)
-      int rngSeed;
-
-      if(request.Settings != null && request.Settings.Fields.TryGetValue("RNG Seed", out var seedAresValue))
+      try
       {
-        var numericValueFound = seedAresValue.TryGetNumericValue(out var numericValue);
-        
-        if(!numericValueFound)
-          rngSeed = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-
-        else
-          rngSeed = (int)numericValue;
-      }
-     
-      else
-      {
-        rngSeed = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        Console.WriteLine("No RNG seed value received, using the current time stamp");
-      }
-
-      // Handle input bounds configuration
-      Dictionary<string, List<double>> inputBounds;
-      if(request.Settings != null && request.Settings.Fields.TryGetValue("Input Bounds", out var boundsAresValue))
-      {
-        var boundsStr = boundsAresValue.StringValue;
-        inputBounds = JsonSerializer.Deserialize<Dictionary<string, List<double>>>(boundsStr);
-      }
-
-      else
-      {
-        Console.WriteLine("No input bounds value received, using the range [0,1] for all inputs");
-        inputBounds = inputNames.ToDictionary(n => n, n => new List<double> { 0.0, 1.0 });
-      }
-
-      var objectives = Cfg.Objectives ?? new List<ObjectiveSchema>();
-      int nResponses = objectives.Count;
-      _responseNames = objectives.Select(o => o.ObjectiveName).ToList();
-
-      // Handle output bounds configuration
-      List<double> outputBounds;
-      if(request.Settings != null && request.Settings.Fields.TryGetValue("Output Bounds", out var outputBoundsAresValue))
-      {
-        var outputBoundsStr = outputBoundsAresValue.StringValue ?? "";
-        outputBounds = JsonSerializer.Deserialize<List<double>>(outputBoundsStr);
-      }
-      else
-      {
-        outputBounds = new List<double> { 0.0, 1.0 };
-      }
-
-      // Ensure all input names have bounds defined
-      foreach(var name in inputNames)
-      {
-        if(!inputBounds.ContainsKey(name))
+        Console.WriteLine("Received Requests with inputs:");
+        foreach(var entry in request.Inputs.Fields)
         {
-          inputBounds[name] = new List<double> { 0.0, 1.0 };
+          Console.WriteLine($"\t{entry.Key}: {entry.Value}");
         }
-      }
 
-      // Re-create response spaces if count or RNG seed has changed
-      if(_responseSpaces.Count != nResponses || rngSeed != _currentRngSeed)
-      {
-        _responseSpaces.Clear();
-        _previousPoints.Clear();
+        var inputDict = request.Inputs.Fields ?? new MapField<string, AresValue>();
+        var convertedInputDict = inputDict.ToDictionary(pair => pair.Key, pair => ExtractNumericValue(pair.Value));
+        var inputNames = inputDict.Keys.ToList();
 
-        var configDict = inputNames.ToDictionary(n => n, n => inputBounds[n]);
-        var rng = new Random(rngSeed);
-        _currentRngSeed = rngSeed;
+        if(inputNames.Count == 0)
+          throw new FormatException("At least one analyzer input is required.");
 
-        for(int i = 0; i < nResponses; i++)
+        var rngSeed = ReadSeed(request);
+        var inputBounds = ReadInputBounds(request, inputNames);
+        var outputBounds = ReadOutputBounds(request);
+
+        var objectives = Cfg.Objectives ?? new List<ObjectiveSchema>();
+        if(objectives.Count == 0)
+          throw new FormatException("At least one analyzer objective is required.");
+
+        _responseNames = objectives.Select(objective => objective.ObjectiveName).ToList();
+        if(_responseNames.Any(string.IsNullOrWhiteSpace) || _responseNames.Distinct(StringComparer.Ordinal).Count() != _responseNames.Count)
+          throw new FormatException("Objective names must be nonempty and unique.");
+
+        foreach(var name in inputNames)
         {
-          int numGaussians = rng.Next(4, 12); // upper bound is exclusive
-          double noiseScale = rng.NextDouble() * (0.2 - 0.05) + 0.05;
-          double noiseFrequency = rng.NextDouble() * (10.0 - 1.0) + 1.0;
-          long seed = (long)(rng.NextDouble() * (1e12 - 1e6) + 1e6);
+          if(!inputBounds.ContainsKey(name))
+            inputBounds[name] = new List<double> { 0.0, 1.0 };
 
-          _responseSpaces.Add(new SyntheticProcessResponse(
-              configDict,
-              outputBounds,
-              numGaussians,
-              noiseScale,
-              noiseFrequency,
-              seed
-          ));
+          ValidateBounds(name, inputBounds[name]);
         }
+
+        ValidateBounds("Output", outputBounds);
+
+        var configurationKey = JsonSerializer.Serialize(new
+        {
+          Inputs = inputNames
+              .OrderBy(name => name, StringComparer.Ordinal)
+              .Select(name => new { Name = name, Bounds = inputBounds[name] })
+              .ToList(),
+          OutputBounds = outputBounds,
+          Objectives = _responseNames
+        });
+
+        if(_responseSpaces.Count != objectives.Count ||
+           _currentRngSeed != rngSeed ||
+           !string.Equals(_currentConfigurationKey, configurationKey, StringComparison.Ordinal))
+        {
+          _responseSpaces.Clear();
+          _previousPoints.Clear();
+
+          var configDict = inputNames.ToDictionary(name => name, name => inputBounds[name]);
+          _randomizer = new Pcg64(rngSeed);
+          _currentRngSeed = rngSeed;
+          _currentConfigurationKey = configurationKey;
+
+          for(int i = 0; i < objectives.Count; i++)
+          {
+            var numGaussians = _randomizer.Next(4, 12);
+            var noiseScale = _randomizer.NextDouble(0.08, 0.25);
+            var noiseFrequency = _randomizer.NextDouble(1.0, 10.0);
+            var responseSeed = _randomizer.NextUInt64(1_000_000UL, 1_000_000_000_000UL);
+
+            _responseSpaces.Add(new SyntheticProcessResponse(
+                configDict,
+                outputBounds,
+                numGaussians,
+                noiseScale,
+                noiseFrequency,
+                responseSeed));
+          }
+        }
+
+        var results = new List<Objective>();
+        var currentPoint = new Dictionary<string, double>(convertedInputDict);
+
+        for(int i = 0; i < _responseSpaces.Count; i++)
+        {
+          var result = _responseSpaces[i].Evaluate(convertedInputDict);
+          currentPoint[_responseNames[i]] = result;
+
+          Console.WriteLine($"{_responseNames[i]}: {result}");
+          results.Add(new Objective
+          {
+            ObjectiveName = _responseNames[i],
+            ObjectiveValue = AresValueHelper.CreateFloat(result)
+          });
+        }
+
+        _previousPoints.Add(currentPoint);
+
+        var response = new AnalysisResponse
+        {
+          AnalysisOutcome = Outcome.Success,
+          ErrorString = string.Empty
+        };
+        response.Objectives.AddRange(results);
+        return response;
       }
-
-      var analysisResults = new List<Objective>();
-      var iterationPoints = new List<double>();
-      var currentPoint = new Dictionary<string, double>(convertedInputDict);
-
-      for(int i = 0; i < _responseSpaces.Count; i++)
+      catch(Exception exception)
       {
-        double result = _responseSpaces[i].Evaluate(convertedInputDict);
-        iterationPoints.Add(result);
-        currentPoint[_responseNames[i]] = result;
+        Console.WriteLine($"Error processing request: {exception.Message}");
 
-        Console.WriteLine($"{_responseNames[i]}: {result}");
-        analysisResults.Add(new Objective() { ObjectiveName = _responseNames[i], ObjectiveValue = AresValueHelper.CreateFloat(result) });
+        var response = new AnalysisResponse
+        {
+          AnalysisOutcome = Outcome.Failure,
+          ErrorString = exception.Message
+        };
+
+        response.Objectives.AddRange(_responseNames.Select(name => new Objective
+        {
+          ObjectiveName = name,
+          ObjectiveValue = AresValueHelper.CreateFloat(-1.0)
+        }));
+
+        return response;
       }
-
-      _previousPoints.Add(currentPoint);
-
-      var analysisResponse = new AnalysisResponse() { AnalysisOutcome = Outcome.Success, ErrorString = string.Empty };
-      analysisResponse.Objectives.AddRange(analysisResults);
-
-      return analysisResponse;
-    }
-    catch(Exception e)
-    {
-      Console.WriteLine($"Error processing request: {e.Message}");
-      var failedObjectives = _responseNames.Select(name => new Objective() { ObjectiveName = name, ObjectiveValue = AresValueHelper.CreateFloat(-1.0)}).ToList();
-
-      var analysisResponse = new AnalysisResponse { AnalysisOutcome = Outcome.Failure, ErrorString = e.Message };
-      analysisResponse.Objectives.AddRange(failedObjectives);
-
-      return analysisResponse;
     }
   }
 
-  private double ExtractNumericValue(AresValue value)
+  private ulong ReadSeed(AnalysisRequest request)
   {
-    var numericFound = value.TryGetNumericValue(out var number);
+    if(_currentRngSeed.HasValue)
+      return _currentRngSeed.Value;
 
-    if(numericFound)
+    if(request.Settings != null &&
+       request.Settings.Fields.TryGetValue("RNG Seed", out var seedValue))
+    {
+      if(!seedValue.TryGetNumericValue(out var numericSeed) ||
+         !double.IsFinite(numericSeed) || numericSeed < 0.0 ||
+         numericSeed > ulong.MaxValue)
+      {
+        throw new FormatException("RNG Seed must be a nonnegative finite number.");
+      }
+
+      return (ulong)numericSeed;
+    }
+
+    Console.WriteLine("No RNG seed value received, using a runtime seed for this analyzer");
+    return (ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+  }
+
+  private static Dictionary<string, List<double>> ReadInputBounds(AnalysisRequest request, IReadOnlyCollection<string> inputNames)
+  {
+    var temperatureMaxValue = request.Settings.Fields.GetValueOrDefault(DemoSettings.TemperatureMax.Key);
+    var temperatureMinValue = request.Settings.Fields.GetValueOrDefault(DemoSettings.TemperatureMin.Key);
+    var flowRateMaxValue = request.Settings.Fields.GetValueOrDefault(DemoSettings.FlowRateMax.Key);
+    var flowRateMinValue = request.Settings.Fields.GetValueOrDefault(DemoSettings.FlowRateMin.Key);
+
+    var tempMax = 200.0;
+    var tempMin = 0.0;
+    var flowMax = 200.0;
+    var flowMin = 0.0;
+
+    temperatureMaxValue?.TryGetNumericValue(out tempMax);
+    temperatureMinValue?.TryGetNumericValue(out tempMin);
+    flowRateMaxValue?.TryGetNumericValue(out flowMax);
+    flowRateMinValue?.TryGetNumericValue(out flowMin);
+
+    var boundsDictionary = new Dictionary<string, List<double>>
+    {
+      { "Temperature", [tempMin, tempMax] },
+      { "Flow Rate", [flowMin, flowMax] }
+    };
+
+    return boundsDictionary;
+  }
+
+  private static List<double> ReadOutputBounds(AnalysisRequest request)
+  {
+    if(request.Settings != null &&
+       request.Settings.Fields.TryGetValue("Output Bounds", out var boundsValue))
+    {
+      var json = boundsValue.StringValue ?? string.Empty;
+      return JsonSerializer.Deserialize<List<double>>(json)
+          ?? throw new FormatException("Output Bounds must be a JSON array.");
+    }
+
+    return new List<double> { 0.0, 1.0 };
+  }
+
+  private static double ExtractNumericValue(AresValue value)
+  {
+    if(value.TryGetNumericValue(out var number) && double.IsFinite(number))
       return number;
 
-    else
-      return double.NaN;
+    throw new FormatException("Analyzer inputs must be finite numeric values.");
+  }
+
+  private static void ValidateBounds(string name, IList<double> bounds)
+  {
+    if(bounds.Count < 2 ||
+       !double.IsFinite(bounds[0]) ||
+       !double.IsFinite(bounds[1]) ||
+       bounds[0] >= bounds[1])
+    {
+      throw new FormatException(
+          $"Bounds for '{name}' must contain two finite values in ascending order.");
+    }
   }
 }
