@@ -59,13 +59,14 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<IDeviceDriverLoader, DeviceDriverLoader>();
     services.AddSingleton<IDeviceManager, DeviceManager>();
 
-    if (AresConfig.DemoMode)
+    if(AresConfig.DemoMode)
     {
       services.AddSingleton<IDeviceConfigManager, DemoDeviceConfigManager>();
       services.AddSingleton<IRemoteAnalyzerManager, DemoRemoteAnalyzerManager>();
       services.AddSingleton<IRemotePlannerManager, DemoRemotePlannerManager>();
       services.AddSingleton<ICampaignTemplatePersistenceService, DemoCampaignTemplatePersistenceService>();
     }
+
     else
     {
       services.AddSingleton<IDeviceConfigManager, DeviceConfigManager>();
