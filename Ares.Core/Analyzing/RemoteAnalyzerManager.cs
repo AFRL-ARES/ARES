@@ -45,12 +45,6 @@ public class RemoteAnalyzerManager : IRemoteAnalyzerManager
     await ctx.SaveChangesAsync();
   }
 
-  public Task CreateDemoAnalyzer(string url)
-  {
-    // In non-demo runs, treat demo analyzer creation as a regular analyzer creation.
-    return CreateAnalyzer("Demo Remote Analyzer", url);
-  }
-
   private RemoteAnalyzer? ConfigToAnalyzer(AnalyzerConfig config)
   {
     var uriValid = Uri.TryCreate(config.Url, UriKind.Absolute, out var uri);
