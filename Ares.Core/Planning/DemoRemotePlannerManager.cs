@@ -1,4 +1,3 @@
-using Ares.Core;
 using Ares.Core.Execution.VersionChecking;
 using Ares.Core.Notifications;
 using Ares.Datamodel.Planning;
@@ -18,8 +17,7 @@ public class DemoRemotePlannerManager : IRemotePlannerManager
   private readonly IPlannerServiceCache _plannerCache;
   private RemotePlannerMonitor? _remotePlannerMonitor;
 
-  public DemoRemotePlannerManager(
-    IPlannerServiceRepo plannerRepo,
+  public DemoRemotePlannerManager(IPlannerServiceRepo plannerRepo,
     INotificationHandler notificationHandler,
     IDatamodelVersionValidator versionValidator,
     IPlannerServiceCache plannerCache)
@@ -36,26 +34,13 @@ public class DemoRemotePlannerManager : IRemotePlannerManager
     var existingDemoPlanner = _plannerRepo.GetPlannerById(DemoIds.PlannerId);
     if(existingDemoPlanner is null)
     {
-      // Default demo planner endpoint from DemoRemotePlanner launch settings.
       var demoUrl = "http://localhost:5036";
       await CreateDemoPlanner(demoUrl);
     }
   }
 
   public Task CreatePlanner(string name, string url)
-  {
-    // In demo mode, creating additional planners is allowed but purely in-memory.
-    var config = new PlannerConfig { UniqueId = Guid.NewGuid().ToString(), Name = name, Url = url };
-    var planner = ConfigToPlanner(config);
-
-    if(planner is not null)
-    {
-      _remotePlannerMonitor = new RemotePlannerMonitor(planner, _plannerCache);
-      _plannerRepo.AddPlanner(planner);
-    }
-
-    return Task.CompletedTask;
-  }
+    => Task.CompletedTask;
 
   public Task CreateDemoPlanner(string url)
   {

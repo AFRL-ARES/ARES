@@ -44,12 +44,6 @@ public class RemotePlannerManager : IRemotePlannerManager
     await ctx.SaveChangesAsync();
   }
 
-  public Task CreateDemoPlanner(string url)
-  {
-    // In non-demo runs, treat demo planner creation as a regular planner creation.
-    return CreatePlanner("Demo Remote Planner", url);
-  }
-
   private RemotePlannerService? ConfigToPlanner(PlannerConfig config)
   {
     var uriValid = Uri.TryCreate(config.Url, UriKind.Absolute, out var uri);
