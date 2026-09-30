@@ -1,0 +1,73 @@
+@using Radzen
+@using System
+@using System.IO
+@using Ares.Core.Settings
+
+<RadzenCard class="rz-p-4" Style="max-width: 640px;">
+  <RadzenText TextStyle="TextStyle.H4" class="rz-mb-3">
+    Welcome to ARES (Demo Mode)
+  </RadzenText>
+
+  <RadzenText TextStyle="TextStyle.Body1" class="rz-mb-2">
+    ARES is an orchestration software designed to make running planners, analyzers,
+    and devices in repeatable campaigns and experiments easy.
+  </RadzenText>
+
+  <RadzenText TextStyle="TextStyle.Body1" class="rz-mb-3">
+    Demo mode runs ARES in a fully simulated configuration. Planners, analyzers, devices, and campaigns
+    are loaded from demo templates instead of your real system setup, and no changes are written to your
+    production database.
+  </RadzenText>
+
+  <ul class="rz-mb-4" style="padding-left: 1.25rem;">
+    <li>Explore campaign design and execution without touching live hardware or existing projects.</li>
+    <li>Use the preconfigured demo campaign to see how planners, analyzers, and devices cooperate.</li>
+    <li>Switch back to normal mode at any time by launching ARES without the demo flag.</li>
+  </ul>
+
+  <div class="rz-mt-3 rz-mb-4" style="display: flex; align-items: center; gap: 0.5rem;">
+    <RadzenCheckBox @bind-Value="DontShowAgain" TValue="bool" id="demo-intro-hide" />
+    <label for="demo-intro-hide">Don&apos;t show this intro next time</label>
+  </div>
+
+  <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+    <RadzenButton Text="Got it" Icon="check" ButtonStyle="ButtonStyle.Primary" Click="OnDismiss" />
+  </div>
+</RadzenCard>
+
+@code {
+  [Inject]
+  public DialogService DialogService { get; set; } = default!;
+
+  [Inject]
+  public ISystemSettingsManager SystemSettingsManager { get; set; } = default!;
+
+  public bool DontShowAgain { get; set; }
+
+  private async Task OnDismiss()
+  {
+    if(DontShowAgain)
+    {
+      await TrySetHideDemoIntroAsync();
+    }
+
+    DialogService.Close(DontShowAgain);
+  }
+
+  private async Task TrySetHideDemoIntroAsync()
+  {
+    try
+    {
+      var config = await SystemSettingsManager.GetAresGeneralSettings();
+      if(config is null)
+        return;
+
+      config.HideDemoModeIntro = true;
+      await SystemSettingsManager.UpdateAresGeneralSettings(config);
+    }
+    catch
+    {
+      // Swallow any errors; failing to persist the preference should not block startup.
+    }
+  }
+}

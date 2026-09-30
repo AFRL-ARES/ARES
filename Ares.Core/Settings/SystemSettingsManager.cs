@@ -28,7 +28,8 @@ public class SystemSettingsManager : ISystemSettingsManager
         RetryCooldown = new Duration() { Seconds = 0 },
         CommandRetryLimit = 1,
         DisplayCompatabilityWarnings = true,
-        DisplayDataCollectionWidget = true
+        DisplayDataCollectionWidget = true,
+        HideDemoModeIntro = false
       };
 
       context.GeneralSettingsConfigs.Add(newGeneralSettingsConfig);
@@ -143,6 +144,7 @@ public class SystemSettingsManager : ISystemSettingsManager
       existingConfig.CommandRetryLimit = config.CommandRetryLimit;
       existingConfig.DisplayCompatabilityWarnings = config.DisplayCompatabilityWarnings;
       existingConfig.DisplayDataCollectionWidget = config.DisplayDataCollectionWidget;
+      existingConfig.HideDemoModeIntro = config.HideDemoModeIntro;
 
       await context.SaveChangesAsync();
     }

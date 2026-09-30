@@ -11,6 +11,10 @@
 @using UI.Application.Notifications
 @using UI.Infrastructure.Notifications
 @using UI.Infrastructure.Startup
+@using Ares.Core.Settings
+@using Microsoft.Extensions.Configuration
+@using Radzen
+@using UI.Features.Tutorial
 
 @inherits LayoutComponentBase
 
@@ -21,6 +25,9 @@
 @inject IDeviceDriverProvider deviceDriverProvider
 @inject INotificationProvider notificationProvider
 @inject StartupStateTracker Tracker
+@inject DialogService DialogService
+@inject IConfiguration Configuration
+@inject ISystemSettingsManager SystemSettingsManager
 
 <HeadContent>
   <link rel="icon" type="image/png" href="images/ARESLogo.png">
@@ -128,6 +135,7 @@
   private bool _isDisposed;
   private List<string> _approvedCssPaths = new();
   public bool HasUnreadNotifications = false;
+  private bool _demoIntroShown;
 
   private readonly string[] _loadingMessageOptions = new[]
   {
@@ -152,7 +160,6 @@
     "Brewing virtual coffee...",
     "Calibrating the flux capacitors..."
   };
-
   protected override void OnInitialized()
   {
     Tracker.OnSystemReady += HandleSystemReady;
@@ -160,24 +167,21 @@
     HasUnreadNotifications = notificationProvider.GetAllNotifications().Any(n => !n.IsRead);
 
     _notificationSubscription = notificationProvider.Connect()
-    .Throttle(TimeSpan.FromMilliseconds(500))
-    .Subscribe(_ => InvokeAsync(NotificationsUpdated));
+      .Throttle(TimeSpan.FromMilliseconds(500))
+      .Subscribe(_ => InvokeAsync(NotificationsUpdated));
 
     _driverSubscription = deviceDriverProvider.Connect()
-    .Throttle(TimeSpan.FromMilliseconds(500))
-    .Subscribe(_ => InvokeAsync(StateHasChanged));
-
+      .Throttle(TimeSpan.FromMilliseconds(500))
+      .Subscribe(_ => InvokeAsync(StateHasChanged));
 
     _ = CycleLoadingMessagesAsync(_cts.Token);
-
   }
+
 
   private Task NotificationsUpdated()
   {
     if(_isDisposed)
       return Task.CompletedTask;
-
-    HasUnreadNotifications = notificationProvider.GetAllNotifications().Any(n => !n.IsRead);
     StateHasChanged();
     return Task.CompletedTask;
   }
@@ -196,6 +200,12 @@
       StateHasChanged();
     });
   }
+
+  protected override async Task OnAfterRenderAsync(bool firstRender)
+  {
+    if(firstRender && !_demoIntroShown)
+      await ShowDemoIntroIfNeededAsync();
+	}
 
   private async Task CycleLoadingMessagesAsync(CancellationToken token)
   {
@@ -255,7 +265,6 @@
 
       uiNotificationService.Notify(notificationMessage);
     }
-
   }
 
   public IEnumerable<string> GetPluginStylesheetPaths()
@@ -278,8 +287,36 @@
   private void HandleSystemReady()
   {
     _cts.Cancel();
-    InvokeAsync(StateHasChanged);
+    _ = InvokeAsync(async () =>
+    {
+      StateHasChanged();
+    });
   }
+
+  private async Task ShowDemoIntroIfNeededAsync()
+  {
+    if(_demoIntroShown)
+      return;
+
+    if(!Ares.Core.AresConfig.DemoMode)
+      return;
+
+    if(!Tracker.IsReady)
+      return;
+
+    var generalSettings = await SystemSettingsManager.GetAresGeneralSettings();
+    if(generalSettings?.HideDemoModeIntro == true)
+      return;
+
+    _demoIntroShown = true;
+
+    await DialogService.OpenAsync<DemoIntroDialog>(string.Empty, null, new DialogOptions
+    {
+      ShowClose = false
+    });
+  }
+
+
 
   public void Dispose()
   {
@@ -295,3 +332,8 @@
     _cts.Dispose();
   }
 }
+
+
+
+
+

@@ -20,7 +20,7 @@ else
         <AnalyzerSettingsView ViewModel="vm"/>
       </div>
     }
-    <button class="m-2 align-self-end btn btn-outline-light" disabled="@SavingInProgress" @onclick="AddAnalyzerClick">
+    <button class="m-2 align-self-end btn btn-outline-light" disabled="@IsAddDisabled" @onclick="AddAnalyzerClick">
       @if (SavingInProgress)
       {
         <LoadingSpinner SpinnerSize="SpinnerSize.Small" />
@@ -36,6 +36,11 @@ else
 @code {
   private async Task AddAnalyzerClick()
   {
+    if (IsAddDisabled)
+    {
+      return;
+    }
+
     var viewModel = ViewModel!.GetNewConfigEditViewModel();
     var result = await DialogService.OpenAsync("New Analyzer", ds =>
       @<AnalyzerConfigEditView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)" />);
@@ -65,6 +70,7 @@ else
       }
     }
   }
+
   protected override async Task OnInitializedAsync()
   {
     await base.OnInitializedAsync();
@@ -73,6 +79,7 @@ else
       await ViewModel.UpdateAvailableAnalyzers();
   }
 
-
   private bool SavingInProgress { get; set; }
+
+  private bool IsAddDisabled => Ares.Core.AresConfig.DemoMode || SavingInProgress;
 }

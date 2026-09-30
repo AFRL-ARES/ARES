@@ -58,8 +58,23 @@ public static class ServiceCollectionExtensions
     services.AddTransient<ICampaignValidator, RequiredDeviceInterpretersValidator>();
     services.AddSingleton<IDeviceDriverLoader, DeviceDriverLoader>();
     services.AddSingleton<IDeviceManager, DeviceManager>();
-    services.AddSingleton<IRemoteAnalyzerManager, RemoteAnalyzerManager>();
-    services.AddSingleton<IRemotePlannerManager, RemotePlannerManager>();
+
+    if(AresConfig.DemoMode)
+    {
+      services.AddSingleton<IDeviceConfigManager, DemoDeviceConfigManager>();
+      services.AddSingleton<IRemoteAnalyzerManager, DemoRemoteAnalyzerManager>();
+      services.AddSingleton<IRemotePlannerManager, DemoRemotePlannerManager>();
+      services.AddSingleton<ICampaignTemplatePersistenceService, DemoCampaignTemplatePersistenceService>();
+    }
+
+    else
+    {
+      services.AddSingleton<IDeviceConfigManager, DeviceConfigManager>();
+      services.AddSingleton<IRemoteAnalyzerManager, RemoteAnalyzerManager>();
+      services.AddSingleton<IRemotePlannerManager, RemotePlannerManager>();
+      services.AddSingleton<ICampaignTemplatePersistenceService, CampaignTemplatePersistenceService>();
+    }
+
     services.AddSingleton<IVisualizationConfigManager, VisualizationConfigManager>();
     services.AddSingleton<IAnalyzerCache, AnalyzerCache>();
     services.AddSingleton<IRemoteDeviceManager, RemoteDeviceManager>();
@@ -70,12 +85,10 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<IDesiredAnalysisResultFactory, DesiredAnalysisResultFactory>();
     services.AddSingleton<IPlannerLeadStopConditionFactory, PlannerLeadStopConditionFactory>();
     services.AddSingleton<INotifier, Notifier>();
-    services.AddSingleton<IDeviceConfigManager, DeviceConfigManager>();
     services.AddSingleton<IDriverDatabaseManager, DriverDatabaseManager>();
     services.AddSingleton<ISystemSettingsManager, SystemSettingsManager>();
     services.AddSingleton<IResourceConnectionArbiter, ResourceConnectionArbiter>();
     services.AddSingleton<ICustomCommandPersistenceService, CustomCommandPersistenceService>();
-    services.AddSingleton<ICampaignTemplatePersistenceService, CampaignTemplatePersistenceService>();
     services.AddSingleton<ICampaignTemplateTransferService, CampaignTemplateTransferService>();
     services.AddSingleton<ICommandDisplayNameResolver, CommandDisplayNameResolver>();
     services.AddSingleton<CustomCommandExecutor>();

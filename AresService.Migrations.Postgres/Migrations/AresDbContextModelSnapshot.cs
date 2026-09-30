@@ -346,6 +346,9 @@ namespace AresService.Migrations.Postgres.Migrations
                     b.Property<int>("ExperimentRetryLimit")
                         .HasColumnType("integer");
 
+                    b.Property<bool>("HideDemoModeIntro")
+                        .HasColumnType("boolean");
+
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("timestamp with time zone")

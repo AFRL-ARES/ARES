@@ -1,0 +1,133 @@
+using Ares.Core;
+using Ares.Core.Execution.VersionChecking;
+using Ares.Core.Notifications;
+using Ares.Datamodel.Analyzing;
+
+namespace Ares.Core.Analyzing;
+
+/// <summary>
+/// Demo-mode implementation of <see cref=\"IRemoteAnalyzerManager\"/>.
+/// This manager does not read from or write to the database and operates
+/// entirely against the in-memory analyzer repository.
+/// </summary>
+public class DemoRemoteAnalyzerManager : IRemoteAnalyzerManager
+{
+  private readonly IAnalyzerRepo _analyzerRepo;
+  private readonly INotificationHandler _notificationHandler;
+  private readonly IDatamodelVersionValidator _datamodelVersionValidator;
+  private readonly List<RemoteAnalyzerMonitor> _analyzerMonitors = [];
+  private readonly IAnalyzerCache _analyzerCache;
+
+  public DemoRemoteAnalyzerManager(
+    IAnalyzerRepo analyzerRepo,
+    INotificationHandler notificationHandler,
+    IDatamodelVersionValidator datamodelVersionValidator,
+    IAnalyzerCache analyzerCache)
+  {
+    _analyzerRepo = analyzerRepo;
+    _notificationHandler = notificationHandler;
+    _datamodelVersionValidator = datamodelVersionValidator;
+    _analyzerCache = analyzerCache;
+  }
+
+  public async Task LoadAnalyzers()
+  {
+    // In demo mode we only ensure that the static demo analyzer exists.
+    var existingDemo = _analyzerRepo.GetAnalyzerById(DemoIds.AnalyzerId);
+    if(existingDemo is null)
+    {
+      // Default demo analyzer endpoint from DemoRemoteAnalyzer launch settings.
+      var demoUrl = "http://localhost:5026";
+      await CreateDemoAnalyzer(demoUrl);
+    }
+  }
+
+  public Task CreateAnalyzer(string name, string url)
+  {
+    // In demo mode, creating additional analyzers is allowed but purely in-memory.
+    var config = new AnalyzerConfig { UniqueId = Guid.NewGuid().ToString(), Name = name, Url = url };
+    var analyzer = ConfigToAnalyzer(config);
+
+    if(analyzer is not null)
+    {
+      _analyzerRepo.AddAnalyzer(analyzer);
+      _analyzerMonitors.Add(new RemoteAnalyzerMonitor(analyzer, _analyzerCache));
+    }
+
+    return Task.CompletedTask;
+  }
+
+  public Task CreateDemoAnalyzer(string url)
+  {
+    var config = new AnalyzerConfig { UniqueId = DemoIds.AnalyzerId, Name = DemoIds.AnalyzerName, Url = url };
+    var analyzer = ConfigToAnalyzer(config);
+
+    if(analyzer is not null)
+    {
+      _analyzerMonitors.Add(new RemoteAnalyzerMonitor(analyzer, _analyzerCache));
+      _analyzerRepo.AddAnalyzer(analyzer);
+    }
+
+    return Task.CompletedTask;
+  }
+
+  public Task RemoveAnalyzer(string analyzerId)
+  {
+    _analyzerRepo.RemoveAnalyzer(analyzerId);
+    var monitor = _analyzerMonitors.FirstOrDefault(m => m.AnalyzerId == analyzerId);
+    if(monitor is not null)
+    {
+      monitor.Dispose();
+      _analyzerMonitors.Remove(monitor);
+    }
+
+    return Task.CompletedTask;
+  }
+
+  public Task UpdateAnalyzer(AnalyzerConfig config)
+  {
+    // For demo mode we can implement a simple in-memory update by
+    // recreating the analyzer with the new configuration.
+    var existing = _analyzerRepo.GetAnalyzerById(config.UniqueId);
+    if(existing is not null)
+    {
+      RemoveAnalyzer(config.UniqueId);
+      var updated = ConfigToAnalyzer(config);
+      if(updated is not null)
+      {
+        _analyzerRepo.AddAnalyzer(updated);
+        _analyzerMonitors.Add(new RemoteAnalyzerMonitor(updated, _analyzerCache));
+      }
+    }
+
+    return Task.CompletedTask;
+  }
+
+  public Task UpdateAnalyzerSettings(AnalyzerSettings analyzerSettings)
+  {
+    var analyzer = _analyzerRepo.GetAnalyzerById(analyzerSettings.AnalyzerId);
+    if(analyzer is null)
+    {
+      return Task.CompletedTask;
+    }
+
+    analyzer.UpdateSettings(analyzerSettings.Settings);
+    // No persistence in demo mode.
+    return Task.CompletedTask;
+  }
+
+  private RemoteAnalyzer? ConfigToAnalyzer(AnalyzerConfig config)
+  {
+    var uriValid = Uri.TryCreate(config.Url, UriKind.Absolute, out var uri);
+    if(!uriValid || uri is null)
+    {
+      _ = _notificationHandler.HandleNotification(
+        "Analyzer Load Error",
+        $"Failed to load a remote analyzer {config.Name} because the url {config.Url} is invalid.",
+        NotificationSeverityEnum.Danger);
+      return null;
+    }
+
+    return new RemoteAnalyzer(config.Name, uri, _datamodelVersionValidator, config.UniqueId);
+  }
+}

@@ -30,10 +30,16 @@ var checkDbOption = new Option<bool>(name: "--check-database")
   Description = "Checks if database exists and/or needs an update. Uses exit code 0 if database is good, 10 if migrations are pending, 11 if database is unavailable, and 3 for other errors.",
 };
 
+var demoModeOption = new Option<bool>(name: "--demo")
+{
+  Description = "Runs ARES in demo mode",
+};
+
 var rootCommand = new RootCommand("Ares Service")
   {
     migrateOption,
-    checkDbOption
+    checkDbOption,
+    demoModeOption
   };
 
 rootCommand.SetAction(async parseResult =>
@@ -49,6 +55,9 @@ rootCommand.SetAction(async parseResult =>
   {
     return await CheckDatabase(args);
   }
+
+  var demoMode = parseResult.GetValue(demoModeOption);
+  AresConfig.DemoMode = demoMode;
 
   await RunWebAppAsync(args);
 
