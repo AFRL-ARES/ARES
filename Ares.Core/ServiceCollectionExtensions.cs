@@ -65,6 +65,7 @@ public static class ServiceCollectionExtensions
       services.AddSingleton<IRemoteAnalyzerManager, DemoRemoteAnalyzerManager>();
       services.AddSingleton<IRemotePlannerManager, DemoRemotePlannerManager>();
       services.AddSingleton<ICampaignTemplatePersistenceService, DemoCampaignTemplatePersistenceService>();
+      services.AddSingleton<IRemoteDeviceManager, DemoRemoteDeviceManager>();
     }
 
     else
@@ -73,11 +74,11 @@ public static class ServiceCollectionExtensions
       services.AddSingleton<IRemoteAnalyzerManager, RemoteAnalyzerManager>();
       services.AddSingleton<IRemotePlannerManager, RemotePlannerManager>();
       services.AddSingleton<ICampaignTemplatePersistenceService, CampaignTemplatePersistenceService>();
+      services.AddSingleton<IRemoteDeviceManager, RemoteDeviceManager>();
     }
 
     services.AddSingleton<IVisualizationConfigManager, VisualizationConfigManager>();
     services.AddSingleton<IAnalyzerCache, AnalyzerCache>();
-    services.AddSingleton<IRemoteDeviceManager, RemoteDeviceManager>();
     services.AddSingleton<IDeviceCache, DeviceCache>();
     services.AddSingleton<IPlannerServiceCache, PlannerServiceCache>();
     services.AddSingleton<AresVariableManager>();

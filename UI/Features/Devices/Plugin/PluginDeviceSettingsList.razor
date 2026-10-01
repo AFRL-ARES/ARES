@@ -1,5 +1,6 @@
 @page "/settings/device/{DriverId}"
 @layout DeviceSettingsLayout
+@using Ares.Core
 @using Ares.Services
 @using Google.Protobuf.WellKnownTypes
 @using Radzen.Blazor
@@ -23,7 +24,7 @@ else
       </div>
     }
 
-    <button class="m-2 align-self-end btn btn-outline-light" disabled="@SavingInProgress" @onclick="AddDeviceClick">
+    <button class="m-2 align-self-end btn btn-outline-light" disabled="@IsAddDisabled" @onclick="AddDeviceClick">
       @if(SavingInProgress)
       {
         <LoadingSpinner SpinnerSize="SpinnerSize.Small" />
@@ -72,6 +73,8 @@ else
 
   private bool IsResolving { get; set; }
   private bool SavingInProgress { get; set; } = false;
+  private bool IsAddDisabled => AresConfig.DemoMode || SavingInProgress;
+
 
   protected override async Task OnParametersSetAsync()
   {

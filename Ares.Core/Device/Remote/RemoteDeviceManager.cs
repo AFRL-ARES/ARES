@@ -98,32 +98,7 @@ internal class RemoteDeviceManager(
     // In demo mode, ensure static demo remote device is present
     if(AresConfig.DemoMode)
     {
-      var existingDemo = _deviceRepo.GetDevice(DemoIds.RemoteDeviceId);
-      if(existingDemo is null)
-      {
-        try
-        {
-          var demoDevice = await LoadExistingDevice(new RemoteDeviceConfig 
-          { 
-            Name = DemoIds.RemoteDeviceName, 
-            UniqueId = DemoIds.RemoteDeviceId, 
-            Url = "http://localhost:5257" 
-          });
 
-          if(demoDevice is null)
-            return;
-
-          _deviceRepo.AddOrUpdate(demoDevice);
-          var demoMonitor = new RemoteDeviceMonitor(demoDevice, _deviceCache, _loggerFactory.CreateLogger<RemoteDeviceMonitor>());
-          _deviceMonitors.Add(demoMonitor);
-
-          await _stateLoggerManager.SetupLogger(demoDevice);
-        }
-        catch(Exception ex)
-        {
-          _logger.LogError(ex, "Failed to initialize demo remote device {DeviceName}", DemoIds.RemoteDeviceName);
-        }
-      }
     }
   }
 

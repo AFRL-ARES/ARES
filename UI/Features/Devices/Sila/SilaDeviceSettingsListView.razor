@@ -1,4 +1,5 @@
 ﻿@page "/settings/device/sila"
+@using Ares.Core
 @layout DeviceSettingsLayout
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<SilaDeviceSettingsListViewModel>
 @inject DialogService DialogService
@@ -18,7 +19,7 @@ else
       </div>
     }
 
-    <button class="m-2 align-self-end btn btn-outline-light" disabled="@ViewModel!.IsLoading" @onclick="AddNewSilaServerClicked">
+    <button class="m-2 align-self-end btn btn-outline-light" disabled="@IsAddDisabled" @onclick="AddNewSilaServerClicked">
       <RadzenIcon Icon="add" />
     </button>
   </div>
@@ -27,6 +28,9 @@ else
 @code {
 	private async Task AddNewSilaServerClicked()
 	{
+    if(IsAddDisabled)
+      return;
+
     var task = await DialogService.OpenAsync("Search for SiLA Servers", ds => @<SilaDeviceSearchEditView ViewModel="ViewModel" />);
     await ViewModel!.UpdateAvailableDevices();
     StateHasChanged();
@@ -37,4 +41,6 @@ else
     await ViewModel!.UpdateAvailableDevices();
 		await base.OnInitializedAsync();
 	}
+
+  private bool IsAddDisabled => AresConfig.DemoMode || ViewModel!.IsLoading;
 }

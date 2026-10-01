@@ -1,5 +1,6 @@
 @page "/settings/device/remote"
 @layout DeviceSettingsLayout
+@using Ares.Core
 @using Ares.Services
 @using Google.Protobuf.WellKnownTypes
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<RemoteDeviceSettingsListViewModel>
@@ -35,18 +36,14 @@ else
 @code {
   private async Task AddDeviceClick()
   {
-    if (IsAddDisabled)
-    {
+    if(IsAddDisabled)
       return;
-    }
 
     var viewModel = ViewModel!.GetNewConfigEditViewModel();
-    var result = await DialogService.OpenAsync("New Device", ds =>
-      @<RemoteDeviceConfigEditView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)" />);
-
+    var result = await DialogService.OpenAsync("New Device", ds => @<RemoteDeviceConfigEditView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)" />);
     var notification = new UiNotificationMessage();
 
-    if (result is true)
+    if(result is true)
     {
       SavingInProgress = true;
       StateHasChanged();
@@ -72,5 +69,5 @@ else
 
   private bool SavingInProgress { get; set; }
 
-  private bool IsAddDisabled => Ares.Core.AresConfig.DemoMode || SavingInProgress;
+  private bool IsAddDisabled => AresConfig.DemoMode || SavingInProgress;
 }

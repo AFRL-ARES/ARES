@@ -1,3 +1,4 @@
+using Ares.Core;
 using Ares.Core.Analyzing;
 using Ares.Core.Device.Managers;
 using Ares.Core.Device.Plugins.Drivers;
@@ -8,6 +9,7 @@ using Ares.Core.Device.State.Logging;
 using Ares.Core.Planning;
 using Ares.Core.Settings;
 using Ares.Core.Visualization.Managers;
+using Ares.Datamodel;
 using UI.Application.Devices.Repos;
 using UI.Application.Notifications;
 using UI.Application.Settings;
@@ -119,8 +121,7 @@ public class ServiceStarter : BackgroundService
       _plannerManager.LoadPlanners(),
       _analyzerManager.LoadAnalyzers(),
       _remoteDeviceManager.LoadDevices(),
-      _silaDeviceManager.LoadSilaDevices()
-      );
+      _silaDeviceManager.LoadSilaDevices());
 
     await _visualizationConfigManager.Initialize();
     await Task.WhenAll(localTrack, infraTrack, remoteTrack);
