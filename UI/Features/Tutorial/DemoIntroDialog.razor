@@ -1,6 +1,4 @@
 @using Radzen
-@using System
-@using System.IO
 @using Ares.Core.Settings
 
 <RadzenCard class="rz-p-4" Style="max-width: 640px;">
@@ -9,21 +7,23 @@
   </RadzenText>
 
   <RadzenText TextStyle="TextStyle.Body1" class="rz-mb-2">
-    ARES is an orchestration software designed to make running planners, analyzers,
-    and devices in repeatable campaigns and experiments easy.
+    Developed by the <strong>Air Force Research Laboratory (AFRL)</strong>, ARES empowers researchers in creating their self-driving labs for driving autonomous discovery.
   </RadzenText>
 
   <RadzenText TextStyle="TextStyle.Body1" class="rz-mb-3">
-    Demo mode runs ARES in a fully simulated configuration. Planners, analyzers, devices, and campaigns
-    are loaded from demo templates instead of your real system setup, and no changes are written to your
-    production database.
+    Demo mode runs ARES in a fully simulated configuration. Adding devices, planners and analyzers is disabled in this mode.
+    You're provided a sample planner, analyzer, devices and a pre-built template ready to run.
   </RadzenText>
 
   <ul class="rz-mb-4" style="padding-left: 1.25rem;">
-    <li>Explore campaign design and execution without touching live hardware or existing projects.</li>
-    <li>Use the preconfigured demo campaign to see how planners, analyzers, and devices cooperate.</li>
-    <li>Switch back to normal mode at any time by launching ARES without the demo flag.</li>
+    <li>Explore ARES without the need for live hardware or existing projects.</li>
+    <li>Modify and execute the pre-configured demo campaign to learn how campaigns are built and executed.</li>
+    <li>Need to reset? Restart ARES in demo mode to start with a clean slate.</li>
   </ul>
+
+  <RadzenText TextStyle="TextStyle.Body1" class="rz-mb-4">
+    <strong>Ready to reach autonomy?</strong>
+  </RadzenText>
 
   <div class="rz-mt-3 rz-mb-4" style="display: flex; align-items: center; gap: 0.5rem;">
     <RadzenCheckBox @bind-Value="DontShowAgain" TValue="bool" id="demo-intro-hide" />
