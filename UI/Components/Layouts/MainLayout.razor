@@ -1,6 +1,7 @@
 @implements IDisposable
 
 @using Ares.Core.Device.Providers
+@using Ares.Core
 @using Ares.Core.Execution.Safety
 @using Ares.Core.Device.Repos
 @using Ares.Services
@@ -13,6 +14,7 @@
 @using UI.Infrastructure.Startup
 @using Ares.Core.Settings
 @using Microsoft.Extensions.Configuration
+@using Microsoft.JSInterop
 @using Radzen
 @using UI.Features.Tutorial
 
@@ -28,6 +30,7 @@
 @inject DialogService DialogService
 @inject IConfiguration Configuration
 @inject ISystemSettingsManager SystemSettingsManager
+@inject IJSRuntime JS
 
 <HeadContent>
   <link rel="icon" type="image/png" href="images/ARESLogo.png">
@@ -136,6 +139,7 @@
   private List<string> _approvedCssPaths = new();
   public bool HasUnreadNotifications = false;
   private bool _demoIntroShown;
+  private const string DemoIntroShownStorageKey = "ares.demoIntroShown";
 
   private readonly string[] _loadingMessageOptions = new[]
   {
@@ -298,7 +302,7 @@
     if(_demoIntroShown)
       return;
 
-    if(!Ares.Core.AresConfig.DemoMode)
+    if(!AresConfig.DemoMode)
       return;
 
     if(!Tracker.IsReady)
@@ -308,7 +312,11 @@
     if(generalSettings?.HideDemoModeIntro == true)
       return;
 
+    if(await WasDemoIntroShownInCurrentTabAsync())
+      return;
+
     _demoIntroShown = true;
+    await MarkDemoIntroShownInCurrentTabAsync();
 
     await DialogService.OpenAsync<DemoIntroDialog>(string.Empty, null, new DialogOptions
     {
@@ -316,7 +324,30 @@
     });
   }
 
+  private async Task<bool> WasDemoIntroShownInCurrentTabAsync()
+  {
+    try
+    {
+      var storedValue = await JS.InvokeAsync<string?>("sessionStorage.getItem", DemoIntroShownStorageKey);
+      return bool.TryParse(storedValue, out var wasShown) && wasShown;
+    }
+    catch(JSException)
+    {
+      return false;
+    }
+  }
 
+  private async Task MarkDemoIntroShownInCurrentTabAsync()
+  {
+    try
+    {
+      await JS.InvokeVoidAsync("sessionStorage.setItem", DemoIntroShownStorageKey, true.ToString());
+    }
+    catch(JSException)
+    {
+      // Browser storage is optional; the in-memory flag still prevents duplicate dialogs in this circuit.
+    }
+  }
 
   public void Dispose()
   {
@@ -332,8 +363,3 @@
     _cts.Dispose();
   }
 }
-
-
-
-
-
