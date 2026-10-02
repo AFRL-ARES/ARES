@@ -111,6 +111,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
       return;
 
     AnalyzerInfo = null;
+    AnalyzerObjectiveSchema = new(StringComparer.OrdinalIgnoreCase);
 
     PlannerAdapterInfos = CampaignTemplate.ExperimentTemplate.GetAllPlannedParameters()
     .Select(parameter => parameter.GetPlanningMetadata())
@@ -127,13 +128,54 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
       request.AnalyzerId = analyzerId;
       var response = await _analyzerService.GetInfo(request, null);
       AnalyzerInfo = response.Info;
+      AnalyzerObjectiveSchema = response.Info.Capabilities.ObjectiveOutputSchema.Fields.ToDictionary();
+      SyncAnalyzerObjectiveTargets();
     }
+  }
+
+  private void SyncAnalyzerObjectiveTargets()
+  {
+    foreach(var objective in AnalyzerObjectiveSchema.Where(objective => objective.Value.Type.IsNumericType()))
+    {
+      DesiredResults.TryAdd(objective.Key, DesiredResult);
+      DesiredLeeways.TryAdd(objective.Key, DesiredLeeway);
+      ObjectiveEnabled.TryAdd(objective.Key, false);
+    }
+
+    var objectiveKeys = AnalyzerObjectiveSchema.Keys.ToHashSet();
+    foreach(var key in DesiredResults.Keys.Where(key => !objectiveKeys.Contains(key)).ToList())
+      DesiredResults.Remove(key);
+    
+    foreach(var key in DesiredLeeways.Keys.Where(key => !objectiveKeys.Contains(key)).ToList())
+      DesiredLeeways.Remove(key);
+
+    foreach(var key in ObjectiveEnabled.Keys.Where(key => !objectiveKeys.Contains(key)).ToList())
+      ObjectiveEnabled.Remove(key);
   }
 
   public async Task SetDesiredAnalysis()
   {
-    await _automationClient.SetAnalysisResultStopCondition(
-      new AnalysisResultCondition { DesiredResult = DesiredResult, Leeway = DesiredLeeway }, null);
+    var stopConditions = new List<AnalysisResultCondition>();
+
+    foreach(var objective in AnalyzerObjectiveSchema)
+    {
+      var key = objective.Key;
+      if(!ObjectiveEnabled.TryGetValue(key, out var enabled) || !enabled)
+        continue;
+
+      var resultFound = DesiredResults.TryGetValue(key, out var result);
+      var leewayFound = DesiredLeeways.TryGetValue(key, out var leeway);
+
+      if(!resultFound || !leewayFound)
+        continue;
+
+      stopConditions.Add(new AnalysisResultCondition { DesiredResult = result, Leeway = leeway });
+    }
+
+    var request = new AddAnalysisResultConditionsRequest();
+    request.Conditions.AddRange(stopConditions);
+
+    await _automationClient.AddAnalysisResultStopConditions(request, null);
     CurrentStopCondition = await GetCurrentStopCondition();
     ActiveStopConditionMode = ExecutionStopConditionMode.AnalyzerResult;
     await RefreshExecutionEligibility();
@@ -223,6 +265,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     if(SelectedTags is not null)
       request.CampaignTags.AddRange(SelectedTags);
 
+    _automationClient.SetAchieveAllStopConditions(AchieveAllObjectives);
     await _automationClient.StartExecution(request, null);
     PlannerMetricsMap.Clear();
     AnalyzerMetrics.Clear();
@@ -806,9 +849,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
   public int CampaignCommandCount => CampaignTemplate?.ExperimentTemplate.StepTemplates.Sum(step => step.CommandTemplates.Count) ?? 0;
 
-  public string PlannerSummary => PlannerAdapterInfos.Any()
-    ? string.Join(", ", PlannerAdapterInfos.Select(info => info?.Name).Where(name => !string.IsNullOrWhiteSpace(name)))
-    : "No planner";
+  public string PlannerSummary => PlannerAdapterInfos.Any() ? string.Join(", ", PlannerAdapterInfos.Select(info => info?.Name).Where(name => !string.IsNullOrWhiteSpace(name))) : "No planner";
 
   public string AnalyzerSummary => AnalyzerInfo?.Name ?? "No analyzer";
 
@@ -816,10 +857,13 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   public partial ExperimentStopConditionResponse? CurrentStopCondition { get; set; }
   public double DesiredResult { get; set; }
   public double DesiredLeeway { get; set; }
+  public Dictionary<string, double> DesiredResults { get; } = new(StringComparer.OrdinalIgnoreCase);
+  public Dictionary<string, double> DesiredLeeways { get; } = new(StringComparer.OrdinalIgnoreCase);
+  public Dictionary<string, bool> ObjectiveEnabled { get; } = new(StringComparer.OrdinalIgnoreCase);
   [Reactive]
   public partial int PlanningBatchSize { get; set; } = 1;
   [Reactive]
-  public int DesiredReplicationRate { get; set; } = 1;
+  public partial int DesiredReplicationRate { get; set; } = 1;
 
   [Reactive]
   public partial bool CampaignActive { get; set; }
@@ -841,6 +885,10 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   public partial HashSet<PlannerServiceInfo?> PlannerAdapterInfos { get; set; }
   [Reactive]
   public partial AnalyzerInfo? AnalyzerInfo { get; set; }
+  [Reactive]
+  public partial Dictionary<string, AresValueSchema> AnalyzerObjectiveSchema { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+  [Reactive]
+  public partial bool AchieveAllObjectives { get; set; }
   [Reactive]
   public partial Dictionary<string, List<ChartMetricPoint>> PlannerMetricsMap { get; private set; }
   [Reactive]

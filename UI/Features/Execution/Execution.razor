@@ -154,21 +154,92 @@
                 </div>
               }
 
+              else if(ViewModel!.ActiveStopConditionMode == ExecutionStopConditionMode.AnalyzerResult)
+              {
+                var numericObjectives = ViewModel!.AnalyzerObjectiveSchema
+                  .Where(objective => objective.Value.Type.IsNumericType())
+                  .ToList();
+
+                <div class="analysis-stop-condition">
+                  @if(ViewModel!.AnalyzerInfo is null)
+                  {
+                    <RadzenAlert AlertStyle="AlertStyle.Info" Variant="Variant.Flat" Shade="Shade.Lighter" AllowClose="false">
+                      Select a campaign with an analyzer that reports a numeric objective to configure this stop condition.
+                    </RadzenAlert>
+                  }
+                  else if(ViewModel!.AnalyzerObjectiveSchema.Count == 0)
+                  {
+                    <RadzenAlert AlertStyle="AlertStyle.Warning" Variant="Variant.Flat" Shade="Shade.Lighter" AllowClose="false">
+                      @ViewModel!.AnalyzerInfo.Name does not report any objective outputs that can be used for an analysis result stop condition.
+                    </RadzenAlert>
+                  }
+                  else
+                  {
+                    <div class="analysis-objective-summary">
+                      <div>
+                        <span class="field-caption">Analyzer objectives</span>
+                        <strong>@ViewModel!.AnalyzerInfo.Name</strong>
+                      </div>
+
+                      <div>
+                        <RadzenLabel Text="Achieve All Objectives" Component="AchieveAllObjectivesSwitch"/>
+                        <RadzenSwitch Name="AchieveAllObjectivesSwitch" style="padding: 0.5rem" @bind-Value="ViewModel!.AchieveAllObjectives" />
+                      </div>
+                    </div>
+
+                    @if(numericObjectives.Count > 0)
+                    {
+                      <div class="analysis-target-list">
+                        @foreach(var objective in numericObjectives)
+                        {
+                          <div class="analysis-target-card">
+                            <div class="analysis-target-heading">
+                              <div>
+                                <strong>@objective.Key</strong>
+                                @if(!string.IsNullOrWhiteSpace(objective.Value.Description))
+                                {
+                                  <span>@objective.Value.Description</span>
+                                }
+                              </div>
+                              <span class="objective-type">@objective.Value.Type</span>
+                            </div>
+
+                            <div class="form-grid two">
+                              <div>
+                                <RadzenLabel Text="Desired result" Component="@($"desiredResult-{objective.Key}")" />
+                                <RadzenNumeric @bind-Value="ViewModel!.DesiredResults[objective.Key]" Name="@($"desiredResult-{objective.Key}")" Class="w-100" />
+                              </div>
+                              <div>
+                                <RadzenLabel Text="Tolerance" Component="@($"desiredTolerance-{objective.Key}")" />
+                                <RadzenNumeric @bind-Value="ViewModel!.DesiredLeeways[objective.Key]" Name="@($"desiredTolerance-{objective.Key}")" Class="w-100" Min="0" />
+                              </div>
+                              <div>
+                                <RadzenLabel Text="Stop Condition Enabled" Component="@($"enabledCondition-{objective.Key}")" /> 
+                                <RadzenSwitch @bind-Value="ViewModel!.ObjectiveEnabled[objective.Key]" Name="@($"enabledCondition-{objective.Key}")" />
+                              </div>
+                            </div>
+                          </div>
+                        }
+                      </div>
+
+                      <div class="apply-box analysis-apply-box">
+                        <RadzenButton Text="Apply Stop Condition" Icon="check" ButtonStyle="ButtonStyle.Primary" Click="@ViewModel!.ApplyActiveStopCondition" />
+                      </div>
+                    }
+                    else
+                    {
+                      <RadzenAlert AlertStyle="AlertStyle.Warning" Variant="Variant.Flat" Shade="Shade.Lighter" AllowClose="false">
+                        None of the analyzer objectives are numeric, so a numeric analysis result stop condition cannot be applied.
+                      </RadzenAlert>
+                    }
+                  }
+                </div>
+              }
               else
               {
-                <div class="form-grid three">
-                  <div>
-                    <RadzenLabel Text="Desired result" Component="desiredResultInput" />
-                    <RadzenNumeric @bind-Value="ViewModel!.DesiredResult" Name="desiredResultInput" Class="w-100" />
-                  </div>
-                  <div>
-                    <RadzenLabel Text="Tolerance" Component="desiredToleranceInput" />
-                    <RadzenNumeric @bind-Value="ViewModel!.DesiredLeeway" Name="desiredToleranceInput" Class="w-100" />
-                  </div>
-                  <div class="apply-box">
-                    <RadzenButton Text="Apply Stop Condition" Icon="check" ButtonStyle="ButtonStyle.Primary" Click="@ViewModel!.ApplyActiveStopCondition" />
-                  </div>
-                </div>
+                <RadzenAlert AlertStyle="AlertStyle.Warning" Variant="Variant.Flat" Shade="Shade.Lighter" AllowClose="false">
+                  Select a stop condition mode to configure the campaign.
+                </RadzenAlert>
               }
             </section>
 

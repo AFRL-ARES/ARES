@@ -47,8 +47,6 @@ public class ExecutionManager : IExecutionManager
     _notifier = notifier;
   }
 
-  public IList<IStopCondition> CampaignStopConditions { get; } = [];
-
   public async Task<bool> CanRun()
   {
     if(_activeCampaignTemplateStore.CampaignTemplate is null)
@@ -79,6 +77,7 @@ public class ExecutionManager : IExecutionManager
     executor.StopConditions.AddRange(CampaignStopConditions);
     executor.ReplicateRate = ReplicateRate;
     executor.BatchPlanningSize = PlanningBatchSize;
+    executor.AchieveAllObjectives = AchieveAllStopConditions;
     _executionControlTokenSource = new ExecutionControlTokenSource();
     CampaignExecutionSummary campaignExecutionSummary;
     ExecutionStartTime = DateTime.UtcNow;
@@ -146,19 +145,16 @@ public class ExecutionManager : IExecutionManager
   }
 
   public void UpdateReplicateRate(int newRate)
-  {
-    ReplicateRate = newRate;
-  }
-
+    => ReplicateRate = newRate;
+  
   public void UpdateBatchPlanningSize(int newBatchSize)
-  {
-    PlanningBatchSize = newBatchSize;
-  }
+    => PlanningBatchSize = newBatchSize;
 
   public void SubmitUserDecision(ErrorHandling decision)
-  {
-    _activeExecutor?.SubmitUserDecision(decision);
-  }
+    => _activeExecutor?.SubmitUserDecision(decision);
+  
+  public void UpdateAchieveAllObjectivesValue(bool achieveAllObjectives)
+    => AchieveAllStopConditions = achieveAllObjectives;
 
   private async Task PostExecution(CampaignExecutionSummary result)
   {
@@ -184,8 +180,9 @@ public class ExecutionManager : IExecutionManager
   }
 
   public DateTime? ExecutionStartTime { get; set; }
-
   public int ReplicateRate { get; private set; } = 1;
-
   public int PlanningBatchSize { get; private set; } = 1;
+  public IList<IStopCondition> CampaignStopConditions { get; } = [];
+  //Determines whether to stop when a single analysis condition is met or when all of them are
+  public bool AchieveAllStopConditions { get; private set;  } = false;
 }

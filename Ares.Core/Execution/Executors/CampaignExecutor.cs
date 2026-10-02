@@ -160,6 +160,12 @@ public class CampaignExecutor : ICampaignExecutor
     if(CampaignTags.Any())
       await CampaignOutputHelper.WriteExperimentTags(campaignPath, CampaignTags);
 
+    if(AresConfig.DemoMode)
+    {
+      await CampaignOutputHelper.WriteExperimentTags(campaignPath, [new AresCampaignTag { TagName = "Demo Mode", UniqueId = "DEMO" }]);
+      await CampaignOutputHelper.WriteExperimentNotes(campaignPath, "This data was generated in simulation as part of demo mode, and has no real world application.");
+    }
+
     var analyzerId = string.IsNullOrEmpty(Template.ExperimentTemplate.AnalyzerId) ? NoneAnalyzer.Id : Template.ExperimentTemplate.AnalyzerId;
     if (analyzerId is null) 
       return campaignPath;
@@ -714,6 +720,10 @@ public class CampaignExecutor : ICampaignExecutor
 
   private bool ShouldStop()
   {
+    if(StopConditions.Any(c => c is DesiredAnalysisResult))
+      if(AchieveAllObjectives)
+        return StopConditions.Where(c => c is DesiredAnalysisResult).All(analysisCondition => analysisCondition.ShouldStop());
+
     return StopConditions.Any(condition => condition.ShouldStop());
   }
 
@@ -878,6 +888,7 @@ public class CampaignExecutor : ICampaignExecutor
   public IList<IStopCondition> StopConditions { get; } = [];
   public int ReplicateRate { get; set; } = 1;
   public int BatchPlanningSize { get; set; } = 1;
+  public bool AchieveAllObjectives { get; set; } = false;
   public string? ExecutionNotes { get; set; }
   public List<AresCampaignTag> CampaignTags { get; set; } = [];
   public IObservable<CampaignExecutionStatus> ExperimentStatusObservable { get; }

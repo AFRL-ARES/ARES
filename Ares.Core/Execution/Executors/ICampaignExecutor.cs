@@ -8,8 +8,8 @@ public interface ICampaignExecutor : IExecutor<CampaignExecutionSummary, Campaig
   IList<IStopCondition> StopConditions { get; }
   int ReplicateRate { get; set; }
   int BatchPlanningSize { get; set; }
+  bool AchieveAllObjectives { get; set; }
   void UpdateExecutionNotes(string executionNotes);
   void UpdateCampaignTags(List<AresCampaignTag> campaignTags);
-
   void SubmitUserDecision(ErrorHandling decision);
 }
