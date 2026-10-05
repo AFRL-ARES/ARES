@@ -1,0 +1,131 @@
+﻿@page "/plotly-dashboard"
+@using System.Text.Json
+@using Ares.Visualizer.Demo
+
+<PageTitle>ARES Visualizer - Plotly Showcase</PageTitle>
+
+<RadzenCard class="rz-mb-4">
+  <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+    <RadzenText TextStyle="TextStyle.H5" class="rz-m-0">ARES Plotly Research Demo</RadzenText>
+
+    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
+      <RadzenText TextStyle="TextStyle.Body2">Select Visualizer Preset:</RadzenText>
+      <RadzenDropDown Data="@SamplePlotlySpecs.Presets.Keys"
+                      TValue="string"
+                      Value="@selectedPresetKey"
+                      ValueChanged="@OnPresetSelected"
+                      Style="width: 320px;" />
+
+      <RadzenButton Text="@(isStreaming ? "Stop Stream" : "Start Live Stream")" Click="ToggleStreaming" ButtonStyle="@(isStreaming ? ButtonStyle.Danger : ButtonStyle.Success)" />
+    </RadzenStack>
+  </RadzenStack>
+</RadzenCard>
+
+<RadzenRow>
+    <RadzenColumn Size="12" SizeLG="8">
+        <RadzenCard Style="height: 800px;">
+            <PlotlyViewer PlotlyJson="@currentPlotlyJson" Height="100%" />
+        </RadzenCard>
+    </RadzenColumn>
+    <RadzenColumn Size="12" SizeLG="4">
+        <RadzenCard Style="height: 500px;" class="rz-display-flex rz-flex-column">
+            <RadzenText TextStyle="TextStyle.Subtitle1">Received Raw JSON Payload</RadzenText>
+            <textarea class="form-control font-monospace" 
+                      style="flex-grow: 1; resize: none; font-size: 0.8rem; background-color: #1e1e1e; color: #d4d4d4;" 
+                      readonly>@currentPlotlyJson</textarea>
+        </RadzenCard>
+    </RadzenColumn>
+</RadzenRow>
+
+@code {
+  private string currentPlotlyJson = string.Empty;
+  private bool isStreaming = false;
+  private CancellationTokenSource? streamCts;
+
+  private string selectedPresetKey = "Tensile Stress-Strain Curves (Temp Dependent)";
+
+  private async Task OnPresetSelected(string key)
+  {
+    selectedPresetKey = key;
+    if(SamplePlotlySpecs.Presets.TryGetValue(key, out var json))
+    {
+      LoadPreset(json);
+    }
+  }
+
+    protected override void OnInitialized()
+    {
+      LoadPreset(SamplePlotlySpecs.TensileTestCurves);
+    }
+
+    private void LoadPreset(string json)
+    {
+      StopStreamingInternal();
+      currentPlotlyJson = json;
+    }
+
+    private void ToggleStreaming()
+    {
+      if(isStreaming)
+        StopStreamingInternal();
+
+      else
+      {
+        isStreaming = true;
+        streamCts = new CancellationTokenSource();
+        _ = StartSimulatedGrpcStreamAsync(streamCts.Token);
+      }
+    }
+
+    private void StopStreamingInternal()
+    {
+        isStreaming = false;
+        streamCts?.Cancel();
+        streamCts?.Dispose();
+        streamCts = null;
+    }
+
+    private async Task StartSimulatedGrpcStreamAsync(CancellationToken ct)
+    {
+      var random = new Random();
+      var xData = Enumerable.Range(0, 30).Select(i => i.ToString()).ToList();
+      var yData = Enumerable.Range(0, 30).Select(_ => random.NextDouble() * 50 + 10).ToList();
+
+      while (!ct.IsCancellationRequested)
+      {
+        // Simulate incoming stream batch
+        yData.RemoveAt(0);
+        yData.Add(random.NextDouble() * 50 + 10);
+
+        var streamSpec = new
+        {
+          data = new[]
+          {
+            new {
+                x = xData,
+                y = yData,
+                type = "scatter",
+                mode = "lines+markers",
+                line = new { color = "#00bc8c", width = 3 },
+                marker = new { size = 6 }
+            }
+          },
+          layout = new
+          {
+            title = "Live Sensor Telemetry Stream (Simulated gRPC)",
+            paper_bgcolor = "rgba(0,0,0,0)",
+            plot_bgcolor = "rgba(0,0,0,0)",
+            font = new { color = "#ffffff" },
+            xaxis = new { title = "Sample Window" },
+            yaxis = new { title = "Value (Units)", range = new[] { 0, 70 } },
+            margin = new { l = 40, r = 20, t = 50, b = 40 }
+          }
+        };
+
+        currentPlotlyJson = JsonSerializer.Serialize(streamSpec);
+        await InvokeAsync(StateHasChanged);
+
+        await Task.Delay(250, ct); // 4Hz streaming updates
+      }
+    }
+}

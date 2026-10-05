@@ -14,11 +14,11 @@
 		},
 		{
 			"provider": "cdnjs",
-			"library": "Chart.js@4.5.0",
-			"destination": "wwwroot/lib/chartjs/",
+			"library": "plotly.js@4.1.2",
+			"destination": "wwwroot/lib/plotly/",
 			"files": [
-				"chart.min.js",
-				"chart.js"
+				"plotly.min.js",
+				"plotly.js"
 			]
 		}
 	]

@@ -1,0 +1,71 @@
+﻿@* Shared/Components/PlotlyViewer.razor *@
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
+<div class="plotly-viewer-wrapper" style="width: 100%; height: @Height; position: relative;">
+  @if(string.IsNullOrWhiteSpace(PlotlyJson))
+  {
+    <div class="d-flex align-items-center justify-content-center h-100 text-muted">
+      <em>No plot data available</em>
+    </div>
+  }
+  <div @ref="chartContainer" style="width: 100%; height: 100%;"></div>
+</div>
+
+@code {
+  private ElementReference chartContainer;
+  private IJSObjectReference? jsModule;
+  private bool isInitialized = false;
+
+  [Parameter] public string PlotlyJson { get; set; } = string.Empty;
+  [Parameter] public string Height { get; set; } = "800px";
+
+  protected override async Task OnAfterRenderAsync(bool firstRender)
+  {
+    if(firstRender)
+    {
+      // Import the ES module
+      jsModule = await JSRuntime.InvokeAsync<IJSObjectReference>(
+          "import", "./js/plotlyInterop.js");
+      isInitialized = true;
+
+      // Render initial frame if data arrived before JS initialization
+      if(!string.IsNullOrWhiteSpace(PlotlyJson))
+      {
+        await RenderPlotAsync();
+      }
+    }
+  }
+
+  protected override async Task OnParametersSetAsync()
+  {
+    if(isInitialized && !string.IsNullOrWhiteSpace(PlotlyJson))
+    {
+      await RenderPlotAsync();
+    }
+  }
+
+  private async Task RenderPlotAsync()
+  {
+    if(jsModule is not null)
+    {
+      await jsModule.InvokeVoidAsync("renderPlot", chartContainer, PlotlyJson);
+    }
+  }
+
+  public async ValueTask DisposeAsync()
+  {
+    if(jsModule is not null)
+    {
+      try
+      {
+        await jsModule.InvokeVoidAsync("purgePlot", chartContainer);
+        await jsModule.DisposeAsync();
+      }
+      catch(JSDisconnectedException)
+      {
+        // Gracefully ignore during page refresh or disconnection
+      }
+    }
+  }
+}
