@@ -5,6 +5,7 @@ let plotlyLoadPromise = null;
 /**
  * Dynamically loads the offline plotly.min.js file on demand and returns a Promise.
  */
+
 function ensurePlotlyLoaded() {
   if (window.Plotly) {
     return Promise.resolve();

@@ -69,6 +69,7 @@
 
   <ItemGroup>
     <Folder Include="Features\Components\" />
+    <Folder Include="wwwroot\lib\plotly\" />
   </ItemGroup>
 
   <ItemGroup>
