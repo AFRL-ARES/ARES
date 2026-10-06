@@ -1,8 +1,4 @@
-﻿// wwwroot/js/plotlyInterop.js
-
-const resizeObservers = new WeakMap();
-
-// wwwroot/js/plotlyInterop.js
+﻿const resizeObservers = new WeakMap();
 
 let plotlyLoadPromise = null;
 
@@ -10,27 +6,21 @@ let plotlyLoadPromise = null;
  * Dynamically loads the offline plotly.min.js file on demand and returns a Promise.
  */
 function ensurePlotlyLoaded() {
-  // 1. Already loaded on window
   if (window.Plotly) {
     return Promise.resolve();
   }
 
-  // 2. Already in the middle of downloading/parsing
   if (plotlyLoadPromise) {
     return plotlyLoadPromise;
   }
 
-  // 3. Inject script element dynamically
   plotlyLoadPromise = new Promise((resolve, reject) => {
     const script = document.createElement('script');
-
-    // ADJUST THIS PATH to match where your 4.7MB file lives under wwwroot
-    // e.g., '/lib/plotly/plotly.min.js' or '/js/plotly.min.js'
     script.src = '/lib/plotly/plotly.min.js';
 
     script.onload = () => resolve();
     script.onerror = (err) => {
-      plotlyLoadPromise = null; // Allow retry on failure
+      plotlyLoadPromise = null;
       reject(new Error(`Failed to load Plotly from ${script.src}`));
     };
 
@@ -49,7 +39,6 @@ export async function renderPlot(container, plotlyJson) {
   if (!container || !plotlyJson) return;
 
   try {
-    // Await the 4.7MB script download/parse completion
     await ensurePlotlyLoaded();
 
     if (!window.Plotly) {
