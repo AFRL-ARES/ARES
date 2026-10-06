@@ -254,8 +254,15 @@
     if(value is null)
       return "No Value";
 
-    if(value.HasNumberValue)
-      return $"{value.NumberValue}";
+    if(value.IsNumericType())
+    {
+      var found = value.TryGetNumericValue(out var numericValue);
+      if(found)
+        return $"{numericValue}";
+
+      else
+        return "Custom Data";
+    }
 
     if(value.HasBoolValue)
       return $"{value.BoolValue}";

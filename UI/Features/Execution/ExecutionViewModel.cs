@@ -128,7 +128,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
       request.AnalyzerId = analyzerId;
       var response = await _analyzerService.GetInfo(request, null);
       AnalyzerInfo = response.Info;
-      AnalyzerObjectiveSchema = response.Info.Capabilities.ObjectiveOutputSchema.Fields.ToDictionary();
+      AnalyzerObjectiveSchema = response.Info.Capabilities.ObjectiveOutputSchema?.Fields.ToDictionary() ?? new Dictionary<string, AresValueSchema>();
       SyncAnalyzerObjectiveTargets();
     }
   }
