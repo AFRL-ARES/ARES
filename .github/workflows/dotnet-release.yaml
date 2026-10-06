@@ -73,14 +73,23 @@ jobs:
 
     - name: Publish Self-Contained Release Artifacts
       run: |
-        echo "Publishing ARES Project for ${{ matrix.os_name_tag }} (${{ matrix.runtime_id }})"
-        dotnet publish ${{ env.UI_PROJECT_FILE }} \
-          --configuration Release \
-          --output ${{ env.OUTPUT_PATH }} \
-          -r ${{ matrix.runtime_id }} \
-          --self-contained true \
-          -p:UseAppHost=true \
-          -p:PublishSingleFile=true
+        echo "Publishing UI Project for ${{ matrix.os_name_tag }} (${{ matrix.runtime_id }})"
+        dotnet publish ${{ env.UI_PROJECT_FILE }} --configuration Release --output ${{ env.OUTPUT_PATH }} -r ${{ matrix.runtime_id }} --self-contained true -p:UseAppHost=true -p:PublishSingleFile=true
+
+    - name: Publish Demo Remote Analyzer
+      run: |
+        echo "Publishing Demo Remote Analyzer for ${{ matrix.os_name_tag }} (${{ matrix.runtime_id }})"
+        dotnet publish ${{ env.DEMO_ANALYZER_PROJECT_FILE }} --configuration Release --output ${{ env.OUTPUT_PATH }}/demo/DemoRemoteAnalyzer -r ${{ matrix.runtime_id }} --self-contained true -p:UseAppHost=true -p:PublishSingleFile=true
+
+    - name: Publish Demo Remote Planner
+      run: |
+        echo "Publishing Demo Remote Planner for ${{ matrix.os_name_tag }} (${{ matrix.runtime_id }})"
+        dotnet publish ${{ env.DEMO_PLANNER_PROJECT_FILE }} --configuration Release --output ${{ env.OUTPUT_PATH }}/demo/DemoRemotePlanner -r ${{ matrix.runtime_id }} --self-contained true -p:UseAppHost=true -p:PublishSingleFile=true
+
+    - name: Publish Demo Remote Device
+      run: |
+        echo "Publishing Demo Remote Device for ${{ matrix.os_name_tag }} (${{ matrix.runtime_id }})"
+        dotnet publish ${{ env.DEMO_DEVICE_PROJECT_FILE }} --configuration Release --output ${{ env.OUTPUT_PATH }}/demo/DemoRemoteDevice -r ${{ matrix.runtime_id }} --self-contained true -p:UseAppHost=true -p:PublishSingleFile=true
         
     - name: Copy Driver Plugins to ARES Output
       shell: bash
