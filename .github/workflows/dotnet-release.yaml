@@ -6,16 +6,12 @@ on:
 
 env:
   UI_PROJECT_FILE: 'UI/UI.csproj'
-  DEMO_PLANNER_PROJECT_FILE: 'DemoRemotePlanner/DemoRemotePlanner.csproj'
-  DEMO_ANALYZER_PROJECT_FILE: 'DemoRemoteAnalyzer/DemoRemoteAnalyzer.csproj'
-  DEMO_DEVICE_PROJECT_FILE: 'DemoRemoteDevice/DemoRemoteDevice.csproj'
   OUTPUT_PATH: 'publish' 
 
 jobs:
   build-and-deploy-prerelease:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
         include:
           - os: ubuntu-latest
             runtime_id: linux-x64
@@ -25,7 +21,10 @@ jobs:
             os_name_tag: windows
           - os: macos-latest
             runtime_id: osx-x64
-            os_name_tag: macos
+            os_name_tag: macos-x64
+          - os: macos-latest
+            runtime_id: osx-arm64
+            os_name_tag: macos-arm64
             
     runs-on: ${{ matrix.os }}
     env:
@@ -33,23 +32,23 @@ jobs:
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v7
+      uses: actions/checkout@v4
       with:
         ref: ${{ github.event.release.tag_name }}
       
     - name: Checkout Device Drivers
-      uses: actions/checkout@v7
+      uses: actions/checkout@v4
       with:
         repository: 'AFRL-ARES/Ares.Device.Drivers'
         path: 'DriversRepo'
 
     - name: Set up .NET 10.x
-      uses: actions/setup-dotnet@v6
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '10.x'
         
     - name: Setup Node.js Environment
-      uses: actions/setup-node@v7
+      uses: actions/setup-node@v4
       with:
         node-version: 24
 
@@ -65,37 +64,28 @@ jobs:
 
     - name: Restore Dependencies for UI
       run: |
-        dotnet restore ${{ env.UI_PROJECT_FILE }}
+        dotnet restore ${{ env.UI_PROJECT_FILE }} -r ${{ matrix.runtime_id }}
 
     - name: Build ARES
       run: |
-        echo "Building ARES to make sure the js artifacts are properly created."
-        dotnet build ${{ env.UI_PROJECT_FILE }} --configuration Release
+        echo "Building ARES to make sure the JS artifacts are properly created."
+        dotnet build ${{ env.UI_PROJECT_FILE }} --configuration Release -r ${{ matrix.runtime_id }}
 
     - name: Publish Self-Contained Release Artifacts
       run: |
-        echo "Publishing ARES Project for ${{ matrix.os_name_tag }}  (${{ matrix.runtime_id }})"
-        dotnet publish ${{ env.UI_PROJECT_FILE }} --configuration Release --output ${{ env.OUTPUT_PATH }} /p:UseAppHost=true -r ${{ matrix.runtime_id }} --self-contained true
-
-    - name: Publish Demo Remote Analyzer
-      run: |
-        echo "Publishing Demo Remote Analyzer for ${{ matrix.os_name_tag }} (${{ matrix.runtime_id }})"
-        dotnet publish ${{ env.DEMO_ANALYZER_PROJECT_FILE }} --configuration Release --output ${{ env.OUTPUT_PATH }}/demo/DemoRemoteAnalyzer /p:UseAppHost=true -r ${{ matrix.runtime_id }} --self-contained true
-
-    - name: Publish Demo Remote Planner
-      run: |
-        echo "Publishing Demo Remote Planner for ${{ matrix.os_name_tag }} (${{ matrix.runtime_id }})"
-        dotnet publish ${{ env.DEMO_PLANNER_PROJECT_FILE }} --configuration Release --output ${{ env.OUTPUT_PATH }}/demo/DemoRemotePlanner /p:UseAppHost=true -r ${{ matrix.runtime_id }} --self-contained true
-
-    - name: Publish Demo Remote Device
-      run: |
-        echo "Publishing Demo Remote Device for ${{ matrix.os_name_tag }} (${{ matrix.runtime_id }})"
-        dotnet publish ${{ env.DEMO_DEVICE_PROJECT_FILE }} --configuration Release --output ${{ env.OUTPUT_PATH }}/demo/DemoRemoteDevice /p:UseAppHost=true -r ${{ matrix.runtime_id }} --self-contained true
+        echo "Publishing ARES Project for ${{ matrix.os_name_tag }} (${{ matrix.runtime_id }})"
+        dotnet publish ${{ env.UI_PROJECT_FILE }} \
+          --configuration Release \
+          --output ${{ env.OUTPUT_PATH }} \
+          -r ${{ matrix.runtime_id }} \
+          --self-contained true \
+          -p:UseAppHost=true \
+          -p:PublishSingleFile=true
         
     - name: Copy Driver Plugins to ARES Output
       shell: bash
       run: |
-        echo "Copying plugins to the publish directory..."
+        echo "Copying .ares plugins to the publish directory..."
         cp -r DriversRepo/plugins ${{ env.OUTPUT_PATH }}/plugins
 
     - name: Create ZIP Archive (Windows)
@@ -109,7 +99,7 @@ jobs:
         zip -r ../${{ env.ZIP_FILE_NAME }} .
     
     - name: Upload Published Binaries to Release
-      uses: softprops/action-gh-release@v3
+      uses: softprops/action-gh-release@v2
       with:
         files: ${{ env.ZIP_FILE_NAME }}
       env:
