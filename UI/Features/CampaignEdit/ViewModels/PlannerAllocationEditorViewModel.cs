@@ -5,6 +5,7 @@ using Ares.Core.Grpc.Services;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using UI.Application.Notifications;
+using UI.Features.Planning.Settings;
 
 namespace UI.Features.CampaignEdit.ViewModels;
 
@@ -67,6 +68,19 @@ public partial class PlannerAllocationEditorViewModel : ReactiveObject
     return allocation;
   }
 
+  public async Task SaveSettingsChanges()
+  {
+    var planner = EditViewModel.Save();
+    var request = new UpdatePlannerRequest();
+    request.Name = planner.Name;
+    request.Url = planner.Address;
+    request.PlannerId = _selectedService?.UniqueId;
+
+    await _plannerClient.UpdatePlanner(request, null);
+  }
+
+  public void PushNotification(UiNotificationMessage notification) => _notificationService.Notify(notification);
+
   public async Task UpdatePlannerOptions()
   {
     if(SelectedService is null)
@@ -102,6 +116,12 @@ public partial class PlannerAllocationEditorViewModel : ReactiveObject
 
       PlannerOptions = _selectedService?.Capabilities?.AvailablePlanners?.ToList() ?? new List<Planner>();
       SelectedPlannerOption = PlannerOptions.FirstOrDefault();
+      if(_selectedService is not null)
+      {
+        SettingsViewModel = new PlannerSettingsEditorViewModel(_plannerClient, _selectedService);
+        EditViewModel = new PlannerConfigEditViewModel(_plannerClient, _selectedService);
+      }
+        
     }
   }
 
@@ -112,4 +132,6 @@ public partial class PlannerAllocationEditorViewModel : ReactiveObject
   public partial IEnumerable<Planner> PlannerOptions { get; set; }
   [Reactive]
   public partial Planner? SelectedPlannerOption { get; set; }
+  public PlannerSettingsEditorViewModel SettingsViewModel { get; set; }
+  public PlannerConfigEditViewModel EditViewModel { get; set; }
 }

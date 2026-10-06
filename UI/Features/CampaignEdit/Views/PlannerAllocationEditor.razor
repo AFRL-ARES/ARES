@@ -1,4 +1,5 @@
 ﻿@using Ares.Datamodel.Planning;
+@using UI.Features.Planning.Settings
 @inject DialogService DialogService
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Features.CampaignEdit.ViewModels.PlannerAllocationEditorViewModel>
 
@@ -9,18 +10,23 @@
         @ViewModel!.ParameterMetadata.Name
       </RadzenRow>
       <RadzenRow AlignItems="AlignItems.Center">
-          <RadzenLabel Text="Select Service:" Component="PlannerServiceDropDown" Style="min-width: 115px"/>
-          <RadzenDropDown TValue="PlannerServiceInfo" 
-            Data="@ViewModel!.PlannerServices" 
-            @bind-Value="@ViewModel!.SelectedService"
-            Change="@OnSelectionChanged"
-            Name="PlannerServiceDropDown" 
-            Style="min-width: 15rem">
+        <RadzenLabel Text="Select Service:" Component="PlannerServiceDropDown" Style="min-width: 115px"/>
+        <RadzenDropDown TValue="PlannerServiceInfo" 
+          Data="@ViewModel!.PlannerServices" 
+          @bind-Value="@ViewModel!.SelectedService"
+          Change="@OnSelectionChanged"
+          Name="PlannerServiceDropDown" 
+          Style="min-width: 15rem">
             
-            <Template>
-              @context.Name (@context.Version)
-            </Template>
-           </RadzenDropDown>
+          <Template>
+            @context.Name (@context.Version)
+          </Template>
+          </RadzenDropDown>
+
+        @if(ViewModel!.SelectedService is not null)
+        {
+          <button class="btn btn-sm btn-outline-primary rounded-2 analyzer-action-button" type="button" disabled="@(ViewModel!.SelectedService is null)" @onclick="SettingsClicked"><RadzenIcon Icon="settings" /></button>
+        }
       </RadzenRow>
 
       <RadzenRow AlignItems="AlignItems.Center">
@@ -74,5 +80,26 @@
         In this scenario, a seperate dropdown allows you to choose what planning method to use from the services advertised options.
       </div>
     , new DialogOptions() { CloseDialogOnOverlayClick = true });
+  }
+
+  private async Task SettingsClicked()
+  {
+    if(ViewModel!.SelectedService is not null)
+    {
+      var result = await DialogService.OpenAsync("Planner Settings", ds =>
+        @<PlannerSettingsEditorView ViewModel="ViewModel!.SettingsViewModel" OnValidSubmit="() => ds.Close(true)"/>);
+
+      if(result is true && ViewModel!.SettingsViewModel.Modified)
+      {
+        await ViewModel!.SaveSettingsChanges();
+        StateHasChanged();
+        var notification = new UiNotificationMessage();
+        notification.Detail = $"ARES successfully saved the request changes to {ViewModel!.SelectedPlannerOption.PlannerName}'s settings.";
+        notification.Summary = "Successfully Updated Planner Settings";
+        notification.Severity = UiNotificationSeverity.Success;
+
+        ViewModel!.PushNotification(notification);
+      }
+    }
   }
 }
