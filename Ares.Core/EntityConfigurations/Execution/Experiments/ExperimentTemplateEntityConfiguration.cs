@@ -18,8 +18,9 @@ internal class ExperimentTemplateEntityConfiguration : AresEntityTypeBaseConfigu
       .WithOne()
       .OnDelete(DeleteBehavior.Cascade);
 
-    builder.Navigation(experimentTemplate => experimentTemplate.StepTemplates)
-      .AutoInclude();
+    builder.Navigation(experimentTemplate => experimentTemplate.StepTemplates).AutoInclude();
+
+    builder.Property(experimentTemplate => experimentTemplate.VisualizerAllocations).HasSerializedRepeatedField();
 
     builder.Property(template => template.PlanObjectives).HasSerializedRepeatedField();
   }
