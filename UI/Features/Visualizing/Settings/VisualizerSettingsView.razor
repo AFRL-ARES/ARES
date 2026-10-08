@@ -1,0 +1,81 @@
+@using Ares.Datamodel.Connection
+@using UI.Features.Visualizing.Settings.Layout
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Features.Visualizing.Settings.VisualizerSettingsViewModel>
+
+@inject DialogService DialogService
+
+<VisualizerSettingsContainer EditCallback="EditCallback"
+  SettingsCallback="SettingCallback"
+  RemoveCallback="RemoveCallback"
+  StateUpdateCallback="UpdateStateCallback"
+  Name="@ViewModel!.Name"
+  State="@ViewModel!.VisualizerState"
+  StateMessage="@ViewModel!.StateMessage"
+  UpdatingInProgress="@UpdateInProgress">
+  <div style="display: flex; flex-direction: column">
+    <span>Address: @ViewModel.Address</span>
+    <span>Type: @ViewModel.Type</span>
+    <span>Version: @ViewModel.Version</span>
+    <span>@ViewModel.Description</span>
+  </div>
+</VisualizerSettingsContainer>
+
+@code {
+  public bool UpdateInProgress { get; private set; }
+
+  private async Task EditCallback()
+  {
+    var viewModel = ViewModel!.EditViewModel;
+    var result = await DialogService.OpenAsync("Edit Visualizer", ds =>
+      @<VisualizerConfigEditView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)" />);
+
+    if(result is true && viewModel.Modified)
+    {
+      await ViewModel.Save();
+      StateHasChanged();
+    }
+  }
+
+  private async Task SettingCallback()
+  {
+    var viewModel = ViewModel!.SettingsEditorViewModel;
+    var result = await DialogService.OpenAsync("Visualizer Settings", ds =>
+      @<VisualizerSettingsEditorView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)" />);
+
+    if(result is true && viewModel.Modified)
+    {
+      await ViewModel.SaveSettings();
+      ViewModel.PushNotification(new UiNotificationMessage
+      {
+        Detail = $"ARES successfully saved the request changes to {ViewModel.Name}'s settings.",
+        Summary = "Successfully Updated Visualizer Settings",
+        Severity = UiNotificationSeverity.Success
+      });
+      StateHasChanged();
+    }
+  }
+
+  private async Task RemoveCallback()
+  {
+    var result = await DialogService.Confirm($"Delete {ViewModel!.Name}?");
+    if(result is true)
+      await ViewModel.Remove();
+  }
+
+  private Task UpdateStateCallback() => Update();
+
+  private async Task Update()
+  {
+    UpdateInProgress = true;
+    await ViewModel!.UpdateState();
+    await ViewModel.UpdateInfo();
+    UpdateInProgress = false;
+    StateHasChanged();
+  }
+
+  protected override async Task OnInitializedAsync()
+  {
+    await base.OnInitializedAsync();
+    _ = Update();
+  }
+}

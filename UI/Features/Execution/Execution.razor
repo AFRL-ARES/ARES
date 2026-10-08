@@ -1,11 +1,13 @@
 @page "/automation/execution"
+@using System.ComponentModel
 @using Ares.Datamodel
 @using Ares.Datamodel.Extensions
 @using Ares.Datamodel.Visualizing.Local
 @using Ares.Services
-@using System.ComponentModel
 @using UI.Domain.Execution
 @using UI.Features.Execution.Components
+@using UI.Features.Execution.Enums
+@using UI.Features.Execution.Internal
 @using UI.Features.Execution.Planning
 @using UI.Features.Visualization.Views
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<ExecutionViewModel>
@@ -482,120 +484,131 @@
               </RadzenAlert>
             }
 
-            <!-- Planner Data Chart -->
-            <div class="live-metrics">
-            <section class="execution-card device-card">
+            <section class="execution-card">
               <div class="card-heading compact">
                 <div>
-                  <h3>Planner Data</h3>
+                  <h3>Live Data Display</h3>
+                  @if(ViewModel!.SelectedLiveDataSource is { } selectedSource)
+                  {
+                    <p>@selectedSource.Detail</p>
+                  }
                 </div>
+                <RadzenDropDown TValue="string"
+                                Data="ViewModel!.LiveDataDisplaySources"
+                                TextProperty="DisplayName"
+                                ValueProperty="Id"
+                                @bind-Value="ViewModel!.SelectedLiveDataSourceId"
+                                Class="live-data-source-selector" />
               </div>
 
-              @if(ViewModel!.PlannerAdapterInfos.Any(p => p?.Name == "Manual Planner"))
+              @if(ViewModel!.SelectedLiveDataSource is not { } liveDataSource)
               {
-                <ManualPlanner />
+                <div class="empty-state">Select a live data source to view its output.</div>
               }
-
-              else if(!ViewModel!.PlannerAdapterInfos.Any())
-              {
-                <div class="empty-state">No planner assigned, no metrics available.</div>
-              }
-
-              else if(ViewModel!.PlannerMetricsMap.Any())
-              {
-                <RadzenChart Style="height: 260px; width: 100%;">
-                  <RadzenChartTooltipOptions Shared="false" />
-                  @{ var plannerSeriesIndex = 0; }
-                  @foreach(var plannerSeries in ViewModel!.PlannerMetricsMap)
-                  {
-                    var currentSeries = plannerSeries;
-                    var seriesColor = GetAnalyzerSeriesColor(plannerSeriesIndex);
-                    plannerSeriesIndex++;
-                    <RadzenLineSeries Data="@currentSeries.Value"
-                                      TItem="ChartMetricPoint"
-                                      CategoryProperty="ExecutionIndex"
-                                      ValueProperty="PlotValue"
-                                      Title="@currentSeries.Key"
-                                      Stroke="@seriesColor">
-                      <ChildContent>
-                        <RadzenMarkers Visible="true" MarkerType="MarkerType.Circle" Size="6" />
-                      </ChildContent>
-
-                      <TooltipTemplate Context="data">
-                        <div class="chart-tooltip">
-                          <span>@currentSeries.Key: </span>
-                          <strong>@data.RawValue</strong>
-                        </div>
-                      </TooltipTemplate>
-                    </RadzenLineSeries>
-                  }
-                  <RadzenCategoryAxis Step="1" />
-                  <RadzenValueAxis Min="0" Max="100" Step="25">
-                    <RadzenGridLines Visible="false" />
-                  </RadzenValueAxis>
-                </RadzenChart>
-              }
-
               else
               {
-                <div class="empty-state">Planner metrics will appear after planning completes.</div>
-              }
-            </section>
-
-            <!-- Analyzer Data Chart -->
-            <section class="execution-card device-card">
-              @if(ViewModel!.AnalyzerSummary == "NONE")
-              {
-                <div class="card-heading compact">
-                  <div>
-                    <h3>Analyzer Data</h3>
-                  </div>
-                </div>
-                <div class="empty-state">No analyzer assigned, no metrics available.</div>
-              }
-
-              else
-              {
-                <div class="card-heading compact">
-                  <div>
-                    <h3>Analyzer Data</h3>
-                    <p>@ViewModel!.AnalyzerSummary</p>
-                  </div>
-                  <span class="metric-chip">@GetAnalyzerMetricLabel()</span>
-                </div>
-
-                @if(ViewModel!.AnalyzerMetrics.Any())
+                switch(liveDataSource.Kind)
                 {
-                  <RadzenChart Style="height: 260px; width: 100%;">
-                    <RadzenChartTooltipOptions Shared="false" />
-                    @{ var analyzerSeriesIndex = 0; }
-                    @foreach(var analyzerSeries in ViewModel!.AnalyzerMetrics)
+                  case LiveDataDisplaySourceKind.Planner:
+                    if(ViewModel.PlannerAdapterInfos.Any(p => p?.Name == "Manual Planner"))
                     {
-                      var seriesColor = GetAnalyzerSeriesColor(analyzerSeriesIndex);
-                      analyzerSeriesIndex++;
-                      <RadzenLineSeries Data="@analyzerSeries.Value" TItem="ChartMetricPoint" CategoryProperty="ExecutionIndex" ValueProperty="PlotValue" Title="@analyzerSeries.Key" Stroke="@seriesColor">
-                        <ChildContent>
-                          <RadzenMarkers Visible="true" MarkerType="MarkerType.Circle" Size="6"/>
-                        </ChildContent>
-
-                        <TooltipTemplate Context="data">
-                          <div class="chart-tooltip">
-                            <span>@analyzerSeries.Key: </span>
-                            <strong>@data.RawValue</strong>
-                          </div>
-                        </TooltipTemplate>
-                    </RadzenLineSeries>
+                      <ManualPlanner />
                     }
+                    else if(!ViewModel.PlannerAdapterInfos.Any())
+                    {
+                      <div class="empty-state">No planner assigned, no metrics available.</div>
+                    }
+                    else if(ViewModel.PlannerMetricsMap.Any())
+                    {
+                      <RadzenChart Style="height: 320px; width: 100%;">
+                        <RadzenChartTooltipOptions Shared="false" />
+                        @{ var plannerSeriesIndex = 0; }
+                        @foreach(var plannerSeries in ViewModel.PlannerMetricsMap)
+                        {
+                          var currentSeries = plannerSeries;
+                          var seriesColor = GetAnalyzerSeriesColor(plannerSeriesIndex);
+                          plannerSeriesIndex++;
+                          <RadzenLineSeries Data="@currentSeries.Value"
+                                            TItem="ChartMetricPoint"
+                                            CategoryProperty="ExecutionIndex"
+                                            ValueProperty="PlotValue"
+                                            Title="@currentSeries.Key"
+                                            Stroke="@seriesColor">
+                            <ChildContent>
+                              <RadzenMarkers Visible="true" MarkerType="MarkerType.Circle" Size="6" />
+                            </ChildContent>
+                            <TooltipTemplate Context="data">
+                              <div class="chart-tooltip">
+                                <span>@currentSeries.Key: </span>
+                                <strong>@data.RawValue</strong>
+                              </div>
+                            </TooltipTemplate>
+                          </RadzenLineSeries>
+                        }
+                        <RadzenCategoryAxis Step="1" />
+                        <RadzenValueAxis Min="0" Max="100" Step="25">
+                          <RadzenGridLines Visible="false" />
+                        </RadzenValueAxis>
+                      </RadzenChart>
+                    }
+                    else
+                    {
+                      <div class="empty-state">Planner metrics will appear after planning completes.</div>
+                    }
+                    break;
 
-                    <RadzenCategoryAxis Step="1" />
-                      <RadzenValueAxis Min="0" Max="100" Step="25">
-                        <RadzenGridLines Visible="false" />
-                      </RadzenValueAxis>
-                  </RadzenChart>
-                }
-                else
-                {
-                  <div class="empty-state">Analyzer results will appear after analysis completes.</div>
+                  case LiveDataDisplaySourceKind.Analyzer:
+                    if(ViewModel.AnalyzerInfo is null)
+                    {
+                      <div class="empty-state">No analyzer assigned, no metrics available.</div>
+                    }
+                    else if(ViewModel.AnalyzerMetrics.Any())
+                    {
+                      <RadzenChart Style="height: 320px; width: 100%;">
+                        <RadzenChartTooltipOptions Shared="false" />
+                        @{ var analyzerSeriesIndex = 0; }
+                        @foreach(var analyzerSeries in ViewModel.AnalyzerMetrics)
+                        {
+                          var seriesColor = GetAnalyzerSeriesColor(analyzerSeriesIndex);
+                          analyzerSeriesIndex++;
+                          <RadzenLineSeries Data="@analyzerSeries.Value" TItem="ChartMetricPoint" CategoryProperty="ExecutionIndex" ValueProperty="PlotValue" Title="@analyzerSeries.Key" Stroke="@seriesColor">
+                            <ChildContent>
+                              <RadzenMarkers Visible="true" MarkerType="MarkerType.Circle" Size="6" />
+                            </ChildContent>
+                            <TooltipTemplate Context="data">
+                              <div class="chart-tooltip">
+                                <span>@analyzerSeries.Key: </span>
+                                <strong>@data.RawValue</strong>
+                              </div>
+                            </TooltipTemplate>
+                          </RadzenLineSeries>
+                        }
+                        <RadzenCategoryAxis Step="1" />
+                        <RadzenValueAxis Min="0" Max="100" Step="25">
+                          <RadzenGridLines Visible="false" />
+                        </RadzenValueAxis>
+                      </RadzenChart>
+                    }
+                    else
+                    {
+                      <div class="empty-state">Analyzer results will appear after analysis completes.</div>
+                    }
+                    break;
+
+                  case LiveDataDisplaySourceKind.Visualization:
+                    if(string.IsNullOrWhiteSpace(ViewModel.SelectedLiveDataJson))
+                    {
+                      <div class="empty-state">Visualization data will appear after the first experiment completes.</div>
+                    }
+                    else
+                    {
+                      <PlotlyViewer @key="liveDataSource.Id" PlotlyJson="@ViewModel.SelectedLiveDataJson" Height="320px" />
+                    }
+                    break;
+
+                  default:
+                    <div class="empty-state">The selected live data source is not supported.</div>
+                    break;
                 }
               }
             </section>
@@ -649,7 +662,6 @@
                 }
               </RadzenRow>
             </section>
-          </div>
           </main>
 
           <aside class="live-side-column">
@@ -750,13 +762,10 @@
     await ViewModel!.RefreshCampaignSetup();
     ViewModel!.StartWatchingTelemetry();
     await ViewModel!.RefreshExecutionContext();
-
   }
 
   private void InvokeStateHasChanged()
-  {
-    _ = InvokeAsync(StateHasChanged);
-  }
+    => _ = InvokeAsync(StateHasChanged);
 
   private static string GetStatusClass(ExecutionState? state)
   {
@@ -786,9 +795,7 @@
   }
 
   private static string FormatVariableDisplayString(string key, AresValue value)
-  {
-    return $"{key} - {value.Stringify()}";
-  }
+   => $"{key} - {value.Stringify()}";
 
   protected override void Dispose(bool disposing)
   {
@@ -821,12 +828,6 @@
     index %= AnalyzerSeriesColors.Length;
     return AnalyzerSeriesColors[index];
   }
-  private string GetAnalyzerMetricLabel()
-  {
-    return ViewModel!.ActiveStopConditionMode == ExecutionStopConditionMode.AnalyzerResult
-      ? $"Target {ViewModel!.DesiredResult} ± {ViewModel!.DesiredLeeway}"
-      : "Objective Score";
-  }
 
   private async Task OpenChartSelector(string slotId)
   {
@@ -857,8 +858,5 @@
   }
 
   private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
-  {
-    _ = InvokeAsync(StateHasChanged);
-  }
+    => _ = InvokeAsync(StateHasChanged);
 }
-

@@ -1,4 +1,5 @@
-﻿using Ares.Datamodel;
+﻿using Ares.Core.EntityConfigurations.Helpers;
+using Ares.Datamodel;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -22,6 +23,8 @@ internal class ExperimentExecutionSummaryEntityConfiguration : AresEntityTypeBas
       .WithOne()
       .HasForeignKey<ExecutionInfo>("ExperimentResultId")
       .OnDelete(DeleteBehavior.ClientCascade);
+
+    builder.Property(es => es.GeneratedVisuals).HasSerializedMap();
 
     builder.Navigation(result => result.  ExperimentOverview)
       .AutoInclude();

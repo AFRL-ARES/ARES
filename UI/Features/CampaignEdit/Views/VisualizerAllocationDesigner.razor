@@ -1,0 +1,71 @@
+@using UI.Features.CampaignEdit.ViewModels
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<VisualizerAllocationDesignerViewModel>
+
+@if(ViewModel is null || ViewModel.IsLoading)
+{
+  <LoadingSpinner SpinnerSize="SpinnerSize.Large" />
+}
+else
+{
+  <div class="d-flex flex-column gap-3">
+    @if(!string.IsNullOrWhiteSpace(ViewModel.LoadError))
+    {
+      <RadzenAlert AlertStyle="AlertStyle.Warning" Variant="Variant.Flat" Shade="Shade.Lighter" Size="AlertSize.Small" AllowClose="false">
+        @ViewModel.LoadError
+      </RadzenAlert>
+    }
+
+    @if(!ViewModel.HasAllocations)
+    {
+      <div class="d-flex align-items-center justify-content-center flex-grow-1 py-5">
+        <button class="btn btn-primary" @onclick="AddAllocation">
+          <RadzenIcon Icon="add_chart" class="me-1" />
+          Add Visualization Hook
+        </button>
+      </div>
+    }
+    else
+    {
+      @foreach(var allocation in ViewModel.AllocationEditors)
+      {
+        <VisualizerAllocationEditor @key="allocation.UniqueId"
+                                     ViewModel="allocation"
+                                     OnRemove="() => RemoveAllocation(allocation)" />
+      }
+
+      <div>
+        <button class="btn btn-outline-primary" @onclick="AddAllocation">
+          <RadzenIcon Icon="add" class="me-1" />
+          Add Visualization Hook
+        </button>
+      </div>
+    }
+  </div>
+}
+
+@code {
+  private VisualizerAllocationDesignerViewModel? _lastViewModel;
+
+  protected override async Task OnParametersSetAsync()
+  {
+    if(ViewModel is not null && ViewModel != _lastViewModel)
+    {
+      _lastViewModel = ViewModel;
+      await ViewModel.InitializeAsync();
+    }
+  }
+
+  private async Task AddAllocation()
+  {
+    if(ViewModel is null)
+      return;
+
+    await ViewModel.AddAllocation();
+  }
+
+  private Task RemoveAllocation(VisualizerAllocationEditorViewModel allocation)
+  {
+    ViewModel?.RemoveAllocation(allocation);
+    return Task.CompletedTask;
+  }
+}

@@ -7,6 +7,7 @@ public enum ExperimentPhase
   Compose,
   Execute,
   Analyze,
+  Visualize,
   Retry,
   Replan,
   Complete,

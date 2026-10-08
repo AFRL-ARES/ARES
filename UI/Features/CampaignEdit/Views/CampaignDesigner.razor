@@ -21,6 +21,7 @@
     <button class="btn @(ActiveTab == DesignerTab.Closeout ? "btn-secondary" : "btn-outline-secondary")" @onclick="() => ActiveTab = DesignerTab.Closeout">Closeout Script</button>
     <button class="btn @(ActiveTab == DesignerTab.Analyzer ? "btn-secondary" : "btn-outline-secondary")" @onclick="() => ActiveTab = DesignerTab.Analyzer">Analyzer Inputs</button>
     <button class="btn @(ActiveTab == DesignerTab.Planning ? "btn-secondary" : "btn-outline-secondary")" @onclick="() => ActiveTab = DesignerTab.Planning">Planning</button>
+    <button class="btn @(ActiveTab == DesignerTab.Visualizations ? "btn-secondary" : "btn-outline-secondary")" @onclick="() => ActiveTab = DesignerTab.Visualizations">Visualization Hooks</button>
   </div>
 
   <div class="my-2 flex-grow-1 overflow-auto">
@@ -46,6 +47,9 @@
       case DesignerTab.Analyzer:
         <AnalyzerInputDesigner ViewModel="@ViewModel!.AnalyzerDesignerViewModel" />
         break;
+      case DesignerTab.Visualizations:
+        <VisualizerAllocationDesigner ViewModel="@ViewModel!.VisualizerAllocationDesigner" />
+        break;
     }
   </div>
     <div class="d-flex justify-content-end">
@@ -53,7 +57,6 @@
         <button class="btn btn-secondary">Cancel</button>
     </div>
 </div>
-
 
 @code {
 
@@ -188,9 +191,9 @@
     Experiment,
     Closeout,
     Analyzer,
-    Planning
+    Planning,
+    Visualizations
   }
 
   public DesignerTab ActiveTab { get; set; } = DesignerTab.Parameters;
 }
-

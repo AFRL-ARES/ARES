@@ -1,4 +1,3 @@
-using Ares.Core;
 using Ares.Core.Analyzing;
 using Ares.Core.Device.Managers;
 using Ares.Core.Device.Plugins.Drivers;
@@ -9,7 +8,7 @@ using Ares.Core.Device.State.Logging;
 using Ares.Core.Planning;
 using Ares.Core.Settings;
 using Ares.Core.Visualization.Managers;
-using Ares.Datamodel;
+using Ares.Core.Visualization;
 using UI.Application.Devices.Repos;
 using UI.Application.Notifications;
 using UI.Application.Settings;
@@ -25,6 +24,7 @@ public class ServiceStarter : BackgroundService
   private readonly DeviceAdapterManager _deviceAdapterManager;
   private readonly IRemoteAnalyzerManager _analyzerManager;
   private readonly IRemotePlannerManager _plannerManager;
+  private readonly IRemoteVisualizerManager _visualizerManager;
   private readonly IRemoteDeviceManager _remoteDeviceManager;
   private readonly IDeviceConfigManager _deviceConfigManager;
   private readonly IVisualizationConfigManager _visualizationConfigManager;
@@ -38,7 +38,6 @@ public class ServiceStarter : BackgroundService
   private readonly SilaClient _silaClient;
   private readonly ILogger<ServiceStarter> _logger;
   private readonly ISystemSettingsManager _settingsManager;
-
   private readonly string _dataPath;
   private readonly string _resultsPath;
   private readonly string _templatesPath;
@@ -47,6 +46,7 @@ public class ServiceStarter : BackgroundService
 
   public ServiceStarter(
     IRemotePlannerManager plannerManager,
+    IRemoteVisualizerManager visualizerManager,
     IDeviceDriverLoader deviceDriverLoader,
     IRemoteAnalyzerManager analyzerManager,
     IDeviceConfigManager deviceConfigManager,
@@ -74,6 +74,7 @@ public class ServiceStarter : BackgroundService
 
     _analyzerManager = analyzerManager;
     _plannerManager = plannerManager;
+    _visualizerManager = visualizerManager;
     _remoteDeviceManager = remoteDeviceManager;
     _silaDeviceManager = silaDeviceManager;
     _visualizationConfigManager = visualizationConfigManager;
@@ -120,6 +121,7 @@ public class ServiceStarter : BackgroundService
     var remoteTrack = Task.WhenAll(
       _plannerManager.LoadPlanners(),
       _analyzerManager.LoadAnalyzers(),
+      _visualizerManager.LoadVisualizers(),
       _remoteDeviceManager.LoadDevices(),
       _silaDeviceManager.LoadSilaDevices());
 
@@ -145,4 +147,3 @@ public class ServiceStarter : BackgroundService
     return Task.CompletedTask;
   }
 }
-

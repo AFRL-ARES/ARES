@@ -11,6 +11,10 @@ public static class DemoIds
   public const string AnalyzerId = "9e5a8f3b-5c7d-4a1b-9f0a-1a2b3c4d5e6f";
   public const string AnalyzerName = "Demo Remote Analyzer";
 
+  // Visualizer
+  public const string VisualizerId = "3d8bf18c-6f48-4d5e-9d2f-5f2b4e7d6c1a";
+  public const string VisualizerName = "Demo Remote Visualizer";
+
   // Planner
   public const string PlannerId = "4b14d5e9-1c9f-4f01-8b2b-4d4d1e2e3e4e";
   public const string PlannerName = "Demo Remote Planner";

@@ -1,0 +1,80 @@
+@page "/settings/visualization"
+@using Ares.Services
+@using Google.Protobuf.WellKnownTypes
+@using UI.Features.Visualizing.Settings.Layout
+@inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<VisualizerSettingsListViewModel>
+@layout VisualizerSettingsLayout
+
+@inject DialogService DialogService
+
+@if (ViewModel!.IsLoading)
+{
+  <LoadingSpinner />
+}
+else
+{
+  <div class="d-flex flex-column">
+    @foreach (var vm in ViewModel.SettingsViewModels ?? [])
+    {
+      <div class="m-2">
+        <VisualizerSettingsView ViewModel="vm" />
+      </div>
+    }
+    <button class="m-2 align-self-end btn btn-outline-light" disabled="@IsAddDisabled" @onclick="AddVisualizerClick">
+      @if (SavingInProgress)
+      {
+        <LoadingSpinner SpinnerSize="SpinnerSize.Small" />
+      }
+      else
+      {
+        <RadzenIcon Icon="add" />
+      }
+    </button>
+  </div>
+}
+
+@code {
+  private bool SavingInProgress { get; set; }
+
+  private bool IsAddDisabled => Ares.Core.AresConfig.DemoMode || SavingInProgress;
+
+  private async Task AddVisualizerClick()
+  {
+    if(IsAddDisabled)
+      return;
+
+    var viewModel = ViewModel!.GetNewConfigEditViewModel();
+    var result = await DialogService.OpenAsync("New Visualizer", ds =>
+      @<VisualizerConfigEditView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)" />);
+
+    if(result is not true)
+      return;
+
+    SavingInProgress = true;
+    StateHasChanged();
+    try
+    {
+      await ViewModel.AddNewVisualizer(viewModel.Save());
+    }
+    catch(Grpc.Core.RpcException e)
+    {
+      ViewModel.PushNotification(new UiNotificationMessage
+      {
+        Summary = $"Failed to add Visualizer {viewModel.Name}",
+        Detail = e.Message,
+        Severity = UiNotificationSeverity.Error
+      });
+    }
+    finally
+    {
+      SavingInProgress = false;
+      StateHasChanged();
+    }
+  }
+
+  protected override async Task OnInitializedAsync()
+  {
+    await base.OnInitializedAsync();
+    await ViewModel!.UpdateAvailableVisualizers();
+  }
+}

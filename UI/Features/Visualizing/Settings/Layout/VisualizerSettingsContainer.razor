@@ -1,0 +1,46 @@
+@using Ares.Datamodel.Connection
+
+<div class="visualizer-settings-grid">
+  <h5 class="visualizer-settings-name">@Name</h5>
+  <div class="visualizer-status d-flex">
+    <button class="btn btn-sm border-0 rounded-circle btn-outline-primary mx-1" @onclick="UpdateVisualizerState">
+      <RadzenIcon Icon="refresh" />
+    </button>
+    @if(UpdatingInProgress)
+    {
+      <LoadingSpinner SpinnerSize="SpinnerSize.Small" />
+    }
+    else
+    {
+      <div class="d-flex flex-column">
+        <div class="visualizer-status-@State.ToString().ToLower()">@State</div>
+        <div>@StateMessage</div>
+      </div>
+    }
+  </div>
+  <div class="d-flex visualizer-settings-actions">
+    <vr />
+    <button class="btn btn-sm btn-outline-primary rounded-2 visualizer-action-button" type="button" disabled="@(EditCallback is null)" @onclick="EditClicked"><RadzenIcon Icon="edit" /></button>
+    <button class="btn btn-sm btn-outline-primary rounded-2 visualizer-action-button" type="button" disabled="@(SettingsCallback is null)" @onclick="SettingsClicked"><RadzenIcon Icon="settings" /></button>
+    <button class="btn btn-sm btn-outline-danger rounded-2 visualizer-action-button" type="button" disabled="@(RemoveCallback is null)" @onclick="RemoveClicked"><RadzenIcon Icon="delete_outline" /></button>
+  </div>
+  <hr class="visualizer-settings-separator" />
+  <div class="visualizer-settings-content">@ChildContent</div>
+</div>
+
+@code {
+  [Parameter] public bool UpdatingInProgress { get; set; }
+  [Parameter] public RenderFragment? ChildContent { get; set; }
+  [Parameter] public Func<Task>? RemoveCallback { get; set; }
+  [Parameter] public Func<Task>? EditCallback { get; set; }
+  [Parameter] public Func<Task>? SettingsCallback { get; set; }
+  [Parameter] public Func<Task>? StateUpdateCallback { get; set; }
+  [Parameter] public string Name { get; set; } = "No name?";
+  [Parameter] public State State { get; set; }
+  [Parameter] public string StateMessage { get; set; } = "";
+
+  private Task UpdateVisualizerState() => StateUpdateCallback is not null ? StateUpdateCallback() : Task.CompletedTask;
+  private Task EditClicked() => EditCallback is not null ? EditCallback() : Task.CompletedTask;
+  private Task RemoveClicked() => RemoveCallback is not null ? RemoveCallback() : Task.CompletedTask;
+  private Task SettingsClicked() => SettingsCallback is not null ? SettingsCallback() : Task.CompletedTask;
+}

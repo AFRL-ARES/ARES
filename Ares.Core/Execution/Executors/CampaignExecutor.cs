@@ -12,6 +12,7 @@ using Ares.Core.Notifications;
 using Ares.Core.Output;
 using Ares.Core.Planning;
 using Ares.Core.Settings;
+using Ares.Core.Visualization;
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Planning;
@@ -40,7 +41,7 @@ public class CampaignExecutor : ICampaignExecutor
   readonly IAnalyzerRepo _analyzerRepo;
   readonly ISystemSettingsManager _settingsManager;
   readonly IExecutionSafetyManager _executionSafetyManager;
-
+  readonly IExperimentVisualizationService _experimentVisualizationService;
   private readonly string _campaignFailedTitle = "Campaign Execution Failed!";
   private AresGeneralSettingsConfig? _generalSettingsConfig;
   private ExperimentExecutorResult _currentExecutorResult = new();
@@ -64,7 +65,8 @@ public class CampaignExecutor : ICampaignExecutor
     AresVariableManager variableManager,
     StateLoggerManager stateLoggerManager,
     ISystemSettingsManager settingsManager,
-    IExecutionSafetyManager executionSafetyManager)
+    IExecutionSafetyManager executionSafetyManager,
+    IExperimentVisualizationService experimentVisualizationService)
   {
     _analyzerRepo = analyzerRepo;
     _analysisRepo = analysisRepo;
@@ -81,6 +83,7 @@ public class CampaignExecutor : ICampaignExecutor
     _notifier = notifier;
     _settingsManager = settingsManager;
     _executionSafetyManager = executionSafetyManager;
+    _experimentVisualizationService = experimentVisualizationService;
 
     Status = new CampaignExecutionStatus
     {
@@ -271,6 +274,10 @@ public class CampaignExecutor : ICampaignExecutor
             currentPhase = await AnalyzeCurrentExperiment(startupSummary, analyses, experimentSummaries, token);
             break;
 
+          case ExperimentPhase.Visualize:
+            currentPhase = await VisualizeCurrentExperiment(experimentSummaries, token);
+            break;
+
           case ExperimentPhase.Retry:
             failedExperimentRetryCount++;
             currentPhase = await RetryCurrentExperiment(failedExperimentRetryCount, failedExperimentRetryLimit, experimentRetryCooldown, token);
@@ -295,6 +302,10 @@ public class CampaignExecutor : ICampaignExecutor
           case ExperimentPhase.Canceled:
             _logger.LogInformation("ARES experiment execution was canceled. Campaign closeout will run before termination.");
             return ExperimentLoopOutcome.Canceled;
+
+          default:
+            _logger.LogError("ARES encountered an unsupported experiment phase: {Phase}", currentPhase);
+            return ExperimentLoopOutcome.Failed;
         }
       }
     }
@@ -424,6 +435,26 @@ public class CampaignExecutor : ICampaignExecutor
     if(!result.Continue)
       return result.Success ? ExperimentPhase.Canceled : ExperimentPhase.Failed;
 
+    return ExperimentPhase.Visualize;
+  }
+
+  private async Task<ExperimentPhase> VisualizeCurrentExperiment(
+    List<ExperimentExecutionSummary> experimentSummaries,
+    ExecutionControlToken token)
+  {
+    if(token.IsCancelled)
+      return ExperimentPhase.Canceled;
+
+    if(_currentExperimentTemplate is null || _currentSummary is null)
+      return ExperimentPhase.Failed;
+
+    await _experimentVisualizationService.GenerateVisualizations(
+      _currentExperimentTemplate,
+      experimentSummaries,
+      _currentSummary,
+      token.CancellationToken);
+
+    _executionReporter.Report(_currentSummary);
     await PostExperimentExecution(_currentSummary);
     experimentSummaries.Add(_currentSummary);
     return ExperimentPhase.Complete;
@@ -727,11 +758,14 @@ public class CampaignExecutor : ICampaignExecutor
     return StopConditions.Any(condition => condition.ShouldStop());
   }
 
-  public void UpdateExecutionNotes(string notes) => ExecutionNotes = notes;
+  public void UpdateExecutionNotes(string notes) 
+    => ExecutionNotes = notes;
 
-  public void UpdateCampaignTags(List<AresCampaignTag> tags) => CampaignTags = tags;
+  public void UpdateCampaignTags(List<AresCampaignTag> tags) 
+    => CampaignTags = tags;
 
-  public void SubmitUserDecision(ErrorHandling decision) => _userDecisionSource?.TrySetResult(decision);
+  public void SubmitUserDecision(ErrorHandling decision) 
+    => _userDecisionSource?.TrySetResult(decision);
 
   private void ReportCampaignStatus(ExecutionState? state = null)
   {
@@ -895,5 +929,3 @@ public class CampaignExecutor : ICampaignExecutor
   public CampaignExecutionStatus Status { get; private set; }
   public DateTime CampaignStartTime { get; set; } = DateTime.MinValue;
 }
-
-

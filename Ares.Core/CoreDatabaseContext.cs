@@ -1,11 +1,12 @@
 using System.Reflection;
 using Ares.Core.EntityConfigurations.Helpers;
 using Ares.Datamodel;
-using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Automation;
 using Ares.Datamodel.Device;
 using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
+using Ares.Datamodel.Visualizing;
+using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Visualizing.Local;
 using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
@@ -43,6 +44,9 @@ public class CoreDatabaseContext : DbContext
   public DbSet<DeviceState> DeviceStates => Set<DeviceState>();
   public DbSet<SilaDeviceConfig> SilaConfigs => Set<SilaDeviceConfig>();
   public DbSet<DeviceVisualizationConfig> DeviceVisualizationConfigs => Set<DeviceVisualizationConfig>();
+  public DbSet<VisualizerConfig> Visualizers => Set<VisualizerConfig>();
+  public DbSet<VisualizerInfo> VisualizerInfos => Set<VisualizerInfo>();
+  public DbSet<VisualizerSettings> VisualizerSettings => Set<VisualizerSettings>();
   public DbSet<PlannerTransaction> PlannerTransactions => Set<PlannerTransaction>();
   public DbSet<AnalyzerTransaction> AnalyzerTransactions => Set<AnalyzerTransaction>();
   public DbSet<DeviceErrorHandlingConfig> DeviceErrorHandlingConfigs => Set<DeviceErrorHandlingConfig>();

@@ -33,6 +33,7 @@ using UI.Features.Notifications;
 using UI.Features.Planning.Settings;
 using UI.Features.ServerHealth;
 using UI.Features.Visualization.ViewModels;
+using UI.Features.Visualizing.Settings;
 using UI.Infrastructure.Auth;
 using UI.Infrastructure.Devices;
 using UI.Infrastructure.Dialog;
@@ -94,6 +95,7 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<PlannerService>();
     services.AddScoped<ValidationService>();
     services.AddScoped<AnalyzerService>();
+    services.AddScoped<VisualizerService>();
     services.AddScoped<AnalysisService>();
     services.AddScoped<AresSafetyManagementService>();
     services.AddScoped<DeviceStateExportService>();
@@ -120,6 +122,7 @@ internal static class ServiceCollectionExtensions
 
     //Device Settings List View Models
     services.AddTransient<AnalyzerSettingsListViewModel>();
+    services.AddTransient<VisualizerSettingsListViewModel>();
     services.AddTransient<PlannerSettingsListViewModel>();
     services.AddTransient<RemoteDeviceSettingsListViewModel>();
     services.AddTransient<PluginDeviceSettingsListViewModel>();
@@ -144,6 +147,7 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<StepDesignerFactory>();
     services.AddScoped<PlanningDesignerFactory>();
     services.AddScoped<AnalyzerInputDesignerVmFactory>();
+    services.AddScoped<VisualizerAllocationDesignerFactory>();
     services.AddSingleton<IAresDeviceViewModelFactory,  AresDeviceViewModelFactory>();
     services.AddSingleton<IRemoteDeviceControlViewModelFactory, RemoteDeviceControlViewModelFactory>();
     services.AddSingleton<ISilaDeviceControlViewModelFactory,  SilaDeviceControlViewModelFactory>();
