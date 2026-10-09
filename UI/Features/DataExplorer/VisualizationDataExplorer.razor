@@ -1,0 +1,467 @@
+@using Ares.Core.Grpc.Services
+@using Ares.Datamodel
+@using Ares.Services
+@using Google.Protobuf.WellKnownTypes
+@using UI.Components.Formatting
+@using UI.Features.Visualization.Views
+@implements IDisposable
+@inject AutomationService AutomationClient
+
+@if(_campaigns is null)
+{
+  <LoadingSpinner />
+}
+else
+{
+  <section class="visualization-data-explorer">
+    <div class="explorer-header">
+      <div>
+        <h3>Visualization Data Explorer</h3>
+        <p>Select a completed campaign, choose a visualization, and replay its history across the experiment sequence.</p>
+      </div>
+
+      <div class="data-summary" aria-label="Visualization data summary">
+        <div>
+          <span class="summary-value">@CampaignCount</span>
+          <span class="summary-label">Campaigns</span>
+        </div>
+        <div>
+          <span class="summary-value">@VisualizationCount</span>
+          <span class="summary-label">Visualizations</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="visualization-data-grid">
+      <aside class="campaign-panel" aria-label="Completed campaigns">
+        <div class="panel-toolbar">
+          <div>
+            <h4>Campaigns</h4>
+            <span>@FilteredCampaignCount shown</span>
+          </div>
+          <button type="button" class="clear-button" @onclick="ClearSelection" disabled="@(string.IsNullOrWhiteSpace(_selectedCampaignId) || _loadingCampaign)">
+            Clear
+          </button>
+        </div>
+
+        <label class="search-field">
+          <RadzenIcon Icon="search" />
+          <input type="search" placeholder="Filter campaigns" disabled="@_loadingCampaign" @bind="_filterText" @bind:event="oninput" />
+        </label>
+
+        @if(!_campaigns.Any())
+        {
+          <div class="empty-state compact">
+            <RadzenIcon Icon="science" />
+            <span>No completed campaign data found.</span>
+          </div>
+        }
+        else if(!FilteredCampaigns.Any())
+        {
+          <div class="empty-state compact">
+            <RadzenIcon Icon="search_off" />
+            <span>No campaigns match this filter.</span>
+          </div>
+        }
+        else
+        {
+          <ul class="campaign-list">
+            @foreach(var campaign in FilteredCampaigns)
+            {
+              var isSelected = campaign.SummaryId == _selectedCampaignId;
+
+              <li class="@(isSelected ? "selected" : null)">
+                <button type="button" disabled="@_loadingCampaign" @onclick="() => SelectCampaign(campaign.SummaryId)">
+                  <span class="campaign-marker" aria-hidden="true"></span>
+                  <span class="campaign-text">
+                    <span class="campaign-name">@campaign.CampaignName</span>
+                    <span class="campaign-meta">@campaign.CompletionTimeDisplay</span>
+                    <span class="campaign-meta">@campaign.ExperimentCount experiment@(campaign.ExperimentCount == 1 ? string.Empty : "s")</span>
+                  </span>
+                </button>
+              </li>
+            }
+          </ul>
+        }
+
+        <div class="selection-actions">
+          <button type="button" class="apply-button" @onclick="ApplyCampaignAsync" disabled="@(!CanApply)">
+            Apply
+          </button>
+        </div>
+      </aside>
+
+      <section class="visualization-workspace" aria-label="Visualization history">
+        @if(_loadingCampaign)
+        {
+          <div class="empty-state">
+            <LoadingSpinner SpinnerSize="SpinnerSize.Large" />
+            <h4>Loading campaign visualizations</h4>
+            <p>Reading the stored chart history for the selected campaign.</p>
+          </div>
+        }
+        else if(!string.IsNullOrWhiteSpace(_loadError))
+        {
+          <div class="empty-state error">
+            <RadzenIcon Icon="error" />
+            <h4>Unable to load visualizations</h4>
+            <p>@_loadError</p>
+          </div>
+        }
+        else if(AppliedCampaign is null)
+        {
+          <div class="empty-state">
+            <RadzenIcon Icon="insert_chart_outlined" />
+            <h4>No campaign selected</h4>
+            <p>Choose a completed campaign and apply the selection.</p>
+          </div>
+        }
+        else if(_visualizations.Count == 0)
+        {
+          <div class="empty-state">
+            <RadzenIcon Icon="bar_chart" />
+            <h4>No visualizations found</h4>
+            <p>The selected campaign did not produce any stored visualization charts.</p>
+          </div>
+        }
+        else
+        {
+          <div class="visualization-workspace-header">
+            <div>
+              <h4>@AppliedCampaign!.CampaignName</h4>
+              <span>@AppliedCampaign.ExperimentCount experiment@(AppliedCampaign.ExperimentCount == 1 ? string.Empty : "s")</span>
+            </div>
+            <div class="campaign-details-inline">
+              <span>@AppliedCampaign.CompletionTimeDisplay</span>
+              <span>@(string.IsNullOrWhiteSpace(AppliedCampaign.Tags) ? "No tags" : AppliedCampaign.Tags)</span>
+            </div>
+          </div>
+
+          <div class="visualization-history-grid">
+            <aside class="visualization-list-panel" aria-label="Available visualizations">
+              <div class="panel-toolbar">
+                <div>
+                  <h4>Visualizations</h4>
+                  <span>@_visualizations.Count available</span>
+                </div>
+              </div>
+
+              <div class="visualization-list">
+                @foreach(var visualization in _visualizations)
+                {
+                  var isSelected = visualization.AllocationId == _selectedVisualizationId;
+                  <button type="button" class="visualization-list-item @(isSelected ? "selected" : null)" @onclick="() => SelectVisualization(visualization.AllocationId)">
+                    <span class="visualization-list-icon"><RadzenIcon Icon="show_chart" /></span>
+                    <span class="visualization-list-text">
+                      <strong>@visualization.DisplayName</strong>
+                      <span>@visualization.RequestedVisual</span>
+                      <small>@visualization.AvailableSnapshotCount of @visualization.History.Count snapshots</small>
+                    </span>
+                  </button>
+                }
+              </div>
+            </aside>
+
+            <section class="history-viewer-panel" aria-label="Visualization history viewer">
+              @if(SelectedVisualization is null)
+              {
+                <div class="empty-state">
+                  <RadzenIcon Icon="touch_app" />
+                  <h4>Select a visualization</h4>
+                  <p>Choose a chart to browse how it changed during the campaign.</p>
+                </div>
+              }
+              else
+              {
+                <div class="history-viewer-header">
+                  <div>
+                    <h4>@SelectedVisualization.DisplayName</h4>
+                    <span>@SelectedVisualization.RequestedVisual - @SelectedVisualization.VisualizerName</span>
+                  </div>
+                  <span class="history-position">Experiment @(_historyIndex + 1) of @SelectedVisualization.History.Count</span>
+                </div>
+
+                <div class="history-controls" aria-label="Visualization playback controls">
+                  <button type="button" class="icon-button" title="First experiment" aria-label="First experiment" @onclick="SelectFirstHistoryEntry" disabled="@(!CanMoveBackward)">
+                    <RadzenIcon Icon="first_page" />
+                  </button>
+                  <button type="button" class="icon-button" title="Previous experiment" aria-label="Previous experiment" @onclick="SelectPreviousHistoryEntry" disabled="@(!CanMoveBackward)">
+                    <RadzenIcon Icon="chevron_left" />
+                  </button>
+                  <button type="button" class="icon-button" title="Next experiment" aria-label="Next experiment" @onclick="SelectNextHistoryEntry" disabled="@(!CanMoveForward)">
+                    <RadzenIcon Icon="chevron_right" />
+                  </button>
+                  <button type="button" class="icon-button" title="Last experiment" aria-label="Last experiment" @onclick="SelectLastHistoryEntry" disabled="@(!CanMoveForward)">
+                    <RadzenIcon Icon="last_page" />
+                  </button>
+
+                  <input class="history-slider" type="range" min="0" max="@(Math.Max(0, SelectedVisualization.History.Count - 1))" @bind="_historyIndex" @bind:event="oninput" aria-label="Experiment history position" />
+                </div>
+
+                @if(SelectedHistoryEntry is null || string.IsNullOrWhiteSpace(SelectedHistoryEntry.ChartJson))
+                {
+                  <div class="empty-state history-empty-state">
+                    <RadzenIcon Icon="hourglass_empty" />
+                    <h4>No chart for this experiment</h4>
+                    <p>This visualization was not generated for experiment @(_historyIndex + 1).</p>
+                  </div>
+                }
+                else
+                {
+                  <div class="history-chart-container">
+                    <div class="history-experiment-details">
+                      <span><strong>Experiment:</strong> @SelectedHistoryEntry.ExperimentId</span>
+                      <span><strong>Started:</strong> @FormatTimestamp(SelectedHistoryEntry.StartedAt)</span>
+                      <span><strong>Finished:</strong> @FormatTimestamp(SelectedHistoryEntry.FinishedAt)</span>
+                    </div>
+                    <PlotlyViewer @key="SelectedVisualization.AllocationId + SelectedHistoryEntry.ExperimentId" PlotlyJson="@SelectedHistoryEntry.ChartJson" Height="520px" />
+                  </div>
+                }
+              }
+            </section>
+          </div>
+        }
+      </section>
+    </div>
+  </section>
+}
+
+@code {
+  private List<CampaignDisplayItem>? _campaigns;
+  private CampaignExecutionSummary? _selectedCampaign;
+  private string? _selectedCampaignId;
+  private string? _appliedCampaignId;
+  private string? _selectedVisualizationId;
+  private string? _filterText;
+  private string? _loadError;
+  private int _historyIndex;
+  private bool _loadingCampaign;
+  private CancellationTokenSource? _loadCancellation;
+  private bool _disposed;
+  private IReadOnlyList<VisualizationDisplayItem> _visualizations = [];
+
+  private int CampaignCount => _campaigns?.Count ?? 0;
+  private int VisualizationCount => _visualizations.Count;
+  private int FilteredCampaignCount => FilteredCampaigns.Count();
+  private bool CanApply => !string.IsNullOrWhiteSpace(_selectedCampaignId) && !_loadingCampaign;
+  private CampaignDisplayItem? AppliedCampaign => _campaigns?.FirstOrDefault(campaign => campaign.SummaryId == _appliedCampaignId);
+  private VisualizationDisplayItem? SelectedVisualization => _visualizations.FirstOrDefault(visualization => visualization.AllocationId == _selectedVisualizationId);
+  private VisualizationHistoryEntry? SelectedHistoryEntry => SelectedVisualization?.History.ElementAtOrDefault(Math.Clamp(_historyIndex, 0, Math.Max(0, (SelectedVisualization?.History.Count ?? 1) - 1)));
+  private bool CanMoveBackward => _historyIndex > 0;
+  private bool CanMoveForward => SelectedVisualization is not null && _historyIndex < SelectedVisualization.History.Count - 1;
+
+  private IEnumerable<CampaignDisplayItem> FilteredCampaigns
+  {
+    get
+    {
+      if(_campaigns is null)
+        return Enumerable.Empty<CampaignDisplayItem>();
+
+      if(string.IsNullOrWhiteSpace(_filterText))
+        return _campaigns;
+
+      return _campaigns.Where(campaign =>
+        campaign.CampaignName.Contains(_filterText, StringComparison.OrdinalIgnoreCase) ||
+        campaign.SummaryId.Contains(_filterText, StringComparison.OrdinalIgnoreCase) ||
+        campaign.Tags.Contains(_filterText, StringComparison.OrdinalIgnoreCase) ||
+        campaign.Notes.Contains(_filterText, StringComparison.OrdinalIgnoreCase));
+    }
+  }
+
+  protected override async Task OnInitializedAsync()
+  {
+    await Task.Yield();
+
+    await Task.Run(async () =>
+    {
+      var response = await AutomationClient.GetAvailableCampaignExecutionSummaries(new Empty(), null);
+      var campaigns = await Task.WhenAll(response.AvailableCampaignSummaries.Select(async campaign =>
+      {
+        var summary = await AutomationClient.GetCampaignSummary(new CampaignExecutionSummaryRequest { SummaryId = campaign.SummaryId }, null);
+
+        return new CampaignDisplayItem(
+          campaign.SummaryId,
+          string.IsNullOrWhiteSpace(campaign.CampaignName) ? campaign.SummaryId : campaign.CampaignName,
+          campaign.CompletionTime.ToReadableTimestamp(),
+          campaign.CompletionTime.ToDateTime(),
+          (int)campaign.NumExperiments,
+          summary.CampaignTags ?? string.Empty,
+          summary.CampaignNotes ?? string.Empty);
+      }));
+
+      _campaigns = campaigns.OrderByDescending(campaign => campaign.CompletionTime).ToList();
+    });
+  }
+
+  private void SelectCampaign(string summaryId)
+  {
+    if(!_loadingCampaign)
+      _selectedCampaignId = summaryId;
+  }
+
+  private void ClearSelection()
+  {
+    if(_loadingCampaign)
+      return;
+
+    _selectedCampaignId = null;
+    _selectedCampaign = null;
+    _appliedCampaignId = null;
+    _selectedVisualizationId = null;
+    _visualizations = [];
+    _historyIndex = 0;
+  }
+
+  private async Task ApplyCampaignAsync()
+  {
+    if(!CanApply || _selectedCampaignId is null)
+      return;
+
+    _loadCancellation?.Cancel();
+    _loadCancellation?.Dispose();
+    _loadCancellation = new CancellationTokenSource();
+    var cancellationToken = _loadCancellation.Token;
+
+    _loadingCampaign = true;
+    _loadError = null;
+    _selectedCampaign = null;
+    _visualizations = [];
+    _selectedVisualizationId = null;
+    _historyIndex = 0;
+
+    try
+    {
+      var summary = await AutomationClient.GetCampaignSummary(
+        new CampaignExecutionSummaryRequest { SummaryId = _selectedCampaignId },
+        null);
+      cancellationToken.ThrowIfCancellationRequested();
+
+      _selectedCampaign = summary;
+      _appliedCampaignId = _selectedCampaignId;
+      _visualizations = BuildVisualizations(summary);
+      _selectedVisualizationId = _visualizations.FirstOrDefault()?.AllocationId;
+    }
+    catch(OperationCanceledException)
+    {
+      _loadError = null;
+    }
+    catch(Exception ex)
+    {
+      _loadError = ex.Message;
+    }
+    finally
+    {
+      _loadingCampaign = false;
+    }
+  }
+
+  private static IReadOnlyList<VisualizationDisplayItem> BuildVisualizations(CampaignExecutionSummary summary)
+  {
+    var experiments = summary.ExperimentSummaries.ToArray();
+    var allocationMap = experiments
+      .SelectMany(experiment => experiment.ExperimentOverview?.Template?.VisualizerAllocations ?? [])
+      .Where(allocation => !string.IsNullOrWhiteSpace(allocation.UniqueId))
+      .GroupBy(allocation => allocation.UniqueId, StringComparer.Ordinal)
+      .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
+
+    var allocationIds = allocationMap.Keys
+      .Concat(experiments.SelectMany(experiment => experiment.GeneratedVisuals.Keys))
+      .Where(id => !string.IsNullOrWhiteSpace(id))
+      .Distinct(StringComparer.Ordinal)
+      .OrderBy(id => id, StringComparer.Ordinal);
+
+    experiments.OrderBy(es => es.ExecutionInfo.TimeStarted.ToDateTime());
+
+    return allocationIds.Select(allocationId =>
+    {
+      allocationMap.TryGetValue(allocationId, out var allocation);
+      var history = experiments.Select((experiment, index) => new VisualizationHistoryEntry(
+        index + 1,
+        string.IsNullOrWhiteSpace(experiment.ExperimentId) ? experiment.UniqueId : experiment.ExperimentId,
+        experiment.ExecutionInfo?.TimeStarted?.ToDateTime(),
+        experiment.ExecutionInfo?.TimeFinished?.ToDateTime(),
+        experiment.GeneratedVisuals.TryGetValue(allocationId, out var chartJson) ? chartJson : null))
+        .OrderBy(vhe => vhe.StartedAt).ToArray();
+
+      var requestedVisual = allocation?.RequestedVisual ?? "Stored visualization";
+      var displayName = !string.IsNullOrWhiteSpace(allocation?.UserProvidedIdentifier)
+        ? allocation.UserProvidedIdentifier
+        : requestedVisual;
+
+      if(string.IsNullOrWhiteSpace(displayName))
+        displayName = allocationId;
+
+      return new VisualizationDisplayItem(
+        allocationId,
+        displayName,
+        requestedVisual,
+        allocation?.Visualizer?.Name ?? "Unknown visualizer",
+        history);
+    }).ToArray();
+  }
+
+  private void SelectVisualization(string allocationId)
+  {
+    if(_selectedVisualizationId == allocationId)
+      return;
+
+    _selectedVisualizationId = allocationId;
+    _historyIndex = 0;
+  }
+
+  private void SelectFirstHistoryEntry()
+    => _historyIndex = 0;
+
+  private void SelectPreviousHistoryEntry()
+    => _historyIndex = Math.Max(0, _historyIndex - 1);
+
+  private void SelectNextHistoryEntry()
+  {
+    if(!CanMoveForward)
+      return;
+
+    _historyIndex++;
+  }
+
+  private void SelectLastHistoryEntry()
+  {
+    if(SelectedVisualization is not null)
+      _historyIndex = SelectedVisualization.History.Count - 1;
+  }
+
+  private static string FormatTimestamp(DateTime? timestamp)
+    => timestamp?.ToLocalTime().ToString("g") ?? "Unknown";
+
+  public void Dispose()
+  {
+    _disposed = true;
+    _loadCancellation?.Cancel();
+    _loadCancellation?.Dispose();
+  }
+
+  private sealed record CampaignDisplayItem(
+    string SummaryId,
+    string CampaignName,
+    string CompletionTimeDisplay,
+    DateTime CompletionTime,
+    int ExperimentCount,
+    string Tags,
+    string Notes);
+
+  private sealed record VisualizationDisplayItem(
+    string AllocationId,
+    string DisplayName,
+    string RequestedVisual,
+    string VisualizerName,
+    IReadOnlyList<VisualizationHistoryEntry> History)
+  {
+    public int AvailableSnapshotCount => History.Count(entry => !string.IsNullOrWhiteSpace(entry.ChartJson));
+  }
+
+  private sealed record VisualizationHistoryEntry(
+    int ExperimentIndex,
+    string ExperimentId,
+    DateTime? StartedAt,
+    DateTime? FinishedAt,
+    string? ChartJson);
+}
