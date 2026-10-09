@@ -23,7 +23,6 @@ using Ares.Core.Planning;
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Extensions;
 using Ares.Core.Execution.StopConditions.PlannerLead;
-using System.Text.Json;
 using DynamicData;
 
 namespace Ares.Core.Grpc.Services;

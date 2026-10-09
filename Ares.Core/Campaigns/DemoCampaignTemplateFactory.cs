@@ -2,6 +2,7 @@ using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
+using Ares.Datamodel.Visualizing;
 
 namespace Ares.Core.Campaigns;
 
@@ -171,7 +172,53 @@ internal static class DemoCampaignTemplateFactory
     experimentTemplate.PlanObjectives.Add("Yield");
 
     experimentTemplate.StepTemplates.Add(experimentStep);
+    experimentTemplate.VisualizerAllocations.AddRange(CreateVisualizerAllocations());
     return experimentTemplate;
+  }
+
+  private static IEnumerable<VisualizerAllocation> CreateVisualizerAllocations()
+  {
+    var visuals = new List<VisualizerAllocation>();
+    var visualOne = new VisualizerAllocation
+    {
+      UniqueId = "29d2f5b2-1e13-47ef-b029-ef8ba3de2130",
+      RequestedVisual = "Temperature and Flow Rate",
+      UserProvidedIdentifier = "Temp and Setpoint Chart",
+      Visualizer = new VisualizerInfo
+      {
+        UniqueId = "3d8bf18c-6f48-4d5e-9d2f-5f2b4e7d6c1a",
+        Description = "A stateless Plotly-compatible visualizer with multiple chart options.",
+        Type = "Demo Plotly Visualizer",
+        Name = "Demo Plotly Visualizer",
+        Url = "http://localhost:5028/",
+        Version = "0.1.0"
+      },
+    };
+
+    visualOne.VisualizationMaps.Add("Flow Rate", "Setpoint-Output");
+    visualOne.VisualizationMaps.Add("Temperature", "Temperature-Output");
+
+    var visualTwo = new VisualizerAllocation
+    {
+      RequestedVisual = "Analysis Objective Summary",
+      UniqueId = "dda13593-31d0-40ce-b910-0abf3d989501",
+      UserProvidedIdentifier = "Objective Visual",
+      Visualizer = new VisualizerInfo 
+      { 
+        Description = "A stateless Plotly-compatible visualizer with multiple chart options.",
+        Name = "Demo Remote Visualizer",
+        Type = "Demo Plotly Visualizer",
+        UniqueId = "3d8bf18c-6f48-4d5e-9d2f-5f2b4e7d6c1a",
+        Url = "http://localhost:5028/",
+        Version = "0.1.0"
+      }
+    };
+
+    visualTwo.VisualizationMaps.Add("Yield", "Yield");
+
+    visuals.AddRange(visualOne, visualTwo);
+
+    return visuals;
   }
 
   private static IEnumerable<CommandTemplate> CreateExperimentCommandTemplates()

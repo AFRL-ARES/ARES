@@ -740,6 +740,10 @@ public class CampaignExecutor : ICampaignExecutor
         TimeStarted = startTime.ToUniversalTime().ToTimestamp()
       }
     };
+
+    if(AresConfig.DemoMode)
+      campaignExecutionSummary.CampaignTags = "Demo Mode";
+
     _logger.LogDebug("Created the campaign execution summary");
     campaignExecutionSummary.ExperimentSummaries.AddRange(experimentSummaries);
     campaignExecutionSummary.StartupExecutionSummary = startupSummary;
