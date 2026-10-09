@@ -225,6 +225,18 @@
   border-top: var(--rz-card-border);
 }
 
+.campaign-pagination {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-top: var(--rz-card-border);
+  color: var(--rz-text-secondary-color, #667085);
+  font-size: 0.82rem;
+}
+
 .apply-button,
 .clear-button {
   border: var(--rz-card-border);

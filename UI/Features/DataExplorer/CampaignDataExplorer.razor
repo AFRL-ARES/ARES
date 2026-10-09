@@ -41,7 +41,7 @@ else
         <div class="panel-toolbar">
           <div>
             <h4>Campaigns</h4>
-            <span>@FilteredCampaignCount shown</span>
+            <span>@DisplayedCampaignCount of @FilteredCampaignCount shown</span>
           </div>
           <button type="button" class="clear-button" @onclick="ClearSelection" disabled="@(string.IsNullOrWhiteSpace(_selectedCampaignId) || _loadingDatasets)">
             Clear
@@ -50,7 +50,7 @@ else
 
         <label class="search-field">
           <RadzenIcon Icon="search" />
-          <input type="search" placeholder="Filter campaigns" disabled="@_loadingDatasets" @bind="_filterText" @bind:event="oninput" />
+          <input type="search" placeholder="Filter campaigns" disabled="@_loadingDatasets" @bind="FilterText" @bind:event="oninput" />
         </label>
 
         @if(_campaigns is null)
@@ -77,7 +77,7 @@ else
         else
         {
           <ul class="campaign-list">
-            @foreach(var campaign in FilteredCampaigns)
+            @foreach(var campaign in PagedFilteredCampaigns)
             {
               var isSelected = campaign.SummaryId == _selectedCampaignId;
 
@@ -93,6 +93,19 @@ else
               </li>
             }
           </ul>
+        }
+
+        @if(HasCampaignPages)
+        {
+          <div class="campaign-pagination" aria-label="Campaign pages">
+            <button type="button" class="icon-button" title="Previous page" aria-label="Previous page" @onclick="PreviousCampaignPage" disabled="@(!HasPreviousCampaignPage || _loadingDatasets)">
+              <RadzenIcon Icon="chevron_left" />
+            </button>
+            <span>Page @_campaignPage of @CampaignPageCount</span>
+            <button type="button" class="icon-button" title="Next page" aria-label="Next page" @onclick="NextCampaignPage" disabled="@(!HasNextCampaignPage || _loadingDatasets)">
+              <RadzenIcon Icon="chevron_right" />
+            </button>
+          </div>
         }
 
         <div class="selection-actions">
@@ -234,9 +247,13 @@ else
   private bool _cancelingDatasetLoad;
   private bool _exportingDatasets;
   private bool _hasApplied;
+  private int _campaignPage = 1;
+
+  private const int CampaignPageSize = 25;
 
   private int CampaignCount => _campaigns?.Count ?? 0;
   private int FilteredCampaignCount => FilteredCampaigns.Count();
+  private int DisplayedCampaignCount => PagedFilteredCampaigns.Count();
   private int AppliedExperimentCount => AppliedCampaign?.ExperimentCount ?? 0;
   private string AppliedCampaignName => AppliedCampaign?.CampaignName ?? "Campaign Data";
   private string AppliedCampaignTags => string.IsNullOrWhiteSpace(AppliedCampaign?.Tags) ? "No tags" : AppliedCampaign.Tags;
@@ -244,6 +261,21 @@ else
   private CampaignDisplayItem? AppliedCampaign => _campaigns?.FirstOrDefault(campaign => campaign.SummaryId == _appliedCampaignId);
   private bool CanApply => !string.IsNullOrWhiteSpace(_selectedCampaignId) && !_loadingDatasets && !_exportingDatasets;
   private bool CanExport => !_loadingDatasets && !_exportingDatasets && _datasets?.Any(dataset => dataset.Rows.Count > 0) == true;
+  private bool HasCampaignPages => FilteredCampaignCount > CampaignPageSize;
+  private int CampaignPageCount => Math.Max(1, (int)Math.Ceiling(FilteredCampaignCount / (double)CampaignPageSize));
+  private bool HasPreviousCampaignPage => _campaignPage > 1;
+  private bool HasNextCampaignPage => _campaignPage < CampaignPageCount;
+  private IEnumerable<CampaignDisplayItem> PagedFilteredCampaigns => FilteredCampaigns.Skip((_campaignPage - 1) * CampaignPageSize).Take(CampaignPageSize);
+
+  private string? FilterText
+  {
+    get => _filterText;
+    set
+    {
+      _filterText = value;
+      _campaignPage = 1;
+    }
+  }
 
   private IEnumerable<CampaignDisplayItem> FilteredCampaigns
   {
@@ -270,27 +302,30 @@ else
     await Task.Run(async () =>
     {
       var response = await AutomationClient.GetAvailableCampaignExecutionSummaries(new Empty(), null);
-      var campaigns = await Task.WhenAll(response.AvailableCampaignSummaries
-        .Select(async campaign =>
-        {
-          var summary = await AutomationClient.GetCampaignSummary(
-            new CampaignExecutionSummaryRequest { SummaryId = campaign.SummaryId },
-            null);
-
-          return new CampaignDisplayItem(
-            campaign.SummaryId,
-            string.IsNullOrWhiteSpace(campaign.CampaignName) ? campaign.SummaryId : campaign.CampaignName,
-            campaign.CompletionTime.ToReadableTimestamp(),
-            campaign.CompletionTime.ToDateTime(),
-            (int)campaign.NumExperiments,
-            summary.CampaignTags ?? string.Empty,
-            summary.CampaignNotes ?? string.Empty);
-        }));
-
-      _campaigns = campaigns
+      _campaigns = response.AvailableCampaignSummaries
+        .Select(campaign => new CampaignDisplayItem(
+          campaign.SummaryId,
+          string.IsNullOrWhiteSpace(campaign.CampaignName) ? campaign.SummaryId : campaign.CampaignName,
+          campaign.CompletionTime.ToReadableTimestamp(),
+          campaign.CompletionTime.ToDateTime(),
+          (int)campaign.NumExperiments,
+          string.Empty,
+          string.Empty))
         .OrderByDescending(campaign => campaign.CompletionTime)
         .ToList();
     });
+  }
+
+  private void PreviousCampaignPage()
+  {
+    if(HasPreviousCampaignPage)
+      _campaignPage--;
+  }
+
+  private void NextCampaignPage()
+  {
+    if(HasNextCampaignPage)
+      _campaignPage++;
   }
 
   private void SelectCampaign(string summaryId)
@@ -325,6 +360,11 @@ else
 
     try
     {
+      var summary = await AutomationClient.GetCampaignSummary(
+        new CampaignExecutionSummaryRequest { SummaryId = pendingCampaignId },
+        null);
+      cancellationToken.ThrowIfCancellationRequested();
+
       var datasets = await Task.Run(
         async () => await DatasetGenerator.GenerateAsync(pendingCampaignId, cancellationToken).ConfigureAwait(false),
         cancellationToken);
@@ -332,6 +372,7 @@ else
       cancellationToken.ThrowIfCancellationRequested();
       _datasets = datasets;
       _appliedCampaignId = pendingCampaignId;
+      UpdateCampaignDetails(summary);
       _selectedDatasetTabIndex = 0;
       _hasApplied = true;
     }
@@ -403,6 +444,22 @@ else
   private string GetExportCampaignName()
   {
     return string.IsNullOrWhiteSpace(_appliedCampaignId) ? "data" : _appliedCampaignId;
+  }
+
+  private void UpdateCampaignDetails(CampaignExecutionSummary summary)
+  {
+    if(_campaigns is null)
+      return;
+
+    var campaignIndex = _campaigns.FindIndex(campaign => campaign.SummaryId == summary.UniqueId);
+    if(campaignIndex < 0)
+      return;
+
+    _campaigns[campaignIndex] = _campaigns[campaignIndex] with
+    {
+      Tags = summary.CampaignTags ?? string.Empty,
+      Notes = summary.CampaignNotes ?? string.Empty
+    };
   }
 
   private static string GetTableName(int index, AresDataset dataset)

@@ -37,7 +37,7 @@ else
         <div class="panel-toolbar">
           <div>
             <h4>Campaigns</h4>
-            <span>@FilteredCampaignCount shown</span>
+            <span>@DisplayedCampaignCount of @FilteredCampaignCount shown</span>
           </div>
           <button type="button" class="clear-button" @onclick="ClearSelection" disabled="@(string.IsNullOrWhiteSpace(_selectedCampaignId) || _loadingCampaign)">
             Clear
@@ -46,7 +46,7 @@ else
 
         <label class="search-field">
           <RadzenIcon Icon="search" />
-          <input type="search" placeholder="Filter campaigns" disabled="@_loadingCampaign" @bind="_filterText" @bind:event="oninput" />
+          <input type="search" placeholder="Filter campaigns" disabled="@_loadingCampaign" @bind="FilterText" @bind:event="oninput" />
         </label>
 
         @if(!_campaigns.Any())
@@ -66,7 +66,7 @@ else
         else
         {
           <ul class="campaign-list">
-            @foreach(var campaign in FilteredCampaigns)
+            @foreach(var campaign in PagedFilteredCampaigns)
             {
               var isSelected = campaign.SummaryId == _selectedCampaignId;
 
@@ -82,6 +82,19 @@ else
               </li>
             }
           </ul>
+        }
+
+        @if(HasCampaignPages)
+        {
+          <div class="campaign-pagination" aria-label="Campaign pages">
+            <button type="button" class="icon-button" title="Previous page" aria-label="Previous page" @onclick="PreviousCampaignPage" disabled="@(!HasPreviousCampaignPage || _loadingCampaign)">
+              <RadzenIcon Icon="chevron_left" />
+            </button>
+            <span>Page @_campaignPage of @CampaignPageCount</span>
+            <button type="button" class="icon-button" title="Next page" aria-label="Next page" @onclick="NextCampaignPage" disabled="@(!HasNextCampaignPage || _loadingCampaign)">
+              <RadzenIcon Icon="chevron_right" />
+            </button>
+          </div>
         }
 
         <div class="selection-actions">
@@ -237,18 +250,36 @@ else
   private int _historyIndex;
   private bool _loadingCampaign;
   private CancellationTokenSource? _loadCancellation;
-  private bool _disposed;
   private IReadOnlyList<VisualizationDisplayItem> _visualizations = [];
+  private int _campaignPage = 1;
+
+  private const int CampaignPageSize = 25;
 
   private int CampaignCount => _campaigns?.Count ?? 0;
   private int VisualizationCount => _visualizations.Count;
   private int FilteredCampaignCount => FilteredCampaigns.Count();
+  private int DisplayedCampaignCount => PagedFilteredCampaigns.Count();
   private bool CanApply => !string.IsNullOrWhiteSpace(_selectedCampaignId) && !_loadingCampaign;
   private CampaignDisplayItem? AppliedCampaign => _campaigns?.FirstOrDefault(campaign => campaign.SummaryId == _appliedCampaignId);
   private VisualizationDisplayItem? SelectedVisualization => _visualizations.FirstOrDefault(visualization => visualization.AllocationId == _selectedVisualizationId);
   private VisualizationHistoryEntry? SelectedHistoryEntry => SelectedVisualization?.History.ElementAtOrDefault(Math.Clamp(_historyIndex, 0, Math.Max(0, (SelectedVisualization?.History.Count ?? 1) - 1)));
   private bool CanMoveBackward => _historyIndex > 0;
   private bool CanMoveForward => SelectedVisualization is not null && _historyIndex < SelectedVisualization.History.Count - 1;
+  private bool HasCampaignPages => FilteredCampaignCount > CampaignPageSize;
+  private int CampaignPageCount => Math.Max(1, (int)Math.Ceiling(FilteredCampaignCount / (double)CampaignPageSize));
+  private bool HasPreviousCampaignPage => _campaignPage > 1;
+  private bool HasNextCampaignPage => _campaignPage < CampaignPageCount;
+  private IEnumerable<CampaignDisplayItem> PagedFilteredCampaigns => FilteredCampaigns.Skip((_campaignPage - 1) * CampaignPageSize).Take(CampaignPageSize);
+
+  private string? FilterText
+  {
+    get => _filterText;
+    set
+    {
+      _filterText = value;
+      _campaignPage = 1;
+    }
+  }
 
   private IEnumerable<CampaignDisplayItem> FilteredCampaigns
   {
@@ -275,22 +306,30 @@ else
     await Task.Run(async () =>
     {
       var response = await AutomationClient.GetAvailableCampaignExecutionSummaries(new Empty(), null);
-      var campaigns = await Task.WhenAll(response.AvailableCampaignSummaries.Select(async campaign =>
-      {
-        var summary = await AutomationClient.GetCampaignSummary(new CampaignExecutionSummaryRequest { SummaryId = campaign.SummaryId }, null);
-
-        return new CampaignDisplayItem(
+      _campaigns = response.AvailableCampaignSummaries
+        .Select(campaign => new CampaignDisplayItem(
           campaign.SummaryId,
           string.IsNullOrWhiteSpace(campaign.CampaignName) ? campaign.SummaryId : campaign.CampaignName,
           campaign.CompletionTime.ToReadableTimestamp(),
           campaign.CompletionTime.ToDateTime(),
           (int)campaign.NumExperiments,
-          summary.CampaignTags ?? string.Empty,
-          summary.CampaignNotes ?? string.Empty);
-      }));
-
-      _campaigns = campaigns.OrderByDescending(campaign => campaign.CompletionTime).ToList();
+          string.Empty,
+          string.Empty))
+        .OrderByDescending(campaign => campaign.CompletionTime)
+        .ToList();
     });
+  }
+
+  private void PreviousCampaignPage()
+  {
+    if(HasPreviousCampaignPage)
+      _campaignPage--;
+  }
+
+  private void NextCampaignPage()
+  {
+    if(HasNextCampaignPage)
+      _campaignPage++;
   }
 
   private void SelectCampaign(string summaryId)
@@ -331,13 +370,12 @@ else
 
     try
     {
-      var summary = await AutomationClient.GetCampaignSummary(
-        new CampaignExecutionSummaryRequest { SummaryId = _selectedCampaignId },
-        null);
+      var summary = await AutomationClient.GetCampaignSummary(new CampaignExecutionSummaryRequest { SummaryId = _selectedCampaignId }, null);
       cancellationToken.ThrowIfCancellationRequested();
 
       _selectedCampaign = summary;
       _appliedCampaignId = _selectedCampaignId;
+      UpdateCampaignDetails(summary);
       _visualizations = BuildVisualizations(summary);
       _selectedVisualizationId = _visualizations.FirstOrDefault()?.AllocationId;
     }
@@ -400,6 +438,22 @@ else
     }).ToArray();
   }
 
+  private void UpdateCampaignDetails(CampaignExecutionSummary summary)
+  {
+    if(_campaigns is null)
+      return;
+
+    var campaignIndex = _campaigns.FindIndex(campaign => campaign.SummaryId == summary.UniqueId);
+    if(campaignIndex < 0)
+      return;
+
+    _campaigns[campaignIndex] = _campaigns[campaignIndex] with
+    {
+      Tags = summary.CampaignTags ?? string.Empty,
+      Notes = summary.CampaignNotes ?? string.Empty
+    };
+  }
+
   private void SelectVisualization(string allocationId)
   {
     if(_selectedVisualizationId == allocationId)
@@ -434,7 +488,6 @@ else
 
   public void Dispose()
   {
-    _disposed = true;
     _loadCancellation?.Cancel();
     _loadCancellation?.Dispose();
   }
