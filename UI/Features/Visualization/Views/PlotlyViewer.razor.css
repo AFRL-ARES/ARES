@@ -1,0 +1,7 @@
+.plotly-viewer-wrapper {
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid var(--rz-border-color, rgba(148, 163, 184, 0.2));
+  border-radius: 8px;
+  background: var(--rz-base-background-color, var(--rz-card-background-color, #151b24));
+}
