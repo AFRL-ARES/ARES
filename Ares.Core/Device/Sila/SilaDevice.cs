@@ -280,10 +280,7 @@ public sealed class SilaDevice : AresDevice, IAsyncDisposable
     };
   }
 
-  private static DynamicRequest BuildRequest(
-      DynamicRequest request,
-      FeatureCommand command,
-      IEnumerable<DeviceCommandArgument> arguments)
+  private static DynamicRequest BuildRequest(DynamicRequest request, FeatureCommand command, IEnumerable<DeviceCommandArgument> arguments)
   {
     var requestValue = new DynamicObject();
 

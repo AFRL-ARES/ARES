@@ -1,7 +1,7 @@
 @using Ares.Datamodel
 @using Ares.Datamodel.Extensions
 
-@if(Schema?.Type is AresDataType.String)
+@if(Schema?.Type is AresDataType.String || Schema?.Type is AresDataType.Any)
   {
     <RadzenFormField Text="@GetFormFieldName()" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%">
       @if(HasStringChoices)
@@ -173,7 +173,6 @@ else if(Schema?.Type is AresDataType.NumberArray)
             _structValues[fieldKey] = AresValueHelper.CreateDefault(fieldSchema.Type);
           }
 
-          @* RECURSIVE CALL: The component renders itself! *@
           <AresValueDesigner 
               Name="@(string.IsNullOrEmpty(fieldSchema.Description) ? fieldKey : fieldSchema.Description)"
               Schema="@fieldSchema"
@@ -227,7 +226,6 @@ else if(Schema?.Type is AresDataType.NumberArray)
     </RadzenFieldset>
   }
 
-
   else
   {
     <span>Unsupported type: @Schema?.Type</span>
@@ -258,6 +256,7 @@ else if(Schema?.Type is AresDataType.NumberArray)
   private List<bool> _boolArray = [];
   private Dictionary<string, AresValue> _structValues = new();
   private List<AresValue> _listValues = [];
+  private AresDataType _currentValueType;
 
   // Helper properties to check for available choices
   private bool HasStringChoices => Schema?.StringChoices?.Strings?.Any() ?? false;
@@ -329,12 +328,14 @@ else if(Schema?.Type is AresDataType.NumberArray)
   // Handler for single string, which is already correctly bound
   private Task OnChanged(object? _ = null)
   {
+    _currentValueType = AresDataType.String;
     return UpdateAresValue();
   }
 
   // Handler for single number from RadzenDropDown (takes object)
   private Task OnNumberChanged(object value)
   {
+    _currentValueType = AresDataType.Float;
     _numberValue = (double)value;
     return UpdateAresValue();
   }
@@ -342,6 +343,7 @@ else if(Schema?.Type is AresDataType.NumberArray)
   // Handler for single double from RadzenNumeric
   private Task OnNumericChanged(double value)
   {
+    _currentValueType = AresDataType.Float;
     _numberValue = value;
     return UpdateAresValue();
   }
@@ -349,12 +351,14 @@ else if(Schema?.Type is AresDataType.NumberArray)
   // Handler for a single integer value from RadzenNumberic
   private Task OnIntNumberChanged(int value)
   {
+    _currentValueType = AresDataType.Int;
     _intValue = value;
     return UpdateAresValue();
   }
 
   private Task OnIntChanged(object value)
   {
+    _currentValueType = AresDataType.Int;
     _intValue = Convert.ToInt32(value);
     return UpdateAresValue();
   }
@@ -362,23 +366,15 @@ else if(Schema?.Type is AresDataType.NumberArray)
   // Handler for single boolean
   private Task OnBoolChanged(bool value)
   {
+    _currentValueType = AresDataType.Boolean;
     _boolValue = value;
-    return UpdateAresValue();
-  }
-
-  // Handler for bool array items
-  private Task OnBoolArrayItemChanged(bool value, int index)
-  {
-    if (index >= 0 && index < _boolArray.Count)
-    {
-      _boolArray[index] = value;
-    }
     return UpdateAresValue();
   }
 
   // Handler for string array items
   private Task OnStringArrayItemChanged(object value, int index)
   {
+    _currentValueType = AresDataType.StringArray;
     if (index >= 0 && index < _stringArray.Count)
     {
       _stringArray[index] = (string)value;
@@ -389,6 +385,7 @@ else if(Schema?.Type is AresDataType.NumberArray)
   // Handler for number array items
   private Task OnNumberArrayItemChanged(object value, int index)
   {
+    _currentValueType = AresDataType.NumberArray;
     if (index >= 0 && index < _numberArray.Count)
     {
       _numberArray[index] = Convert.ToDouble(value);
@@ -451,19 +448,86 @@ else if(Schema?.Type is AresDataType.NumberArray)
         }
         aresValue.StructValue = aresStruct;
         break;
-        
+
       case AresDataType.List:
         var aresList = new AresValueList();
         aresList.Values.AddRange(_listValues);
         aresValue.ListValue = aresList;
+        break;
+
+      case AresDataType.Any:
+        HandleAnyTypeAssignment(aresValue);
         break;
     }
     // Invoke the callback with the newly constructed AresValue object.
     return ValueEditCallback?.Invoke(aresValue) ?? Task.CompletedTask;
   }
 
+  private void HandleAnyTypeAssignment(AresValue aresValue)
+  {
+    switch(_currentValueType)
+    {
+      case AresDataType.String:
+        aresValue.StringValue = _stringValue;
+        break;
+
+      case AresDataType.Number:
+        aresValue.NumberValue = _numberValue;
+        break;
+
+      case AresDataType.Float:
+        aresValue.FloatValue = _numberValue;
+        break;
+
+      case AresDataType.Int:
+        aresValue.IntValue = _intValue;
+        break;
+
+      case AresDataType.Quantity:
+        aresValue.QuantityValue = new QuantityValue
+        {
+          Scalar = _numberValue,
+          Type = Schema?.QuantitySchema?.QuantityType ?? QuantityType.Unspecified,
+          Unit = Unit ?? Schema?.QuantitySchema?.BoundsUnit ?? string.Empty
+        };
+        break;
+
+      case AresDataType.Boolean:
+        aresValue.BoolValue = _boolValue;
+        break;
+
+      case AresDataType.StringArray:
+        var strArray = new StringArray();
+        strArray.Strings.AddRange(_stringArray);
+        aresValue.StringArrayValue = strArray;
+        break;
+
+      case AresDataType.NumberArray:
+        var numArray = new NumberArray();
+        numArray.Numbers.AddRange(_numberArray);
+        aresValue.NumberArrayValue = numArray;
+        break;
+
+      case AresDataType.Struct:
+        var aresStruct = new AresStruct();
+        foreach(var kvp in _structValues)
+        {
+          aresStruct.Fields[kvp.Key] = kvp.Value;
+        }
+        aresValue.StructValue = aresStruct;
+        break;
+
+      case AresDataType.List:
+        var aresList = new AresValueList();
+        aresList.Values.AddRange(_listValues);
+        aresValue.ListValue = aresList;
+        break;
+    }
+  }
+
   private void AddStringItem()
   {
+    _currentValueType = AresDataType.String;
     // If there are string choices, add the first one by default. Otherwise, add an empty string.
     _stringArray.Add(HasStringChoices && Schema is not null ? Schema.StringChoices.Strings.First() : "");
     UpdateAresValue();
