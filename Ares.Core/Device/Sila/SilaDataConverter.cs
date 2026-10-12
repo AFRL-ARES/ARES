@@ -34,7 +34,7 @@ public static class SilaDataConverter
       AresDataType.List => CreateListType(CreateBasicType(BasicType.Any)),
       AresDataType.Struct => CreateStructureType([]),
       AresDataType.ByteArray => CreateBasicType(BasicType.Binary),
-      AresDataType.Any => CreateBasicType(BasicType.Any),
+      AresDataType.Any => CreateAnyStructureType(),
       AresDataType.Unit => CreateUnitStructureType(),
       AresDataType.Function => CreateFunctionStructureType(),
       AresDataType.Quantity => CreateQuantityStructureType(),
@@ -47,15 +47,10 @@ public static class SilaDataConverter
     ArgumentNullException.ThrowIfNull(schema);
 
     if(schema.Type == AresDataType.Struct)
-    {
-      return CreateStructureType(
-        schema.StructSchema?.Fields.Select(kvp => CreateElement(kvp.Key, kvp.Value)) ?? []);
-    }
+      return CreateStructureType(schema.StructSchema?.Fields.Select(kvp => CreateElement(kvp.Key, kvp.Value)) ?? []);
 
     if(schema.Type == AresDataType.List)
-    {
       return CreateListType(ToSilaDataType(schema.ListElementSchema ?? AresSchemaBuilder.Entry(AresDataType.Any).Build()));
-    }
 
     if(schema.Type == AresDataType.Unit)
       return CreateUnitStructureType();
@@ -81,16 +76,14 @@ public static class SilaDataConverter
     return dataType.Item switch
     {
       BasicType.String => AresSchemaBuilder.Entry(AresDataType.String).Build(),
-      // TODO fix when we have int/float support in ARES
-      BasicType.Integer => AresSchemaBuilder.Entry(AresDataType.Number).Build(),
-      BasicType.Real => AresSchemaBuilder.Entry(AresDataType.Number).Build(),
+      BasicType.Integer => AresSchemaBuilder.Entry(AresDataType.Int).Build(),
+      BasicType.Real => AresSchemaBuilder.Entry(AresDataType.Float).Build(),
       BasicType.Boolean => AresSchemaBuilder.Entry(AresDataType.Boolean).Build(),
       BasicType.Binary => AresSchemaBuilder.Entry(AresDataType.ByteArray).Build(),
       BasicType.Any => AresSchemaBuilder.Entry(AresDataType.Any).Build(),
-      // TODO fix when we have proper date types in ARES
-      BasicType.Date => AresSchemaBuilder.Entry(AresDataType.String).WithDescription("Converted from SiLA Date").Build(),
-      BasicType.Time => AresSchemaBuilder.Entry(AresDataType.String).WithDescription("Converted from SiLA Time").Build(),
-      BasicType.Timestamp => AresSchemaBuilder.Entry(AresDataType.String).WithDescription("Converted from SiLA Timestamp").Build(),
+      BasicType.Date => AresSchemaBuilder.Entry(AresDataType.Timestamp).WithDescription("Converted from SiLA Date").Build(),
+      BasicType.Time => AresSchemaBuilder.Entry(AresDataType.Timestamp).WithDescription("Converted from SiLA Time").Build(),
+      BasicType.Timestamp => AresSchemaBuilder.Entry(AresDataType.Timestamp).WithDescription("Converted from SiLA Timestamp").Build(),
       ListType listType => CreateAresListSchema(listType),
       StructureType structureType => CreateAresStructSchema(structureType),
       ConstrainedType constrainedType => ApplySilaConstraints(ToAresValueSchema(constrainedType.DataType), constrainedType.Constraints),
@@ -105,9 +98,7 @@ public static class SilaDataConverter
 
     var result = new DynamicObject();
     foreach(var field in value.Fields)
-    {
       result.Elements.Add(ToSilaProperty(field.Key, field.Value));
-    }
 
     return result;
   }
@@ -451,6 +442,13 @@ public static class SilaDataConverter
   private static DataTypeType CreateBasicType(BasicType basicType)
   {
     return new DataTypeType { Item = basicType };
+  }
+
+  private static DataTypeType CreateAnyStructureType()
+  {
+    //TODO; Implement
+
+    return new DataTypeType { Item = BasicType.Any };
   }
 
   private static DataTypeType CreateListType(DataTypeType itemType)
