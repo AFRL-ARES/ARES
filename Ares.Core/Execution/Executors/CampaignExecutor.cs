@@ -154,7 +154,15 @@ public class CampaignExecutor : ICampaignExecutor
 
   private async Task<string> InitializeCampaign(DateTime startTime)
   {
-    var campaignPath = await CampaignOutputHelper.InitializeOutputDirectories(Template, startTime);
+    _generalSettingsConfig = await _settingsManager.GetAresGeneralSettings();
+    string campaignPath;
+
+    if(_generalSettingsConfig?.NameFoldersWithLocalTime ?? false)
+      campaignPath = await CampaignOutputHelper.InitializeOutputDirectories(Template, startTime.ToLocalTime());
+
+    else
+      campaignPath = await CampaignOutputHelper.InitializeOutputDirectories(Template, startTime);
+
     _logger.LogInformation("Campaign started with output directory at: {Path}", campaignPath);
 
     if(!string.IsNullOrEmpty(ExecutionNotes))
@@ -177,7 +185,6 @@ public class CampaignExecutor : ICampaignExecutor
     _logger.LogInformation("Analyzer selected {AnalyzerName}", analyzer?.Name ?? "NO ANALYZER");
     await CampaignOutputHelper.OutputVersionFile(campaignPath, Template, analyzer);
 
-    _generalSettingsConfig = await _settingsManager.GetAresGeneralSettings();
     _experimentCount = 0;
     return campaignPath;
   }

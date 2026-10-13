@@ -29,7 +29,8 @@ public class SystemSettingsManager : ISystemSettingsManager
         CommandRetryLimit = 1,
         DisplayCompatabilityWarnings = true,
         DisplayDataCollectionWidget = true,
-        HideDemoModeIntro = false
+        HideDemoModeIntro = false,
+        NameFoldersWithLocalTime = false
       };
 
       context.GeneralSettingsConfigs.Add(newGeneralSettingsConfig);
@@ -145,6 +146,7 @@ public class SystemSettingsManager : ISystemSettingsManager
       existingConfig.DisplayCompatabilityWarnings = config.DisplayCompatabilityWarnings;
       existingConfig.DisplayDataCollectionWidget = config.DisplayDataCollectionWidget;
       existingConfig.HideDemoModeIntro = config.HideDemoModeIntro;
+      existingConfig.NameFoldersWithLocalTime = config.NameFoldersWithLocalTime;
 
       await context.SaveChangesAsync();
     }
