@@ -17,16 +17,10 @@ public sealed class SilaDevice : AresDevice, IAsyncDisposable
   private readonly ServerData _serverData;
   private readonly BehaviorSubject<AresStruct> _stateSubject = new(new AresStruct());
   private readonly ConcurrentDictionary<string, AresValue> _currentPropertyValues = new();
-
   private DeviceCommandDescriptor[] _commands = [];
   private CancellationTokenSource _stateStreamCts = new();
   private DevicePollingSettings _pollingSettings = new();
   private Task? _monitoringTask;
-
-  public string Address { get; private set; }
-  private IEnumerable<Feature> DeviceFeatures { get; set; } = [];
-
-  public override IObservable<AresStruct> StateStream => _stateSubject.AsObservable();
 
   public SilaDevice(ServerData serverData, DeviceConnectionInfo connectionInfo, SilaClient client) : base(connectionInfo)
   {
@@ -60,11 +54,12 @@ public sealed class SilaDevice : AresDevice, IAsyncDisposable
     var schema = new AresStructSchema();
     foreach(var feature in DeviceFeatures)
     {
+      var typeResolver = CreateTypeResolver(feature);
       foreach(var property in (feature.Items ?? []).OfType<FeatureProperty>())
       {
         var key = $"{feature.Identifier}.{property.Identifier}";
         var fieldSchema = property.DataType is not null
-            ? SilaDataConverter.ToAresValueSchema(property.DataType)
+            ? SilaDataConverter.ToAresValueSchema(property.DataType, typeResolver)
             : AresSchemaBuilder.Entry(AresDataType.Any).Build();
 
         if(!string.IsNullOrWhiteSpace(property.Description))
@@ -160,7 +155,7 @@ public sealed class SilaDevice : AresDevice, IAsyncDisposable
   private void UpdatePropertyState(Feature feature, FeatureProperty property, DynamicObjectProperty value)
   {
     var key = $"{feature.Identifier}.{property.Identifier}";
-    var aresValue = SilaDataConverter.ToAresValue(value);
+    var aresValue = SilaDataConverter.ToAresValue(value, CreateTypeResolver(feature));
     _currentPropertyValues[key] = aresValue;
 
     var newState = new AresStruct();
@@ -172,10 +167,9 @@ public sealed class SilaDevice : AresDevice, IAsyncDisposable
     _stateSubject.OnNext(newState);
   }
 
+  // Currently SiLA doesn't really provide a mechanism to mimic this ARES feature
   public override Task EnterSafeMode(CancellationToken ct)
-  {
-    return Task.CompletedTask;
-  }
+    =>  Task.CompletedTask;
 
   public override async Task<CommandResult> ExecuteCommand(string command, List<DeviceCommandArgument> arguments, CancellationToken token)
   {
@@ -196,30 +190,30 @@ public sealed class SilaDevice : AresDevice, IAsyncDisposable
         if(featureCommand.IntermediateResponse?.Length > 0)
         {
           var observableClient = new IntermediateObservableCommandClient(featureCommand, context);
-          var request = BuildRequest(observableClient.CreateRequest(), featureCommand, arguments);
+          var request = BuildRequest(observableClient.CreateRequest(), featureCommand, arguments, context.ResolveType);
           var observableCommand = observableClient.Invoke(request);
 
           using var cancellationRegistration = token.Register(observableCommand.Cancel);
           var response = await observableCommand.Response.WaitAsync(token);
-          return CreateSuccessResult(featureCommand, response);
+          return CreateSuccessResult(featureCommand, response, context.ResolveType);
         }
         else
         {
           var trackedObservableClient = new ObservableCommandClient(featureCommand, context);
-          var trackedRequest = BuildRequest(trackedObservableClient.CreateRequest(), featureCommand, arguments);
+          var trackedRequest = BuildRequest(trackedObservableClient.CreateRequest(), featureCommand, arguments, context.ResolveType);
           var trackedObservableCommand = trackedObservableClient.Invoke(trackedRequest);
 
           using var trackedCancellationRegistration = token.Register(trackedObservableCommand.Cancel);
           var trackedResponse = await trackedObservableCommand.Response.WaitAsync(token);
-          return CreateSuccessResult(featureCommand, trackedResponse);
+          return CreateSuccessResult(featureCommand, trackedResponse, context.ResolveType);
         }
       }
 
       var nonObservableClient = new NonObservableCommandClient(featureCommand, context);
-      var nonObservableRequest = BuildRequest(nonObservableClient.CreateRequest(), featureCommand, arguments);
+      var nonObservableRequest = BuildRequest(nonObservableClient.CreateRequest(), featureCommand, arguments, context.ResolveType);
       var nonObservableResponse = await nonObservableClient.InvokeAsync(nonObservableRequest).WaitAsync(token);
 
-      return CreateSuccessResult(featureCommand, nonObservableResponse);
+      return CreateSuccessResult(featureCommand, nonObservableResponse, context.ResolveType);
     }
     catch(OperationCanceledException)
     {
@@ -231,11 +225,14 @@ public sealed class SilaDevice : AresDevice, IAsyncDisposable
     }
   }
 
-  public override Task<AresStruct> GetSettings() => Task.FromResult(new AresStruct());
+  public override Task<AresStruct> GetSettings() 
+    => Task.FromResult(new AresStruct());
 
-  public override Task<AresStruct> GetState() => Task.FromResult(_stateSubject.Value);
+  public override Task<AresStruct> GetState() 
+    => Task.FromResult(_stateSubject.Value);
 
-  public override Task UpdateSettings(AresStruct settings) => Task.CompletedTask;
+  public override Task UpdateSettings(AresStruct settings) 
+    => Task.CompletedTask;
 
   protected override Task<List<DeviceCommandDescriptor>> BuildCommandDescriptorsAsync()
   {
@@ -271,16 +268,18 @@ public sealed class SilaDevice : AresDevice, IAsyncDisposable
 
   private static DeviceCommandDescriptor BuildCommandDescriptor(Feature feature, FeatureCommand command)
   {
+    var typeResolver = CreateTypeResolver(feature);
+
     return new DeviceCommandDescriptor
     {
       Name = GetCommandDescriptorName(feature, command),
       Description = command.Description ?? string.Empty,
-      InputSchema = BuildStructSchema(command.Parameter),
-      OutputSchema = BuildOutputSchema(command.Response)
+      InputSchema = BuildStructSchema(command.Parameter, typeResolver),
+      OutputSchema = BuildOutputSchema(command.Response, typeResolver)
     };
   }
 
-  private static DynamicRequest BuildRequest(DynamicRequest request, FeatureCommand command, IEnumerable<DeviceCommandArgument> arguments)
+  private static DynamicRequest BuildRequest(DynamicRequest request, FeatureCommand command, IEnumerable<DeviceCommandArgument> arguments, Func<string, DataTypeType?> typeResolver)
   {
     var requestValue = new DynamicObject();
 
@@ -292,7 +291,12 @@ public sealed class SilaDevice : AresDevice, IAsyncDisposable
 
       requestValue.Elements.Add(new DynamicObjectProperty(parameter)
       {
-        Value = SilaDataConverter.ToSilaProperty(parameter.Identifier, argument.ArgValue).Value
+        Value = SilaDataConverter.ToSilaProperty(
+          parameter.Identifier,
+          argument.ArgValue,
+          parameter.DataType,
+          typeResolver,
+          parameter.Description).Value
       });
     }
 
@@ -301,27 +305,23 @@ public sealed class SilaDevice : AresDevice, IAsyncDisposable
     return request;
   }
 
-  private static CommandResult CreateSuccessResult(FeatureCommand command, DynamicObjectProperty? response)
-  {
-    return new CommandResult
+  private static CommandResult CreateSuccessResult(FeatureCommand command, DynamicObjectProperty? response, Func<string, DataTypeType?> typeResolver)
+    => new CommandResult
     {
       Success = true,
       Result = HasResponse(command)
             ? response is not null
-                ? SilaDataConverter.ToAresValue(response)
+                ? SilaDataConverter.ToAresValue(response, typeResolver)
                 : AresValueHelper.CreateNull()
             : AresValueHelper.CreateUnit()
     };
-  }
 
   private static CommandResult CreateFailedResult(string error)
-  {
-    return new CommandResult
+    => new CommandResult
     {
       Success = false,
       Error = error
     };
-  }
 
   private bool TryResolveCommand(string descriptorCommandName, out Feature feature, out FeatureCommand command)
   {
@@ -343,19 +343,19 @@ public sealed class SilaDevice : AresDevice, IAsyncDisposable
     return false;
   }
 
-  private static string GetCommandDescriptorName(Feature feature, FeatureCommand command) => $"{feature.Identifier}.{command.Identifier}";
+  private static string GetCommandDescriptorName(Feature feature, FeatureCommand command) 
+    => $"{feature.Identifier}.{command.Identifier}";
 
-  private static bool HasResponse(FeatureCommand command) => command.Response?.Length > 0;
+  private static bool HasResponse(FeatureCommand command) 
+    => command.Response?.Length > 0;
 
-  private static AresStructSchema BuildStructSchema(IEnumerable<SiLAElement>? elements)
+  private static AresStructSchema BuildStructSchema(IEnumerable<SiLAElement>? elements, Func<string, DataTypeType?> typeResolver)
   {
     var schema = new AresStructSchema();
 
     foreach(var element in elements ?? [])
     {
-      var fieldSchema = element.DataType is not null
-          ? SilaDataConverter.ToAresValueSchema(element.DataType)
-          : AresSchemaBuilder.Entry(AresDataType.Any).Build();
+      var fieldSchema = element.DataType is not null ? SilaDataConverter.ToAresValueSchema(element.DataType, typeResolver) : AresSchemaBuilder.Entry(AresDataType.Any).Build();
 
       if(!string.IsNullOrWhiteSpace(element.Description))
         fieldSchema.Description = element.Description;
@@ -366,14 +366,24 @@ public sealed class SilaDevice : AresDevice, IAsyncDisposable
     return schema;
   }
 
-  private static AresValueSchema? BuildOutputSchema(IEnumerable<SiLAElement>? responses)
+  private static AresValueSchema? BuildOutputSchema(IEnumerable<SiLAElement>? responses, Func<string, DataTypeType?> typeResolver)
   {
-    var responseSchema = BuildStructSchema(responses);
+    var responseSchema = BuildStructSchema(responses, typeResolver);
     if(responseSchema.Fields.Count == 0)
       return null;
 
-    return AresSchemaBuilder.Entry(AresDataType.Struct)
-        .WithStructSchema(responseSchema)
-        .Build();
+    return AresSchemaBuilder.Entry(AresDataType.Struct).WithStructSchema(responseSchema).Build();
   }
+
+  private static Func<string, DataTypeType?> CreateTypeResolver(Feature feature)
+  {
+    return typeName => (feature.Items ?? [])
+      .OfType<SiLAElement>()
+      .FirstOrDefault(element => string.Equals(element.Identifier, typeName, StringComparison.Ordinal))
+      ?.DataType;
+  }
+
+  public string Address { get; private set; }
+  private IEnumerable<Feature> DeviceFeatures { get; set; } = [];
+  public override IObservable<AresStruct> StateStream => _stateSubject.AsObservable();
 }
