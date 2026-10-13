@@ -4,7 +4,6 @@ using Ares.Datamodel;
 using Ares.Datamodel.Device;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using ProtoBuf.Meta;
 using System.Net;
 using Tecan.Sila2;
 
@@ -97,11 +96,9 @@ public class SilaDeviceManager : ISilaDeviceManager
     return device;
   }
 
-
   public Task<IEnumerable<ServerData>> UpdateAvailableSilaDevices()
     => Task.Run(_silaClient.DiscoverServers);
   
-
   private SilaDevice ConfigToDevice(SilaDeviceConfig config, ServerData data)
   {
     var deviceInfo = new DeviceConnectionInfo()

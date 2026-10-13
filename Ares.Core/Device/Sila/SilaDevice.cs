@@ -309,11 +309,7 @@ public sealed class SilaDevice : AresDevice, IAsyncDisposable
     => new CommandResult
     {
       Success = true,
-      Result = HasResponse(command)
-            ? response is not null
-                ? SilaDataConverter.ToAresValue(response, typeResolver)
-                : AresValueHelper.CreateNull()
-            : AresValueHelper.CreateUnit()
+      Result = HasResponse(command) ? response is not null ? SilaDataConverter.ToAresValue(response, typeResolver) : AresValueHelper.CreateNull() : AresValueHelper.CreateUnit()
     };
 
   private static CommandResult CreateFailedResult(string error)
