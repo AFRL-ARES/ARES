@@ -8,10 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="Grpc.AspNetCore" Version="2.80.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="C:\ARES\ARES-datamodel\dotnet\ARES.Datamodel\ARES.Datamodel.csproj" />
-  </ItemGroup>
+		<PackageReference Include="ARES.Datamodel" Version="0.40.0" />
+	</ItemGroup>
 
 </Project>
