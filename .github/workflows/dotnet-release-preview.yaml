@@ -9,6 +9,7 @@ env:
   DEMO_PLANNER_PROJECT_FILE: 'DemoRemotePlanner/DemoRemotePlanner.csproj'
   DEMO_ANALYZER_PROJECT_FILE: 'DemoRemoteAnalyzer/DemoRemoteAnalyzer.csproj'
   DEMO_DEVICE_PROJECT_FILE: 'DemoRemoteDevice/DemoRemoteDevice.csproj'
+  DEMO_VISUALIZER_PROJECT_FILE: 'DemoRemoteVisualizer/DemoRemoteVisualizer.csproj'
   OUTPUT_PATH: 'publish'
 
 jobs:
@@ -94,6 +95,11 @@ jobs:
       run: |
         echo "Publishing Demo Remote Device for ${{ matrix.os_name_tag }} (${{ matrix.runtime_id }})"
         dotnet publish ${{ env.DEMO_DEVICE_PROJECT_FILE }} --configuration Release --output ${{ env.OUTPUT_PATH }}/demo/DemoRemoteDevice -r ${{ matrix.runtime_id }} --self-contained true -p:UseAppHost=true -p:PublishSingleFile=true
+
+    - name: Publish Demo Visualizer Service
+      run: |
+        echo "Publishing Demo Visualizer Service for ${{ matrix.os_name_tag }} (${{ matrix.runtime_id }})"
+        dotnet publish ${{ env.DEMO_VISUALIZER_PROJECT_FILE }} --configuration Release --output ${{ env.OUTPUT_PATH }}/demo/DemoRemoteDevice -r ${{ matrix.runtime_id }} --self-contained true -p:UseAppHost=true -p:PublishSingleFile=true
 
     - name: Copy Driver Plugins to ARES Output
       shell: bash
