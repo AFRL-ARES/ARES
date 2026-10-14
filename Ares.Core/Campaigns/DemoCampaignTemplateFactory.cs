@@ -347,7 +347,7 @@ internal static class DemoCampaignTemplateFactory
           OutputVarName = "growth-start-time",
           SystemCommand = new SystemCommand { Operation = (SystemOperation)6 }
         },
-        // 5: System Command - Delay (10s)
+        // 5: System Command - Sleep (5s)
         new CommandTemplate
         {
           UniqueId = "0c453598-1640-4e22-be7b-e4568c8a5a8b",
@@ -355,7 +355,7 @@ internal static class DemoCampaignTemplateFactory
           SystemCommand = new SystemCommand { Operation = (SystemOperation)2 },
           ArgumentBindings = 
           { 
-            CreateLiteralParameter("ccca8b27-201f-4ca2-b087-c433a12e1430", "54f1d894-cb53-4b0b-9dec-c324583670db", "Duration", 10, AresDataType.Number, notPlannable: true) 
+            CreateLiteralParameter("ccca8b27-201f-4ca2-b087-c433a12e1430", "54f1d894-cb53-4b0b-9dec-c324583670db", "Duration", 5, AresDataType.Number, notPlannable: true) 
           }
         },
         // 6: System Command - GetTime (growth-stop-time)

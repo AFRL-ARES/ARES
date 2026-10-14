@@ -1,4 +1,4 @@
-namespace Ares.Core.Visualization;
+namespace Ares.Core.Visualization.Repos;
 
 public interface IVisualizerRepo
 {

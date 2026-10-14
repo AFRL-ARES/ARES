@@ -1,7 +1,7 @@
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Visualizing;
 
-namespace Ares.Core.Visualization;
+namespace Ares.Core.Visualization.Managers;
 
 public interface IRemoteVisualizerManager
 {

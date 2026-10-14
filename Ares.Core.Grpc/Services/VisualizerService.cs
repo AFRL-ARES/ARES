@@ -3,6 +3,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Ares.Core.Exceptions;
 using Ares.Core.Visualization;
+using Ares.Core.Visualization.Managers;
+using Ares.Core.Visualization.Repos;
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Connection;
@@ -10,13 +12,22 @@ using Ares.Datamodel.Visualizing;
 using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
+using Microsoft.Extensions.Logging;
 
 namespace Ares.Core.Grpc.Services;
 
-public class VisualizerService(IVisualizerRepo visualizerRepo, IRemoteVisualizerManager remoteVisualizerManager) : AresVisualizerManagementService.AresVisualizerManagementServiceBase
+public class VisualizerService : AresVisualizerManagementService.AresVisualizerManagementServiceBase
 {
-  private readonly IVisualizerRepo _visualizerRepo = visualizerRepo;
-  private readonly IRemoteVisualizerManager _remoteVisualizerManager = remoteVisualizerManager;
+  private readonly IVisualizerRepo _visualizerRepo;
+  private readonly IRemoteVisualizerManager _remoteVisualizerManager;
+  private readonly ILogger<VisualizerService> _logger;
+
+  public VisualizerService(IVisualizerRepo visualizerRepo, IRemoteVisualizerManager remoteVisualizerManager, ILogger<VisualizerService> logger)
+  {
+    _visualizerRepo = visualizerRepo;
+    _remoteVisualizerManager = remoteVisualizerManager;
+    _logger = logger;
+  }
 
   public override async Task<GetAllVisualizersResponse> GetAllVisualizers(Empty request, ServerCallContext context)
   {
@@ -35,6 +46,7 @@ public class VisualizerService(IVisualizerRepo visualizerRepo, IRemoteVisualizer
     }
     catch(Exception e)
     {
+      _logger.LogError("Failed to add remote visualizer, error received in gRPC Visualizer Service implementation: {exception}", e.Message);
       return new AddRemoteVisualizerResponse { Success = false, ErrorMessage = e.Message };
     }
   }
@@ -52,8 +64,10 @@ public class VisualizerService(IVisualizerRepo visualizerRepo, IRemoteVisualizer
       await _remoteVisualizerManager.UpdateVisualizer(config);
       return new UpdateRemoteVisualizerResponse { Success = true };
     }
+
     catch(ItemNotFoundException e)
     {
+      _logger.LogError("Exception trying to update remote visualizer. Could not find a config for a visualizer named {name}.", request.Name);
       return new UpdateRemoteVisualizerResponse { Success = false, ErrorMessage = e.Message };
     }
   }
@@ -66,8 +80,17 @@ public class VisualizerService(IVisualizerRepo visualizerRepo, IRemoteVisualizer
 
   public override Task<StateResponse> GetState(StateRequest request, ServerCallContext context)
   {
-    var visualizer = _visualizerRepo.GetVisualizerById(request.Id) 
-      ?? throw new ItemNotFoundException(request.Id, typeof(IRemoteVisualizer), "Failed to get state as requested visualizer was not found");
+    var visualizer = _visualizerRepo.GetVisualizerById(request.Id);
+
+    if(visualizer is null)
+    {
+      _logger.LogError("Failed to fetch a fresh state from visualizer service with the ID of {ID}.", request.Id);
+      return Task.FromResult(new StateResponse
+      {
+        State = State.Error,
+        StateMessage = "Unable to fetch visualizers state!"
+      });
+    }
 
     return Task.FromResult(new StateResponse
     {
@@ -81,6 +104,7 @@ public class VisualizerService(IVisualizerRepo visualizerRepo, IRemoteVisualizer
     var visualizer = _visualizerRepo.GetVisualizerById(request.VisualizerId);
     if(visualizer is null)
     {
+      _logger.LogWarning("ARES was unable to fetch info about a visualizer service matching the ID of {ID}.", request.VisualizerId);
       return new VisualizerInfoResponse
       {
         Info = new VisualizerInfo { Name = "Unknown", Description = "Visualizer not found" }
@@ -92,16 +116,26 @@ public class VisualizerService(IVisualizerRepo visualizerRepo, IRemoteVisualizer
 
   public override Task<AresStruct> GetVisualizerSettings(VisualizerSettingsRequest request, ServerCallContext context)
   {
-    var visualizer = _visualizerRepo.GetVisualizerById(request.VisualizerId)
-      ?? throw new ItemNotFoundException(request.VisualizerId, typeof(IRemoteVisualizer), "Failed to get settings as requested visualizer was not found");
+    var visualizer = _visualizerRepo.GetVisualizerById(request.VisualizerId);
+
+    if(visualizer is null)
+    {
+      _logger.LogError("ARES failed to fetch the settings for a visualizer with the ID of {ID}, as one could not be found.", request.VisualizerId);
+      return Task.FromResult(new AresStruct());
+    }
 
     return Task.FromResult(visualizer.Settings);
   }
 
   public async Task<AresStructSchema> GetVisualizerSettingsSchema(string visualizerId)
   {
-    var visualizer = _visualizerRepo.GetVisualizerById(visualizerId)
-      ?? throw new ItemNotFoundException(visualizerId, typeof(IRemoteVisualizer), "Failed to get settings schema as requested visualizer was not found");
+    var visualizer = _visualizerRepo.GetVisualizerById(visualizerId);
+
+    if(visualizer is null)
+    {
+      _logger.LogError("ARES failed to fetch the settings schema for a visualizer with the ID of {ID}, as one could not be found.", visualizerId);
+      return new AresStructSchema();
+    }
 
     var options = await visualizer.GetVisualizationOptions();
     var schema = new AresStructSchema();

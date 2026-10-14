@@ -1,13 +1,10 @@
 using System.Collections.ObjectModel;
 
-namespace Ares.Core.Visualization;
+namespace Ares.Core.Visualization.Repos;
 
 public class VisualizerRepo : IVisualizerRepo
 {
   private readonly IList<IRemoteVisualizer> _visualizerStore = [];
-
-  public IEnumerable<IRemoteVisualizer> AvailableVisualizers
-    => new ReadOnlyCollection<IRemoteVisualizer>(_visualizerStore);
 
   public IRemoteVisualizer? GetVisualizerById(string id)
     => _visualizerStore.FirstOrDefault(visualizer => visualizer.UniqueId == id);
@@ -34,4 +31,7 @@ public class VisualizerRepo : IVisualizerRepo
     if(visualizer is not null)
       RemoveVisualizer(visualizer);
   }
+
+  public IEnumerable<IRemoteVisualizer> AvailableVisualizers
+    => new ReadOnlyCollection<IRemoteVisualizer>(_visualizerStore);
 }

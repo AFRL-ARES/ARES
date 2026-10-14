@@ -378,6 +378,8 @@ else
       UpdateCampaignDetails(summary);
       _visualizations = BuildVisualizations(summary);
       _selectedVisualizationId = _visualizations.FirstOrDefault()?.AllocationId;
+      if(SelectedVisualization is not null)
+        _historyIndex = SelectedVisualization.History.Count;
     }
     catch(OperationCanceledException)
     {
@@ -460,7 +462,12 @@ else
       return;
 
     _selectedVisualizationId = allocationId;
-    _historyIndex = 0;
+
+    if(SelectedVisualization is null)
+      _historyIndex = 0;
+    
+    else
+      _historyIndex = SelectedVisualization.History.Count - 1;
   }
 
   private void SelectFirstHistoryEntry()

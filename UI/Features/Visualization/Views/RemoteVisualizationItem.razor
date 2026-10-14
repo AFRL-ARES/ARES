@@ -1,0 +1,47 @@
+@using UI.Features.Visualization.ViewModels
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<RemoteVisualizationItemViewModel>
+@inject Radzen.DialogService DialogService
+
+<div class="ares-vis-wrapper remote-vis-wrapper">
+  <RadzenCard Class="rz-p-4 ares-vis-card">
+    <div class="ares-vis-header rz-display-flex rz-justify-content-between rz-align-items-center">
+      <div class="remote-vis-heading">
+        <RadzenText TextStyle="TextStyle.H6" Style="color: #88B04B; margin: 0;">@ViewModel!.Title</RadzenText>
+        <span>@ViewModel!.RequestedVisual - @ViewModel.VisualizerName</span>
+      </div>
+
+      <div class="ares-header-actions">
+        <RadzenButton Icon="settings" Variant="Variant.Text" Size="ButtonSize.Small" Click="OpenSettingsDialog" />
+      </div>
+    </div>
+
+    <div class="ares-vis-body remote-vis-body">
+      @if(string.IsNullOrWhiteSpace(ViewModel.ChartJson))
+      {
+        <div class="remote-vis-empty">
+          <RadzenIcon Icon="hourglass_empty" />
+          <span>Waiting for the first completed experiment.</span>
+        </div>
+      }
+      else
+      {
+        <PlotlyViewer PlotlyJson="@ViewModel.ChartJson" Height="100%" />
+      }
+    </div>
+  </RadzenCard>
+</div>
+
+@code {
+  private async Task OpenSettingsDialog()
+  {
+    await DialogService.OpenAsync<RemoteVisualizationSettingsDialog>(
+      $"Settings: {ViewModel!.Title}",
+      new Dictionary<string, object?> { { "ViewModel", ViewModel } },
+      new DialogOptions
+      {
+        Width = "400px",
+        Resizable = true,
+        Draggable = true
+      });
+  }
+}

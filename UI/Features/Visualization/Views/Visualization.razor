@@ -21,6 +21,21 @@
         </div>
       </div>
     }
+
+    @foreach(var itemViewModel in ViewModel.RemoteVisualizationItems)
+    {
+      <div @key="itemViewModel.UniqueId"
+           class="grid-stack-item"
+           gs-w="@itemViewModel.GridW"
+           gs-h="@itemViewModel.GridH"
+           gs-x="@itemViewModel.GridX"
+           gs-y="@itemViewModel.GridY"
+           data-id="@itemViewModel.UniqueId">
+        <div class="grid-stack-item-content">
+          <RemoteVisualizationItem ViewModel="itemViewModel" />
+        </div>
+      </div>
+    }
   }
 </div>
 
@@ -54,6 +69,5 @@
   {
     foreach(var change in changes)
       ViewModel!.UpdateChartPosition(change.UniqueId, change.X, change.Y, change.W, change.H);
-    
   }
 }

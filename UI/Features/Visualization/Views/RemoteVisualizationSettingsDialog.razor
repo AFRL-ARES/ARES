@@ -1,0 +1,36 @@
+@using UI.Features.Visualization.ViewModels
+@inject Radzen.DialogService DialogService
+
+<div class="rz-p-2">
+  <RadzenLabel Text="Chart Title" Component="RemoteChartTitle" />
+  <RadzenTextBox @bind-Value="ViewModel!.Title" Name="RemoteChartTitle" Class="rz-w-100 rz-mb-4" />
+
+  <div class="rz-mb-4">
+    <RadzenText TextStyle="TextStyle.Caption">@ViewModel.VisualizerName</RadzenText>
+    <div>@ViewModel.RequestedVisual</div>
+  </div>
+
+  <div class="rz-mt-4 rz-display-flex rz-justify-content-between rz-align-items-center">
+    <RadzenButton Icon="delete" Text="Delete" ButtonStyle="ButtonStyle.Danger" Variant="Variant.Flat" Click="Delete" />
+    <RadzenButton Text="Done" ButtonStyle="ButtonStyle.Success" Click="Done" />
+  </div>
+</div>
+
+@code {
+  [Parameter]
+  public RemoteVisualizationItemViewModel ViewModel { get; set; } = null!;
+
+  private Task Delete()
+  {
+    ViewModel.OnDelete();
+    DialogService.Close();
+    return Task.CompletedTask;
+  }
+
+  private Task Done()
+  {
+    ViewModel.SaveSettings();
+    DialogService.Close();
+    return Task.CompletedTask;
+  }
+}

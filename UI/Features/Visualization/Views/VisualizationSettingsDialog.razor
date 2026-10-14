@@ -1,14 +1,11 @@
 ﻿@using Ares.Datamodel.Visualizing
-@using Ares.Datamodel.Visualizing.Local
 @using UI.Features.Visualization.ViewModels
 
 @inject Radzen.DialogService DialogService
 
 <div class="rz-p-2">
   <RadzenLabel Text="Chart Title" Component="ChartTitle" />
-  <RadzenTextBox @bind-Value="ViewModel!.Title"
-                 Name="ChartTitle"
-                 Class="rz-w-100 rz-mb-4" />
+  <RadzenTextBox @bind-Value="ViewModel!.Title" Name="ChartTitle" Class="rz-w-100 rz-mb-4" />
 
   <RadzenLabel Text="Chart Style" Component="StyleDropdown" />
   <RadzenDropDown @bind-Value="ViewModel.Style"
@@ -44,9 +41,7 @@
                   Size="ButtonSize.Medium"
                   Click="@OnDeleteClicked" />
 
-    <RadzenButton Text="Done"
-                  ButtonStyle="ButtonStyle.Success"
-                  Click="@OnDoneClicked" />
+    <RadzenButton Text="Done" ButtonStyle="ButtonStyle.Success" Click="@OnDoneClicked" />
   </div>
 </div>
 

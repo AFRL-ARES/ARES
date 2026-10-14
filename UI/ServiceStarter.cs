@@ -8,7 +8,7 @@ using Ares.Core.Device.State.Logging;
 using Ares.Core.Planning;
 using Ares.Core.Settings;
 using Ares.Core.Visualization.Managers;
-using Ares.Core.Visualization;
+using Ares.Core.Visualization.Providers;
 using UI.Application.Devices.Repos;
 using UI.Application.Notifications;
 using UI.Application.Settings;
@@ -28,6 +28,8 @@ public class ServiceStarter : BackgroundService
   private readonly IRemoteDeviceManager _remoteDeviceManager;
   private readonly IDeviceConfigManager _deviceConfigManager;
   private readonly IVisualizationConfigManager _visualizationConfigManager;
+  private readonly IRemoteVisualizationConfigManager _remoteVisualizationConfigManager;
+  private readonly IRemoteVisualizationDataProvider _remoteVisualizationDataProvider;
   private readonly IDeviceDriverLoader _deviceDriverLoader;
   private readonly IDeviceManager _deviceManager;
   private readonly ISilaDeviceManager _silaDeviceManager;
@@ -51,6 +53,8 @@ public class ServiceStarter : BackgroundService
     IRemoteAnalyzerManager analyzerManager,
     IDeviceConfigManager deviceConfigManager,
     IVisualizationConfigManager visualizationConfigManager,
+    IRemoteVisualizationConfigManager remoteVisualizationConfigManager,
+    IRemoteVisualizationDataProvider remoteVisualizationDataProvider,
     IConfiguration configuration,
     IRemoteDeviceManager remoteDeviceManager,
     ISilaDeviceManager silaDeviceManager,
@@ -78,6 +82,8 @@ public class ServiceStarter : BackgroundService
     _remoteDeviceManager = remoteDeviceManager;
     _silaDeviceManager = silaDeviceManager;
     _visualizationConfigManager = visualizationConfigManager;
+    _remoteVisualizationConfigManager = remoteVisualizationConfigManager;
+    _remoteVisualizationDataProvider = remoteVisualizationDataProvider;
     _configuration = configuration;
     _deviceManager = deviceManager;
     _deviceConfigManager = deviceConfigManager;
@@ -126,9 +132,10 @@ public class ServiceStarter : BackgroundService
       _silaDeviceManager.LoadSilaDevices());
 
     await _visualizationConfigManager.Initialize();
+    await _remoteVisualizationConfigManager.Initialize();
+    await _remoteVisualizationDataProvider.Initialize();
     await Task.WhenAll(localTrack, infraTrack, remoteTrack);
-    await Task.Delay(TimeSpan.FromSeconds(6));
-    _logger.LogInformation("Successfully Finished the Loading Sequences");
+    _logger.LogInformation("Successfully Finished the ARES Loading Sequence");
     _tracker.MarkAsReady();
   }
 

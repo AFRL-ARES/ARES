@@ -1,0 +1,28 @@
+.remote-vis-heading {
+  min-width: 0;
+}
+
+.remote-vis-heading > span {
+  display: block;
+  margin-top: 0.2rem;
+  overflow: hidden;
+  color: var(--rz-text-secondary-color, #667085);
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.remote-vis-body {
+  min-height: 0;
+}
+
+.remote-vis-empty {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 10rem;
+  color: var(--rz-text-secondary-color, #667085);
+  text-align: center;
+}

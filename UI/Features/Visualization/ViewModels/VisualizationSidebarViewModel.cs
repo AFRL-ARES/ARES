@@ -1,34 +1,53 @@
 ﻿using Ares.Core.Device.Providers;
 using Ares.Core.Visualization.Managers;
+using Ares.Core.Visualization.Providers;
 using Ares.Datamodel;
 using Ares.Datamodel.Visualizing;
 using Ares.Datamodel.Visualizing.Local;
+using Ares.Datamodel.Visualizing.Remote;
 using Ares.Device;
 using DynamicData;
+using Radzen;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System.Collections.ObjectModel;
 using System.Reactive.Linq;
+using UI.Features.Visualization.Models;
 
 namespace UI.Features.Visualization.ViewModels;
 
 public partial class VisualizationSidebarViewModel : ReactiveObject
 {
   private readonly IVisualizationConfigManager _visualizationConfigManager;
+  private readonly IRemoteVisualizationConfigManager _remoteVisualizationConfigManager;
+  private readonly IVisualizerProvider _visualizerProvider;
   private readonly ReadOnlyObservableCollection<IAresDevice> _devices;
   private readonly IDisposable _cleanUp;
+  private readonly ILogger<VisualizationSidebarViewModel> _logger;
+  private readonly NotificationService _notificationService;
 
-  public VisualizationSidebarViewModel(IAresDeviceProvider deviceProvider, IVisualizationConfigManager visualizationConfigManager)
+  public VisualizationSidebarViewModel(
+    IAresDeviceProvider deviceProvider,
+    IVisualizationConfigManager visualizationConfigManager,
+    IRemoteVisualizationConfigManager remoteVisualizationConfigManager,
+    IVisualizerProvider visualizerProvider,
+    ILogger<VisualizationSidebarViewModel> logger,
+    NotificationService notificationService)
   {
     _cleanUp = deviceProvider.Connect()
         .Bind(out _devices)
         .Subscribe();
 
     _visualizationConfigManager = visualizationConfigManager;
+    _remoteVisualizationConfigManager = remoteVisualizationConfigManager;
+    _visualizerProvider = visualizerProvider;
+    _notificationService = notificationService;
+    _logger = logger;
     AllPaths = [];
     VisiblePaths = [];
     SelectedPaths = [];
     AvailableChartStyles = [];
+    AvailableRemoteVisualizations = BuildRemoteVisualizationChoices();
 
     this.WhenAnyValue(x => x.BrowsingDevice, x => x.ShowAllValues)
         .Subscribe(tuple =>
@@ -87,24 +106,16 @@ public partial class VisualizationSidebarViewModel : ReactiveObject
       var type = field.Value.Type;
 
       if(type == AresDataType.Number || type == AresDataType.Float || type == AresDataType.Int || type == AresDataType.Quantity || type == AresDataType.Boolean)
-      {
         paths.Add(new VisualizationPath { Path = currentPath, DataType = type, IsPlottable = true, AssociatedDeviceId = device.UniqueId });
-      }
 
       else if(type == AresDataType.Struct && field.Value.StructSchema != null)
-      {
         paths.AddRange(ExtractPaths(device, field.Value.StructSchema, currentPath));
-      }
 
       else if(type == AresDataType.List && field.Value.ListElementSchema?.Type == AresDataType.Struct)
-      {
         paths.AddRange(ExtractPaths(device, field.Value.ListElementSchema.StructSchema!, $"{currentPath}[*]"));
-      }
 
       else if(type == AresDataType.String)
-      {
         paths.Add(new VisualizationPath { Path = currentPath, DataType = type, IsPlottable = false, AssociatedDeviceId = device.UniqueId });
-      }
     }
 
     return paths;
@@ -123,16 +134,47 @@ public partial class VisualizationSidebarViewModel : ReactiveObject
 
     catch(Exception e)
     {
-      //TODO: Log and notify
+      _logger.LogError("Error encountered inside the Visualization Side Bar View Model! {exception}", e.Message);
+      _notificationService.Notify(NotificationSeverity.Error, "Failed to Create Visualization", e.Message);
     }
   }
 
-  public void AddPath()
+  public async Task AddRemoteVisualization()
   {
-    if(SelectedPaths.Any() && SelectedPaths.First().DataType != CurrentlySelectedPath.DataType)
+    if(SelectedRemoteVisualization is null)
       return;
 
-    else
+    var config = new RemoteVisualizationConfig
+    {
+      UniqueId = Guid.NewGuid().ToString(),
+      ChartTitle = SelectedRemoteVisualization.VisualName,
+      VisualizerId = SelectedRemoteVisualization.VisualizerId,
+      RequestedVisual = SelectedRemoteVisualization.VisualName,
+      GridW = 6,
+      GridH = 5
+    };
+
+    await _remoteVisualizationConfigManager.Add(config);
+    SelectedRemoteVisualization = null;
+  }
+
+  private IReadOnlyList<RemoteVisualizationChoice> BuildRemoteVisualizationChoices()
+    => _visualizerProvider.GetAllVisualizers()
+      .SelectMany(visualizer => visualizer.VisualizationOptions.Select(option => new RemoteVisualizationChoice(
+        visualizer.UniqueId,
+        visualizer.Name,
+        option.VisualizationName,
+        $"{visualizer.Name} - {option.VisualizationName}")))
+      .OrderBy(choice => choice.VisualizerName, StringComparer.OrdinalIgnoreCase)
+      .ThenBy(choice => choice.VisualName, StringComparer.OrdinalIgnoreCase)
+      .ToArray();
+
+  public void AddPath()
+  {
+    if(SelectedPaths.Any() && SelectedPaths.First().DataType != CurrentlySelectedPath?.DataType)
+      return;
+
+    else if(CurrentlySelectedPath is not null)
       SelectedPaths.Add(CurrentlySelectedPath);
 
     if(SelectedPaths.Count == 1)
@@ -146,9 +188,7 @@ public partial class VisualizationSidebarViewModel : ReactiveObject
     => SelectedPaths.Remove(path);
 
   public void Dispose()
-  {
-    _cleanUp.Dispose();
-  }
+    => _cleanUp.Dispose();
 
   [Reactive]
   public partial IAresDevice? BrowsingDevice { get; set; }
@@ -172,10 +212,15 @@ public partial class VisualizationSidebarViewModel : ReactiveObject
   private partial AresDataType SelectedDataType { get; set; }
 
   [Reactive]
-  public IEnumerable<ChartStyle> AvailableChartStyles { get; set; }
+  public partial IEnumerable<ChartStyle> AvailableChartStyles { get; set; }
 
   [Reactive]
-  public partial VisualizationPath CurrentlySelectedPath { get; set; }
+  public partial VisualizationPath? CurrentlySelectedPath { get; set; }
 
   public ReadOnlyObservableCollection<IAresDevice> AvailableDevices => _devices;
+
+  [Reactive]
+  public partial RemoteVisualizationChoice? SelectedRemoteVisualization { get; set; }
+
+  public IReadOnlyList<RemoteVisualizationChoice> AvailableRemoteVisualizations { get; }
 }

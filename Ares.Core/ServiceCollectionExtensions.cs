@@ -81,11 +81,13 @@ public static class ServiceCollectionExtensions
     }
 
     services.AddSingleton<IVisualizationConfigManager, VisualizationConfigManager>();
+    services.AddSingleton<IRemoteVisualizationConfigManager, RemoteVisualizationConfigManager>();
     services.AddSingleton<IAnalyzerCache, AnalyzerCache>();
     services.AddSingleton<IDeviceCache, DeviceCache>();
     services.AddSingleton<IPlannerServiceCache, PlannerServiceCache>();
     services.AddSingleton<IVisualizerCache, VisualizerCache>();
     services.AddSingleton<IExperimentVisualizationService, ExperimentVisualizationService>();
+    services.AddSingleton<IRemoteVisualizationDataProvider, RemoteVisualizationDataProvider>();
     services.AddSingleton<AresVariableManager>();
     services.AddSingleton<AnalysisHelper>();
     services.AddSingleton<IDesiredAnalysisResultFactory, DesiredAnalysisResultFactory>();
@@ -156,6 +158,7 @@ public static class ServiceCollectionExtensions
     services.AddTransient<IDeviceDriverProvider, DeviceDriverProvider>();
     services.AddTransient<IDeviceConfigProvider, DeviceConfigProvider>();
     services.AddTransient<IDeviceVisualizationConfigProvider, DeviceVisualizationConfigProvider>();
+    services.AddTransient<IRemoteVisualizationConfigProvider, RemoteVisualizationConfigProvider>();
     services.AddTransient<IVisualizerProvider, VisualizerProvider>();
   }
 
@@ -171,5 +174,6 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<IPlannerServiceRepo, PlannerServiceRepo>();
     services.AddSingleton<IVisualizerRepo, VisualizerRepo>();
     services.AddSingleton<IDeviceVisualizationConfigRepo, DeviceVisualizationConfigRepo>();
+    services.AddSingleton<IRemoteVisualizationConfigRepo, RemoteVisualizationConfigRepo>();
   }
 }

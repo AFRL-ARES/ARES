@@ -8,6 +8,7 @@ using Ares.Datamodel.Templates;
 using Ares.Datamodel.Visualizing;
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Visualizing.Local;
+using Ares.Datamodel.Visualizing.Remote;
 using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
 using Microsoft.EntityFrameworkCore;
@@ -44,6 +45,7 @@ public class CoreDatabaseContext : DbContext
   public DbSet<DeviceState> DeviceStates => Set<DeviceState>();
   public DbSet<SilaDeviceConfig> SilaConfigs => Set<SilaDeviceConfig>();
   public DbSet<DeviceVisualizationConfig> DeviceVisualizationConfigs => Set<DeviceVisualizationConfig>();
+  public DbSet<RemoteVisualizationConfig> RemoteVisualizationConfigs => Set<RemoteVisualizationConfig>();
   public DbSet<VisualizerConfig> Visualizers => Set<VisualizerConfig>();
   public DbSet<VisualizerInfo> VisualizerInfos => Set<VisualizerInfo>();
   public DbSet<VisualizerSettings> VisualizerSettings => Set<VisualizerSettings>();

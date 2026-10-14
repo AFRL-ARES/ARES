@@ -1,4 +1,5 @@
 using Ares.Core.Notifications;
+using Ares.Core.Visualization.Repos;
 using Ares.Datamodel;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Templates;
@@ -15,7 +16,7 @@ public sealed class ExperimentVisualizationService(IVisualizerRepo visualizerRep
   private readonly ILogger<ExperimentVisualizationService> _logger = logger;
 
   public async Task GenerateVisualizations(
-    ExperimentTemplate experimentTemplate, 
+    ExperimentTemplate experimentTemplate,
     IEnumerable<ExperimentExecutionSummary> completedExperiments, 
     ExperimentExecutionSummary currentExperiment,
     CancellationToken cancellationToken = default)
@@ -42,7 +43,7 @@ public sealed class ExperimentVisualizationService(IVisualizerRepo visualizerRep
         var message = $"Failed to generate {visualName}: {exception.Message}";
 
         _logger.LogWarning(exception, "{Message}", message);
-        await _notifier.Notify("Visualization Generation Failed", message, NotificationSeverityEnum.Warning);
+        await _notifier.Notify("Visualization Generation Failed", message, NotificationSeverityEnum.Error);
       }
     }
   }
@@ -54,7 +55,11 @@ public sealed class ExperimentVisualizationService(IVisualizerRepo visualizerRep
     CancellationToken cancellationToken)
   {
     if(allocation.Visualizer is null || string.IsNullOrWhiteSpace(allocation.Visualizer.UniqueId))
-      throw new InvalidOperationException("The visualization allocation does not identify a visualizer.");
+    {
+      _logger.LogError("The visualization ({visId}) allocation does not identify a visualizer.", allocation?.Visualizer?.UniqueId ?? "");
+      await _notifier.Notify("Visualization Generation Failed", "ARES couldn't generate the requested visualization as the request Unique ID was not found", NotificationSeverityEnum.Error);
+      return;
+    }
 
     if(string.IsNullOrWhiteSpace(allocation.RequestedVisual))
       throw new InvalidOperationException("The visualization allocation does not identify a requested visualization.");

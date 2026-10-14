@@ -1,9 +1,11 @@
 using Ares.Core.Execution.VersionChecking;
 using Ares.Core.Notifications;
+using Ares.Core.Visualization.Repos;
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Visualizing;
+using Microsoft.Extensions.Logging;
 
-namespace Ares.Core.Visualization;
+namespace Ares.Core.Visualization.Managers;
 
 /// <summary>
 /// Demo-mode implementation of <see cref="IRemoteVisualizerManager"/>.
@@ -17,24 +19,30 @@ public class DemoRemoteVisualizerManager : IRemoteVisualizerManager
   private readonly IDatamodelVersionValidator _datamodelVersionValidator;
   private readonly IVisualizerCache _visualizerCache;
   private readonly List<RemoteVisualizerMonitor> _visualizerMonitors = [];
+  private readonly ILogger<DemoRemoteVisualizerManager> _logger;
 
   public DemoRemoteVisualizerManager(
     IVisualizerRepo visualizerRepo,
     INotificationHandler notificationHandler,
     IDatamodelVersionValidator datamodelVersionValidator,
-    IVisualizerCache visualizerCache)
+    IVisualizerCache visualizerCache,
+    ILogger<DemoRemoteVisualizerManager> logger)
   {
     _visualizerRepo = visualizerRepo;
     _notificationHandler = notificationHandler;
     _datamodelVersionValidator = datamodelVersionValidator;
     _visualizerCache = visualizerCache;
+    _logger = logger;
   }
 
   public async Task LoadVisualizers()
   {
     var existingDemo = _visualizerRepo.GetVisualizerById(DemoIds.VisualizerId);
     if(existingDemo is null)
+    {
+      _logger.LogInformation("[Demo Remote Visualization Manager] - No Existing Demo Visualizer, Creating New Demo Visualizer");
       await CreateDemoVisualizer("http://localhost:5028");
+    }
   }
 
   public Task CreateVisualizer(string name, string url)
@@ -46,6 +54,7 @@ public class DemoRemoteVisualizerManager : IRemoteVisualizerManager
     {
       _visualizerRepo.AddVisualizer(visualizer);
       _visualizerMonitors.Add(new RemoteVisualizerMonitor(visualizer, _visualizerCache));
+      _logger.LogInformation("[Demo Remote Visualization Manager] - Successfully Added a New Visualizer: {vis}", visualizer.Name);
     }
 
     return Task.CompletedTask;
@@ -78,6 +87,7 @@ public class DemoRemoteVisualizerManager : IRemoteVisualizerManager
     {
       monitor.Dispose();
       _visualizerMonitors.Remove(monitor);
+      _logger.LogInformation("[Demo Remote Visualization Manager] - Successfully Removed Visualizer with ID of {id}", visualizerId);
     }
 
     return Task.CompletedTask;
@@ -94,6 +104,7 @@ public class DemoRemoteVisualizerManager : IRemoteVisualizerManager
       {
         _visualizerRepo.AddVisualizer(updated);
         _visualizerMonitors.Add(new RemoteVisualizerMonitor(updated, _visualizerCache));
+        _logger.LogInformation("[Demo Remote Visualization Manager] - Successfully Updated Visualizer: {name}", config.Name);
       }
     }
 
@@ -104,7 +115,10 @@ public class DemoRemoteVisualizerManager : IRemoteVisualizerManager
   {
     var visualizer = _visualizerRepo.GetVisualizerById(visualizerSettings.VisualizerId);
     if(visualizer is not null)
+    {
       visualizer.UpdateSettings(visualizerSettings.Settings);
+      _logger.LogInformation("[Demo Remote Visualization Manager] - Successfully Updated Visualizer Settings for {name}", visualizer.Name);
+    }
 
     return Task.CompletedTask;
   }
@@ -114,10 +128,12 @@ public class DemoRemoteVisualizerManager : IRemoteVisualizerManager
     var uriValid = Uri.TryCreate(config.Url, UriKind.Absolute, out var uri);
     if(!uriValid || uri is null)
     {
-      _ = _notificationHandler.HandleNotification(
-        "Visualizer Load Error",
+      _ = _notificationHandler.HandleNotification("Visualizer Load Error",
         $"Failed to load a remote visualizer {config.Name} because the url {config.Url} is invalid.",
-        NotificationSeverityEnum.Danger);
+        NotificationSeverityEnum.Error);
+
+      _logger.LogError("Failed to load visualizer as the provided URL {url} was invalid.", config.Url);
+
       return null;
     }
 
