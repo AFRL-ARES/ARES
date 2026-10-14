@@ -292,6 +292,36 @@ namespace AresService.Migrations.Postgres.Migrations
                     b.ToTable("AnalyzerTransactions");
                 });
 
+            modelBuilder.Entity("Ares.Datamodel.Analyzing.VisualizerSettings", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("Settings")
+                        .HasColumnType("text");
+
+                    b.Property<string>("VisualizerId")
+                        .HasColumnType("text");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("VisualizerId")
+                        .IsUnique();
+
+                    b.ToTable("VisualizerSettings");
+                });
+
             modelBuilder.Entity("Ares.Datamodel.AresCampaignTag", b =>
                 {
                     b.Property<Guid>("UniqueId")
@@ -353,6 +383,11 @@ namespace AresService.Migrations.Postgres.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("NOW()");
+
+                    b.Property<bool>("NameFoldersWithLocalTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("RetryCooldown")
                         .HasColumnType("jsonb");
@@ -1048,6 +1083,9 @@ namespace AresService.Migrations.Postgres.Migrations
                     b.Property<string>("ExperimentId")
                         .HasColumnType("text");
 
+                    b.Property<string>("GeneratedVisuals")
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("timestamp with time zone")
@@ -1623,6 +1661,9 @@ namespace AresService.Migrations.Postgres.Migrations
                     b.Property<bool>("Resolved")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("VisualizerAllocations")
+                        .HasColumnType("text");
+
                     b.HasKey("UniqueId");
 
                     b.HasIndex("CampaignCloseoutId")
@@ -1892,6 +1933,146 @@ namespace AresService.Migrations.Postgres.Migrations
                     b.HasKey("UniqueId");
 
                     b.ToTable("VisualizationPath");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Visualizing.Remote.RemoteVisualizationConfig", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ChartTitle")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<int>("GridH")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("GridW")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("GridX")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("GridY")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("RequestedVisual")
+                        .HasColumnType("text");
+
+                    b.Property<string>("VisualizerId")
+                        .HasColumnType("text");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("RemoteVisualizationConfigs");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Visualizing.VisualizerAllocation", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("RequestedVisual")
+                        .HasColumnType("text");
+
+                    b.Property<string>("UserProvidedIdentifier")
+                        .HasColumnType("text");
+
+                    b.Property<string>("VisualizationMaps")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("VisualizerUniqueId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("VisualizerUniqueId");
+
+                    b.ToTable("VisualizerAllocation");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Visualizing.VisualizerConfig", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Url")
+                        .HasColumnType("text");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("Visualizers", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Visualizing.VisualizerInfo", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Type")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Url")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Version")
+                        .HasColumnType("text");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("VisualizerInfos");
                 });
 
             modelBuilder.Entity("Ares.Services.DriverInfo", b =>
@@ -2243,6 +2424,15 @@ namespace AresService.Migrations.Postgres.Migrations
                         .WithMany("StepTemplates")
                         .HasForeignKey("ExperimentTemplateUniqueId")
                         .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Visualizing.VisualizerAllocation", b =>
+                {
+                    b.HasOne("Ares.Datamodel.Visualizing.VisualizerInfo", "Visualizer")
+                        .WithMany()
+                        .HasForeignKey("VisualizerUniqueId");
+
+                    b.Navigation("Visualizer");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Analyzing.AnalyzerInfo", b =>
