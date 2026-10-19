@@ -34,6 +34,7 @@ internal class CampaignExecutorTests
   private AnalyzerRepo _analyzerRepo;
   private IAnalyzer _replyAnalyzer;
   private AresDeviceRepo _deviceRepo;
+  private IAresDeviceProvider _deviceProvider;
   private IExecutionReportStore _executionReportStore;
   private Mock<IPlanningHelper> _planningHelper;
   private Mock<ISystemSettingsManager> _settingsManager;
@@ -76,6 +77,8 @@ internal class CampaignExecutorTests
 
     _safetyManager = new Mock<IExecutionSafetyManager>();
     _safetyManager.Setup(manager => manager.EnterSafeMode()).ReturnsAsync(true);
+
+    _deviceProvider = new Mock<IAresDeviceProvider>().Object;
 
     var dbOptions = new DbContextOptionsBuilder<CoreDatabaseContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
     var dbContextFactory = new Mock<IDbContextFactory<CoreDatabaseContext>>();
@@ -124,7 +127,7 @@ internal class CampaignExecutorTests
       Mock.Of<AresVariableManager>(),
       stateLoggerManager,
       _settingsManager.Object,
-      _safetyManager.Object,
+      _deviceProvider,
       visualizationService.Object);
   }
 

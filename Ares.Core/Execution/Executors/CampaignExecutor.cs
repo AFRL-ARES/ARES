@@ -1,5 +1,6 @@
 ﻿using Ares.Core.Analyzing;
 using Ares.Core.AresEnvironment;
+using Ares.Core.Device.Providers;
 using Ares.Core.Device.State.Logging;
 using Ares.Core.Exceptions;
 using Ares.Core.Execution.ControlTokens;
@@ -40,7 +41,7 @@ public class CampaignExecutor : ICampaignExecutor
   readonly PlanningResponseRepo _planningResponseRepo;
   readonly IAnalyzerRepo _analyzerRepo;
   readonly ISystemSettingsManager _settingsManager;
-  readonly IExecutionSafetyManager _executionSafetyManager;
+  readonly IAresDeviceProvider _deviceProvider;
   readonly IExperimentVisualizationService _experimentVisualizationService;
   private readonly string _campaignFailedTitle = "Campaign Execution Failed!";
   private AresGeneralSettingsConfig? _generalSettingsConfig;
@@ -65,7 +66,7 @@ public class CampaignExecutor : ICampaignExecutor
     AresVariableManager variableManager,
     StateLoggerManager stateLoggerManager,
     ISystemSettingsManager settingsManager,
-    IExecutionSafetyManager executionSafetyManager,
+    IAresDeviceProvider deviceProvider,
     IExperimentVisualizationService experimentVisualizationService)
   {
     _analyzerRepo = analyzerRepo;
@@ -82,7 +83,7 @@ public class CampaignExecutor : ICampaignExecutor
     Template = template;
     _notifier = notifier;
     _settingsManager = settingsManager;
-    _executionSafetyManager = executionSafetyManager;
+    _deviceProvider = deviceProvider;
     _experimentVisualizationService = experimentVisualizationService;
 
     Status = new CampaignExecutionStatus
@@ -555,7 +556,11 @@ public class CampaignExecutor : ICampaignExecutor
 
       case ErrorHandling.EnterSafeMode:
         ReportCampaignStatus(ExecutionState.EnteringSafeMode);
-        await _executionSafetyManager.EnterSafeMode();
+        var connectedDevices = _deviceProvider.GetAllDevices();
+
+        foreach(var device in connectedDevices)
+          await device.EnterSafeMode();
+
         await _notifier.Notify("Safe Mode Activated", "An ARES experiment has failed and based on your settings ARES has entered safe mode in response.", NotificationSeverityEnum.Error);
         return ExperimentPhase.Failed;
 

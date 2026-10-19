@@ -3,11 +3,7 @@
 @using Ares.Core.Device.Providers
 @using Ares.Core
 @using Ares.Core.Execution.Safety
-@using Ares.Core.Device.Repos
-@using Ares.Services
-@using Google.Protobuf.WellKnownTypes
 @using System.Reactive.Linq
-@using System.Collections.Specialized
 @using UI.Application.Dialog
 @using UI.Application.Notifications
 @using UI.Infrastructure.Notifications
@@ -237,39 +233,33 @@
 
   async Task ShowEmergencyStopDialog()
   {
-    var confirmDialogOptions = new UiConfirmOptions { OkButtonText = "Yes", CancelButtonText = "No" };
-    var result = await dialogService.ConfirmAsync("Are you sure you want to trigger an emergency stop?", "Emergency Stop Confirmation", confirmDialogOptions);
+    var success = await executionSafetyManager.EnterSafeMode();
+    UiNotificationMessage notificationMessage;
 
-    if(result)
+    if(success)
     {
-      var success = await executionSafetyManager.EnterSafeMode();
-      UiNotificationMessage notificationMessage;
-
-      if(success)
+      notificationMessage = new UiNotificationMessage
       {
-        notificationMessage = new UiNotificationMessage
-        {
-          Summary = "Successfully Processed Emergency Shutdown Request",
-          Detail = "ARES has successfully processed an emergency shutdown request. All devices have entered safemode and any running campaigns have been completed.",
-          Severity = UiNotificationSeverity.Success,
-          CloseOnClick = true
-        };
-      }
-
-
-      else
-      {
-        notificationMessage = new UiNotificationMessage
-        {
-          Detail = "ARES HAS FAILED TO ENTER SAFE MODE. DEVICES MAY BE IN AN UNSTABLE STATE AND SHOULD BE POWERED OFF IMMEDIATELY IF IT IS SAFE TO DO SO.",
-          Summary = "FAILED TO PROCESS EMERGENCY SHUTDOWN REQUEST!",
-          CloseOnClick = true,
-          Severity = UiNotificationSeverity.Error
-        };
-      }
-
-      uiNotificationService.Notify(notificationMessage);
+        Summary = "Successfully Processed Emergency Shutdown Request",
+        Detail = "ARES has successfully processed an emergency shutdown request. All devices have entered safemode and any running campaigns have been completed.",
+        Severity = UiNotificationSeverity.Success,
+        CloseOnClick = true
+      };
     }
+
+
+    else
+    {
+      notificationMessage = new UiNotificationMessage
+      {
+        Detail = "ARES HAS FAILED TO ENTER SAFE MODE. DEVICES MAY BE IN AN UNSTABLE STATE AND SHOULD BE POWERED OFF IMMEDIATELY IF IT IS SAFE TO DO SO.",
+        Summary = "FAILED TO PROCESS EMERGENCY SHUTDOWN REQUEST!",
+        CloseOnClick = true,
+        Severity = UiNotificationSeverity.Error
+      };
+    }
+
+    uiNotificationService.Notify(notificationMessage);
   }
 
   public IEnumerable<string> GetPluginStylesheetPaths()

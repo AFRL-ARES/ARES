@@ -1,5 +1,6 @@
 ﻿using Ares.Core.Analyzing;
 using Ares.Core.AresEnvironment;
+using Ares.Core.Device.Providers;
 using Ares.Core.Device.State.Logging;
 using Ares.Core.Execution.Safety;
 using Ares.Core.Notifications;
@@ -26,7 +27,7 @@ public class CampaignComposer : ICommandComposer<CampaignTemplate, ICampaignExec
   readonly PlanningResponseRepo _planningResponseRepo;
   readonly IAnalyzerRepo _analyzerRepo;
   readonly ISystemSettingsManager _settingsManager;
-  readonly IExecutionSafetyManager _safetyManager;
+  readonly IAresDeviceProvider _deviceProvider;
   readonly IExperimentVisualizationService _experimentVisualizationService;
 
   public CampaignComposer(AnalysisHelper analysisHelper,
@@ -42,7 +43,7 @@ public class CampaignComposer : ICommandComposer<CampaignTemplate, ICampaignExec
     AresVariableManager variableManager,
     StateLoggerManager stateLoggerManager,
     ISystemSettingsManager settingsManager,
-    IExecutionSafetyManager safetyManager,
+    IAresDeviceProvider deviceProvider,
     IExperimentVisualizationService experimentVisualizationService)
   {
     _analyzerRepo = analyzerRepo;
@@ -58,7 +59,7 @@ public class CampaignComposer : ICommandComposer<CampaignTemplate, ICampaignExec
     _notifier = notifier;
     _loggerFactory = loggerFactory;
     _settingsManager = settingsManager;
-    _safetyManager = safetyManager;
+    _deviceProvider = deviceProvider;
     _experimentVisualizationService = experimentVisualizationService;
   }
 
@@ -77,6 +78,6 @@ public class CampaignComposer : ICommandComposer<CampaignTemplate, ICampaignExec
       _variableManager, 
       _stateLoggerManager, 
       _settingsManager, 
-      _safetyManager,
+      _deviceProvider,
       _experimentVisualizationService);
 }

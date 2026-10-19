@@ -7,10 +7,14 @@ public class ExecutionSafetyManager : IExecutionSafetyManager
 {
   private readonly IAresDeviceRepo _deviceRepo;
   private readonly ILogger<ExecutionSafetyManager> _logger;
+  private readonly IExecutionManager _executionManager;
   
-  public ExecutionSafetyManager(IAresDeviceRepo deviceRepo, ILogger<ExecutionSafetyManager> logger)
+  public ExecutionSafetyManager(IAresDeviceRepo deviceRepo,
+    IExecutionManager executionManager,
+    ILogger<ExecutionSafetyManager> logger)
   {
     _deviceRepo = deviceRepo;
+    _executionManager = executionManager;
     _logger = logger;
   }
 
@@ -19,10 +23,9 @@ public class ExecutionSafetyManager : IExecutionSafetyManager
     try
     {
       foreach(var device in _deviceRepo)
-      {
         await device.EnterSafeMode();
-      }
 
+      _executionManager.Stop();
       return true;
     }
 
