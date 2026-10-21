@@ -34,9 +34,10 @@ function ensurePlotlyLoaded() {
 /**
  * Renders or updates a Plotly chart inside a container element.
  * @param {HTMLElement} container 
- * @param {string} plotlyJson 
+ * @param {string} plotlyJson
+ * @param {boolean} disableInteractions
  */
-export async function renderPlot(container, plotlyJson) {
+export async function renderPlot(container, plotlyJson, disableInteractions = false) {
   if (!container || !plotlyJson) return;
 
   try {
@@ -49,24 +50,53 @@ export async function renderPlot(container, plotlyJson) {
 
     const fig = JSON.parse(plotlyJson);
     const data = fig.data || [];
-    const layout = fig.layout || {};
+    const layout = { ...(fig.layout || {}) };
     const config = Object.assign(
       { responsive: true, displayModeBar: true, displaylogo: false },
       fig.config || {}
     );
 
-    if (!layout.autosize) {
-      layout.autosize = true;
+    layout.autosize = true;
+    delete layout.width;
+    delete layout.height;
+
+    if (disableInteractions) {
+      Object.assign(config, {
+        staticPlot: true,
+        displayModeBar: false,
+        scrollZoom: false,
+        doubleClick: false
+      });
     }
 
-    window.Plotly.react(container, data, layout, config);
+    await window.Plotly.react(container, data, layout, config);
+    observeContainerResize(container);
   } catch (err) {
     console.error("Plotly rendering failed:", err);
   }
 }
 
+function observeContainerResize(container) {
+  if (resizeObservers.has(container)) return;
+
+  const observer = new ResizeObserver(() => {
+    if (window.Plotly && container.data) {
+      window.Plotly.Plots.resize(container);
+    }
+  });
+
+  observer.observe(container);
+  resizeObservers.set(container, observer);
+}
+
 export function purgePlot(container) {
-  if (container && window.Plotly) {
+  if (!container) return;
+
+  const observer = resizeObservers.get(container);
+  observer?.disconnect();
+  resizeObservers.delete(container);
+
+  if (window.Plotly) {
     window.Plotly.purge(container);
   }
 }

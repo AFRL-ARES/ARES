@@ -1,48 +1,26 @@
 ﻿let _componentInstance = null;
-let currentMode = 'desktop';
 
 function getGridOptions(columnCount) {
   return {
     column: columnCount,
-    cellHeight: 10,
-    margin: 5,
+    cellHeight: '80px',
+    margin: 10,
+    minRow: 15,
     float: true,
     acceptWidgets: true,
     disableResize: false,
     oneColumnSize: 900,
     draggable: {
-      handle: '.grid-stack-item-content',
+      handle: '.visualization-drag-handle',
       scroll: true
     }
   };
 }
 
-function attachEvents(grid) {
-  if (!_componentInstance) return;
-
-  grid.on('change', function (event, items) {
-    if (!items) return;
-    let updates = items.map(item => {
-      return {
-        id: item.el.getAttribute('data-id'),
-        x: item.x ?? 0,
-        y: item.y ?? 0,
-        w: item.w,
-        h: item.h
-      };
-    });
-    _componentInstance.invokeMethodAsync('OnDashboardUpdate', updates);
-  });
-}
-
 // --- EXPORTED FUNCTIONS ---
 export function initDashboard(containerId, dotNetRef) {
-  let grid = GridStack.init({
-    cellHeight: '80px',
-    margin: 10,
-    minRow: 15,
-    float: true
-  }, `#${containerId}`);
+  _componentInstance = dotNetRef;
+  const grid = GridStack.init(getGridOptions(100), `#${containerId}`);
 
   grid.on('change', function (event, items) {
     if (!items) return;
@@ -55,7 +33,7 @@ export function initDashboard(containerId, dotNetRef) {
       H: item.h
     }));
 
-    dotNetRef.invokeMethodAsync('OnDashboardUpdate', layoutChanges);
+    _componentInstance.invokeMethodAsync('OnDashboardUpdate', layoutChanges);
   });
 }
 

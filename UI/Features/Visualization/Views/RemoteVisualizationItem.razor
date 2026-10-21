@@ -3,8 +3,8 @@
 @inject Radzen.DialogService DialogService
 
 <div class="ares-vis-wrapper remote-vis-wrapper">
-  <RadzenCard Class="rz-p-4 ares-vis-card">
-    <div class="ares-vis-header rz-display-flex rz-justify-content-between rz-align-items-center">
+  <RadzenCard Class="rz-p-4 remote-vis-card">
+    <div class="remote-vis-header visualization-drag-handle rz-display-flex rz-justify-content-between rz-align-items-center">
       <div class="remote-vis-heading">
         <RadzenText TextStyle="TextStyle.H6" Style="color: #88B04B; margin: 0;">@ViewModel!.Title</RadzenText>
         <span>@ViewModel!.RequestedVisual - @ViewModel.VisualizerName</span>
@@ -15,7 +15,7 @@
       </div>
     </div>
 
-    <div class="ares-vis-body remote-vis-body">
+    <div class="remote-vis-body">
       @if(string.IsNullOrWhiteSpace(ViewModel.ChartJson))
       {
         <div class="remote-vis-empty">

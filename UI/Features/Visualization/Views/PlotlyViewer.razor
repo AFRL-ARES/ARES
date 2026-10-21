@@ -9,7 +9,7 @@
       <em>No plot data available</em>
     </div>
   }
-  <div @ref="chartContainer" style="width: 100%; height: 100%;"></div>
+  <div @ref="chartContainer" class="plotly-chart-container" style="width: 100%; height: 100%;"></div>
 </div>
 
 @code {
@@ -19,6 +19,7 @@
 
   [Parameter] public string PlotlyJson { get; set; } = string.Empty;
   [Parameter] public string Height { get; set; } = "800px";
+  [Parameter] public bool DisableInteractions { get; set; }
 
   protected override async Task OnAfterRenderAsync(bool firstRender)
   {
@@ -49,7 +50,7 @@
   {
     if(jsModule is not null)
     {
-      await jsModule.InvokeVoidAsync("renderPlot", chartContainer, PlotlyJson);
+      await jsModule.InvokeVoidAsync("renderPlot", chartContainer, PlotlyJson, DisableInteractions);
     }
   }
 

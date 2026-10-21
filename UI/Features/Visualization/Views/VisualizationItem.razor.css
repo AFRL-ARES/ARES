@@ -15,6 +15,14 @@
 	margin-bottom: 0.5rem;
 }
 
+::deep .ares-vis-header > *:not(.ares-header-actions) {
+	pointer-events: none;
+}
+
+::deep .ares-vis-header .ares-header-actions {
+	pointer-events: auto;
+}
+
 ::deep .ares-vis-body {
 	flex: 1;
 	min-height: 0;
