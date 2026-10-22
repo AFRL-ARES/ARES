@@ -2,6 +2,8 @@ using Ares.Core;
 using Ares.Core.Execution.VersionChecking;
 using Ares.Core.Notifications;
 using Ares.Datamodel.Analyzing;
+using Grpc.Core.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Ares.Core.Analyzing;
 
@@ -17,17 +19,20 @@ public class DemoRemoteAnalyzerManager : IRemoteAnalyzerManager
   private readonly IDatamodelVersionValidator _datamodelVersionValidator;
   private readonly List<RemoteAnalyzerMonitor> _analyzerMonitors = [];
   private readonly IAnalyzerCache _analyzerCache;
+  private readonly ILogger<DemoRemoteAnalyzerManager> _logger;
 
   public DemoRemoteAnalyzerManager(
     IAnalyzerRepo analyzerRepo,
     INotificationHandler notificationHandler,
     IDatamodelVersionValidator datamodelVersionValidator,
-    IAnalyzerCache analyzerCache)
+    IAnalyzerCache analyzerCache,
+    ILogger<DemoRemoteAnalyzerManager> logger)
   {
     _analyzerRepo = analyzerRepo;
     _notificationHandler = notificationHandler;
     _datamodelVersionValidator = datamodelVersionValidator;
     _analyzerCache = analyzerCache;
+    _logger = logger;
   }
 
   public async Task LoadAnalyzers()
@@ -40,6 +45,8 @@ public class DemoRemoteAnalyzerManager : IRemoteAnalyzerManager
       var demoUrl = "http://localhost:5026";
       await CreateDemoAnalyzer(demoUrl);
     }
+
+    _logger.LogInformation("Finished loading Analyzers");
   }
 
   public Task CreateAnalyzer(string name, string url)

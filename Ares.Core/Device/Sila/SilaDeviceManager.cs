@@ -17,12 +17,14 @@ public class SilaDeviceManager : ISilaDeviceManager
   private readonly List<SilaDeviceMonitor> _monitors;
   private readonly ILoggerFactory _loggerFactory;
   private readonly StateLoggerManager _stateLoggerManager;
+  private readonly ILogger<SilaDeviceManager> _logger;
 
   public SilaDeviceManager(SilaClient client, 
     IAresDeviceRepo deviceRepo, 
     IDbContextFactory<CoreDatabaseContext> dbContextFactory,
     ILoggerFactory loggerFactory,
-    StateLoggerManager stateLoggerManager)
+    StateLoggerManager stateLoggerManager,
+    ILogger<SilaDeviceManager> logger)
   {
     _silaClient = client;
     _deviceRepo = deviceRepo;
@@ -30,6 +32,7 @@ public class SilaDeviceManager : ISilaDeviceManager
     _loggerFactory = loggerFactory;
     _monitors = new List<SilaDeviceMonitor>();
     _stateLoggerManager = stateLoggerManager;
+    _logger = logger;
   }
 
   public async Task<bool> RemoveDevice(string deviceId)
@@ -87,7 +90,7 @@ public class SilaDeviceManager : ISilaDeviceManager
 
   public async Task<SilaDevice?> Create(string address, int port)
   {
-    var server = _silaClient.TryConnectToServer(address, port);
+    var server = await _silaClient.TryConnectToServer(address, port);
 
     if(server is null)
       return null;
@@ -127,6 +130,8 @@ public class SilaDeviceManager : ISilaDeviceManager
 
       await _stateLoggerManager.SetupLogger(device);
     }
+
+    _logger.LogInformation("Finished Loading the SiLA Devices");
   }
 
   public async Task<SilaDevice?> LoadExistingSilaDevice(SilaDeviceConfig deviceConfig)
@@ -136,7 +141,7 @@ public class SilaDeviceManager : ISilaDeviceManager
     if(!parsed || endPoint is null)
       return null;
 
-    var serverData = _silaClient.TryConnectToServer(endPoint.Address.ToString(), endPoint.Port);
+    var serverData = await _silaClient.TryConnectToServer(endPoint.Address.ToString(), endPoint.Port);
 
     if(serverData is null)
       return null;

@@ -89,6 +89,8 @@ public class DemoRemoteDeviceManager : IRemoteDeviceManager
         _deviceMonitors.Add(demoMonitor);
 
         await _stateLoggerManager.SetupLogger(demoDevice);
+
+        _logger.LogInformation("Finished Loading Remote Devices in Demo Mode");
       }
       catch(Exception ex)
       {

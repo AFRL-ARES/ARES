@@ -40,9 +40,11 @@ public class DemoRemoteVisualizerManager : IRemoteVisualizerManager
     var existingDemo = _visualizerRepo.GetVisualizerById(DemoIds.VisualizerId);
     if(existingDemo is null)
     {
-      _logger.LogInformation("[Demo Remote Visualization Manager] - No Existing Demo Visualizer, Creating New Demo Visualizer");
+      _logger.LogInformation("No Existing Demo Visualizer, Creating New Demo Visualizer");
       await CreateDemoVisualizer("http://localhost:5028");
     }
+
+    _logger.LogInformation("Finished loading Visualizers");
   }
 
   public Task CreateVisualizer(string name, string url)

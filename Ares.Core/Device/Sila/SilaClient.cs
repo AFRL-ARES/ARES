@@ -25,12 +25,21 @@ public class SilaClient
     return ServerFinder.GetServers(TimeSpan.FromSeconds(5));
   }
 
-  public ServerData? TryConnectToServer(string address, int port)
+  public async Task<ServerData?> TryConnectToServer(string address, int port)
   {
     try
     {
-      var server = Connector.Connect(address, port);
-      return server;
+      var task = Task.Run(() => Connector.Connect(address, port));
+      var delayTask = Task.Delay(TimeSpan.FromSeconds(5));
+
+      var completedTask = await Task.WhenAny(task, delayTask);
+
+      if(completedTask == delayTask)
+        throw new TimeoutException("The synchronous operation timed out.");
+
+      // Retrieve the result (will rethrow any exceptions from the method)
+      var result = await task;
+      return result;
     }
 
     catch(Exception)

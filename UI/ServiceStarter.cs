@@ -123,13 +123,7 @@ public class ServiceStarter : BackgroundService
     }, cancellationToken);
 
     var infraTrack = EnsureDataPathsExist();
-
-    var remoteTrack = Task.WhenAll(
-      _plannerManager.LoadPlanners(),
-      _analyzerManager.LoadAnalyzers(),
-      _visualizerManager.LoadVisualizers(),
-      _remoteDeviceManager.LoadDevices(),
-      _silaDeviceManager.LoadSilaDevices());
+    var remoteTrack = LoadRemoteTrackAsync();
 
     await _visualizationConfigManager.Initialize();
     await _remoteVisualizationConfigManager.Initialize();
@@ -137,6 +131,26 @@ public class ServiceStarter : BackgroundService
     await Task.WhenAll(localTrack, infraTrack, remoteTrack);
     _logger.LogInformation("Successfully Finished the ARES Loading Sequence");
     _tracker.MarkAsReady();
+  }
+
+  async Task LoadRemoteTrackAsync()
+  {
+    try
+    {
+      await Task.WhenAll(
+          _plannerManager.LoadPlanners(),
+          _analyzerManager.LoadAnalyzers(),
+          _visualizerManager.LoadVisualizers(),
+          _remoteDeviceManager.LoadDevices(),
+          _silaDeviceManager.LoadSilaDevices()
+      );
+
+      _logger.LogInformation("Finished the Remote Loading Startup Track");
+    }
+    catch(Exception ex)
+    {
+      _logger.LogError(ex, "Failed to complete the Remote Loading Startup Track");
+    }
   }
 
   public override async Task StopAsync(CancellationToken cancellationToken)
@@ -151,6 +165,7 @@ public class ServiceStarter : BackgroundService
     Directory.CreateDirectory(_resultsPath);
     Directory.CreateDirectory(_templatesPath);
 
+    _logger.LogInformation("Finished Local Path Creation Track");
     return Task.CompletedTask;
   }
 }

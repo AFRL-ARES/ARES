@@ -1,6 +1,8 @@
 using Ares.Core.Execution.VersionChecking;
 using Ares.Core.Notifications;
 using Ares.Datamodel.Planning;
+using Grpc.Core.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace Ares.Core.Planning;
 
@@ -16,16 +18,19 @@ public class DemoRemotePlannerManager : IRemotePlannerManager
   private readonly IDatamodelVersionValidator _versionValidator;
   private readonly IPlannerServiceCache _plannerCache;
   private RemotePlannerMonitor? _remotePlannerMonitor;
+  private ILogger<DemoRemotePlannerManager> _logger;
 
   public DemoRemotePlannerManager(IPlannerServiceRepo plannerRepo,
     INotificationHandler notificationHandler,
     IDatamodelVersionValidator versionValidator,
-    IPlannerServiceCache plannerCache)
+    IPlannerServiceCache plannerCache,
+    ILogger<DemoRemotePlannerManager> logger)
   {
     _plannerRepo = plannerRepo;
     _notificationHandler = notificationHandler;
     _versionValidator = versionValidator;
     _plannerCache = plannerCache;
+    _logger = logger;
   }
 
   public async Task LoadPlanners()
@@ -37,6 +42,8 @@ public class DemoRemotePlannerManager : IRemotePlannerManager
       var demoUrl = "http://localhost:5036";
       await CreateDemoPlanner(demoUrl);
     }
+
+    _logger.LogInformation("Finished loading Planners");
   }
 
   public Task CreatePlanner(string name, string url)

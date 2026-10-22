@@ -95,11 +95,7 @@ internal class RemoteDeviceManager(
       await _stateLoggerManager.SetupLogger(device);
     }
 
-    // In demo mode, ensure static demo remote device is present
-    if(AresConfig.DemoMode)
-    {
-
-    }
+    _logger.LogInformation("Finished Loading Remote Devices from the Database");
   }
 
   public async Task<bool> RemoveDevice(string deviceId)
