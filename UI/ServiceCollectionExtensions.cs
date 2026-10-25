@@ -50,6 +50,8 @@ using RemoteDeviceSettingsListViewModel = UI.Features.Devices.Remote.RemoteDevic
 using ScriptPlaygroundViewModel = UI.Features.ScriptPlayground.ScriptPlaygroundViewModel;
 using UI.Features.Settings;
 using UI.Features.Devices.Sila.Factory;
+using UI.Infrastructure.Devices.Remote;
+using UI.Infrastructure.Devices.Sila;
 
 namespace UI;
 
@@ -74,7 +76,8 @@ internal static class ServiceCollectionExtensions
     services.AddSingleton<INotificationRepo, NotificationRepo>();
     services.AddSingleton<INotificationProvider, NotificationProvider>();
 
-    services.AddSingleton<IDeviceAdapterRepository, DeviceAdapterRepository>();
+    services.AddSingleton<IRemoteDeviceAdapterRepository, RemoteDeviceAdapterRepository>();
+    services.AddSingleton<ISilaDeviceAdapterRepository, SilaDeviceAdapterRepository>();
     services.AddSingleton<DeviceAdapterManager>();
     services.AddSingleton<MonacoCompletionProvider>();
     services.AddSingleton<MonacoDiagnosticsProvider>();

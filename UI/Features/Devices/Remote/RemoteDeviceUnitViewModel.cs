@@ -49,4 +49,3 @@ public partial class RemoteDeviceUnitViewModel : ReactiveObject, IDeviceUnitCont
     return ValueTask.CompletedTask;
   }
 }
-

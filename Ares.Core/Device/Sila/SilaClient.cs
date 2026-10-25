@@ -1,4 +1,6 @@
-﻿using Tecan.Sila2;
+﻿using Grpc.Core;
+using Grpc.Net.Client;
+using Tecan.Sila2;
 using Tecan.Sila2.Discovery;
 
 namespace Ares.Core.Device.Sila;
@@ -25,6 +27,24 @@ public class SilaClient
     return ServerFinder.GetServers(TimeSpan.FromSeconds(5));
   }
 
+  public bool TestServerConnection(string address, int port)
+  {
+    try
+    {
+      var fetchedData = Connector.Connect(address, port);
+
+      if(fetchedData is null)
+        return false;
+
+      return true;
+    }
+
+    catch(Exception)
+    {
+      return false;
+    }
+  }
+
   public async Task<ServerData?> TryConnectToServer(string address, int port)
   {
     try
@@ -49,8 +69,6 @@ public class SilaClient
   }
 
   private ServerDiscovery? ServerFinder { get; set; }
-
   public DiscoveryExecutionManager? ExecutionManager { get; set; }
-  
   public ServerConnector Connector { get; set; }
 }

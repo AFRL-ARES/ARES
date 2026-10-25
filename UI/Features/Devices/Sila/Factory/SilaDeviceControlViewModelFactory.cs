@@ -1,5 +1,5 @@
-﻿using Ares.Core.Device.Sila;
-using Ares.Toolkit.Device.UI;
+﻿using Ares.Toolkit.Device.UI;
+using UI.Infrastructure.Devices.Sila;
 
 namespace UI.Features.Devices.Sila.Factory;
 
@@ -10,6 +10,6 @@ public class SilaDeviceControlViewModelFactory : ISilaDeviceControlViewModelFact
     
   }
 
-  public IDeviceUnitControlViewModel Create(SilaDevice silaDevice)
+  public IDeviceUnitControlViewModel Create(SilaDeviceAdapter silaDevice)
     => new SilaDeviceUnitViewModel(silaDevice);
 }

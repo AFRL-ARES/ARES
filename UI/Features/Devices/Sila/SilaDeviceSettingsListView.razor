@@ -40,7 +40,7 @@ else
 	{
     await ViewModel!.UpdateAvailableDevices();
 		await base.OnInitializedAsync();
-	}
+  }
 
   private bool IsAddDisabled => AresConfig.DemoMode || ViewModel!.IsLoading;
 }

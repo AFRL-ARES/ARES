@@ -6,7 +6,7 @@
   {
     <div class="device-status d-flex">
       <button class="btn btn-sm border-0 rounded-circle btn-outline-primary mx-1" @onclick="UpdateDeviceOperationalStatus">
-        <RadzenIcon Icon="add"/>
+        <RadzenIcon Icon="refresh"/>
       </button>
       @if (_deviceOperationalStatus is not null)
       {
@@ -19,7 +19,7 @@
             if(_deviceOperationalStatus.Message == string.Empty)
             {
               <div>
-                Remote Device is Active!
+                Device is Active!
               </div>
             }
 
@@ -104,15 +104,6 @@
 
   private DeviceOperationalStatus? _deviceOperationalStatus;
 
-  protected override async Task OnInitializedAsync()
-  {
-    if (DeviceOperationalStatusGetter is not null)
-    {
-      _deviceOperationalStatus = await DeviceOperationalStatusGetter();
-      StateHasChanged();
-    }
-  }
-
   private Task EditClicked()
   {
     return EditCallback is not null ? EditCallback() : Task.CompletedTask;
@@ -135,11 +126,12 @@
 
   private async Task UpdateDeviceOperationalStatus()
   {
-    if (DeviceOperationalStatusGetter is null)
+    if(DeviceOperationalStatusGetter is null)
       return;
 
     _deviceOperationalStatus = null;
     _deviceOperationalStatus = await DeviceOperationalStatusGetter();
+    StateHasChanged();
   }
 
   private async Task ActivateClicked()
@@ -151,4 +143,8 @@
     await UpdateDeviceOperationalStatus();
   }
 
+  protected override async Task OnInitializedAsync()
+  {
+    await UpdateDeviceOperationalStatus();
+  }
 }

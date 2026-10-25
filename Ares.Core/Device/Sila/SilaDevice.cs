@@ -3,7 +3,9 @@ using Ares.Datamodel.Device;
 using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Factories;
 using Ares.Device;
+using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
+using System.Net;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Tecan.Sila2;
@@ -14,25 +16,34 @@ namespace Ares.Core.Device.Sila;
 public sealed class SilaDevice : AresDevice, IAsyncDisposable
 {
   private readonly SilaClient _silaClient;
-  private readonly ServerData _serverData;
+  private ServerData _serverData;
   private readonly BehaviorSubject<AresStruct> _stateSubject = new(new AresStruct());
   private readonly ConcurrentDictionary<string, AresValue> _currentPropertyValues = new();
   private DeviceCommandDescriptor[] _commands = [];
   private CancellationTokenSource _stateStreamCts = new();
   private DevicePollingSettings _pollingSettings = new();
   private Task? _monitoringTask;
+  private readonly ILogger<SilaDevice> _logger;
 
-  public SilaDevice(ServerData serverData, DeviceConnectionInfo connectionInfo, SilaClient client) : base(connectionInfo)
+  public SilaDevice(ServerData serverData, 
+    DeviceConnectionInfo connectionInfo, 
+    SilaClient client, 
+    ILogger<SilaDevice> logger) : base(connectionInfo)
   {
     _serverData = serverData ?? throw new ArgumentNullException(nameof(serverData));
     _silaClient = client ?? throw new ArgumentNullException(nameof(client));
+    _logger = logger;
 
     DeviceFeatures = _serverData.Features.ToArray();
 
     Description = serverData.Info.Description;
     Version = serverData.Info.Version;
     Type = serverData.Info.Type;
-    Address = serverData.Address;
+
+    var parsed = IPEndPoint.TryParse(serverData.Address, out IPEndPoint? parsedEndpoint);
+    
+    if(parsed)
+      Address = parsedEndpoint;
   }
 
   public override async Task<bool> Activate(CancellationToken ct)
@@ -47,6 +58,96 @@ public sealed class SilaDevice : AresDevice, IAsyncDisposable
 
     await StartPropertyMonitoring();
     return true;
+  }
+
+  public async Task TryUpdateStatus()
+  {
+    try 
+    {
+      if(Address is null)
+      {
+        Status = new DeviceOperationalStatus() { OperationalState = OperationalState.Error, Message = "Invalid or No Address Provided" };
+        return;
+      }
+
+      if(_serverData.Features.Any() && Status.OperationalState == OperationalState.Active)
+      {
+        _silaClient.TestServerConnection(Address.Address.ToString(), Address.Port);
+
+        var connected = await TestExistingConnection();
+
+        if(!connected)
+        {
+          _logger.LogWarning("Connection Test for SiLA Server {name} failed, as it refused to respond to a feature defintion request", Name);
+
+          Status = new DeviceOperationalStatus()
+          {
+            OperationalState = OperationalState.Inactive,
+            Message = $"SiLA Server {Name} Failed to Respond to Feature Query"
+          };
+        }
+
+        return;
+      }
+
+      var data = await _silaClient.TryConnectToServer(Address.Address.ToString(), Address.Port);
+
+      if(data is not null)
+      {
+        _serverData = data;
+
+        BuildStateSchema();
+
+        Status = new DeviceOperationalStatus()
+        {
+          OperationalState = OperationalState.Active,
+          Message = $"Connected to SiLA Device {Name}!"
+        };
+
+        await StartPropertyMonitoring();
+      }
+
+      else
+      {
+        Status = new DeviceOperationalStatus()
+        {
+          OperationalState = OperationalState.Error,
+          Message = $"Unable to Connect to Specified Server, No Data Recevied in Response"
+        };
+
+        _logger.LogWarning("Tried to fetch Server Data for Sila Device {deviceName}, but got a null response", Name);
+      }
+    }
+
+    catch(Exception e)
+    {
+      _logger.LogError(e, "Encountered an error while trying to add a SiLA Device named {dood}", Name);
+
+      Status = new DeviceOperationalStatus()
+      {
+        OperationalState = OperationalState.Error,
+        Message = $"Encountered an error trying to connect to SiLA Server, check ARES logs for more details"
+      };
+    }
+  }
+
+  private async Task<bool> TestExistingConnection()
+  {
+    TryResolveCommand("SiLAService.GetFeatureDefinition", out var feature, out var featureCommand);
+
+    try
+    {
+      if(Address is null)
+        return false;
+
+      return _silaClient.TestServerConnection(Address.Address.ToString(), Address.Port);
+    }
+
+    catch(Exception ex)
+    {
+      _logger.LogError(ex, "Failed to connect to SiLA Server {name}", Name);
+      return false;
+    }
   }
 
   private void BuildStateSchema()
@@ -379,7 +480,7 @@ public sealed class SilaDevice : AresDevice, IAsyncDisposable
       ?.DataType;
   }
 
-  public string Address { get; private set; }
+  public IPEndPoint? Address { get; private set; }
   private IEnumerable<Feature> DeviceFeatures { get; set; } = [];
   public override IObservable<AresStruct> StateStream => _stateSubject.AsObservable();
 }

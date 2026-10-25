@@ -11,13 +11,13 @@ public class AresDeviceViewModelFactory : IAresDeviceViewModelFactory
   private readonly IServiceProvider _serviceProvider;
   private readonly IDeviceDriverProvider _driverProvider;
   private readonly IDeviceConfigProvider _deviceConfigProvider;
-  private readonly IDeviceAdapterRepository _deviceAdapterRepo;
+  private readonly IRemoteDeviceAdapterRepository _deviceAdapterRepo;
   private readonly ILogger<IAresDeviceViewModelFactory> _logger;
 
   public AresDeviceViewModelFactory(IServiceProvider serviceProvider,
     IDeviceDriverProvider driverProvider,
     IDeviceConfigProvider deviceConfigProvider,
-    IDeviceAdapterRepository deviceAdapterRepo,
+    IRemoteDeviceAdapterRepository deviceAdapterRepo,
     ILogger<IAresDeviceViewModelFactory> logger)
   {
     _serviceProvider = serviceProvider;

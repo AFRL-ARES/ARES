@@ -629,7 +629,8 @@ public class SilaDeviceTests
         DeviceId = "sila-device",
         DeviceName = "SiLA Device"
       },
-      client ?? new SilaClient());
+      client ?? new SilaClient(),
+      null);
   }
 
   private static ServerData CreateServerData(IEnumerable<Feature> features)
