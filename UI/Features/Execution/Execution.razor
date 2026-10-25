@@ -391,12 +391,16 @@
                 </div>
               </div>
 
-              @if(ViewModel!.ExperimentExecutionStatuses.Any())
+              @{
+                var experimentExecutionStatuses = ViewModel!.ExperimentExecutionStatuses;
+              }
+
+              @if(experimentExecutionStatuses.Any())
               {
                 <div class="timeline">
-                  @for(var i = 0; i < ViewModel!.ExperimentExecutionStatuses.Count; i++)
+                  @for(var i = 0; i < experimentExecutionStatuses.Count; i++)
                   {
-                    var experiment = ViewModel!.ExperimentExecutionStatuses[i];
+                    var experiment = experimentExecutionStatuses[i];
                     <div class="timeline-item @GetExperimentClass(experiment)" @key="experiment.ExperimentId">
                       <div class="timeline-marker"></div>
                       <div class="timeline-content">
@@ -412,15 +416,7 @@
 
                         else
                         {
-                          @if(ViewModel!.CampaignTemplate!.StartupTemplate.StepTemplates.Any())
-                          {
-                            <h4>Experiment @(i)</h4>
-                          }
-
-                          else
-                          {
-                            <h4>Experiment @(i + 1)</h4>
-                          }
+                          <h4>Experiment @experimentExecutionStatuses.GetExperimentNumber(i)</h4>
                         }
 
                         @foreach(var step in experiment.StepExecutionStatuses)
@@ -732,7 +728,7 @@
               </div>
 
               <div class="activity-list">
-                @foreach(var activity in ViewModel!.ExperimentExecutionStatuses.SelectMany(status => status.GetCommandExecutionStatuses()).Reverse().Take(8))
+                @foreach(var activity in ViewModel!.ExperimentExecutionStatuses.SelectMany(status => status.GetCommandExecutionStatuses()).Reverse().Take(8).ToArray())
                 {
                   <div class="activity-item">
                     <span class="@GetStatusClass(activity.State)">@activity.State</span>
@@ -760,8 +756,8 @@
     await ViewModel!.UpdateCurrentTemplate();
     await ViewModel!.GetAllTags();
     await ViewModel!.RefreshCampaignSetup();
-    ViewModel!.StartWatchingTelemetry();
     await ViewModel!.RefreshExecutionContext();
+    ViewModel!.StartWatchingTelemetry();
   }
 
   private void InvokeStateHasChanged()

@@ -33,4 +33,11 @@ public static class StatusExtensions
   {
     return experimentExecutionStatus.StepExecutionStatuses.SelectMany(stepStatus => stepStatus.CommandExecutionStatuses);
   }
+
+  public static int GetExperimentNumber(this IEnumerable<ExperimentExecutionStatus> experimentExecutionStatuses, int statusIndex)
+  {
+    return experimentExecutionStatuses
+      .Take(statusIndex + 1)
+      .Count(status => !status.IsStartup && !status.IsCloseout);
+  }
 }

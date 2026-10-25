@@ -331,7 +331,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
       return;
     }
 
-    ExperimentExecutionStatuses.Clear();
+    ExperimentExecutionStatuses = [];
     _latestVisualizationJsonByAllocationId.Clear();
     this.RaisePropertyChanged(nameof(SelectedLiveDataJson));
     var request = new StartCampaignRequest() { UserNotes = ExecutionNotes };
@@ -658,15 +658,8 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
     _campaignStateSubscription = _executionReportStore.CampaignStatusObservable
       .Where(status => status is not null)
-      .Select(status => new CampaignExecutionState
-      {
-        CampaignId = status!.CampaignId,
-        State = status.State,
-        AnalysisState = status.AnalysisState,
-        PlannerState = status.PlannerState
-      })
       .Subscribe(
-        onNext: state => UpdateCampaignStatus(state!), 
+        onNext: status => ApplyCampaignExecutionStatus(status!),
         onError: ex => Console.WriteLine($"Error Updating Campaign State: {ex.Message}"));
 
     _completedExperimentSubscription = _executionReportStore.CompletedExperimentObservable
@@ -681,9 +674,8 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     var existingStatus = ExperimentExecutionStatuses.FirstOrDefault(s => s.ExperimentId == status.ExperimentId);
 
     if(existingStatus is null)
-      ExperimentExecutionStatuses.Add(status);
- 
-      
+      ExperimentExecutionStatuses = [.. ExperimentExecutionStatuses, status];
+
     else
     {
       var incomingCommands = status.GetCommandExecutionStatuses();
@@ -742,6 +734,30 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
       _ = RequestUserConfirmation();
 
     StateChanged?.Invoke();
+  }
+
+  internal void ApplyCampaignExecutionStatus(CampaignExecutionStatus status)
+  {
+    ExperimentExecutionStatuses = status.ExperimentExecutionStatuses.ToArray();
+
+    var state = new CampaignExecutionState
+    {
+      CampaignId = status.CampaignId,
+      State = status.State,
+      AnalysisState = status.AnalysisState,
+      PlannerState = status.PlannerState
+    };
+
+    UpdateCampaignStatus(state);
+
+    var latestExperimentStatus = ExperimentExecutionStatuses.LastOrDefault();
+    if(latestExperimentStatus is not null)
+      ExtractCommandVariables(latestExperimentStatus);
+
+    this.RaisePropertyChanged(nameof(CurrentCommand));
+    this.RaisePropertyChanged(nameof(CompletedExperimentCount));
+    this.RaisePropertyChanged(nameof(ActiveExperimentNumber));
+    this.RaisePropertyChanged(nameof(CurrentOutputVariables));
   }
 
   public Task UpdateDeviceChartA()
@@ -826,6 +842,10 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   {
     await RefreshPlannerTransactionData();
     await RefreshAnalyzerTransactionData();
+
+    var campaignExecutionStatus = await GetCampaignExecutionStatus();
+    if(campaignExecutionStatus is not null)
+      ApplyCampaignExecutionStatus(campaignExecutionStatus);
   }
 
   public async Task RefreshPlannerTransactionData()
@@ -995,7 +1015,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   [Reactive]
   public partial string? SelectedLiveDataSourceId { get; set; } = LiveDataDisplaySource.PlannerSourceId;
   [Reactive]
-  public partial IList<ExperimentExecutionStatus> ExperimentExecutionStatuses { get; private set; }
+  public partial IReadOnlyList<ExperimentExecutionStatus> ExperimentExecutionStatuses { get; private set; }
   [Reactive]
   public partial VisualizationItemViewModel? ChartA { get; private set; }
   [Reactive]
