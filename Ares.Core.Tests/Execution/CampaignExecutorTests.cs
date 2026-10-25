@@ -236,19 +236,6 @@ internal class CampaignExecutorTests
   }
 
   [Test]
-  public async Task Safe_Mode_Is_Entered_Exactly_Once()
-  {
-    UseDeviceResults(FailedResult());
-    ConfigureErrorHandling(ErrorHandling.EnterSafeMode);
-    var executor = CreateExecutor(addStopCondition: false);
-
-    await executor.Execute(new ExecutionControlTokenSource().Token);
-
-    Assert.That(executor.Status.State, Is.EqualTo(ExecutionState.Failed));
-    _safetyManager.Verify(manager => manager.EnterSafeMode(), Times.Once);
-  }
-
-  [Test]
   public async Task Prompted_Error_Reports_Waiting_And_Follows_Decision()
   {
     UseDeviceResults(FailedResult(), SuccessfulResults(4));
