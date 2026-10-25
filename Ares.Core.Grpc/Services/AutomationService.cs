@@ -23,7 +23,7 @@ using Ares.Core.Planning;
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Extensions;
 using Ares.Core.Execution.StopConditions.PlannerLead;
-using System.Text.Json;
+using DynamicData;
 
 namespace Ares.Core.Grpc.Services;
 
@@ -356,6 +356,17 @@ public class AutomationService : AresAutomation.AresAutomationBase
     return Task.FromResult(new Empty());
   }
 
+  public override Task<Empty> AddAnalysisResultStopConditions(AddAnalysisResultConditionsRequest request, ServerCallContext? context)
+  {
+    var stopConditions = _executionManager.CampaignStopConditions;
+    stopConditions.Clear();
+
+    var newStopConditions = request.Conditions.Select(condition => _desiredAnalysisResultFactory.Create(condition.DesiredResult, condition.Leeway));
+    stopConditions.AddRange(newStopConditions);
+
+    return Task.FromResult(new Empty());
+  }
+
   public override Task<Empty> SetPlannerLeadStopCondition(Empty request, ServerCallContext context)
   {
     var stopConditions = _executionManager.CampaignStopConditions;
@@ -385,6 +396,17 @@ public class AutomationService : AresAutomation.AresAutomationBase
     }
 
     var condition = stopConditions.First();
+
+    if(condition is DesiredAnalysisResult)
+    {
+      if(stopConditions.Count(c => c is DesiredAnalysisResult) > 1)
+        return Task.FromResult(new ExperimentStopConditionResponse 
+        { 
+          ActiveCondition = "Multi-Objective Analysis Condition", 
+          Description = "Campaign will stop when one of the set objective thresholds is met" 
+        });
+    }
+
     return Task.FromResult(
       new ExperimentStopConditionResponse
       {
@@ -392,6 +414,9 @@ public class AutomationService : AresAutomation.AresAutomationBase
         Description = condition.Description
       });
   }
+
+  public void SetAchieveAllStopConditions(bool achieveAllConditions)
+    => _executionManager.UpdateAchieveAllObjectivesValue(achieveAllConditions);
 
   public override async Task<CheckExecutionEligibilityResponse> CheckExecutionEligibility(Empty request, ServerCallContext? context)
   {

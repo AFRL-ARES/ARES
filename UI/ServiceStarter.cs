@@ -8,6 +8,7 @@ using Ares.Core.Device.State.Logging;
 using Ares.Core.Planning;
 using Ares.Core.Settings;
 using Ares.Core.Visualization.Managers;
+using Ares.Core.Visualization.Providers;
 using UI.Application.Devices.Repos;
 using UI.Application.Notifications;
 using UI.Application.Settings;
@@ -23,9 +24,12 @@ public class ServiceStarter : BackgroundService
   private readonly DeviceAdapterManager _deviceAdapterManager;
   private readonly IRemoteAnalyzerManager _analyzerManager;
   private readonly IRemotePlannerManager _plannerManager;
+  private readonly IRemoteVisualizerManager _visualizerManager;
   private readonly IRemoteDeviceManager _remoteDeviceManager;
   private readonly IDeviceConfigManager _deviceConfigManager;
   private readonly IVisualizationConfigManager _visualizationConfigManager;
+  private readonly IRemoteVisualizationConfigManager _remoteVisualizationConfigManager;
+  private readonly IRemoteVisualizationDataProvider _remoteVisualizationDataProvider;
   private readonly IDeviceDriverLoader _deviceDriverLoader;
   private readonly IDeviceManager _deviceManager;
   private readonly ISilaDeviceManager _silaDeviceManager;
@@ -36,7 +40,6 @@ public class ServiceStarter : BackgroundService
   private readonly SilaClient _silaClient;
   private readonly ILogger<ServiceStarter> _logger;
   private readonly ISystemSettingsManager _settingsManager;
-
   private readonly string _dataPath;
   private readonly string _resultsPath;
   private readonly string _templatesPath;
@@ -45,10 +48,13 @@ public class ServiceStarter : BackgroundService
 
   public ServiceStarter(
     IRemotePlannerManager plannerManager,
+    IRemoteVisualizerManager visualizerManager,
     IDeviceDriverLoader deviceDriverLoader,
     IRemoteAnalyzerManager analyzerManager,
     IDeviceConfigManager deviceConfigManager,
     IVisualizationConfigManager visualizationConfigManager,
+    IRemoteVisualizationConfigManager remoteVisualizationConfigManager,
+    IRemoteVisualizationDataProvider remoteVisualizationDataProvider,
     IConfiguration configuration,
     IRemoteDeviceManager remoteDeviceManager,
     ISilaDeviceManager silaDeviceManager,
@@ -72,9 +78,12 @@ public class ServiceStarter : BackgroundService
 
     _analyzerManager = analyzerManager;
     _plannerManager = plannerManager;
+    _visualizerManager = visualizerManager;
     _remoteDeviceManager = remoteDeviceManager;
     _silaDeviceManager = silaDeviceManager;
     _visualizationConfigManager = visualizationConfigManager;
+    _remoteVisualizationConfigManager = remoteVisualizationConfigManager;
+    _remoteVisualizationDataProvider = remoteVisualizationDataProvider;
     _configuration = configuration;
     _deviceManager = deviceManager;
     _deviceConfigManager = deviceConfigManager;
@@ -114,19 +123,34 @@ public class ServiceStarter : BackgroundService
     }, cancellationToken);
 
     var infraTrack = EnsureDataPathsExist();
-
-    var remoteTrack = Task.WhenAll(
-      _plannerManager.LoadPlanners(),
-      _analyzerManager.LoadAnalyzers(),
-      _remoteDeviceManager.LoadDevices(),
-      _silaDeviceManager.LoadSilaDevices()
-      );
+    var remoteTrack = LoadRemoteTrackAsync();
 
     await _visualizationConfigManager.Initialize();
+    await _remoteVisualizationConfigManager.Initialize();
+    await _remoteVisualizationDataProvider.Initialize();
     await Task.WhenAll(localTrack, infraTrack, remoteTrack);
-    await Task.Delay(TimeSpan.FromSeconds(6));
-    _logger.LogInformation("Successfully Finished the Loading Sequences");
+    _logger.LogInformation("Successfully Finished the ARES Loading Sequence");
     _tracker.MarkAsReady();
+  }
+
+  async Task LoadRemoteTrackAsync()
+  {
+    try
+    {
+      await Task.WhenAll(
+          _plannerManager.LoadPlanners(),
+          _analyzerManager.LoadAnalyzers(),
+          _visualizerManager.LoadVisualizers(),
+          _remoteDeviceManager.LoadDevices(),
+          _silaDeviceManager.LoadSilaDevices()
+      );
+
+      _logger.LogInformation("Finished the Remote Loading Startup Track");
+    }
+    catch(Exception ex)
+    {
+      _logger.LogError(ex, "Failed to complete the Remote Loading Startup Track");
+    }
   }
 
   public override async Task StopAsync(CancellationToken cancellationToken)
@@ -141,7 +165,7 @@ public class ServiceStarter : BackgroundService
     Directory.CreateDirectory(_resultsPath);
     Directory.CreateDirectory(_templatesPath);
 
+    _logger.LogInformation("Finished Local Path Creation Track");
     return Task.CompletedTask;
   }
 }
-

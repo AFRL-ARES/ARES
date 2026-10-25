@@ -1,0 +1,16 @@
+.plotly-viewer-wrapper {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--rz-border-color, rgba(148, 163, 184, 0.2));
+  border-radius: 8px;
+  background: var(--rz-base-background-color, var(--rz-card-background-color, #151b24));
+}
+
+.plotly-chart-container {
+  flex: 1 1 auto;
+  min-height: 0;
+}

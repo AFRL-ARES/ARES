@@ -15,6 +15,7 @@ using Ares.Core.Settings;
 using Ares.Core.Tests.Data;
 using Ares.Core.Tests.Data.Analyzer;
 using Ares.Core.Tests.Data.Device;
+using Ares.Core.Visualization;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
 using Ares.Datamodel.Extensions;
@@ -33,6 +34,7 @@ internal class CampaignExecutorTests
   private AnalyzerRepo _analyzerRepo;
   private IAnalyzer _replyAnalyzer;
   private AresDeviceRepo _deviceRepo;
+  private IAresDeviceProvider _deviceProvider;
   private IExecutionReportStore _executionReportStore;
   private Mock<IPlanningHelper> _planningHelper;
   private Mock<ISystemSettingsManager> _settingsManager;
@@ -76,16 +78,12 @@ internal class CampaignExecutorTests
     _safetyManager = new Mock<IExecutionSafetyManager>();
     _safetyManager.Setup(manager => manager.EnterSafeMode()).ReturnsAsync(true);
 
-    var dbOptions = new DbContextOptionsBuilder<CoreDatabaseContext>()
-      .UseInMemoryDatabase(Guid.NewGuid().ToString())
-      .Options;
+    _deviceProvider = new Mock<IAresDeviceProvider>().Object;
+
+    var dbOptions = new DbContextOptionsBuilder<CoreDatabaseContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
     var dbContextFactory = new Mock<IDbContextFactory<CoreDatabaseContext>>();
     dbContextFactory.Setup(factory => factory.CreateDbContext()).Returns(() => new CoreDatabaseContext(dbOptions));
-    var analysisHelper = new AnalysisHelper(
-      _analyzerRepo,
-      Mock.Of<ILogger<AnalysisHelper>>(),
-      dbContextFactory.Object,
-      notifier);
+    var analysisHelper = new AnalysisHelper(_analyzerRepo, Mock.Of<ILogger<AnalysisHelper>>(), dbContextFactory.Object, notifier);
 
     _deviceRepo = new AresDeviceRepo();
     _deviceRepo.AddOrUpdate(new ResultSequenceDevice([]));
@@ -106,6 +104,15 @@ internal class CampaignExecutorTests
       dbContextFactory.Object,
       Mock.Of<IAresDeviceProvider>());
 
+    var visualizationService = new Mock<IExperimentVisualizationService>();
+    visualizationService
+      .Setup(service => service.GenerateVisualizations(
+        It.IsAny<ExperimentTemplate>(),
+        It.IsAny<IEnumerable<ExperimentExecutionSummary>>(),
+        It.IsAny<ExperimentExecutionSummary>(),
+        It.IsAny<CancellationToken>()))
+      .Returns(Task.CompletedTask);
+
     _campaignComposer = new CampaignComposer(
       analysisHelper,
       experimentComposer,
@@ -120,14 +127,14 @@ internal class CampaignExecutorTests
       Mock.Of<AresVariableManager>(),
       stateLoggerManager,
       _settingsManager.Object,
-      _safetyManager.Object);
+      _deviceProvider,
+      visualizationService.Object);
   }
 
   [TearDown]
   public void TearDown()
-  {
-    _deviceRepo.Dispose();
-  }
+    => _deviceRepo.Dispose();
+  
 
   [Test]
   public async Task Successful_Campaign_Reports_Succeeded_Without_Internal_Execution_States()
@@ -226,19 +233,6 @@ internal class CampaignExecutorTests
       It.IsAny<int>(),
       It.IsAny<List<PlanStatusCode>>(),
       It.IsAny<CancellationToken>()), Times.Once);
-  }
-
-  [Test]
-  public async Task Safe_Mode_Is_Entered_Exactly_Once()
-  {
-    UseDeviceResults(FailedResult());
-    ConfigureErrorHandling(ErrorHandling.EnterSafeMode);
-    var executor = CreateExecutor(addStopCondition: false);
-
-    await executor.Execute(new ExecutionControlTokenSource().Token);
-
-    Assert.That(executor.Status.State, Is.EqualTo(ExecutionState.Failed));
-    _safetyManager.Verify(manager => manager.EnterSafeMode(), Times.Once);
   }
 
   [Test]
@@ -362,9 +356,7 @@ internal class CampaignExecutorTests
   }
 
   private void UseDeviceResults(params CommandResult[][] resultGroups)
-  {
-    _deviceRepo.AddOrUpdate(new ResultSequenceDevice(resultGroups.SelectMany(results => results)));
-  }
+    => _deviceRepo.AddOrUpdate(new ResultSequenceDevice(resultGroups.SelectMany(results => results)));
 
   private static CommandResult[] SuccessfulResults(int count)
     => Enumerable.Range(0, count).Select(_ => SuccessfulResult()).ToArray();
@@ -380,10 +372,8 @@ internal class CampaignExecutorTests
     private readonly Queue<CommandResult> _results;
 
     public ResultSequenceDevice(IEnumerable<CommandResult> results)
-    {
-      _results = new Queue<CommandResult>(results);
-    }
-
+      =>  _results = new Queue<CommandResult>(results);
+   
     public override Task<CommandResult> ExecuteCommand(string command, List<DeviceCommandArgument> parameters, CancellationToken token)
     {
       if(token.IsCancellationRequested)

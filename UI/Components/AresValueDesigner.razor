@@ -1,19 +1,20 @@
 @using Ares.Datamodel
 @using Ares.Datamodel.Extensions
+@using Google.Protobuf
 
 @if(Schema?.Type is AresDataType.String)
-  {
-    <RadzenFormField Text="@GetFormFieldName()" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%">
-      @if(HasStringChoices)
-      {
-        <RadzenDropDown TValue="string" Data="@Schema.StringChoices.Strings" @bind-Value="_stringValue" Change="OnChanged" Style="width: 100%" />
-      }
-      else
-      {
-        <RadzenTextBox @bind-Value="_stringValue" Change="OnChanged" Style="width: 100%" />
-      }
-    </RadzenFormField>
-  }
+{
+  <RadzenFormField Text="@GetFormFieldName()" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%">
+    @if(HasStringChoices)
+    {
+      <RadzenDropDown TValue="string" Data="@Schema.StringChoices.Strings" @bind-Value="_stringValue" Change="OnChanged" Style="width: 100%" />
+    }
+    else
+    {
+      <RadzenTextBox @bind-Value="_stringValue" Change="OnChanged" Style="width: 100%" />
+    }
+  </RadzenFormField>
+}
 
 else if(Schema?.Type is AresDataType.Number || Schema?.Type is AresDataType.Float)
 {
@@ -67,7 +68,7 @@ else if(Schema?.Type is AresDataType.Quantity)
   </RadzenFormField>
 }
 
-else if(Schema?.Type is AresDataType.NumberArray)
+else if(Schema?.Type is AresDataType.NumberArray or AresDataType.FloatArray)
 {
   <RadzenFieldset AllowCollapse="true" Collapsed="true">
     <HeaderTemplate>
@@ -113,12 +114,67 @@ else if(Schema?.Type is AresDataType.NumberArray)
   </RadzenFieldset>
 }
 
+else if(Schema?.Type is AresDataType.IntArray)
+{
+  <RadzenFieldset AllowCollapse="true" Collapsed="true">
+    <HeaderTemplate>
+      <RadzenStack Orientation="Orientation.Horizontal" Gap="0.25rem">
+        <RadzenIcon Icon="data_array" /><b>@Name</b>
+      </RadzenStack>
+    </HeaderTemplate>
+
+    <ChildContent>
+      @for(var i = 0; i < _intArray.Count; i++)
+      {
+        var index = i;
+        <div class="mb-2 flex items-center">
+          <RadzenNumeric TValue="long" Value="@_intArray[index]" Change="@(value => OnIntArrayItemChanged(Convert.ToInt64(value), index))" Style="width: 90%" />
+          <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(() => RemoveIntItem(index))" />
+        </div>
+      }
+      <RadzenButton Icon="add" Click="AddIntItem" ButtonStyle="ButtonStyle.Secondary" />
+    </ChildContent>
+
+    <SummaryTemplate>
+      <RadzenCard>
+        <b>@_intArray.Count Items</b>
+      </RadzenCard>
+    </SummaryTemplate>
+  </RadzenFieldset>
+}
+
   else if(Schema?.Type is AresDataType.Boolean)
   { 
     <RadzenRow Gap="1rem" AlignItems="AlignItems.Center" Style="padding-top: 0.5rem; padding-bottom: 0.5rem;">
       <RadzenSwitch @bind-Value="_boolValue" Name="@Name" Change="@OnBoolChanged" Style="width: 20px"/>
       <RadzenLabel Text="@Name" Component="@Name" />
     </RadzenRow>
+  }
+
+  else if(Schema?.Type is AresDataType.Timestamp)
+  {
+    <RadzenFormField Text="@GetFormFieldName()" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%">
+      <RadzenDatePicker TValue="DateTime" @bind-Value="_timestampValue" Change="@(value => OnTimestampChanged(value ?? DateTime.UnixEpoch))" ShowTime="true" HourFormat="24" Style="width: 100%" />
+    </RadzenFormField>
+  }
+
+  else if(Schema?.Type is AresDataType.ByteArray)
+  {
+    <RadzenFormField Text="@GetFormFieldName()" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%">
+      <RadzenTextBox @bind-Value="_bytesValue" Change="@OnBytesChanged" Style="width: 100%" />
+    </RadzenFormField>
+  }
+
+  else if(Schema?.Type is AresDataType.Unit)
+  {
+    <RadzenText Text="Unit" TextStyle="TextStyle.Body1" />
+  }
+
+  else if(Schema?.Type is AresDataType.Function)
+  {
+    <RadzenFormField Text="@GetFormFieldName()" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%">
+      <RadzenTextBox @bind-Value="_functionId" Change="@OnFunctionChanged" Style="width: 100%" />
+    </RadzenFormField>
   }
 
   else if(Schema?.Type is AresDataType.StringArray)
@@ -170,10 +226,9 @@ else if(Schema?.Type is AresDataType.NumberArray)
           // Ensure we have a default state for this field
           if (!_structValues.ContainsKey(fieldKey))
           {
-            _structValues[fieldKey] = AresValueHelper.CreateDefault(fieldSchema.Type);
+            _structValues[fieldKey] = AresValueHelper.CreateDefaultValue(fieldSchema);
           }
 
-          @* RECURSIVE CALL: The component renders itself! *@
           <AresValueDesigner 
               Name="@(string.IsNullOrEmpty(fieldSchema.Description) ? fieldKey : fieldSchema.Description)"
               Schema="@fieldSchema"
@@ -227,6 +282,33 @@ else if(Schema?.Type is AresDataType.NumberArray)
     </RadzenFieldset>
   }
 
+  else if(Schema?.Type is AresDataType.Any)
+  {
+    <RadzenFormField Text="@GetFormFieldName()" Variant="Variant.Outlined" AllowFloatingLabel="false" Style="width: 100%">
+      <RadzenDropDown TValue="AresDataType?" Data="@AnyTypeOptions" @bind-Value="_selectedAnyValueType" Change="@OnAnyTypeChanged" Style="width: 100%" />
+      
+      @if(_selectedAnyValueType is not null)
+      {
+        @if(_selectedAnyValueType is AresDataType.Null)
+        {
+          <RadzenText Text="Null" TextStyle="TextStyle.Body1" />
+        }
+        else
+        {
+          <RadzenFieldset AllowCollapse="true" Collapsed="false" Text="@Name">
+            <RadzenStack Orientation="Orientation.Vertical" Gap="1rem">
+              <AresValueDesigner
+                Name="@Schema.Description"
+                Value="@_anyValue"
+                Schema="@_anySchema"
+                ValueEditCallback="@OnAnyCaseValueChanged" />
+            </RadzenStack>
+          </RadzenFieldset>
+        }
+    }
+
+    </RadzenFormField>
+  }
 
   else
   {
@@ -255,9 +337,36 @@ else if(Schema?.Type is AresDataType.NumberArray)
   private bool _boolValue;
   private List<string> _stringArray = [];
   private List<double> _numberArray = [];
-  private List<bool> _boolArray = [];
+  private List<long> _intArray = [];
   private Dictionary<string, AresValue> _structValues = new();
   private List<AresValue> _listValues = [];
+  private DateTime _timestampValue = DateTime.UnixEpoch;
+  private string _bytesValue = string.Empty;
+  private string _functionId = string.Empty;
+  private AresValue _anyValue = AresValueHelper.CreateNull();
+  private AresValueSchema _anySchema = new() { Type = AresDataType.Null };
+  private AresDataType? _selectedAnyValueType;
+
+  private static readonly AresDataType[] AnyTypeOptions =
+  [
+    AresDataType.Null,
+    AresDataType.Boolean,
+    AresDataType.String,
+    AresDataType.Number,
+    AresDataType.Float,
+    AresDataType.Int,
+    AresDataType.StringArray,
+    AresDataType.NumberArray,
+    AresDataType.IntArray,
+    AresDataType.FloatArray,
+    AresDataType.ByteArray,
+    AresDataType.Timestamp,
+    AresDataType.Quantity,
+    AresDataType.Struct,
+    AresDataType.List,
+    AresDataType.Unit,
+    AresDataType.Function
+  ];
 
   // Helper properties to check for available choices
   private bool HasStringChoices => Schema?.StringChoices?.Strings?.Any() ?? false;
@@ -270,17 +379,19 @@ else if(Schema?.Type is AresDataType.NumberArray)
 
     else if (Schema is not null)
     {
-      Value = AresValueHelper.CreateDefault(Schema.Type);
+      Value = AresValueHelper.CreateDefaultValue(Schema);
       SetCurrentValue();
     }
 
     if (Value is not null)
-      ValueEditCallback?.Invoke(Value);
+    {
+      if(Schema is not null)
+        return UpdateAresValue();
 
-    else
-      throw new InvalidOperationException("How did you do this?");
+      return ValueEditCallback?.Invoke(Value) ?? Task.CompletedTask;
+    }
 
-    return base.OnInitializedAsync();
+    throw new InvalidOperationException("How did you do this?");
   }
 
   private void SetCurrentValue()
@@ -312,14 +423,53 @@ else if(Schema?.Type is AresDataType.NumberArray)
         _numberArray = Value!.NumberArrayValue?.Numbers?.ToList() ?? [];
         break;
 
+      case AresDataType.FloatArray:
+        _numberArray = Value!.FloatArrayValue?.Floats?.ToList() ?? [];
+        break;
+
+      case AresDataType.IntArray:
+        _intArray = Value!.IntArrayValue?.Ints?.ToList() ?? [];
+        break;
+
       case AresDataType.Struct:
-        // Safely extract existing struct fields into our dictionary
-        _structValues = Value!.StructValue?.Fields?.ToDictionary(k => k.Key, v => v.Value) ?? new();
+        var existingFields = Value!.StructValue?.Fields;
+        _structValues = new(StringComparer.Ordinal);
+
+        foreach(var field in Schema?.StructSchema?.Fields ?? [])
+        {
+          _structValues[field.Key] = existingFields is not null && existingFields.TryGetValue(field.Key, out var fieldValue)
+            ? fieldValue
+            : AresValueHelper.CreateDefaultValue(field.Value);
+        }
         break;
 
       case AresDataType.List:
-        // Assuming your Protobuf defines AresValueList containing a repeated AresValue
         _listValues = Value!.ListValue?.Values?.ToList() ?? new();
+        break;
+
+      case AresDataType.Timestamp:
+        _timestampValue = Value!.TimestampValue?.ToDateTime() ?? DateTime.UnixEpoch;
+        break;
+
+      case AresDataType.ByteArray:
+        _bytesValue = Convert.ToBase64String(Value!.BytesValue?.ToByteArray() ?? []);
+        break;
+
+      case AresDataType.Function:
+        _functionId = Value!.FunctionValue?.FunctionId ?? string.Empty;
+        break;
+
+      case AresDataType.Unit:
+      case AresDataType.Null:
+        break;
+
+      case AresDataType.Any:
+        _anyValue = Value!.AnyValue?.Clone() ?? AresValueHelper.CreateNull();
+        _selectedAnyValueType = _anyValue.GetAresDataType();
+        _anySchema = CreateSchemaForValue(_anyValue);
+        break;
+
+      case AresDataType.UnspecifiedType:
         break;
     }
   }
@@ -328,14 +478,21 @@ else if(Schema?.Type is AresDataType.NumberArray)
 
   // Handler for single string, which is already correctly bound
   private Task OnChanged(object? _ = null)
-  {
-    return UpdateAresValue();
-  }
+    => UpdateAresValue();
+
 
   // Handler for single number from RadzenDropDown (takes object)
   private Task OnNumberChanged(object value)
   {
     _numberValue = (double)value;
+    return UpdateAresValue();
+  }
+
+  private Task OnAnyTypeChanged(object value)
+  {
+    _selectedAnyValueType = (AresDataType)value;
+    _anyValue = AresValueHelper.CreateDefaultValue(new AresValueSchema { Type = _selectedAnyValueType.Value });
+    _anySchema = CreateSchemaForValue(_anyValue);
     return UpdateAresValue();
   }
 
@@ -359,20 +516,31 @@ else if(Schema?.Type is AresDataType.NumberArray)
     return UpdateAresValue();
   }
 
+  private Task OnTimestampChanged(DateTime? value)
+  {
+    if(value is null)
+     return Task.CompletedTask;
+
+    _timestampValue = (DateTime)value;
+    return UpdateAresValue();
+  }
+
+  private Task OnBytesChanged(object? value)
+  {
+    _bytesValue = value?.ToString() ?? string.Empty;
+    return UpdateAresValue();
+  }
+
+  private Task OnFunctionChanged(object? value)
+  {
+    _functionId = value?.ToString() ?? string.Empty;
+    return UpdateAresValue();
+  }
+
   // Handler for single boolean
   private Task OnBoolChanged(bool value)
   {
     _boolValue = value;
-    return UpdateAresValue();
-  }
-
-  // Handler for bool array items
-  private Task OnBoolArrayItemChanged(bool value, int index)
-  {
-    if (index >= 0 && index < _boolArray.Count)
-    {
-      _boolArray[index] = value;
-    }
     return UpdateAresValue();
   }
 
@@ -393,6 +561,14 @@ else if(Schema?.Type is AresDataType.NumberArray)
     {
       _numberArray[index] = Convert.ToDouble(value);
     }
+    return UpdateAresValue();
+  }
+
+  private Task OnIntArrayItemChanged(long value, int index)
+  {
+    if(index >= 0 && index < _intArray.Count)
+      _intArray[index] = value;
+
     return UpdateAresValue();
   }
 
@@ -443,6 +619,18 @@ else if(Schema?.Type is AresDataType.NumberArray)
         aresValue.NumberArrayValue = numArray;
         break;
 
+      case AresDataType.FloatArray:
+        var floatArray = new FloatArray();
+        floatArray.Floats.AddRange(_numberArray);
+        aresValue.FloatArrayValue = floatArray;
+        break;
+
+      case AresDataType.IntArray:
+        var intArray = new IntArray();
+        intArray.Ints.AddRange(_intArray);
+        aresValue.IntArrayValue = intArray;
+        break;
+
       case AresDataType.Struct:
         var aresStruct = new AresStruct();
         foreach(var kvp in _structValues)
@@ -451,11 +639,42 @@ else if(Schema?.Type is AresDataType.NumberArray)
         }
         aresValue.StructValue = aresStruct;
         break;
-        
+
       case AresDataType.List:
         var aresList = new AresValueList();
         aresList.Values.AddRange(_listValues);
         aresValue.ListValue = aresList;
+        break;
+
+      case AresDataType.Timestamp:
+        aresValue.TimestampValue = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(
+          _timestampValue.Kind == DateTimeKind.Utc ? _timestampValue : _timestampValue.ToUniversalTime());
+        break;
+
+      case AresDataType.ByteArray:
+        if(Convert.TryFromBase64String(_bytesValue, new byte[_bytesValue.Length], out var byteCount))
+          aresValue.BytesValue = ByteString.CopyFrom(Convert.FromBase64String(_bytesValue));
+        else
+          aresValue.BytesValue = ByteString.Empty;
+        break;
+
+      case AresDataType.Unit:
+        aresValue.UnitValue = UnitValue.UnitValue;
+        break;
+
+      case AresDataType.Function:
+        aresValue.FunctionValue = new FunctionValue { FunctionId = _functionId };
+        break;
+
+      case AresDataType.Null:
+        aresValue.NullValue = NullValue.NullValue;
+        break;
+
+      case AresDataType.Any:
+        aresValue = AresValueHelper.CreateAnyAresValue(_anyValue);
+        break;
+
+      case AresDataType.UnspecifiedType:
         break;
     }
     // Invoke the callback with the newly constructed AresValue object.
@@ -485,26 +704,26 @@ else if(Schema?.Type is AresDataType.NumberArray)
     UpdateAresValue();
   }
 
+  private void AddIntItem()
+  {
+    _intArray.Add(0);
+    UpdateAresValue();
+  }
+
+  private void RemoveIntItem(int index)
+  {
+    if(index >= 0 && index < _intArray.Count)
+    {
+      _intArray.RemoveAt(index);
+      UpdateAresValue();
+    }
+  }
+
   private void RemoveNumberItem(int index)
   {
     if(index >= 0 && index < _numberArray.Count)
     {
       _numberArray.RemoveAt(index);
-      UpdateAresValue();
-    }
-  }
-
-  private void AddBoolItem()
-  {
-    _boolArray.Add(false);
-    UpdateAresValue();
-  }
-
-  private void RemoveBoolItem(int index)
-  {
-    if(index >= 0 && index < _boolArray.Count)
-    {
-      _boolArray.RemoveAt(index);
       UpdateAresValue();
     }
   }
@@ -520,7 +739,7 @@ else if(Schema?.Type is AresDataType.NumberArray)
       return $"Value must be at least {Schema.MinNumberValue}.";
     if(Schema.HasMaxNumberValue)
       return $"Value must be no more than {Schema.MaxNumberValue}.";
-          
+
     return "Invalid value.";
   }
 
@@ -535,7 +754,7 @@ else if(Schema?.Type is AresDataType.NumberArray)
       return $"Value must be at least {Schema.QuantitySchema.MinScalarValue}.";
     if(Schema.QuantitySchema.HasMaxScalarValue)
       return $"Value must be no more than {Schema.QuantitySchema.MaxScalarValue}.";
-          
+
     return "Invalid value.";
   }
 
@@ -554,11 +773,18 @@ else if(Schema?.Type is AresDataType.NumberArray)
     return UpdateAresValue();
   }
 
+  private Task OnAnyCaseValueChanged(AresValue newValue)
+  {
+    _anyValue = newValue;
+    _anySchema = CreateSchemaForValue(_anyValue);
+    return UpdateAresValue();
+  }
+
   private void AddListItem()
   {
     if(Schema?.ListElementSchema != null)
     {
-      _listValues.Add(AresValueHelper.CreateDefault(Schema.ListElementSchema.Type));
+      _listValues.Add(AresValueHelper.CreateDefaultValue(Schema.ListElementSchema));
       UpdateAresValue();
     }
   }
@@ -570,5 +796,14 @@ else if(Schema?.Type is AresDataType.NumberArray)
       _listValues.RemoveAt(index);
       UpdateAresValue();
     }
+  }
+
+  private static AresValueSchema CreateSchemaForValue(AresValue value)
+  {
+    var schema = value.ToAresValueSchema();
+    if(schema.Type == AresDataType.Any)
+      schema.Type = value.KindCase == AresValue.KindOneofCase.None ? AresDataType.Null : value.GetAresDataType();
+
+    return schema;
   }
 }

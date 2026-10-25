@@ -1,0 +1,88 @@
+@using UI.Features.CampaignEdit.ViewModels
+@inherits ReactiveUI.Blazor.ReactiveComponentBase<VisualizerAllocationEditorViewModel>
+
+<section class="border rounded-1 p-3">
+  <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+    <h5 class="mb-0">Visualization Hook</h5>
+    <button class="btn btn-sm btn-outline-danger"
+            title="Remove visualization hook"
+            @onclick="Remove">
+      <RadzenIcon Icon="delete_outline" />
+    </button>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-md-4">
+      <label class="form-label">Chart Identifier</label>
+      <input class="form-control" @bind="ViewModel!.UserProvidedIdentifier" />
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label">Visualizer Service</label>
+      <RadzenDropDown TValue="string"
+                       class="w-100"
+                       Data="ViewModel!.AvailableVisualizers"
+                       TextProperty="Name"
+                       ValueProperty="UniqueId"
+                       Placeholder="Select visualizer"
+                       @bind-Value="ViewModel.SelectedVisualizerId" />
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label">Visualization</label>
+      <RadzenDropDown TValue="string"
+                       class="w-100"
+                       Data="ViewModel!.AvailableVisualizations"
+                       TextProperty="VisualizationName"
+                       ValueProperty="VisualizationName"
+                       Placeholder="Select visualization"
+                       Disabled="@(string.IsNullOrWhiteSpace(ViewModel.SelectedVisualizerId))"
+                       @bind-Value="ViewModel.SelectedVisualizationName" />
+    </div>
+  </div>
+
+  @if(!string.IsNullOrWhiteSpace(ViewModel!.SelectionError))
+  {
+    <RadzenAlert AlertStyle="AlertStyle.Warning" Variant="Variant.Flat" Shade="Shade.Lighter" Size="AlertSize.Small" AllowClose="false" class="mt-3">
+      @ViewModel.SelectionError
+    </RadzenAlert>
+  }
+
+  @if(ViewModel.SelectedVisualization is not null)
+  {
+    <div class="d-flex align-items-center gap-2 mt-4 mb-2">
+      <h6 class="mb-0">Input Mappings</h6>
+      <span class="text-muted small">@ViewModel.SelectedVisualization.ChartType</span>
+    </div>
+
+    <RadzenDataGrid TItem="VisualizationInputMappingViewModel"
+                    Data="ViewModel.InputMappings"
+                    Editable="true"
+                    EditMode="DataGridEditMode.Single"
+                    ColumnWidth="200px">
+      <Columns>
+        <RadzenDataGridColumn Property="@(nameof(VisualizationInputMappingViewModel.InputKey))" Title="Visualization Input" />
+        <RadzenDataGridColumn Property="@(nameof(VisualizationInputMappingViewModel.InputType))" Title="Input Type" />
+        <RadzenDataGridColumn Property="@(nameof(VisualizationInputMappingViewModel.Required))" Title="Required" />
+        <RadzenDataGridColumn Property="@(nameof(VisualizationInputMappingViewModel.SelectedSourcePath))" Title="Campaign Value">
+          <Template Context="item">
+            <RadzenDropDown TValue="string"
+                             class="w-100"
+                             Data="item.MatchingValues"
+                             TextProperty="DisplayName"
+                             ValueProperty="Path"
+                             Placeholder="Select campaign value"
+                             @bind-Value="item.SelectedSourcePath" />
+          </Template>
+        </RadzenDataGridColumn>
+      </Columns>
+    </RadzenDataGrid>
+  }
+</section>
+
+@code {
+  [Parameter]
+  public EventCallback OnRemove { get; set; }
+
+  private Task Remove() => OnRemove.InvokeAsync();
+}

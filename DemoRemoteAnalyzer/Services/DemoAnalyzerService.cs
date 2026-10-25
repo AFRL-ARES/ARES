@@ -3,14 +3,33 @@ using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Analyzing.Remote;
 using Ares.Datamodel.Connection;
 using Ares.Datamodel.Extensions;
+using Ares.Datamodel.Factories;
+using DemoRemoteAnalyzer.Models;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 
 namespace DemoRemoteAnalyzer.Services;
 public class DemoAnalyzerService : AresRemoteAnalyzerService.AresRemoteAnalyzerServiceBase
 {
+  private readonly DemoResponseSurfaceAnalyzer _demoResponseSurfaceAnalyzer;
+
   public DemoAnalyzerService()
   {
+    _demoResponseSurfaceAnalyzer = new DemoResponseSurfaceAnalyzer() { ResponseNames = [ "Yield" ] };
+  }
+
+  public override Task<AnalysisObjectivesResponse> GetAnalysisObjectives(Empty request, ServerCallContext context)
+  {
+    var objectivesResponse = new AnalysisObjectivesResponse();
+    var valueSchema = new AresValueSchema() 
+    { 
+      Type = AresDataType.Float,
+      Description = "The calculated yield of the experiment."
+    };
+
+    objectivesResponse.ParameterSchema.Fields.Add("Yield", valueSchema);
+
+    return Task.FromResult(objectivesResponse);
   }
 
   public override Task<StateResponse> GetState(Empty request, ServerCallContext context)
@@ -20,38 +39,29 @@ public class DemoAnalyzerService : AresRemoteAnalyzerService.AresRemoteAnalyzerS
 
   public override Task<AnalysisResponse> Analyze(AnalysisRequest request, ServerCallContext context)
   {
-    Console.WriteLine("Analysis requested");
-    var numInput = request.Inputs.Fields[DemoDataTypes.InputNumber.Key];
-    var input = numInput.NumberValue;
-    Console.WriteLine($"Analysis input: {input}");
-    var analysis = new AnalysisResponse
-    {
-      AnalysisOutcome = Outcome.Success,
-    };
+    Console.WriteLine("[Demo Analyzer] - Analysis Requested");
 
-    analysis.Objectives.Add(new Objective() { ObjectiveName = "Result", ObjectiveValue = AresValueHelper.CreateNumber(input) });
+    var temperatureInput = request.Inputs.Fields[DemoDataTypes.Temperature.Key];
+    var temperatureFound = temperatureInput.TryGetNumericValue(out var numericTemperatureValue);
+    if(temperatureFound)
+      Console.WriteLine($"[Demo Analyzer] - Temperature Input: {numericTemperatureValue}");
 
-    var numOperand = request.Inputs.Fields.GetValueOrDefault(DemoDataTypes.Operand.Key);
-    if(numOperand is null)
-    {
-      Console.WriteLine("No operand specified, returning base number");
-      return Task.FromResult(analysis);
-    }
-    var operand = numOperand.NumberValue;
+    var flowRateInput = request.Inputs.Fields[DemoDataTypes.FlowRate.Key];
+    var flowRateFound = flowRateInput.TryGetNumericValue(out var flowRateValue);
+    if(flowRateFound)
+      Console.WriteLine($"[Demo Analyzer] - Flow Rate Input: {flowRateValue}");
 
-    var operation = request.Settings.Fields[DemoDataTypes.Operation.Key];
-    var operationValue = operation.StringValue;
+    var analysisResponse = _demoResponseSurfaceAnalyzer.DemoResponse(request);
 
-    var resultValue = operationValue switch
-    {
-      "Multiply" => AresValueHelper.CreateNumber(analysis.Objectives.First().ObjectiveValue.NumberValue * operand),
-      "Divide" => AresValueHelper.CreateNumber(analysis.Objectives.First().ObjectiveValue.NumberValue / operand),
-      _ => AresValueHelper.CreateNumber(0),// you broke it :(
-    };
+    if(analysisResponse != null)
+      return Task.FromResult(analysisResponse);
 
-    analysis.Objectives.Add(new Objective() { ObjectiveValue = resultValue, ObjectiveName = "Result"});
-
-    return Task.FromResult(analysis);
+    else
+      return Task.FromResult(new AnalysisResponse 
+      { 
+        AnalysisOutcome = Outcome.Failure, 
+        ErrorString = "Demo Response Analyzer failed to return a proper analysis response" 
+      });
   }
 
   public override Task<AnalysisParametersResponse> GetAnalysisParameters(Empty request, ServerCallContext context)
@@ -62,8 +72,8 @@ public class DemoAnalyzerService : AresRemoteAnalyzerService.AresRemoteAnalyzerS
       {
         Fields =
         {
-          [DemoDataTypes.InputNumber.Key] = DemoDataTypes.InputNumber.Value,
-          [DemoDataTypes.Operand.Key] = DemoDataTypes.Operand.Value
+          [DemoDataTypes.Temperature.Key] = DemoDataTypes.Temperature.Value,
+          [DemoDataTypes.FlowRate.Key] = DemoDataTypes.FlowRate.Value
         }
       }
     };
@@ -73,17 +83,22 @@ public class DemoAnalyzerService : AresRemoteAnalyzerService.AresRemoteAnalyzerS
 
   public override Task<AnalyzerCapabilities> GetAnalyzerCapabilities(Empty request, ServerCallContext context)
   {
+
+    var objectiveSchema = AresSchemaBuilder.Empty().AddEntry("Yield", new AresValueSchema { Type = AresDataType.Float, Optional = false, Description = "The yield of the reaction" }).Build();
+
     var capabilities = new AnalyzerCapabilities
     {
       SettingsSchema = new AresStructSchema
       {
         Fields =
         {
-          [DemoDataTypes.Operation.Key] = DemoDataTypes.Operation.Value,
-          [DemoDataTypes.RandomTags.Key] = DemoDataTypes.RandomTags.Value,
-          [DemoDataTypes.PreselectedTags.Key] = DemoDataTypes.PreselectedTags.Value
+          [DemoSettings.TemperatureMax.Key] = DemoSettings.TemperatureMax.Value,
+          [DemoSettings.TemperatureMin.Key] = DemoSettings.TemperatureMin.Value,
+          [DemoSettings.FlowRateMax.Key] = DemoSettings.FlowRateMax.Value,
+          [DemoSettings.FlowRateMin.Key] = DemoSettings.FlowRateMin.Value
         }
-      }
+      },
+      ObjectiveOutputSchema = objectiveSchema
     };
 
 
@@ -101,9 +116,9 @@ public class DemoAnalyzerService : AresRemoteAnalyzerService.AresRemoteAnalyzerS
   {
     var infoResponse = new InfoResponse
     {
-      Description = "Give me a number and I'll give it back or multiply it by the multiplier parameter.",
-      Name = "DemoAnalyzer",
-      Version = "1.0.1"
+      Description = "Generates a synthetic process space for sampling with ARES OS",
+      Name = "Demo Response Surface Analyzer",
+      Version = "0.8.0"
     };
 
     return Task.FromResult(infoResponse);
@@ -111,32 +126,29 @@ public class DemoAnalyzerService : AresRemoteAnalyzerService.AresRemoteAnalyzerS
 
   public override Task<ParameterValidationResult> ValidateInputs(ParameterValidationRequest request, ServerCallContext context)
   {
-    Console.WriteLine("Validating inputs");
-    if(request.InputSchema.Fields.ContainsKey(DemoDataTypes.InputNumber.Key))
-    {
-      Console.WriteLine($"Validation found data key {DemoDataTypes.InputNumber.Key}");
-    }
+    Console.WriteLine("[Demo Analyzer] - Validating inputs");
+    if(request.InputSchema.Fields.ContainsKey(DemoDataTypes.Temperature.Key))
+      Console.WriteLine($"[Demo Analyzer] - Validation found data key {DemoDataTypes.Temperature.Key}");
+    
     else
     {
-      Console.WriteLine($"Did not found data with a key of {DemoDataTypes.InputNumber.Key}.");
-      Console.WriteLine("Found following items:");
+      Console.WriteLine($"[Demo Analyzer] - Could Not Find Data with a Key of: {DemoDataTypes.Temperature.Key}.");
+      Console.WriteLine("[Demo Analyzer] - Found following items:");
       foreach(var schemaItem in request.InputSchema.Fields)
-      {
         Console.WriteLine($"{schemaItem.Key}:{schemaItem.Value}");
-      }
     }
 
-    if(request.InputSchema.Fields.ContainsKey(DemoDataTypes.Operand.Key))
-    {
-      Console.WriteLine($"Validation found data key {DemoDataTypes.Operand.Key}");
-    }
+    if(request.InputSchema.Fields.ContainsKey(DemoDataTypes.FlowRate.Key))
+      Console.WriteLine($"[Demo Analyzer] - Validation Found Data Key: {DemoDataTypes.FlowRate.Key}");
+
     else
     {
-      Console.WriteLine($"Did not found data with a key of {DemoDataTypes.Operand.Key}. But it was optional, so doesn't matter :)");
+      Console.WriteLine($"[Demo Analyzer]: Could Not Find Data with a Key of: {DemoDataTypes.FlowRate.Key}.");
+      Console.WriteLine("[Demo Analyzer] - Found following items:");
+      foreach(var schemaItem in request.InputSchema.Fields)
+        Console.WriteLine($"{schemaItem.Key}:{schemaItem.Value}");
     }
 
-    // the base input validator will take care of checking for required params so no need to do that manually unless
-    // you need some specific validation logic
     return base.ValidateInputs(request, context);
   }
 }

@@ -15,4 +15,10 @@ public interface IExecutionReporter
   /// </summary>
   /// <param name="status"></param>
   void Report(ExperimentExecutionStatus status);
+
+  /// <summary>
+  /// Used internally to publish a completed experiment summary after all experiment phases finish.
+  /// </summary>
+  /// <param name="summary"></param>
+  void Report(ExperimentExecutionSummary summary);
 }

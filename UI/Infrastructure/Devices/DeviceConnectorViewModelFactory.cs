@@ -1,15 +1,10 @@
 using Ares.Datamodel.Device;
-using Ares.Services.Device;
-using Ares.Core.Grpc.Services;
 using ReactiveUI;
 using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using UI.Application.Devices;
 using UI.Application.Devices.Repos;
-using Ares.Core.Device.Repos;
 using Ares.Core.Device.Providers;
-using Ares.Device;
 
 namespace UI.Infrastructure.Devices;
 

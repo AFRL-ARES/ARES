@@ -27,6 +27,7 @@ using Ares.Core.Validation.Campaign;
 using Ares.Core.Visualization.Managers;
 using Ares.Core.Visualization.Providers;
 using Ares.Core.Visualization.Repos;
+using Ares.Core.Visualization;
 using Ares.Datamodel.Templates;
 using Microsoft.Extensions.DependencyInjection;
 using Ares.Core.Device.Sila;
@@ -58,24 +59,44 @@ public static class ServiceCollectionExtensions
     services.AddTransient<ICampaignValidator, RequiredDeviceInterpretersValidator>();
     services.AddSingleton<IDeviceDriverLoader, DeviceDriverLoader>();
     services.AddSingleton<IDeviceManager, DeviceManager>();
-    services.AddSingleton<IRemoteAnalyzerManager, RemoteAnalyzerManager>();
-    services.AddSingleton<IRemotePlannerManager, RemotePlannerManager>();
+
+    if(AresConfig.DemoMode)
+    {
+      services.AddSingleton<IDeviceConfigManager, DemoDeviceConfigManager>();
+      services.AddSingleton<IRemoteAnalyzerManager, DemoRemoteAnalyzerManager>();
+      services.AddSingleton<IRemotePlannerManager, DemoRemotePlannerManager>();
+      services.AddSingleton<IRemoteVisualizerManager, DemoRemoteVisualizerManager>();
+      services.AddSingleton<ICampaignTemplatePersistenceService, DemoCampaignTemplatePersistenceService>();
+      services.AddSingleton<IRemoteDeviceManager, DemoRemoteDeviceManager>();
+    }
+
+    else
+    {
+      services.AddSingleton<IDeviceConfigManager, DeviceConfigManager>();
+      services.AddSingleton<IRemoteAnalyzerManager, RemoteAnalyzerManager>();
+      services.AddSingleton<IRemotePlannerManager, RemotePlannerManager>();
+      services.AddSingleton<IRemoteVisualizerManager, RemoteVisualizerManager>();
+      services.AddSingleton<ICampaignTemplatePersistenceService, CampaignTemplatePersistenceService>();
+      services.AddSingleton<IRemoteDeviceManager, RemoteDeviceManager>();
+    }
+
     services.AddSingleton<IVisualizationConfigManager, VisualizationConfigManager>();
+    services.AddSingleton<IRemoteVisualizationConfigManager, RemoteVisualizationConfigManager>();
     services.AddSingleton<IAnalyzerCache, AnalyzerCache>();
-    services.AddSingleton<IRemoteDeviceManager, RemoteDeviceManager>();
     services.AddSingleton<IDeviceCache, DeviceCache>();
     services.AddSingleton<IPlannerServiceCache, PlannerServiceCache>();
+    services.AddSingleton<IVisualizerCache, VisualizerCache>();
+    services.AddSingleton<IExperimentVisualizationService, ExperimentVisualizationService>();
+    services.AddSingleton<IRemoteVisualizationDataProvider, RemoteVisualizationDataProvider>();
     services.AddSingleton<AresVariableManager>();
     services.AddSingleton<AnalysisHelper>();
     services.AddSingleton<IDesiredAnalysisResultFactory, DesiredAnalysisResultFactory>();
     services.AddSingleton<IPlannerLeadStopConditionFactory, PlannerLeadStopConditionFactory>();
     services.AddSingleton<INotifier, Notifier>();
-    services.AddSingleton<IDeviceConfigManager, DeviceConfigManager>();
     services.AddSingleton<IDriverDatabaseManager, DriverDatabaseManager>();
     services.AddSingleton<ISystemSettingsManager, SystemSettingsManager>();
     services.AddSingleton<IResourceConnectionArbiter, ResourceConnectionArbiter>();
     services.AddSingleton<ICustomCommandPersistenceService, CustomCommandPersistenceService>();
-    services.AddSingleton<ICampaignTemplatePersistenceService, CampaignTemplatePersistenceService>();
     services.AddSingleton<ICampaignTemplateTransferService, CampaignTemplateTransferService>();
     services.AddSingleton<ICommandDisplayNameResolver, CommandDisplayNameResolver>();
     services.AddSingleton<CustomCommandExecutor>();
@@ -137,6 +158,8 @@ public static class ServiceCollectionExtensions
     services.AddTransient<IDeviceDriverProvider, DeviceDriverProvider>();
     services.AddTransient<IDeviceConfigProvider, DeviceConfigProvider>();
     services.AddTransient<IDeviceVisualizationConfigProvider, DeviceVisualizationConfigProvider>();
+    services.AddTransient<IRemoteVisualizationConfigProvider, RemoteVisualizationConfigProvider>();
+    services.AddTransient<IVisualizerProvider, VisualizerProvider>();
   }
 
   private static void BindRepositories(this IServiceCollection services)
@@ -149,7 +172,8 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<PlanningResponseRepo>();
     services.AddSingleton<IAnalyzerRepo, AnalyzerRepo>();
     services.AddSingleton<IPlannerServiceRepo, PlannerServiceRepo>();
+    services.AddSingleton<IVisualizerRepo, VisualizerRepo>();
     services.AddSingleton<IDeviceVisualizationConfigRepo, DeviceVisualizationConfigRepo>();
+    services.AddSingleton<IRemoteVisualizationConfigRepo, RemoteVisualizationConfigRepo>();
   }
-
 }

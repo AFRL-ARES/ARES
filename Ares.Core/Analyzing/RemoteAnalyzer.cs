@@ -32,8 +32,6 @@ public class RemoteAnalyzer : AnalyzerBase
     _datamodelVersionValidator = datamodelVersionValidator;
   }
 
-  public Uri Address { get; }
-
   public override async Task<AnalysisResponse> Analyze(AnalysisRequest request, CancellationToken cancellationToken = default)
   {
     var client = GetClient();
@@ -147,44 +145,30 @@ public class RemoteAnalyzer : AnalyzerBase
     }
 
     if(_capabilities.TimeoutSeconds > 0)
-    {
       AnalysisTimeout = TimeSpan.FromSeconds(_capabilities.TimeoutSeconds);
-    }
+
     else
-    {
       AnalysisTimeout = TimeSpan.MaxValue;
-    }
 
     var newSettings = _capabilities.SettingsSchema?.Fields.Where(entry => !Settings.Fields.ContainsKey(entry.Key)) ?? [];
     var removedSettings = Settings.Fields.Where(entry => !_capabilities.SettingsSchema?.Fields.ContainsKey(entry.Key) ?? false);
 
     foreach(var removedSetting in removedSettings)
-    {
       Settings.Fields.Remove(removedSetting.Key);
-    }
 
     foreach(var newSetting in newSettings)
     {
       if(newSetting.Value.DefaultValue is not null)
-      {
         Settings.Fields[newSetting.Key] = newSetting.Value.DefaultValue;
-      }
 
       else if(newSetting.Value.Type == AresDataType.String)
-      {
         Settings.Fields[newSetting.Key] = AresValueHelper.CreateDefault(newSetting.Value.Type, newSetting.Value.StringChoices?.Strings);
-      }
 
       else if(newSetting.Value.Type == AresDataType.Number)
-      {
-        Settings.Fields[newSetting.Key] = AresValueHelper.CreateDefault(
-          newSetting.Value.Type,
-          newSetting.Value.NumberChoices?.Numbers);
-      }
+        Settings.Fields[newSetting.Key] = AresValueHelper.CreateDefault(newSetting.Value.Type, newSetting.Value.NumberChoices?.Numbers);
+
       else
-      {
         Settings.Fields[newSetting.Key] = AresValueHelper.CreateDefault(newSetting.Value.Type);
-      }
     }
   }
 
@@ -219,7 +203,7 @@ public class RemoteAnalyzer : AnalyzerBase
   }
 
   private AresRemoteAnalyzerService.AresRemoteAnalyzerServiceClient GetClient()
-  {
-    return new AresRemoteAnalyzerService.AresRemoteAnalyzerServiceClient(_channel);
-  }
+    => new AresRemoteAnalyzerService.AresRemoteAnalyzerServiceClient(_channel);
+
+  public Uri Address { get; }
 }

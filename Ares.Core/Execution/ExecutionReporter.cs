@@ -20,4 +20,9 @@ internal class ExecutionReporter : IExecutionReporter
   {
     _reportStore.ExperimentExecutionStatus = status;
   }
+
+  public void Report(ExperimentExecutionSummary summary)
+  {
+    _reportStore.LatestCompletedExperiment = summary;
+  }
 }

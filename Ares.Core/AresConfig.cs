@@ -1,4 +1,4 @@
-﻿namespace Ares.Core;
+namespace Ares.Core;
 
 public static class AresConfig
 {
@@ -8,5 +8,7 @@ public static class AresConfig
 
   public static string DevicesPath { get; set; } = string.Empty;
 
-  public static string TagsPath { get; set; } = string.Empty;  
+  public static string TagsPath { get; set; } = string.Empty;
+
+  public static bool DemoMode { get; set; } = false;
 }

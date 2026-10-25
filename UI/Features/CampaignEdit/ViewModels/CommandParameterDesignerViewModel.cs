@@ -18,14 +18,18 @@ public partial class CommandParameterDesignerViewModel : ReactiveObject
   private CommandOutputVariableReference[] _availableVariableReferences = [];
   private CommandOutputVariableOption[] _availableVariableOptions = [];
 
-  public CommandParameterDesignerViewModel(Parameter param, UnitCategoryHelper unitCategoryHelper, IEnumerable<ParameterMetadata>? plannedParameters = null)
+  public CommandParameterDesignerViewModel(Parameter param, 
+    UnitCategoryHelper unitCategoryHelper, 
+    IEnumerable<ParameterMetadata>? plannedParameters = null)
     : this(unitCategoryHelper, plannedParameters)
   {
     Parameter = param;
     SelectedVariableType = param.GetVariableType();
   }
 
-  public CommandParameterDesignerViewModel(ParameterMetadata meta, UnitCategoryHelper unitCategoryHelper, IEnumerable<ParameterMetadata>? plannedParameters = null)
+  public CommandParameterDesignerViewModel(ParameterMetadata meta, 
+    UnitCategoryHelper unitCategoryHelper, 
+    IEnumerable<ParameterMetadata>? plannedParameters = null)
     : this(unitCategoryHelper, plannedParameters)
   {
     Parameter = new Parameter
@@ -227,6 +231,9 @@ public partial class CommandParameterDesignerViewModel : ReactiveObject
 
       case AresDataType.String:
         return value.HasStringValue;
+
+      case AresDataType.Any:
+        return true;
 
       default:
         return true;

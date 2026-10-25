@@ -1,24 +1,35 @@
 @using System.Reactive.Linq
-@using System.Reactive.Threading.Tasks
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<SilaDeviceSettingsViewModel>
 @inject DialogService DialogService
 
-<DeviceSettingsContainer 
-  EditCallback="null"
-  SettingsCallback="null"
-  RemoveCallback="RemoveCallback"
-  ShowDeviceInfoCallback="DisplayDeviceInfoCallback"
-  Name="@ViewModel!.Name" 
-  DeviceOperationalStatusGetter="@ViewModel!.GetOperationalStatus">
-  <div style="display: flex; flex-direction: column">
-    <span>Address: @(ViewModel!.Address)</span>
-    <span>Type: @(ViewModel.Device?.Type ?? string.Empty)</span>
-    <span>Version: @(ViewModel.Device?.Version ?? string.Empty)</span>
-    <span>@ViewModel.Description</span>
-  </div>
-</DeviceSettingsContainer>
+@if(ViewModel!.IsLoading)
+{
+  <LoadingSpinner SpinnerSize="SpinnerSize.Large" />
+}
+
+else
+{
+  <DeviceSettingsContainer EditCallback="null"
+                           SettingsCallback="null"
+                           RemoveCallback="RemoveCallback"
+                           ShowDeviceInfoCallback="DisplayDeviceInfoCallback"
+                           Name="@ViewModel!.Name"
+                           DeviceOperationalStatusGetter="@ViewModel!.GetOperationalStatus">
+    <div style="display: flex; flex-direction: column">
+      <span>Address: @(ViewModel!.Address)</span>
+      <span>Type: @(ViewModel.Device?.Type ?? string.Empty)</span>
+      <span>Version: @(ViewModel.Device?.Version ?? string.Empty)</span>
+      <span>@ViewModel.Description</span>
+    </div>
+  </DeviceSettingsContainer>
+}
 
 @code {
+  protected override async Task OnInitializedAsync()
+  {
+    await ViewModel!.GetOperationalStatus();
+  }
+
   private async Task RemoveCallback()
   {
     var result = await DialogService.Confirm($"Delete {ViewModel!.Name}?");

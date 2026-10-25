@@ -2,7 +2,6 @@ using Ares.Datamodel.Connection;
 using Ares.Datamodel.Planning;
 using Ares.Services;
 using Ares.Core.Grpc.Services;
-using Grpc.Core;
 using ReactiveUI;
 using UI.Application.Notifications;
 

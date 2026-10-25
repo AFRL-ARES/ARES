@@ -1,7 +1,10 @@
-﻿using Ares.Core.Execution.VersionChecking;
+using Ares.Core;
+using Ares.Core.Execution.VersionChecking;
 using Ares.Core.Notifications;
 using Ares.Datamodel.Analyzing;
+using Grpc.Core.Logging;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Ares.Core.Analyzing;
 public class RemoteAnalyzerManager : IRemoteAnalyzerManager
@@ -12,21 +15,22 @@ public class RemoteAnalyzerManager : IRemoteAnalyzerManager
   private readonly IAnalyzerCache _analyzerCache;
   private readonly IDatamodelVersionValidator _datamodelVersionValidator;
   private readonly List<RemoteAnalyzerMonitor> _analyzerMonitors = [];
-  private static readonly string _demoAnalyzerUniqueId = "9e5a8f3b-5c7d-4a1b-9f0a-1a2b3c4d5e6f";
+  private readonly ILogger<RemoteAnalyzerManager> _logger;
 
-  public RemoteAnalyzerManager(IDbContextFactory<CoreDatabaseContext> dbContextFactory, 
-    IAnalyzerRepo analyzerRepo, 
-    INotificationHandler notificationHandler, 
+  public RemoteAnalyzerManager(IDbContextFactory<CoreDatabaseContext> dbContextFactory,
+    IAnalyzerRepo analyzerRepo,
+    INotificationHandler notificationHandler,
     IAnalyzerCache analyzerCache,
-    IDatamodelVersionValidator datamodelVersionValidator)
+    IDatamodelVersionValidator datamodelVersionValidator,
+    ILogger<RemoteAnalyzerManager> logger)
   {
     _dbContextFactory = dbContextFactory;
     _analyzerCache = analyzerCache;
     _analyzerRepo = analyzerRepo;
     _notificationHandler = notificationHandler;
     _datamodelVersionValidator = datamodelVersionValidator;
+    _logger = logger;
   }
-
 
   public async Task CreateAnalyzer(string name, string url)
   {
@@ -43,20 +47,6 @@ public class RemoteAnalyzerManager : IRemoteAnalyzerManager
     ctx.Analyzers.Add(config);
 
     await ctx.SaveChangesAsync();
-  }
-
-  public Task CreateDemoAnalyzer(string url)
-  {
-    var config = new AnalyzerConfig { UniqueId = _demoAnalyzerUniqueId, Name = "Demo Remote Analyzer", Url = url };
-    var analyzer = ConfigToAnalyzer(config);
-    if(analyzer is null)
-      return Task.CompletedTask;
-
-    _analyzerRepo.AddAnalyzer(analyzer);
-    var monitor = new RemoteAnalyzerMonitor(analyzer, _analyzerCache);
-    _analyzerMonitors.Add(monitor);
-
-    return Task.CompletedTask;
   }
 
   private RemoteAnalyzer? ConfigToAnalyzer(AnalyzerConfig config)
@@ -114,6 +104,8 @@ public class RemoteAnalyzerManager : IRemoteAnalyzerManager
       var monitor = new RemoteAnalyzerMonitor(analyzer, _analyzerCache);
       _analyzerMonitors.Add(monitor);
     }
+
+    _logger.LogInformation("Finished loading Analyzers");
   }
 
   public async Task RemoveAnalyzer(string analyzerId)
@@ -165,7 +157,7 @@ public class RemoteAnalyzerManager : IRemoteAnalyzerManager
   public Task UpdateAnalyzerSettings(AnalyzerSettings analyzerSettings)
   {
     var analyzer = _analyzerRepo.GetAnalyzerById(analyzerSettings.AnalyzerId);
-    if (analyzer is null)
+    if(analyzer is null)
     {
       return Task.CompletedTask;
     }

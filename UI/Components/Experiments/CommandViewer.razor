@@ -122,9 +122,16 @@
     if(aresValue is null)
       return $"{argument.Metadata.Name}: Unassigned";
 
-    if(aresValue.HasNumberValue)
-      return $"{argument.Metadata.Name}: {aresValue.NumberValue} {argument.Metadata.Unit}";
-
+    if(aresValue.IsNumericType())
+    {
+      var found = aresValue.TryGetNumericValue(out var numericValue);
+      if(found)
+        return $"{argument.Metadata.Name}: {numericValue} {argument.Metadata.Unit}";
+    
+      else
+        return $"{argument.Metadata.Name}: Custom Data";
+    }
+    
     else if(aresValue.HasStringValue)
       return $"{argument.Metadata.Name}: {aresValue.StringValue} {argument.Metadata.Unit}";
 

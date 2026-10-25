@@ -1,5 +1,6 @@
 ﻿using Ares.Core.Analyzing;
 using Ares.Core.AresEnvironment;
+using Ares.Core.Device.Providers;
 using Ares.Core.Device.State.Logging;
 using Ares.Core.Exceptions;
 using Ares.Core.Execution.ControlTokens;
@@ -12,6 +13,7 @@ using Ares.Core.Notifications;
 using Ares.Core.Output;
 using Ares.Core.Planning;
 using Ares.Core.Settings;
+using Ares.Core.Visualization;
 using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Planning;
@@ -39,8 +41,8 @@ public class CampaignExecutor : ICampaignExecutor
   readonly PlanningResponseRepo _planningResponseRepo;
   readonly IAnalyzerRepo _analyzerRepo;
   readonly ISystemSettingsManager _settingsManager;
-  readonly IExecutionSafetyManager _executionSafetyManager;
-
+  readonly IAresDeviceProvider _deviceProvider;
+  readonly IExperimentVisualizationService _experimentVisualizationService;
   private readonly string _campaignFailedTitle = "Campaign Execution Failed!";
   private AresGeneralSettingsConfig? _generalSettingsConfig;
   private ExperimentExecutorResult _currentExecutorResult = new();
@@ -64,7 +66,8 @@ public class CampaignExecutor : ICampaignExecutor
     AresVariableManager variableManager,
     StateLoggerManager stateLoggerManager,
     ISystemSettingsManager settingsManager,
-    IExecutionSafetyManager executionSafetyManager)
+    IAresDeviceProvider deviceProvider,
+    IExperimentVisualizationService experimentVisualizationService)
   {
     _analyzerRepo = analyzerRepo;
     _analysisRepo = analysisRepo;
@@ -80,7 +83,8 @@ public class CampaignExecutor : ICampaignExecutor
     Template = template;
     _notifier = notifier;
     _settingsManager = settingsManager;
-    _executionSafetyManager = executionSafetyManager;
+    _deviceProvider = deviceProvider;
+    _experimentVisualizationService = experimentVisualizationService;
 
     Status = new CampaignExecutionStatus
     {
@@ -151,7 +155,15 @@ public class CampaignExecutor : ICampaignExecutor
 
   private async Task<string> InitializeCampaign(DateTime startTime)
   {
-    var campaignPath = await CampaignOutputHelper.InitializeOutputDirectories(Template, startTime);
+    _generalSettingsConfig = await _settingsManager.GetAresGeneralSettings();
+    string campaignPath;
+
+    if(_generalSettingsConfig?.NameFoldersWithLocalTime ?? false)
+      campaignPath = await CampaignOutputHelper.InitializeOutputDirectories(Template, startTime.ToLocalTime());
+
+    else
+      campaignPath = await CampaignOutputHelper.InitializeOutputDirectories(Template, startTime);
+
     _logger.LogInformation("Campaign started with output directory at: {Path}", campaignPath);
 
     if(!string.IsNullOrEmpty(ExecutionNotes))
@@ -159,6 +171,12 @@ public class CampaignExecutor : ICampaignExecutor
 
     if(CampaignTags.Any())
       await CampaignOutputHelper.WriteExperimentTags(campaignPath, CampaignTags);
+
+    if(AresConfig.DemoMode)
+    {
+      await CampaignOutputHelper.WriteExperimentTags(campaignPath, [new AresCampaignTag { TagName = "Demo Mode", UniqueId = "DEMO" }]);
+      await CampaignOutputHelper.WriteExperimentNotes(campaignPath, "This data was generated in simulation as part of demo mode, and has no real world application.");
+    }
 
     var analyzerId = string.IsNullOrEmpty(Template.ExperimentTemplate.AnalyzerId) ? NoneAnalyzer.Id : Template.ExperimentTemplate.AnalyzerId;
     if (analyzerId is null) 
@@ -168,7 +186,6 @@ public class CampaignExecutor : ICampaignExecutor
     _logger.LogInformation("Analyzer selected {AnalyzerName}", analyzer?.Name ?? "NO ANALYZER");
     await CampaignOutputHelper.OutputVersionFile(campaignPath, Template, analyzer);
 
-    _generalSettingsConfig = await _settingsManager.GetAresGeneralSettings();
     _experimentCount = 0;
     return campaignPath;
   }
@@ -265,6 +282,10 @@ public class CampaignExecutor : ICampaignExecutor
             currentPhase = await AnalyzeCurrentExperiment(startupSummary, analyses, experimentSummaries, token);
             break;
 
+          case ExperimentPhase.Visualize:
+            currentPhase = await VisualizeCurrentExperiment(experimentSummaries, token);
+            break;
+
           case ExperimentPhase.Retry:
             failedExperimentRetryCount++;
             currentPhase = await RetryCurrentExperiment(failedExperimentRetryCount, failedExperimentRetryLimit, experimentRetryCooldown, token);
@@ -289,6 +310,10 @@ public class CampaignExecutor : ICampaignExecutor
           case ExperimentPhase.Canceled:
             _logger.LogInformation("ARES experiment execution was canceled. Campaign closeout will run before termination.");
             return ExperimentLoopOutcome.Canceled;
+
+          default:
+            _logger.LogError("ARES encountered an unsupported experiment phase: {Phase}", currentPhase);
+            return ExperimentLoopOutcome.Failed;
         }
       }
     }
@@ -418,6 +443,26 @@ public class CampaignExecutor : ICampaignExecutor
     if(!result.Continue)
       return result.Success ? ExperimentPhase.Canceled : ExperimentPhase.Failed;
 
+    return ExperimentPhase.Visualize;
+  }
+
+  private async Task<ExperimentPhase> VisualizeCurrentExperiment(
+    List<ExperimentExecutionSummary> experimentSummaries,
+    ExecutionControlToken token)
+  {
+    if(token.IsCancelled)
+      return ExperimentPhase.Canceled;
+
+    if(_currentExperimentTemplate is null || _currentSummary is null)
+      return ExperimentPhase.Failed;
+
+    await _experimentVisualizationService.GenerateVisualizations(
+      _currentExperimentTemplate,
+      experimentSummaries,
+      _currentSummary,
+      token.CancellationToken);
+
+    _executionReporter.Report(_currentSummary);
     await PostExperimentExecution(_currentSummary);
     experimentSummaries.Add(_currentSummary);
     return ExperimentPhase.Complete;
@@ -511,7 +556,11 @@ public class CampaignExecutor : ICampaignExecutor
 
       case ErrorHandling.EnterSafeMode:
         ReportCampaignStatus(ExecutionState.EnteringSafeMode);
-        await _executionSafetyManager.EnterSafeMode();
+        var connectedDevices = _deviceProvider.GetAllDevices();
+
+        foreach(var device in connectedDevices)
+          await device.EnterSafeMode();
+
         await _notifier.Notify("Safe Mode Activated", "An ARES experiment has failed and based on your settings ARES has entered safe mode in response.", NotificationSeverityEnum.Error);
         return ExperimentPhase.Failed;
 
@@ -703,6 +752,10 @@ public class CampaignExecutor : ICampaignExecutor
         TimeStarted = startTime.ToUniversalTime().ToTimestamp()
       }
     };
+
+    if(AresConfig.DemoMode)
+      campaignExecutionSummary.CampaignTags = "Demo Mode";
+
     _logger.LogDebug("Created the campaign execution summary");
     campaignExecutionSummary.ExperimentSummaries.AddRange(experimentSummaries);
     campaignExecutionSummary.StartupExecutionSummary = startupSummary;
@@ -714,14 +767,21 @@ public class CampaignExecutor : ICampaignExecutor
 
   private bool ShouldStop()
   {
+    if(StopConditions.Any(c => c is DesiredAnalysisResult))
+      if(AchieveAllObjectives)
+        return StopConditions.Where(c => c is DesiredAnalysisResult).All(analysisCondition => analysisCondition.ShouldStop());
+
     return StopConditions.Any(condition => condition.ShouldStop());
   }
 
-  public void UpdateExecutionNotes(string notes) => ExecutionNotes = notes;
+  public void UpdateExecutionNotes(string notes) 
+    => ExecutionNotes = notes;
 
-  public void UpdateCampaignTags(List<AresCampaignTag> tags) => CampaignTags = tags;
+  public void UpdateCampaignTags(List<AresCampaignTag> tags) 
+    => CampaignTags = tags;
 
-  public void SubmitUserDecision(ErrorHandling decision) => _userDecisionSource?.TrySetResult(decision);
+  public void SubmitUserDecision(ErrorHandling decision) 
+    => _userDecisionSource?.TrySetResult(decision);
 
   private void ReportCampaignStatus(ExecutionState? state = null)
   {
@@ -878,11 +938,10 @@ public class CampaignExecutor : ICampaignExecutor
   public IList<IStopCondition> StopConditions { get; } = [];
   public int ReplicateRate { get; set; } = 1;
   public int BatchPlanningSize { get; set; } = 1;
+  public bool AchieveAllObjectives { get; set; } = false;
   public string? ExecutionNotes { get; set; }
   public List<AresCampaignTag> CampaignTags { get; set; } = [];
   public IObservable<CampaignExecutionStatus> ExperimentStatusObservable { get; }
   public CampaignExecutionStatus Status { get; private set; }
   public DateTime CampaignStartTime { get; set; } = DateTime.MinValue;
 }
-
-

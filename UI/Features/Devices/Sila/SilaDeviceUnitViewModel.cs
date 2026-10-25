@@ -1,20 +1,22 @@
-using Ares.Core.Device.Sila;
 using Ares.Datamodel;
 using Ares.Toolkit.Device.UI;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
+using UI.Application.Devices;
+using UI.Infrastructure.Devices.Sila;
 
 namespace UI.Features.Devices.Sila;
 
 public partial class SilaDeviceUnitViewModel : ReactiveObject, IDeviceUnitControlViewModel, IAsyncDisposable
 {
-  private readonly SilaDevice _device;
+  private readonly SilaDeviceAdapter _deviceAdapter;
   private IDisposable? _stateListener;
+  private IDisposable? _statusListener;
 
-  public SilaDeviceUnitViewModel(SilaDevice device)
+  public SilaDeviceUnitViewModel(SilaDeviceAdapter device)
   {
-    _device = device;
-    DeviceId = device.UniqueId;
+    _deviceAdapter = device;
+    DeviceId = device.Id;
     StartStateUpdater();
 
     ViewType = typeof(SilaDeviceUnitView);
@@ -23,17 +25,21 @@ public partial class SilaDeviceUnitViewModel : ReactiveObject, IDeviceUnitContro
 
   private void StartStateUpdater()
   {
-    _stateListener = _device.StateStream.Subscribe(s => DeviceState = s);
+    _stateListener = _deviceAdapter.StateStream.Subscribe(s => DeviceState = s);
+    _statusListener = _deviceAdapter.ConnectionStatusStream.Subscribe(s => ConnectionStatus = s);
   }
 
   [Reactive]
   public partial AresStruct? DeviceState { get; set; }
 
-  public string DeviceName => _device.Name;
+  [Reactive]
+  public partial ConnectionStatus ConnectionStatus { get; set; }
+
+  public string DeviceName => _deviceAdapter.Name;
 
   public string DeviceId { get; }
 
-  public string Address => _device.Address;
+  public string Address => _deviceAdapter.Address;
 
   public int DefaultWidth { get; set; }
   public Type? ViewType { get; set; }
@@ -41,6 +47,7 @@ public partial class SilaDeviceUnitViewModel : ReactiveObject, IDeviceUnitContro
   public ValueTask DisposeAsync()
   {
     _stateListener?.Dispose();
+    _statusListener?.Dispose();
     GC.SuppressFinalize(this);
     return ValueTask.CompletedTask;
   }

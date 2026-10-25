@@ -286,10 +286,9 @@ public class DevicesService(
     return Task.FromResult(state is null ? new DeviceStateResponse() : new DeviceStateResponse { State = state });
   }
 
-  public override async Task GetDeviceStateStream(
-      DeviceStateStreamRequest request,
-      IServerStreamWriter<DeviceStateResponse> responseStream,
-      ServerCallContext? context)
+  public override async Task GetDeviceStateStream(DeviceStateStreamRequest request, 
+    IServerStreamWriter<DeviceStateResponse> responseStream, 
+    ServerCallContext? context)
   {
     var cancellationToken = context?.CancellationToken ?? CancellationToken.None;
     var device = deviceProvider.GetDevice<RemoteDevice>(request.DeviceId);

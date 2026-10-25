@@ -4,6 +4,7 @@ using Ares.Datamodel;
 using Ares.Datamodel.Analyzing;
 using Ares.Datamodel.Analyzing.Remote;
 using Ares.Datamodel.Connection;
+using Ares.Datamodel.Extensions;
 
 namespace Ares.Core.Analyzing;
 
@@ -105,7 +106,7 @@ public abstract class AnalyzerBase : IAnalyzer
   private static ParameterValidationResult ValidateRequiredParams(AresStructSchema inputSchema, AresStructSchema parameters)
   {
     var requiredParams = parameters.Fields.Where(p => !p.Value.Optional).ToArray();
-    var unfulfilledParams = requiredParams.Where(rp => !inputSchema.Fields.Any(input => input.Key == rp.Key && input.Value.Type == rp.Value.Type));
+    var unfulfilledParams = requiredParams.Where(rp => !inputSchema.Fields.Any(input => input.Key == rp.Key && AresValueHelper.AreCompatibleDataTypes(input.Value.Type, rp.Value.Type)));
 
     var messages = unfulfilledParams.Select(up => $"No value provided for the required parameter {up.Key}.").ToArray();
     var result = new ParameterValidationResult

@@ -1,32 +1,35 @@
-﻿using Ares.Core.Execution.VersionChecking;
+using Ares.Core.Execution.VersionChecking;
 using Ares.Core.Notifications;
-using Ares.Core.Settings;
 using Ares.Datamodel.Planning;
+using Grpc.Core.Logging;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Ares.Core.Planning;
 
 public class RemotePlannerManager : IRemotePlannerManager
 {
   private readonly List<RemotePlannerMonitor> _plannerMonitors = [];
-  private readonly string _demoPlannerUniqueId = "4b14d5e9-1c9f-4f01-8b2b-4d4d1e2e3e4e";
   private readonly IPlannerServiceRepo _plannerRepo;
   private readonly INotificationHandler _notificationHandler;
   private readonly IPlannerServiceCache _plannerCache;
   private readonly IDatamodelVersionValidator _versionValidator;
   private readonly IDbContextFactory<CoreDatabaseContext> _dbContextFactory;
+  private readonly ILogger<RemotePlannerManager> _logger;
 
-  public RemotePlannerManager(IPlannerServiceRepo plannerRepo, 
-    INotificationHandler notificationHandler, 
-    IPlannerServiceCache plannerCache, 
+  public RemotePlannerManager(IPlannerServiceRepo plannerRepo,
+    INotificationHandler notificationHandler,
+    IPlannerServiceCache plannerCache,
     IDatamodelVersionValidator versionValidator,
-    IDbContextFactory<CoreDatabaseContext> dbContextFactory)
+    IDbContextFactory<CoreDatabaseContext> dbContextFactory,
+    ILogger<RemotePlannerManager> logger)
   {
     _plannerRepo = plannerRepo;
     _notificationHandler = notificationHandler;
     _plannerCache = plannerCache;
     _versionValidator = versionValidator;
     _dbContextFactory = dbContextFactory;
+    _logger = logger;
   }
 
   public async Task CreatePlanner(string name, string url)
@@ -44,20 +47,6 @@ public class RemotePlannerManager : IRemotePlannerManager
     ctx.Planners.Add(config);
 
     await ctx.SaveChangesAsync();
-  }
-
-  public Task CreateDemoPlanner(string url)
-  {
-    var config = new PlannerConfig { UniqueId = _demoPlannerUniqueId, Name = "Demo Remote Planner", Url = url };
-    var planner = ConfigToPlanner(config);
-    if(planner is null)
-      return Task.CompletedTask;
-
-    _plannerRepo.AddPlanner(planner);
-    var monitor = new RemotePlannerMonitor(planner, _plannerCache);
-    _plannerMonitors.Add(monitor);
-
-    return Task.CompletedTask;
   }
 
   private RemotePlannerService? ConfigToPlanner(PlannerConfig config)
@@ -123,6 +112,8 @@ public class RemotePlannerManager : IRemotePlannerManager
       var monitor = new RemotePlannerMonitor(planner, _plannerCache);
       _plannerMonitors.Add(monitor);
     }
+
+    _logger.LogInformation("Finished Loading Planners");
   }
 
   public async Task RemovePlanner(string plannerId)
@@ -149,7 +140,7 @@ public class RemotePlannerManager : IRemotePlannerManager
     var plannerConfig = ctx.Planners.Where(a => a.UniqueId == config.UniqueId).FirstOrDefault();
     if(plannerConfig is null)
       return;
-    
+
 
     plannerConfig.Name = config.Name;
     plannerConfig.Url = config.Url;
@@ -175,7 +166,7 @@ public class RemotePlannerManager : IRemotePlannerManager
     var planner = _plannerRepo.GetPlannerById(plannerSettings.PlannerId);
     if(planner is null)
       return Task.CompletedTask;
-    
+
 
     planner.UpdateSettings(plannerSettings.Settings);
 

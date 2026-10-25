@@ -456,26 +456,31 @@ else
           .OrderBy(device => device.Name)
           .ThenBy(device => device.Id)
           .ToList();
+      try
+      {
+        var campaignResponse = await AutomationClient.GetAvailableCampaignExecutionSummaries(new Empty(), null);
+        var campaigns = await Task.WhenAll(campaignResponse.AvailableCampaignSummaries
+            .Select(async campaignMetadata =>
+            {
+              var campaign = await AutomationClient.GetCampaignSummary(
+                  new CampaignExecutionSummaryRequest { SummaryId = campaignMetadata.SummaryId },
+                  null);
 
-      var campaignResponse = await AutomationClient.GetAvailableCampaignExecutionSummaries(new Empty(), null);
-      var campaigns = await Task.WhenAll(campaignResponse.AvailableCampaignSummaries
-          .Select(async campaignMetadata =>
-          {
-            var campaign = await AutomationClient.GetCampaignSummary(
-                new CampaignExecutionSummaryRequest { SummaryId = campaignMetadata.SummaryId },
-                null);
+              return new CampaignDisplayItem(
+                  campaignMetadata.SummaryId,
+                  campaign.CampaignName,
+                  GetCampaignStartTime(campaign),
+                  GetCampaignTimezone(campaign),
+                  GetCampaignStartSortTime(campaign));
+            }));
 
-            return new CampaignDisplayItem(
-                campaignMetadata.SummaryId,
-                campaign.CampaignName,
-                GetCampaignStartTime(campaign),
-                GetCampaignTimezone(campaign),
-                GetCampaignStartSortTime(campaign));
-          }));
+        _campaigns = campaigns.OrderByDescending(campaign => campaign.TimeStarted).ToList();
+      }
 
-      _campaigns = campaigns
-          .OrderByDescending(campaign => campaign.TimeStarted)
-          .ToList();
+      catch(Exception ex)
+      {
+        Console.WriteLine(ex.Message);
+      }
     });
   }
 

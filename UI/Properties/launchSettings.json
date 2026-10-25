@@ -2,6 +2,7 @@
   "profiles": {
     "UI": {
       "commandName": "Project",
+      "commandLineArgs": "--demo",
       "launchBrowser": true,
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"

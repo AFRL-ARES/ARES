@@ -87,6 +87,94 @@ public class SilaDataConverterTests
   }
 
   [Test]
+  public void ToSilaProperty_AnyValue_UsesConcreteValueInsideAnyStructure()
+  {
+    var value = AresValueHelper.CreateAnyAresValue(AresValueHelper.CreateInt(42));
+
+    var property = SilaDataConverter.ToSilaProperty("Value", value);
+
+    Assert.That(property.Type.Item, Is.TypeOf<StructureType>());
+    var anyObject = (DynamicObject)property.Value;
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(anyObject.Elements, Has.Count.EqualTo(1));
+      Assert.That(anyObject.Elements[0].Identifier, Is.EqualTo("Value"));
+      Assert.That(anyObject.Elements[0].Type.Item, Is.EqualTo(BasicType.Integer));
+      Assert.That(anyObject.Elements[0].Value, Is.EqualTo(42L));
+    }
+  }
+
+  [Test]
+  public void ToAresValue_AnyStructure_WrapsConcreteValue()
+  {
+    var property = new DynamicObjectProperty(
+      "Value",
+      "Value",
+      null,
+      new DataTypeType
+      {
+        Item = new StructureType
+        {
+          Element =
+          [
+            new SiLAElement
+            {
+              Identifier = "Value",
+              DataType = new DataTypeType { Item = BasicType.Any }
+            }
+          ]
+        }
+      })
+    {
+      Value = new DynamicObject
+      {
+        Elements =
+        {
+          new DynamicObjectProperty("Value", "Value", null, new DataTypeType { Item = BasicType.Real })
+          {
+            Value = 12.5d
+          }
+        }
+      }
+    };
+
+    var value = SilaDataConverter.ToAresValue(property);
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(value.KindCase, Is.EqualTo(AresValue.KindOneofCase.AnyValue));
+      Assert.That(value.AnyValue.KindCase, Is.EqualTo(AresValue.KindOneofCase.FloatValue));
+      Assert.That(value.AnyValue.FloatValue, Is.EqualTo(12.5d));
+    }
+  }
+
+  [Test]
+  public void AnyValue_NestedStruct_RoundTripsThroughSilaConverter()
+  {
+    var value = AresValueHelper.CreateAnyAresValue(
+      AresValueHelper.CreateStruct(new AresStruct
+      {
+        Fields =
+        {
+          ["Enabled"] = AresValueHelper.CreateBool(true),
+          ["Count"] = AresValueHelper.CreateInt(3)
+        }
+      }));
+
+    var property = SilaDataConverter.ToSilaProperty("Value", value);
+    var roundTripped = SilaDataConverter.ToAresValue(property);
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(roundTripped.KindCase, Is.EqualTo(AresValue.KindOneofCase.AnyValue));
+      Assert.That(roundTripped.AnyValue.KindCase, Is.EqualTo(AresValue.KindOneofCase.StructValue));
+      Assert.That(roundTripped.AnyValue.StructValue.Fields["Enabled"].BoolValue, Is.True);
+      Assert.That(roundTripped.AnyValue.StructValue.Fields["Count"].KindCase, Is.EqualTo(AresValue.KindOneofCase.IntValue));
+      Assert.That(roundTripped.AnyValue.StructValue.Fields["Count"].IntValue, Is.EqualTo(3));
+    }
+  }
+
+  [Test]
   public void ToAresValue_UnmarkedQuantityShapedStructure_RemainsStruct()
   {
     var property = new DynamicObjectProperty(
@@ -134,7 +222,7 @@ public class SilaDataConverterTests
     using(Assert.EnterMultipleScope())
     {
       Assert.That(value.KindCase, Is.EqualTo(AresValue.KindOneofCase.StructValue));
-      Assert.That(value.StructValue.Fields["Scalar"].NumberValue, Is.EqualTo(12.5));
+      Assert.That(value.StructValue.Fields["Scalar"].FloatValue, Is.EqualTo(12.5));
       Assert.That(value.StructValue.Fields["QuantityType"].StringValue, Is.EqualTo("Duration"));
       Assert.That(value.StructValue.Fields["Unit"].StringValue, Is.EqualTo("s"));
     }
@@ -242,6 +330,109 @@ public class SilaDataConverterTests
       Assert.That(schema.StructSchema.Fields["Name"].Description, Is.EqualTo("Device name"));
       Assert.That(schema.StructSchema.Fields["Enabled"].Type, Is.EqualTo(AresDataType.Boolean));
     }
+  }
+
+  [Test]
+  public void ToAresValueSchema_ResolvesNamedStructureInsideList()
+  {
+    var paraWriteType = CreateParaWriteType();
+    var parameterType = new DataTypeType
+    {
+      Item = new ListType
+      {
+        DataType = new DataTypeType { Item = "ParaWrite" }
+      }
+    };
+
+    var schema = SilaDataConverter.ToAresValueSchema(
+      parameterType,
+      typeName => typeName == "ParaWrite" ? paraWriteType.DataType : null);
+
+    var elementSchema = schema.ListElementSchema;
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(schema.Type, Is.EqualTo(AresDataType.List));
+      Assert.That(elementSchema, Is.Not.Null);
+      Assert.That(elementSchema!.Type, Is.EqualTo(AresDataType.Struct));
+      Assert.That(elementSchema.StructSchema.Fields["Name"].Type, Is.EqualTo(AresDataType.String));
+      Assert.That(elementSchema.StructSchema.Fields["Value"].Type, Is.EqualTo(AresDataType.String));
+    }
+  }
+
+  [Test]
+  public void ToSilaProperty_ResolvesNamedStructureInsideList()
+  {
+    var paraWriteType = CreateParaWriteType();
+    var parameterType = new DataTypeType
+    {
+      Item = new ListType
+      {
+        DataType = new DataTypeType { Item = "ParaWrite" }
+      }
+    };
+    var value = AresValueHelper.CreateList(
+    [
+      AresValueHelper.CreateStruct(new AresStruct
+      {
+        Fields =
+        {
+          ["Name"] = AresValueHelper.CreateString("Speed"),
+          ["Value"] = AresValueHelper.CreateString("asdf")
+        }
+      })
+    ]);
+
+    var property = SilaDataConverter.ToSilaProperty(
+      "parameters",
+      value,
+      parameterType,
+      typeName => typeName == "ParaWrite" ? paraWriteType.DataType : null);
+
+    var list = ((IEnumerable<object>)property.Value!).ToList();
+    var item = (DynamicObject)list.Single();
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(item.Elements, Has.Count.EqualTo(2));
+      Assert.That(item.Elements[0].Identifier, Is.EqualTo("Name"));
+      Assert.That(item.Elements[0].Value, Is.EqualTo("Speed"));
+      Assert.That(item.Elements[1].Identifier, Is.EqualTo("Value"));
+      Assert.That(item.Elements[1].Value, Is.EqualTo("asdf"));
+      Assert.That(item.Elements[1].Value, Is.Not.TypeOf<DynamicObject>());
+    }
+  }
+
+  [Test]
+  public void ToSilaProperty_ResolvesNamedStructureInsideList_ForTecanSerializer()
+  {
+    var paraWriteType = CreateParaWriteType();
+    var parameterType = new DataTypeType
+    {
+      Item = new ListType
+      {
+        DataType = new DataTypeType { Item = "ParaWrite" }
+      }
+    };
+    var value = AresValueHelper.CreateList(
+    [
+      AresValueHelper.CreateStruct(new AresStruct
+      {
+        Fields =
+        {
+          ["Name"] = AresValueHelper.CreateString("Speed"),
+          ["Value"] = AresValueHelper.CreateString("asdf")
+        }
+      })
+    ]);
+    var property = SilaDataConverter.ToSilaProperty(
+      "parameters",
+      value,
+      parameterType,
+      typeName => typeName == "ParaWrite" ? paraWriteType.DataType : null);
+    var serializer = new DynamicObjectSerializer(
+      typeName => typeName == "ParaWrite" ? paraWriteType.DataType : null);
+
+    Assert.DoesNotThrow(() => serializer.Serialize(property, null));
   }
 
   [Test]
@@ -353,5 +544,38 @@ public class SilaDataConverterTests
       Assert.That(value.KindCase, Is.EqualTo(AresValue.KindOneofCase.BytesValue));
       Assert.That(value.BytesValue, Is.EqualTo(ByteString.CopyFrom([1, 2, 3, 4])));
     }
+  }
+
+  private static SiLAElement CreateParaWriteType()
+  {
+    return new SiLAElement
+    {
+      Identifier = "ParaWrite",
+      DisplayName = "Para Write",
+      Description = "Custom parameter type",
+      DataType = new DataTypeType
+      {
+        Item = new StructureType
+        {
+          Element =
+          [
+            new SiLAElement
+            {
+              Identifier = "Name",
+              DisplayName = "Name",
+              Description = "Parameter name",
+              DataType = new DataTypeType { Item = BasicType.String }
+            },
+            new SiLAElement
+            {
+              Identifier = "Value",
+              DisplayName = "Value",
+              Description = "Parameter value",
+              DataType = new DataTypeType { Item = BasicType.String }
+            }
+          ]
+        }
+      }
+    };
   }
 }

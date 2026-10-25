@@ -293,6 +293,37 @@ namespace AresService.Migrations.SqlServer.Migrations
                     b.ToTable("AnalyzerTransactions");
                 });
 
+            modelBuilder.Entity("Ares.Datamodel.Analyzing.VisualizerSettings", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Settings")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("VisualizerId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("VisualizerId")
+                        .IsUnique()
+                        .HasFilter("[VisualizerId] IS NOT NULL");
+
+                    b.ToTable("VisualizerSettings");
+                });
+
             modelBuilder.Entity("Ares.Datamodel.AresCampaignTag", b =>
                 {
                     b.Property<Guid>("UniqueId")
@@ -347,10 +378,18 @@ namespace AresService.Migrations.SqlServer.Migrations
                     b.Property<int>("ExperimentRetryLimit")
                         .HasColumnType("int");
 
+                    b.Property<bool>("HideDemoModeIntro")
+                        .HasColumnType("bit");
+
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("getdate()");
+
+                    b.Property<bool>("NameFoldersWithLocalTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("RetryCooldown")
                         .HasColumnType("nvarchar(max)");
@@ -1051,6 +1090,9 @@ namespace AresService.Migrations.SqlServer.Migrations
                     b.Property<string>("ExperimentId")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("GeneratedVisuals")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("datetime2")
@@ -1630,6 +1672,9 @@ namespace AresService.Migrations.SqlServer.Migrations
                     b.Property<bool>("Resolved")
                         .HasColumnType("bit");
 
+                    b.Property<string>("VisualizerAllocations")
+                        .HasColumnType("nvarchar(max)");
+
                     b.HasKey("UniqueId");
 
                     b.HasIndex("CampaignCloseoutId")
@@ -1903,6 +1948,146 @@ namespace AresService.Migrations.SqlServer.Migrations
                     b.HasKey("UniqueId");
 
                     b.ToTable("VisualizationPath");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Visualizing.Remote.RemoteVisualizationConfig", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ChartTitle")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<int>("GridH")
+                        .HasColumnType("int");
+
+                    b.Property<int>("GridW")
+                        .HasColumnType("int");
+
+                    b.Property<int>("GridX")
+                        .HasColumnType("int");
+
+                    b.Property<int>("GridY")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("RequestedVisual")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("VisualizerId")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("RemoteVisualizationConfigs");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Visualizing.VisualizerAllocation", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("RequestedVisual")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserProvidedIdentifier")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("VisualizationMaps")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid?>("VisualizerUniqueId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("VisualizerUniqueId");
+
+                    b.ToTable("VisualizerAllocation");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Visualizing.VisualizerConfig", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Url")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("Visualizers", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Visualizing.VisualizerInfo", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Type")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Url")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Version")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("VisualizerInfos");
                 });
 
             modelBuilder.Entity("Ares.Services.DriverInfo", b =>
@@ -2254,6 +2439,15 @@ namespace AresService.Migrations.SqlServer.Migrations
                         .WithMany("StepTemplates")
                         .HasForeignKey("ExperimentTemplateUniqueId")
                         .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Visualizing.VisualizerAllocation", b =>
+                {
+                    b.HasOne("Ares.Datamodel.Visualizing.VisualizerInfo", "Visualizer")
+                        .WithMany()
+                        .HasForeignKey("VisualizerUniqueId");
+
+                    b.Navigation("Visualizer");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Analyzing.AnalyzerInfo", b =>

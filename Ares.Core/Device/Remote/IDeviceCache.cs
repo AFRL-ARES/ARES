@@ -2,7 +2,7 @@
 using Ares.Datamodel.Device;
 
 namespace Ares.Core.Device.Remote;
-internal interface IDeviceCache
+public interface IDeviceCache
 {
   Task CacheDeviceInfo(RemoteDevice device);
   Task CacheDeviceSettings(RemoteDevice device);

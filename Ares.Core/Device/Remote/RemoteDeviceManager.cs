@@ -1,4 +1,4 @@
-﻿using Ares.Core.Device.Repos;
+using Ares.Core.Device.Repos;
 using Ares.Core.Device.State.Logging;
 using Ares.Core.Execution.VersionChecking;
 using Ares.Core.Notifications;
@@ -94,6 +94,8 @@ internal class RemoteDeviceManager(
 
       await _stateLoggerManager.SetupLogger(device);
     }
+
+    _logger.LogInformation("Finished Loading Remote Devices from the Database");
   }
 
   public async Task<bool> RemoveDevice(string deviceId)
@@ -101,9 +103,7 @@ internal class RemoteDeviceManager(
     var ctx = _dbContextFactory.CreateDbContext();
     var device = ctx.RemoteDeviceConfigs.Where(a => a.UniqueId == deviceId).FirstOrDefault();
     if(device is null)
-    {
       return false;
-    }
 
     _deviceRepo.Remove(deviceId);
     ctx.Remove(device);
@@ -123,9 +123,7 @@ internal class RemoteDeviceManager(
     var ctx = _dbContextFactory.CreateDbContext();
     var deviceCfg = ctx.RemoteDeviceConfigs.Where(a => a.UniqueId == config.UniqueId).FirstOrDefault();
     if(deviceCfg is null)
-    {
       return;
-    }
 
     deviceCfg.Name = config.Name;
     deviceCfg.Url = config.Url;
@@ -138,9 +136,7 @@ internal class RemoteDeviceManager(
 
     var device = await LoadExistingDevice(deviceCfg);
     if(device is null)
-    {
       return;
-    }
 
     _deviceRepo.Remove(config.UniqueId);
     _deviceRepo.AddOrUpdate(device);
@@ -156,7 +152,6 @@ internal class RemoteDeviceManager(
     var remoteDevice = _deviceRepo.OfType<RemoteDevice>().FirstOrDefault(d => d.UniqueId == deviceSettings.DeviceId);
     if(remoteDevice is null)
       return;
-    
 
     await remoteDevice.UpdateSettings(deviceSettings.Settings);
     await _deviceCache.CacheDeviceSettings(remoteDevice);
@@ -170,9 +165,7 @@ internal class RemoteDeviceManager(
 
     var deviceInfo = await _deviceCache.GetCachedDeviceInfo(config.UniqueId);
     if(deviceInfo is not null)
-    {
       await device.UpdateInfo(deviceInfo);
-    }
 
     await device.Activate(CancellationToken.None);
 
@@ -184,7 +177,7 @@ internal class RemoteDeviceManager(
         await device.UpdateSettings(deviceSettings);
       }
 
-      catch(Exception ex) 
+      catch(Exception ex)
       {
         _logger.LogError(ex.Message);
       }

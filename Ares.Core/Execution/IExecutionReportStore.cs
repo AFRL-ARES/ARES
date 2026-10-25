@@ -15,6 +15,11 @@ public interface IExecutionReportStore
   IObservable<ExperimentExecutionStatus?> ExperimentStatusObservable { get; }
 
   /// <summary>
+  /// Provides completed experiment summaries after analysis and visualization have completed.
+  /// </summary>
+  IObservable<ExperimentExecutionSummary?> CompletedExperimentObservable { get; }
+
+  /// <summary>
   /// The current campaign execution status
   /// </summary>
   CampaignExecutionStatus? CampaignExecutionStatus { get; set; }
@@ -23,4 +28,9 @@ public interface IExecutionReportStore
   /// The current experiment execution status
   /// </summary>
   ExperimentExecutionStatus? ExperimentExecutionStatus { get; set; }
+
+  /// <summary>
+  /// The most recently completed experiment summary.
+  /// </summary>
+  ExperimentExecutionSummary? LatestCompletedExperiment { get; set; }
 }

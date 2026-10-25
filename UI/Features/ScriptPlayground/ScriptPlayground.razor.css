@@ -98,11 +98,13 @@
 
 .script-playground__tab-button {
   border: 1px solid;
+  border-color: white;
   border-radius: 0.4rem;
   background: transparent;
   padding: 0.35rem 0.75rem;
   font-size: 0.85rem;
   font-weight: 600;
+  color: white;
 }
 
 .script-playground__tab-button.active {

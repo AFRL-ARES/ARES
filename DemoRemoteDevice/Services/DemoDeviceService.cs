@@ -27,7 +27,7 @@ public class DemoDeviceService : AresRemoteDeviceService.AresRemoteDeviceService
 
   public override Task<DeviceOperationalStatus> GetOperationalStatus(Empty request, ServerCallContext context)
   {
-    _logger.LogInformation("Operational status requested, returning {}", OperationalState.Active);
+    _logger.LogInformation("Operational status requested, returning {status}", OperationalState.Active);
     return Task.FromResult(new DeviceOperationalStatus { OperationalState = OperationalState.Active });
   }
 
@@ -36,9 +36,9 @@ public class DemoDeviceService : AresRemoteDeviceService.AresRemoteDeviceService
     _logger.LogInformation("Info Requested");
     var response = new DeviceInfoResponse()
     {
-      Name = "Demo Device",
+      Name = "Demo Remote Device",
       Version = "1.0.1",
-      Description = "Me name demo device. I demo (:"
+      Description = "This is a demo remote device. This device is communciating with ARES via gRPC!"
     };
 
     return Task.FromResult(response);

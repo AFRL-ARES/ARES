@@ -16,7 +16,7 @@ public partial class CampaignDesignerViewModel : ReactiveObject
   private readonly CloseoutDesignerFactory _closeoutDesignerFactory;
   private readonly PlannableParameterDesignerFactory _plannableParameterDesignerFactory;
   private readonly PlanningDesignerFactory _planningDesignerFactory;
-  private CampaignTemplate _campaignTemplate = null!;
+  private readonly VisualizerAllocationDesignerFactory _visualizerAllocationDesignerFactory;
   readonly AnalyzerInputDesignerVmFactory _analyzerInputDesignerFactory;
 
   public CampaignDesignerViewModel(
@@ -26,6 +26,7 @@ public partial class CampaignDesignerViewModel : ReactiveObject
     CloseoutDesignerFactory closeoutDesignerFactory,
     PlanningDesignerFactory planningDesignerFactory,
     AnalyzerInputDesignerVmFactory analyzingDesignerFactory,
+    VisualizerAllocationDesignerFactory visualizerAllocationDesignerFactory,
     PlannableParameterDesignerFactory plannableParameterDesignerFactory,
     CampaignEditContext editContext,
     IConfiguration configuration)
@@ -36,6 +37,7 @@ public partial class CampaignDesignerViewModel : ReactiveObject
     _startupDesignerFactory = startupDesignerFactory;
     _closeoutDesignerFactory = closeoutDesignerFactory;
     _planningDesignerFactory = planningDesignerFactory;
+    _visualizerAllocationDesignerFactory = visualizerAllocationDesignerFactory;
     _plannableParameterDesignerFactory = plannableParameterDesignerFactory;
     _editContext = editContext;
     IsCreatingCampaign = false;
@@ -52,38 +54,28 @@ public partial class CampaignDesignerViewModel : ReactiveObject
 
   [Reactive] 
   public partial bool IsCreatingCampaign { get; set; }
-
   [Reactive] 
   public partial bool IsNotCreatingCampaign { get; set; }
-
   [Reactive] 
   public partial string Placeholder { get; set; }
-
   [Reactive]
   public partial PlannableParameterDesignerViewModel? PlannableParameterDesigner { get; private set; }
-
   [Reactive]
   public partial ExperimentDesignerViewModel? ExperimentDesigner { get; private set; }
-
   [Reactive]
   public partial StartupDesignerViewModel? StartupDesigner { get; private set; }
-
   [Reactive]
   public partial CloseoutDesignerViewModel? CloseoutDesigner { get; private set; }
-
   [Reactive]
   public partial PlanningViewModel? PlanningDesigner { get; private set; }
-
   [Reactive]
   public partial AnalyzerDesignerViewModel? AnalyzerDesignerViewModel { get; private set; }
-
+  [Reactive]
+  public partial VisualizerAllocationDesignerViewModel? VisualizerAllocationDesigner { get; private set; }
   public string CampaignName { get; set; } = "Unnamed Campaign";
-
   public CampaignTemplate CampaignTemplate { get; private set; } = null!;
-
   [Reactive] 
   public partial bool CreationIsErrorFree { get; set; }
-
   [Reactive] 
   public partial string? CreationErrorText { get; set; }
 
@@ -107,7 +99,9 @@ public partial class CampaignDesignerViewModel : ReactiveObject
     };
 
     var template = await _automationClient.GetSingleCampaign(request, null);
-    await LoadCampaignTemplateAsync(template);
+
+    if(template is not null)
+      await LoadCampaignTemplateAsync(template);
   }
 
   public async Task LoadCampaignTemplateAsync(CampaignTemplate campaignTemplate)
@@ -128,23 +122,11 @@ public partial class CampaignDesignerViewModel : ReactiveObject
     if(campaignTemplate.ExperimentTemplate is not null)
     {
       AnalyzerDesignerViewModel = _analyzerInputDesignerFactory.Create(campaignTemplate.ExperimentTemplate, commandDesigners, startupDesigners);
-    }
-  }
-
-  private async Task Init(CampaignTemplate campaignTemplate)
-  {
-    CampaignName = campaignTemplate.Name;
-    PlannableParameterDesigner = _plannableParameterDesignerFactory.Create(campaignTemplate.PlannableParameters, campaignTemplate.ExperimentTemplate);
-    ExperimentDesigner = _experimentDesignerFactory.Create(campaignTemplate.ExperimentTemplate);
-    StartupDesigner = _startupDesignerFactory.Create(campaignTemplate.StartupTemplate);
-    CloseoutDesigner = _closeoutDesignerFactory.Create(campaignTemplate.CloseoutTemplate);
-    PlanningDesigner = await _planningDesignerFactory.Create(campaignTemplate);
-    var commandDesigners = ExperimentDesigner?.StepDesigners?.SelectMany(sd => sd.CommandDesigners) ?? [];
-    var startupDesigners = StartupDesigner?.StartupStepDesigners?.SelectMany(ssd => ssd.CommandDesigners) ?? [];
-
-    if(CampaignTemplate.ExperimentTemplate is not null)
-    {
-      AnalyzerDesignerViewModel = _analyzerInputDesignerFactory.Create(campaignTemplate.ExperimentTemplate, commandDesigners, startupDesigners);
+      VisualizerAllocationDesigner = _visualizerAllocationDesignerFactory.Create(
+        campaignTemplate.ExperimentTemplate,
+        commandDesigners,
+        startupDesigners,
+        () => AnalyzerDesignerViewModel?.AnalyzerId);
     }
   }
 
@@ -168,6 +150,7 @@ public partial class CampaignDesignerViewModel : ReactiveObject
     PlannableParameterDesigner?.Save();
     PlanningDesigner?.Save();
     AnalyzerDesignerViewModel?.Save();
+    VisualizerAllocationDesigner?.Save();
     return CampaignTemplate;
   }
 

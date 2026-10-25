@@ -1,5 +1,6 @@
-﻿@page "/settings/device/remote"
+@page "/settings/device/remote"
 @layout DeviceSettingsLayout
+@using Ares.Core
 @using Ares.Services
 @using Google.Protobuf.WellKnownTypes
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<RemoteDeviceSettingsListViewModel>
@@ -19,7 +20,7 @@ else
         <RemoteDeviceSettingsView ViewModel="vm"/>
       </div>
     }
-    <button class="m-2 align-self-end btn btn-outline-light" disabled="@SavingInProgress" @onclick="AddDeviceClick">
+    <button class="m-2 align-self-end btn btn-outline-light" disabled="@IsAddDisabled" @onclick="AddDeviceClick">
       @if (SavingInProgress)
       {
         <LoadingSpinner SpinnerSize="SpinnerSize.Small" />
@@ -35,13 +36,14 @@ else
 @code {
   private async Task AddDeviceClick()
   {
-    var viewModel = ViewModel!.GetNewConfigEditViewModel();
-    var result = await DialogService.OpenAsync("New Device", ds =>
-      @<RemoteDeviceConfigEditView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)" />);
+    if(IsAddDisabled)
+      return;
 
+    var viewModel = ViewModel!.GetNewConfigEditViewModel();
+    var result = await DialogService.OpenAsync("New Device", ds => @<RemoteDeviceConfigEditView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)" />);
     var notification = new UiNotificationMessage();
 
-    if (result is true)
+    if(result is true)
     {
       SavingInProgress = true;
       StateHasChanged();
@@ -66,4 +68,6 @@ else
   }
 
   private bool SavingInProgress { get; set; }
+
+  private bool IsAddDisabled => AresConfig.DemoMode || SavingInProgress;
 }

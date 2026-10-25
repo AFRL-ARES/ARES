@@ -40,8 +40,7 @@ public partial class CommandDesignerViewModel : ReactiveObject
     _initializationTask = InitializeAsync(existingTemplate);
   }
 
-  public CommandDesignerViewModel(
-    CommandParameterDesignerFactory commandParameterDesignerFactory,
+  public CommandDesignerViewModel(CommandParameterDesignerFactory commandParameterDesignerFactory,
     MetadataPickerFactory metadataPickerFactory,
     DevicesService devicesClient,
     ICustomCommandPersistenceService customCommandPersistenceService)

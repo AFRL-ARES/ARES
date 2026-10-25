@@ -1,31 +1,52 @@
 ﻿using Ares.Services.Device;
 using Ares.Core.Grpc.Services;
 using Google.Protobuf.WellKnownTypes;
+using Ares.Core.Device.Providers;
+using Ares.Core.Device.Sila;
+using UI.Infrastructure.Devices.Remote;
+using UI.Infrastructure.Devices.Sila;
 using UI.Application.Devices.Repos;
 
 namespace UI.Infrastructure.Devices;
 
-public class DeviceAdapterManager(DevicesService _devicesClient,
-    IDeviceAdapterRepository _deviceAdapterRepository,
-    ILoggerFactory _loggerFactory,
-    ILogger<DeviceAdapterManager> _logger) : IAsyncDisposable
+public class DeviceAdapterManager : IAsyncDisposable
 {
-  private readonly CancellationTokenSource _cts = new();
-  private Task? _pollingTask;
+  private readonly DevicesService _devicesClient;
+  private readonly IAresDeviceProvider _deviceProvider;
+  private readonly IRemoteDeviceAdapterRepository _remoteDeviceAdapterRepository;
+  private readonly ISilaDeviceAdapterRepository _silaDeviceAdapterRepository;
+  private readonly ILoggerFactory _loggerFactory;
+  private readonly ILogger<DeviceAdapterManager> _logger;
+  private readonly CancellationTokenSource _remoteDeviceCTS = new();
+  private readonly CancellationTokenSource _silaDeviceCTS = new();
+  private Task? _remoteDevicePollingTask;
+  private Task? _silaDevicePollingTask;
   private bool _isErrorState;
-  private IDictionary<string, RemoteDeviceAdapterMonitor> _monitors = new Dictionary<string, RemoteDeviceAdapterMonitor>();
+  private IDictionary<string, RemoteDeviceAdapterMonitor> _remoteMonitors = new Dictionary<string, RemoteDeviceAdapterMonitor>();
+  private IDictionary<string, SilaDeviceAdapterMonitor> _silaMonitors = new Dictionary<string, SilaDeviceAdapterMonitor>();
+
+  public DeviceAdapterManager(DevicesService devicesClient, 
+    IAresDeviceProvider deviceProvider, 
+    IRemoteDeviceAdapterRepository remoteAdapterRepo, 
+    ISilaDeviceAdapterRepository silaAdapterRepo, 
+    ILoggerFactory loggerFactory, 
+    ILogger<DeviceAdapterManager> logger)
+  {
+    _devicesClient = devicesClient;
+    _deviceProvider = deviceProvider;
+    _remoteDeviceAdapterRepository = remoteAdapterRepo;
+    _silaDeviceAdapterRepository = silaAdapterRepo;
+    _loggerFactory = loggerFactory;
+    _logger = logger;
+  }
 
   public void Activate()
   {
-    _pollingTask = Task.Run(() => PollDevicesAsync(_cts.Token));
+    _remoteDevicePollingTask = Task.Run(() => PollRemoteDevicesAsync(_remoteDeviceCTS.Token));
+    _silaDevicePollingTask = Task.Run(() => PollSilaDevicesAsync(_silaDeviceCTS.Token));
   }
 
-  public async Task CreateDeviceAdapter()
-  {
-
-  }
-
-  private async Task PollDevicesAsync(CancellationToken cancellationToken)
+  private async Task PollRemoteDevicesAsync(CancellationToken cancellationToken)
   {
     while (!cancellationToken.IsCancellationRequested)
     {
@@ -69,12 +90,54 @@ public class DeviceAdapterManager(DevicesService _devicesClient,
     }
   }
 
+  private async Task PollSilaDevicesAsync(CancellationToken cancellationToken)
+  {
+    while(!cancellationToken.IsCancellationRequested)
+    {
+      try
+      {
+        var devices = _deviceProvider.GetAllDevices<SilaDevice>();
+
+        if(_isErrorState)
+        {
+          _logger.LogInformation("Device polling recovered.");
+          _isErrorState = false;
+        }
+
+        await UpdateSilaAdaptersFromDeviceList(devices);
+      }
+      catch(OperationCanceledException)
+      {
+        // This is expected on shutdown.
+        break;
+      }
+      catch(Exception ex)
+      {
+        if(!_isErrorState)
+        {
+          _logger.LogError(ex, "Error polling remote Ares devices.");
+          _isErrorState = true;
+        }
+      }
+
+      try
+      {
+        await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
+      }
+      catch(OperationCanceledException)
+      {
+        // This is expected on shutdown.
+        break;
+      }
+    }
+  }
+
   private async Task UpdateAdaptersFromDeviceList(ListAresRemoteDevicesResponse devicesResponse)
   {
     try
     {
       var remoteIds = devicesResponse.Devices.Select(d => d.UniqueId).ToHashSet();
-      var existingIds = _deviceAdapterRepository.Keys.ToHashSet();
+      var existingIds = _remoteDeviceAdapterRepository.Keys.ToHashSet();
 
       var newDevices = remoteIds.Except(existingIds);
       var removedDevices = existingIds.Except(remoteIds);
@@ -82,14 +145,14 @@ public class DeviceAdapterManager(DevicesService _devicesClient,
       var newAdapters = newDevices
               .Select(id => new RemoteDeviceAdapter(_devicesClient, id, _loggerFactory.CreateLogger<RemoteDeviceAdapter>())).ToArray();
 
-      var removedAdapters = _deviceAdapterRepository.Items.Where(da => removedDevices.Contains(da.Id)).ToArray();
+      var removedAdapters = _remoteDeviceAdapterRepository.Items.Where(da => removedDevices.Contains(da.Id)).ToArray();
       foreach (var adapter in removedAdapters)
       {
         if (adapter is IAsyncDisposable asyncDisposable)
         {
           await asyncDisposable.DisposeAsync();
         }
-        if (_monitors.Remove(adapter.Id, out var monitor))
+        if (_remoteMonitors.Remove(adapter.Id, out var monitor))
         {
           monitor.Dispose();
         }
@@ -99,10 +162,10 @@ public class DeviceAdapterManager(DevicesService _devicesClient,
       {
         _ = adapter.Activate();
         var monitor = new RemoteDeviceAdapterMonitor(adapter, _loggerFactory.CreateLogger<RemoteDeviceAdapterMonitor>());
-        _monitors[adapter.Id] = monitor;
+        _remoteMonitors[adapter.Id] = monitor;
       }
 
-      _deviceAdapterRepository.Edit(updater =>
+      _remoteDeviceAdapterRepository.Edit(updater =>
       {
         updater.AddOrUpdate(newAdapters); // add/update
         updater.RemoveKeys(removedDevices);   // remove stale
@@ -114,14 +177,61 @@ public class DeviceAdapterManager(DevicesService _devicesClient,
     }
   }
 
+  private async Task UpdateSilaAdaptersFromDeviceList(IReadOnlyCollection<SilaDevice> silaDevices)
+  {
+    try
+    {
+      var silaDeviceIds = silaDevices.Select(d => d.UniqueId).ToHashSet();
+      var existingIds = _silaDeviceAdapterRepository.Keys.ToHashSet();
+
+      var newDevices = silaDeviceIds.Except(existingIds);
+      var removedDevices = existingIds.Except(silaDeviceIds);
+
+      var newAdapters = newDevices.Select(id => new SilaDeviceAdapter(_deviceProvider, id, _loggerFactory.CreateLogger<SilaDeviceAdapter>())).ToArray();
+
+      var removedAdapters = _silaDeviceAdapterRepository.Items.Where(da => removedDevices.Contains(da.Id)).ToArray();
+      foreach(var adapter in removedAdapters)
+      {
+        if(adapter is IAsyncDisposable asyncDisposable)
+        {
+          await asyncDisposable.DisposeAsync();
+        }
+        if(_silaMonitors.Remove(adapter.Id, out var monitor))
+        {
+          monitor.Dispose();
+        }
+      }
+
+      foreach(var adapter in newAdapters)
+      {
+        _ = adapter.Activate();
+        var monitor = new SilaDeviceAdapterMonitor(adapter, _loggerFactory.CreateLogger<SilaDeviceAdapterMonitor>());
+        _silaMonitors[adapter.Id] = monitor;
+      }
+
+      _silaDeviceAdapterRepository.Edit(updater =>
+      {
+        updater.AddOrUpdate(newAdapters);
+        updater.RemoveKeys(removedDevices);
+      });
+    }
+    catch(Exception ex)
+    {
+      _logger.LogError(ex, "Error updating device adapter repository.");
+    }
+  }
+
   public async ValueTask DisposeAsync()
   {
-    await _cts.CancelAsync();
-    if (_pollingTask is not null)
-    {
-      await _pollingTask;
-    }
-    _cts.Dispose();
+    await _remoteDeviceCTS.CancelAsync();
+    if(_remoteDevicePollingTask is not null)
+      await _remoteDevicePollingTask;
+
+    if(_silaDevicePollingTask is not null)
+      await _silaDevicePollingTask;
+    
+    _remoteDeviceCTS.Dispose();
+    _silaDeviceCTS.Dispose();
     GC.SuppressFinalize(this);
   }
 }

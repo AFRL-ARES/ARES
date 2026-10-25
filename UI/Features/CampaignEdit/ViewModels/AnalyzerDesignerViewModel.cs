@@ -7,6 +7,7 @@ using Google.Protobuf.WellKnownTypes;
 using NuGet.Packaging;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
+using Ares.Datamodel.Extensions;
 
 namespace UI.Features.CampaignEdit.ViewModels;
 
@@ -94,12 +95,12 @@ public partial class AnalyzerDesignerViewModel : ReactiveObject
     foreach(var outputInputMap in outputInputMappings)
     {
       var outputs = _commandDesignerViewModels.SelectMany(GetOutputSchemaPaths)
-        .Where(output => output.Type == outputInputMap.InputType)
+        .Where(output => IsCompatibleAresDataType(outputInputMap.InputType, output.Type))
         .Select(output => output.Path)
         .ToArray();
 
       var startupOutputs = _startupCommandDesignerViewModels.SelectMany(GetOutputSchemaPaths)
-        .Where(output => output.Type == outputInputMap.InputType)
+        .Where(output => IsCompatibleAresDataType(outputInputMap.InputType, output.Type))
         .Select(output => output.Path)
         .ToArray();
 
@@ -147,6 +148,17 @@ public partial class AnalyzerDesignerViewModel : ReactiveObject
       _experimentTemplate.PlanObjectives.Clear();
 
     _experimentTemplate.AnalyzerId = AnalyzerId;
+  }
+
+  private bool IsCompatibleAresDataType(AresDataType inputType, AresDataType outputType)
+  {
+    if(inputType == outputType)
+      return true;
+
+    if(inputType.IsNumericType() && outputType.IsNumericType())
+      return true;
+
+    return false;
   }
 
   public string? AnalyzerId

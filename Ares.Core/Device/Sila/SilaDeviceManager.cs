@@ -4,9 +4,9 @@ using Ares.Datamodel;
 using Ares.Datamodel.Device;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using ProtoBuf.Meta;
 using System.Net;
 using Tecan.Sila2;
+using Tecan.Sila2.Client;
 
 namespace Ares.Core.Device.Sila;
 
@@ -18,12 +18,14 @@ public class SilaDeviceManager : ISilaDeviceManager
   private readonly List<SilaDeviceMonitor> _monitors;
   private readonly ILoggerFactory _loggerFactory;
   private readonly StateLoggerManager _stateLoggerManager;
+  private readonly ILogger<SilaDeviceManager> _logger;
 
   public SilaDeviceManager(SilaClient client, 
     IAresDeviceRepo deviceRepo, 
     IDbContextFactory<CoreDatabaseContext> dbContextFactory,
     ILoggerFactory loggerFactory,
-    StateLoggerManager stateLoggerManager)
+    StateLoggerManager stateLoggerManager,
+    ILogger<SilaDeviceManager> logger)
   {
     _silaClient = client;
     _deviceRepo = deviceRepo;
@@ -31,6 +33,7 @@ public class SilaDeviceManager : ISilaDeviceManager
     _loggerFactory = loggerFactory;
     _monitors = new List<SilaDeviceMonitor>();
     _stateLoggerManager = stateLoggerManager;
+    _logger = logger;
   }
 
   public async Task<bool> RemoveDevice(string deviceId)
@@ -88,7 +91,7 @@ public class SilaDeviceManager : ISilaDeviceManager
 
   public async Task<SilaDevice?> Create(string address, int port)
   {
-    var server = _silaClient.TryConnectToServer(address, port);
+    var server = await _silaClient.TryConnectToServer(address, port);
 
     if(server is null)
       return null;
@@ -97,11 +100,9 @@ public class SilaDeviceManager : ISilaDeviceManager
     return device;
   }
 
-
   public Task<IEnumerable<ServerData>> UpdateAvailableSilaDevices()
     => Task.Run(_silaClient.DiscoverServers);
   
-
   private SilaDevice ConfigToDevice(SilaDeviceConfig config, ServerData data)
   {
     var deviceInfo = new DeviceConnectionInfo()
@@ -112,7 +113,7 @@ public class SilaDeviceManager : ISilaDeviceManager
       Simulated = false
     };
 
-    var silaDevice = new SilaDevice(data, deviceInfo, _silaClient);
+    var silaDevice = new SilaDevice(data, deviceInfo, _silaClient, _loggerFactory.CreateLogger<SilaDevice>());
     return silaDevice;
   }
 
@@ -130,6 +131,8 @@ public class SilaDeviceManager : ISilaDeviceManager
 
       await _stateLoggerManager.SetupLogger(device);
     }
+
+    _logger.LogInformation("Finished Loading the SiLA Devices");
   }
 
   public async Task<SilaDevice?> LoadExistingSilaDevice(SilaDeviceConfig deviceConfig)
@@ -139,13 +142,28 @@ public class SilaDeviceManager : ISilaDeviceManager
     if(!parsed || endPoint is null)
       return null;
 
-    var serverData = _silaClient.TryConnectToServer(endPoint.Address.ToString(), endPoint.Port);
+    ServerData? serverData;
+
+    serverData = await _silaClient.TryConnectToServer(endPoint.Address.ToString(), endPoint.Port);
 
     if(serverData is null)
-      return null;
+    {
+      serverData = CreateOfflineSilaDevice(deviceConfig);
+      var offlineDevice = ConfigToDevice(deviceConfig, serverData);
+      return offlineDevice;
+    }
 
     var device = ConfigToDevice(deviceConfig, serverData);
     await device.Activate(CancellationToken.None);
     return device;
+  }
+
+  public ServerData CreateOfflineSilaDevice(SilaDeviceConfig deviceConfig)
+  {
+    var serverConfig = new ServerConfig(deviceConfig.ServerName, Guid.Parse(deviceConfig.UniqueId));
+    var serverInformation = new ServerInformation(deviceConfig.Type, deviceConfig.Description, deviceConfig.VendorUri, deviceConfig.Version);
+
+    var newData = new ServerData(serverConfig, serverInformation, [], null, null, deviceConfig.Address);
+    return newData;
   }
 }

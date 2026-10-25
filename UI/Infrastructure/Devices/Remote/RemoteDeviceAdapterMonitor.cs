@@ -2,9 +2,9 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using UI.Application.Devices;
 
-namespace UI.Infrastructure.Devices;
+namespace UI.Infrastructure.Devices.Remote;
 
-public class RemoteDeviceAdapterMonitor(IAresDeviceAdapter deviceAdapter, ILogger<RemoteDeviceAdapterMonitor> logger) : IDisposable
+public class RemoteDeviceAdapterMonitor : IDisposable
 {
   private IDisposable _deviceStatusWatcher = Disposable.Empty;
   private Task _reconnectLoop = Task.CompletedTask;
@@ -14,8 +14,14 @@ public class RemoteDeviceAdapterMonitor(IAresDeviceAdapter deviceAdapter, ILogge
   private int _reconnectInProgress = 0; // 0=false, 1=true
   private int _reconnectAttempts = 0;
   private int _activated = 0;           // 0=false, 1=true
-  private readonly IAresDeviceAdapter _deviceAdapter = deviceAdapter;
-  private readonly ILogger<RemoteDeviceAdapterMonitor> _logger = logger;
+  private readonly IAresDeviceAdapter _deviceAdapter;
+  private readonly ILogger<RemoteDeviceAdapterMonitor> _logger;
+
+  public RemoteDeviceAdapterMonitor(IAresDeviceAdapter deviceAdapter, ILogger<RemoteDeviceAdapterMonitor> logger)
+  {
+    _deviceAdapter = deviceAdapter;
+    _logger = logger;
+  }
 
   public void Activate()
   {

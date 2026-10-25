@@ -4,17 +4,14 @@ using Ares.Datamodel;
 using Ares.Datamodel.Device;
 using Ares.Services.Device;
 using Ares.Core.Grpc.Services;
-using Grpc.Core;
 using UI.Application.Devices;
 using UI.Infrastructure.Grpc;
 
-namespace UI.Infrastructure.Devices;
+namespace UI.Infrastructure.Devices.Remote;
 public sealed class RemoteDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
 {
   private readonly BehaviorSubject<AresStruct> _stateSubject = new(new AresStruct());
-  private readonly BehaviorSubject<ConnectionStatus> _connectionStatusSubject =
-    new BehaviorSubject<ConnectionStatus>(ConnectionStatus.Undefined);
-
+  private readonly BehaviorSubject<ConnectionStatus> _connectionStatusSubject = new BehaviorSubject<ConnectionStatus>(ConnectionStatus.Undefined);
   private readonly DevicesService _devicesClient;
   private readonly ILogger<RemoteDeviceAdapter> _logger;
   private CancellationTokenSource _stateStreamCts = new();

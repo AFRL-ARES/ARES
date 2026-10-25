@@ -21,6 +21,11 @@ public interface IExecutionManager
   public int PlanningBatchSize { get; }
 
   /// <summary>
+  /// A boolean value that determines whether a campaign stops when all the analyzer objectives are achieved or just one
+  /// </summary>
+  public bool AchieveAllStopConditions { get; }
+
+  /// <summary>
   /// Indicates whether the currently loaded campaign has all the prerequisites in order to start and run
   /// </summary>
   public Task<bool> CanRun();
@@ -64,6 +69,12 @@ public interface IExecutionManager
   /// </summary>
   /// <param name="batchSize"></param>
   void UpdateBatchPlanningSize(int batchSize);
+
+  /// <summary>
+  /// A method to update the boolean value determining how analysis objectives are achieved
+  /// </summary>
+  /// <param name="achieveAllObjectives"></param>
+  void UpdateAchieveAllObjectivesValue(bool achieveAllObjectives);
 
   /// Submits a user decision for how to handle an error that has occurred during execution
   /// </summary>

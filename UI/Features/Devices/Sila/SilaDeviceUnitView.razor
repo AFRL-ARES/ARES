@@ -10,8 +10,18 @@
       <RadzenText Text="@ViewModel!.DeviceName" TItem="string" />
       <RadzenLabel Text="SiLA Device" />
       <RadzenLabel Text="@($"Address: {ViewModel!.Address}")" />
-      <RadzenIcon @ref="_connectedIcon" Icon="link" class="rz-color-success"
-        @onmouseenter="@(args => ShowTooltip(_connectedIcon!.Element, "Connected to SiLA Service and Device"))" />
+      @if(ViewModel.ConnectionStatus == ConnectionStatus.ConnectedToDevice)
+      {
+        <RadzenIcon @ref="_connectedIcon" Icon="link" class="rz-color-success" @onmouseenter="@(args => ShowTooltip(_connectedIcon!.Element, "Connected to Service and Device"))" />
+      }
+      else if(ViewModel!.ConnectionStatus == ConnectionStatus.ConnectedToService)
+      {
+        <RadzenIcon @ref="_serviceConnectedIcon" Icon="link" class="rz-color-warning" @onmouseenter="@(args => ShowTooltip(_serviceConnectedIcon!.Element, "Connected to Service but not Device"))" />
+      }
+      else if(ViewModel.ConnectionStatus == ConnectionStatus.Disconnected)
+      {
+        <RadzenIcon @ref="_disconnectedIcon" Icon="link_off" class="rz-color-danger" @onmouseenter="@(args => ShowTooltip(_disconnectedIcon!.Element, "Disconnected"))" />
+      }
     </RadzenStack>
   </HeaderTemplate>
   <ChildContent>
@@ -44,6 +54,8 @@
 
 @code {
   private RadzenIcon? _connectedIcon;
+  private RadzenIcon? _serviceConnectedIcon;
+  private RadzenIcon? _disconnectedIcon;
 
   void ShowTooltip(ElementReference elementReference, string text)
   {

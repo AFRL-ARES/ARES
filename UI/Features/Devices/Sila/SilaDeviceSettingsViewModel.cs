@@ -1,11 +1,10 @@
 using Ares.Core.Device.Sila;
-using Ares.Core.Grpc.Services;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
-using Ares.Services.Device;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System.Reactive;
+using System.Reactive.Linq;
 
 namespace UI.Features.Devices.Sila;
 
@@ -20,7 +19,7 @@ public partial class SilaDeviceSettingsViewModel : ReactiveObject
     Name = silaDevice.Name;
     Id = silaDevice.UniqueId;
     Device = silaDevice;
-    Address = silaDevice.Address;
+    Address = silaDevice?.Address?.ToString() ?? "";
 
     Description = Device?.Description ?? string.Empty;
     SettingsSchema = Device?.SettingSchema ?? new AresStructSchema();
@@ -36,8 +35,29 @@ public partial class SilaDeviceSettingsViewModel : ReactiveObject
     await onRemoveCallback();
   }
 
-  public Task<DeviceOperationalStatus> GetOperationalStatus()
-    => Task.FromResult(Device?.Status ?? new DeviceOperationalStatus { OperationalState = OperationalState.Inactive, Message = "Status Current Unknown"});
+  public async Task<DeviceOperationalStatus> GetOperationalStatus()
+  {
+    if(Device is null)
+    {
+      IsLoading = false;
+      return new DeviceOperationalStatus
+      {
+        OperationalState = OperationalState.Inactive,
+        Message = "Status is Currently Unknown"
+      };
+    }
+
+    IsLoading = true;
+    try
+    {
+      var status = await Device.StatusObservable.FirstAsync();
+      return status;
+    }
+    finally
+    {
+      IsLoading = false; // Always ensure loading state resets
+    }
+  }
 
   public async Task LoadDeviceCommandsAsync()
   {
@@ -76,6 +96,9 @@ public partial class SilaDeviceSettingsViewModel : ReactiveObject
 
   [Reactive]
   public partial DeviceCommandDescriptor[] DeviceCommands { get; private set; }
+
+  [Reactive]
+  public partial bool IsLoading { get; private set; } = true;
 
   public ReactiveCommand<Unit, Unit> RemoveCommand { get; }
 }

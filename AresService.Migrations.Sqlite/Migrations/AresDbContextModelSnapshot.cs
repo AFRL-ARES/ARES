@@ -287,6 +287,36 @@ namespace AresService.Migrations.Sqlite.Migrations
                     b.ToTable("AnalyzerTransactions");
                 });
 
+            modelBuilder.Entity("Ares.Datamodel.Analyzing.VisualizerSettings", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
+
+                    b.Property<string>("Settings")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("VisualizerId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("VisualizerId")
+                        .IsUnique();
+
+                    b.ToTable("VisualizerSettings");
+                });
+
             modelBuilder.Entity("Ares.Datamodel.AresCampaignTag", b =>
                 {
                     b.Property<Guid>("UniqueId")
@@ -341,10 +371,18 @@ namespace AresService.Migrations.Sqlite.Migrations
                     b.Property<int>("ExperimentRetryLimit")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("HideDemoModeIntro")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("TEXT")
                         .HasDefaultValueSql("DATETIME('now')");
+
+                    b.Property<bool>("NameFoldersWithLocalTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("RetryCooldown")
                         .HasColumnType("TEXT");
@@ -1040,6 +1078,9 @@ namespace AresService.Migrations.Sqlite.Migrations
                     b.Property<string>("ExperimentId")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("GeneratedVisuals")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("LastModified")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("TEXT")
@@ -1615,6 +1656,9 @@ namespace AresService.Migrations.Sqlite.Migrations
                     b.Property<bool>("Resolved")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("VisualizerAllocations")
+                        .HasColumnType("TEXT");
+
                     b.HasKey("UniqueId");
 
                     b.HasIndex("CampaignCloseoutId")
@@ -1884,6 +1928,146 @@ namespace AresService.Migrations.Sqlite.Migrations
                     b.HasKey("UniqueId");
 
                     b.ToTable("VisualizationPath");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Visualizing.Remote.RemoteVisualizationConfig", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ChartTitle")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
+
+                    b.Property<int>("GridH")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("GridW")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("GridX")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("GridY")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
+
+                    b.Property<string>("RequestedVisual")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("VisualizerId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("RemoteVisualizationConfigs");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Visualizing.VisualizerAllocation", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
+
+                    b.Property<string>("RequestedVisual")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("UserProvidedIdentifier")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("VisualizationMaps")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("VisualizerUniqueId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("UniqueId");
+
+                    b.HasIndex("VisualizerUniqueId");
+
+                    b.ToTable("VisualizerAllocation");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Visualizing.VisualizerConfig", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Url")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("Visualizers", (string)null);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Visualizing.VisualizerInfo", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValueSql("DATETIME('now')");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Type")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Url")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Version")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("VisualizerInfos");
                 });
 
             modelBuilder.Entity("Ares.Services.DriverInfo", b =>
@@ -2235,6 +2419,15 @@ namespace AresService.Migrations.Sqlite.Migrations
                         .WithMany("StepTemplates")
                         .HasForeignKey("ExperimentTemplateUniqueId")
                         .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Visualizing.VisualizerAllocation", b =>
+                {
+                    b.HasOne("Ares.Datamodel.Visualizing.VisualizerInfo", "Visualizer")
+                        .WithMany()
+                        .HasForeignKey("VisualizerUniqueId");
+
+                    b.Navigation("Visualizer");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.Analyzing.AnalyzerInfo", b =>

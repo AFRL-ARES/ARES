@@ -40,7 +40,7 @@ public class SilaDeviceTests
     {
       Assert.That(descriptor.Name, Is.EqualTo("PumpControl.Start"));
       Assert.That(descriptor.Description, Is.Empty);
-      Assert.That(descriptor.InputSchema.Fields["Rate"].Type, Is.EqualTo(AresDataType.Number));
+      Assert.That(descriptor.InputSchema.Fields["Rate"].Type, Is.EqualTo(AresDataType.Float));
       Assert.That(descriptor.InputSchema.Fields["Rate"].Description, Is.EqualTo("Pump rate"));
       Assert.That(descriptor.OutputSchema, Is.Null);
     }
@@ -103,6 +103,43 @@ public class SilaDeviceTests
   }
 
   [Test]
+  public async Task GetCommandDescriptorsAsync_ResolvesFeatureDefinedListStructure()
+  {
+    var paraWriteType = CreateParaWriteType();
+    var command = CreateCommand(
+      "RunProgram",
+      parameters:
+      [
+        CreateElement("name", BasicType.String),
+        CreateElement(
+          "parameters",
+          new DataTypeType
+          {
+            Item = new ListType
+            {
+              DataType = new DataTypeType { Item = "ParaWrite" }
+            }
+          })
+      ]);
+    var feature = CreateFeature("Robot", paraWriteType, command);
+
+    var device = CreateDevice(CreateServerData([feature]));
+
+    var descriptor = (await device.GetCommandDescriptorsAsync()).Single();
+    var parametersSchema = descriptor.InputSchema.Fields["parameters"];
+    var paraWriteSchema = parametersSchema.ListElementSchema;
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(parametersSchema.Type, Is.EqualTo(AresDataType.List));
+      Assert.That(paraWriteSchema, Is.Not.Null);
+      Assert.That(paraWriteSchema!.Type, Is.EqualTo(AresDataType.Struct));
+      Assert.That(paraWriteSchema.StructSchema.Fields["Name"].Type, Is.EqualTo(AresDataType.String));
+      Assert.That(paraWriteSchema.StructSchema.Fields["Value"].Type, Is.EqualTo(AresDataType.String));
+    }
+  }
+
+  [Test]
   public async Task GetCommandDescriptorsAsync_BuildsStructOutputForSingleResponse()
   {
     var serverData = CreateServerData(
@@ -155,7 +192,7 @@ public class SilaDeviceTests
     using(Assert.EnterMultipleScope())
     {
       Assert.That(fields.Keys, Is.EquivalentTo(new[] { "FlowRate", "Enabled" }));
-      Assert.That(fields["FlowRate"].Type, Is.EqualTo(AresDataType.Number));
+      Assert.That(fields["FlowRate"].Type, Is.EqualTo(AresDataType.Float));
       Assert.That(fields["Enabled"].Type, Is.EqualTo(AresDataType.Boolean));
     }
   }
@@ -225,7 +262,7 @@ public class SilaDeviceTests
     using(Assert.EnterMultipleScope())
     {
       Assert.That(fields.Keys, Is.EquivalentTo(new[] { "PumpControl.FlowRate", "PumpControl.IsEnabled" }));
-      Assert.That(fields["PumpControl.FlowRate"].Type, Is.EqualTo(AresDataType.Number));
+      Assert.That(fields["PumpControl.FlowRate"].Type, Is.EqualTo(AresDataType.Float));
       Assert.That(fields["PumpControl.FlowRate"].Description, Is.EqualTo("Current flow rate"));
       Assert.That(fields["PumpControl.IsEnabled"].Type, Is.EqualTo(AresDataType.Boolean));
     }
@@ -321,6 +358,72 @@ public class SilaDeviceTests
       Assert.That(result.Success, Is.True);
       Assert.That(result.Result.KindCase, Is.EqualTo(AresValue.KindOneofCase.StructValue));
       Assert.That(result.Result.StructValue.Fields["Status"].StringValue, Is.EqualTo("Ready"));
+    }
+  }
+
+  [Test]
+  public async Task ExecuteCommand_ResolvesFeatureDefinedListStructureInRequest()
+  {
+    var paraWriteType = CreateParaWriteType();
+    var command = CreateCommand(
+      "RunProgram",
+      parameters:
+      [
+        CreateElement("name", BasicType.String),
+        CreateElement(
+          "parameters",
+          new DataTypeType
+          {
+            Item = new ListType
+            {
+              DataType = new DataTypeType { Item = "ParaWrite" }
+            }
+          })
+      ],
+      observable: FeatureCommandObservable.No);
+    var feature = CreateFeature("Robot", paraWriteType, command);
+    var channelMock = CreateChannelMock();
+    channelMock
+      .Setup(c => c.ExecuteUnobservableCommandAsync(
+        It.IsAny<string>(),
+        It.IsAny<string>(),
+        It.Is<DynamicRequest>(request => RequestContainsParaWrite(request)),
+        It.IsAny<IClientCallInfo>(),
+        It.IsAny<ByteSerializer<DynamicRequest>>(),
+        It.IsAny<ByteSerializer<DynamicObjectProperty>>() ))
+      .ReturnsAsync(CreateResponseProperty(command));
+
+    var device = CreateDevice(CreateServerData([feature], channelMock.Object), CreateConfiguredClient());
+    var result = await device.ExecuteCommand(
+      "Robot.RunProgram",
+      [
+        new DeviceCommandArgument
+        {
+          ArgName = "name",
+          ArgValue = AresValueHelper.CreateString("Demo")
+        },
+        new DeviceCommandArgument
+        {
+          ArgName = "parameters",
+          ArgValue = AresValueHelper.CreateList(
+          [
+            AresValueHelper.CreateStruct(new AresStruct
+            {
+              Fields =
+              {
+                ["Name"] = AresValueHelper.CreateString("Speed"),
+                ["Value"] = AresValueHelper.CreateString("asdf")
+              }
+            })
+          ])
+        }
+      ],
+      CancellationToken.None);
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(result.Success, Is.True);
+      Assert.That(result.Result.KindCase, Is.EqualTo(AresValue.KindOneofCase.UnitValue));
     }
   }
 
@@ -526,7 +629,8 @@ public class SilaDeviceTests
         DeviceId = "sila-device",
         DeviceName = "SiLA Device"
       },
-      client ?? new SilaClient());
+      client ?? new SilaClient(),
+      null);
   }
 
   private static ServerData CreateServerData(IEnumerable<Feature> features)
@@ -616,6 +720,24 @@ public class SilaDeviceTests
     return property is not null && predicate(property.Value);
   }
 
+  private static bool RequestContainsParaWrite(DynamicRequest request)
+  {
+    if(request.Value is not DynamicObject requestObject)
+      return false;
+
+    var parameters = requestObject.Elements.FirstOrDefault(element => element.Identifier == "parameters")?.Value;
+    if(parameters is not IEnumerable<object> parameterList)
+      return false;
+
+    var paraWrite = parameterList.SingleOrDefault() as DynamicObject;
+    if(paraWrite is null)
+      return false;
+
+    var name = paraWrite.Elements.FirstOrDefault(element => element.Identifier == "Name")?.Value;
+    var value = paraWrite.Elements.FirstOrDefault(element => element.Identifier == "Value")?.Value;
+    return name is string nameValue && nameValue == "Speed" && value is string valueString && valueString == "asdf";
+  }
+
   private static DynamicObjectProperty CreateResponseProperty(
     FeatureCommand command,
     params (SiLAElement element, object value)[] values)
@@ -643,6 +765,27 @@ public class SilaDeviceTests
 
     property.Value = responseObject;
     return property;
+  }
+
+  private static SiLAElement CreateParaWriteType()
+  {
+    return new SiLAElement
+    {
+      Identifier = "ParaWrite",
+      DisplayName = "Para Write",
+      Description = "Custom parameter type",
+      DataType = new DataTypeType
+      {
+        Item = new StructureType
+        {
+          Element =
+          [
+            CreateElement("Name", BasicType.String, "Parameter name"),
+            CreateElement("Value", BasicType.String, "Parameter value")
+          ]
+        }
+      }
+    };
   }
 
   private static IObservableCommand<DynamicObjectProperty> CreateObservableCommand(DynamicObjectProperty response)

@@ -40,20 +40,29 @@ public static class EfCoreValueConverters
 
   private static MapField<TKey, TValue> DeserializeMapFromJson<TKey, TValue>(string json) where TKey : notnull
   {
-    if(string.IsNullOrWhiteSpace(json))
+    try
     {
+      if(string.IsNullOrWhiteSpace(json))
+      {
+        return new MapField<TKey, TValue>();
+      }
+
+      var dict = JsonSerializer.Deserialize<Dictionary<TKey, TValue>>(json, JsonSerializerOptions.Default);
+      var map = new MapField<TKey, TValue>();
+
+      if(dict is not null)
+      {
+        map.Add(dict);
+      }
+
+      return map;
+    }
+
+    catch(Exception ex)
+    {
+      Console.WriteLine(ex.Message);
       return new MapField<TKey, TValue>();
     }
-
-    var dict = JsonSerializer.Deserialize<Dictionary<TKey, TValue>>(json, JsonSerializerOptions.Default);
-    var map = new MapField<TKey, TValue>();
-
-    if(dict is not null)
-    {
-      map.Add(dict);
-    }
-
-    return map;
   }
 
   private static ValueComparer<MapField<TKey, TValue>> GetMapFieldComparer<TKey, TValue>() where TKey : notnull

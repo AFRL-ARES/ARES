@@ -1,7 +1,5 @@
 ﻿@page "/visualization"
 @using Ares.Core.Visualization.ViewModels
-@using UI.Components.Visualization
-@using UI.Features.Visualization.ViewModels
 
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<VisualizationViewModel>
 @inject IJSRuntime JS
@@ -20,6 +18,21 @@
       data-id="@itemViewModel.UniqueId">
         <div class="grid-stack-item-content">
           <VisualizationItem ViewModel="itemViewModel" />
+        </div>
+      </div>
+    }
+
+    @foreach(var itemViewModel in ViewModel.RemoteVisualizationItems)
+    {
+      <div @key="itemViewModel.UniqueId"
+           class="grid-stack-item"
+           gs-w="@itemViewModel.GridW"
+           gs-h="@itemViewModel.GridH"
+           gs-x="@itemViewModel.GridX"
+           gs-y="@itemViewModel.GridY"
+           data-id="@itemViewModel.UniqueId">
+        <div class="grid-stack-item-content">
+          <RemoteVisualizationItem ViewModel="itemViewModel" />
         </div>
       </div>
     }
@@ -56,6 +69,5 @@
   {
     foreach(var change in changes)
       ViewModel!.UpdateChartPosition(change.UniqueId, change.X, change.Y, change.W, change.H);
-    
   }
 }

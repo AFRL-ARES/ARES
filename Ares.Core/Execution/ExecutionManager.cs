@@ -1,4 +1,5 @@
-﻿using Ares.Core.Exceptions;
+﻿using Ares.Core.Device.Providers;
+using Ares.Core.Exceptions;
 using Ares.Core.Execution.ControlTokens;
 using Ares.Core.Execution.Executors;
 using Ares.Core.Execution.Executors.Composers;
@@ -21,7 +22,7 @@ public class ExecutionManager : IExecutionManager
   private readonly ICommandComposer<CampaignTemplate, ICampaignExecutor> _campaignComposer;
   private readonly IDbContextFactory<CoreDatabaseContext> _dbContextFactory;
   private readonly IEnumerable<IStartCondition> _startConditions;
-  private readonly IExecutionSafetyManager _safetyManager;
+  private readonly IAresDeviceProvider _deviceProvider;
   private readonly INotifier _notifier;
   private readonly ICommandDisplayNameResolver _commandDisplayNameResolver;
   private readonly ILogger _logger;
@@ -31,9 +32,9 @@ public class ExecutionManager : IExecutionManager
   public ExecutionManager(IEnumerable<IStartCondition> startConditions,
     IDbContextFactory<CoreDatabaseContext> dbContextFactory,
     IActiveCampaignTemplateStore activeCampaignTemplateStore,
-    IExecutionSafetyManager safetyManager,
     ICommandComposer<CampaignTemplate, ICampaignExecutor> campaignComposer,
     ICommandDisplayNameResolver commandDisplayNameResolver,
+    IAresDeviceProvider deviceProvider,
     ILogger<ExecutionManager> logger,
     INotifier notifier)
   {
@@ -42,12 +43,10 @@ public class ExecutionManager : IExecutionManager
     _activeCampaignTemplateStore = activeCampaignTemplateStore;
     _campaignComposer = campaignComposer;
     _commandDisplayNameResolver = commandDisplayNameResolver;
-    _safetyManager = safetyManager;
+    _deviceProvider = deviceProvider;
     _logger = logger;
     _notifier = notifier;
   }
-
-  public IList<IStopCondition> CampaignStopConditions { get; } = [];
 
   public async Task<bool> CanRun()
   {
@@ -79,6 +78,7 @@ public class ExecutionManager : IExecutionManager
     executor.StopConditions.AddRange(CampaignStopConditions);
     executor.ReplicateRate = ReplicateRate;
     executor.BatchPlanningSize = PlanningBatchSize;
+    executor.AchieveAllObjectives = AchieveAllStopConditions;
     _executionControlTokenSource = new ExecutionControlTokenSource();
     CampaignExecutionSummary campaignExecutionSummary;
     ExecutionStartTime = DateTime.UtcNow;
@@ -94,7 +94,10 @@ public class ExecutionManager : IExecutionManager
     }
     catch(CloseoutScriptFailedException ex)
     {
-      await _safetyManager.EnterSafeMode();
+      var availableDevices = _deviceProvider.GetAllDevices();
+
+      foreach(var device in availableDevices)
+        await device.EnterSafeMode();
 
       var message = $"ARES failed to execute its closeout script. To avoid leaving lab equipment in a potentially dangerous state, safe mode has been activated.";
 
@@ -146,19 +149,16 @@ public class ExecutionManager : IExecutionManager
   }
 
   public void UpdateReplicateRate(int newRate)
-  {
-    ReplicateRate = newRate;
-  }
-
+    => ReplicateRate = newRate;
+  
   public void UpdateBatchPlanningSize(int newBatchSize)
-  {
-    PlanningBatchSize = newBatchSize;
-  }
+    => PlanningBatchSize = newBatchSize;
 
   public void SubmitUserDecision(ErrorHandling decision)
-  {
-    _activeExecutor?.SubmitUserDecision(decision);
-  }
+    => _activeExecutor?.SubmitUserDecision(decision);
+  
+  public void UpdateAchieveAllObjectivesValue(bool achieveAllObjectives)
+    => AchieveAllStopConditions = achieveAllObjectives;
 
   private async Task PostExecution(CampaignExecutionSummary result)
   {
@@ -184,8 +184,9 @@ public class ExecutionManager : IExecutionManager
   }
 
   public DateTime? ExecutionStartTime { get; set; }
-
   public int ReplicateRate { get; private set; } = 1;
-
   public int PlanningBatchSize { get; private set; } = 1;
+  public IList<IStopCondition> CampaignStopConditions { get; } = [];
+  //Determines whether to stop when a single analysis condition is met or when all of them are
+  public bool AchieveAllStopConditions { get; private set;  } = false;
 }

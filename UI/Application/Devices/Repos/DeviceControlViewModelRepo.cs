@@ -10,13 +10,16 @@ using System.Reactive.Disposables.Fluent;
 using UI.Features.Devices;
 using UI.Features.Devices.Remote.Factory;
 using UI.Features.Devices.Sila.Factory;
+using UI.Infrastructure.Devices.Remote;
+using UI.Infrastructure.Devices.Sila;
 
 namespace UI.Application.Devices.Repos
 {
   public class DeviceControlViewModelRepo : IDeviceControlViewModelRepo
   {
     private readonly IAresDeviceProvider _deviceProvider;
-    private readonly IDeviceAdapterRepository _deviceAdapterRepo;
+    private readonly IRemoteDeviceAdapterRepository _remoteDeviceAdapterRepo;
+    private readonly ISilaDeviceAdapterRepository _silaDeviceAdapterRepo;
     private readonly IAresDeviceViewModelFactory _factory;
     private readonly IRemoteDeviceControlViewModelFactory _remoteVmFactory;
     private readonly ISilaDeviceControlViewModelFactory _silaVmFactory;
@@ -26,12 +29,14 @@ namespace UI.Application.Devices.Repos
     public DeviceControlViewModelRepo(IAresDeviceProvider deviceProvider,
       IAresDeviceViewModelFactory factory,
       IRemoteDeviceControlViewModelFactory remoteVmFactory,
-      IDeviceAdapterRepository deviceAdapterRepo,
+      IRemoteDeviceAdapterRepository remoteDeviceAdapterRepo,
+      ISilaDeviceAdapterRepository silaDeviceAdapterRepo,
       ISilaDeviceControlViewModelFactory silaVmFactory)
     {
       _deviceProvider = deviceProvider;
       _factory = factory;
-      _deviceAdapterRepo = deviceAdapterRepo;
+      _remoteDeviceAdapterRepo = remoteDeviceAdapterRepo;
+      _silaDeviceAdapterRepo = silaDeviceAdapterRepo;
       _remoteVmFactory = remoteVmFactory;
       _silaVmFactory = silaVmFactory;
     }
@@ -45,14 +50,13 @@ namespace UI.Application.Devices.Repos
         .PopulateInto(_viewModelCache)
         .DisposeWith(_cleanup);
 
-      _deviceProvider.Connect()
-        .Filter(d => d is SilaDevice)
-        .Transform(d => _silaVmFactory.Create((SilaDevice)d))
+      _silaDeviceAdapterRepo.Connect()
+        .Transform(_silaVmFactory.Create)
         .DisposeMany()
         .PopulateInto(_viewModelCache)
         .DisposeWith(_cleanup);
 
-      _deviceAdapterRepo.Connect()
+      _remoteDeviceAdapterRepo.Connect()
         .Transform(_remoteVmFactory.Create)
         .DisposeMany()
         .PopulateInto (_viewModelCache)

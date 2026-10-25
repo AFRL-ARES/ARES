@@ -1,16 +1,18 @@
 @implements IDisposable
 
 @using Ares.Core.Device.Providers
+@using Ares.Core
 @using Ares.Core.Execution.Safety
-@using Ares.Core.Device.Repos
-@using Ares.Services
-@using Google.Protobuf.WellKnownTypes
 @using System.Reactive.Linq
-@using System.Collections.Specialized
 @using UI.Application.Dialog
 @using UI.Application.Notifications
 @using UI.Infrastructure.Notifications
 @using UI.Infrastructure.Startup
+@using Ares.Core.Settings
+@using Microsoft.Extensions.Configuration
+@using Microsoft.JSInterop
+@using Radzen
+@using UI.Features.Tutorial
 
 @inherits LayoutComponentBase
 
@@ -21,6 +23,10 @@
 @inject IDeviceDriverProvider deviceDriverProvider
 @inject INotificationProvider notificationProvider
 @inject StartupStateTracker Tracker
+@inject DialogService DialogService
+@inject IConfiguration Configuration
+@inject ISystemSettingsManager SystemSettingsManager
+@inject IJSRuntime JS
 
 <HeadContent>
   <link rel="icon" type="image/png" href="images/ARESLogo.png">
@@ -53,6 +59,7 @@
             </AresNavItem>
             <AresNavItem Icon="assessment" Text="Data Explorer" Path="data-explorer" />
             <AresNavItem Icon="bar_chart" Text="Visualization" Path="visualization"/>
+            <AresNavItem Icon="analytics" Text="Plotly Demo" Path="plotly-dashboard"/>
             <AresNavItem Icon="terminal" Text="Scripting" Path="scripting" />
             @* Coming Soon *@
             @* <AresNavItem Icon="detector" Text="Safety" Path="/safety"/> *@
@@ -128,6 +135,8 @@
   private bool _isDisposed;
   private List<string> _approvedCssPaths = new();
   public bool HasUnreadNotifications = false;
+  private bool _demoIntroShown;
+  private const string DemoIntroShownStorageKey = "ares.demoIntroShown";
 
   private readonly string[] _loadingMessageOptions = new[]
   {
@@ -137,7 +146,7 @@
     "Topping off the blinker fluid...",
     "Herding the autonomous research agents...",
     "Downloading more RAM...",
-    "Warming up the lasers...",
+    "Charging the lasers...",
     "Purging the digital fluid lines...",
     "Waiting for the valves to make up their minds...",
     "Dividing by zero... please wait...",
@@ -152,7 +161,6 @@
     "Brewing virtual coffee...",
     "Calibrating the flux capacitors..."
   };
-
   protected override void OnInitialized()
   {
     Tracker.OnSystemReady += HandleSystemReady;
@@ -160,24 +168,21 @@
     HasUnreadNotifications = notificationProvider.GetAllNotifications().Any(n => !n.IsRead);
 
     _notificationSubscription = notificationProvider.Connect()
-    .Throttle(TimeSpan.FromMilliseconds(500))
-    .Subscribe(_ => InvokeAsync(NotificationsUpdated));
+      .Throttle(TimeSpan.FromMilliseconds(500))
+      .Subscribe(_ => InvokeAsync(NotificationsUpdated));
 
     _driverSubscription = deviceDriverProvider.Connect()
-    .Throttle(TimeSpan.FromMilliseconds(500))
-    .Subscribe(_ => InvokeAsync(StateHasChanged));
-
+      .Throttle(TimeSpan.FromMilliseconds(500))
+      .Subscribe(_ => InvokeAsync(StateHasChanged));
 
     _ = CycleLoadingMessagesAsync(_cts.Token);
-
   }
+
 
   private Task NotificationsUpdated()
   {
     if(_isDisposed)
       return Task.CompletedTask;
-
-    HasUnreadNotifications = notificationProvider.GetAllNotifications().Any(n => !n.IsRead);
     StateHasChanged();
     return Task.CompletedTask;
   }
@@ -196,6 +201,12 @@
       StateHasChanged();
     });
   }
+
+  protected override async Task OnAfterRenderAsync(bool firstRender)
+  {
+    if(firstRender && !_demoIntroShown)
+      await ShowDemoIntroIfNeededAsync();
+	}
 
   private async Task CycleLoadingMessagesAsync(CancellationToken token)
   {
@@ -222,40 +233,33 @@
 
   async Task ShowEmergencyStopDialog()
   {
-    var confirmDialogOptions = new UiConfirmOptions { OkButtonText = "Yes", CancelButtonText = "No" };
-    var result = await dialogService.ConfirmAsync("Are you sure you want to trigger an emergency stop?", "Emergency Stop Confirmation", confirmDialogOptions);
+    var success = await executionSafetyManager.EnterSafeMode();
+    UiNotificationMessage notificationMessage;
 
-    if(result)
+    if(success)
     {
-      var success = await executionSafetyManager.EnterSafeMode();
-      UiNotificationMessage notificationMessage;
-
-      if(success)
+      notificationMessage = new UiNotificationMessage
       {
-        notificationMessage = new UiNotificationMessage
-        {
-          Summary = "Successfully Processed Emergency Shutdown Request",
-          Detail = "ARES has successfully processed an emergency shutdown request. All devices have entered safemode and any running campaigns have been completed.",
-          Severity = UiNotificationSeverity.Success,
-          CloseOnClick = true
-        };
-      }
-
-
-      else
-      {
-        notificationMessage = new UiNotificationMessage
-        {
-          Detail = "ARES HAS FAILED TO ENTER SAFE MODE. DEVICES MAY BE IN AN UNSTABLE STATE AND SHOULD BE POWERED OFF IMMEDIATELY IF IT IS SAFE TO DO SO.",
-          Summary = "FAILED TO PROCESS EMERGENCY SHUTDOWN REQUEST!",
-          CloseOnClick = true,
-          Severity = UiNotificationSeverity.Error
-        };
-      }
-
-      uiNotificationService.Notify(notificationMessage);
+        Summary = "Successfully Processed Emergency Shutdown Request",
+        Detail = "ARES has successfully processed an emergency shutdown request. All devices have entered safemode and any running campaigns have been completed.",
+        Severity = UiNotificationSeverity.Success,
+        CloseOnClick = true
+      };
     }
 
+
+    else
+    {
+      notificationMessage = new UiNotificationMessage
+      {
+        Detail = "ARES HAS FAILED TO ENTER SAFE MODE. DEVICES MAY BE IN AN UNSTABLE STATE AND SHOULD BE POWERED OFF IMMEDIATELY IF IT IS SAFE TO DO SO.",
+        Summary = "FAILED TO PROCESS EMERGENCY SHUTDOWN REQUEST!",
+        CloseOnClick = true,
+        Severity = UiNotificationSeverity.Error
+      };
+    }
+
+    uiNotificationService.Notify(notificationMessage);
   }
 
   public IEnumerable<string> GetPluginStylesheetPaths()
@@ -278,7 +282,63 @@
   private void HandleSystemReady()
   {
     _cts.Cancel();
-    InvokeAsync(StateHasChanged);
+    _ = InvokeAsync(async () =>
+    {
+      StateHasChanged();
+    });
+  }
+
+  private async Task ShowDemoIntroIfNeededAsync()
+  {
+    if(_demoIntroShown)
+      return;
+
+    if(!AresConfig.DemoMode)
+      return;
+
+    if(!Tracker.IsReady)
+      return;
+
+    var generalSettings = await SystemSettingsManager.GetAresGeneralSettings();
+    if(generalSettings?.HideDemoModeIntro == true)
+      return;
+
+    if(await WasDemoIntroShownInCurrentTabAsync())
+      return;
+
+    _demoIntroShown = true;
+    await MarkDemoIntroShownInCurrentTabAsync();
+
+    await DialogService.OpenAsync<DemoIntroDialog>(string.Empty, null, new DialogOptions
+    {
+      ShowClose = false,
+      ShowTitle = false
+    });
+  }
+
+  private async Task<bool> WasDemoIntroShownInCurrentTabAsync()
+  {
+    try
+    {
+      var storedValue = await JS.InvokeAsync<string?>("sessionStorage.getItem", DemoIntroShownStorageKey);
+      return bool.TryParse(storedValue, out var wasShown) && wasShown;
+    }
+    catch(JSException)
+    {
+      return false;
+    }
+  }
+
+  private async Task MarkDemoIntroShownInCurrentTabAsync()
+  {
+    try
+    {
+      await JS.InvokeVoidAsync("sessionStorage.setItem", DemoIntroShownStorageKey, true.ToString());
+    }
+    catch(JSException)
+    {
+      // Browser storage is optional; the in-memory flag still prevents duplicate dialogs in this circuit.
+    }
   }
 
   public void Dispose()

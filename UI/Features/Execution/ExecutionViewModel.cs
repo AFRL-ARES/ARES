@@ -19,6 +19,8 @@ using System.Reactive.Linq;
 using UI.Application.Notifications;
 using UI.Domain.Execution;
 using UI.Domain.Experiments;
+using UI.Features.Execution.Enums;
+using UI.Features.Execution.Internal;
 using UI.Features.Visualization.ViewModels;
 
 namespace UI.Features.Execution;
@@ -32,9 +34,10 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   private readonly IExecutionReportStore _executionReportStore;
   private readonly IAresDeviceProvider _deviceProvider;
   public event Action? StateChanged;
-
   private IDisposable? _experimentSubscription;
   private IDisposable? _campaignStateSubscription;
+  private IDisposable? _completedExperimentSubscription;
+  private readonly Dictionary<string, string> _latestVisualizationJsonByAllocationId = new(StringComparer.Ordinal);
 
   public ExecutionViewModel(AutomationService automationClient,
     IConfiguration configuration,
@@ -53,6 +56,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     AnalyzerMetrics = [];
     PlannerMetricsMap = [];
     ExperimentExecutionStatuses = [];
+    LiveDataDisplaySources = [];
 
     this.WhenAnyValue(x => x.CurrentPlannerState)
       .Subscribe(newState =>
@@ -64,6 +68,14 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
       .Subscribe(newState =>
       {
         _ = UpdateAnalysisTransactions();
+      });
+
+    this.WhenAnyValue(x => x.SelectedLiveDataSourceId)
+      .Subscribe(_ =>
+      {
+        this.RaisePropertyChanged(nameof(SelectedLiveDataSource));
+        this.RaisePropertyChanged(nameof(SelectedLiveDataJson));
+        StateChanged?.Invoke();
       });
   }
 
@@ -111,10 +123,12 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
       return;
 
     AnalyzerInfo = null;
+    AnalyzerObjectiveSchema = new(StringComparer.OrdinalIgnoreCase);
+
     PlannerAdapterInfos = CampaignTemplate.ExperimentTemplate.GetAllPlannedParameters()
     .Select(parameter => parameter.GetPlanningMetadata())
     .Select(metadata => CampaignTemplate.PlannerAllocations
-    .FirstOrDefault(allocation => allocation.Parameter.Equals(metadata))?.Planner)
+    .FirstOrDefault(allocation => allocation.Parameter.UniqueId.Equals(metadata?.UniqueId))?.Planner)
     .Where(info => info is not null)
     .ToHashSet();
 
@@ -126,13 +140,114 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
       request.AnalyzerId = analyzerId;
       var response = await _analyzerService.GetInfo(request, null);
       AnalyzerInfo = response.Info;
+      AnalyzerObjectiveSchema = response.Info.Capabilities.ObjectiveOutputSchema?.Fields.ToDictionary() ?? new Dictionary<string, AresValueSchema>();
+      SyncAnalyzerObjectiveTargets();
     }
+
+    RebuildLiveDataDisplaySources();
+  }
+
+  private void RebuildLiveDataDisplaySources()
+  {
+    var sources = new List<LiveDataDisplaySource>
+    {
+      new(LiveDataDisplaySource.PlannerSourceId, LiveDataDisplaySourceKind.Planner, "Planner Data", "Planner-selected experiment parameters"),
+      new(LiveDataDisplaySource.AnalyzerSourceId, LiveDataDisplaySourceKind.Analyzer, "Analyzer Data", "Experiment analysis objectives")
+    };
+
+    var allocations = CampaignTemplate?.ExperimentTemplate?.VisualizerAllocations ?? [];
+    foreach(var allocation in allocations)
+    {
+      if(string.IsNullOrWhiteSpace(allocation.UniqueId))
+        continue;
+
+      var displayName = !string.IsNullOrWhiteSpace(allocation.UserProvidedIdentifier)
+        ? allocation.UserProvidedIdentifier
+        : allocation.RequestedVisual;
+
+      if(string.IsNullOrWhiteSpace(displayName))
+        displayName = "Visualization";
+
+      sources.Add(new LiveDataDisplaySource(
+        allocation.UniqueId,
+        LiveDataDisplaySourceKind.Visualization,
+        displayName,
+        allocation.RequestedVisual));
+    }
+
+    LiveDataDisplaySources = sources;
+    this.RaisePropertyChanged(nameof(SelectedLiveDataSource));
+    this.RaisePropertyChanged(nameof(SelectedLiveDataJson));
+
+    if(!sources.Any(source => source.Id == SelectedLiveDataSourceId))
+      SelectedLiveDataSourceId = LiveDataDisplaySource.PlannerSourceId;
+
+    UpdateGeneratedVisualizations(_executionReportStore.LatestCompletedExperiment);
+  }
+
+  private void UpdateGeneratedVisualizations(ExperimentExecutionSummary? summary)
+  {
+    if(summary is null)
+      return;
+
+    var configuredAllocationIds = LiveDataDisplaySources
+      .Where(source => source.Kind == LiveDataDisplaySourceKind.Visualization)
+      .Select(source => source.Id)
+      .ToHashSet(StringComparer.Ordinal);
+
+    foreach(var generatedVisual in summary.GeneratedVisuals)
+    {
+      if(configuredAllocationIds.Contains(generatedVisual.Key))
+        _latestVisualizationJsonByAllocationId[generatedVisual.Key] = generatedVisual.Value;
+    }
+
+    this.RaisePropertyChanged(nameof(SelectedLiveDataJson));
+    StateChanged?.Invoke();
+  }
+
+  private void SyncAnalyzerObjectiveTargets()
+  {
+    foreach(var objective in AnalyzerObjectiveSchema.Where(objective => objective.Value.Type.IsNumericType()))
+    {
+      DesiredResults.TryAdd(objective.Key, DesiredResult);
+      DesiredLeeways.TryAdd(objective.Key, DesiredLeeway);
+      ObjectiveEnabled.TryAdd(objective.Key, false);
+    }
+
+    var objectiveKeys = AnalyzerObjectiveSchema.Keys.ToHashSet();
+    foreach(var key in DesiredResults.Keys.Where(key => !objectiveKeys.Contains(key)).ToList())
+      DesiredResults.Remove(key);
+    
+    foreach(var key in DesiredLeeways.Keys.Where(key => !objectiveKeys.Contains(key)).ToList())
+      DesiredLeeways.Remove(key);
+
+    foreach(var key in ObjectiveEnabled.Keys.Where(key => !objectiveKeys.Contains(key)).ToList())
+      ObjectiveEnabled.Remove(key);
   }
 
   public async Task SetDesiredAnalysis()
   {
-    await _automationClient.SetAnalysisResultStopCondition(
-      new AnalysisResultCondition { DesiredResult = DesiredResult, Leeway = DesiredLeeway }, null);
+    var stopConditions = new List<AnalysisResultCondition>();
+
+    foreach(var objective in AnalyzerObjectiveSchema)
+    {
+      var key = objective.Key;
+      if(!ObjectiveEnabled.TryGetValue(key, out var enabled) || !enabled)
+        continue;
+
+      var resultFound = DesiredResults.TryGetValue(key, out var result);
+      var leewayFound = DesiredLeeways.TryGetValue(key, out var leeway);
+
+      if(!resultFound || !leewayFound)
+        continue;
+
+      stopConditions.Add(new AnalysisResultCondition { DesiredResult = result, Leeway = leeway });
+    }
+
+    var request = new AddAnalysisResultConditionsRequest();
+    request.Conditions.AddRange(stopConditions);
+
+    await _automationClient.AddAnalysisResultStopConditions(request, null);
     CurrentStopCondition = await GetCurrentStopCondition();
     ActiveStopConditionMode = ExecutionStopConditionMode.AnalyzerResult;
     await RefreshExecutionEligibility();
@@ -216,12 +331,15 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
       return;
     }
 
-    ExperimentExecutionStatuses.Clear();
+    ExperimentExecutionStatuses = [];
+    _latestVisualizationJsonByAllocationId.Clear();
+    this.RaisePropertyChanged(nameof(SelectedLiveDataJson));
     var request = new StartCampaignRequest() { UserNotes = ExecutionNotes };
 
     if(SelectedTags is not null)
       request.CampaignTags.AddRange(SelectedTags);
 
+    _automationClient.SetAchieveAllStopConditions(AchieveAllObjectives);
     await _automationClient.StartExecution(request, null);
     PlannerMetricsMap.Clear();
     AnalyzerMetrics.Clear();
@@ -540,16 +658,15 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
     _campaignStateSubscription = _executionReportStore.CampaignStatusObservable
       .Where(status => status is not null)
-      .Select(status => new CampaignExecutionState
-      {
-        CampaignId = status!.CampaignId,
-        State = status.State,
-        AnalysisState = status.AnalysisState,
-        PlannerState = status.PlannerState
-      })
       .Subscribe(
-        onNext: state => UpdateCampaignStatus(state!), 
+        onNext: status => ApplyCampaignExecutionStatus(status!),
         onError: ex => Console.WriteLine($"Error Updating Campaign State: {ex.Message}"));
+
+    _completedExperimentSubscription = _executionReportStore.CompletedExperimentObservable
+      .Where(summary => summary is not null)
+      .Subscribe(
+        onNext: summary => UpdateGeneratedVisualizations(summary),
+        onError: ex => Console.WriteLine($"Error updating generated visualizations: {ex.Message}"));
   }
 
   private void UpdateExperimentStatus(ExperimentExecutionStatus status)
@@ -557,9 +674,8 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     var existingStatus = ExperimentExecutionStatuses.FirstOrDefault(s => s.ExperimentId == status.ExperimentId);
 
     if(existingStatus is null)
-      ExperimentExecutionStatuses.Add(status);
- 
-      
+      ExperimentExecutionStatuses = [.. ExperimentExecutionStatuses, status];
+
     else
     {
       var incomingCommands = status.GetCommandExecutionStatuses();
@@ -618,6 +734,30 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
       _ = RequestUserConfirmation();
 
     StateChanged?.Invoke();
+  }
+
+  public void ApplyCampaignExecutionStatus(CampaignExecutionStatus status)
+  {
+    ExperimentExecutionStatuses = status.ExperimentExecutionStatuses.ToArray();
+
+    var state = new CampaignExecutionState
+    {
+      CampaignId = status.CampaignId,
+      State = status.State,
+      AnalysisState = status.AnalysisState,
+      PlannerState = status.PlannerState
+    };
+
+    UpdateCampaignStatus(state);
+
+    var latestExperimentStatus = ExperimentExecutionStatuses.LastOrDefault();
+    if(latestExperimentStatus is not null)
+      ExtractCommandVariables(latestExperimentStatus);
+
+    this.RaisePropertyChanged(nameof(CurrentCommand));
+    this.RaisePropertyChanged(nameof(CompletedExperimentCount));
+    this.RaisePropertyChanged(nameof(ActiveExperimentNumber));
+    this.RaisePropertyChanged(nameof(CurrentOutputVariables));
   }
 
   public Task UpdateDeviceChartA()
@@ -690,6 +830,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   {
     _experimentSubscription?.Dispose();
     _campaignStateSubscription?.Dispose();
+    _completedExperimentSubscription?.Dispose();
   }
 
   /// <summary>
@@ -701,6 +842,10 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   {
     await RefreshPlannerTransactionData();
     await RefreshAnalyzerTransactionData();
+
+    var campaignExecutionStatus = await GetCampaignExecutionStatus();
+    if(campaignExecutionStatus is not null)
+      ApplyCampaignExecutionStatus(campaignExecutionStatus);
   }
 
   public async Task RefreshPlannerTransactionData()
@@ -744,6 +889,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
     if(CurrentStopCondition.ActiveCondition.Contains("NumExperimentsRun", StringComparison.OrdinalIgnoreCase))
       ActiveStopConditionMode = ExecutionStopConditionMode.NumExperiments;
+
     else if(CurrentStopCondition.ActiveCondition.Contains("Analysis", StringComparison.OrdinalIgnoreCase))
       ActiveStopConditionMode = ExecutionStopConditionMode.AnalyzerResult;
 
@@ -805,20 +951,36 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
 
   public int CampaignCommandCount => CampaignTemplate?.ExperimentTemplate.StepTemplates.Sum(step => step.CommandTemplates.Count) ?? 0;
 
-  public string PlannerSummary => PlannerAdapterInfos.Any()
-    ? string.Join(", ", PlannerAdapterInfos.Select(info => info?.Name).Where(name => !string.IsNullOrWhiteSpace(name)))
-    : "No planner";
+  public string PlannerSummary => PlannerAdapterInfos.Any() ? string.Join(", ", PlannerAdapterInfos.Select(info => info?.Name).Where(name => !string.IsNullOrWhiteSpace(name))) : "No planner";
 
   public string AnalyzerSummary => AnalyzerInfo?.Name ?? "No analyzer";
+
+  public LiveDataDisplaySource? SelectedLiveDataSource
+    => LiveDataDisplaySources.FirstOrDefault(source => source.Id == SelectedLiveDataSourceId);
+
+  public string? SelectedLiveDataJson
+  {
+    get
+    {
+      var selectedSource = SelectedLiveDataSource;
+      if(selectedSource is null || selectedSource.Kind != LiveDataDisplaySourceKind.Visualization)
+        return null;
+
+      return _latestVisualizationJsonByAllocationId.GetValueOrDefault(selectedSource.Id);
+    }
+  }
 
   [Reactive]
   public partial ExperimentStopConditionResponse? CurrentStopCondition { get; set; }
   public double DesiredResult { get; set; }
   public double DesiredLeeway { get; set; }
+  public Dictionary<string, double> DesiredResults { get; } = new(StringComparer.OrdinalIgnoreCase);
+  public Dictionary<string, double> DesiredLeeways { get; } = new(StringComparer.OrdinalIgnoreCase);
+  public Dictionary<string, bool> ObjectiveEnabled { get; } = new(StringComparer.OrdinalIgnoreCase);
   [Reactive]
   public partial int PlanningBatchSize { get; set; } = 1;
   [Reactive]
-  public int DesiredReplicationRate { get; set; } = 1;
+  public partial int DesiredReplicationRate { get; set; } = 1;
 
   [Reactive]
   public partial bool CampaignActive { get; set; }
@@ -841,11 +1003,19 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   [Reactive]
   public partial AnalyzerInfo? AnalyzerInfo { get; set; }
   [Reactive]
+  public partial Dictionary<string, AresValueSchema> AnalyzerObjectiveSchema { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+  [Reactive]
+  public partial bool AchieveAllObjectives { get; set; }
+  [Reactive]
   public partial Dictionary<string, List<ChartMetricPoint>> PlannerMetricsMap { get; private set; }
   [Reactive]
   public partial Dictionary<string, List<ChartMetricPoint>> AnalyzerMetrics { get; private set; }
   [Reactive]
-  public partial IList<ExperimentExecutionStatus> ExperimentExecutionStatuses { get; private set; }
+  public partial IReadOnlyList<LiveDataDisplaySource> LiveDataDisplaySources { get; private set; }
+  [Reactive]
+  public partial string? SelectedLiveDataSourceId { get; set; } = LiveDataDisplaySource.PlannerSourceId;
+  [Reactive]
+  public partial IReadOnlyList<ExperimentExecutionStatus> ExperimentExecutionStatuses { get; private set; }
   [Reactive]
   public partial VisualizationItemViewModel? ChartA { get; private set; }
   [Reactive]
@@ -871,20 +1041,3 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
   [Reactive]
   public partial Dictionary<string, AresValue> CurrentOutputVariables { get; set; } = new();
 }
-
-public enum ExecutionStopConditionMode
-{
-  NumExperiments,
-  AnalyzerResult,
-  PlannerResult
-}
-
-public record ExecutionPreflightItem(string Label, bool IsReady, string Detail);
-
-public class ChartMetricPoint
-{
-  public int ExecutionIndex { get; set; }
-  public double RawValue { get; set; }
-  public double PlotValue { get; set; }
-}
-
