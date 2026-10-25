@@ -736,7 +736,7 @@ public partial class ExecutionViewModel : ReactiveObject, INotifyPropertyChanged
     StateChanged?.Invoke();
   }
 
-  internal void ApplyCampaignExecutionStatus(CampaignExecutionStatus status)
+  public void ApplyCampaignExecutionStatus(CampaignExecutionStatus status)
   {
     ExperimentExecutionStatuses = status.ExperimentExecutionStatuses.ToArray();
 
