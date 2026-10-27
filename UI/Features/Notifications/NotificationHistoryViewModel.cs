@@ -1,6 +1,5 @@
 using Ares.Services;
 using ReactiveUI;
-using UI.Application.Notifications;
 using UI.Infrastructure.Notifications;
 
 namespace UI.Features.Notifications;
@@ -59,7 +58,6 @@ public partial class NotificationHistoryViewModel : ReactiveObject
     }
   }
 
-
   public void MarkAllAsRead()
   {
     _notificationProvider.MarkAllAsRead();
@@ -77,5 +75,3 @@ public partial class NotificationHistoryViewModel : ReactiveObject
   public bool HasUnreadNotifications => _notificationProvider.HasUnread();
   public IReadOnlyCollection<AresNotification> Notifications => _notificationProvider.GetAllNotifications();
 }
-
-

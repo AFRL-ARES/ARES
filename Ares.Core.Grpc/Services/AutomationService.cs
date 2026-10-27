@@ -299,13 +299,6 @@ public class AutomationService : AresAutomation.AresAutomationBase
     return response;
   }
 
-  private async Task<IEnumerable<StartConditionResult>> GetFailedStartConditionResults()
-  {
-    var conditionTasks = _startConditions.Select(condition => condition.CanStart());
-    var conditions = await Task.WhenAll(conditionTasks);
-    return conditions;
-  }
-
   public override Task<Empty> SetNumExperimentsStopCondition(NumExperimentsCondition request, ServerCallContext? context)
   {
     var stopConditions = _executionManager.CampaignStopConditions;
@@ -367,7 +360,7 @@ public class AutomationService : AresAutomation.AresAutomationBase
     return Task.FromResult(new Empty());
   }
 
-  public override Task<Empty> SetPlannerLeadStopCondition(Empty request, ServerCallContext context)
+  public override Task<Empty> SetPlannerLeadStopCondition(Empty request, ServerCallContext? context)
   {
     var stopConditions = _executionManager.CampaignStopConditions;
 

@@ -14,13 +14,13 @@ public partial class PlanningViewModel : ReactiveObject
 {
   private readonly CampaignTemplate _template;
   private readonly PlannerService _client;
-  private readonly IUiNotificationService _notificationService;
+  private readonly IAresUINotificationService _notificationService;
   private readonly IAnalyzer? _selectedAnalyzer;
 
   public PlanningViewModel(CampaignTemplate template, 
     IEnumerable<PlannerServiceInfo> plannerAdapters, 
     PlannerService client,
-    IUiNotificationService notificationService,
+    IAresUINotificationService notificationService,
     IAnalyzer? selectedAnalyzer)
   {
     _template = template;

@@ -103,8 +103,7 @@ internal class CampaignTemplatePersistenceServiceTests
   public async Task Add_RejectsDuplicateCampaignName()
   {
     await _service.AddAsync(CreateCampaign("Duplicate"));
-
-    Assert.ThrowsAsync<DbUpdateException>(() => _service.AddAsync(CreateCampaign("Duplicate")));
+    await Assert.ThrowsAsync<DbUpdateException>(() => _service.AddAsync(CreateCampaign("Duplicate")));
   }
 
   private static CampaignTemplate CreateCampaign(string name)

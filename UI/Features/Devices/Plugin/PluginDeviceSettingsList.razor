@@ -2,7 +2,6 @@
 @layout DeviceSettingsLayout
 @using Ares.Core
 @using Ares.Services
-@using Google.Protobuf.WellKnownTypes
 @using Radzen.Blazor
 @using UI.Components
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<PluginDeviceSettingsListViewModel>
@@ -44,7 +43,7 @@ else
     var result = await DialogService.OpenAsync("New Device", ds =>
       @<PluginDeviceConfigEditView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)" />);
 
-    var notification = new UiNotificationMessage();
+    var notification = new AresNotification();
     if(result is true)
     {
       SavingInProgress = true;
@@ -55,9 +54,9 @@ else
       }
       catch(Exception e)
       {
-        notification.Summary = $"Failed to add Device {viewModel.Name}";
-        notification.Detail = $"ARES was unable to add {viewModel.Name} as an available device. {e.Message}";
-        notification.Severity = UiNotificationSeverity.Error;
+        notification.Title = $"Failed to add Device {viewModel.Name}";
+        notification.Message = $"ARES was unable to add {viewModel.Name} as an available device. {e.Message}";
+        notification.NotificationSeverity = Severity.Error;
         ViewModel!.PushNotification(notification);
       }
       finally

@@ -3,7 +3,7 @@
 <EditForm Model="@ViewModel" OnValidSubmit="OnValidSubmit">
   <div class="d-flex flex-column">
     <RadzenFormField Text="Visualizer Name" Variant="Variant.Flat">
-      <RadzenTextBox @bind-Value="ViewModel!.Name" Disabled="@(!ViewModel.NewConfig)" />
+      <RadzenTextBox @bind-Value="ViewModel!.Name" Disabled="@(!ViewModel!.NewConfig)" />
     </RadzenFormField>
     <RadzenFormField Text="Address" Variant="Variant.Flat">
       <RadzenTextBox @bind-Value="ViewModel!.Address" />

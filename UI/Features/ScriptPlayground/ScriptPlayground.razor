@@ -140,94 +140,94 @@
 </div>
 
 @code {
-  private ScriptEditor? _editor;
-  private List<OutputLine> _outputLines = new();
-  private List<SummaryRow> _summaryRows = new();
-  private readonly Dictionary<string, SummaryRow> _rowsByCallId = new();
-  private string _activeTab = "output";
-  private IDisposable? _outputSubscription;
-  private IDisposable? _summarySubscription;
+	private ScriptEditor? _editor;
+	private List<OutputLine> _outputLines = new();
+	private List<SummaryRow> _summaryRows = new();
+	private readonly Dictionary<string, SummaryRow> _rowsByCallId = new();
+	private string _activeTab = "output";
+	private IDisposable? _outputSubscription;
+	private IDisposable? _summarySubscription;
 
-  protected override Task OnInitializedAsync()
-  {
-    base.OnInitialized();
+	protected override Task OnInitializedAsync()
+	{
+		base.OnInitialized();
 
-    // Subscribe to script output
-    if (ViewModel != null)
-    {
-      _outputSubscription = ViewModel.ScriptOutput
-          .Subscribe(output =>
-          {
-            _outputLines.Add(new OutputLine
+		// Subscribe to script output
+		if (ViewModel != null)
+		{
+			_outputSubscription = ViewModel.ScriptOutput
+					.Subscribe(output =>
+					{
+						_outputLines.Add(new OutputLine
                     {
                         Timestamp = DateTime.Now.ToString("HH:mm:ss.fff"),
                         Message = output
                     });
-            InvokeAsync(StateHasChanged);
-          });
+						InvokeAsync(StateHasChanged);
+					});
 
-      _summarySubscription = ViewModel.ScriptSummaryEvents
-          .Subscribe(evt =>
-          {
-            switch (evt)
-            {
-              case SummaryInitializedEvent initialized:
-                InitializeSummary(initialized.Steps);
-                break;
-              case SummaryCallStartedEvent started:
-                MarkStarted(started);
-                break;
-              case SummaryCallCompletedEvent completed:
-                MarkCompleted(completed);
-                break;
-              case SummaryCallFailedEvent failed:
-                MarkFailed(failed);
-                break;
-            }
-            InvokeAsync(StateHasChanged);
-          });
-    }
+			_summarySubscription = ViewModel.ScriptSummaryEvents
+					.Subscribe(evt =>
+					{
+						switch (evt)
+						{
+							case SummaryInitializedEvent initialized:
+								InitializeSummary(initialized.Steps);
+								break;
+							case SummaryCallStartedEvent started:
+								MarkStarted(started);
+								break;
+							case SummaryCallCompletedEvent completed:
+								MarkCompleted(completed);
+								break;
+							case SummaryCallFailedEvent failed:
+								MarkFailed(failed);
+								break;
+						}
+						InvokeAsync(StateHasChanged);
+					});
+		}
 
-    return Task.CompletedTask;
-  }
+		return Task.CompletedTask;
+	}
 
-  private async Task HandleStart()
-  {
-    if (_editor == null || ViewModel == null) return;
+	private async Task HandleStart()
+	{
+		if (_editor == null || ViewModel == null) return;
 
-    // Clear previous output
-    _outputLines.Clear();
-    _summaryRows.Clear();
-    _rowsByCallId.Clear();
+		// Clear previous output
+		_outputLines.Clear();
+		_summaryRows.Clear();
+		_rowsByCallId.Clear();
 
-    // Get script from editor and start execution
-    var script = await _editor.GetScript();
-    await ViewModel.StartScript(script);
-  }
+		// Get script from editor and start execution
+		var script = await _editor.GetScript();
+		await ViewModel.StartScript(script);
+	}
 
-  private async Task HandleStop()
-  {
-    if (ViewModel == null) return;
-    await ViewModel.StopScript();
-  }
+	private async Task HandleStop()
+	{
+		if (ViewModel == null) return;
+		await ViewModel.StopScript();
+	}
 
-  private async Task HandleSummary()
-  {
-    if (_editor == null || ViewModel == null) return;
+	private async Task HandleSummary()
+	{
+		if (_editor == null || ViewModel == null) return;
 
-    _summaryRows.Clear();
-    _rowsByCallId.Clear();
-    _activeTab = "summary";
+		_summaryRows.Clear();
+		_rowsByCallId.Clear();
+		_activeTab = "summary";
 
-    var script = await _editor.GetScript();
-    await ViewModel.BuildSummaryAsync(script);
-  }
+		var script = await _editor.GetScript();
+		await ViewModel.BuildSummaryAsync(script);
+	}
 
-  public void Dispose()
-  {
+	protected override void Dispose(bool disposing)
+	{
     _outputSubscription?.Dispose();
     _summarySubscription?.Dispose();
-  }
+	}
 
   private void InitializeSummary(IReadOnlyList<Ares.Datamodel.Scripting.ScriptFunctionInvocation> steps)
   {

@@ -41,7 +41,7 @@ internal class ClientManager : IClientManager
     var handler = new HttpClientHandler();
     try
     {
-      var cert = new X509Certificate2(_certificateOptions.Path ?? "", _certificateOptions.Password);
+      var cert = X509CertificateLoader.LoadPkcs12FromFile(_certificateOptions.Path ?? "", _certificateOptions.Password);
       handler.ClientCertificates.Add(cert);
       handler.CheckCertificateRevocationList = false;
     }
@@ -66,9 +66,6 @@ internal class ClientManager : IClientManager
       throw new NullReferenceException($"Couldn't create a client as {nameof(GrpcChannel)} was not created");
 
     var client = (T?)Activator.CreateInstance(typeof(T), _channel);
-    if (client is null)
-      throw new InvalidOperationException($"Unable to create client of type {nameof(T)}");
-
-    return client;
+    return client is null ? throw new InvalidOperationException($"Unable to create client of type {nameof(T)}") : client;
   }
 }

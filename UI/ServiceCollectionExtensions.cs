@@ -65,7 +65,6 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<DialogService>();
     services.AddSingleton<NotificationService>();
     services.AddScoped<IUiDialogService, RadzenUiDialogService>();
-    services.AddSingleton<IUiNotificationService, RadzenUiNotificationService>();
     services.AddScoped<TooltipService>();
     services.AddScoped<ContextMenuService>();
     services.AddSingleton<UnitCategoryHelper>();
@@ -102,7 +101,7 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<AnalysisService>();
     services.AddScoped<AresSafetyManagementService>();
     services.AddScoped<DeviceStateExportService>();
-    services.AddSingleton<AresNotificationService>();
+    services.AddSingleton<Ares.Core.Grpc.Services.Notifications.AresNotificationService>();
     services.AddSingleton<AresScriptingService>();
     services.AddSingleton<AresDriverService>();
 
@@ -218,7 +217,7 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<IClientManager, ClientManager>();
     services.LoadAresModules();
     services.BindClients();
-    services.AddSingleton<INotificationReceivingService, NotificationReceivingService>();
+    services.AddSingleton<IAresUINotificationService, Infrastructure.Notifications.AresUINotificationService>();
     services.AddSingleton<StartupStateTracker>();
     services.LoadService(configuration);
 

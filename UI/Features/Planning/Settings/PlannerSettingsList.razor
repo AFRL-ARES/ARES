@@ -1,6 +1,5 @@
 @page "/settings/planning"
 @using Ares.Services
-@using Google.Protobuf.WellKnownTypes
 @using UI.Features.Planning.Settings.Layout
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<PlannerSettingsListViewModel>
 @layout PlannerSettingsLayout
@@ -52,19 +51,19 @@ else
       try
       {
         await ViewModel!.AddNewPlanner(viewModel.Save());
-        var notification = new UiNotificationMessage();
-        notification.Detail = $"ARES successfully added {viewModel.Name} utilizing the address {viewModel.Address}.";
-        notification.Summary = $"Successfully Updated Planner {viewModel.Name}!";
-        notification.Severity = UiNotificationSeverity.Success;
+        var notification = new AresNotification();
+        notification.Message = $"ARES successfully added {viewModel.Name} utilizing the address {viewModel.Address}.";
+        notification.Title = $"Successfully Updated Planner {viewModel.Name}!";
+        notification.NotificationSeverity = Severity.Success;
 
         ViewModel!.PushNotification(notification);
       }
       catch (Grpc.Core.RpcException e)
       {
-        var notification = new UiNotificationMessage();
-        notification.Detail = e.Message;
-        notification.Summary = $"Failed to add {viewModel.Name}!";
-        notification.Severity = UiNotificationSeverity.Error;
+        var notification = new AresNotification();
+        notification.Message = e.Message;
+        notification.Title = $"Failed to add {viewModel.Name}!";
+        notification.NotificationSeverity = Severity.Error;
         ViewModel!.PushNotification(notification);
       }
       finally

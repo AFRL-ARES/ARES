@@ -9,7 +9,7 @@ namespace UI.Features.Devices.Plugin;
 /// <summary>
 /// A default view model that can be used when we fail to load a device plugins view model implementation.
 /// </summary>
-public class PluginDeviceUnitViewModel : ReactiveObject, IDeviceUnitControlViewModel, IAsyncDisposable
+public partial class PluginDeviceUnitViewModel : ReactiveObject, IDeviceUnitControlViewModel, IAsyncDisposable
 {
   private readonly IAresDevice _device;
   private IDisposable? _stateListener;
@@ -26,7 +26,7 @@ public class PluginDeviceUnitViewModel : ReactiveObject, IDeviceUnitControlViewM
     _stateListener = _device.StateStream.Subscribe(s => DeviceState = s);
 
   [Reactive]
-  public AresStruct? DeviceState { get; private set; }
+  public partial AresStruct? DeviceState { get; private set; }
 
   public string DeviceName => _device.Name;
 

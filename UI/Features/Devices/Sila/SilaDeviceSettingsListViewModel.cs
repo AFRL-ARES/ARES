@@ -1,5 +1,6 @@
 ﻿using Ares.Core.Device.Providers;
 using Ares.Core.Device.Sila;
+using Ares.Services;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
 using System.Collections.ObjectModel;
@@ -10,13 +11,13 @@ namespace UI.Features.Devices.Sila;
 
 public partial class SilaDeviceSettingsListViewModel : ReactiveObject
 {
-  private readonly IUiNotificationService _notificationService;
+  private readonly IAresUINotificationService _notificationService;
   private readonly IAresDeviceProvider _deviceProvider;
   private readonly ISilaDeviceManager _silaDeviceManager;
 
   public SilaDeviceSettingsListViewModel(IAresDeviceProvider deviceProvider, 
     ISilaDeviceManager silaDevice,
-    IUiNotificationService notificationService)
+    IAresUINotificationService notificationService)
   {
     _notificationService = notificationService;
     _deviceProvider = deviceProvider;
@@ -35,11 +36,11 @@ public partial class SilaDeviceSettingsListViewModel : ReactiveObject
     }
     catch(Exception e)
     {
-      PushNotification(new UiNotificationMessage() 
+      PushNotification(new AresNotification() 
       { 
-        Detail = $"Could not retrieve SiLA devices. {e.Message}", 
-        Summary = "Connection Error", 
-        Severity = UiNotificationSeverity.Error
+        Message = $"Could not retrieve SiLA devices. {e.Message}", 
+        Title = "Connection Error", 
+        NotificationSeverity = Severity.Error
       });
       SettingsViewModels.Clear();
     }
@@ -80,7 +81,7 @@ public partial class SilaDeviceSettingsListViewModel : ReactiveObject
     await UpdateAvailableDevices();
   }
 
-  public void PushNotification(UiNotificationMessage notification) => _notificationService.Notify(notification);
+  public void PushNotification(AresNotification notification) => _notificationService.PushNotification(notification);
 
   [Reactive]
   public partial bool IsLoading { get; set; }

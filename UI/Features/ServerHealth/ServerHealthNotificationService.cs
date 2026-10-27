@@ -1,6 +1,6 @@
 using Ares.Services;
-using UI.Application.Notifications;
 using UI.Application.Hosting;
+using UI.Application.Notifications;
 
 namespace UI.Features.ServerHealth;
 
@@ -9,10 +9,10 @@ namespace UI.Features.ServerHealth;
 /// </summary>
 internal class ServerHealthNotificationService : ILocalService
 {
-  private readonly IUiNotificationService _notificationService;
+  private readonly IAresUINotificationService _notificationService;
   private readonly ServerHealthService _serverHealthService;
 
-  public ServerHealthNotificationService(ServerHealthService serverHealthService, IUiNotificationService notificationService)
+  public ServerHealthNotificationService(ServerHealthService serverHealthService, IAresUINotificationService notificationService)
   {
     _serverHealthService = serverHealthService;
     _notificationService = notificationService;
@@ -32,18 +32,20 @@ internal class ServerHealthNotificationService : ILocalService
       case ServerStatus.Busy:
         break;
       case ServerStatus.Error:
-        _notificationService.Notify(new UiNotificationMessage
+        _notificationService.PushNotification(new AresNotification
         {
-          Severity = UiNotificationSeverity.Error,
-          Detail = status.StatusMessage
+          NotificationSeverity = Severity.Error,
+          Message = status.StatusMessage,
+          Title = "Error Processing Server State"
         });
         break;
       case ServerStatus.Stopping:
       case ServerStatus.Stopped:
-        _notificationService.Notify(new UiNotificationMessage
+        _notificationService.PushNotification(new AresNotification
         {
-          Severity = UiNotificationSeverity.Warning,
-          Detail = status.StatusMessage
+          NotificationSeverity = Severity.Warning,
+          Message = status.StatusMessage,
+          Title = "Server Has Been Stopped"
         });
         break;
       default:
@@ -51,5 +53,3 @@ internal class ServerHealthNotificationService : ILocalService
     }
   }
 }
-
-

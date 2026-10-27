@@ -2,6 +2,7 @@ using Ares.Core.Device.Plugins.Drivers;
 using Ares.Core.Device.Providers;
 using Ares.Core.Grpc.Services;
 using Ares.Datamodel.Device;
+using Ares.Services;
 using Ares.Services.Device;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
@@ -15,10 +16,10 @@ public partial class PluginDeviceSettingsListViewModel : ReactiveObject
   private readonly DevicesService _devicesService;
   private readonly IDeviceConfigProvider _configProvider;
   private readonly IAresDeviceProvider _deviceProvider;
-  private readonly IUiNotificationService _notificationService;
+  private readonly IAresUINotificationService _notificationService;
 
-  public PluginDeviceSettingsListViewModel(DevicesService devicesClient, 
-    IUiNotificationService notificationService, 
+  public PluginDeviceSettingsListViewModel(DevicesService devicesClient,
+    IAresUINotificationService notificationService, 
     IAresDeviceProvider deviceProvider, 
     IDeviceConfigProvider configProvider)
   {
@@ -46,11 +47,11 @@ public partial class PluginDeviceSettingsListViewModel : ReactiveObject
     }
     catch (Exception e)
     {
-      _notificationService.Notify(new UiNotificationMessage
+      _notificationService.PushNotification(new AresNotification
       {
-          Detail = $"Could not retrieve devices for {DeviceClassName}. {e.Message}",
-          Summary = "Connection Error",
-          Severity = UiNotificationSeverity.Error
+          Message = $"Could not retrieve devices for {DeviceClassName}. {e.Message}",
+          Title = "Connection Error",
+          NotificationSeverity = Severity.Error
       });
       SettingsViewModels.Clear();
     }
@@ -76,33 +77,33 @@ public partial class PluginDeviceSettingsListViewModel : ReactiveObject
 
       if(response.Success)
       {
-        PushNotification(new UiNotificationMessage() 
+        PushNotification(new AresNotification() 
         {
-          Summary = $"Added new device {config.DeviceName}", 
-          Severity = UiNotificationSeverity.Success,
-          Detail = $"Successfully Added {config.DeviceName}" 
+          Title = $"Added new device {config.DeviceName}",
+          NotificationSeverity = Severity.Success,
+          Message = $"Successfully Added {config.DeviceName}" 
         });
         await UpdateAvailableDevices();
       }
 
       else
       {
-        PushNotification(new UiNotificationMessage() 
+        PushNotification(new AresNotification() 
         {
-          Detail = $"Failed to add device {config.DeviceName}. {response.ErrorMessage}", 
-          Severity = UiNotificationSeverity.Error,
-          Summary = "Error Trying to Add Device" 
+          Message = $"Failed to add device {config.DeviceName}. {response.ErrorMessage}",
+          NotificationSeverity = Severity.Error,
+          Title = "Error Trying to Add Device" 
         });
       }
     }
 
     catch (Exception e)
     {
-      PushNotification(new UiNotificationMessage() 
+      PushNotification(new AresNotification() 
       { 
-        Detail = $"Failed to add device {config.DeviceName}. {e.Message}", 
-        Summary = "Error Adding Device", 
-        Severity = UiNotificationSeverity.Error 
+        Message = $"Failed to add device {config.DeviceName}. {e.Message}", 
+        Title = "Error Adding Device", 
+        NotificationSeverity = Severity.Error 
       });
     }
   }
@@ -113,11 +114,11 @@ public partial class PluginDeviceSettingsListViewModel : ReactiveObject
   public PluginDeviceConfigEditViewModel GetNewConfigEditViewModel() 
     => new(new DeviceConfig(), Driver, true, _devicesService);
   
-  public void PushNotification(UiNotificationMessage notification) 
-    => _notificationService.Notify(notification);
+  public void PushNotification(AresNotification notification) 
+    => _notificationService.PushNotification(notification);
 
   [Reactive]
-  public partial string DeviceClassName { get; set; }
+  public partial string DeviceClassName { get; set; } = string.Empty;
 
   public ObservableCollection<PluginDeviceSettingsViewModel> SettingsViewModels { get; } = [];
 

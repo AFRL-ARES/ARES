@@ -2,7 +2,7 @@
 @layout DeviceSettingsLayout
 @using Ares.Core
 @using Ares.Services
-@using Google.Protobuf.WellKnownTypes
+@using Grpc.Core
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<RemoteDeviceSettingsListViewModel>
 
 @inject DialogService DialogService
@@ -41,7 +41,6 @@ else
 
     var viewModel = ViewModel!.GetNewConfigEditViewModel();
     var result = await DialogService.OpenAsync("New Device", ds => @<RemoteDeviceConfigEditView ViewModel="@viewModel" OnValidSubmit="() => ds.Close(true)" />);
-    var notification = new UiNotificationMessage();
 
     if(result is true)
     {
@@ -51,11 +50,14 @@ else
       {
         await ViewModel!.AddNewRemoteDevice(viewModel.Save());
       }
-      catch (Grpc.Core.RpcException e)
+      catch(RpcException e)
       {
-        notification.Summary = $"Failed to add Device {viewModel.Name}";
-        notification.Detail = $"ARES was unable to add {viewModel.Name} as an available device. {e.Message}";
-        notification.Severity = UiNotificationSeverity.Error;
+        var notification = new AresNotification()
+        {
+          Title = $"Failed to add Device {viewModel.Name}",
+          Message = $"ARES was unable to add {viewModel.Name} as an available device. {e.Message}",
+          NotificationSeverity = Severity.Error
+        };
 
         ViewModel!.PushNotification(notification);
       }

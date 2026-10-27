@@ -54,8 +54,7 @@ public class QuantitySymbolProviderTests
       .OfType<AresSystemFunctionSymbol>()
       .First(symbol => symbol.ParentName == "Quantity.Duration" && symbol.Name == "from");
 
-    var ex = Assert.ThrowsAsync<InvalidOperationException>(() => function.Body(
-      [AresValueHelper.CreateNumber(1), AresValueHelper.CreateString("kg")],
+    var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => function.Body([AresValueHelper.CreateNumber(1), AresValueHelper.CreateString("kg")],
       new ScriptExecutionControlToken(CancellationToken.None)));
 
     Assert.That(ex?.Message, Does.Contain("not valid for quantity type 'Duration'"));

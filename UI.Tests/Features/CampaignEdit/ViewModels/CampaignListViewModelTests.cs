@@ -10,13 +10,12 @@ namespace UI.Tests.Features.CampaignEdit.ViewModels;
 internal class CampaignListViewModelTests
 {
   [Test]
-  public void ImportCampaignTemplate_RejectsFilesOverFiveMiB()
+  public async Task ImportCampaignTemplate_RejectsFilesOverFiveMiB()
   {
     var file = new Mock<IBrowserFile>();
     file.SetupGet(value => value.Size).Returns(CampaignListViewModel.MaximumImportFileSize + 1);
     var viewModel = new CampaignListViewModel(null!, Mock.Of<ICampaignTemplateTransferService>());
-
-    Assert.ThrowsAsync<CampaignTemplateImportException>(() => viewModel.ImportCampaignTemplate(file.Object));
+    await Assert.ThrowsAsync<CampaignTemplateImportException>(() => viewModel.ImportCampaignTemplate(file.Object));
   }
 
   [Test]

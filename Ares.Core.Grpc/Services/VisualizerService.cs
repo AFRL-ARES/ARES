@@ -29,7 +29,7 @@ public class VisualizerService : AresVisualizerManagementService.AresVisualizerM
     _logger = logger;
   }
 
-  public override async Task<GetAllVisualizersResponse> GetAllVisualizers(Empty request, ServerCallContext context)
+  public override async Task<GetAllVisualizersResponse> GetAllVisualizers(Empty request, ServerCallContext? context)
   {
     var response = new GetAllVisualizersResponse();
     var infos = await Task.WhenAll(_visualizerRepo.AvailableVisualizers.Select(GetInfo));
@@ -37,7 +37,7 @@ public class VisualizerService : AresVisualizerManagementService.AresVisualizerM
     return response;
   }
 
-  public override async Task<AddRemoteVisualizerResponse> AddRemoteVisualizer(AddRemoteVisualizerRequest request, ServerCallContext context)
+  public override async Task<AddRemoteVisualizerResponse> AddRemoteVisualizer(AddRemoteVisualizerRequest request, ServerCallContext? context)
   {
     try
     {
@@ -51,7 +51,7 @@ public class VisualizerService : AresVisualizerManagementService.AresVisualizerM
     }
   }
 
-  public override async Task<UpdateRemoteVisualizerResponse> UpdateRemoteVisualizer(UpdateRemoteVisualizerRequest request, ServerCallContext context)
+  public override async Task<UpdateRemoteVisualizerResponse> UpdateRemoteVisualizer(UpdateRemoteVisualizerRequest request, ServerCallContext? context)
   {
     try
     {
@@ -72,13 +72,13 @@ public class VisualizerService : AresVisualizerManagementService.AresVisualizerM
     }
   }
 
-  public override async Task<Empty> RemoveRemoteVisualizer(RemoveRemoteVisualizerRequest request, ServerCallContext context)
+  public override async Task<Empty> RemoveRemoteVisualizer(RemoveRemoteVisualizerRequest request, ServerCallContext? context)
   {
     await _remoteVisualizerManager.RemoveVisualizer(request.VisualizerId);
     return new Empty();
   }
 
-  public override Task<StateResponse> GetState(StateRequest request, ServerCallContext context)
+  public override Task<StateResponse> GetState(StateRequest request, ServerCallContext? context)
   {
     var visualizer = _visualizerRepo.GetVisualizerById(request.Id);
 
@@ -99,7 +99,7 @@ public class VisualizerService : AresVisualizerManagementService.AresVisualizerM
     });
   }
 
-  public override async Task<VisualizerInfoResponse> GetInfo(VisualizerInfoRequest request, ServerCallContext context)
+  public override async Task<VisualizerInfoResponse> GetInfo(VisualizerInfoRequest request, ServerCallContext? context)
   {
     var visualizer = _visualizerRepo.GetVisualizerById(request.VisualizerId);
     if(visualizer is null)
@@ -114,7 +114,7 @@ public class VisualizerService : AresVisualizerManagementService.AresVisualizerM
     return new VisualizerInfoResponse { Info = await GetInfo(visualizer) };
   }
 
-  public override Task<AresStruct> GetVisualizerSettings(VisualizerSettingsRequest request, ServerCallContext context)
+  public override Task<AresStruct> GetVisualizerSettings(VisualizerSettingsRequest request, ServerCallContext? context)
   {
     var visualizer = _visualizerRepo.GetVisualizerById(request.VisualizerId);
 
@@ -152,7 +152,7 @@ public class VisualizerService : AresVisualizerManagementService.AresVisualizerM
     return schema;
   }
 
-  public override async Task<Empty> SetVisualizerSettings(VisualizerSettings request, ServerCallContext context)
+  public override async Task<Empty> SetVisualizerSettings(VisualizerSettings request, ServerCallContext? context)
   {
     if(_visualizerRepo.GetVisualizerById(request.VisualizerId) is not null)
       await _remoteVisualizerManager.UpdateVisualizerSettings(request);

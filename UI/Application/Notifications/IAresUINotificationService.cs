@@ -5,10 +5,11 @@ namespace UI.Application.Notifications;
 /// <summary>
 /// A service designated to receiving notifications from the core
 /// </summary>
-public interface INotificationReceivingService
+public interface IAresUINotificationService
 {
   void StartNotificationStream();
 
-  event Action<UiNotificationMessage>? OnNotificationReceived;
-}
+  event Action<AresNotification>? OnNotificationReceived;
 
+  void PushNotification(AresNotification notification);
+}

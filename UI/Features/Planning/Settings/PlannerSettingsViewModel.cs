@@ -5,16 +5,15 @@ using Ares.Core.Grpc.Services;
 using ReactiveUI;
 using UI.Application.Notifications;
 
-
 namespace UI.Features.Planning.Settings;
 
 public class PlannerSettingsViewModel : ReactiveObject
 {
   private readonly PlannerService _planningClient;
-  private readonly IUiNotificationService _notificationService;
+  private readonly IAresUINotificationService _notificationService;
 
   public PlannerSettingsViewModel(PlannerService planningClient,
-    IUiNotificationService notificationService,
+    IAresUINotificationService notificationService,
     PlannerServiceInfo genericAdapter,
     Func<Task> onRemoveCallback)
   {
@@ -72,7 +71,5 @@ public class PlannerSettingsViewModel : ReactiveObject
     }
   }
 
-  public void PushNotification(UiNotificationMessage notification) => _notificationService.Notify(notification);
+  public void PushNotification(AresNotification notification) => _notificationService.PushNotification(notification);
 }
-
-

@@ -464,7 +464,7 @@ internal class DeviceStateDatasetGeneratorTests
   }
 
   [Test]
-  public void GenerateAsync_ThrowsWhenAlreadyCanceled()
+  public async Task GenerateAsync_ThrowsWhenAlreadyCanceled()
   {
     var filter = new DeviceStateRequestFilter();
     var stateGetter = new Mock<IDeviceStateGetter>();
@@ -472,13 +472,12 @@ internal class DeviceStateDatasetGeneratorTests
     cancellationTokenSource.Cancel();
 
     var generator = CreateGenerator(stateGetter.Object);
-
-    Assert.ThrowsAsync<OperationCanceledException>(async () => await generator.GenerateAsync(filter, cancellationTokenSource.Token));
+    await Assert.ThrowsAsync<OperationCanceledException>(async () => await generator.GenerateAsync(filter, cancellationTokenSource.Token));
     stateGetter.Verify(getter => getter.GetStates<DeviceState>(It.IsAny<DeviceStateRequestFilter>()), Times.Never);
   }
 
   [Test]
-  public void GenerateAsync_ThrowsWhenCanceledAfterFetchingStates()
+  public async Task GenerateAsync_ThrowsWhenCanceledAfterFetchingStates()
   {
     var filter = new DeviceStateRequestFilter();
     var states = new Dictionary<string, DeviceState[]>
@@ -496,12 +495,11 @@ internal class DeviceStateDatasetGeneratorTests
       });
 
     var generator = CreateGenerator(stateGetter.Object);
-
-    Assert.ThrowsAsync<OperationCanceledException>(async () => await generator.GenerateAsync(filter, cancellationTokenSource.Token));
+    await Assert.ThrowsAsync<OperationCanceledException>(async () => await generator.GenerateAsync(filter, cancellationTokenSource.Token));
   }
 
   [Test]
-  public void GenerateAsync_WithMinimumSampleIntervalThrowsWhenCanceledDuringRowGeneration()
+  public async Task GenerateAsync_WithMinimumSampleIntervalThrowsWhenCanceledDuringRowGeneration()
   {
     var filter = new DeviceStateRequestFilter
     {
@@ -519,8 +517,7 @@ internal class DeviceStateDatasetGeneratorTests
     using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromMilliseconds(1));
 
     var generator = CreateGenerator(stateGetter.Object);
-
-    Assert.ThrowsAsync<OperationCanceledException>(async () => await generator.GenerateAsync(filter, cancellationTokenSource.Token));
+    await Assert.ThrowsAsync<OperationCanceledException>(async () => await generator.GenerateAsync(filter, cancellationTokenSource.Token));
   }
 
   private static AresValueSchema ColumnSchema(AresDataset dataset, string columnName)

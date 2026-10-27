@@ -1,6 +1,5 @@
 @page "/notifications"
 @using Ares.Services
-@using UI.Features.Notifications
 @inject ContextMenuService ContextMenuService
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<NotificationHistoryViewModel>
 
@@ -83,9 +82,7 @@
 
     // Mark notifications as read when visiting the notification history page
     if(ViewModel!.Notifications.Any())
-    {
       ViewModel.MarkAllAsRead(); // Implement this logic in your ViewModel/Repo
-    }
   }
   
   private string ErrorToggleText()

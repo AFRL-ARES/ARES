@@ -10,11 +10,11 @@ namespace UI.Features.Analyzing.Settings;
 public class AnalyzerSettingsViewModel : ReactiveObject
 {
   private readonly AnalyzerService _analyzerService;
-  private readonly IUiNotificationService _notificationService;
+  private readonly IAresUINotificationService _notificationService;
   private AnalyzerInfo _analyzerInfo;
 
   public AnalyzerSettingsViewModel(AnalyzerService analyzerService,
-    IUiNotificationService notificationService,
+    IAresUINotificationService notificationService,
     AnalyzerInfo analyzerInfo,
     Func<Task> onRemoveCallback)
   {
@@ -29,7 +29,7 @@ public class AnalyzerSettingsViewModel : ReactiveObject
     _notificationService = notificationService;
   }
 
-  public void PushNotification(UiNotificationMessage notification) => _notificationService.Notify(notification);
+  public void PushNotification(AresNotification notification) => _notificationService.PushNotification(notification);
 
   public string Name { get; private set; }
 
@@ -66,21 +66,21 @@ public class AnalyzerSettingsViewModel : ReactiveObject
       Name = analyzerConfig.Name;
       Address = analyzerConfig.Url;
       PushNotification(
-        new UiNotificationMessage
+        new AresNotification
         {
-          Summary = "Analyzer Update",
-          Detail = $"Analyzer {Name} updated",
-          Severity = UiNotificationSeverity.Success
+          Title = "Analyzer Update",
+          Message = $"Analyzer {Name} updated",
+          NotificationSeverity = Severity.Success
         });
     }
     else
     {
       PushNotification(
-        new UiNotificationMessage
+        new AresNotification
         {
-          Summary = "Analyzer Update",
-          Detail = $"Analyzer {Name} failed to update.\n{response.ErrorMessage}",
-          Severity = UiNotificationSeverity.Error
+          Title = "Analyzer Update",
+          Message = $"Analyzer {Name} failed to update.\n{response.ErrorMessage}",
+          NotificationSeverity = Severity.Error
         });
     }
     await UpdateState();

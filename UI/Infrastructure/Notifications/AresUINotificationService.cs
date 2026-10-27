@@ -1,20 +1,20 @@
-using Ares.Services;
 using Ares.Core.Grpc.Services.Notifications;
+using Ares.Services;
 using Google.Protobuf.WellKnownTypes;
+using Radzen;
 using UI.Application.Notifications;
 using UI.Infrastructure.Grpc;
-using Radzen;
 
 namespace UI.Infrastructure.Notifications;
 
-public class NotificationReceivingService : INotificationReceivingService
+public class AresUINotificationService : IAresUINotificationService
 {
   private readonly AresNotificationService _notificationClient;
   private readonly INotificationRepo _notificationRepo;
   private readonly NotificationService _radzenNotificationService;
-  public event Action<UiNotificationMessage>? OnNotificationReceived;
+  public event Action<AresNotification>? OnNotificationReceived;
 
-  public NotificationReceivingService(AresNotificationService notificationClient, INotificationRepo notificationRepo, NotificationService radzenNotificationService)
+  public AresUINotificationService(AresNotificationService notificationClient, INotificationRepo notificationRepo, NotificationService radzenNotificationService)
   {
     _notificationClient = notificationClient;
     _notificationRepo = notificationRepo;
@@ -35,14 +35,6 @@ public class NotificationReceivingService : INotificationReceivingService
         while (await stream.MoveNext(default))
         {
           var notification = stream.Current;
-          var userNotification = new UiNotificationMessage
-          {
-            Summary = notification.Title,
-            Detail = notification.Message,
-            Severity = ConvertToUiSeverity(notification.NotificationSeverity),
-            DurationMs = DetermineDisplayTime(notification.NotificationSeverity, notification.Loiter),
-            CloseOnClick = notification.NotificationSeverity == Severity.Danger,
-          };
 
           var radzenNotification = new NotificationMessage
           {
@@ -57,7 +49,7 @@ public class NotificationReceivingService : INotificationReceivingService
           _notificationRepo.AddOrUpdate(notification);
           //Pass to Radzen (for popup toast)
           _radzenNotificationService.Notify(radzenNotification);
-          OnNotificationReceived?.Invoke(userNotification);
+          OnNotificationReceived?.Invoke(notification);
         }
       }
       catch(Exception ex)
@@ -71,6 +63,24 @@ public class NotificationReceivingService : INotificationReceivingService
   {
     var history = await _notificationClient.GetUpdatedNotificationList(new Empty(), null);
     _notificationRepo.AddRange(history.Notifications);
+  }
+
+  public void PushNotification(AresNotification notification)
+  {
+    var radzenNotification = new NotificationMessage
+    {
+      Summary = notification.Title,
+      Detail = notification.Message,
+      Severity = ConvertToRadzenSeverity(notification.NotificationSeverity),
+      CloseOnClick = notification.NotificationSeverity == Severity.Danger,
+      Duration = DetermineDisplayTime(notification.NotificationSeverity, notification.Loiter)
+    };
+
+    //Add to the repo
+    _notificationRepo.AddOrUpdate(notification);
+    //Pass to Radzen (for popup toast)
+    _radzenNotificationService.Notify(radzenNotification);
+    OnNotificationReceived?.Invoke(notification);
   }
 
   private static int DetermineDisplayTime(Severity severity, bool loiter)
@@ -91,18 +101,6 @@ public class NotificationReceivingService : INotificationReceivingService
     };
   }
 
-  private static UiNotificationSeverity ConvertToUiSeverity(Severity aresSeverity)
-  {
-    return aresSeverity switch
-    {
-      Severity.Error => UiNotificationSeverity.Error,
-      Severity.Success => UiNotificationSeverity.Success,
-      Severity.Warning => UiNotificationSeverity.Warning,
-      Severity.Danger => UiNotificationSeverity.Error,
-      _ => UiNotificationSeverity.Info
-    };
-  }
-
   private static NotificationSeverity ConvertToRadzenSeverity(Severity severity)
   {
     return severity switch
@@ -114,4 +112,3 @@ public class NotificationReceivingService : INotificationReceivingService
     };
   }
 }
-

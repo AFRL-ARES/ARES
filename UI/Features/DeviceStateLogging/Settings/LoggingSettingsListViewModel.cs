@@ -13,10 +13,10 @@ namespace UI.Features.DeviceStateLogging.Settings;
 public partial class LoggingSettingsListViewModel : ReactiveObject
 {
   private readonly DevicesService _devicesClient;
-  private readonly IUiNotificationService _notificationService;
+  private readonly IAresUINotificationService _notificationService;
   private ObservableAsPropertyHelper<bool> _updated;
 
-  public LoggingSettingsListViewModel(DevicesService devicesClient, IUiNotificationService notificationService)
+  public LoggingSettingsListViewModel(DevicesService devicesClient, IAresUINotificationService notificationService)
   {
     _devicesClient = devicesClient;
     _notificationService = notificationService;
@@ -53,14 +53,14 @@ public partial class LoggingSettingsListViewModel : ReactiveObject
     var saved = await Task.WhenAll(LoggingSettingsViewModels.Select(lsvm => lsvm.Save()));
     if(saved.Any(s => s))
     {
-      var notif = new UiNotificationMessage
+      var notif = new AresNotification
       {
-        Detail = "Logging updates saved successfully",
-        Summary = "Logging Settings",
-        Severity = UiNotificationSeverity.Success
+        Message = "Logging updates saved successfully",
+        Title = "Logging Settings",
+        NotificationSeverity = Severity.Success
       };
 
-      _notificationService.Notify(notif);
+      _notificationService.PushNotification(notif);
     }
   }
 }

@@ -69,7 +69,7 @@ internal class CommandDisplayNameResolverTests
     persistence.Setup(service => service.GetCommandsAsync()).ThrowsAsync(new InvalidOperationException("Database unavailable"));
     var resolver = CreateResolver(persistence.Object);
 
-    Assert.DoesNotThrowAsync(resolver.RefreshAsync);
+    await Assert.DoesNotThrowAsync(resolver.RefreshAsync);
     Assert.That(resolver.Resolve(CreateCustomTemplate("command-id")), Is.EqualTo("Custom Command"));
   }
 

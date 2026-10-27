@@ -1,4 +1,3 @@
-@using UI.Application.Devices
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<PluginDeviceUnitViewModel>
 @inject TooltipService TooltipService
 
@@ -30,8 +29,6 @@
 
 @code {
   private RadzenIcon? _connectedIcon;
-  private RadzenIcon? _serviceConnectedIcon;
-  private RadzenIcon? _disconnectedIcon;
 
   void ShowTooltip(ElementReference elementReference, string text)
   {

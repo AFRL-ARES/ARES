@@ -1,4 +1,5 @@
 ﻿@using Ares.Datamodel.Planning;
+@using Ares.Services
 @using UI.Features.Planning.Settings
 @inject DialogService DialogService
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Features.CampaignEdit.ViewModels.PlannerAllocationEditorViewModel>
@@ -89,14 +90,14 @@
       var result = await DialogService.OpenAsync("Planner Settings", ds =>
         @<PlannerSettingsEditorView ViewModel="ViewModel!.SettingsViewModel" OnValidSubmit="() => ds.Close(true)"/>);
 
-      if(result is true && ViewModel!.SettingsViewModel.Modified)
+      if(result is true && ViewModel!.SettingsViewModel is not null && ViewModel!.SettingsViewModel.Modified)
       {
         await ViewModel!.SaveSettingsChanges();
         StateHasChanged();
-        var notification = new UiNotificationMessage();
-        notification.Detail = $"ARES successfully saved the request changes to {ViewModel!.SelectedPlannerOption.PlannerName}'s settings.";
-        notification.Summary = "Successfully Updated Planner Settings";
-        notification.Severity = UiNotificationSeverity.Success;
+        var notification = new AresNotification();
+        notification.Message = $"ARES successfully saved the request changes to {ViewModel!.SelectedPlannerOption?.PlannerName ?? "Unknown Planner Name"}'s settings.";
+        notification.Title = "Successfully Updated Planner Settings";
+        notification.NotificationSeverity = Severity.Success;
 
         ViewModel!.PushNotification(notification);
       }

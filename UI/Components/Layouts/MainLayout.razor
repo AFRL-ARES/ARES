@@ -1,24 +1,24 @@
 @implements IDisposable
 
-@using Ares.Core.Device.Providers
-@using Ares.Core
-@using Ares.Core.Execution.Safety
 @using System.Reactive.Linq
-@using UI.Application.Dialog
-@using UI.Application.Notifications
-@using UI.Infrastructure.Notifications
-@using UI.Infrastructure.Startup
+@using Ares.Core
+@using Ares.Core.Device.Providers
+@using Ares.Core.Execution.Safety
 @using Ares.Core.Settings
+@using Ares.Services
 @using Microsoft.Extensions.Configuration
 @using Microsoft.JSInterop
 @using Radzen
+@using UI.Application.Dialog
+@using UI.Application.Notifications
 @using UI.Features.Tutorial
+@using UI.Infrastructure.Notifications
+@using UI.Infrastructure.Startup
 
 @inherits LayoutComponentBase
 
 @inject IUiDialogService dialogService
-@inject INotificationReceivingService notificationService
-@inject IUiNotificationService uiNotificationService
+@inject IAresUINotificationService notificationService
 @inject IExecutionSafetyManager executionSafetyManager 
 @inject IDeviceDriverProvider deviceDriverProvider
 @inject INotificationProvider notificationProvider
@@ -194,7 +194,7 @@
     InvokeAsync(StateHasChanged);
   }
 
-  private void HandleBackgroundNotification(UiNotificationMessage message)
+  private void HandleBackgroundNotification(AresNotification message)
   {
     InvokeAsync(() =>
     {
@@ -235,32 +235,31 @@
   async Task ShowEmergencyStopDialog()
   {
     var success = await executionSafetyManager.EnterSafeMode();
-    UiNotificationMessage notificationMessage;
+    AresNotification notificationMessage;
 
     if(success)
     {
-      notificationMessage = new UiNotificationMessage
+      notificationMessage = new AresNotification
       {
-        Summary = "Successfully Processed Emergency Shutdown Request",
-        Detail = "ARES has successfully processed an emergency shutdown request. All devices have entered safemode and any running campaigns have been completed.",
-        Severity = UiNotificationSeverity.Success,
-        CloseOnClick = true
+        Title = "Successfully Processed Emergency Shutdown Request",
+        Message = "ARES has successfully processed an emergency shutdown request. All devices have entered safemode and any running campaigns have been completed.",
+        NotificationSeverity = Severity.Success,
+        Loiter = true
       };
     }
-
 
     else
     {
-      notificationMessage = new UiNotificationMessage
+      notificationMessage = new AresNotification
       {
-        Detail = "ARES HAS FAILED TO ENTER SAFE MODE. DEVICES MAY BE IN AN UNSTABLE STATE AND SHOULD BE POWERED OFF IMMEDIATELY IF IT IS SAFE TO DO SO.",
-        Summary = "FAILED TO PROCESS EMERGENCY SHUTDOWN REQUEST!",
-        CloseOnClick = true,
-        Severity = UiNotificationSeverity.Error
+        Message = "ARES HAS FAILED TO ENTER SAFE MODE. DEVICES MAY BE IN AN UNSTABLE STATE AND SHOULD BE POWERED OFF IMMEDIATELY IF IT IS SAFE TO DO SO.",
+        Title = "FAILED TO PROCESS EMERGENCY SHUTDOWN REQUEST!",
+        Loiter = true,
+        NotificationSeverity = Severity.Error
       };
     }
-
-    uiNotificationService.Notify(notificationMessage);
+    
+    notificationService.PushNotification(notificationMessage);
   }
 
   public IEnumerable<string> GetPluginStylesheetPaths()

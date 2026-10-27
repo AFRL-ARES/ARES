@@ -8,7 +8,7 @@
 
 @code {
   private const string DefaultScript = "# Welcome to ARES\ndef main():\n    return True\n";
-  private StandaloneCodeEditor _editor;
+  private StandaloneCodeEditor? _editor;
 
   private IJSObjectReference? _setupModule;
   private IJSObjectReference? _completionModule;
@@ -36,7 +36,7 @@
   [Parameter]
   public string? InitialScript { get; set; }
 
-  public Task<string> GetScript() => _editor.GetValue();
+  public Task<string> GetScript() => _editor?.GetValue() ?? Task.FromResult(string.Empty);
 
   public async Task SetScript(string script)
   {

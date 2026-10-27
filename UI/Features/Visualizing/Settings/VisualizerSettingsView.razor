@@ -1,4 +1,4 @@
-@using Ares.Datamodel.Connection
+@using Ares.Services
 @using UI.Features.Visualizing.Settings.Layout
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<UI.Features.Visualizing.Settings.VisualizerSettingsViewModel>
 
@@ -45,11 +45,11 @@
     if(result is true && viewModel.Modified)
     {
       await ViewModel.SaveSettings();
-      ViewModel.PushNotification(new UiNotificationMessage
+      ViewModel.PushNotification(new AresNotification
       {
-        Detail = $"ARES successfully saved the request changes to {ViewModel.Name}'s settings.",
-        Summary = "Successfully Updated Visualizer Settings",
-        Severity = UiNotificationSeverity.Success
+        Message = $"ARES successfully saved the request changes to {ViewModel.Name}'s settings.",
+        Title = "Successfully Updated Visualizer Settings",
+        NotificationSeverity = Severity.Success
       });
       StateHasChanged();
     }

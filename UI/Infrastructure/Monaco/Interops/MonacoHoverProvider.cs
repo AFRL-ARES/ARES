@@ -156,28 +156,5 @@ public sealed class MonacoHoverProvider(ScriptingService scriptingService) : IMo
     sb.AppendLine(entry.Stringify());
     sb.AppendLine("```");
     return;
-    if(entry.Type == AresDataType.Struct && entry.StructSchema is not null && entry.StructSchema.Fields.Count > 0)
-    {
-      foreach(var field in entry.StructSchema.Fields)
-      {
-        sb.Append(field.Key).Append(": ").AppendLine(FormatAresValueSchema(field.Value));
-      }
-    }
-    else if(entry.Type == AresDataType.List && entry.ListElementSchema is not null)
-    {
-      sb.Append("List<").Append(FormatAresValueSchema(entry.ListElementSchema)).AppendLine(">");
-    }
-    else
-    {
-      sb.AppendLine(FormatAresValueSchema(entry));
-    }
-
-    sb.AppendLine("```");
-  }
-
-  private static string FormatAresValueSchema(AresValueSchema entry)
-  {
-    var typeName = entry.Type.ToString();
-    return entry.Optional ? $"{typeName} (optional)" : typeName;
   }
 }

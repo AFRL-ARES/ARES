@@ -110,7 +110,7 @@ public partial class ParameterEditorViewModel : ReactiveObject
     set
     {
       this.RaiseAndSetIfChanged(ref _unit, value);
-      if(value == null)
+      if(value is null || _unit is null)
         return;
 
       Category = _unitHelper.GetCategoryForUnit(_unit.Dehumanize()).Humanize();
@@ -166,7 +166,7 @@ public partial class ParameterEditorViewModel : ReactiveObject
     {
       ParameterMetadata.Constraints[0].Maximum = (float)Maximum;
       ParameterMetadata.Constraints[0].Minimum = (float)Minimum;
-      ParameterMetadata.Unit = Unit.Dehumanize();
+      ParameterMetadata.Unit = Unit?.Dehumanize() ?? "Unknown Unit";
     }
 
     // TODO Should technically set to null but protobuf complains. Maybe investigate further?
@@ -196,7 +196,8 @@ public partial class ParameterEditorViewModel : ReactiveObject
     }
   }
 
-  public bool HasAchievedValue { get; set; }
+  [Reactive]
+  public partial bool HasAchievedValue { get; set; }
 
   public bool HasInitialValue 
   {
@@ -213,9 +214,11 @@ public partial class ParameterEditorViewModel : ReactiveObject
     }
   }
 
-  public string? SelectedAchievedOutput { get; set; }
+  [Reactive]
+  public partial string? SelectedAchievedOutput { get; set; }
 
-  public string[]? AvailableOutputs { get; set; }
+  [Reactive]
+  public partial string[]? AvailableOutputs { get; set; }
 
   private void LockInParams(ParameterMetadata meta)
   {
@@ -243,6 +246,6 @@ public partial class ParameterEditorViewModel : ReactiveObject
     }
   }
 
-  public bool IsInitialValueValid { get; set; }
-
+  [Reactive]
+  public partial bool IsInitialValueValid { get; set; }
 }

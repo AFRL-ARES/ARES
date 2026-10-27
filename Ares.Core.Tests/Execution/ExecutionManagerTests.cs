@@ -57,7 +57,7 @@ internal class ExecutionManagerTests
   }
 
   [Test]
-  public void ExecutionManager_Should_Execute_Without_Throwing_Exception()
+  public async Task ExecutionManager_Should_Execute_Without_Throwing_Exception()
   {
     var expTemplate = new ExperimentTemplate();
     var campaignTemplate = new CampaignTemplate
@@ -68,26 +68,26 @@ internal class ExecutionManagerTests
     mockTemplateStore.Setup(store => store.CampaignTemplate).Returns(campaignTemplate);
     var executionManager = new ExecutionManager([], _contextFactory, mockTemplateStore.Object, _campaignComposer, _commandDisplayNameResolver, _deviceProvider, _logger, _notifier);
     executionManager.CampaignStopConditions.Add(new NumExperimentsRun(_executionReportStore, 1));
-    Assert.DoesNotThrowAsync(() => executionManager.Start(string.Empty, []));
+    await Assert.DoesNotThrowAsync(() => executionManager.Start(string.Empty, []));
   }
 
   [Test]
-  public void ExecutionManager_Should_Throw_When_CampaignTemplate_Is_Null()
+  public async Task ExecutionManager_Should_Throw_When_CampaignTemplate_Is_Null()
   {
     var mockTemplateStore = new Mock<IActiveCampaignTemplateStore>();
     mockTemplateStore.Setup(store => store.CampaignTemplate).Returns((CampaignTemplate)null);
     var executionManager = new ExecutionManager([], _contextFactory, mockTemplateStore.Object, _campaignComposer, _commandDisplayNameResolver, _deviceProvider, _logger, _notifier);
-    Assert.ThrowsAsync<InvalidOperationException>(() => executionManager.Start(string.Empty, []));
+    await Assert.ThrowsAsync<InvalidOperationException>(() => executionManager.Start(string.Empty, []));
   }
 
   [Test]
-  public void ExecutionManager_Should_Throw_When_Start_Condition_Fails()
+  public async Task ExecutionManager_Should_Throw_When_Start_Condition_Fails()
   {
     var mockTemplateStore = new Mock<IActiveCampaignTemplateStore>();
     mockTemplateStore.Setup(store => store.CampaignTemplate).Returns(new CampaignTemplate());
     var falseCondition = new Mock<IStartCondition>();
     falseCondition.Setup(condition => condition.CanStart()).Returns(Task.FromResult(new StartConditionResult(false)));
     var executionManager = new ExecutionManager([falseCondition.Object], _contextFactory, mockTemplateStore.Object, _campaignComposer, _commandDisplayNameResolver, _deviceProvider, _logger, _notifier);
-    Assert.ThrowsAsync<InvalidOperationException>(() => executionManager.Start(string.Empty, []));
+    await Assert.ThrowsAsync<InvalidOperationException>(() => executionManager.Start(string.Empty, []));
   }
 }

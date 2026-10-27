@@ -10,12 +10,12 @@ namespace UI.Features.Visualizing.Settings;
 public class VisualizerSettingsViewModel : ReactiveObject
 {
   private readonly VisualizerService _visualizerService;
-  private readonly IUiNotificationService _notificationService;
+  private readonly IAresUINotificationService _notificationService;
   private readonly VisualizerInfo _visualizerInfo;
 
   public VisualizerSettingsViewModel(
     VisualizerService visualizerService,
-    IUiNotificationService notificationService,
+    IAresUINotificationService notificationService,
     VisualizerInfo visualizerInfo,
     Func<Task> onRemoveCallback)
   {
@@ -48,8 +48,8 @@ public class VisualizerSettingsViewModel : ReactiveObject
   public VisualizerConfigEditViewModel EditViewModel { get; }
   public VisualizerSettingsEditorViewModel SettingsEditorViewModel { get; }
 
-  public void PushNotification(UiNotificationMessage notification)
-    => _notificationService.Notify(notification);
+  public void PushNotification(AresNotification notification)
+    => _notificationService.PushNotification(notification);
 
   public async Task Save()
   {
@@ -65,20 +65,20 @@ public class VisualizerSettingsViewModel : ReactiveObject
     {
       Name = config.Name;
       Address = config.Url;
-      PushNotification(new UiNotificationMessage
+      PushNotification(new AresNotification
       {
-        Summary = "Visualizer Update",
-        Detail = $"Visualizer {Name} updated",
-        Severity = UiNotificationSeverity.Success
+        Title = "Visualizer Update",
+        Message = $"Visualizer {Name} updated",
+        NotificationSeverity = Severity.Success
       });
     }
     else
     {
-      PushNotification(new UiNotificationMessage
+      PushNotification(new AresNotification
       {
-        Summary = "Visualizer Update",
-        Detail = $"Visualizer {Name} failed to update.\n{response.ErrorMessage}",
-        Severity = UiNotificationSeverity.Error
+        Title = "Visualizer Update",
+        Message = $"Visualizer {Name} failed to update.\n{response.ErrorMessage}",
+        NotificationSeverity = Severity.Error
       });
     }
 

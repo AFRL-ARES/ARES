@@ -1,8 +1,9 @@
 @page "/automation/custom-commands"
 @using Ares.Core.CustomCommands
+@using Ares.Services
 @using UI.Application.Notifications
 @inject ICustomCommandPersistenceService CustomCommandService
-@inject IUiNotificationService NotificationService
+@inject IAresUINotificationService NotificationService
 
 <PageTitle>Custom Commands</PageTitle>
 
@@ -105,7 +106,12 @@
     catch(Exception ex)
     {
       _loadError = $"Failed to load custom commands. {ex.Message}";
-      NotificationService.Error(_loadError);
+      NotificationService.PushNotification(new AresNotification 
+      { 
+        Title = "Error Loading Custom Command", 
+        Message = _loadError, 
+        NotificationSeverity = Severity.Error 
+      });
     }
     finally
     {
@@ -120,12 +126,22 @@
     try
     {
       await CustomCommandService.DeleteAsync(command.Id);
-      NotificationService.Success($"Deleted custom command '{command.Name}'.");
+      NotificationService.PushNotification(new AresNotification
+      {
+        Title = "Custom Command Deleted",
+        Message = $"Deleted custom command '{command.Name}'.",
+        NotificationSeverity = Severity.Success
+      });
       await LoadCommandsAsync();
     }
     catch(Exception ex)
     {
-      NotificationService.Error($"Failed to delete custom command '{command.Name}'. {ex.Message}");
+      NotificationService.PushNotification(new AresNotification
+      {
+        Title = $"Failed to delete custom command '{command.Name}'.",
+        Message = ex.Message,
+        NotificationSeverity = Severity.Error
+      });
     }
     finally
     {

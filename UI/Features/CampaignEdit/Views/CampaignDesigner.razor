@@ -1,7 +1,7 @@
 @page "/automation/campaigndesigner"
 @page "/automation/campaigndesigner/{CampaignId:guid}"
-@using UI.Application.Notifications
-@inject IUiNotificationService NotificationService
+@using Ares.Services
+@inject IAresUINotificationService NotificationService
 @inject DialogService DialogService
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<UI.Features.CampaignEdit.ViewModels.CampaignDesignerViewModel>
 
@@ -69,13 +69,11 @@
       await ViewModel!.SelectCampaignById(CampaignId.Value);
   }
 
-  private bool _isLoading = true;
-
   protected override async Task OnParametersSetAsync()
   {
     if(CampaignId.HasValue)
       await ViewModel!.SelectCampaignById(CampaignId.Value);
-    
+
     else
       await ViewModel!.InitializeNewCampaignAsync();
   }
@@ -146,17 +144,27 @@
     SelectedSubOption5 = false;
     SelectedSubOption6 = true;
   }
-    
+
   private async Task SaveClick()
   {
     try
     {
       await ViewModel!.Update();
-      NotificationService.Success("Campaign has been saved");
+      NotificationService.PushNotification(new AresNotification()
+      {
+        Title = "Campaign Saved",
+        Message = "ARES saved a campaign successfully",
+        NotificationSeverity = Severity.Success
+      });
     }
     catch (Exception e)
     {
-      NotificationService.Error($"Failed to save campaign {e.Message}");
+      NotificationService.PushNotification(new AresNotification()
+      {
+        Title = "Campaign Save Error",
+        Message = e.Message,
+        NotificationSeverity = Severity.Error
+      });
     }
   }
 

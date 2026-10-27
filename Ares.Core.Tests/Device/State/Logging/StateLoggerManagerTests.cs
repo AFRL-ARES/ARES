@@ -236,8 +236,7 @@ internal class StateLoggerManagerTests
       .ThrowsAsync(new InvalidOperationException("Override failed"))
       .Returns(Task.CompletedTask);
 
-    Assert.ThrowsAsync<InvalidOperationException>(
-      () => _manager.EnableOverrideAsync(CreateSettings(loggingEnabled: true), true));
+    await Assert.ThrowsAsync<InvalidOperationException>(() => _manager.EnableOverrideAsync(CreateSettings(loggingEnabled: true), true));
 
     var device = new TestDevice("Device", "device-2");
     var newLogger = CreateFactoryLogger(device.UniqueId);
@@ -268,7 +267,7 @@ internal class StateLoggerManagerTests
       .ThrowsAsync(new InvalidOperationException("Restore failed"))
       .Returns(Task.CompletedTask);
 
-    Assert.ThrowsAsync<InvalidOperationException>(() => _manager.DisableOverrideAsync());
+    await Assert.ThrowsAsync<InvalidOperationException>(() => _manager.DisableOverrideAsync());
     await _manager.DisableOverrideAsync();
 
     logger.Verify(

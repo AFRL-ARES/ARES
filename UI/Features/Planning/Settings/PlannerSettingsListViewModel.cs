@@ -13,9 +13,9 @@ namespace UI.Features.Planning.Settings;
 public partial class PlannerSettingsListViewModel : ReactiveObject
 {
   private readonly PlannerService _planningService;
-  private readonly IUiNotificationService _notificationService;
+  private readonly IAresUINotificationService _notificationService;
 
-  public PlannerSettingsListViewModel(PlannerService planningService, IUiNotificationService notificationService)
+  public PlannerSettingsListViewModel(PlannerService planningService, IAresUINotificationService notificationService)
   {
     _planningService = planningService;
     _notificationService = notificationService;
@@ -35,11 +35,11 @@ public partial class PlannerSettingsListViewModel : ReactiveObject
     }
     catch(Exception ex)
     {
-      PushNotification(new UiNotificationMessage
+      PushNotification(new AresNotification
       {
-        Summary = "Error fetching planners",
-        Detail = ex.Message,
-        Severity = UiNotificationSeverity.Error
+        Title = "Error fetching planners",
+        Message = ex.Message,
+        NotificationSeverity = Severity.Error
       });
     }
     finally
@@ -69,7 +69,7 @@ public partial class PlannerSettingsListViewModel : ReactiveObject
     await UpdateAvailablePlanners();
   }
 
-  public void PushNotification(UiNotificationMessage notification) => _notificationService.Notify(notification);
+  public void PushNotification(AresNotification notification) => _notificationService.PushNotification(notification);
 
   [Reactive]
   public partial IEnumerable<PlannerSettingsViewModel> SettingsViewModels { get; private set; }

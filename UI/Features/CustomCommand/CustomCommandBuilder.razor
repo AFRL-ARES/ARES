@@ -2,19 +2,19 @@
 @page "/automation/custom-command-builder/{CommandId:guid}"
 @using Ares.Core.CustomCommands
 @using Ares.Datamodel
-@using Ares.Datamodel.Automation
+@using Ares.Services
 @using AresScript.ScriptBuilding
 @using AresScript.Symbols
-@using UI.Application.Notifications
-@using UI.Application.Scripting
 @using CustomCommandModel = Ares.Datamodel.Automation.CustomCommandVersion
 @using CustomCommandParameterModel = Ares.Datamodel.Automation.CustomCommandParameter
+@using UI.Application.Notifications
+@using UI.Application.Scripting
 @inject IMonacoCompletionProvider CompletionProvider
 @inject IMonacoDiagnosticsProvider DiagnosticsProvider
 @inject IMonacoSemanticTokensProvider SemanticTokensProvider
 @inject IMonacoHoverProvider HoverProvider
 @inject ICustomCommandPersistenceService CustomCommandService
-@inject IUiNotificationService NotificationService
+@inject IAresUINotificationService NotificationService
 @inject NavigationManager NavigationManager
 
 <PageTitle>Custom Command Designer</PageTitle>
@@ -363,7 +363,12 @@ return
     catch(Exception ex)
     {
       _loadError = $"Failed to load custom command. {ex.Message}";
-      NotificationService.Error(_loadError);
+      NotificationService.PushNotification(new AresNotification()
+      {
+        Title = "Failed to Load Custom Command",
+        Message = ex.Message,
+        NotificationSeverity = Severity.Error
+      });
     }
     finally
     {
@@ -381,12 +386,23 @@ return
       var savedId = await CustomCommandService.SaveAsync(CommandId, command);
       CommandId = savedId;
       _loadedCommandId = savedId;
-      NotificationService.Success("Custom command saved.");
+      NotificationService.PushNotification(new AresNotification()
+      {
+        Title = "Custom Command Saved",
+        Message = "ARES successfully saved a new custom command",
+        NotificationSeverity = Severity.Success
+      });
+      
       NavigationManager.NavigateTo($"/automation/custom-command-builder/{savedId}", replace: true);
     }
     catch(Exception ex)
     {
-      NotificationService.Error($"Failed to save custom command. {ex.Message}");
+      NotificationService.PushNotification(new AresNotification()
+      {
+        Title = "Failed to Save Custom Command",
+        Message = ex.Message,
+        NotificationSeverity = Severity.Error
+      });
     }
     finally
     {

@@ -51,7 +51,7 @@
 
   private async Task FileChanged(UploadChangeEventArgs obj)
   {
-    if(!obj.Files.Any())
+    if(obj.Files is null || !obj.Files.Any())
       return;
 
     var file = obj.Files.First();

@@ -12,14 +12,14 @@ namespace UI.Features.CampaignEdit.ViewModels;
 public partial class PlannerAllocationEditorViewModel : ReactiveObject
 {
   private readonly PlannerService _plannerClient;
-  private readonly IUiNotificationService _notificationService;
+  private readonly IAresUINotificationService _notificationService;
   private PlannerServiceInfo? _selectedService;
 
   public PlannerAllocationEditorViewModel(ParameterMetadata metadata,
     PlannerServiceInfo? plannerInfo,
     IEnumerable<PlannerServiceInfo> plannerAdapters,
     PlannerService plannerClient,
-    IUiNotificationService notificationService)
+    IAresUINotificationService notificationService)
   {
     var plannerArray = plannerAdapters.ToArray();
 
@@ -70,6 +70,9 @@ public partial class PlannerAllocationEditorViewModel : ReactiveObject
 
   public async Task SaveSettingsChanges()
   {
+    if(EditViewModel is null)
+      throw new NullReferenceException("Edit View Model was null, settings cannot be saved");
+
     var planner = EditViewModel.Save();
     var request = new UpdatePlannerRequest();
     request.Name = planner.Name;
@@ -79,7 +82,7 @@ public partial class PlannerAllocationEditorViewModel : ReactiveObject
     await _plannerClient.UpdatePlanner(request, null);
   }
 
-  public void PushNotification(UiNotificationMessage notification) => _notificationService.Notify(notification);
+  public void PushNotification(AresNotification notification) => _notificationService.PushNotification(notification);
 
   public async Task UpdatePlannerOptions()
   {
@@ -95,15 +98,15 @@ public partial class PlannerAllocationEditorViewModel : ReactiveObject
     }
     else
     {
-      var notification = new UiNotificationMessage
+      var notification = new AresNotification
       {
-        Summary = "Assigned Planner Unavailable!",
-        Detail = "This template uses a planner that ARES no longer has a connection with. The template won't be usable until this is resolved.",
-        Severity = UiNotificationSeverity.Warning,
-        CloseOnClick = true
+        Title = "Assigned Planner Unavailable!",
+        Message = "This template uses a planner that ARES no longer has a connection with. The template won't be usable until this is resolved.",
+        NotificationSeverity = Severity.Warning,
+        Loiter = true
       };
 
-      _notificationService.Notify(notification);
+      _notificationService.PushNotification(notification);
     }
   }
 
@@ -132,6 +135,6 @@ public partial class PlannerAllocationEditorViewModel : ReactiveObject
   public partial IEnumerable<Planner> PlannerOptions { get; set; }
   [Reactive]
   public partial Planner? SelectedPlannerOption { get; set; }
-  public PlannerSettingsEditorViewModel SettingsViewModel { get; set; }
-  public PlannerConfigEditViewModel EditViewModel { get; set; }
+  public PlannerSettingsEditorViewModel? SettingsViewModel { get; set; }
+  public PlannerConfigEditViewModel? EditViewModel { get; set; }
 }

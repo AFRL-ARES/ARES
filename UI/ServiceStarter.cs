@@ -19,7 +19,7 @@ namespace UI;
 
 public class ServiceStarter : BackgroundService
 {
-  private readonly INotificationReceivingService _notificationReceivingService;
+  private readonly IAresUINotificationService _notificationReceivingService;
   private readonly IDeviceControlViewModelRepo _deviceControlViewModelRepo;
   private readonly DeviceAdapterManager _deviceAdapterManager;
   private readonly IRemoteAnalyzerManager _analyzerManager;
@@ -60,7 +60,7 @@ public class ServiceStarter : BackgroundService
     ISilaDeviceManager silaDeviceManager,
     IDriverDatabaseManager driverDbManager,
     IDeviceManager deviceManager,
-    INotificationReceivingService notificationReceivingService,
+    IAresUINotificationService notificationReceivingService,
     IServiceProvider serviceProvider,
     IDeviceControlViewModelRepo deviceControlViewModelRepo,
     DeviceAdapterManager deviceAdapterManager,

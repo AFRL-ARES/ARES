@@ -101,7 +101,7 @@
   {
     await DialogService.OpenAsync<VisualizationSettingsDialog>(
         $"Settings: {ViewModel!.Title}",
-        new Dictionary<string, object>() { { "ViewModel", ViewModel } },
+        new Dictionary<string, object?>() { { "ViewModel", ViewModel } },
         new DialogOptions()
         {
           Width = "400px",

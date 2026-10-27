@@ -136,10 +136,10 @@ internal class CampaignTemplateTransferServiceTests
   }
 
   [Test]
-  public void Import_RejectsMalformedOrStructurallyInvalidFiles()
+  public async Task Import_RejectsMalformedOrStructurallyInvalidFiles()
   {
-    Assert.ThrowsAsync<CampaignTemplateImportException>(() => _transferService.ImportAsync("not-json"));
-    Assert.ThrowsAsync<CampaignTemplateImportException>(() => _transferService.ImportAsync("{\"name\":\"Missing experiment\"}"));
+    await Assert.ThrowsAsync<CampaignTemplateImportException>(() => _transferService.ImportAsync("not-json"));
+    await Assert.ThrowsAsync<CampaignTemplateImportException>(() => _transferService.ImportAsync("{\"name\":\"Missing experiment\"}"));
   }
 
   [Test]

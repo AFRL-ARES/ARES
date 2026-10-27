@@ -34,8 +34,8 @@ internal class CampaignDatasetGeneratorTests
     var summary = CreateCampaignSummary(
       summaryId,
       "Campaign A",
-      CreateExperiment(secondStart, secondEnd, analysisResult: new List<Objective> { new Objective { ObjectiveName = "Result", ObjectiveValue = AresValueHelper.CreateNumber(2.5) } }),
-      CreateExperiment(firstStart, firstEnd, analysisResult: new List<Objective> { new Objective { ObjectiveName = "Result", ObjectiveValue = AresValueHelper.CreateNumber(1.5) } }));
+      CreateExperiment(secondStart, secondEnd, analysisResult: [new() { ObjectiveName = "Result", ObjectiveValue = AresValueHelper.CreateNumber(2.5) }]),
+      CreateExperiment(firstStart, firstEnd, analysisResult: [new() { ObjectiveName = "Result", ObjectiveValue = AresValueHelper.CreateNumber(1.5) }]));
     var generator = CreateGenerator(summary);
 
     var dataset = GetDataset(await generator.GenerateAsync(summaryId), "Experiments");
@@ -718,13 +718,13 @@ internal class CampaignDatasetGeneratorTests
   }
 
   [Test]
-  public void GenerateAsync_ThrowsWhenAlreadyCanceled()
+  public async Task GenerateAsync_ThrowsWhenAlreadyCanceled()
   {
     using var cancellationTokenSource = new CancellationTokenSource();
     cancellationTokenSource.Cancel();
     var generator = new CampaignDatasetGenerator(CreateContextFactory());
 
-    Assert.ThrowsAsync<OperationCanceledException>(async () => await generator.GenerateAsync("summary-1", cancellationTokenSource.Token));
+    await Assert.ThrowsAsync<OperationCanceledException>(async () => await generator.GenerateAsync("summary-1", cancellationTokenSource.Token));
   }
 
   private static CampaignDatasetGenerator CreateGenerator(
@@ -744,7 +744,7 @@ internal class CampaignDatasetGeneratorTests
     return new CampaignDatasetGenerator(CreateContextFactory(options));
   }
 
-  private static IDbContextFactory<CoreDatabaseContext> CreateContextFactory(DbContextOptions<CoreDatabaseContext> options = null)
+  private static TestContextFactory CreateContextFactory(DbContextOptions<CoreDatabaseContext> options = null)
   {
     var contextOptions = options ?? CreateContextOptions();
     return new TestContextFactory(contextOptions);
@@ -810,7 +810,7 @@ internal class CampaignDatasetGeneratorTests
   private static ExperimentExecutionSummary CreateExperiment(
     DateTime timeStarted,
     DateTime timeFinished,
-    List<Objective>? analysisResult = null,
+    List<Objective> analysisResult = null,
     (string Name, AresValue Value)[] resultFields = null,
     Parameter[] parameters = null,
     StepExecutionSummary[] steps = null)

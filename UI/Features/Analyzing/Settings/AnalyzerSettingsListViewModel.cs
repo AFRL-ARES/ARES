@@ -11,8 +11,8 @@ namespace UI.Features.Analyzing.Settings;
 public partial class AnalyzerSettingsListViewModel : ReactiveObject
 {
   private readonly AnalyzerService _analyzerManagerService;
-  private readonly IUiNotificationService _notificationService;
-  public AnalyzerSettingsListViewModel(AnalyzerService analyzerManagerService, IUiNotificationService notificationService)
+  private readonly IAresUINotificationService _notificationService;
+  public AnalyzerSettingsListViewModel(AnalyzerService analyzerManagerService, IAresUINotificationService notificationService)
   {
     _analyzerManagerService = analyzerManagerService;
     _notificationService = notificationService;
@@ -31,11 +31,11 @@ public partial class AnalyzerSettingsListViewModel : ReactiveObject
     }
     catch(Exception ex)
     {
-      PushNotification(new UiNotificationMessage
+      PushNotification(new AresNotification
       {
-        Summary = "Error fetching analyzers",
-        Detail = ex.Message,
-        Severity = UiNotificationSeverity.Error
+        Title = "Error fetching analyzers",
+        Message = ex.Message,
+        NotificationSeverity = Severity.Error
       });
     }
     finally
@@ -57,22 +57,22 @@ public partial class AnalyzerSettingsListViewModel : ReactiveObject
     var response = await _analyzerManagerService.AddRemoteAnalyzer(request, null);
     if(response.Success)
     {
-      PushNotification(new UiNotificationMessage() 
+      PushNotification(new AresNotification() 
       { 
-        Detail = $"Added new analyzer {analyzerConfig.Name}", 
-        Severity = UiNotificationSeverity.Success, 
-        Summary = "Successfully Added Remote Analyzer" 
+        Message = $"Added new analyzer {analyzerConfig.Name}", 
+        NotificationSeverity = Severity.Success, 
+        Title = "Successfully Added Remote Analyzer" 
       });
       await UpdateAvailableAnalyzers();
     }
     else
     {
       PushNotification(
-        new UiNotificationMessage() 
+        new AresNotification() 
         {
-          Detail = response.ErrorMessage,
-          Summary = $"Failed to Add Analyzer {analyzerConfig.Name}.", 
-          Severity = UiNotificationSeverity.Error 
+          Message = response.ErrorMessage,
+          Title  = $"Failed to Add Analyzer {analyzerConfig.Name}.", 
+          NotificationSeverity = Severity.Error 
         });
     }
   }
@@ -83,7 +83,7 @@ public partial class AnalyzerSettingsListViewModel : ReactiveObject
     await UpdateAvailableAnalyzers();
   }
 
-  public void PushNotification(UiNotificationMessage notification) => _notificationService.Notify(notification);
+  public void PushNotification(AresNotification notification) => _notificationService.PushNotification(notification);
 
   [Reactive]
   public partial IEnumerable<AnalyzerSettingsViewModel>? SettingsViewModels { get; private set; }

@@ -10,7 +10,7 @@
   [Parameter] 
   public object? Config { get; set; }
 
-  private IJSObjectReference _module;
+  private IJSObjectReference? _module;
 
   protected override async Task OnAfterRenderAsync(bool firstRender)
   {

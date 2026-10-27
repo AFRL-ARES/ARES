@@ -24,8 +24,6 @@ namespace Ares.Core.Grpc.Services;
 public class DevicesService(
   IAresDeviceProvider deviceProvider,
   IDeviceDriverProvider driverProvider,
-  IDeviceConfigProvider configProvider,
-  IDeviceManager deviceManager,
   IDeviceConfigManager deviceConfigManager,
   IDbContextFactory<CoreDatabaseContext> contextFactory,
   IRemoteDeviceManager remoteDeviceManager,
@@ -395,7 +393,7 @@ public class DevicesService(
     }
   }
 
-  public override async Task<RemoveDeviceResponse> RemoveAresDevice(RemoveDeviceRequest request, ServerCallContext context)
+  public override async Task<RemoveDeviceResponse> RemoveAresDevice(RemoveDeviceRequest request, ServerCallContext? context)
   {
     var response = new RemoveDeviceResponse();
 
@@ -414,7 +412,7 @@ public class DevicesService(
     return response;
   }
 
-  public override async Task<UpdateDeviceResponse> UpdateAresDevice(UpdateDeviceRequest request, ServerCallContext context)
+  public override async Task<UpdateDeviceResponse> UpdateAresDevice(UpdateDeviceRequest request, ServerCallContext? context)
   {
     var response = new UpdateDeviceResponse();
     

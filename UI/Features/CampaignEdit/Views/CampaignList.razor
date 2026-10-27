@@ -1,13 +1,12 @@
 ﻿@page "/automation"
 @page "/automation/campaignlist"
 @using Ares.Services
-@using Newtonsoft.Json
 @using UI.Application.Notifications
 @using UI.Features.CampaignEdit.ViewModels
 @inject DialogService DialogService
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<CampaignListViewModel>
 @inject IJSRuntime JS
-@inject IUiNotificationService NotificationService
+@inject IAresUINotificationService NotificationService
 
 
 <div class="d-flex flex-column align-content-stretch">
@@ -104,7 +103,12 @@
       var export = await ViewModel!.ExportCampaignTemplate(templateSummary.UniqueId);
       if(export is null)
       {
-        NotificationService.Error("The selected campaign could not be found.");
+        NotificationService.PushNotification(new AresNotification() 
+        { 
+          Title = "Error Exporting Campaign", 
+          Message = "The selected campaign could not be found.", 
+          NotificationSeverity = Severity.Error 
+        });
         return;
       }
 
@@ -112,7 +116,12 @@
     }
     catch(Exception exception)
     {
-      NotificationService.Error($"Failed to export campaign. {exception.Message}");
+      NotificationService.PushNotification(new AresNotification()
+      {
+        Title = "Error Exporting Campaign",
+        Message = $"Failed to export campaign. {exception.Message}",
+        NotificationSeverity = Severity.Error
+      });
     }
   }
 
@@ -126,13 +135,30 @@
     {
       var result = await ViewModel!.ImportCampaignTemplate(args.File);
       await ViewModel.RefreshCampaigns();
-      NotificationService.Success($"Imported campaign '{result.Template.Name}'.");
+      
+      NotificationService.PushNotification(new AresNotification()
+      {
+        Title = "Imported Campaign Successufully",
+        Message = $"Imported campaign '{result.Template.Name}'.",
+        NotificationSeverity = Severity.Success
+      });
+
       if(result.Warnings.Count > 0)
-        NotificationService.Warning(string.Join(System.Environment.NewLine, result.Warnings), "Campaign imported with warnings");
+        NotificationService.PushNotification(new AresNotification()
+          {
+            Title = "Warnings While Importing Campaign",
+            Message = string.Join(System.Environment.NewLine, result.Warnings),
+            NotificationSeverity = Severity.Warning
+          });
     }
     catch(Exception exception)
     {
-      NotificationService.Error($"Failed to import campaign. {exception.Message}");
+      NotificationService.PushNotification(new AresNotification() 
+      { 
+        Title = "Failed to Import Campaign", 
+        Message = exception.Message, 
+        NotificationSeverity = Severity.Error 
+      });
     }
     finally
     {

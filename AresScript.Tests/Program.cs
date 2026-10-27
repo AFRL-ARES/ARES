@@ -267,7 +267,7 @@ public class InterpreterTests
   }
 
   [Test]
-  public Task Assert_Fails_OnFalseCondition()
+  public async Task Assert_Fails_OnFalseCondition()
   {
     var script = """
       num1 = 20
@@ -275,21 +275,19 @@ public class InterpreterTests
       assert num1 + num2 == 80
       """;
 
-    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
+    var ex = await Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("Assertion failed"));
-    return Task.CompletedTask;
   }
 
   [Test]
-  public Task Assert_Fails_OnNonBooleanCondition()
+  public async Task Assert_Fails_OnNonBooleanCondition()
   {
     var script = """
       assert 123
       """;
 
-    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
+    var ex = await Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("Assert condition must be boolean"));
-    return Task.CompletedTask;
   }
 
   [Test]
@@ -369,16 +367,15 @@ public class InterpreterTests
   }
 
   [Test]
-  public Task Validation_Rejects_Arithmetic_On_Different_Quantity_Types()
+  public async Task Validation_Rejects_Arithmetic_On_Different_Quantity_Types()
   {
     var script = """
       def bad_add(a: Quantity.Duration, b: Quantity.Length) -> Quantity:
         return a + b
       """;
 
-    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
+    var ex = await Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("compatible quantity"));
-    return Task.CompletedTask;
   }
 
   [Test]
@@ -496,29 +493,27 @@ public class InterpreterTests
   }
 
   [Test]
-  public Task Validation_Rejects_QuantityRangeTypeHint_Without_Unit()
+  public async Task Validation_Rejects_QuantityRangeTypeHint_Without_Unit()
   {
     var script = """
       def bad_duration(value: Quantity.Duration[min=0, max=30]) -> Quantity:
         return value
       """;
 
-    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
+    var ex = await Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("must specify a bounds unit"));
-    return Task.CompletedTask;
   }
 
   [Test]
-  public Task Validation_Rejects_QuantityRangeTypeHint_With_Invalid_Unit_For_QuantityType()
+  public async Task Validation_Rejects_QuantityRangeTypeHint_With_Invalid_Unit_For_QuantityType()
   {
     var script = """
       def bad_length(value: Quantity.Length[unit="m/s", min=0, max=30]) -> Quantity:
         return value
       """;
 
-    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
+    var ex = await Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("Unit 'm/s' is not valid for quantity type 'Length'"));
-    return Task.CompletedTask;
   }
 
   [Test]
@@ -727,7 +722,7 @@ public class InterpreterTests
   }
 
   [Test]
-  public Task Runtime_Rejects_Mismatched_Function_Argument_TypeHint()
+  public async Task Runtime_Rejects_Mismatched_Function_Argument_TypeHint()
   {
     var script = """
       def echo_num(value: Number) -> Number:
@@ -736,13 +731,12 @@ public class InterpreterTests
       echo_num("oops")
       """;
 
-    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
+    var ex = await Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("argument 'value' type mismatch"));
-    return Task.CompletedTask;
   }
 
   [Test]
-  public Task Validation_Rejects_Mismatched_Function_Argument_TypeHint()
+  public async Task Validation_Rejects_Mismatched_Function_Argument_TypeHint()
   {
     var script = """
       def echo_num(value: Number) -> Number:
@@ -751,13 +745,12 @@ public class InterpreterTests
       echo_num("oops")
       """;
 
-    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
+    var ex = await Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("argument 'value' type mismatch"));
-    return Task.CompletedTask;
   }
 
   [Test]
-  public Task Runtime_Rejects_Mismatched_Function_Return_TypeHint()
+  public async Task Runtime_Rejects_Mismatched_Function_Return_TypeHint()
   {
     var script = """
       def bad_return() -> Number:
@@ -766,26 +759,24 @@ public class InterpreterTests
       bad_return()
       """;
 
-    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
+    var ex = await Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("return type mismatch"));
-    return Task.CompletedTask;
   }
 
   [Test]
-  public Task Validation_Rejects_Mismatched_Function_Return_TypeHint()
+  public async Task Validation_Rejects_Mismatched_Function_Return_TypeHint()
   {
     var script = """
       def bad_return() -> Number:
         return "oops"
       """;
 
-    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
+    var ex = await Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("return type mismatch"));
-    return Task.CompletedTask;
   }
 
   [Test]
-  public Task Validation_Rejects_Mismatched_Function_Struct_Argument_TypeHint()
+  public async Task Validation_Rejects_Mismatched_Function_Struct_Argument_TypeHint()
   {
     var script = """
       def echo_payload(value: { foo: Number, bar: String }) -> Number:
@@ -794,22 +785,20 @@ public class InterpreterTests
       echo_payload({ foo: "oops", bar: "ok" })
       """;
 
-    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
+    var ex = await Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("argument 'value' type mismatch"));
-    return Task.CompletedTask;
   }
 
   [Test]
-  public Task Validation_Rejects_Mismatched_Function_Struct_Return_TypeHint()
+  public async Task Validation_Rejects_Mismatched_Function_Struct_Return_TypeHint()
   {
     var script = """
       def bad_return() -> { foo: Number, bar: String }:
         return { foo: "oops", bar: "ok" }
       """;
 
-    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
+    var ex = await Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("return type mismatch"));
-    return Task.CompletedTask;
   }
 
   [Test]
@@ -890,7 +879,7 @@ public class InterpreterTests
   }
 
   [Test]
-  public Task KeywordArgs_RejectPositionalAfterKeyword()
+  public async Task KeywordArgs_RejectPositionalAfterKeyword()
   {
     var script = """
       def add(a, b):
@@ -899,13 +888,12 @@ public class InterpreterTests
       add(a=1, 2)
       """;
 
-    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
+    var ex = await Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("Positional argument follows keyword argument"));
-    return Task.CompletedTask;
   }
 
   [Test]
-  public Task KeywordArgs_RejectUnexpectedKeyword()
+  public async Task KeywordArgs_RejectUnexpectedKeyword()
   {
     var script = """
       def add(a, b):
@@ -914,13 +902,12 @@ public class InterpreterTests
       add(c=1)
       """;
 
-    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
+    var ex = await Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("unexpected keyword argument"));
-    return Task.CompletedTask;
   }
 
   [Test]
-  public Task KeywordArgs_RejectMissingRequiredArgument()
+  public async Task KeywordArgs_RejectMissingRequiredArgument()
   {
     var script = """
       def add(a, b):
@@ -929,13 +916,12 @@ public class InterpreterTests
       add(1)
       """;
 
-    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
+    var ex = await Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("missing required argument"));
-    return Task.CompletedTask;
   }
 
   [Test]
-  public Task KeywordArgs_RejectDuplicateKeyword()
+  public async Task KeywordArgs_RejectDuplicateKeyword()
   {
     var script = """
       def add(a, b):
@@ -944,32 +930,29 @@ public class InterpreterTests
       add(a=1, a=2)
       """;
 
-    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
+    var ex = await Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("Duplicate keyword argument"));
-    return Task.CompletedTask;
   }
 
   [Test]
-  public Task KeywordArgs_RejectOnRuntimeFunctions()
+  public async Task KeywordArgs_RejectOnRuntimeFunctions()
   {
     var script = "print(value=1)";
 
-    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
+    var ex = await Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("does not support keyword arguments"));
-    return Task.CompletedTask;
   }
 
   [Test]
-  public Task SyntaxErrors_AreThrown()
+  public async Task SyntaxErrors_AreThrown()
   {
     var script = """
       if True
         print("oops")
       """;
 
-    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
+    var ex = await Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("Syntax error"));
-    return Task.CompletedTask;
   }
 
   [Test]
@@ -1104,12 +1087,11 @@ public class InterpreterTests
   }
 
   [Test]
-  public Task Range_ZeroStep_ThrowsException()
+  public async Task Range_ZeroStep_ThrowsException()
   {
     var script = "range(0, 10, 0)";
-    var ex = Assert.ThrowsAsync<InvalidOperationException>(() => RunScriptAsync(script));
+    var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => RunScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("Range step must not be zero"));
-    return Task.CompletedTask;
   }
 
   [Test]
@@ -1125,12 +1107,11 @@ public class InterpreterTests
   }
 
   [Test]
-  public Task Len_InvalidType_Throws()
+  public async Task Len_InvalidType_Throws()
   {
     var script = "len(1)";
-    var ex = Assert.ThrowsAsync<InvalidOperationException>(() => RunScriptAsync(script));
+    var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => RunScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("Len is not supported"));
-    return Task.CompletedTask;
   }
 
   [Test]
@@ -1482,17 +1463,16 @@ public class InterpreterTests
   }
 
   [Test]
-  public Task Validator_Rejects_Runtime_Keyword_Args()
+  public async Task Validator_Rejects_Runtime_Keyword_Args()
   {
     var script = "print(value=1)";
 
-    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
+    var ex = await Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("does not support keyword arguments"));
-    return Task.CompletedTask;
   }
 
   [Test]
-  public Task Validator_Rejects_Positional_After_Keyword()
+  public async Task Validator_Rejects_Positional_After_Keyword()
   {
     var script = """
       def add(a, b):
@@ -1501,19 +1481,17 @@ public class InterpreterTests
       add(a=1, 2)
       """;
 
-    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
+    var ex = await Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("Positional argument follows keyword argument"));
-    return Task.CompletedTask;
   }
 
   [Test]
-  public Task Validator_Rejects_Missing_Function_At_Top_Level()
+  public async Task Validator_Rejects_Missing_Function_At_Top_Level()
   {
     var script = "missing()";
 
-    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
+    var ex = await Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("Unknown identifier 'missing'"));
-    return Task.CompletedTask;
   }
 
   [Test]
@@ -1602,16 +1580,15 @@ public class InterpreterTests
   }
 
   [Test]
-  public Task Validator_Rejects_Number_Array_Append_With_Wrong_Type()
+  public async Task Validator_Rejects_Number_Array_Append_With_Wrong_Type()
   {
     var script = """
       nums = [1, 2]
       nums.append("oops")
       """;
 
-    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
+    var ex = await Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("type mismatch"));
-    return Task.CompletedTask;
   }
 
   [Test]
@@ -1639,29 +1616,27 @@ public class InterpreterTests
   }
 
   [Test]
-  public Task Validator_Rejects_Too_Many_Lambda_Args()
+  public async Task Validator_Rejects_Too_Many_Lambda_Args()
   {
     var script = """
       inc = x => x + 1
       inc(1, 2)
       """;
 
-    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
+    var ex = await Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("expected 1 arguments but got 2"));
-    return Task.CompletedTask;
   }
 
   [Test]
-  public Task Validator_Rejects_Too_Many_Extension_Args()
+  public async Task Validator_Rejects_Too_Many_Extension_Args()
   {
     var script = """
       items = []
       items.append(1, 2)
       """;
 
-    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
+    var ex = await Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("expected at most 1 arguments"));
-    return Task.CompletedTask;
   }
 
   [Test]
@@ -1678,18 +1653,17 @@ public class InterpreterTests
   }
 
   [Test]
-  public Task Validator_Rejects_Quantity_As_With_Incompatible_Unit()
+  public async Task Validator_Rejects_Quantity_As_With_Incompatible_Unit()
   {
     var script = """duration.as("cm")""";
 
-    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(
+    var ex = await Assert.ThrowsAsync<AresInterpreterException>(() => ValidateScriptAsync(
       script,
       env => env.AssignVariable(
         "duration",
         AresValueHelper.CreateQuantity(UnitsNet.Duration.FromSeconds(1).ToQuantityValue()),
         AresSchemaBuilder.Entry(AresDataType.Quantity).WithQuantity(QuantityType.Duration).Build())));
     Assert.That(ex?.Message, Does.Contain("Unit 'cm' is not valid for quantity type 'Duration'."));
-    return Task.CompletedTask;
   }
 
   [Test]
@@ -1715,15 +1689,14 @@ public class InterpreterTests
   }
 
   [Test]
-  public Task Empty_Array_Index_Access_Throws()
+  public async Task Empty_Array_Index_Access_Throws()
   {
     var script = """
                  empty_arr = []
                  test = empty_arr[1]
                  """;
-    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
+    var ex = await Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("Index was out of range."));
-    return Task.CompletedTask;
   }
 
   [Test]
@@ -1837,25 +1810,22 @@ public class InterpreterTests
   }
 
   [Test]
-  public void Sleep_Rejects_Non_Duration_Quantity()
+  public async Task Sleep_Rejects_Non_Duration_Quantity()
   {
     var sleepFn = StandardLibrary.Functions.First(function => function.Id == "sleep");
     var length = AresValueHelper.CreateQuantity(UnitsNet.Length.FromCentimeters(1).ToQuantityValue());
 
-    var ex = Assert.ThrowsAsync<InvalidOperationException>(async () =>
-      await sleepFn.Body([length], new ScriptExecutionControlToken(CancellationToken.None)));
+    var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await sleepFn.Body([length], new ScriptExecutionControlToken(CancellationToken.None)));
     Assert.That(ex?.Message, Does.Contain("Duration quantity expected"));
   }
 
   [Test]
-  public void Validation_Rejects_Sleep_With_NonDuration_Quantity()
+  public async Task Validation_Rejects_Sleep_With_NonDuration_Quantity()
   {
     var script = "sleep(length)";
     var length = AresValueHelper.CreateQuantity(UnitsNet.Length.FromCentimeters(1).ToQuantityValue());
 
-    var ex = Assert.ThrowsAsync<AresInterpreterException>(async () => await ValidateScriptAsync(
-      script,
-      env => env.AssignVariable("length", length)));
+    var ex = await Assert.ThrowsAsync<AresInterpreterException>(async () => await ValidateScriptAsync(script, env => env.AssignVariable("length", length)));
 
     Assert.That(ex?.Message, Does.Contain("Sleep expects a Duration quantity or a plain number."));
   }
@@ -1923,7 +1893,7 @@ public class InterpreterTests
     var executionTask = RunScriptAsync(script, cts.Token);
     await Task.Delay(TimeSpan.FromMilliseconds(500), testToken);
     await cts.CancelAsync();
-    Assert.ThrowsAsync<TaskCanceledException>(() => executionTask);
+    await Assert.ThrowsAsync<TaskCanceledException>(() => executionTask);
   }
 
   [Test]
@@ -1942,7 +1912,7 @@ public class InterpreterTests
   }
 
   [Test]
-  public Task Too_Much_Recursion()
+  public async Task Too_Much_Recursion()
   {
     var script = """
                  def recurse(num):
@@ -1955,9 +1925,8 @@ public class InterpreterTests
                  recurse(101)
                  """;
 
-    var ex = Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
+    var ex = await Assert.ThrowsAsync<AresInterpreterException>(() => RunScriptAsync(script));
     Assert.That(ex?.Message, Does.Contain("Maximum function call depth reached."));
-    return Task.CompletedTask;
   }
 
   [Test]

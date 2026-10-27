@@ -1,9 +1,10 @@
 @using Ares.Datamodel.Extensions
 @using Ares.Datamodel.Templates
-@using UI.Application.Notifications
+@using Ares.Services
 @using CommandDesignerViewModel=UI.Features.CampaignEdit.ViewModels.CommandDesignerViewModel
+@using UI.Application.Notifications
 
-@inject IUiNotificationService notificationService;
+@inject IAresUINotificationService notificationService;
 
 @if (CommandDesignerViewModel is not null)
 {
@@ -86,7 +87,12 @@
 
   public void NotifyOfParameterError(string message)
   {
-    notificationService.Error(message, "Experiment Parameter Assignment Error");
+    notificationService.PushNotification(new AresNotification()
+    {
+      Title = "Experiment Parameter Assignment Error",
+      Message = message,
+      NotificationSeverity = Severity.Error
+    });
   }
 
   public object ConvertToDisplayData(Parameter argument)

@@ -11,11 +11,11 @@ namespace UI.Features.Visualizing.Settings;
 public partial class VisualizerSettingsListViewModel : ReactiveObject
 {
   private readonly VisualizerService _visualizerService;
-  private readonly IUiNotificationService _notificationService;
+  private readonly IAresUINotificationService _notificationService;
 
   public VisualizerSettingsListViewModel(
     VisualizerService visualizerService,
-    IUiNotificationService notificationService)
+    IAresUINotificationService notificationService)
   {
     _visualizerService = visualizerService;
     _notificationService = notificationService;
@@ -37,11 +37,11 @@ public partial class VisualizerSettingsListViewModel : ReactiveObject
     }
     catch(Exception ex)
     {
-      PushNotification(new UiNotificationMessage
+      PushNotification(new AresNotification
       {
-        Summary = "Error fetching visualizers",
-        Detail = ex.Message,
-        Severity = UiNotificationSeverity.Error
+        Title = "Error fetching visualizers",
+        Message = ex.Message,
+        NotificationSeverity = Severity.Error
       });
     }
     finally
@@ -60,21 +60,21 @@ public partial class VisualizerSettingsListViewModel : ReactiveObject
 
     if(response.Success)
     {
-      PushNotification(new UiNotificationMessage
+      PushNotification(new AresNotification
       {
-        Summary = "Successfully Added Remote Visualizer",
-        Detail = $"Added new visualizer {config.Name}",
-        Severity = UiNotificationSeverity.Success
+        Title = "Successfully Added Remote Visualizer",
+        Message = $"Added new visualizer {config.Name}",
+        NotificationSeverity = Severity.Success
       });
       await UpdateAvailableVisualizers();
     }
     else
     {
-      PushNotification(new UiNotificationMessage
+      PushNotification(new AresNotification
       {
-        Summary = $"Failed to Add Visualizer {config.Name}",
-        Detail = response.ErrorMessage,
-        Severity = UiNotificationSeverity.Error
+        Title = $"Failed to Add Visualizer {config.Name}",
+        Message = response.ErrorMessage,
+        NotificationSeverity = Severity.Error
       });
     }
   }
@@ -85,8 +85,8 @@ public partial class VisualizerSettingsListViewModel : ReactiveObject
     await UpdateAvailableVisualizers();
   }
 
-  public void PushNotification(UiNotificationMessage notification)
-    => _notificationService.Notify(notification);
+  public void PushNotification(AresNotification notification)
+    => _notificationService.PushNotification(notification);
 
   [Reactive]
   public partial IEnumerable<VisualizerSettingsViewModel>? SettingsViewModels { get; private set; }
