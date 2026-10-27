@@ -10,34 +10,33 @@ namespace Ares.Core.DataManagement.DataMappers;
 
 public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _dbContextFactory)
 {
-  private const string ExperimentNumberColumnName = "Experiment Number";
-  private const string ExperimentTemplateColumnName = "Experiment Template";
-  private const string StepNumberColumnName = "Step Number";
-  private const string CommandNumberColumnName = "Command Number";
-  private const string CommandNameColumnName = "Command Name";
-  private const string CommandDescriptionColumnName = "Command Description";
-  private const string OutputVariableNameColumnName = "Output Variable Name";
-  private const string TimeStartedColumnName = "Time Started";
-  private const string TimeFinishedColumnName = "Time Finished";
-  private const string DurationSecondsColumnName = "Duration Seconds";
-  private const string StatusColumnName = "Status";
-  private const string SuccessColumnName = "Success";
-  private const string ErrorColumnName = "Error";
-  private const string PlanNumberColumnName = "Plan Number";
-  private const string PlannerNameColumnName = "Planner Name";
-  private const string PlannerTypeColumnName = "Planner Type";
-  private const string PlannerVersionColumnName = "Planner Version";
-  private const string AnalyzerNameColumnName = "Analyzer Name";
-  private const string AnalyzerTypeColumnName = "Analyzer Type";
-  private const string AnalyzerVersionColumnName = "Analyzer Version";
-  private const string TimeRequestSentColumnName = "Time Request Sent";
-  private const string TimeResponseReceivedColumnName = "Time Response Received";
-  private const string OutcomeColumnName = "Outcome";
-  private const string ObjectiveStatusColumnName = "Objective Status";
-  private const string ResultColumnName = "Objective.Result";
-  private const string InputColumnPrefix = "Input.";
-  private const string OutputColumnPrefix = "Output.";
-  private const string OutputColumnName = "Output";
+  private const string _experimentNumberColumnName = "Experiment Number";
+  private const string _experimentTemplateColumnName = "Experiment Template";
+  private const string _stepNumberColumnName = "Step Number";
+  private const string _commandNumberColumnName = "Command Number";
+  private const string _commandNameColumnName = "Command Name";
+  private const string _commandDescriptionColumnName = "Command Description";
+  private const string _outputVariableNameColumnName = "Output Variable Name";
+  private const string _timeStartedColumnName = "Time Started";
+  private const string _timeFinishedColumnName = "Time Finished";
+  private const string _durationSecondsColumnName = "Duration Seconds";
+  private const string _statusColumnName = "Status";
+  private const string _successColumnName = "Success";
+  private const string _errorColumnName = "Error";
+  private const string _planNumberColumnName = "Plan Number";
+  private const string _plannerNameColumnName = "Planner Name";
+  private const string _plannerTypeColumnName = "Planner Type";
+  private const string _plannerVersionColumnName = "Planner Version";
+  private const string _analyzerNameColumnName = "Analyzer Name";
+  private const string _analyzerTypeColumnName = "Analyzer Type";
+  private const string _analyzerVersionColumnName = "Analyzer Version";
+  private const string _timeRequestSentColumnName = "Time Request Sent";
+  private const string _timeResponseReceivedColumnName = "Time Response Received";
+  private const string _outcomeColumnName = "Outcome";
+  private const string _objectiveStatusColumnName = "Objective Status";
+  private const string _inputColumnPrefix = "Input.";
+  private const string _outputColumnPrefix = "Output.";
+  private const string _outputColumnName = "Output";
 
   public async ValueTask<AresDataset[]> GenerateAsync(string summaryId, CancellationToken cancellationToken = default)
   {
@@ -110,9 +109,9 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
             plannerRecords.Add(record);
         }
       }
-      catch(Exception e)
+      catch(Exception)
       {
-        throw e;
+        throw;
       }
 
 
@@ -187,15 +186,15 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     return dataset;
   }
 
-  private static IEnumerable<AresDataColumn> CreateExperimentColumns(IEnumerable<ExperimentExecutionSummary> experiments, CancellationToken cancellationToken)
+  private static List<AresDataColumn> CreateExperimentColumns(IEnumerable<ExperimentExecutionSummary> experiments, CancellationToken cancellationToken)
   {
     var columns = new List<AresDataColumn>
     {
-      CreateColumn(ExperimentNumberColumnName, AresDataType.Int),
-      CreateColumn(ExperimentTemplateColumnName, AresDataType.String, optional: true),
-      CreateColumn(TimeStartedColumnName, AresDataType.Timestamp, optional: true),
-      CreateColumn(TimeFinishedColumnName, AresDataType.Timestamp, optional: true),
-      CreateColumn(DurationSecondsColumnName, AresDataType.Number, optional: true)
+      CreateColumn(_experimentNumberColumnName, AresDataType.Int),
+      CreateColumn(_experimentTemplateColumnName, AresDataType.String, optional: true),
+      CreateColumn(_timeStartedColumnName, AresDataType.Timestamp, optional: true),
+      CreateColumn(_timeFinishedColumnName, AresDataType.Timestamp, optional: true),
+      CreateColumn(_durationSecondsColumnName, AresDataType.Number, optional: true)
     };
 
     var dynamicColumns = CreateExperimentDynamicColumns(experiments, cancellationToken);
@@ -207,18 +206,18 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
   {
     return
     [
-      CreateColumn(ExperimentNumberColumnName, AresDataType.Int),
-      CreateColumn(StepNumberColumnName, AresDataType.Int),
-      CreateColumn(CommandNumberColumnName, AresDataType.Int),
-      CreateColumn(CommandNameColumnName, AresDataType.String, optional: true),
-      CreateColumn(CommandDescriptionColumnName, AresDataType.String, optional: true),
-      CreateColumn(OutputVariableNameColumnName, AresDataType.String, optional: true),
-      CreateColumn(TimeStartedColumnName, AresDataType.Timestamp, optional: true),
-      CreateColumn(TimeFinishedColumnName, AresDataType.Timestamp, optional: true),
-      CreateColumn(DurationSecondsColumnName, AresDataType.Number, optional: true),
-      CreateColumn(StatusColumnName, AresDataType.String, optional: true),
-      CreateColumn(SuccessColumnName, AresDataType.Boolean, optional: true),
-      CreateColumn(ErrorColumnName, AresDataType.String, optional: true),
+      CreateColumn(_experimentNumberColumnName, AresDataType.Int),
+      CreateColumn(_stepNumberColumnName, AresDataType.Int),
+      CreateColumn(_commandNumberColumnName, AresDataType.Int),
+      CreateColumn(_commandNameColumnName, AresDataType.String, optional: true),
+      CreateColumn(_commandDescriptionColumnName, AresDataType.String, optional: true),
+      CreateColumn(_outputVariableNameColumnName, AresDataType.String, optional: true),
+      CreateColumn(_timeStartedColumnName, AresDataType.Timestamp, optional: true),
+      CreateColumn(_timeFinishedColumnName, AresDataType.Timestamp, optional: true),
+      CreateColumn(_durationSecondsColumnName, AresDataType.Number, optional: true),
+      CreateColumn(_statusColumnName, AresDataType.String, optional: true),
+      CreateColumn(_successColumnName, AresDataType.Boolean, optional: true),
+      CreateColumn(_errorColumnName, AresDataType.String, optional: true),
       .. CreateCommandInputColumns(commandRecords, cancellationToken),
       .. CreateCommandOutputColumns(commandRecords, cancellationToken)
     ];
@@ -228,14 +227,14 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
   {
     return
     [
-      CreateColumn(ExperimentNumberColumnName, AresDataType.Int),
-      CreateColumn(PlanNumberColumnName, AresDataType.Int, optional: true),
-      CreateColumn(PlannerNameColumnName, AresDataType.String, optional: true),
-      CreateColumn(PlannerTypeColumnName, AresDataType.String, optional: true),
-      CreateColumn(PlannerVersionColumnName, AresDataType.String, optional: true),
+      CreateColumn(_experimentNumberColumnName, AresDataType.Int),
+      CreateColumn(_planNumberColumnName, AresDataType.Int, optional: true),
+      CreateColumn(_plannerNameColumnName, AresDataType.String, optional: true),
+      CreateColumn(_plannerTypeColumnName, AresDataType.String, optional: true),
+      CreateColumn(_plannerVersionColumnName, AresDataType.String, optional: true),
       .. CreateTransactionTimingColumns(),
-      CreateColumn(OutcomeColumnName, AresDataType.String, optional: true),
-      CreateColumn(ErrorColumnName, AresDataType.String, optional: true),
+      CreateColumn(_outcomeColumnName, AresDataType.String, optional: true),
+      CreateColumn(_errorColumnName, AresDataType.String, optional: true),
       .. CreatePlannerDynamicColumns(records, cancellationToken)
     ];
   }
@@ -244,19 +243,19 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
   {
     return
     [
-      CreateColumn(ExperimentNumberColumnName, AresDataType.Int),
-      CreateColumn(AnalyzerNameColumnName, AresDataType.String, optional: true),
-      CreateColumn(AnalyzerTypeColumnName, AresDataType.String, optional: true),
-      CreateColumn(AnalyzerVersionColumnName, AresDataType.String, optional: true),
+      CreateColumn(_experimentNumberColumnName, AresDataType.Int),
+      CreateColumn(_analyzerNameColumnName, AresDataType.String, optional: true),
+      CreateColumn(_analyzerTypeColumnName, AresDataType.String, optional: true),
+      CreateColumn(_analyzerVersionColumnName, AresDataType.String, optional: true),
       .. CreateTransactionTimingColumns(),
       .. CreateObjectiveColumns(records),
-      CreateColumn(OutcomeColumnName, AresDataType.String, optional: true),
-      CreateColumn(ErrorColumnName, AresDataType.String, optional: true),
+      CreateColumn(_outcomeColumnName, AresDataType.String, optional: true),
+      CreateColumn(_errorColumnName, AresDataType.String, optional: true),
       .. CreateAnalyzerDynamicColumns(records, cancellationToken)
     ];
   }
 
-  private static IEnumerable<AresDataColumn> CreateObjectiveColumns(IEnumerable<AnalyzerRecord> analyzerRecords)
+  private static List<AresDataColumn> CreateObjectiveColumns(IEnumerable<AnalyzerRecord> analyzerRecords)
   {
     var objectiveColumns = new List<AresDataColumn>();
     var analyzerRecord = analyzerRecords.FirstOrDefault();
@@ -276,9 +275,9 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
   {
     return
     [
-      CreateColumn(TimeRequestSentColumnName, AresDataType.Timestamp, optional: true),
-      CreateColumn(TimeResponseReceivedColumnName, AresDataType.Timestamp, optional: true),
-      CreateColumn(DurationSecondsColumnName, AresDataType.Number, optional: true)
+      CreateColumn(_timeRequestSentColumnName, AresDataType.Timestamp, optional: true),
+      CreateColumn(_timeResponseReceivedColumnName, AresDataType.Timestamp, optional: true),
+      CreateColumn(_durationSecondsColumnName, AresDataType.Number, optional: true)
     ];
   }
 
@@ -304,7 +303,9 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
         // Handle the presence of deprecated result values gracefully
         else if(experiment.ExperimentOverview.AnalysisOverview.AnalyzerInfo.Name != "NONE")
         {
+#pragma warning disable CS0612 // Type or member is obsolete
           var aresValueResult = AresValueHelper.CreateNumber(experiment.ExperimentOverview.AnalysisOverview.Result);
+#pragma warning restore CS0612 // Type or member is obsolete
           TryAddDynamicColumn(columns, $"Objective.Result", aresValueResult);
         }
 
@@ -315,7 +316,7 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
       foreach(var field in resultFields)
       {
         cancellationToken.ThrowIfCancellationRequested();
-        foreach(var flattenedField in AresValueFlattener.Flatten($"{OutputColumnPrefix}{field.Key}", field.Value))
+        foreach(var flattenedField in AresValueFlattener.Flatten($"{_outputColumnPrefix}{field.Key}", field.Value))
         {
           TryAddDynamicColumn(columns, flattenedField.Key, flattenedField.Value);
         }
@@ -373,7 +374,7 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
       if(output is null || output.KindCase == AresValue.KindOneofCase.None)
         continue;
 
-      foreach(var flattenedField in AresValueFlattener.Flatten(OutputColumnName, output))
+      foreach(var flattenedField in AresValueFlattener.Flatten(_outputColumnName, output))
       {
         cancellationToken.ThrowIfCancellationRequested();
         TryAddDynamicColumn(columns, flattenedField.Key, flattenedField.Value);
@@ -400,7 +401,7 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
         {
           cancellationToken.ThrowIfCancellationRequested();
           if(parameter.ParameterValue is not null)
-            AddDynamicColumns(columns, $"{OutputColumnPrefix}{parameter.ParameterName}", parameter.ParameterValue);
+            AddDynamicColumns(columns, $"{_outputColumnPrefix}{parameter.ParameterName}", parameter.ParameterValue);
         }
       }
     }
@@ -418,7 +419,7 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
       {
         cancellationToken.ThrowIfCancellationRequested();
         if(input.Value is not null)
-          AddDynamicColumns(columns, $"{InputColumnPrefix}{input.Key}", input.Value);
+          AddDynamicColumns(columns, $"{_inputColumnPrefix}{input.Key}", input.Value);
       }
     }
 
@@ -478,7 +479,7 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     }
   }
 
-  private static IReadOnlyDictionary<string, CommandTemplate> CreateUniqueCommandTemplateMap(ExperimentExecutionSummary experiment)
+  private static Dictionary<string, CommandTemplate> CreateUniqueCommandTemplateMap(ExperimentExecutionSummary experiment)
   {
     return (experiment.ExperimentOverview?.Template?.StepTemplates ?? [])
       .SelectMany(step => step.CommandTemplates)
@@ -510,8 +511,8 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     cancellationToken.ThrowIfCancellationRequested();
 
     var data = new AresStruct();
-    AddExperimentFields(data, experiment, experimentNumber);
-    AddString(data, ExperimentTemplateColumnName, experiment.ExperimentOverview?.Template?.Name);
+    AddExperimentFields(data, experimentNumber);
+    AddString(data, _experimentTemplateColumnName, experiment.ExperimentOverview?.Template?.Name);
     AddExecutionFields(data, experiment.ExecutionInfo);
 
     if(experiment.ExperimentOverview?.AnalysisOverview is not null)
@@ -525,7 +526,9 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
       //If we have no listed objectives AND there is an Analyzer assigned, assume it's using the legacy standard
       else if(experiment.ExperimentOverview.AnalysisOverview.AnalyzerInfo.Name != "NONE")
       {
+#pragma warning disable CS0612 // Type or member is obsolete
         var aresValueResult = AresValueHelper.CreateNumber(experiment.ExperimentOverview.AnalysisOverview.Result);
+#pragma warning restore CS0612 // Type or member is obsolete
         AddFlattenedValue(data, $"Objective.Result", aresValueResult, cancellationToken);
       }
 
@@ -534,7 +537,7 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     foreach(var field in experiment.ExperimentOverview?.Result?.Fields ?? [])
     {
       cancellationToken.ThrowIfCancellationRequested();
-      AddFlattenedValue(data, $"{OutputColumnPrefix}{field.Key}", field.Value, cancellationToken);
+      AddFlattenedValue(data, $"{_outputColumnPrefix}{field.Key}", field.Value, cancellationToken);
     }
 
     var cleanedParameters = CleanParametersOfDuplicateNames(experiment, cancellationToken);
@@ -562,14 +565,14 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     cancellationToken.ThrowIfCancellationRequested();
 
     var data = new AresStruct();
-    AddExperimentFields(data, record.Experiment, record.ExperimentNumber);
-    data.Fields[StepNumberColumnName] = AresValueHelper.CreateInt(record.StepNumber);
-    data.Fields[CommandNumberColumnName] = AresValueHelper.CreateInt(record.CommandNumber);
-    AddString(data, CommandNameColumnName, record.Command.CommandName);
-    AddString(data, CommandDescriptionColumnName, record.Command.CommandDescription);
-    AddString(data, OutputVariableNameColumnName, record.Command.VarName);
+    AddExperimentFields(data, record.ExperimentNumber);
+    data.Fields[_stepNumberColumnName] = AresValueHelper.CreateInt(record.StepNumber);
+    data.Fields[_commandNumberColumnName] = AresValueHelper.CreateInt(record.CommandNumber);
+    AddString(data, _commandNameColumnName, record.Command.CommandName);
+    AddString(data, _commandDescriptionColumnName, record.Command.CommandDescription);
+    AddString(data, _outputVariableNameColumnName, record.Command.VarName);
     AddExecutionFields(data, record.Command.ExecutionInfo);
-    AddString(data, StatusColumnName, record.Command.StatusCode.ToString());
+    AddString(data, _statusColumnName, record.Command.StatusCode.ToString());
 
     foreach(var parameter in record.Template?.ArgumentBindings ?? [])
     {
@@ -581,11 +584,11 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
 
     if(record.Command.Result is not null)
     {
-      data.Fields[SuccessColumnName] = AresValueHelper.CreateBool(record.Command.Result.Success);
-      AddString(data, ErrorColumnName, record.Command.Result.Error);
+      data.Fields[_successColumnName] = AresValueHelper.CreateBool(record.Command.Result.Success);
+      AddString(data, _errorColumnName, record.Command.Result.Error);
 
       if(record.Command.Result.Result is not null && record.Command.Result.Result.KindCase != AresValue.KindOneofCase.None)
-        AddFlattenedValue(data, OutputColumnName, record.Command.Result.Result, cancellationToken);
+        AddFlattenedValue(data, _outputColumnName, record.Command.Result.Result, cancellationToken);
     }
 
     return new AresDataRow
@@ -621,23 +624,23 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     var transaction = record.Transaction;
     var data = new AresStruct();
 
-    data.Fields[ExperimentNumberColumnName] = AresValueHelper.CreateInt(record.ExperimentNumber);
-    AddString(data, PlannerNameColumnName, transaction.PlannerName);
-    AddString(data, PlannerTypeColumnName, transaction.PlannerType);
-    AddString(data, PlannerVersionColumnName, transaction.PlannerVersion);
+    data.Fields[_experimentNumberColumnName] = AresValueHelper.CreateInt(record.ExperimentNumber);
+    AddString(data, _plannerNameColumnName, transaction.PlannerName);
+    AddString(data, _plannerTypeColumnName, transaction.PlannerType);
+    AddString(data, _plannerVersionColumnName, transaction.PlannerVersion);
     
 
     AddTransactionTimingFields(data, transaction.TimeRequestSent, transaction.TimeResponseReceived);
 
     if(plan is not null)
     {
-      AddString(data, OutcomeColumnName, plan.PlanningOutcome.ToString());
-      AddString(data, ErrorColumnName, plan.ErrorString);
+      AddString(data, _outcomeColumnName, plan.PlanningOutcome.ToString());
+      AddString(data, _errorColumnName, plan.ErrorString);
     }
 
     if(transaction.PlanningResponse is not null)
     {
-      AddString(data, ObjectiveStatusColumnName, transaction.PlanningResponse.ObjectiveStatus.ToString());
+      AddString(data, _objectiveStatusColumnName, transaction.PlanningResponse.ObjectiveStatus.ToString());
     }
 
     // Base AnalysisData
@@ -654,30 +657,31 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     if(plan is not null)
     {
       data.Fields["Plan Number"] = AresValueHelper.CreateInt(planIndex);
-      AddString(data, OutcomeColumnName, plan.PlanningOutcome.ToString());
-      AddString(data, ErrorColumnName, plan.ErrorString);
+      AddString(data, _outcomeColumnName, plan.PlanningOutcome.ToString());
+      AddString(data, _errorColumnName, plan.ErrorString);
 
       foreach(var parameter in plan.PlannedParameters)
       {
         cancellationToken.ThrowIfCancellationRequested();
         if(parameter.ParameterValue is not null)
-          AddFlattenedValue(data, $"{OutputColumnPrefix}{parameter.ParameterName}", parameter.ParameterValue, cancellationToken);
+          AddFlattenedValue(data, $"{_outputColumnPrefix}{parameter.ParameterName}", parameter.ParameterValue, cancellationToken);
       }
     }
 
     return new AresDataRow { Data = data };
   }
 
+#pragma warning disable CS0612 // Type or member is obsolete
   private static AresDataRow CreateAnalyzerTransactionRow(AnalyzerRecord record, CancellationToken cancellationToken)
   {
     cancellationToken.ThrowIfCancellationRequested();
 
     var transaction = record.Transaction;
     var data = new AresStruct();
-    data.Fields[ExperimentNumberColumnName] = AresValueHelper.CreateInt(record.ExperimentNumber);
-    AddString(data, AnalyzerNameColumnName, transaction.AnalyzerName);
-    AddString(data, AnalyzerTypeColumnName, transaction.AnalyzerType);
-    AddString(data, AnalyzerVersionColumnName, transaction.AnalyzerVersion);
+    data.Fields[_experimentNumberColumnName] = AresValueHelper.CreateInt(record.ExperimentNumber);
+    AddString(data, _analyzerNameColumnName, transaction.AnalyzerName);
+    AddString(data, _analyzerTypeColumnName, transaction.AnalyzerType);
+    AddString(data, _analyzerVersionColumnName, transaction.AnalyzerVersion);
     AddTransactionTimingFields(data, transaction.TimeRequestSent, transaction.TimeResponseReceived);
 
     if(transaction.AnalysisResponse is not null)
@@ -685,8 +689,8 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
       var aresValResult = AresValueHelper.CreateNumber(transaction.AnalysisResponse.Result);
       AddFlattenedValue(data, "Objective.Result", aresValResult, cancellationToken);
 
-      AddString(data, OutcomeColumnName, transaction.AnalysisResponse.AnalysisOutcome.ToString());
-      AddString(data, ErrorColumnName, transaction.AnalysisResponse.ErrorString);
+      AddString(data, _outcomeColumnName, transaction.AnalysisResponse.AnalysisOutcome.ToString());
+      AddString(data, _errorColumnName, transaction.AnalysisResponse.ErrorString);
     }
 
     else if(transaction.AnalyzerResponse.Objectives.Any())
@@ -694,19 +698,21 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
       foreach(var objective in transaction.AnalyzerResponse.Objectives)
         AddFlattenedValue(data, $"Objective.{objective.ObjectiveName}", objective.ObjectiveValue, cancellationToken);
 
-      AddString(data, OutcomeColumnName, transaction.AnalyzerResponse.AnalysisOutcome.ToString());
-      AddString(data, ErrorColumnName, transaction.AnalyzerResponse.ErrorString);
+      AddString(data, _outcomeColumnName, transaction.AnalyzerResponse.AnalysisOutcome.ToString());
+      AddString(data, _errorColumnName, transaction.AnalyzerResponse.ErrorString);
     }
 
     foreach(var input in transaction.AnalysisRequest?.Inputs?.Fields ?? [])
     {
       cancellationToken.ThrowIfCancellationRequested();
       if(input.Value is not null)
-        AddFlattenedValue(data, $"{InputColumnPrefix}{input.Key}", input.Value, cancellationToken);
+        AddFlattenedValue(data, $"{_inputColumnPrefix}{input.Key}", input.Value, cancellationToken);
     }
 
     return new AresDataRow { Data = data };
   }
+#pragma warning restore CS0612 // Type or member is obsolete
+
 
   private static AresDataColumn CreateColumn(string name, AresDataType type, bool optional = false)
   {
@@ -717,38 +723,38 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     };
   }
 
-  private static void AddExperimentFields(AresStruct data, ExperimentExecutionSummary experiment, int experimentNumber)
+  private static void AddExperimentFields(AresStruct data, int experimentNumber)
   {
-    data.Fields[ExperimentNumberColumnName] = AresValueHelper.CreateInt(experimentNumber);
+    data.Fields[_experimentNumberColumnName] = AresValueHelper.CreateInt(experimentNumber);
   }
 
   private static void AddExecutionFields(AresStruct data, ExecutionInfo? executionInfo)
   {
     if(executionInfo?.TimeStarted is not null)
-      data.Fields[TimeStartedColumnName] = AresValueHelper.CreateTimestamp(executionInfo.TimeStarted);
+      data.Fields[_timeStartedColumnName] = AresValueHelper.CreateTimestamp(executionInfo.TimeStarted);
 
     if(executionInfo?.TimeFinished is not null)
-      data.Fields[TimeFinishedColumnName] = AresValueHelper.CreateTimestamp(executionInfo.TimeFinished);
+      data.Fields[_timeFinishedColumnName] = AresValueHelper.CreateTimestamp(executionInfo.TimeFinished);
 
     if(executionInfo?.TimeStarted is not null && executionInfo.TimeFinished is not null)
     {
       var duration = executionInfo.TimeFinished.ToDateTime() - executionInfo.TimeStarted.ToDateTime();
-      data.Fields[DurationSecondsColumnName] = AresValueHelper.CreateNumber(duration.TotalSeconds);
+      data.Fields[_durationSecondsColumnName] = AresValueHelper.CreateNumber(duration.TotalSeconds);
     }
   }
 
   private static void AddTransactionTimingFields(AresStruct data, Timestamp? requestSent, Timestamp? responseReceived)
   {
     if(requestSent is not null)
-      data.Fields[TimeRequestSentColumnName] = AresValueHelper.CreateTimestamp(requestSent);
+      data.Fields[_timeRequestSentColumnName] = AresValueHelper.CreateTimestamp(requestSent);
 
     if(responseReceived is not null)
-      data.Fields[TimeResponseReceivedColumnName] = AresValueHelper.CreateTimestamp(responseReceived);
+      data.Fields[_timeResponseReceivedColumnName] = AresValueHelper.CreateTimestamp(responseReceived);
 
     if(requestSent is not null && responseReceived is not null)
     {
       var duration = responseReceived.ToDateTime() - requestSent.ToDateTime();
-      data.Fields[DurationSecondsColumnName] = AresValueHelper.CreateNumber(duration.TotalSeconds);
+      data.Fields[_durationSecondsColumnName] = AresValueHelper.CreateNumber(duration.TotalSeconds);
     }
   }
 
@@ -767,7 +773,7 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
     }
   }
 
-  private static IEnumerable<(Parameter, string)> CleanParametersOfDuplicateNames(ExperimentExecutionSummary experiment, CancellationToken cancellationToken)
+  private static List<(Parameter, string)> CleanParametersOfDuplicateNames(ExperimentExecutionSummary experiment, CancellationToken cancellationToken)
   {
     var stepTemplates = experiment.ExperimentOverview?.Template?.StepTemplates ?? Enumerable.Empty<StepTemplate>();
     var globalParameters = experiment.ExperimentOverview?.Parameters ?? Enumerable.Empty<Parameter>();
@@ -835,12 +841,12 @@ public class CampaignDatasetGenerator(IDbContextFactory<CoreDatabaseContext> _db
       return parameter.PlannedSource.PlanningMetadata.Name;
 
     if(!string.IsNullOrWhiteSpace(parameter.Metadata?.Name))
-      return $"{InputColumnPrefix}{parameter.Metadata.Name}";
+      return $"{_inputColumnPrefix}{parameter.Metadata.Name}";
 
     if(!string.IsNullOrWhiteSpace(parameter.UniqueId))
-      return $"{InputColumnPrefix}{parameter.UniqueId}";
+      return $"{_inputColumnPrefix}{parameter.UniqueId}";
 
-    return $"{InputColumnPrefix}{parameter.Index}";
+    return $"{_inputColumnPrefix}{parameter.Index}";
   }
 
   private static bool TryCreatePlannerRecord(

@@ -10,7 +10,9 @@ internal class AnalyzerTransactionEntityConfiguration : AresEntityTypeBaseConfig
   {
     base.Configure(builder);
     builder.Property(transaction => transaction.AnalysisRequest).HasAnalysisRequest();
+#pragma warning disable CS0612 // Type or member is obsolete
     builder.Property(transaction => transaction.AnalysisResponse).HasAnalysis(); //Known depricated field, kept for backwards compatability
+#pragma warning restore CS0612 // Type or member is obsolete
     builder.Property(transaction => transaction.AnalyzerResponse).HasAnalyzerResponse();
   }
 }

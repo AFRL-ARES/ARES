@@ -157,7 +157,7 @@ public class PlanningHelper : IPlanningHelper
   /// <param name="statusCode">The previous plans status code</param>
   /// <param name="metadata">Request metadata</param>
   /// <returns>An ARES <cref><see cref="PlanningRequest"/></cref></returns>
-  private PlanningRequest CreatePlanningRequest(ParameterMetadata[] plannableParameters,
+  private static PlanningRequest CreatePlanningRequest(ParameterMetadata[] plannableParameters,
     IEnumerable<ExperimentOverview> seedExperiments,
     AnalysisResponse[] seedAnalysesArr,
     List<PlanStatusCode> statusCodes,
@@ -183,7 +183,9 @@ public class PlanningHelper : IPlanningHelper
 
       //If the objective doesn't have a number value, then the analyzer was built for running the newest system
       if(defaultObjective is not null && defaultObjective.HasNumberValue)
+#pragma warning disable CS0612 // Type or member is obsolete
         planRequest.AnalysisResults.Add(defaultObjective.NumberValue);
+#pragma warning restore CS0612 // Type or member is obsolete
 
       var analysisData = CreateAnalysisData(currentAnalysis, currentExp);
       planRequest.AnalysisData.Add(analysisData);
@@ -222,7 +224,7 @@ public class PlanningHelper : IPlanningHelper
   /// </summary>
   /// <param name="plan">The plan containing the planned parameters</param>
   /// <param name="parameterArray">The array of parameters to be resolved</param>
-  private void ResolveParametersFromPlan(Plan plan, Parameter[] parameterArray)
+  private static void ResolveParametersFromPlan(Plan plan, Parameter[] parameterArray)
   {
     foreach(var result in plan.PlannedParameters)
     {
@@ -282,7 +284,7 @@ public class PlanningHelper : IPlanningHelper
     return parameter;
   }
 
-  private AnalysisData CreateAnalysisData(AnalysisResponse analysis, ExperimentOverview experiment)
+  private static AnalysisData CreateAnalysisData(AnalysisResponse analysis, ExperimentOverview experiment)
   {
     var newData = new AnalysisData();
 

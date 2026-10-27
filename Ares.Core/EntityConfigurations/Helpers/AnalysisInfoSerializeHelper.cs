@@ -34,6 +34,7 @@ public static class AnalysisInfoSerializeHelper
   /// </summary>
   /// <param name="value"></param>
   /// <returns></returns>
+#pragma warning disable CS0612 // Type or member is obsolete
   public static PropertyBuilder<Analysis> HasAnalysis(this PropertyBuilder<Analysis> value)
   {
     var settings = SerializerSettingsHelper.CreateCustomSerializationSettings();
@@ -43,6 +44,7 @@ public static class AnalysisInfoSerializeHelper
       v => JsonSerializer.Deserialize<Analysis>(v, settings) ?? new Analysis())
       .HasColumnType(SerializerSettingsHelper.DetermineColumnType());
   }
+#pragma warning restore CS0612 // Type or member is obsolete
 
   public static PropertyBuilder<AnalysisResponse> HasAnalyzerResponse(this PropertyBuilder<AnalysisResponse> value)
   {

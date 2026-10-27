@@ -43,9 +43,7 @@ public static class EfCoreValueConverters
     try
     {
       if(string.IsNullOrWhiteSpace(json))
-      {
-        return new MapField<TKey, TValue>();
-      }
+        return [];
 
       var dict = JsonSerializer.Deserialize<Dictionary<TKey, TValue>>(json, JsonSerializerOptions.Default);
       var map = new MapField<TKey, TValue>();
@@ -61,7 +59,7 @@ public static class EfCoreValueConverters
     catch(Exception ex)
     {
       Console.WriteLine(ex.Message);
-      return new MapField<TKey, TValue>();
+      return [];
     }
   }
 
@@ -74,18 +72,26 @@ public static class EfCoreValueConverters
     );
   }
 
-  private static bool MapFieldEquals<TKey, TValue>(MapField<TKey, TValue> d1, MapField<TKey, TValue> d2)
+  private static bool MapFieldEquals<TKey, TValue>(MapField<TKey, TValue>? d1, MapField<TKey, TValue>? d2)
     where TKey : notnull
   {
-    if (ReferenceEquals(d1, d2)) return true;
-    if (d1 is null || d2 is null) return false;
-    if (d1.Count != d2.Count) return false;
+    if(ReferenceEquals(d1, d2)) 
+      return true;
+
+    if(d1 is null || d2 is null)
+      return false;
+
+    if(d1.Count != d2.Count) 
+      return false;
 
     // Compare by key lookup to avoid sorting and multiple enumeration
     foreach (var kv in d1)
     {
-      if (!d2.TryGetValue(kv.Key, out var v2)) return false;
-      if (!EqualityComparer<TValue>.Default.Equals(kv.Value, v2)) return false;
+      if(!d2.TryGetValue(kv.Key, out var v2)) 
+        return false;
+      
+      if(!EqualityComparer<TValue>.Default.Equals(kv.Value, v2)) 
+        return false;
     }
     return true;
   }
@@ -122,17 +128,13 @@ public static class EfCoreValueConverters
   private static RepeatedField<T> DeserializeRepeatedFieldFromJson<T>(string json)
   {
     if(string.IsNullOrWhiteSpace(json))
-    {
-      return new RepeatedField<T>();
-    }
+      return [];
 
     var arr = JsonSerializer.Deserialize<T[]>(json, JsonSerializerOptions.Default);
     var rf = new RepeatedField<T>();
 
     if(arr is not null)
-    {
       rf.Add(arr);
-    }
 
     return rf;
   }

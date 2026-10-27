@@ -99,15 +99,17 @@ public class DemoPlannerService : AresRemotePlannerService.AresRemotePlannerServ
   public Task<PlannedParameter> RandomPlanner(PlanningParameter aresParameter)
   {
     var randomDouble = _random.NextDouble();
-    var plannedParam = new PlannedParameter();
-    plannedParam.ParameterName = aresParameter.ParameterName;
+    var plannedParam = new PlannedParameter
+    {
+      ParameterName = aresParameter.ParameterName
+    };
     var randomizedValue = (float)(aresParameter.MinimumValue + (randomDouble * (aresParameter.MaximumValue - aresParameter.MinimumValue)));
     var roundedValue = Math.Round(randomizedValue, 2);
     plannedParam.ParameterValue = AresValueHelper.CreateFloat(roundedValue);
     return Task.FromResult(plannedParam);
   }
 
-  private async Task<List<PlannedParameter>> JointHillClimbingPlanner(IReadOnlyList<PlanningParameter> parameters, List<AnalysisData> analysisData)
+  private async Task<List<PlannedParameter>> JointHillClimbingPlanner(List<PlanningParameter> parameters, List<AnalysisData> analysisData)
   {
     const double executionResolution = 1.0;
     const double objectiveTolerance = 1e-9;
@@ -143,12 +145,12 @@ public class DemoPlannerService : AresRemotePlannerService.AresRemotePlannerServ
     }
 
     if(HasEvaluatedJointPoint(proposedPoint, samples, executionResolution / 2.0))
-      proposedPoint = FindUnseenJointCandidate(parameters, best.Values, samples, executionResolution);
+      proposedPoint = FindUnseenJointCandidate(parameters, best?.Values ?? [], samples, executionResolution);
 
     return CreatePlannedParameters(parameters, proposedPoint);
   }
 
-  private List<JointSample> ExtractJointSamples(IReadOnlyList<PlanningParameter> parameters, IReadOnlyList<AnalysisData> analysisData)
+  private static List<JointSample> ExtractJointSamples(IReadOnlyList<PlanningParameter> parameters, List<AnalysisData> analysisData)
   {
     var sampleCount = analysisData.Count;
 
@@ -224,8 +226,8 @@ public class DemoPlannerService : AresRemotePlannerService.AresRemotePlannerServ
   }
 
   private static Dictionary<string, double> CreateInitialStep(
-      IReadOnlyList<PlanningParameter> parameters,
-      IReadOnlyDictionary<string, double> latestPoint,
+      List<PlanningParameter> parameters,
+      Dictionary<string, double> latestPoint,
       double resolution)
   {
     var proposedPoint = new Dictionary<string, double>();
@@ -247,8 +249,8 @@ public class DemoPlannerService : AresRemotePlannerService.AresRemotePlannerServ
 
   private static Dictionary<string, double> CreateHillClimbStep(
       IReadOnlyList<PlanningParameter> parameters,
-      IReadOnlyDictionary<string, double> previousPoint,
-      IReadOnlyDictionary<string, double> latestPoint,
+      Dictionary<string, double> previousPoint,
+      Dictionary<string, double> latestPoint,
       bool objectiveImproved,
       double resolution)
   {
@@ -291,9 +293,9 @@ public class DemoPlannerService : AresRemotePlannerService.AresRemotePlannerServ
             sample.Values.TryGetValue(pair.Key, out var sampleValue) && Math.Abs(sampleValue - pair.Value) <= tolerance));
 
   private Dictionary<string, double> FindUnseenJointCandidate(
-      IReadOnlyList<PlanningParameter> parameters,
-      IReadOnlyDictionary<string, double> bestPoint,
-      IReadOnlyList<JointSample> samples,
+      List<PlanningParameter> parameters,
+      Dictionary<string, double> bestPoint,
+      List<JointSample> samples,
       double resolution)
   {
     for(var attempt = 0; attempt < 16; attempt++)
@@ -334,7 +336,7 @@ public class DemoPlannerService : AresRemotePlannerService.AresRemotePlannerServ
     return new Dictionary<string, double>(bestPoint);
   }
 
-  private static List<PlannedParameter> CreatePlannedParameters(IReadOnlyList<PlanningParameter> parameters, IReadOnlyDictionary<string, double> point)
+  private static List<PlannedParameter> CreatePlannedParameters(IReadOnlyList<PlanningParameter> parameters, Dictionary<string, double> point)
     => parameters.Select(parameter => new PlannedParameter
     {
       ParameterName = parameter.ParameterName,
@@ -354,8 +356,10 @@ public class DemoPlannerService : AresRemotePlannerService.AresRemotePlannerServ
 
   public Task<PlannedParameter> GradualPlanner(PlanningParameter aresParameter)
   {
-    var response = new PlannedParameter();
-    response.ParameterName = aresParameter.ParameterName;
+    var response = new PlannedParameter
+    {
+      ParameterName = aresParameter.ParameterName
+    };
 
     if(aresParameter.ParameterHistory.Count == 0)
       response.ParameterValue = AresValueHelper.CreateNumber((float)aresParameter.MinimumValue);
