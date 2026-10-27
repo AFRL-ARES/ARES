@@ -59,7 +59,6 @@
             </AresNavItem>
             <AresNavItem Icon="assessment" Text="Data Explorer" Path="data-explorer" />
             <AresNavItem Icon="bar_chart" Text="Visualization" Path="visualization"/>
-            <AresNavItem Icon="analytics" Text="Plotly Demo" Path="plotly-dashboard"/>
             <AresNavItem Icon="terminal" Text="Scripting" Path="scripting" />
             @* Coming Soon *@
             @* <AresNavItem Icon="detector" Text="Safety" Path="/safety"/> *@
@@ -67,7 +66,7 @@
 
           <FooterContent>
             <NavLink type="button" class="px-4 py-2 btn btn-outline-light" href="notifications">
-              <RadzenIcon Icon="@(HasUnreadNotifications ? "notifications_active" : "notifications")" class="@(HasUnreadNotifications ? "bell-unread" : "")" />
+              <RadzenIcon Icon="@(HasUnreadNotifications ? "notifications_active" : "notifications")" class="@(HasUnreadNotifications ? "bell-unread" : "")" @onclick="@(_ => NotificationsRead())" />
             </NavLink>
             <AresNavFooterItem Path="settings/device" Icon="settings" />
             <AresNavFooterItem Path="profile" Icon="person" />
@@ -178,6 +177,8 @@
     _ = CycleLoadingMessagesAsync(_cts.Token);
   }
 
+  private void NotificationsRead()
+    => HasUnreadNotifications = false;
 
   private Task NotificationsUpdated()
   {
