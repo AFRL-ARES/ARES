@@ -14,6 +14,10 @@
     <ProjectReference Include="..\AresService.Data\AresService.Data.csproj" />
   </ItemGroup>
 
+	<ItemGroup>
+		<PackageReference Include="System.Security.Cryptography.Pkcs" Version="9.0.21" />
+  </ItemGroup>
+
 	<PropertyGroup>
 		<BaseOutputPath>..\AresService\bin</BaseOutputPath>
 	</PropertyGroup>

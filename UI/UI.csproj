@@ -52,10 +52,7 @@
     </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="10.0.2" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
-    <PackageReference Include="ReactiveUI.SourceGenerators" Version="2.6.1">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
+    <PackageReference Include="ReactiveUI.SourceGenerators" Version="4.2.0" />
     <PackageReference Include="Serilog" Version="4.4.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageReference Include="Serilog.Enrichers.Context" Version="4.6.5" />
@@ -65,6 +62,13 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.3.1" />
     <PackageReference Include="System.CommandLine" Version="2.0.14" />
     <PackageReference Include="UnitsNet" Version="5.75.1" />
+  </ItemGroup>
+
+  <!-- Force Security Patch Usage for Dependecies -->
+	<ItemGroup>
+		<PackageReference Include="System.Security.Cryptography.Pkcs" Version="9.0.21" />
+		<PackageReference Include="NuGet.Protocol" Version="6.12.5" />
+		<PackageReference Include="NuGet.Packaging" Version="6.12.5" />
   </ItemGroup>
 
   <ItemGroup>
