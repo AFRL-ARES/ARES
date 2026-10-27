@@ -91,5 +91,3 @@ public partial class AnalyzerSettingsListViewModel : ReactiveObject
   [Reactive]
   public partial bool IsLoading { get; private set; }
 }
-
-

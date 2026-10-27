@@ -34,7 +34,18 @@
           <h4> Experiment Summary </h4>
           <b> Experiment Started: @ViewModel!.SelectedExperimentSummary.ExecutionInfo.TimeStarted.ToReadableTimestamp() </b>
           <b> Experiment Finished: @(ViewModel!.SelectedExperimentSummary.ExecutionInfo.TimeFinished.ToReadableTimestamp()) </b>
-          <b> Analysis Result: @ViewModel!.SelectedExperimentSummary.ExperimentOverview.AnalysisOverview.Result </b>
+          @foreach(var obj in ViewModel!.SelectedExperimentSummary.ExperimentOverview.AnalysisOverview.Objectives)
+          {
+            if(AresValueHelper.IsPrimitiveType(obj.ObjectiveValue))
+            {
+              <b>@obj.ObjectiveName Objective: @obj.ObjectiveValue </b>
+            }
+            else
+            {
+              <b>@obj.ObjectiveName Objective: Complex Data </b>
+            }
+          }
+          <b> Analysis Result: @ViewModel!.SelectedExperimentSummary.ExperimentOverview.AnalysisOverview. </b>
           @if(ViewModel!.SelectedExperimentSummary.ExperimentOverview.Result.Fields.Any())
           {
             <b> Experiment Results </b>
@@ -48,8 +59,6 @@
               {
                 <b>@result.Key : Complex Data </b>
               }
-
-              <b> @result.Key : @result.Value </b>
             }
           }
         }
@@ -148,7 +157,19 @@
                         <ChildContent>
                           <RadzenTreeItem Text=@($"Analyzer Name: {exp.ExperimentOverview.AnalysisOverview.AnalyzerInfo.Name}") />
                           <RadzenTreeItem Text=@($"Analyzer Version: {exp.ExperimentOverview.AnalysisOverview.AnalyzerInfo.Version}") />
-                          <RadzenTreeItem Text=@($"Analyzer Result: {exp.ExperimentOverview.AnalysisOverview.Result}") />
+                          <RadzenTreeItem Text="Analyzer Objectives">
+                            <ChildContent>
+                              @foreach(var objective in exp.ExperimentOverview.AnalysisOverview.Objectives)
+                              {
+                                <RadzenTreeItem Text="@($"{objective.ObjectiveName}: {CreateAresValueDisplayString(objective.ObjectiveValue)}")"/>
+                              }
+                            </ChildContent>
+
+                            <Template>
+                              <RadzenIcon Icon="flag" />
+                              <b> @context.Text </b>
+                            </Template>
+                          </RadzenTreeItem>
                           <RadzenTreeItem Text=@($"Analyzer Address: {exp.ExperimentOverview.AnalysisOverview.AnalyzerInfo.Url}") />
                           <RadzenTreeItem Text=@($"Analyzer Type: {exp.ExperimentOverview.AnalysisOverview.AnalyzerInfo.Type}") />
                           <RadzenTreeItem Text="Analyzer Settings">
@@ -159,14 +180,14 @@
                                 <RadzenTreeItem Text=@($"{setting.Key}")>
                                   <ChildContent>
                                     <RadzenTreeItem Text=@($"Type: {setting.Value.Type}") />
-                                    @if(setting.Value.StringChoices.Strings.Count != 0)
+                                    @if(setting.Value.StringChoices?.Strings.Count != 0)
                                     {
-                                      <RadzenTreeItem Text=@($"String Constraints: {setting.Value.StringChoices.Strings}") />
+                                      <RadzenTreeItem Text=@($"String Constraints: {setting.Value.StringChoices?.Strings ?? []}") />
                                     }
 
-                                    else if(setting.Value.NumberChoices.Numbers.Count != 0)
+                                    else if(setting.Value.NumberChoices?.Numbers.Count != 0)
                                     {
-                                      <RadzenTreeItem Text=@($"Number Constraints: {setting.Value.NumberChoices.Numbers}") />
+                                      <RadzenTreeItem Text=@($"Number Constraints: {setting.Value.NumberChoices?.Numbers ?? []}") />
                                     }
 
                                     <RadzenTreeItem Text=@($"Optional: {setting.Value.Optional}") />
