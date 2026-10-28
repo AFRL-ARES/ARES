@@ -30,7 +30,8 @@ public class SystemSettingsManager : ISystemSettingsManager
         DisplayCompatabilityWarnings = true,
         DisplayDataCollectionWidget = true,
         HideDemoModeIntro = false,
-        NameFoldersWithLocalTime = false
+        NameFoldersWithLocalTime = false,
+        DisplayCustomCommandWidget = false
       };
 
       context.GeneralSettingsConfigs.Add(newGeneralSettingsConfig);
@@ -147,6 +148,7 @@ public class SystemSettingsManager : ISystemSettingsManager
       existingConfig.DisplayDataCollectionWidget = config.DisplayDataCollectionWidget;
       existingConfig.HideDemoModeIntro = config.HideDemoModeIntro;
       existingConfig.NameFoldersWithLocalTime = config.NameFoldersWithLocalTime;
+      existingConfig.DisplayCustomCommandWidget = config.DisplayCustomCommandWidget;
 
       await context.SaveChangesAsync();
     }

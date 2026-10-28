@@ -4,11 +4,12 @@
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.JSInterop
 @using UI.Application.Devices.Repos
+@using UI.Features.CustomCommand
 @using UI.Features.DeviceStateLogging
 
 @inject IJSRuntime JS
 @inject IDeviceControlViewModelRepo ViewModelRepo
-@inject ISystemSettingsManager SettingsManager 
+@inject ISystemSettingsManager SettingsManager
 @implements IAsyncDisposable
 
 <PageTitle>Dashboard</PageTitle>
@@ -21,8 +22,18 @@
     </div>
   }
 
-
   <div class="grid-stack @(_isReady ? "dashboard-ready" : "")" id="my-dashboard">
+
+    @if(_shouldDisplayCustomCommandWidget)
+    {
+      <div class="grid-stack-item" data-id="custom-command-runner" gs-w="20" gs-size-to-content="true">
+        <div class="grid-stack-item-content">
+          <CustomCommandDashboardWidget />
+        </div>
+      </div>
+    }
+
+
     @foreach(var viewModel in ViewModelRepo.Items)
     {
       // Fallback Values
@@ -47,6 +58,7 @@
   private bool _isReady = false;
   private Dictionary<string, Dictionary<string, object>> _cachedViewArgs = new();
   private bool _shouldDisplayManualWidget = true;
+  private bool _shouldDisplayCustomCommandWidget = false;
 
   private Dictionary<string, object> GetOrCreateArgs(IDeviceUnitControlViewModel vm)
   {
@@ -66,7 +78,7 @@
       _module = await JS.InvokeAsync<IJSObjectReference>("import", "./Pages/Index.razor.js");
     }
 
-    if(_module is not null && ViewModelRepo.Items.Any())
+    if(_module is not null)
     {
       if(!_isReady)
       {
@@ -81,17 +93,19 @@
       }
     }
 
-    await UpdateManualWidgetDisplaySetting();
+    await UpdateWidgetDisplaySetting();
   }
 
-  private async Task UpdateManualWidgetDisplaySetting()
+  private async Task UpdateWidgetDisplaySetting()
   {
     var currentSettings = await SettingsManager.GetAresGeneralSettings();
-    var newValue = currentSettings?.DisplayDataCollectionWidget ?? true;
+    var displayDataWidget = currentSettings?.DisplayDataCollectionWidget ?? true;
+    var displayCustomCommandWidget = currentSettings?.DisplayCustomCommandWidget ?? true;
 
-    if(_shouldDisplayManualWidget != newValue)
+    if(_shouldDisplayManualWidget != displayDataWidget || _shouldDisplayCustomCommandWidget != displayCustomCommandWidget)
     {
-      _shouldDisplayManualWidget = newValue;
+      _shouldDisplayManualWidget = displayDataWidget;
+      _shouldDisplayCustomCommandWidget = displayCustomCommandWidget;
       StateHasChanged();
     }
   }

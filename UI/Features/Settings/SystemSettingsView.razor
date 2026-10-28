@@ -57,6 +57,11 @@
               <RadzenSwitch @bind-Value="ViewModel!.UseLocalTimeForFolderNames" Style="align-self: center" />
               <RadzenIcon Icon="help_outline" MouseEnter="@(args => ShowUseLocalTimeInFolderNamesTooltip(args, new TooltipOptions { Duration = null }))" />
             </RadzenStack>
+            <RadzenStack Gap="1rem" Orientation="Orientation.Horizontal" Style="padding: 0.5rem">
+              <RadzenLabel Text="Display Custom Command Widget" />
+              <RadzenSwitch @bind-Value="ViewModel!.DisplayCustomCommandWidget" Style="align-self: center" />
+              <RadzenIcon Icon="help_outline" MouseEnter="@(args => ShowCustomCommandWidgetTooltip(args, new TooltipOptions { Duration = null }))" />
+            </RadzenStack>
           </RadzenCard>
         </RadzenTabsItem>
         <RadzenTabsItem Text="Error Handling" Icon="error_outline">
@@ -97,9 +102,7 @@
 
   private IEnumerable<CommandStatusCode> GetFilteredValues()
   {
-    var values = Enum.GetValues<CommandStatusCode>()
-    .Where(c => c != CommandStatusCode.StatusUnspecified && c != CommandStatusCode.CommandSuccess && c != CommandStatusCode.SuccessWithWarnings);
-
+    var values = Enum.GetValues<CommandStatusCode>().Where(c => c != CommandStatusCode.StatusUnspecified && c != CommandStatusCode.CommandSuccess && c != CommandStatusCode.SuccessWithWarnings);
     return values;
   }
 
@@ -113,4 +116,5 @@
   void ShowDisplayDataCollectionWidgetTooltip(ElementReference elementReference, TooltipOptions? options = null) => tooltipService.Open(elementReference, "Sets whether the data collection widget is displayed on the ARES dashboard", options);
   void ShowHideDemoModeTooltip(ElementReference elementReference, TooltipOptions? options = null) => tooltipService.Open(elementReference, "Sets whether the welcome tile appears when launching ARES in demo mode", options);
   void ShowUseLocalTimeInFolderNamesTooltip(ElementReference elementReference, TooltipOptions? options = null) => tooltipService.Open(elementReference, "Sets whether files created by ARES use the local time or UTC when creating names", options);
+  void ShowCustomCommandWidgetTooltip(ElementReference elementReference, TooltipOptions? options = null) => tooltipService.Open(elementReference, "Sets whether the custom command execution widget is displayed on the ARES dashboard", options);
 }

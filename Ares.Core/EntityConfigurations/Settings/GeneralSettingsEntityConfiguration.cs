@@ -15,6 +15,7 @@ internal class GeneralSettingsEntityConfiguration : AresEntityTypeBaseConfigurat
     builder.Property(b => b.DisplayCompatabilityWarnings).HasDefaultValue(true);
     builder.Property(b => b.DisplayDataCollectionWidget).HasDefaultValue(true);
     builder.Property(b => b.NameFoldersWithLocalTime).HasDefaultValue(false);
+    builder.Property(b => b.DisplayCustomCommandWidget).HasDefaultValue(false);
 
     builder.ToTable("AresGeneralSettingsConfig");
   }

@@ -29,6 +29,7 @@ using UI.Features.Devices.Remote.Factory;
 using UI.Features.Devices.Sila;
 using UI.Features.DeviceStateLogging;
 using UI.Features.DeviceStateLogging.Settings;
+using UI.Features.CustomCommand;
 using UI.Features.Notifications;
 using UI.Features.Planning.Settings;
 using UI.Features.ServerHealth;
@@ -134,6 +135,7 @@ internal static class ServiceCollectionExtensions
     //Other View Models
     services.AddScoped<ManualPlannerViewModel>();
     services.AddScoped<ManualDeviceLoggerWidgetViewModel>();
+    services.AddTransient<CustomCommandDashboardViewModel>();
     services.AddScoped<LoggingSettingsListViewModel>();
   }
   private static void BindViewModelFactories(this IServiceCollection services)

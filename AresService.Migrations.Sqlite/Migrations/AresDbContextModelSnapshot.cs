@@ -15,7 +15,7 @@ namespace AresService.Migrations.Sqlite.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "10.0.10");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.14");
 
             modelBuilder.Entity("Ares.Datamodel.AnalysisOverview", b =>
                 {
@@ -362,6 +362,11 @@ namespace AresService.Migrations.Sqlite.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER")
                         .HasDefaultValue(true);
+
+                    b.Property<bool>("DisplayCustomCommandWidget")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
 
                     b.Property<bool>("DisplayDataCollectionWidget")
                         .ValueGeneratedOnAdd()

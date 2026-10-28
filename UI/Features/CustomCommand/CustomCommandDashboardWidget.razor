@@ -1,0 +1,159 @@
+@using System.ComponentModel
+@using Ares.Datamodel
+@using Ares.Datamodel.Automation
+@implements IDisposable
+@inject CustomCommandDashboardViewModel ViewModel
+
+<DashboardWidget>
+  <section class="custom-command-dashboard">
+    <header class="custom-command-dashboard__header">
+      <div>
+        <h4>Custom Command Tile</h4>
+        <span>Run your custom automation commands!</span>
+      </div>
+      <RadzenButton Icon="refresh"
+                    ButtonStyle="ButtonStyle.Light"
+                    Size="ButtonSize.Small"
+                    Disabled="@(ViewModel.IsLoading || ViewModel.IsRunning)"
+                    Click="RefreshAsync"
+                    title="Refresh custom commands" />
+    </header>
+
+    @if(ViewModel.IsCampaignActive)
+    {
+      <div class="custom-command-dashboard__notice">
+        <RadzenIcon Icon="lock" />
+        <span>Unavailable while a campaign is active.</span>
+      </div>
+    }
+
+    @if(ViewModel.IsLoading)
+    {
+      <div class="custom-command-dashboard__state">Loading custom commands...</div>
+    }
+    else if(!string.IsNullOrWhiteSpace(ViewModel.LoadError))
+    {
+      <div class="custom-command-dashboard__state custom-command-dashboard__error">@ViewModel.LoadError</div>
+    }
+    else if(ViewModel.AvailableCommands.Count == 0)
+    {
+      <div class="custom-command-dashboard__state">
+        <span>No custom commands have been saved.</span>
+        <a href="automation/custom-commands">Manage custom commands</a>
+      </div>
+    }
+    else
+    {
+      <RadzenDropDown TValue="string"
+                      Data="@ViewModel.AvailableCommands"
+                      Value="@ViewModel.SelectedCommandId"
+                      TextProperty="@nameof(CustomCommandVersion.Name)"
+                      ValueProperty="@nameof(CustomCommandVersion.CustomCommandId)"
+                      Change="CommandChanged"
+                      Disabled="@ViewModel.IsRunning"
+                      Placeholder="Select a custom command"
+                      Style="width: 100%;" />
+
+      @if(ViewModel.SelectedCommand is not null)
+      {
+        @if(!string.IsNullOrWhiteSpace(ViewModel.SelectedCommand.Description))
+        {
+          <p class="custom-command-dashboard__description">@ViewModel.SelectedCommand.Description</p>
+        }
+
+        <div class="custom-command-dashboard__arguments">
+          @foreach(var argument in ViewModel.Arguments)
+          {
+            <AresValueDesigner @key="@($"{ViewModel.SelectedCommandId}:{argument.Name}:{argument.Index}")"
+                               Name="@argument.Name"
+                               Schema="@argument.Schema"
+                               Value="@argument.Value"
+                               ValueEditCallback="@(value => UpdateArgument(argument.Name, value))" />
+          }
+        </div>
+
+        <div class="custom-command-dashboard__actions">
+          @if(ViewModel.IsRunning)
+          {
+            <RadzenButton Icon="stop"
+                          Text="Cancel"
+                          ButtonStyle="ButtonStyle.Danger"
+                          Click="Cancel" />
+            <span>Running...</span>
+          }
+          else
+          {
+            <RadzenButton Icon="play_arrow"
+                          Text="Run"
+                          ButtonStyle="ButtonStyle.Primary"
+                          Disabled="@(!ViewModel.CanRun)"
+                          Click="RunAsync" />
+          }
+        </div>
+
+        @if(!string.IsNullOrWhiteSpace(ViewModel.ExecutionError))
+        {
+          <div class="custom-command-dashboard__result custom-command-dashboard__error">
+            @ViewModel.ExecutionError
+          </div>
+        }
+        else if(ViewModel.Result?.Success == true)
+        {
+          <div class="custom-command-dashboard__result">
+            <div class="custom-command-dashboard__result-heading">
+              <span>Result</span>
+              @if(ViewModel.ExecutionDuration is not null)
+              {
+                <span>@ViewModel.ExecutionDuration.Value.TotalSeconds.ToString("0.###")s</span>
+              }
+            </div>
+            @if(ViewModel.Result.Result.HasUnitValue)
+            {
+              <span>Success!</span>
+            }
+
+            else
+            {
+              <AresValueDisplay Value="@ViewModel.Result.Result" Schema="@ViewModel.SelectedCommand.OutputSchema" />
+            }
+          </div>
+        }
+      }
+    }
+  </section>
+</DashboardWidget>
+
+@code {
+  protected override async Task OnInitializedAsync()
+  {
+    ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+    await ViewModel.InitializeAsync();
+  }
+
+  private async Task RefreshAsync()
+    => await ViewModel.RefreshAsync();
+
+  private void CommandChanged(object? value)
+    => ViewModel.SelectCommand(value?.ToString());
+
+  private Task UpdateArgument(string name, AresValue value)
+  {
+    ViewModel.UpdateArgument(name, value);
+    return Task.CompletedTask;
+  }
+
+  private async Task RunAsync()
+    => await ViewModel.RunAsync();
+
+  private void Cancel()
+    => ViewModel.Cancel();
+
+  private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs args)
+    => _ = InvokeAsync(StateHasChanged);
+
+  public void Dispose()
+  {
+    ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+    ViewModel.Dispose();
+  }
+}

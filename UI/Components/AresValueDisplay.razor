@@ -22,6 +22,14 @@
                      Max="@(Schema?.HasMaxNumberValue == true ? (decimal?)Schema.MaxNumberValue : null)" />
             break;
 
+        case AresValue.KindOneofCase.FloatValue:
+            <RadzenText>@Value.FloatValue</RadzenText>
+            break;
+
+        case AresValue.KindOneofCase.IntValue:
+            <RadzenText>@Value.IntValue</RadzenText>
+            break;
+
         case AresValue.KindOneofCase.QuantityValue:
             <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
                 <RadzenNumeric ShowUpDown="false" Value="Value.QuantityValue.Scalar" ReadOnly="true"
@@ -47,6 +55,59 @@
             </RadzenDataList>
             break;
 
+        case AresValue.KindOneofCase.FloatArrayValue:
+            <RadzenDataList WrapItems="true" AllowPaging="true" PageSize="5" Data="@Value.FloatArrayValue.Floats">
+                <Template Context="num">
+                    <RadzenText>@num.ToString()</RadzenText>
+                </Template>
+            </RadzenDataList>
+            break;
+
+        case AresValue.KindOneofCase.IntArrayValue:
+            <RadzenDataList WrapItems="true" AllowPaging="true" PageSize="5" Data="@Value.IntArrayValue.Ints">
+                <Template Context="num">
+                    <RadzenText>@num.ToString()</RadzenText>
+                </Template>
+            </RadzenDataList>
+            break;
+
+        case AresValue.KindOneofCase.ListValue:
+            <RadzenStack Orientation="Orientation.Vertical" Gap="0.5rem">
+                @foreach(var item in Value.ListValue.Values)
+                {
+                    <AresValueDisplay Value="@item" Schema="@Schema?.ListElementSchema" />
+                }
+            </RadzenStack>
+            break;
+
+        case AresValue.KindOneofCase.StructValue:
+            <RadzenStack Orientation="Orientation.Vertical" Gap="0.5rem">
+                @foreach(var field in Value.StructValue.Fields)
+                {
+                    <div>
+                        <strong>@field.Key</strong>
+                        <AresValueDisplay Value="@field.Value" Schema="@GetStructFieldSchema(field.Key)" />
+                    </div>
+                }
+            </RadzenStack>
+            break;
+
+        case AresValue.KindOneofCase.UnitValue:
+            <RadzenText>Unit</RadzenText>
+            break;
+
+        case AresValue.KindOneofCase.FunctionValue:
+            <RadzenText>@Value.FunctionValue.FunctionId</RadzenText>
+            break;
+
+        case AresValue.KindOneofCase.TimestampValue:
+            <RadzenText>@Value.TimestampValue.ToDateTime().ToLocalTime().ToString("G")</RadzenText>
+            break;
+
+        case AresValue.KindOneofCase.AnyValue:
+            <AresValueDisplay Value="@Value.AnyValue" />
+            break;
+
         case AresValue.KindOneofCase.BytesValue:
             <RadzenText TextStyle="TextStyle.Subtitle2" Class="rz-color-secondary">[Bytes data omitted]</RadzenText>
             break;
@@ -64,4 +125,12 @@
 
     [Parameter]
     public AresValueSchema? Schema { get; set; }
+
+    private AresValueSchema? GetStructFieldSchema(string fieldName)
+    {
+        if(Schema?.StructSchema?.Fields.TryGetValue(fieldName, out var fieldSchema) == true)
+            return fieldSchema;
+
+        return null;
+    }
 }

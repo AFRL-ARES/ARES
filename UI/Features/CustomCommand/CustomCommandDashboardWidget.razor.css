@@ -1,0 +1,75 @@
+.custom-command-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 18rem;
+}
+
+.custom-command-dashboard__header,
+.custom-command-dashboard__result-heading,
+.custom-command-dashboard__actions,
+.custom-command-dashboard__notice {
+  display: flex;
+  align-items: center;
+}
+
+.custom-command-dashboard__header,
+.custom-command-dashboard__result-heading {
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.custom-command-dashboard__header h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.custom-command-dashboard__header span,
+.custom-command-dashboard__description,
+.custom-command-dashboard__actions span,
+.custom-command-dashboard__result-heading span:last-child {
+  color: var(--rz-text-secondary-color);
+  font-size: 0.8rem;
+}
+
+.custom-command-dashboard__description {
+  margin: 0;
+}
+
+.custom-command-dashboard__arguments {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.custom-command-dashboard__actions,
+.custom-command-dashboard__notice {
+  gap: 0.5rem;
+}
+
+.custom-command-dashboard__state,
+.custom-command-dashboard__notice,
+.custom-command-dashboard__result {
+  padding: 0.65rem;
+  border: 1px solid var(--rz-base-600);
+  border-radius: 4px;
+}
+
+.custom-command-dashboard__state {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.custom-command-dashboard__notice {
+  color: var(--rz-warning);
+}
+
+.custom-command-dashboard__error {
+  color: var(--rz-danger);
+}
+
+.custom-command-dashboard__result-heading {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}

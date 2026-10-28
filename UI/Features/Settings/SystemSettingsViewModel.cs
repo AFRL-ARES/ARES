@@ -17,7 +17,7 @@ public partial class SystemSettingsViewModel : ReactiveObject
   {
     _settingsManager = settingsManager;
     _notificationHandler = notificationHandler;
-    CurrentErrorHandlingSettings = new();
+    CurrentErrorHandlingSettings = [];
     Initialize();
     _logger = logger;
   }
@@ -42,7 +42,8 @@ public partial class SystemSettingsViewModel : ReactiveObject
         DisplayCompatabilityWarnings = DisplayCompatabilityWarnings,
         DisplayDataCollectionWidget = DisplayDataCollectionWidget,
         HideDemoModeIntro = HideDemoModeWelcomePrompt,
-        NameFoldersWithLocalTime = UseLocalTimeForFolderNames
+        NameFoldersWithLocalTime = UseLocalTimeForFolderNames,
+        DisplayCustomCommandWidget = DisplayCustomCommandWidget
       });
 
       await _notificationHandler.HandleNotification("Settings Updated!", "ARES successfully updated your settings.", NotificationSeverityEnum.Success);
@@ -74,6 +75,7 @@ public partial class SystemSettingsViewModel : ReactiveObject
       DisplayDataCollectionWidget = newGeneralSettings.DisplayDataCollectionWidget;
       HideDemoModeWelcomePrompt = newGeneralSettings.HideDemoModeIntro;
       UseLocalTimeForFolderNames = newGeneralSettings.NameFoldersWithLocalTime;
+      DisplayCustomCommandWidget = newGeneralSettings.DisplayCustomCommandWidget;
     }
   }
 
@@ -81,12 +83,13 @@ public partial class SystemSettingsViewModel : ReactiveObject
   {
     foreach(var status in System.Enum.GetValues<CommandStatusCode>())
     {
-      if(!CurrentErrorHandlingSettings.TryGetValue(status, out var val))
+      if(!CurrentErrorHandlingSettings.TryGetValue(status, out var _))
         CurrentErrorHandlingSettings[status] = ErrorHandling.UnknownHandling;
     }
   }
 
-  public Dictionary<CommandStatusCode, ErrorHandling> CurrentErrorHandlingSettings { get; set; }
+  [Reactive]
+  public partial Dictionary<CommandStatusCode, ErrorHandling> CurrentErrorHandlingSettings { get; set; }
 
   [Reactive]
   public partial int ExperimentRetryLimit { get; set; }
@@ -110,6 +113,8 @@ public partial class SystemSettingsViewModel : ReactiveObject
   public partial bool HideDemoModeWelcomePrompt { get; set; }
 
   [Reactive]
-
   public partial bool UseLocalTimeForFolderNames { get; set; }
+
+  [Reactive]
+  public partial bool DisplayCustomCommandWidget { get; set; }
 }
