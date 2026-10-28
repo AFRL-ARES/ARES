@@ -12,7 +12,7 @@ namespace Ares.Core.Grpc.Services.Notifications;
 public class AresNotificationService : AresNotificationRpc.AresNotificationRpcBase
 {
   private static readonly ConcurrentDictionary<string, IServerStreamWriter<AresNotification>> _clients = new();
-  private IAresNotificationRepo _notificationRepo;
+  private readonly IAresNotificationRepo _notificationRepo;
 
   public AresNotificationService(IAresNotificationRepo notificationRepo)
   {

@@ -6,6 +6,7 @@ using Ares.Datamodel.Factories;
 using AresScript.Environment;
 using AresScript.Generated;
 using AresScript.Symbols;
+using System.Runtime.InteropServices;
 
 namespace AresScript.Interpreters;
 
@@ -889,7 +890,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
         }
       }
 
-      ValidateUserFunctionTypeHints(functionId, userFn, positionalArgs, keywordArgs, ctx);
+      ValidateUserFunctionTypeHints(functionId, userFn, CollectionsMarshal.AsSpan(positionalArgs), keywordArgs);
       RecordFunctionInvocation(userFn.Name, userFn.Name, ctx, AresFunctionInvocationKind.User);
       return;
     }
@@ -1123,7 +1124,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     AresSystemFunctionSymbol function,
     AresLangParser.ExpressionContext receiverExpression,
     AresValueSchema receiverSchema,
-    IReadOnlyList<AresLangParser.ExpressionContext> positionalArgs,
+    List<AresLangParser.ExpressionContext> positionalArgs,
     IReadOnlyDictionary<string, AresLangParser.ExpressionContext> keywordArgs,
     AresLangParser.FunctionCallContext ctx)
   {
@@ -1188,7 +1189,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     IReadOnlyDictionary<string, AresLangParser.ExpressionContext> keywordArgs,
     AresLangParser.FunctionCallContext ctx)
   {
-    var schemaFields = schema.Fields.ToArray();
+    var schemaFields = schema.Fields.ToList();
     var variadicAnyArgs = IsVariadicAnyArgsSchema(schemaFields);
 
     if(schema.Fields.Count == 0 && keywordArgs.Count == 0)
@@ -1220,11 +1221,11 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
 
     if(keywordArgs.Count == 0)
     {
-      if(!variadicAnyArgs && positionalArgs.Count > schemaFields.Length)
+      if(!variadicAnyArgs && positionalArgs.Count > schemaFields.Count)
       {
-        var extraArgument = positionalArgs[schemaFields.Length];
+        var extraArgument = positionalArgs[schemaFields.Count];
         throw new AresInterpreterException(
-          $"Function '{functionId}' expected at most {schemaFields.Length} arguments but got {positionalArgs.Count}.",
+          $"Function '{functionId}' expected at most {schemaFields.Count} arguments but got {positionalArgs.Count}.",
           extraArgument.Start.Line,
           extraArgument.Start.Column
         );
@@ -1243,7 +1244,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
         }
       }
 
-      var positionalTypeChecks = variadicAnyArgs ? 0 : Math.Min(positionalArgs.Count, schemaFields.Length);
+      var positionalTypeChecks = variadicAnyArgs ? 0 : Math.Min(positionalArgs.Count, schemaFields.Count);
       for(var i = 0; i < positionalTypeChecks; i++)
       {
         var (name, expected) = schemaFields[i];
@@ -1260,7 +1261,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
     }
   }
 
-  private static bool IsVariadicAnyArgsSchema(IReadOnlyList<KeyValuePair<string, AresValueSchema>> schemaFields)
+  private static bool IsVariadicAnyArgsSchema(List<KeyValuePair<string, AresValueSchema>> schemaFields)
   {
     if(schemaFields.Count != 1)
     {
@@ -1290,9 +1291,8 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
   private void ValidateUserFunctionTypeHints(
     string functionId,
     AresScriptFunction userFunction,
-    IReadOnlyList<AresLangParser.ExpressionContext> positionalArgs,
-    IReadOnlyDictionary<string, AresLangParser.ExpressionContext> keywordArgs,
-    AresLangParser.FunctionCallContext context)
+    ReadOnlySpan<AresLangParser.ExpressionContext> positionalArgs,
+    Dictionary<string, AresLangParser.ExpressionContext> keywordArgs)
   {
     for(var i = 0; i < userFunction.Parameters.Count; i++)
     {
@@ -1301,7 +1301,7 @@ public sealed class AresValidationInterpreter : AresLangBaseVisitor<Task>
       var expectedSchema = parameter.Schema;
 
       AresLangParser.ExpressionContext? argument = null;
-      if(i < positionalArgs.Count)
+      if(i < positionalArgs.Length)
       {
         argument = positionalArgs[i];
       }
