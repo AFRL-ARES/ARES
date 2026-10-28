@@ -22,17 +22,14 @@ internal static class AresScriptTypeHints
     error = null;
     schema = AresSchemaBuilder.Entry(AresDataType.Any).Build();
     if(typeHint is null)
-    {
       return true;
-    }
 
     switch(typeHint)
     {
       case AresLangParser.NamedTypeRefContext namedTypeHint:
         if(!TryParseNamedTypeHint(namedTypeHint.namedTypeHint(), namedTypeHint.typeHintConstraints(), out schema, out error))
-        {
           return false;
-        }
+        
         return true;
 
       case AresLangParser.StructTypeRefContext structTypeHint:
@@ -41,9 +38,7 @@ internal static class AresScriptTypeHints
           foreach(var field in structTypeHint.structTypeHint().typeHintField())
           {
             if(!TryParseTypeHint(field.typeHint(), out var fieldSchema, out error))
-            {
               return false;
-            }
 
             structSchema.Fields[field.ID().GetText()] = fieldSchema;
           }
@@ -55,9 +50,7 @@ internal static class AresScriptTypeHints
 
       case AresLangParser.ListTypeRefContext listTypeHint:
         if(!TryParseTypeHint(listTypeHint.listTypeHint().typeHint(), out var elementSchema, out error))
-        {
           return false;
-        }
 
         schema = AresSchemaBuilder.Entry(AresDataType.List).Build();
         schema.ListElementSchema = elementSchema;
@@ -78,9 +71,7 @@ internal static class AresScriptTypeHints
   public static AresValueSchema SchemaFromTypeHint(string? typeHint)
   {
     if(string.IsNullOrWhiteSpace(typeHint))
-    {
       return AresSchemaBuilder.Entry(AresDataType.Any).Build();
-    }
 
     var input = new Antlr4.Runtime.AntlrInputStream($"def __type_hint_probe(value: {typeHint}):\n  return value\n");
     var lexer = new AresIndentationLexer(input);
@@ -98,26 +89,18 @@ internal static class AresScriptTypeHints
   }
 
   public static bool IsCompatibleWithTypeHint(AresValueSchema actual, AresValueSchema expected)
-  {
-    return IsCompatible(expected, actual);
-  }
+    => IsCompatible(expected, actual);
 
   public static bool IsCompatibleWithTypeHint(AresValue actual, AresValueSchema expected)
   {
     if(!IsCompatibleWithTypeHint(actual.ToAresValueSchema(), expected))
-    {
       return false;
-    }
 
     if(IsNumberLike(expected.Type) && actual.TryGetNumericValue(out var numericValue))
-    {
       return IsCompatible(expected, numericValue);
-    }
 
     if(expected.Type == AresDataType.Quantity && actual.KindCase == AresValue.KindOneofCase.QuantityValue)
-    {
       return IsCompatible(expected.QuantitySchema, actual.QuantityValue);
-    }
 
     return true;
   }
@@ -135,38 +118,34 @@ internal static class AresScriptTypeHints
   private static bool IsCompatible(AresValueSchema expected, AresValueSchema actual)
   {
     if(expected.Type == AresDataType.Any || expected.Type == AresDataType.UnspecifiedType)
-    {
       return true;
-    }
 
     if(actual.Type == AresDataType.Any || actual.Type == AresDataType.UnspecifiedType)
-    {
       return true;
-    }
 
     if(expected.Optional && actual.Type == AresDataType.Null)
-    {
       return true;
-    }
+
+    if(expected.Type.IsNumericType() && actual.Type.IsNumericType())
+      return true;
 
     if(expected.Type != actual.Type)
-    {
       return false;
-    }
 
     switch(expected.Type)
     {
       case AresDataType.Struct:
         return AreStructSchemasCompatible(expected.StructSchema, actual.StructSchema);
+
       case AresDataType.List:
         if(expected.ListElementSchema is null || actual.ListElementSchema is null)
-        {
           return true;
-        }
 
         return IsCompatible(expected.ListElementSchema, actual.ListElementSchema);
+
       case AresDataType.Quantity:
         return IsCompatible(expected.QuantitySchema, actual.QuantitySchema);
+
       default:
         return true;
     }
