@@ -9,7 +9,6 @@ using Ares.Datamodel.Device;
 using Ares.Datamodel.Templates;
 using Ares.Device;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
 using Moq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;

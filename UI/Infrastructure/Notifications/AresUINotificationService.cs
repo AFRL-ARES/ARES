@@ -25,7 +25,7 @@ public class AresUINotificationService : IAresUINotificationService
   public void StartNotificationStream()
   {
     var subscriptionRequest = new SubscriptionRequest { ClientId = Guid.NewGuid().ToString() };
-
+     
     Task.Run(async () =>
     {
       var stream = new LocalStream<AresNotification>();

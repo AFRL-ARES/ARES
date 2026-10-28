@@ -6,89 +6,144 @@
 @layout SettingsLayout
 @inject TooltipService tooltipService
 
-<div class="card flex-fill d-flex flex-column">
+<div class="system-settings-page">
+  <header class="system-settings-header">
+    <div class="system-settings-header__icon" aria-hidden="true">
+      <RadzenIcon Icon="settings" />
+    </div>
+    <div>
+      <h1>System Settings</h1>
+      <p>Configure how ARES retries work, reports compatibility issues, and presents dashboard tools.</p>
+    </div>
+  </header>
 
-  <RadzenStack Gap="1.5rem" Class="rz-p-6">
-    <RadzenTabs RenderMode="TabRenderMode.Client">
-      <Tabs>
-        <RadzenTabsItem Text="Experiment Settings" Icon="biotech">
-          <RadzenCard Variant="Variant.Flat">
-            <RadzenStack Gap="1rem" Orientation="Orientation.Horizontal" Style="padding: 0.5rem">
-              <RadzenFormField Text="Experiment Retry Limit">
-                <RadzenNumeric @bind-Value="ViewModel!.ExperimentRetryLimit" />
-              </RadzenFormField>
-              <RadzenIcon Icon="help_outline" MouseEnter="@(args => ShowExperimentRetryLimitTooltip(args, new TooltipOptions { Duration = null }))" Style="padding-top: 1.5rem" />
-            </RadzenStack>
-            <RadzenStack Gap="1rem" Orientation="Orientation.Horizontal" Style="padding: 0.5rem">
-              <RadzenFormField Text="Command Retry Limit">
-                <RadzenNumeric @bind-Value="ViewModel!.CommandRetryLimit" />
-              </RadzenFormField>
-              <RadzenIcon Icon="help_outline" MouseEnter="@(args => ShowCommandRetryLimitTooltip(args, new TooltipOptions { Duration = null }))" Style="padding-top: 1.5rem" />
-            </RadzenStack>
-            <RadzenStack Gap="1rem" Orientation="Orientation.Horizontal" Style="padding: 0.5rem">
-              <RadzenFormField Text="Experiment Retry Cooldown">
-                <RadzenNumeric @bind-Value="ViewModel!.ExperimentRetryCooldown" />
-              </RadzenFormField>
-              <RadzenIcon Icon="help_outline" MouseEnter="@(args => ShowRetryCooldownTooltip(args, new TooltipOptions { Duration = null }))" Style="padding-top: 1.5rem" />
-            </RadzenStack>
-            <RadzenStack Gap="1rem" Orientation="Orientation.Horizontal" Style="padding: 0.5rem">
-              <RadzenFormField Text="Universal Command Latency">
-                <RadzenNumeric @bind-Value="ViewModel!.CommandLatency" />
-              </RadzenFormField>
-              <RadzenIcon Icon="help_outline" MouseEnter="@(args => ShowCommandLatencyTooltip(args, new TooltipOptions { Duration = null }))" Style="padding-top: 1.5rem" />
-            </RadzenStack>
-            <RadzenStack Gap="1rem" Orientation="Orientation.Horizontal" Style="padding: 0.5rem">
-              <RadzenLabel Text="Display Compatibility Warnings" />
-              <RadzenSwitch @bind-Value="ViewModel!.DisplayCompatabilityWarnings" Style="align-self: center" />
-              <RadzenIcon Icon="help_outline" MouseEnter="@(args => ShowDisplayCompatabilityWarningsTooltip(args, new TooltipOptions { Duration = null }))" />
-            </RadzenStack>
-            <RadzenStack Gap="1rem" Orientation="Orientation.Horizontal" Style="padding: 0.5rem">
-              <RadzenLabel Text="Display Data Collection Widget" />
-              <RadzenSwitch @bind-Value="ViewModel!.DisplayDataCollectionWidget" Style="align-self: center" />
-              <RadzenIcon Icon="help_outline" MouseEnter="@(args => ShowDisplayDataCollectionWidgetTooltip(args, new TooltipOptions { Duration = null }))" />
-            </RadzenStack>
-            <RadzenStack Gap="1rem" Orientation="Orientation.Horizontal" Style="padding: 0.5rem">
-              <RadzenLabel Text="Hide Demo Mode Welcome Prompt" />
-              <RadzenSwitch @bind-Value="ViewModel!.HideDemoModeWelcomePrompt" Style="align-self: center" />
-              <RadzenIcon Icon="help_outline" MouseEnter="@(args => ShowHideDemoModeTooltip(args, new TooltipOptions { Duration = null }))" />
-            </RadzenStack>
-            <RadzenStack Gap="1rem" Orientation="Orientation.Horizontal" Style="padding: 0.5rem">
-              <RadzenLabel Text="Use Local Time for Folder Names" />
-              <RadzenSwitch @bind-Value="ViewModel!.UseLocalTimeForFolderNames" Style="align-self: center" />
-              <RadzenIcon Icon="help_outline" MouseEnter="@(args => ShowUseLocalTimeInFolderNamesTooltip(args, new TooltipOptions { Duration = null }))" />
-            </RadzenStack>
-            <RadzenStack Gap="1rem" Orientation="Orientation.Horizontal" Style="padding: 0.5rem">
-              <RadzenLabel Text="Display Custom Command Widget" />
-              <RadzenSwitch @bind-Value="ViewModel!.DisplayCustomCommandWidget" Style="align-self: center" />
-              <RadzenIcon Icon="help_outline" MouseEnter="@(args => ShowCustomCommandWidgetTooltip(args, new TooltipOptions { Duration = null }))" />
-            </RadzenStack>
-          </RadzenCard>
-        </RadzenTabsItem>
-        <RadzenTabsItem Text="Error Handling" Icon="error_outline">
-          <RadzenCard Variant="Variant.Flat">
-            <RadzenStack Gap="1rem">
-              <RadzenFieldset Text="Configure Error Handling">
-                <RadzenStack Gap="1rem">
-                  @foreach(var error in GetFilteredValues())
-                  {
-                    <RadzenFormField Text="@(error.ToString())" Variant="Variant.Outlined" Style="width: 100%;">
-                      <RadzenDropDown @bind-Value="ViewModel!.CurrentErrorHandlingSettings[error]"
-                                      Data="@(Enum.GetValues<ErrorHandling>().Where(v => v != ErrorHandling.UnknownHandling))"
-                                      Style="width: 100%;" />
-                    </RadzenFormField>
-                  }
-                </RadzenStack>
-              </RadzenFieldset>
-            </RadzenStack>
-          </RadzenCard>
-        </RadzenTabsItem>
+  <RadzenTabs Class="system-settings-tabs" RenderMode="TabRenderMode.Client">
+    <Tabs>
+      <RadzenTabsItem Text="Experiment Settings" Icon="biotech">
+        <section class="settings-panel" aria-labelledby="experiment-settings-heading">
+          <div class="settings-panel__heading">
+            <div>
+              <h2 id="experiment-settings-heading">Experiment behavior</h2>
+              <p>Control retry timing and the optional widgets and notices shown throughout ARES.</p>
+            </div>
+            <RadzenIcon Icon="tune" aria-hidden="true" />
+          </div>
 
-      </Tabs>
-    </RadzenTabs>
+          <div class="numeric-settings-grid">
+            <div class="numeric-setting">
+              <RadzenFormField Text="Experiment Retry Limit" Variant="Variant.Outlined">
+                <RadzenNumeric @bind-Value="ViewModel!.ExperimentRetryLimit" ShowUpDown="false" />
+              </RadzenFormField>
+              <span class="setting-unit">attempts</span>
+              <RadzenIcon Icon="help_outline" aria-label="Experiment retry limit help" title="Experiment retry limit help" MouseEnter="@(args => ShowExperimentRetryLimitTooltip(args, new TooltipOptions { Duration = null }))" />
+            </div>
 
-  </RadzenStack>
+            <div class="numeric-setting">
+              <RadzenFormField Text="Command Retry Limit" Variant="Variant.Outlined">
+                <RadzenNumeric @bind-Value="ViewModel!.CommandRetryLimit" ShowUpDown="false" />
+              </RadzenFormField>
+              <span class="setting-unit">attempts</span>
+              <RadzenIcon Icon="help_outline" aria-label="Command retry limit help" title="Command retry limit help" MouseEnter="@(args => ShowCommandRetryLimitTooltip(args, new TooltipOptions { Duration = null }))" />
+            </div>
 
-  <RadzenButton Click=@ViewModel!.PushUpdatedSettings Text="Save All Changes" Icon="save" ButtonStyle="ButtonStyle.Primary" Style="max-width: 175px; margin-left: 10px; margin-top: 10px"/>
+            <div class="numeric-setting">
+              <RadzenFormField Text="Experiment Retry Cooldown" Variant="Variant.Outlined">
+                <RadzenNumeric @bind-Value="ViewModel!.ExperimentRetryCooldown" ShowUpDown="false" />
+              </RadzenFormField>
+              <span class="setting-unit">seconds</span>
+              <RadzenIcon Icon="help_outline" aria-label="Experiment retry cooldown help" title="Experiment retry cooldown help" MouseEnter="@(args => ShowRetryCooldownTooltip(args, new TooltipOptions { Duration = null }))" />
+            </div>
+
+            <div class="numeric-setting">
+              <RadzenFormField Text="Universal Command Latency" Variant="Variant.Outlined">
+                <RadzenNumeric @bind-Value="ViewModel!.CommandLatency" ShowUpDown="false" />
+              </RadzenFormField>
+              <span class="setting-unit">seconds</span>
+              <RadzenIcon Icon="help_outline" aria-label="Universal command latency help" title="Universal command latency help" MouseEnter="@(args => ShowCommandLatencyTooltip(args, new TooltipOptions { Duration = null }))" />
+            </div>
+          </div>
+
+          <div class="settings-divider"></div>
+
+          <div class="settings-toggle-list">
+            <div class="setting-toggle-row">
+              <div class="setting-copy">
+                <span class="setting-label">Display Compatibility Warnings</span>
+                <span class="setting-description">Notify when connected ARES services may not be fully compatible.</span>
+              </div>
+              <RadzenSwitch @bind-Value="ViewModel!.DisplayCompatabilityWarnings" />
+              <RadzenIcon Icon="help_outline" aria-label="Compatibility warnings help" title="Compatibility warnings help" MouseEnter="@(args => ShowDisplayCompatabilityWarningsTooltip(args, new TooltipOptions { Duration = null }))" />
+            </div>
+
+            <div class="setting-toggle-row">
+              <div class="setting-copy">
+                <span class="setting-label">Display Data Collection Widget</span>
+                <span class="setting-description">Show the manual data collection tool on the dashboard.</span>
+              </div>
+              <RadzenSwitch @bind-Value="ViewModel!.DisplayDataCollectionWidget" />
+              <RadzenIcon Icon="help_outline" aria-label="Data collection widget help" title="Data collection widget help" MouseEnter="@(args => ShowDisplayDataCollectionWidgetTooltip(args, new TooltipOptions { Duration = null }))" />
+            </div>
+
+            <div class="setting-toggle-row">
+              <div class="setting-copy">
+                <span class="setting-label">Hide Demo Mode Welcome Prompt</span>
+                <span class="setting-description">Skip the welcome tile when launching ARES in demo mode.</span>
+              </div>
+              <RadzenSwitch @bind-Value="ViewModel!.HideDemoModeWelcomePrompt" />
+              <RadzenIcon Icon="help_outline" aria-label="Demo mode welcome prompt help" title="Demo mode welcome prompt help" MouseEnter="@(args => ShowHideDemoModeTooltip(args, new TooltipOptions { Duration = null }))" />
+            </div>
+
+            <div class="setting-toggle-row">
+              <div class="setting-copy">
+                <span class="setting-label">Use Local Time for Folder Names</span>
+                <span class="setting-description">Use local time instead of UTC when naming generated folders.</span>
+              </div>
+              <RadzenSwitch @bind-Value="ViewModel!.UseLocalTimeForFolderNames" />
+              <RadzenIcon Icon="help_outline" aria-label="Local time folder names help" title="Local time folder names help" MouseEnter="@(args => ShowUseLocalTimeInFolderNamesTooltip(args, new TooltipOptions { Duration = null }))" />
+            </div>
+
+            <div class="setting-toggle-row">
+              <div class="setting-copy">
+                <span class="setting-label">Display Custom Command Widget</span>
+                <span class="setting-description">Show the ad-hoc custom command runner on the dashboard.</span>
+              </div>
+              <RadzenSwitch @bind-Value="ViewModel!.DisplayCustomCommandWidget" />
+              <RadzenIcon Icon="help_outline" aria-label="Custom command widget help" title="Custom command widget help" MouseEnter="@(args => ShowCustomCommandWidgetTooltip(args, new TooltipOptions { Duration = null }))" />
+            </div>
+          </div>
+        </section>
+      </RadzenTabsItem>
+
+      <RadzenTabsItem Text="Error Handling" Icon="error_outline">
+        <section class="settings-panel" aria-labelledby="error-handling-heading">
+          <div class="settings-panel__heading">
+            <div>
+              <h2 id="error-handling-heading">Error handling</h2>
+              <p>Choose how ARES should respond when a command reports each type of failure.</p>
+            </div>
+            <RadzenIcon Icon="rule" aria-hidden="true" />
+          </div>
+
+          <div class="error-handling-grid">
+            @foreach(var error in GetFilteredValues())
+            {
+              <div class="error-handling-row">
+                <span class="setting-label">@GetErrorHandlingLabel(error)</span>
+                <RadzenDropDown @bind-Value="ViewModel!.CurrentErrorHandlingSettings[error]"
+                                Data="@(Enum.GetValues<ErrorHandling>().Where(v => v != ErrorHandling.UnknownHandling))"
+                                Style="width: 100%;" />
+              </div>
+            }
+          </div>
+        </section>
+      </RadzenTabsItem>
+    </Tabs>
+  </RadzenTabs>
+
+  <div class="system-settings-actions">
+    <span class="system-settings-actions__hint">Changes are applied when you save.</span>
+    <RadzenButton Click="@ViewModel!.PushUpdatedSettings" Text="Save All Changes" Icon="save" ButtonStyle="ButtonStyle.Primary" />
+  </div>
 </div>
 
 
@@ -106,8 +161,6 @@
     return values;
   }
 
-  TooltipOptions Options = new TooltipOptions { Duration = null };
-
   void ShowExperimentRetryLimitTooltip(ElementReference elementReference, TooltipOptions? options = null) => tooltipService.Open(elementReference, "Sets the max times ARES will retry a failing experiment", options);
   void ShowCommandRetryLimitTooltip(ElementReference elementReference, TooltipOptions? options = null) => tooltipService.Open(elementReference, "Sets the max times ARES will retry a failing command", options);
   void ShowRetryCooldownTooltip(ElementReference elementReference, TooltipOptions? options = null) => tooltipService.Open(elementReference, "Sets the a cooldown value, in seconds, on how long ARES waits to re-attempt failed commands", options);
@@ -117,4 +170,19 @@
   void ShowHideDemoModeTooltip(ElementReference elementReference, TooltipOptions? options = null) => tooltipService.Open(elementReference, "Sets whether the welcome tile appears when launching ARES in demo mode", options);
   void ShowUseLocalTimeInFolderNamesTooltip(ElementReference elementReference, TooltipOptions? options = null) => tooltipService.Open(elementReference, "Sets whether files created by ARES use the local time or UTC when creating names", options);
   void ShowCustomCommandWidgetTooltip(ElementReference elementReference, TooltipOptions? options = null) => tooltipService.Open(elementReference, "Sets whether the custom command execution widget is displayed on the ARES dashboard", options);
+
+  private static string GetErrorHandlingLabel(CommandStatusCode error)
+    => error switch
+    {
+      CommandStatusCode.StatusUnspecified => "Unspecified status",
+      CommandStatusCode.CommandSuccess => "Command success",
+      CommandStatusCode.SuccessWithWarnings => "Success with warnings",
+      CommandStatusCode.CommandFailed => "Command failed",
+      CommandStatusCode.InvalidCommand => "Invalid command",
+      CommandStatusCode.HardwareFault => "Hardware fault",
+      CommandStatusCode.EmergencyStop => "Emergency stop",
+      CommandStatusCode.OutOfRange => "Out of range",
+      CommandStatusCode.ParametersUnachievable => "Parameters unachievable",
+      _ => error.ToString()
+    };
 }

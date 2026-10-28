@@ -16,6 +16,17 @@ namespace UI.Tests.Features.CustomCommand;
 
 public class CustomCommandDashboardViewModelTests
 {
+  private ILogger<CustomCommandDashboardViewModel> _logger;
+
+  private IAresUINotificationService _notificationService;
+
+  [OneTimeSetUp]
+  public void OneTimeSetup()
+  {
+    _logger = new Mock<ILogger<CustomCommandDashboardViewModel>>().Object;
+    _notificationService = new Mock<IAresUINotificationService>().Object;
+  }
+
   [Test]
   public async Task InitializeAsync_LoadsCommandsInNameOrder()
   {
@@ -108,7 +119,7 @@ public class CustomCommandDashboardViewModelTests
     };
   }
 
-  private static ViewModelFixture CreateFixture(IReadOnlyList<CustomCommandVersion> commands)
+  private ViewModelFixture CreateFixture(IReadOnlyList<CustomCommandVersion> commands)
   {
     var persistence = new Mock<ICustomCommandPersistenceService>();
     persistence.Setup(service => service.GetCommandsAsync()).ReturnsAsync(commands);
@@ -124,9 +135,7 @@ public class CustomCommandDashboardViewModelTests
     reportStore.SetupGet(store => store.CampaignStatusObservable).Returns(statuses);
     reportStore.SetupGet(store => store.CampaignExecutionStatus).Returns(() => currentStatus);
     var executor = new CustomCommandExecutor(persistence.Object, new BaseEnvironmentBuilder([]));
-    var notifService = new Mock<IAresUINotificationService>().Object;
-    var logger = new Mock<Logger<CustomCommandDashboardViewModel>>().Object;
-    var viewModel = new CustomCommandDashboardViewModel(persistence.Object, executor, reportStore.Object, notifService, logger);
+    var viewModel = new CustomCommandDashboardViewModel(persistence.Object, executor, reportStore.Object, _notificationService, _logger);
 
     return new ViewModelFixture(viewModel, persistence, statuses, status => currentStatus = status);
   }

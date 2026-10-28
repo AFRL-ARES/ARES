@@ -553,12 +553,12 @@ public class InterpreterTests
     Assert.That(IsValueTypeHintCompatible(AresValueHelper.CreateFloat(12d), expectedFloat), Is.True);
     Assert.That(IsValueTypeHintCompatible(AresValueHelper.CreateFloat(-1d), expectedFloat), Is.False);
     Assert.That(IsValueTypeHintCompatible(AresValueHelper.CreateFloat(40d), expectedFloat), Is.False);
-    Assert.That(IsValueTypeHintCompatible(AresValueHelper.CreateNumber(12), expectedFloat), Is.False);
+    Assert.That(IsValueTypeHintCompatible(AresValueHelper.CreateNumber(12), expectedFloat), Is.True);
 
     Assert.That(IsValueTypeHintCompatible(AresValueHelper.CreateInt(12), expectedInt), Is.True);
     Assert.That(IsValueTypeHintCompatible(AresValueHelper.CreateInt(-1), expectedInt), Is.False);
     Assert.That(IsValueTypeHintCompatible(AresValueHelper.CreateInt(40), expectedInt), Is.False);
-    Assert.That(IsValueTypeHintCompatible(AresValueHelper.CreateNumber(12), expectedInt), Is.False);
+    Assert.That(IsValueTypeHintCompatible(AresValueHelper.CreateNumber(12), expectedInt), Is.True);
   }
 
   [Test]

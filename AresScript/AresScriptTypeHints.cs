@@ -126,12 +126,6 @@ internal static class AresScriptTypeHints
     if(expected.Optional && actual.Type == AresDataType.Null)
       return true;
 
-    if(expected.Type.IsNumericType() && actual.Type.IsNumericType())
-      return true;
-
-    if(expected.Type != actual.Type)
-      return false;
-
     switch(expected.Type)
     {
       case AresDataType.Struct:
@@ -147,7 +141,10 @@ internal static class AresScriptTypeHints
         return IsCompatible(expected.QuantitySchema, actual.QuantitySchema);
 
       default:
-        return true;
+        if(AresValueHelper.AreCompatibleDataTypes(expected.Type, actual.Type))
+          return true;
+
+        return false;
     }
   }
 
