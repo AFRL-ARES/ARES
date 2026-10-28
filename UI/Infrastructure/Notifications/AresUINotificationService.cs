@@ -67,6 +67,9 @@ public class AresUINotificationService : IAresUINotificationService
 
   public void PushNotification(AresNotification notification)
   {
+    if(notification.Timestamp is null)
+      notification.Timestamp = DateTime.UtcNow.ToTimestamp();
+
     var radzenNotification = new NotificationMessage
     {
       Summary = notification.Title,

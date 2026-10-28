@@ -64,7 +64,7 @@
           </div>
 
           <div style="width: 20%; align-content: center; text-align-last: end">
-            <div>@notification.Timestamp.ToDateTime().ToString("hh:mm tt")</div>
+            <div>@notification.Timestamp.ToDateTime().ToLocalTime().ToString("hh:mm tt")</div>
           </div>
         </RadzenRow>
       </RadzenCard>
