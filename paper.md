@@ -43,6 +43,27 @@ affiliations:
    index: 5
 date: 30 January 2026
 bibliography: paper.bib
+# Override this entry because the bundled APA style title-cases BibTeX journal names.
+# Pandoc's nocase span preserves the journal's lowercase "npj" spelling.
+references:
+ - id: nikolaev:2016
+   type: article-journal
+   author:
+    - {family: Nikolaev, given: Pavel}
+    - {family: Hooper, given: Daylond}
+    - {family: Webber, given: Frederick}
+    - {family: Rao, given: Rahul}
+    - {family: Decker, given: Kevin}
+    - {family: Krein, given: Michael}
+    - {family: Poleski, given: Jason}
+    - {family: Barto, given: Rick}
+    - {family: Maruyama, given: Benji}
+   title: 'Autonomy in [Materials Research]{.nocase}: [A Case Study]{.nocase} in [Carbon Nanotube Growth]{.nocase}'
+   container-title: '[npj]{.nocase} Computational Materials'
+   issued: {date-parts: [[2016, 10]]}
+   volume: '2'
+   page: '16031'
+   DOI: 10.1038/npjcompumats.2016.31
 
 ---
 
