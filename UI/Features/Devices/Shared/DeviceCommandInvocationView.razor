@@ -1,0 +1,381 @@
+@using Ares.Datamodel
+@using Ares.Datamodel.Device
+@using Ares.Datamodel.Extensions
+@using UI.Application.Devices
+@inject DialogService DialogService
+
+@if(Command is null || DeviceAdapter is null)
+{
+  <RadzenText TextStyle="TextStyle.Body1">This command is not currently available.</RadzenText>
+}
+else
+{
+  <div class="@GetContainerClass()">
+    <RadzenStack Gap="1rem">
+      @if(ShowCommandHeader)
+      {
+        <div class="device-command-invocation__header">
+          <div>
+            <span class="device-command-invocation__eyebrow">Command</span>
+            <RadzenText Text="@Command.Name" TextStyle="TextStyle.Subtitle1" />
+          </div>
+        </div>
+      }
+
+      @if(!GetInputFields().Any())
+      {
+        <RadzenText TextStyle="TextStyle.Caption">This command does not require any input.</RadzenText>
+      }
+      else
+      {
+        @foreach(var field in GetInputFields())
+        {
+          var fieldKey = field.Key;
+          var schema = field.Value;
+          var widgetType = GetEffectiveWidgetType(fieldKey);
+
+          <RadzenStack Gap="0.35rem" class="device-command-invocation__field">
+            @switch(widgetType)
+            {
+              case WidgetType.WidgetUnspecified:
+                <AresValueDesigner Name="@fieldKey"
+                                   Schema="@schema"
+                                   Value="@_values[fieldKey]"
+                                   ValueEditCallback="@(value => UpdateValue(fieldKey, value))" />
+                break;
+
+              case WidgetType.NumericInput:
+                @if(IsNumericSchema(schema))
+                {
+                  <RadzenNumeric TValue="double"
+                                 Value="@GetNumericValue(fieldKey)"
+                                 Change="@(value => SetNumericValue(fieldKey, schema, value))"
+                                 Min="@GetMinimum(schema)"
+                                 Max="@GetMaximum(schema)"
+                                 Step="@GetNumericStep(schema).ToString()"
+                                 Style="width: 100%;" />
+                }
+                else
+                {
+                  <AresValueDesigner Name="@fieldKey" Schema="@schema" Value="@_values[fieldKey]" ValueEditCallback="@(value => UpdateValue(fieldKey, value))" />
+                }
+                break;
+
+              case WidgetType.NumericSlider:
+                @if(IsSliderSchema(schema))
+                {
+                  <RadzenSlider TValue="double"
+                                Value="@GetNumericValue(fieldKey)"
+                                Change="@(value => SetNumericValue(fieldKey, schema, value))"
+                                Min="@((decimal)GetMinimum(schema)!.Value)"
+                                Max="@((decimal)GetMaximum(schema)!.Value)"
+                                Step="@GetSliderStep(fieldKey).ToString()"
+                                Style="width: 100%;" />
+                  <div class="device-command-invocation__slider-value">@GetNumericValue(fieldKey)</div>
+                }
+                else
+                {
+                  <AresValueDesigner Name="@fieldKey" Schema="@schema" Value="@_values[fieldKey]" ValueEditCallback="@(value => UpdateValue(fieldKey, value))" />
+                }
+                break;
+
+              case WidgetType.BooleanToggle:
+                @if(schema.Type == AresDataType.Boolean)
+                {
+                  <RadzenSwitch Value="@GetBooleanValue(fieldKey)"
+                                Change="@(value => SetBooleanValue(fieldKey, value))" />
+                }
+                else
+                {
+                  <AresValueDesigner Name="@fieldKey" Schema="@schema" Value="@_values[fieldKey]" ValueEditCallback="@(value => UpdateValue(fieldKey, value))" />
+                }
+                break;
+
+              case WidgetType.StringInput:
+                @if(schema.Type == AresDataType.String)
+                {
+                  <RadzenTextBox Value="@GetStringValue(fieldKey)"
+                                 Change="@(value => SetStringValue(fieldKey, value))"
+                                 Style="width: 100%;" />
+                }
+                else
+                {
+                  <AresValueDesigner Name="@fieldKey" Schema="@schema" Value="@_values[fieldKey]" ValueEditCallback="@(value => UpdateValue(fieldKey, value))" />
+                }
+                break;
+
+              case WidgetType.Dropdown:
+                @if(schema.Type == AresDataType.String && schema.StringChoices?.Strings.Any() == true)
+                {
+                  <RadzenDropDown TValue="string"
+                                  Data="@schema.StringChoices.Strings"
+                                  Value="@GetStringValue(fieldKey)"
+                                  Change="@(value => SetStringValue(fieldKey, value))"
+                                  Style="width: 100%;" />
+                }
+                else if(IsNumericSchema(schema) && schema.NumberChoices?.Numbers.Any() == true)
+                {
+                  <RadzenDropDown TValue="double"
+                                  Data="@schema.NumberChoices.Numbers"
+                                  Value="@GetNumericValue(fieldKey)"
+                                  Change="@(value => SetNumericValue(fieldKey, schema, Convert.ToDouble(value)))"
+                                  Style="width: 100%;" />
+                }
+                else
+                {
+                  <AresValueDesigner Name="@fieldKey" Schema="@schema" Value="@_values[fieldKey]" ValueEditCallback="@(value => UpdateValue(fieldKey, value))" />
+                }
+                break;
+
+              case WidgetType.ReadOnly:
+                <AresValueDisplay Value="@_values[fieldKey]" Schema="@schema" />
+                break;
+
+              default:
+                <AresValueDesigner Name="@fieldKey" Schema="@schema" Value="@_values[fieldKey]" ValueEditCallback="@(value => UpdateValue(fieldKey, value))" />
+                break;
+            }
+            @if(!string.IsNullOrWhiteSpace(schema.Description))
+            {
+              <RadzenText TextStyle="TextStyle.Caption" class="device-command-invocation__hint">@schema.Description</RadzenText>
+            }
+          </RadzenStack>
+        }
+      }
+
+      @if(_result is not null)
+      {
+        <RadzenAlert AlertStyle="@(_result.Success ? AlertStyle.Success : AlertStyle.Danger)" class="device-command-invocation__result">
+          @if(_result.Success)
+          {
+            <RadzenText TextStyle="TextStyle.Subtitle2">Command completed successfully.</RadzenText>
+            @if(_result.Result is not null && Command.OutputSchema is not null)
+            {
+              <AresValueDisplay Value="@_result.Result" Schema="@Command.OutputSchema" />
+            }
+          }
+          else
+          {
+            @_result.Error
+          }
+        </RadzenAlert>
+      }
+
+      <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem" class="device-command-invocation__actions">
+        @if(ShowCloseButton)
+        {
+          <RadzenButton Icon="close" Text="Close" ButtonStyle="ButtonStyle.Light" Click="@(() => DialogService.Close())" />
+        }
+        <RadzenButton Icon="play_arrow" ButtonStyle="ButtonStyle.Primary" Click="InvokeAsync" Disabled="@(_isExecuting || !CanInvoke)" />
+      </RadzenStack>
+    </RadzenStack>
+  </div>
+}
+
+@code {
+  [Parameter]
+  public DeviceCommandDescriptor? Command { get; set; }
+
+  [Parameter]
+  public IAresDeviceAdapter? DeviceAdapter { get; set; }
+
+  [Parameter]
+  public bool DisplayOnlyWidgetDescriptors { get; set; }
+
+  [Parameter]
+  public bool ShowCommandHeader { get; set; }
+
+  [Parameter]
+  public bool ShowCloseButton { get; set; } = true;
+
+  [Parameter]
+  public bool CanInvoke { get; set; } = true;
+
+  private readonly Dictionary<string, AresValue> _values = new(StringComparer.Ordinal);
+  private bool _isExecuting;
+  private CommandResult? _result;
+
+  private string GetContainerClass()
+    => ShowCloseButton
+      ? "device-command-invocation"
+      : "device-command-invocation device-command-invocation--inline";
+
+  private IEnumerable<KeyValuePair<string, AresValueSchema>> GetInputFields()
+  {
+    if(Command is null)
+      return [];
+
+    if(!DisplayOnlyWidgetDescriptors)
+      return Command.InputSchema.Fields;
+
+    var widgetInputs = Command.WidgetDescriptors
+      .Select(widget => widget.AssociatedInput)
+      .ToHashSet(StringComparer.Ordinal);
+    return Command.InputSchema.Fields.Where(field => widgetInputs.Contains(field.Key));
+  }
+
+  protected override void OnParametersSet()
+  {
+    _values.Clear();
+    if(Command is null)
+      return;
+
+    foreach(var field in Command.InputSchema.Fields)
+      _values[field.Key] = field.Value.DefaultValue?.Clone() ?? AresValueHelper.CreateDefaultValue(field.Value);
+  }
+
+  private async Task InvokeAsync()
+  {
+    if(Command is null || DeviceAdapter is null || _isExecuting)
+      return;
+
+    _isExecuting = true;
+    _result = null;
+    try
+    {
+      var arguments = _values
+        .Select(entry => new DeviceCommandArgument { ArgName = entry.Key, ArgValue = entry.Value })
+        .ToArray();
+      _result = await DeviceAdapter.ExecuteCommandAsync(Command.Name, arguments);
+    }
+    catch(Exception ex)
+    {
+      _result = new CommandResult { Success = false, Error = ex.Message };
+    }
+    finally
+    {
+      _isExecuting = false;
+    }
+  }
+
+  private async Task UpdateValue(string fieldKey, AresValue value)
+  {
+    _values[fieldKey] = value;
+    await InvokeAsync(StateHasChanged);
+  }
+
+  private Task SetNumericValue(string fieldKey, AresValueSchema schema, double value)
+  {
+    var aresValue = new AresValue();
+    switch(schema.Type)
+    {
+      case AresDataType.Number:
+        aresValue.NumberValue = value;
+        break;
+      case AresDataType.Float:
+        aresValue.FloatValue = value;
+        break;
+      case AresDataType.Int:
+        aresValue.IntValue = (long)value;
+        break;
+      case AresDataType.Quantity:
+        aresValue.QuantityValue = new QuantityValue
+        {
+          Scalar = value,
+          Type = schema.QuantitySchema?.QuantityType ?? QuantityType.Unspecified,
+          Unit = schema.QuantitySchema?.BoundsUnit ?? string.Empty
+        };
+        break;
+      case AresDataType.Boolean:
+      case AresDataType.String:
+      case AresDataType.StringArray:
+      case AresDataType.NumberArray:
+      case AresDataType.FloatArray:
+      case AresDataType.IntArray:
+      case AresDataType.ByteArray:
+      case AresDataType.Timestamp:
+      case AresDataType.Struct:
+      case AresDataType.List:
+      case AresDataType.Unit:
+      case AresDataType.Function:
+      case AresDataType.Null:
+      case AresDataType.Any:
+      case AresDataType.UnspecifiedType:
+      default:
+        return Task.CompletedTask;
+    }
+
+    return UpdateValue(fieldKey, aresValue);
+  }
+
+  private Task SetBooleanValue(string fieldKey, bool value)
+    => UpdateValue(fieldKey, new AresValue { BoolValue = value });
+
+  private Task SetStringValue(string fieldKey, object? value)
+    => UpdateValue(fieldKey, new AresValue { StringValue = value?.ToString() ?? string.Empty });
+
+  private WidgetType GetEffectiveWidgetType(string fieldKey)
+  {
+    var descriptor = Command?.WidgetDescriptors.FirstOrDefault(widget => widget.AssociatedInput == fieldKey);
+    if(descriptor is null)
+      return WidgetType.WidgetUnspecified;
+
+    return descriptor.WidgetType switch
+    {
+      WidgetType.WidgetUnspecified => WidgetType.WidgetUnspecified,
+      WidgetType.NumericInput => WidgetType.NumericInput,
+      WidgetType.NumericSlider => WidgetType.NumericSlider,
+      WidgetType.BooleanToggle => WidgetType.BooleanToggle,
+      WidgetType.StringInput => WidgetType.StringInput,
+      WidgetType.Dropdown => WidgetType.Dropdown,
+      WidgetType.ReadOnly => WidgetType.ReadOnly,
+      _ => WidgetType.WidgetUnspecified
+    };
+  }
+
+  private WidgetDescriptor? GetDescriptor(string fieldKey)
+    => Command?.WidgetDescriptors.FirstOrDefault(widget => widget.AssociatedInput == fieldKey);
+
+  private decimal? GetMinimum(AresValueSchema schema)
+  {
+    if(schema.Type == AresDataType.Quantity)
+      return schema.QuantitySchema?.HasMinScalarValue == true ? (decimal)schema.QuantitySchema.MinScalarValue : null;
+
+    return schema.HasMinNumberValue ? (decimal)schema.MinNumberValue : null;
+  }
+
+  private decimal? GetMaximum(AresValueSchema schema)
+  {
+    if(schema.Type == AresDataType.Quantity)
+      return schema.QuantitySchema?.HasMaxScalarValue == true ? (decimal)schema.QuantitySchema.MaxScalarValue : null;
+
+    return schema.HasMaxNumberValue ? (decimal)schema.MaxNumberValue : null;
+  }
+
+  private double GetNumericStep(AresValueSchema schema)
+    => schema.Type == AresDataType.Int ? 1 : 0.01;
+
+  private double GetSliderStep(string fieldKey)
+  {
+    var descriptor = GetDescriptor(fieldKey);
+    return descriptor?.SliderStepSize > 0 ? descriptor.SliderStepSize : GetNumericStep(Command!.InputSchema.Fields[fieldKey]);
+  }
+
+  private bool IsNumericSchema(AresValueSchema schema)
+    => schema.Type is AresDataType.Number or AresDataType.Float or AresDataType.Int or AresDataType.Quantity;
+
+  private bool IsSliderSchema(AresValueSchema schema)
+    => IsNumericSchema(schema) && GetMinimum(schema) is not null && GetMaximum(schema) is not null;
+
+  private double GetNumericValue(string fieldKey)
+  {
+    var value = _values[fieldKey];
+    return value.KindCase switch
+    {
+      AresValue.KindOneofCase.NumberValue => value.NumberValue,
+      AresValue.KindOneofCase.FloatValue => value.FloatValue,
+      AresValue.KindOneofCase.IntValue => value.IntValue,
+      AresValue.KindOneofCase.QuantityValue => value.QuantityValue.Scalar,
+      _ => 0
+    };
+  }
+
+  private bool GetBooleanValue(string fieldKey)
+    => _values[fieldKey].KindCase == AresValue.KindOneofCase.BoolValue && _values[fieldKey].BoolValue;
+
+  private string GetStringValue(string fieldKey)
+    => _values[fieldKey].KindCase == AresValue.KindOneofCase.StringValue ? _values[fieldKey].StringValue : string.Empty;
+
+  private string GetFieldLabel(string fieldKey, AresValueSchema schema)
+    => string.IsNullOrWhiteSpace(schema.Description) ? fieldKey : schema.Description;
+}

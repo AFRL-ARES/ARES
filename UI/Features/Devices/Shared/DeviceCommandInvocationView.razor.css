@@ -1,0 +1,91 @@
+.device-command-invocation {
+  min-width: 0;
+}
+
+.device-command-invocation--inline {
+  padding: 0.85rem;
+  border: 1px solid var(--rz-base-300, rgba(148, 163, 184, 0.24));
+  border-radius: 7px;
+  background: var(--rz-card-flat-background-color, rgba(148, 163, 184, 0.04));
+}
+
+.device-command-invocation__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.device-command-invocation__header .rz-text {
+  margin-top: 0.1rem;
+  font-weight: 650;
+}
+
+.device-command-invocation__header-icon {
+  color: var(--rz-primary, #0d6efd);
+  font-size: 1.25rem;
+}
+
+.device-command-invocation__eyebrow {
+  color: var(--rz-text-secondary-color, #667085);
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.device-command-invocation__description {
+  color: var(--rz-text-secondary-color, #667085);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.device-command-invocation--inline .device-command-invocation__field {
+  display: grid;
+  grid-template-columns: minmax(6rem, 0.65fr) minmax(0, 1.35fr);
+  align-items: center;
+  column-gap: 0.85rem;
+}
+
+.device-command-invocation--inline .device-command-invocation__field > ::deep .rz-text,
+.device-command-invocation--inline .device-command-invocation__field > ::deep .device-command-invocation__hint {
+  grid-column: 2;
+}
+
+.device-command-invocation--inline .device-command-invocation__field > ::deep .rz-label {
+  align-self: start;
+  padding-top: 0.45rem;
+  color: var(--rz-text-secondary-color, #667085);
+  font-size: 0.78rem;
+}
+
+.device-command-invocation__hint {
+  color: var(--rz-text-secondary-color, #667085);
+  line-height: 1.35;
+}
+
+.device-command-invocation__slider-value {
+  color: var(--rz-text-secondary-color, #667085);
+  font-size: 0.75rem;
+  text-align: right;
+}
+
+.device-command-invocation__result {
+  margin: 0;
+}
+
+.device-command-invocation__actions {
+  margin-top: 0.15rem;
+}
+
+@media (max-width: 32rem) {
+  .device-command-invocation--inline .device-command-invocation__field {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.35rem;
+  }
+
+  .device-command-invocation--inline .device-command-invocation__field > ::deep .rz-label {
+    padding-top: 0;
+  }
+}

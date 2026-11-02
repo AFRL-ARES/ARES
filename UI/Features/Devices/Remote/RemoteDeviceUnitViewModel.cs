@@ -1,4 +1,5 @@
 using Ares.Datamodel;
+using Ares.Datamodel.Device;
 using Ares.Toolkit.Device.UI;
 using ReactiveUI;
 using ReactiveUI.SourceGenerators;
@@ -25,7 +26,25 @@ public partial class RemoteDeviceUnitViewModel : ReactiveObject, IDeviceUnitCont
   private void StartStateUpdater()
   {
     _stateListener = _deviceAdapter.StateStream.Subscribe(s => DeviceState = s);
-    _statusListener = _deviceAdapter.ConnectionStatusStream.Subscribe(s => ConnectionStatus = s);
+    _statusListener = _deviceAdapter.ConnectionStatusStream.Subscribe(s =>
+    {
+      ConnectionStatus = s;
+      if(s == ConnectionStatus.ConnectedToDevice)
+        _ = RefreshCommandsAsync();
+    });
+    _ = RefreshCommandsAsync();
+  }
+
+  private async Task RefreshCommandsAsync()
+  {
+    try
+    {
+      DeviceCommands = (await _deviceAdapter.GetCommandDescriptorsAsync()).ToArray();
+    }
+    catch(Exception)
+    {
+      // Keep the last known command set available while the device reconnects.
+    }
   }
 
   [Reactive]
@@ -34,7 +53,11 @@ public partial class RemoteDeviceUnitViewModel : ReactiveObject, IDeviceUnitCont
   [Reactive]
   public partial ConnectionStatus ConnectionStatus { get; set; }
 
+  [Reactive]
+  public partial DeviceCommandDescriptor[] DeviceCommands { get; private set; } = [];
+
   public string DeviceName => _deviceAdapter.Name;
+  public IAresDeviceAdapter DeviceAdapter => _deviceAdapter;
 
   public string DeviceId { get; }
 

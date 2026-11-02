@@ -12,6 +12,10 @@ public interface IAresDeviceAdapter
   string Version { get; }
   Task<bool> Activate();
   Task UpdateConnectionStatus();
+  Task<IReadOnlyList<DeviceCommandDescriptor>> GetCommandDescriptorsAsync(CancellationToken cancellationToken = default);
+  Task<CommandResult> ExecuteCommandAsync(string commandName,
+    IReadOnlyCollection<DeviceCommandArgument> arguments,
+    CancellationToken cancellationToken = default);
   AresStruct? State { get; }
   IObservable<AresStruct?> StateStream { get; }
   DeviceOperationalStatus OperationalStatus { get; }
