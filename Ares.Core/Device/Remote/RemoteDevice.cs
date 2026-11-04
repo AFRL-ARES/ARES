@@ -56,8 +56,6 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     }
   }
 
-  public override IObservable<AresStruct> StateStream => _stateSubject.AsObservable();
-  public AresStruct? CurrentState => _stateSubject.Value;
   public override async Task<List<DeviceCommandDescriptor>> GetCommandDescriptorsAsync()
   {
     return await BuildCommandDescriptorsAsync();
@@ -92,11 +90,32 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     var client = GetClient();
     try
     {
-      using var call =
-        client.GetStateStream(new DeviceStateStreamRequest { PollingSettings = _pollingSettings }, cancellationToken: token);
+      using var call = client.GetStateStream(new DeviceStateStreamRequest { PollingSettings = _pollingSettings }, cancellationToken: token);
       await foreach(var state in call.ResponseStream.ReadAllAsync(token))
       {
-        _stateSubject.OnNext(state.State);
+        if(!state.DeviceStateData.Any())
+          _stateSubject.OnNext(state.State);
+
+        else
+        {
+          var stitchedStateData = new AresStruct();
+
+          foreach(var item in state.DeviceStateData)
+          {
+            stitchedStateData.AddValue(item.Name, item.Value);
+
+            if(DisplaySettings.TryGetValue(item.Name, out var value))
+            {
+              value.DisplayOnUI = item.DisplayInUi;
+              value.Index = item.Index;
+            }
+
+            else
+              DisplaySettings[item.Name] = new StateDisplayInfo { Index = item.Index, DisplayOnUI = item.DisplayInUi };
+          }
+
+          _stateSubject.OnNext(stitchedStateData);
+        }
       }
     }
     catch(RpcException e) when(e.StatusCode == StatusCode.Cancelled)
@@ -172,9 +191,6 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     var client = GetClient();
     try
     {
-      //var callOpts = new CallOptions(deadline: DateTime.UtcNow.AddSeconds(5));
-      //var cmdResponse = await client.GetCommandsAsync(new Empty(), callOpts);
-      //_commands = [.. cmdResponse.Commands];
       await BuildCommandDescriptorsAsync();
     }
     catch(RpcException ex)
@@ -395,4 +411,8 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
       return [];
     }
   }
+
+  public override IObservable<AresStruct> StateStream => _stateSubject.AsObservable();
+  public AresStruct? CurrentState => _stateSubject.Value;
+  public ConcurrentDictionary<string, StateDisplayInfo> DisplaySettings { get; set; } = [];
 }

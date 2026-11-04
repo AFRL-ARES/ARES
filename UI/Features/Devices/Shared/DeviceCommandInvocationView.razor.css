@@ -63,6 +63,19 @@
   line-height: 1.35;
 }
 
+.device-command-invocation__slider-control {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.device-command-invocation__slider-control > ::deep .rz-slider {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+}
+
 .device-command-invocation__slider-value {
   color: var(--rz-text-secondary-color, #667085);
   font-size: 0.75rem;

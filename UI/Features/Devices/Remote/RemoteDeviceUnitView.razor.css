@@ -138,11 +138,14 @@
 
 .remote-device__state-grid {
     display: grid;
+    grid-template-columns: repeat(var(--remote-device-state-columns), minmax(0, 1fr));
     gap: 0.65rem;
 }
 
-.remote-device__state-grid {
-    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+@media (max-width: 48rem) {
+    .remote-device__state-grid {
+        grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    }
 }
 
 .remote-device__command-picker {

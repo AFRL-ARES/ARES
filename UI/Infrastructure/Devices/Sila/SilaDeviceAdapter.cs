@@ -1,4 +1,5 @@
 ﻿using Ares.Core.Device.Providers;
+using Ares.Core.Device.Remote;
 using Ares.Core.Device.Sila;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
@@ -48,6 +49,9 @@ public sealed class SilaDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
     cancellationToken.ThrowIfCancellationRequested();
     return await GetDevice().GetCommandDescriptorsAsync();
   }
+
+  //Not applicable for SiLA Devices
+  public Dictionary<string, StateDisplayInfo> GetDisplaySettings() => [];
 
   public Task<CommandResult> ExecuteCommandAsync(
     string commandName,

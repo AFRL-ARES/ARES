@@ -25,15 +25,18 @@
           </div>
           <span class="remote-device__section-count">@ViewModel.DeviceState.Fields.Count values</span>
         </div>
-        <div class="remote-device__state-grid">
+        <div class="remote-device__state-grid" style="--remote-device-state-columns: @ViewModel.StateColumnCount">
           @foreach(var field in ViewModel.DeviceState.Fields)
           {
-            <div class="remote-device__state-item">
-              <span class="remote-device__state-label" title="@field.Key">@field.Key</span>
-              <div class="remote-device__state-value">
-                <AresValueDisplay Value="@field.Value" />
+            @if(ViewModel!.ShouldDisplay(field.Key))
+            {
+              <div class="remote-device__state-item">
+                <span class="remote-device__state-label" title="@field.Key">@field.Key</span>
+                <div class="remote-device__state-value">
+                  <AresValueDisplay Value="@field.Value" />
+                </div>
               </div>
-            </div>
+            }
           }
         </div>
       </section>

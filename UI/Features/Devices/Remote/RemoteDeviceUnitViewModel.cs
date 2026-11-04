@@ -1,3 +1,4 @@
+using Ares.Core.Device.Remote;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
 using Ares.Toolkit.Device.UI;
@@ -9,6 +10,9 @@ namespace UI.Features.Devices.Remote;
 
 public partial class RemoteDeviceUnitViewModel : ReactiveObject, IDeviceUnitControlViewModel, IAsyncDisposable
 {
+  private const int MinimumWidth = 30;
+  private const int WidthPerStateColumn = 15;
+  private const int MaximumStateColumns = 4;
   private readonly IAresDeviceAdapter _deviceAdapter;
   private IDisposable? _stateListener;
   private IDisposable? _statusListener;
@@ -17,15 +21,23 @@ public partial class RemoteDeviceUnitViewModel : ReactiveObject, IDeviceUnitCont
   {
     DeviceId = deviceAdapter.Id;
     _deviceAdapter = deviceAdapter;
-    StartStateUpdater();
+    StateDisplayInfo = deviceAdapter.GetDisplaySettings();
 
     ViewType = typeof(RemoteDeviceUnitView);
-    DefaultWidth = 20;
+    DefaultWidth = MinimumWidth;
+    StateColumnCount = 1;
+
+    StartStateUpdater();
   }
 
   private void StartStateUpdater()
   {
-    _stateListener = _deviceAdapter.StateStream.Subscribe(s => DeviceState = s);
+    _stateListener = _deviceAdapter.StateStream.Subscribe(s =>
+    {
+      DeviceState = s;
+      StateDisplayInfo = _deviceAdapter.GetDisplaySettings();
+      UpdateLayout(s.Fields.Count(f => ShouldDisplay(f.Key)));
+    });
     _statusListener = _deviceAdapter.ConnectionStatusStream.Subscribe(s =>
     {
       ConnectionStatus = s;
@@ -33,6 +45,17 @@ public partial class RemoteDeviceUnitViewModel : ReactiveObject, IDeviceUnitCont
         _ = RefreshCommandsAsync();
     });
     _ = RefreshCommandsAsync();
+  }
+
+  public bool ShouldDisplay(string fieldName)
+  {
+    var found = StateDisplayInfo.TryGetValue(fieldName, out StateDisplayInfo? value);
+
+    if(!found || value is null)
+      return false;
+
+    else
+      return value.DisplayOnUI;
   }
 
   private async Task RefreshCommandsAsync()
@@ -47,22 +70,11 @@ public partial class RemoteDeviceUnitViewModel : ReactiveObject, IDeviceUnitCont
     }
   }
 
-  [Reactive]
-  public partial AresStruct? DeviceState { get; set; }
-
-  [Reactive]
-  public partial ConnectionStatus ConnectionStatus { get; set; }
-
-  [Reactive]
-  public partial DeviceCommandDescriptor[] DeviceCommands { get; private set; } = [];
-
-  public string DeviceName => _deviceAdapter.Name;
-  public IAresDeviceAdapter DeviceAdapter => _deviceAdapter;
-
-  public string DeviceId { get; }
-
-  public int DefaultWidth { get; set; }
-  public Type? ViewType { get; set; }
+  private void UpdateLayout(int stateFieldCount)
+  {
+    StateColumnCount = Math.Clamp((int)Math.Ceiling(stateFieldCount / 2d), 1, MaximumStateColumns);
+    DefaultWidth = Math.Max(MinimumWidth, StateColumnCount * WidthPerStateColumn);
+  }
 
   public ValueTask DisposeAsync()
   {
@@ -71,4 +83,21 @@ public partial class RemoteDeviceUnitViewModel : ReactiveObject, IDeviceUnitCont
     GC.SuppressFinalize(this);
     return ValueTask.CompletedTask;
   }
+
+  public string DeviceName => _deviceAdapter.Name;
+  public IAresDeviceAdapter DeviceAdapter => _deviceAdapter;
+  public string DeviceId { get; }
+  [Reactive]
+  public partial int DefaultWidth { get; set; }
+  public Type? ViewType { get; set; }
+  [Reactive]
+  public partial AresStruct? DeviceState { get; set; }
+  [Reactive]
+  public partial Dictionary<string, StateDisplayInfo> StateDisplayInfo { get; set; }
+  [Reactive]
+  public partial ConnectionStatus ConnectionStatus { get; set; }
+  [Reactive]
+  public partial DeviceCommandDescriptor[] DeviceCommands { get; private set; } = [];
+  [Reactive]
+  public partial int StateColumnCount { get; private set; }
 }

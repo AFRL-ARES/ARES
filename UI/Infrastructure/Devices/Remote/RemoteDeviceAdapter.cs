@@ -31,18 +31,6 @@ public sealed class RemoteDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
     };
   }
 
-  public string Id { get; }
-  public string Name { get; private set; } = "";
-  public string Type { get; private set; } = "";
-  public string Description { get; private set; } = "";
-  public string Version { get; private set; } = "";
-  public bool Active { get; private set; }
-  public IObservable<AresStruct?> StateStream => _stateSubject.AsObservable();
-  public AresStruct? State => _stateSubject.Value;
-  public DeviceOperationalStatus OperationalStatus { get; private set; }
-  public IObservable<ConnectionStatus> ConnectionStatusStream => _connectionStatusSubject.AsObservable();
-  public AresStructSchema? StateSchema { get; private set; }
-
   public async Task<bool> Activate()
   {
     await FetchInfo();
@@ -192,8 +180,27 @@ public sealed class RemoteDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
   }
 
   private RemoteDevice GetDevice()
+    => _deviceProvider.GetDevice<RemoteDevice>(Id) ?? throw new InvalidOperationException($"Device '{Id}' is no longer available.");
+
+  public Dictionary<string, StateDisplayInfo> GetDisplaySettings()
   {
-    return _deviceProvider.GetDevice<RemoteDevice>(Id)
-      ?? throw new InvalidOperationException($"Device '{Id}' is no longer available.");
+    var device = GetDevice();
+
+    if(device is not null)
+      return device.DisplaySettings.ToDictionary();
+
+    return [];
   }
+  
+  public string Id { get; }
+  public string Name { get; private set; } = "";
+  public string Type { get; private set; } = "";
+  public string Description { get; private set; } = "";
+  public string Version { get; private set; } = "";
+  public bool Active { get; private set; }
+  public IObservable<AresStruct?> StateStream => _stateSubject.AsObservable();
+  public AresStruct? State => _stateSubject.Value;
+  public DeviceOperationalStatus OperationalStatus { get; private set; }
+  public IObservable<ConnectionStatus> ConnectionStatusStream => _connectionStatusSubject.AsObservable();
+  public AresStructSchema? StateSchema { get; private set; }
 }

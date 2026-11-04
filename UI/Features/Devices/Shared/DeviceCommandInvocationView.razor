@@ -64,14 +64,19 @@ else
               case WidgetType.NumericSlider:
                 @if(IsSliderSchema(schema))
                 {
-                  <RadzenSlider TValue="double"
-                                Value="@GetNumericValue(fieldKey)"
-                                Change="@(value => SetNumericValue(fieldKey, schema, value))"
-                                Min="@((decimal)GetMinimum(schema)!.Value)"
-                                Max="@((decimal)GetMaximum(schema)!.Value)"
-                                Step="@GetSliderStep(fieldKey).ToString()"
-                                Style="width: 100%;" />
-                  <div class="device-command-invocation__slider-value">@GetNumericValue(fieldKey)</div>
+                  <div class="device-command-invocation__slider-control grid-stack-interactive"
+                       @onmousedown:stopPropagation
+                       @onpointerdown:stopPropagation
+                       @ontouchstart:stopPropagation>
+                    <RadzenSlider TValue="double"
+                                  Value="@GetNumericValue(fieldKey)"
+                                  Change="@(value => SetNumericValue(fieldKey, schema, value))"
+                                  Min="@((decimal)GetMinimum(schema)!.Value)"
+                                  Max="@((decimal)GetMaximum(schema)!.Value)"
+                                  Step="@GetSliderStep(fieldKey).ToString()"
+                                  Style="width: 100%;" />
+                    <div class="device-command-invocation__slider-value">@GetNumericValue(fieldKey)</div>
+                  </div>
                 }
                 else
                 {
@@ -113,7 +118,7 @@ else
                                   Change="@(value => SetStringValue(fieldKey, value))"
                                   Style="width: 100%;" />
                 }
-                else if(IsNumericSchema(schema) && schema.NumberChoices?.Numbers.Any() == true)
+                else if(schema.Type.IsNumericType() && schema.NumberChoices?.Numbers.Any() == true)
                 {
                   <RadzenDropDown TValue="double"
                                   Data="@schema.NumberChoices.Numbers"
@@ -360,6 +365,7 @@ else
   private double GetNumericValue(string fieldKey)
   {
     var value = _values[fieldKey];
+
     return value.KindCase switch
     {
       AresValue.KindOneofCase.NumberValue => value.NumberValue,
