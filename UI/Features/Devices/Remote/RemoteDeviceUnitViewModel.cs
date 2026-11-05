@@ -34,8 +34,8 @@ public partial class RemoteDeviceUnitViewModel : ReactiveObject, IDeviceUnitCont
   {
     _stateListener = _deviceAdapter.StateStream.Subscribe(s =>
     {
-      DeviceState = s;
       StateDisplayInfo = _deviceAdapter.GetDisplaySettings();
+      DeviceState = s;
       UpdateLayout(s.Fields.Count(f => ShouldDisplay(f.Key)));
     });
     _statusListener = _deviceAdapter.ConnectionStatusStream.Subscribe(s =>
@@ -49,13 +49,20 @@ public partial class RemoteDeviceUnitViewModel : ReactiveObject, IDeviceUnitCont
 
   public bool ShouldDisplay(string fieldName)
   {
-    var found = StateDisplayInfo.TryGetValue(fieldName, out StateDisplayInfo? value);
+    return StateDisplayInfo.TryGetValue(fieldName, out StateDisplayInfo? value)
+      && value is not null
+      && value.DisplayOnUI;
+  }
 
-    if(!found || value is null)
-      return false;
+  public IReadOnlyList<KeyValuePair<string, AresValue>> GetDisplayedStateFields()
+  {
+    if(DeviceState is null)
+      return [];
 
-    else
-      return value.DisplayOnUI;
+    return DeviceState.Fields
+      .Where(field => ShouldDisplay(field.Key))
+      .OrderBy(field => StateDisplayInfo[field.Key].Index)
+      .ToArray();
   }
 
   private async Task RefreshCommandsAsync()

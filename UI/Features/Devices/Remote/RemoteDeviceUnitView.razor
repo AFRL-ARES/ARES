@@ -16,27 +16,24 @@
     </div>
   </HeaderTemplate>
   <ChildContent>
-    @if(ViewModel!.DeviceState?.Fields.Count > 0)
+    @if(ViewModel!.GetDisplayedStateFields() is { Count: > 0 } displayedStateFields)
     {
       <section class="remote-device__state" aria-label="Live device state">
         <div class="remote-device__section-heading">
           <div>
             <span class="remote-device__section-kicker">Live state</span>
           </div>
-          <span class="remote-device__section-count">@ViewModel.DeviceState.Fields.Count values</span>
+          <span class="remote-device__section-count">@displayedStateFields.Count values</span>
         </div>
         <div class="remote-device__state-grid" style="--remote-device-state-columns: @ViewModel.StateColumnCount">
-          @foreach(var field in ViewModel.DeviceState.Fields)
+          @foreach(var field in displayedStateFields)
           {
-            @if(ViewModel!.ShouldDisplay(field.Key))
-            {
-              <div class="remote-device__state-item">
-                <span class="remote-device__state-label" title="@field.Key">@field.Key</span>
-                <div class="remote-device__state-value">
-                  <AresValueDisplay Value="@field.Value" />
-                </div>
+            <div class="remote-device__state-item">
+              <span class="remote-device__state-label" title="@field.Key">@field.Key</span>
+              <div class="remote-device__state-value">
+                <AresValueDisplay Value="@field.Value" />
               </div>
-            }
+            </div>
           }
         </div>
       </section>
