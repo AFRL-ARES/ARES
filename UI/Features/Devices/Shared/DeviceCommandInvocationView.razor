@@ -226,7 +226,12 @@ else
       return;
 
     foreach(var field in Command.InputSchema.Fields)
+    {
       _values[field.Key] = field.Value.DefaultValue?.Clone() ?? AresValueHelper.CreateDefaultValue(field.Value);
+
+      if(GetEffectiveWidgetType(field.Key) == WidgetType.NumericSlider && IsSliderSchema(field.Value))
+        _values[field.Key] = CreateSliderValue(field.Value, GetNumericValue(field.Key));
+    }
   }
 
   private async Task InvokeAsync()
@@ -260,6 +265,12 @@ else
   }
 
   private Task SetNumericValue(string fieldKey, AresValueSchema schema, double value)
+  {
+    var aresValue = CreateNumericValue(schema, value);
+    return aresValue is null ? Task.CompletedTask : UpdateValue(fieldKey, aresValue);
+  }
+
+  private AresValue? CreateNumericValue(AresValueSchema schema, double value)
   {
     var aresValue = new AresValue();
     switch(schema.Type)
@@ -297,10 +308,18 @@ else
       case AresDataType.Any:
       case AresDataType.UnspecifiedType:
       default:
-        return Task.CompletedTask;
+        return null;
     }
 
-    return UpdateValue(fieldKey, aresValue);
+    return aresValue;
+  }
+
+  private AresValue CreateSliderValue(AresValueSchema schema, double value)
+  {
+    var minimum = GetMinimum(schema)!.Value;
+    var maximum = GetMaximum(schema)!.Value;
+    var clampedValue = Math.Clamp(value, (double)minimum, (double)maximum);
+    return CreateNumericValue(schema, clampedValue)!;
   }
 
   private Task SetBooleanValue(string fieldKey, bool value)

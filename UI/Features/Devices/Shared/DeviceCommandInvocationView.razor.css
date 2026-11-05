@@ -67,7 +67,7 @@
   box-sizing: border-box;
   min-width: 0;
   max-width: 100%;
-  overflow: hidden;
+  padding-inline: 0.375rem;
 }
 
 .device-command-invocation__slider-control > ::deep .rz-slider {
