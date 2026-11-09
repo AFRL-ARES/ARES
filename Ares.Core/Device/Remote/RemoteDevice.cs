@@ -94,7 +94,9 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
       await foreach(var state in call.ResponseStream.ReadAllAsync(token))
       {
         if(!state.DeviceStateData.Any())
+          #pragma warning disable CS0612 // We know this is obsolete, but this is required for backwards compatability for now
           _stateSubject.OnNext(state.State);
+          #pragma warning restore CS0612 // We know this is obsolete, but this is required for backwards compatability for now
 
         else
         {

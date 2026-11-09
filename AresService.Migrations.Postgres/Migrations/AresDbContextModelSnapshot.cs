@@ -708,6 +708,9 @@ namespace AresService.Migrations.Postgres.Migrations
                     b.Property<string>("OutputSchema")
                         .HasColumnType("text");
 
+                    b.Property<string>("WidgetDescriptors")
+                        .HasColumnType("text");
+
                     b.HasKey("UniqueId");
 
                     b.HasIndex("DeviceInfoId");
@@ -985,6 +988,36 @@ namespace AresService.Migrations.Postgres.Migrations
                     b.HasKey("UniqueId");
 
                     b.ToTable("SilaConfigs");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Device.WidgetDescriptor", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AssociatedInput")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW()");
+
+                    b.Property<float>("SliderStepSize")
+                        .HasColumnType("real");
+
+                    b.Property<int>("WidgetType")
+                        .HasColumnType("integer");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("WidgetDescriptor");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.DeviceErrorHandlingConfig", b =>
