@@ -1,53 +1,147 @@
 @using UI.Application.Devices
+@using Ares.Datamodel.Device
 @inherits ReactiveUI.Blazor.ReactiveComponentBase<RemoteDeviceUnitViewModel>
-@inject TooltipService TooltipService
-
-<RadzenFieldset class="device-fieldset">
+<RadzenFieldset class="device-fieldset remote-device-unit">
   <HeaderTemplate>
-    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
-      <RadzenText Text="@ViewModel!.DeviceName" TItem="string" />
-      @if (ViewModel.ConnectionStatus == ConnectionStatus.ConnectedToDevice)
-      {
-        <RadzenIcon @ref="_connectedIcon" Icon="link" class="rz-color-success"
-          @onmouseenter="@(args => ShowTooltip(_connectedIcon!.Element, "Connected to Service and Device"))" />
-      }
-      else if (ViewModel!.ConnectionStatus == ConnectionStatus.ConnectedToService)
-      {
-        <RadzenIcon @ref="_serviceConnectedIcon" Icon="link" class="rz-color-warning"
-          @onmouseenter="@(args => ShowTooltip(_serviceConnectedIcon!.Element, "Connected to Service but not Device"))" />
-      }
-      else if (ViewModel.ConnectionStatus == ConnectionStatus.Disconnected)
-      {
-        <RadzenIcon @ref="_disconnectedIcon" Icon="link_off" class="rz-color-danger"
-          @onmouseenter="@(args => ShowTooltip(_disconnectedIcon!.Element, "Disconnected"))" />
-      }
-    </RadzenStack>
+    <div class="remote-device__header">
+      <div class="remote-device__identity">
+        <div class="remote-device__identity-copy">
+          <RadzenText Text="@ViewModel!.DeviceName" TextStyle="TextStyle.H6" TItem="string" />
+        </div>
+      </div>
+      <span class="remote-device__status @GetStatusClass(ViewModel.ConnectionStatus)" title="@GetStatusDescription(ViewModel.ConnectionStatus)">
+        <span class="remote-device__status-dot"></span>
+        @GetStatusLabel(ViewModel.ConnectionStatus)
+      </span>
+    </div>
   </HeaderTemplate>
   <ChildContent>
-    @if(ViewModel!.DeviceState is not null)
+    @if(ViewModel!.GetDisplayedStateFields() is { Count: > 0 } displayedStateFields)
     {
-      @foreach(var field in ViewModel!.DeviceState.Fields)
-      {
-        <RadzenRow AlignItems="AlignItems.Center" Gap="1rem" class="rz-mb-4">
-          <RadzenColumn Size="4" class="d-flex justify-content-end">
-            <RadzenLabel Text="@field.Key" />
-          </RadzenColumn>
-          <RadzenColumn Size="8">
-            <AresValueDisplay Value="@field.Value" />
-          </RadzenColumn>
-        </RadzenRow>
-      }
+      <section class="remote-device__state" aria-label="Live device state">
+        <div class="remote-device__section-heading">
+          <div>
+            <span class="remote-device__section-kicker">Live state</span>
+          </div>
+          <span class="remote-device__section-count">@displayedStateFields.Count values</span>
+        </div>
+        <div class="remote-device__state-grid" style="--remote-device-state-columns: @ViewModel.StateColumnCount">
+          @foreach(var field in displayedStateFields)
+          {
+            <div class="remote-device__state-item">
+              <span class="remote-device__state-label" title="@field.Key">@field.Key</span>
+              <div class="remote-device__state-value">
+                <AresValueDisplay Value="@field.Value" />
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+    }
+    else
+    {
+      <div class="remote-device__empty-state">
+        <RadzenIcon Icon="hourglass_empty" />
+        <span>No Data Provided for Live Device State</span>
+      </div>
+    }
+
+    @{ var displayCommands = GetDisplayCommands(); }
+
+    @if(displayCommands.Length > 0)
+    {
+      <section class="remote-device__commands" aria-label="Device commands">
+        <div class="remote-device__section-heading">
+          <div>
+            <span class="remote-device__section-kicker">Device commands</span>
+          </div>
+          <span class="remote-device__section-count">@displayCommands.Length available</span>
+        </div>
+        <div class="remote-device__command-picker">
+          <RadzenDropDown TValue="string"
+                          Data="@displayCommands"
+                          TextProperty="@nameof(DeviceCommandDescriptor.Name)"
+                          ValueProperty="@nameof(DeviceCommandDescriptor.Name)"
+                          Value="@_selectedCommandName"
+                          Change="OnCommandChanged"
+                          Placeholder="Select a command"
+                          AllowClear="true"
+                          Class="remote-device__command-select" />
+        </div>
+        @if(SelectedCommand is not null)
+        {
+          <div class="remote-device__selected-command">
+            <DeviceCommandInvocationView Command="@SelectedCommand"
+                                         DeviceAdapter="@ViewModel.DeviceAdapter"
+                                         DisplayOnlyWidgetDescriptors="true"
+                                         ShowCommandHeader="true"
+                                         ShowCloseButton="false"
+                                         CanInvoke="@(ViewModel.ConnectionStatus == ConnectionStatus.ConnectedToDevice)" />
+          </div>
+        }
+      </section>
     }
   </ChildContent>
 </RadzenFieldset>
 
 @code {
-  private RadzenIcon? _connectedIcon;
-  private RadzenIcon? _serviceConnectedIcon;
-  private RadzenIcon? _disconnectedIcon;
+  private string? _selectedCommandName;
 
-  void ShowTooltip(ElementReference elementReference, string text)
+  private DeviceCommandDescriptor? SelectedCommand
+    => GetDisplayCommands().FirstOrDefault(command => command.Name == _selectedCommandName);
+
+  protected override void OnParametersSet()
   {
-    TooltipService.Open(elementReference, text, new TooltipOptions { Position = TooltipPosition.Top });
+    var displayCommands = GetDisplayCommands();
+    if(_selectedCommandName is not null && displayCommands.All(command => command.Name != _selectedCommandName))
+      _selectedCommandName = null;
+  }
+
+  private DeviceCommandDescriptor[] GetDisplayCommands()
+  {
+    return ViewModel?.DeviceCommands
+      .Where(command => command.WidgetDescriptors.Any(widget => command.InputSchema.Fields.ContainsKey(widget.AssociatedInput)))
+      .ToArray() ?? [];
+  }
+
+  private void OnCommandChanged(object? value)
+  {
+    _selectedCommandName = value?.ToString();
+  }
+
+  private static string GetStatusLabel(ConnectionStatus status)
+  {
+    return status switch
+    {
+      ConnectionStatus.Undefined => "Connecting",
+      ConnectionStatus.Disconnected => "Offline",
+      ConnectionStatus.ConnectedToService => "Service only",
+      ConnectionStatus.ConnectedToDevice => "Online",
+      _ => "Unknown"
+    };
+  }
+
+  private static string GetStatusClass(ConnectionStatus status)
+  {
+    return status switch
+    {
+      ConnectionStatus.Undefined => "remote-device__status--pending",
+      ConnectionStatus.Disconnected => "remote-device__status--offline",
+      ConnectionStatus.ConnectedToService => "remote-device__status--partial",
+      ConnectionStatus.ConnectedToDevice => "remote-device__status--online",
+      _ => "remote-device__status--unknown"
+    };
+  }
+
+  private static string GetStatusDescription(ConnectionStatus status)
+  {
+    return status switch
+    {
+      ConnectionStatus.Undefined => "Connecting to the ARES service and device",
+      ConnectionStatus.Disconnected => "The device is currently disconnected",
+      ConnectionStatus.ConnectedToService => "Connected to ARES, but the device is unavailable",
+      ConnectionStatus.ConnectedToDevice => "Connected to ARES and the device is ready",
+      _ => "The device connection status is unknown"
+    };
   }
 }

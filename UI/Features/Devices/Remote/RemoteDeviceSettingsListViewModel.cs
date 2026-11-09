@@ -7,6 +7,7 @@ using ReactiveUI.SourceGenerators;
 using System.Collections.ObjectModel;
 using Google.Protobuf.WellKnownTypes;
 using UI.Application.Notifications;
+using UI.Application.Devices.Repos;
 
 namespace UI.Features.Devices.Remote;
 
@@ -14,12 +15,16 @@ public partial class RemoteDeviceSettingsListViewModel : ReactiveObject
 {
   private readonly IAresUINotificationService _notificationService;
   private readonly DevicesService _devicesService;
+  private readonly IRemoteDeviceAdapterRepository _adapterRepository;
 
-  public RemoteDeviceSettingsListViewModel(DevicesService devicesService, IAresUINotificationService notificationService)
+  public RemoteDeviceSettingsListViewModel(DevicesService devicesService,
+    IAresUINotificationService notificationService,
+    IRemoteDeviceAdapterRepository adapterRepository)
   {
     _notificationService = notificationService;
     SettingsViewModels = [];
     _devicesService = devicesService;
+    _adapterRepository = adapterRepository;
     _ = UpdateAvailableDevices();
   }
 
@@ -47,7 +52,9 @@ public partial class RemoteDeviceSettingsListViewModel : ReactiveObject
   private void UpdateViewModels(IEnumerable<DeviceInfo> remoteDevices)
   {
     SettingsViewModels.Clear();
-    var viewModels = remoteDevices.Select(info => new RemoteDeviceSettingsViewModel(_devicesService, _notificationService, info, OnDeviceRemoved)).ToArray();
+    var viewModels = remoteDevices
+      .Select(info => new RemoteDeviceSettingsViewModel(_devicesService, _notificationService, _adapterRepository, info, OnDeviceRemoved))
+      .ToArray();
     foreach (var vm in viewModels)
     {
       SettingsViewModels.Add(vm);

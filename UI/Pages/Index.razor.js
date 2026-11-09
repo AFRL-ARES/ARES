@@ -11,6 +11,7 @@ function getGridOptions(columnCount) {
     oneColumnSize: 900,
     draggable: {
       handle: '.grid-stack-item-content',
+      cancel: '.grid-stack-interactive, .grid-stack-interactive *',
       scroll: true
     }
   };
@@ -81,6 +82,17 @@ export function resizeToContent(id) {
       grid.resizeToContent(item);
     });
   }
+}
+
+export function updateWidgetWidth(gridId, widgetId, width) {
+  const gridElement = document.getElementById(gridId);
+  if (!gridElement || !gridElement.gridstack) return;
+
+  const widget = Array.from(gridElement.querySelectorAll('.grid-stack-item'))
+    .find(item => item.getAttribute('data-id') === widgetId);
+  if (!widget || !widget.gridstackNode) return;
+
+  gridElement.gridstack.update(widget, { w: width });
 }
 
 // --- INTERNAL HELPERS ---

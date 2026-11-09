@@ -3,9 +3,11 @@
 @using Ares.Toolkit.Device.UI
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.JSInterop
+@using System.ComponentModel
 @using UI.Application.Devices.Repos
 @using UI.Features.CustomCommand
 @using UI.Features.DeviceStateLogging
+@using UI.Features.Devices.Remote
 
 @inject IJSRuntime JS
 @inject IDeviceControlViewModelRepo ViewModelRepo
@@ -39,7 +41,7 @@
       // Fallback Values
       var width = viewModel.DefaultWidth;
 
-      <div class="grid-stack-item" @key="viewModel.DeviceId" gs-w="@width" gs-size-to-content="true">
+      <div class="grid-stack-item" @key="viewModel.DeviceId" data-id="@viewModel.DeviceId" gs-w="@width" gs-size-to-content="true">
         <div class="grid-stack-item-content">
           <DashboardWidget>
             <DynamicComponent Type="@viewModel.ViewType" Parameters="@GetOrCreateArgs(viewModel)" />
@@ -57,6 +59,8 @@
 
   private bool _isReady = false;
   private Dictionary<string, Dictionary<string, object>> _cachedViewArgs = new();
+  private Dictionary<string, int> _recommendedWidgetWidths = new();
+  private Dictionary<string, (RemoteDeviceUnitViewModel ViewModel, PropertyChangedEventHandler Handler)> _widgetWidthSubscriptions = new();
   private bool _shouldDisplayManualWidget = true;
   private bool _shouldDisplayCustomCommandWidget = false;
 
@@ -90,10 +94,23 @@
       else
       {
         await _module.InvokeVoidAsync("refreshGrid", "my-dashboard");
+        await UpdateRecommendedWidgetWidths();
       }
     }
 
     await UpdateWidgetDisplaySetting();
+  }
+
+  private async Task UpdateRecommendedWidgetWidths()
+  {
+    foreach(var remoteDevice in ViewModelRepo.Items.OfType<RemoteDeviceUnitViewModel>())
+    {
+      if(_recommendedWidgetWidths.TryGetValue(remoteDevice.DeviceId, out var currentWidth) && currentWidth == remoteDevice.DefaultWidth)
+        continue;
+
+      _recommendedWidgetWidths[remoteDevice.DeviceId] = remoteDevice.DefaultWidth;
+      await _module!.InvokeVoidAsync("updateWidgetWidth", "my-dashboard", remoteDevice.DeviceId, remoteDevice.DefaultWidth);
+    }
   }
 
   private async Task UpdateWidgetDisplaySetting()
@@ -112,11 +129,40 @@
 
   private void ViewModelsUpdated()
   {
-    InvokeAsync(StateHasChanged);
+    _ = InvokeAsync(() =>
+    {
+      UpdateWidgetWidthSubscriptions();
+      StateHasChanged();
+    });
+  }
+
+  private void UpdateWidgetWidthSubscriptions()
+  {
+    var remoteDevices = ViewModelRepo.Items.OfType<RemoteDeviceUnitViewModel>().ToDictionary(device => device.DeviceId);
+
+    foreach(var subscription in _widgetWidthSubscriptions.Where(subscription => !remoteDevices.ContainsKey(subscription.Key)).ToArray())
+    {
+      subscription.Value.ViewModel.PropertyChanged -= subscription.Value.Handler;
+      _widgetWidthSubscriptions.Remove(subscription.Key);
+      _recommendedWidgetWidths.Remove(subscription.Key);
+    }
+
+    foreach(var remoteDevice in remoteDevices.Values.Where(device => !_widgetWidthSubscriptions.ContainsKey(device.DeviceId)))
+    {
+      PropertyChangedEventHandler handler = (_, args) =>
+      {
+        if(args.PropertyName == nameof(RemoteDeviceUnitViewModel.DefaultWidth))
+          _ = InvokeAsync(StateHasChanged);
+      };
+
+      remoteDevice.PropertyChanged += handler;
+      _widgetWidthSubscriptions[remoteDevice.DeviceId] = (remoteDevice, handler);
+    }
   }
 
   protected override void OnInitialized()
   {
+    UpdateWidgetWidthSubscriptions();
     _repoSubscription = ViewModelRepo.Connect().Subscribe(_ => ViewModelsUpdated());
   }
 
@@ -131,6 +177,9 @@
     try
     {
       _repoSubscription?.Dispose();
+
+      foreach(var subscription in _widgetWidthSubscriptions.Values)
+        subscription.ViewModel.PropertyChanged -= subscription.Handler;
 
       if(_module is not null)
       {

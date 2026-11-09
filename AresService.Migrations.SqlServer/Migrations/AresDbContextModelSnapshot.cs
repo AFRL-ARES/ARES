@@ -711,6 +711,9 @@ namespace AresService.Migrations.SqlServer.Migrations
                     b.Property<string>("OutputSchema")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("WidgetDescriptors")
+                        .HasColumnType("nvarchar(max)");
+
                     b.HasKey("UniqueId");
 
                     b.HasIndex("DeviceInfoId");
@@ -988,6 +991,36 @@ namespace AresService.Migrations.SqlServer.Migrations
                     b.HasKey("UniqueId");
 
                     b.ToTable("SilaConfigs");
+                });
+
+            modelBuilder.Entity("Ares.Datamodel.Device.WidgetDescriptor", b =>
+                {
+                    b.Property<Guid>("UniqueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AssociatedInput")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreationTime")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<DateTime>("LastModified")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("getdate()");
+
+                    b.Property<float>("SliderStepSize")
+                        .HasColumnType("real");
+
+                    b.Property<int>("WidgetType")
+                        .HasColumnType("int");
+
+                    b.HasKey("UniqueId");
+
+                    b.ToTable("WidgetDescriptor");
                 });
 
             modelBuilder.Entity("Ares.Datamodel.DeviceErrorHandlingConfig", b =>

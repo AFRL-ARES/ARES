@@ -1,4 +1,5 @@
 ﻿using Ares.Core.Device.Providers;
+using Ares.Core.Device.Remote;
 using Ares.Core.Device.Sila;
 using Ares.Datamodel;
 using Ares.Datamodel.Device;
@@ -40,6 +41,24 @@ public sealed class SilaDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
   {
     // Fetching operational status is the least amount of data and it still updates the connection status
     return FetchOperationalStatus();
+  }
+
+  public async Task<IReadOnlyList<DeviceCommandDescriptor>> GetCommandDescriptorsAsync(
+    CancellationToken cancellationToken = default)
+  {
+    cancellationToken.ThrowIfCancellationRequested();
+    return await GetDevice().GetCommandDescriptorsAsync();
+  }
+
+  //Not applicable for SiLA Devices
+  public Dictionary<string, StateDisplayInfo> GetDisplaySettings() => [];
+
+  public Task<CommandResult> ExecuteCommandAsync(
+    string commandName,
+    IReadOnlyCollection<DeviceCommandArgument> arguments,
+    CancellationToken cancellationToken = default)
+  {
+    return GetDevice().ExecuteCommand(commandName, arguments.ToList(), cancellationToken);
   }
 
   public async Task StartStatusUpdate()
@@ -188,6 +207,12 @@ public sealed class SilaDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
     _statusStreamCts.Dispose();
     _stateSubject.OnCompleted();
     _stateSubject.Dispose();
+  }
+
+  private SilaDevice GetDevice()
+  {
+    return _deviceProvider.GetDevice<SilaDevice>(Id)
+      ?? throw new InvalidOperationException($"Device '{Id}' is no longer available.");
   }
 
   public string Id { get; }

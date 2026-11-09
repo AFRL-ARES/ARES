@@ -3,11 +3,206 @@
     margin: 0;
 }
 
+::deep .remote-device-unit.rz-fieldset {
+    overflow: hidden;
+    border: 1px solid var(--rz-base-300, rgba(148, 163, 184, 0.24));
+    border-radius: 8px;
+    background: var(--rz-card-background-color, var(--rz-base-background-color, #fff));
+}
+
 ::deep .device-fieldset .rz-fieldset-legend {
-    padding-left: 0;
-    padding-right: 0;
+    padding: 0.9rem 1rem;
+    border-bottom: 1px solid var(--rz-base-300, rgba(148, 163, 184, 0.24));
+    background: var(--rz-card-flat-background-color, transparent);
 }
 
 ::deep .device-fieldset .rz-fieldset-content {
-    padding: 0;
+    padding: 1rem;
+}
+
+.remote-device__header,
+.remote-device__identity,
+.remote-device__section-heading,
+.remote-device__status {
+    display: flex;
+    align-items: center;
+}
+
+.remote-device__header,
+.remote-device__section-heading {
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.remote-device__identity {
+    min-width: 0;
+    gap: 0.7rem;
+}
+
+.remote-device__identity-icon {
+    display: grid;
+    width: 2.25rem;
+    height: 2.25rem;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 6px;
+    background: var(--rz-primary-lighter, rgba(13, 110, 253, 0.12));
+    color: var(--rz-primary, #0d6efd);
+}
+
+.remote-device__identity-copy {
+    min-width: 0;
+}
+
+.remote-device__identity-copy .rz-text {
+    overflow: hidden;
+    margin: 0;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.remote-device__eyebrow,
+.remote-device__section-kicker,
+.remote-device__section-count {
+    color: var(--rz-text-secondary-color, #667085);
+    font-size: 0.72rem;
+}
+
+.remote-device__eyebrow,
+.remote-device__section-kicker {
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.remote-device__status {
+    gap: 0.45rem;
+    flex: 0 0 auto;
+    padding: 0.3rem 0.55rem;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.remote-device__status-dot {
+    width: 0.42rem;
+    height: 0.42rem;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.remote-device__status--online {
+    color: var(--rz-success, #16a34a);
+    background: color-mix(in srgb, var(--rz-success, #16a34a) 10%, transparent);
+}
+
+.remote-device__status--partial,
+.remote-device__status--pending {
+    color: var(--rz-warning, #d97706);
+    background: color-mix(in srgb, var(--rz-warning, #d97706) 10%, transparent);
+}
+
+.remote-device__status--offline {
+    color: var(--rz-danger, #dc2626);
+    background: color-mix(in srgb, var(--rz-danger, #dc2626) 10%, transparent);
+}
+
+.remote-device__status--unknown {
+    color: var(--rz-text-secondary-color, #667085);
+    background: var(--rz-base-200, rgba(148, 163, 184, 0.12));
+}
+
+.remote-device__state,
+.remote-device__commands {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.remote-device__commands {
+    margin-top: 1.25rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--rz-base-300, rgba(148, 163, 184, 0.24));
+}
+
+.remote-device__section-heading h4 {
+    margin: 0.1rem 0 0;
+    font-size: 0.95rem;
+    font-weight: 650;
+}
+
+.remote-device__section-count {
+    white-space: nowrap;
+}
+
+.remote-device__state-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--remote-device-state-columns), minmax(0, 1fr));
+    gap: 0.65rem;
+}
+
+@media (max-width: 48rem) {
+    .remote-device__state-grid {
+        grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    }
+}
+
+.remote-device__command-picker {
+    display: grid;
+    gap: 0.35rem;
+}
+
+::deep .remote-device__command-select {
+    width: 100%;
+}
+
+.remote-device__selected-command {
+    min-width: 0;
+}
+
+.remote-device__state-item {
+    min-width: 0;
+    padding: 0.7rem 0.8rem;
+    border: 1px solid var(--rz-base-300, rgba(148, 163, 184, 0.24));
+    border-radius: 6px;
+    background: var(--rz-card-flat-background-color, rgba(148, 163, 184, 0.04));
+}
+
+.remote-device__state-label {
+    display: block;
+    overflow: hidden;
+    color: var(--rz-text-secondary-color, #667085);
+    font-size: 0.72rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.remote-device__state-value {
+    margin-top: 0.3rem;
+    overflow: hidden;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.remote-device__empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 4rem;
+    color: var(--rz-text-secondary-color, #667085);
+    font-size: 0.82rem;
+}
+
+@media (max-width: 32rem) {
+    .remote-device__header,
+    .remote-device__section-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .remote-device__status {
+        align-self: flex-start;
+    }
 }

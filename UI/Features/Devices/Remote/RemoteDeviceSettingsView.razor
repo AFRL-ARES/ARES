@@ -50,7 +50,7 @@
   {
     var status = await ViewModel!.GetOperationalStatus();
     var options = new DialogOptions() { Width = "800px" };
-    await DialogService.OpenAsync("Device Capabilities", ds => @<DeviceInfoContainer DeviceName="@ViewModel!.Name" DeviceCommands="@ViewModel!.DeviceCommands" OperationalState="@status.OperationalState"/>, options);
+    await DialogService.OpenAsync("Device Capabilities", ds => @<DeviceInfoContainer DeviceName="@ViewModel!.Name" DeviceCommands="@ViewModel!.DeviceCommands" DeviceAdapter="@ViewModel!.DeviceAdapter" OperationalState="@status.OperationalState"/>, options);
   }
 
   private async Task RefreshCallback()

@@ -1,4 +1,5 @@
-﻿using Ares.Datamodel;
+﻿using Ares.Core.Device.Remote;
+using Ares.Datamodel;
 using Ares.Datamodel.Device;
 
 namespace UI.Application.Devices;
@@ -12,6 +13,11 @@ public interface IAresDeviceAdapter
   string Version { get; }
   Task<bool> Activate();
   Task UpdateConnectionStatus();
+  Task<IReadOnlyList<DeviceCommandDescriptor>> GetCommandDescriptorsAsync(CancellationToken cancellationToken = default);
+  Dictionary<string, StateDisplayInfo> GetDisplaySettings();
+  Task<CommandResult> ExecuteCommandAsync(string commandName,
+    IReadOnlyCollection<DeviceCommandArgument> arguments,
+    CancellationToken cancellationToken = default);
   AresStruct? State { get; }
   IObservable<AresStruct?> StateStream { get; }
   DeviceOperationalStatus OperationalStatus { get; }

@@ -9,6 +9,8 @@ using ReactiveUI.SourceGenerators;
 using System.Reactive;
 using System.Reactive.Linq;
 using UI.Application.Notifications;
+using UI.Application.Devices;
+using UI.Application.Devices.Repos;
 
 namespace UI.Features.Devices.Remote;
 
@@ -17,16 +19,19 @@ public partial class RemoteDeviceSettingsViewModel : ReactiveObject
   private readonly DevicesService _devicesClient;
   private readonly IAresUINotificationService _notificationService;
   private readonly DeviceInfo _deviceInfo;
+  private readonly IRemoteDeviceAdapterRepository _adapterRepository;
   private readonly ObservableAsPropertyHelper<bool> _isBusy;
 
   public RemoteDeviceSettingsViewModel(DevicesService devicesService,
-      IAresUINotificationService notificationService,
-      DeviceInfo deviceInfo,
-      Func<Task> onRemoveCallback)
+    IAresUINotificationService notificationService,
+    IRemoteDeviceAdapterRepository adapterRepository,
+    DeviceInfo deviceInfo,
+    Func<Task> onRemoveCallback)
   {
     _devicesClient = devicesService;
     _notificationService = notificationService;
     _deviceInfo = deviceInfo;
+    _adapterRepository = adapterRepository;
 
     Name = _deviceInfo.Name;
     Address = _deviceInfo.Url;
@@ -91,6 +96,7 @@ public partial class RemoteDeviceSettingsViewModel : ReactiveObject
   public partial DeviceCommandDescriptor[] DeviceCommands { get; private set; }
   public RemoteDeviceConfigEditViewModel EditViewModel { get; }
   public bool IsBusy => _isBusy.Value;
+  public IAresDeviceAdapter? DeviceAdapter => _adapterRepository.Items.FirstOrDefault(adapter => adapter.Id == _deviceInfo.UniqueId);
 
   public ReactiveCommand<Unit, Unit> SaveCommand { get; }
   public ReactiveCommand<Unit, Unit> RemoveCommand { get; }
@@ -181,6 +187,18 @@ public partial class RemoteDeviceSettingsViewModel : ReactiveObject
     Version = infoResponse.Version;
     Description = infoResponse.Description;
     SettingsSchema = infoResponse.SettingsSchema ?? new AresStructSchema();
+
+    if(DeviceAdapter is not null)
+    {
+      try
+      {
+        DeviceCommands = (await DeviceAdapter.GetCommandDescriptorsAsync()).ToArray();
+      }
+      catch(Exception ex)
+      {
+        HandleError(ex);
+      }
+    }
   }
 
   public async Task<DeviceOperationalStatus> GetOperationalStatus()

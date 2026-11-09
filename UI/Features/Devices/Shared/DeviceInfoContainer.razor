@@ -1,6 +1,8 @@
 @using Ares.Datamodel
 @using Ares.Datamodel.Device
 @using Ares.Datamodel.Extensions
+@using UI.Application.Devices
+@inject DialogService DialogService
 
 <RadzenStack Gap="1rem" Style="padding: 20px;">
 
@@ -46,6 +48,17 @@
       <RadzenDataGridColumn TItem="DeviceCommandDescriptor" Title="Return Type" Width="150px">
         <Template Context="cmd">
           <RadzenBadge BadgeStyle="BadgeStyle.Info" IsPill="true" Text="@GetReturnTypeDisplay(cmd.OutputSchema)" />
+        </Template>
+      </RadzenDataGridColumn>
+
+      <RadzenDataGridColumn TItem="DeviceCommandDescriptor" Title="Actions" Width="110px">
+        <Template Context="cmd">
+          <RadzenButton Icon="play_arrow"
+                        ButtonStyle="ButtonStyle.Primary"
+                        Size="ButtonSize.Small"
+                        Disabled="@(DeviceAdapter is null)"
+                        Click="@(() => OpenInvokeDialog(cmd))"
+                        title="Invoke command" />
         </Template>
       </RadzenDataGridColumn>
     </Columns>
@@ -112,10 +125,22 @@
   [Parameter]
   public OperationalState OperationalState { get; set; } = new();
 
+  [Parameter]
+  public IAresDeviceAdapter? DeviceAdapter { get; set; }
 
-  private void OpenInvokeDialog(DeviceCommandDescriptor cmd)
+  private async Task OpenInvokeDialog(DeviceCommandDescriptor cmd)
   {
-    Console.WriteLine($"Opening dialog for {cmd.Name}");
+    if(DeviceAdapter is null)
+      return;
+
+    await DialogService.OpenAsync<DeviceCommandInvocationView>(
+      $"Invoke {cmd.Name}",
+      new Dictionary<string, object?>
+      {
+        [nameof(DeviceCommandInvocationView.Command)] = cmd,
+        [nameof(DeviceCommandInvocationView.DeviceAdapter)] = DeviceAdapter
+      },
+      new DialogOptions { Width = "650px" });
   }
 
   // --- Format Helpers ---
