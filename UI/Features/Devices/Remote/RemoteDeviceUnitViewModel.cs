@@ -36,7 +36,7 @@ public partial class RemoteDeviceUnitViewModel : ReactiveObject, IDeviceUnitCont
     {
       StateDisplayInfo = _deviceAdapter.GetDisplaySettings();
       DeviceState = s;
-      UpdateLayout(s.Fields.Count(f => ShouldDisplay(f.Key)));
+      UpdateLayout(s?.Fields.Count(f => ShouldDisplay(f.Key)) ?? 0);
     });
     _statusListener = _deviceAdapter.ConnectionStatusStream.Subscribe(s =>
     {
