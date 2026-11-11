@@ -12,6 +12,7 @@ using Ares.Services;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using Ares.Core.Execution.StopConditions.PlannerLead;
+using Ares.Core.Campaigns.Models;
 
 namespace Ares.Core.Tests.Campaigns;
 

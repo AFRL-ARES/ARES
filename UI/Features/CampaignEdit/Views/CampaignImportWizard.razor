@@ -1,0 +1,363 @@
+@using Ares.Core.Campaigns
+@using Ares.Datamodel.Templates
+@using UI.Features.CampaignEdit.ViewModels
+@inject DialogService DialogService
+@inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<CampaignImportWizardViewModel>
+
+<div class="campaign-import-wizard d-flex flex-column">
+  @if(ViewModel!.IsBusy && ViewModel.Analysis is null)
+  {
+    <div class="import-loading">
+      <p class="mb-0">Analyzing campaign dependencies...</p>
+    </div>
+  }
+  else if(!string.IsNullOrWhiteSpace(ViewModel.Error))
+  {
+    <RadzenAlert AlertStyle="AlertStyle.Danger">@ViewModel.Error</RadzenAlert>
+  }
+  else if(ViewModel.Analysis is not null)
+  {
+    var analysis = ViewModel.Analysis;
+    <header class="import-header">
+      <span class="import-eyebrow">Campaign import</span>
+      <h5 class="mb-1">@analysis.Template.Name</h5>
+      <p class="text-muted mb-0">Review dependencies before importing this campaign.</p>
+    </header>
+
+    <nav class="import-stepper" aria-label="Campaign import steps">
+      <div class="import-step @GetStepClass(DeviceStep) @GetStepConnectorClass(DeviceStep)" >
+        <button type="button" class="import-step-button" @onclick="() => SelectStep(DeviceStep)" aria-current="@(CurrentStep == DeviceStep ? "step" : null)">
+          <span class="import-step-icon">@GetStepIcon(DeviceStep)</span>
+          <span class="import-step-copy">
+            <span class="import-step-label">Device issues</span>
+            <span class="import-step-status">@GetStepStatus(DeviceStep)</span>
+          </span>
+        </button>
+      </div>
+      <div class="import-step-connector @GetConnectorClass(DeviceStep)" style="flex: 0 0 7rem; margin-right: 2rem"></div>
+      <div class="import-step @GetStepClass(CommandStep) @GetStepConnectorClass(CommandStep)">
+        <button type="button" class="import-step-button" @onclick="() => SelectStep(CommandStep)" aria-current="@(CurrentStep == CommandStep ? "step" : null)">
+          <span class="import-step-icon">@GetStepIcon(CommandStep)</span>
+          <span class="import-step-copy">
+            <span class="import-step-label">Command issues</span>
+            <span class="import-step-status">@GetStepStatus(CommandStep)</span>
+          </span>
+        </button>
+      </div>
+      <div class="import-step-connector @GetConnectorClass(CommandStep)" style="flex: 0 0 5rem"></div>
+      <div class="import-step @GetStepClass(CustomCommandStep)">
+        <button type="button" class="import-step-button" @onclick="() => SelectStep(CustomCommandStep)" aria-current="@(CurrentStep == CustomCommandStep ? "step" : null)">
+          <span class="import-step-icon">@GetStepIcon(CustomCommandStep)</span>
+          <span class="import-step-copy">
+            <span class="import-step-label">Custom commands</span>
+            <span class="import-step-status">@GetStepStatus(CustomCommandStep)</span>
+          </span>
+        </button>
+      </div>
+    </nav>
+
+    <div class="import-content overflow-auto">
+      @if(CurrentStep == DeviceStep)
+      {
+        <div class="import-panel-heading">
+          <div>
+            <h6 class="mb-1">Resolve device issues</h6>
+            <p class="text-muted mb-0">Choose replacements for devices that could not be matched exactly.</p>
+          </div>
+          <span class="import-count @GetStepBadgeClass(DeviceStep)">@GetStepStatus(DeviceStep)</span>
+        </div>
+        @if(!analysis.DeviceDependencies.Any())
+        {
+          <div class="import-empty import-empty-success">
+            <span class="import-empty-icon">✓</span>
+            <strong>No device issues found.</strong>
+            <span>All imported devices are available.</span>
+          </div>
+        }
+        else
+        {
+          @foreach(var dependency in analysis.DeviceDependencies)
+          {
+            <div class="import-card">
+              <div class="import-card-heading">
+                <div>
+                  <strong>@dependency.DeviceType</strong>
+                  <div class="import-metadata">@dependency.DeviceId</div>
+                </div>
+                <span class="import-badge @GetDeviceBadgeClass(dependency)">@GetDeviceStatus(dependency)</span>
+              </div>
+              @if(dependency.IsResolved && !dependency.HasCommandMismatches)
+              {
+                <div class="import-message import-message-success"><span>✓</span>Exact device ID found; current commands match.</div>
+              }
+              else if(dependency.IsResolved)
+              {
+                <div class="import-message import-message-warning"><span>!</span>Exact device ID found. Review the command differences in the next step.</div>
+              }
+              else if(dependency.Candidates.Count == 0)
+              {
+                <div class="import-message import-message-danger"><span>×</span>No compatible replacement candidates found.</div>
+              }
+              else
+              {
+                <div class="import-message import-message-danger"><span>×</span>No exact device ID found.</div>
+                <label class="form-label mt-3" for="device-@dependency.DeviceId">Replacement candidate</label>
+                <select id="device-@dependency.DeviceId" class="form-select" @bind="dependency.SelectedReplacementDeviceId">
+                  <option value="">Leave unresolved</option>
+                  @foreach(var candidate in dependency.Candidates)
+                  {
+                    <option value="@candidate.DeviceId">@candidate.Name - Confidence: @candidate.Score</option>
+                  }
+                </select>
+                <small class="text-muted d-block mt-2">@string.Join(" ", dependency.Candidates.Select(candidate => candidate.MatchDescription))</small>
+              }
+            </div>
+          }
+        }
+      }
+      else if(CurrentStep == CommandStep)
+      {
+        <div class="import-panel-heading">
+          <div>
+            <h6 class="mb-1">Resolve command issues</h6>
+            <p class="text-muted mb-0">Review commands whose interfaces differ from the imported campaign.</p>
+          </div>
+          <span class="import-count @GetStepBadgeClass(CommandStep)">@GetStepStatus(CommandStep)</span>
+        </div>
+        @if(!analysis.DeviceDependencies.Any(HasCommandIssues))
+        {
+          <div class="import-empty import-empty-success">
+            <span class="import-empty-icon">✓</span>
+            <strong>No command issues found.</strong>
+            <span>All device command interfaces match.</span>
+          </div>
+        }
+        else
+        {
+          @foreach(var dependency in analysis.DeviceDependencies.Where(HasCommandIssues))
+          {
+            <div class="import-card">
+              <div class="import-card-heading">
+                <div>
+                  <strong>@dependency.DeviceType</strong>
+                  <div class="import-metadata">@GetEffectiveDeviceId(dependency)</div>
+                </div>
+                <span class="import-badge import-badge-danger">Needs attention</span>
+              </div>
+              <p class="import-card-description">One or more command interfaces differ from the campaign requirement.</p>
+              @foreach(var match in GetCommandMatches(dependency).Where(match => match.Status != CampaignCommandMatchStatus.Exact))
+              {
+                <div class="import-command-row">
+                  <span class="import-message import-message-danger"><span>×</span><strong>@match.RequiredName</strong></span>
+                  <span class="text-muted">@match.Description</span>
+                </div>
+              }
+              @if(!string.IsNullOrWhiteSpace(dependency.SelectedReplacementDeviceId))
+              {
+                <small class="text-muted d-block mt-3">These results reflect the selected replacement device from the previous step.</small>
+              }
+              else if(!dependency.IsResolved)
+              {
+                <small class="text-muted d-block mt-3">Select a replacement device in the previous step to check its command interface.</small>
+              }
+            </div>
+          }
+        }
+      }
+      else
+      {
+        <div class="import-panel-heading">
+          <div>
+            <h6 class="mb-1">Resolve custom command issues</h6>
+            <p class="text-muted mb-0">Review custom commands referenced by the campaign.</p>
+          </div>
+          <span class="import-count @GetStepBadgeClass(CustomCommandStep)">@GetStepStatus(CustomCommandStep)</span>
+        </div>
+        @if(!analysis.CustomCommandDependencies.Any())
+        {
+          <div class="import-empty import-empty-success">
+            <span class="import-empty-icon">✓</span>
+            <strong>No custom command issues found.</strong>
+            <span>No custom commands are referenced by this campaign.</span>
+          </div>
+        }
+        else
+        {
+          @foreach(var dependency in analysis.CustomCommandDependencies)
+          {
+            <div class="import-card">
+              <div class="import-card-heading">
+                <div>
+                  <strong>@dependency.Requirement.Name</strong>
+                  <div class="import-metadata">@dependency.CustomCommandId</div>
+                </div>
+                <span class="import-badge @GetCustomCommandBadgeClass(dependency)">@GetCustomCommandStatus(dependency)</span>
+              </div>
+              @if(dependency.IsResolved && dependency.CurrentSignatureMatches)
+              {
+                <div class="import-message import-message-success"><span>✓</span>Exact custom command ID found; current interface matches.</div>
+              }
+              else if(dependency.IsResolved)
+              {
+                <div class="import-message import-message-danger"><span>×</span>Exact custom command ID found, but its current interface differs.</div>
+              }
+              else if(dependency.Candidates.Count == 0)
+              {
+                <div class="import-message import-message-danger"><span>×</span>No compatible replacement candidates found.</div>
+              }
+              else
+              {
+                <div class="import-message import-message-danger"><span>×</span>No exact custom command ID found.</div>
+                <label class="form-label mt-3" for="custom-command-@dependency.CustomCommandId">Replacement candidate</label>
+                <select id="custom-command-@dependency.CustomCommandId" class="form-select" @bind="dependency.SelectedReplacementCustomCommandId">
+                  <option value="">Leave unresolved</option>
+                  @foreach(var candidate in dependency.Candidates)
+                  {
+                    <option value="@candidate.CustomCommandId">@candidate.Name - Score: @candidate.Score</option>
+                  }
+                </select>
+                <small class="text-muted d-block mt-2">@string.Join(" ", dependency.Candidates.Select(candidate => candidate.MatchDescription))</small>
+              }
+            </div>
+          }
+        }
+      }
+    </div>
+
+    <footer class="import-footer">
+      <button class="btn btn-secondary" @onclick="Cancel" disabled="@ViewModel.IsBusy">Cancel</button>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary" @onclick="PreviousStep" disabled="@(ViewModel.IsBusy || CurrentStep == DeviceStep)">Back</button>
+        @if(CurrentStep < CustomCommandStep)
+        {
+          <button class="btn btn-primary" @onclick="NextStep" disabled="@ViewModel.IsBusy">Next</button>
+        }
+        else
+        {
+          <button class="btn btn-primary" @onclick="Commit" disabled="@(!ViewModel.CanCommit)">Import</button>
+        }
+      </div>
+    </footer>
+  }
+</div>
+
+@code {
+  private const int DeviceStep = 0;
+  private const int CommandStep = 1;
+  private const int CustomCommandStep = 2;
+  private int CurrentStep;
+
+  [Parameter]
+  public string Json { get; set; } = string.Empty;
+
+  protected override async Task OnInitializedAsync()
+  {
+    await ViewModel!.InitializeAsync(Json);
+  }
+
+  private void SelectStep(int step)
+  {
+    if(step is >= DeviceStep and <= CustomCommandStep)
+      CurrentStep = step;
+  }
+
+  private void NextStep()
+  {
+    if(CurrentStep < CustomCommandStep)
+      CurrentStep++;
+  }
+
+  private void PreviousStep()
+  {
+    if(CurrentStep > DeviceStep)
+      CurrentStep--;
+  }
+
+  private string GetStepClass(int step)
+    => CurrentStep == step ? "import-step-active" : string.Empty;
+
+  private string GetStepConnectorClass(int step)
+    => HasStepIssues(step) ? "import-step-blocked" : "import-step-complete";
+
+  private string GetConnectorClass(int step)
+    => HasStepIssues(step) ? "import-connector-blocked" : "import-connector-complete";
+
+  private string GetStepIcon(int step)
+    => HasStepIssues(step) ? "×" : "✓";
+
+  private string GetStepStatus(int step)
+  {
+    if(step == DeviceStep)
+    {
+      var count = ViewModel!.Analysis!.DeviceDependencies.Count(NeedsDeviceResolution);
+      return count == 0 ? "All resolved" : $"{count} need attention";
+    }
+
+    if(step == CommandStep)
+    {
+      var count = ViewModel!.Analysis!.DeviceDependencies.Count(HasCommandIssues);
+      return count == 0 ? "All resolved" : $"{count} need attention";
+    }
+
+    var customCount = ViewModel!.Analysis!.CustomCommandDependencies.Count(NeedsCustomCommandResolution);
+    return customCount == 0 ? "All resolved" : $"{customCount} need attention";
+  }
+
+  private string GetStepBadgeClass(int step)
+    => HasStepIssues(step) ? "import-count-danger" : "import-count-success";
+
+  private bool HasStepIssues(int step)
+  {
+    if(step == DeviceStep)
+      return ViewModel!.Analysis!.DeviceDependencies.Any(NeedsDeviceResolution);
+    if(step == CommandStep)
+      return ViewModel!.Analysis!.DeviceDependencies.Any(HasCommandIssues);
+    return ViewModel!.Analysis!.CustomCommandDependencies.Any(NeedsCustomCommandResolution);
+  }
+
+  private bool NeedsDeviceResolution(CampaignDeviceDependency dependency)
+    => !dependency.IsResolved && string.IsNullOrWhiteSpace(dependency.SelectedReplacementDeviceId);
+
+  private bool HasCommandIssues(CampaignDeviceDependency dependency)
+    => GetCommandMatches(dependency).Any(match => match.Status != CampaignCommandMatchStatus.Exact);
+
+  private IReadOnlyList<CampaignCommandMatch> GetCommandMatches(CampaignDeviceDependency dependency)
+  {
+    if(!string.IsNullOrWhiteSpace(dependency.SelectedReplacementDeviceId))
+    {
+      var candidate = dependency.Candidates.FirstOrDefault(candidate => string.Equals(candidate.DeviceId, dependency.SelectedReplacementDeviceId, StringComparison.OrdinalIgnoreCase));
+      if(candidate is not null)
+        return candidate.CommandMatches;
+    }
+
+    return dependency.CurrentCommandMatches;
+  }
+
+  private string GetEffectiveDeviceId(CampaignDeviceDependency dependency)
+    => string.IsNullOrWhiteSpace(dependency.SelectedReplacementDeviceId) ? dependency.DeviceId : dependency.SelectedReplacementDeviceId;
+
+  private string GetDeviceStatus(CampaignDeviceDependency dependency)
+    => NeedsDeviceResolution(dependency) ? "Needs attention" : "Resolved";
+
+  private string GetDeviceBadgeClass(CampaignDeviceDependency dependency)
+    => NeedsDeviceResolution(dependency) ? "import-badge-danger" : "import-badge-success";
+
+  private bool NeedsCustomCommandResolution(CampaignCustomCommandDependency dependency)
+    => (!dependency.IsResolved && string.IsNullOrWhiteSpace(dependency.SelectedReplacementCustomCommandId))
+      || (dependency.IsResolved && !dependency.CurrentSignatureMatches);
+
+  private string GetCustomCommandStatus(CampaignCustomCommandDependency dependency)
+    => NeedsCustomCommandResolution(dependency) ? "Needs attention" : "Resolved";
+
+  private string GetCustomCommandBadgeClass(CampaignCustomCommandDependency dependency)
+    => NeedsCustomCommandResolution(dependency) ? "import-badge-danger" : "import-badge-success";
+
+  private async Task Commit()
+  {
+    var result = await ViewModel!.CommitAsync();
+    if(result is not null)
+      DialogService.Close(result);
+  }
+
+  private void Cancel() => DialogService.Close(null);
+}

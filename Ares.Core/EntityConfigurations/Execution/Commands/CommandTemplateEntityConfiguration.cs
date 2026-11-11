@@ -19,7 +19,14 @@ internal class CommandTemplateEntityConfiguration : AresEntityTypeBaseConfigurat
       .HasForeignKey<DeviceCommand>("CommandTemplateId")
       .OnDelete(DeleteBehavior.Cascade);
     builder.OwnsOne(template => template.SystemCommand);
-    builder.OwnsOne(template => template.CustomCommandInvocation);
+    builder.OwnsOne(template => template.CustomCommandInvocation, invocationBuilder =>
+    {
+      invocationBuilder.Property(invocation => invocation.CustomCommandId).IsRequired();
+      invocationBuilder.OwnsOne(invocation => invocation.Requirement, requirementBuilder =>
+      {
+        requirementBuilder.OwnsMany(requirement => requirement.InputParameters);
+      });
+    });
 
     builder.Navigation(template => template.DeviceCommand)
       .AutoInclude();

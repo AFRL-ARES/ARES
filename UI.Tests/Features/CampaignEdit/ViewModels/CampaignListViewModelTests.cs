@@ -1,4 +1,5 @@
 using Ares.Core.Campaigns;
+using Ares.Core.Campaigns.Models;
 using Ares.Datamodel.Templates;
 using Microsoft.AspNetCore.Components.Forms;
 using Moq;

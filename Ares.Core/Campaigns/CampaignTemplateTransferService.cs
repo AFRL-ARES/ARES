@@ -1,18 +1,22 @@
 using Ares.Core.CustomCommands;
-using Ares.Core.Device.Repos;
+using Ares.Core.Device.Providers;
 using Ares.Core.EntityConfigurations.Helpers;
-using Ares.Datamodel.Planning;
+using Ares.Datamodel.Device;
 using Ares.Datamodel.Templates;
+using Ares.Device;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Ares.Core.Campaigns.Helpers;
+using Ares.Core.Campaigns.Models;
 
 namespace Ares.Core.Campaigns;
 
 internal class CampaignTemplateTransferService(
   ICampaignTemplatePersistenceService campaignPersistenceService,
   ICustomCommandPersistenceService customCommandPersistenceService,
-  IAresDeviceRepo deviceRepo,
+  IAresDeviceProvider deviceProvider,
+  IDeviceConfigProvider deviceConfigProvider,
   IDbContextFactory<CoreDatabaseContext> contextFactory) : ICampaignTemplateTransferService
 {
   private readonly JsonSerializerOptions _serializerOptions = SerializerSettingsHelper.CreateCustomSerializationSettings();
@@ -24,17 +28,58 @@ internal class CampaignTemplateTransferService(
       return null;
 
     var json = JsonSerializer.Serialize(template, _serializerOptions);
-    return new CampaignTemplateExport(template, json, MakeFileName(template.Name));
+    return new CampaignTemplateExport(template, json, CampaignTemplateHelper.MakeFileName(template.Name));
   }
 
-  public async Task<CampaignTemplateImportResult> ImportAsync(string json, CancellationToken cancellationToken = default)
+  public async Task<CampaignImportAnalysis> AnalyzeImportAsync(string json, CancellationToken cancellationToken = default)
   {
-    CampaignTemplate template;
+    var template = ParseTemplate(json);
+    CampaignTemplateHelper.Validate(template);
+    var warnings = new List<string>();
+    await PreparePlannerAllocationsAsync(template, warnings, cancellationToken);
+    var dependencies = await AnalyzeDependenciesAsync(template, warnings, cancellationToken);
+    return new CampaignImportAnalysis
+    {
+      Template = template,
+      Warnings = warnings,
+      DeviceDependencies = dependencies.Devices,
+      CustomCommandDependencies = dependencies.CustomCommands
+    };
+  }
+
+  public Task<CampaignTemplateImportResult> ImportAsync(string json, CancellationToken cancellationToken = default)
+    => AnalyzeAndCommitAsync(json, cancellationToken);
+
+  public async Task<CampaignTemplateImportResult> CommitImportAsync(CampaignImportAnalysis analysis, CancellationToken cancellationToken = default)
+  {
+    CampaignTemplateHelper.ApplySelections(analysis);
+    await AssignImportIdentityAsync(analysis.Template, cancellationToken);
+
+    try
+    {
+      await campaignPersistenceService.AddAsync(analysis.Template, cancellationToken);
+    }
+    catch(Exception exception)
+    {
+      throw new CampaignTemplateImportException("The campaign was valid but could not be saved to the database.", exception);
+    }
+
+    return new CampaignTemplateImportResult(analysis.Template, analysis.Warnings);
+  }
+
+  private async Task<CampaignTemplateImportResult> AnalyzeAndCommitAsync(string json, CancellationToken cancellationToken)
+  {
+    var analysis = await AnalyzeImportAsync(json, cancellationToken);
+    return await CommitImportAsync(analysis, cancellationToken);
+  }
+
+  private CampaignTemplate ParseTemplate(string json)
+  {
     try
     {
       var root = JsonNode.Parse(json) ?? throw new CampaignTemplateImportException("The selected file does not contain a JSON document.");
       CampaignTemplateLegacyJsonConverter.Convert(root);
-      template = root.Deserialize<CampaignTemplate>(_serializerOptions)
+      return root.Deserialize<CampaignTemplate>(_serializerOptions)
         ?? throw new CampaignTemplateImportException("The selected file does not contain a campaign template.");
     }
     catch(CampaignTemplateImportException)
@@ -45,38 +90,6 @@ internal class CampaignTemplateTransferService(
     {
       throw new CampaignTemplateImportException("The selected file is not a valid campaign template JSON file.", exception);
     }
-
-    Validate(template);
-    var warnings = new List<string>();
-    await PreparePlannerAllocationsAsync(template, warnings, cancellationToken);
-    await AddReferenceWarningsAsync(template, warnings);
-    await AssignImportIdentityAsync(template, cancellationToken);
-
-    try
-    {
-      await campaignPersistenceService.AddAsync(template, cancellationToken);
-    }
-    catch(Exception exception)
-    {
-      throw new CampaignTemplateImportException("The campaign was valid but could not be saved to the database.", exception);
-    }
-
-    return new CampaignTemplateImportResult(template, warnings);
-  }
-
-  private static void Validate(CampaignTemplate template)
-  {
-    if(string.IsNullOrWhiteSpace(template.Name))
-      throw new CampaignTemplateImportException("The campaign template does not have a name.");
-    if(template.ExperimentTemplate is null)
-      throw new CampaignTemplateImportException("The campaign template does not contain a main experiment.");
-
-    var invalidCommand = GetExperiments(template)
-      .SelectMany(experiment => experiment.StepTemplates)
-      .SelectMany(step => step.CommandTemplates)
-      .FirstOrDefault(command => command.CommandTypeCase == CommandTemplate.CommandTypeOneofCase.None);
-    if(invalidCommand is not null)
-      throw new CampaignTemplateImportException($"Command '{invalidCommand.UniqueId}' does not contain a supported command type.");
   }
 
   private async Task PreparePlannerAllocationsAsync(CampaignTemplate template, List<string> warnings, CancellationToken cancellationToken)
@@ -116,33 +129,180 @@ internal class CampaignTemplateTransferService(
     }
   }
 
-  private async Task AddReferenceWarningsAsync(CampaignTemplate template, List<string> warnings)
+  private async Task<(IReadOnlyList<CampaignDeviceDependency> Devices, IReadOnlyList<CampaignCustomCommandDependency> CustomCommands)> AnalyzeDependenciesAsync(
+    CampaignTemplate template,
+    List<string> warnings,
+    CancellationToken cancellationToken)
   {
-    var deviceIds = deviceRepo.GetAll().Select(device => device.UniqueId).ToHashSet(StringComparer.OrdinalIgnoreCase);
-    var customCommandIds = (await customCommandPersistenceService.GetCommandsAsync())
-      .Select(command => command.CustomCommandId)
-      .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    var commands = CampaignTemplateHelper.GetExperiments(template)
+      .SelectMany(experiment => experiment.StepTemplates
+      .SelectMany(step => step.CommandTemplates
+      .Select(command => (ExperimentName: experiment.Name, StepId: step.UniqueId, command))))
+      .ToArray();
 
-    foreach(var command in GetExperiments(template).SelectMany(experiment => experiment.StepTemplates).SelectMany(step => step.CommandTemplates))
-      switch(command.CommandTypeCase)
+    var devicesById = commands
+      .Where(item => item.command.CommandTypeCase == CommandTemplate.CommandTypeOneofCase.DeviceCommand)
+      .Select(item => (item.command.DeviceCommand?.Metadata, item.ExperimentName, item.StepId, item.command.UniqueId))
+      .Where(item => item.Metadata is not null && !string.IsNullOrWhiteSpace(item.Metadata.DeviceId))
+      .GroupBy(item => item.Metadata!.DeviceId, StringComparer.OrdinalIgnoreCase);
+
+    var devices = new List<CampaignDeviceDependency>();
+
+    foreach(var deviceGroup in devicesById)
+    {
+      cancellationToken.ThrowIfCancellationRequested();
+      var firstMetadata = deviceGroup.First().Metadata!;
+      var currentDevice = deviceProvider.GetDevice(deviceGroup.Key);
+      var commandDependencies = deviceGroup
+        .GroupBy(item => item.Metadata!.Name, StringComparer.OrdinalIgnoreCase)
+        .Select(commandGroup => new CampaignDeviceCommandDependency
+        {
+          CommandId = commandGroup.First().Metadata!.UniqueId,
+          Name = commandGroup.Key,
+          Parameters = commandGroup.First().Metadata!.ParameterMetadatas.Select(metadata => metadata.Clone()).ToArray(),
+          OutputSchema = commandGroup.First().Metadata!.OutputMetadata?.DataSchema?.Clone(),
+          Locations = commandGroup.Select(item => $"{item.ExperimentName} / {item.StepId} / {item.Metadata!.Name}").Distinct().ToArray()
+        })
+        .ToArray();
+
+      if(currentDevice is not null)
       {
-        case CommandTemplate.CommandTypeOneofCase.DeviceCommand:
-          var deviceId = command.DeviceCommand?.Metadata?.DeviceId;
-          if(!string.IsNullOrWhiteSpace(deviceId) && !deviceIds.Contains(deviceId))
-            warnings.Add($"Device '{deviceId}' is unavailable; its command was preserved for repair.");
-          break;
-        case CommandTemplate.CommandTypeOneofCase.CustomCommandInvocation:
-          var customCommandId = command.CustomCommandInvocation.CustomCommandId;
-          if(!string.IsNullOrWhiteSpace(customCommandId) && !customCommandIds.Contains(customCommandId))
-            warnings.Add($"Custom command '{customCommandId}' is unavailable; its invocation was preserved for repair.");
-          break;
-        case CommandTemplate.CommandTypeOneofCase.SystemCommand:
-        case CommandTemplate.CommandTypeOneofCase.None:
-          break;
-        default:
-          throw new ArgumentOutOfRangeException(nameof(command.CommandTypeCase), command.CommandTypeCase, null);
+        var currentMatches = await CampaignTemplateHelper.MatchCurrentDeviceCommandsAsync(currentDevice, commandDependencies, cancellationToken);
+        if(currentMatches.Any(match => match.Status != CampaignCommandMatchStatus.Exact))
+          warnings.Add($"Device '{firstMetadata.DeviceType}' is available, but one or more commands no longer match its current command interface.");
+
+        devices.Add(new CampaignDeviceDependency
+        {
+          DeviceId = deviceGroup.Key,
+          DeviceType = firstMetadata.DeviceType,
+          DeviceCategory = firstMetadata.HasDeviceCategory ? firstMetadata.DeviceCategory : DeviceCategory.Unspecified,
+          DriverId = firstMetadata.DeviceDriverId,
+          Commands = commandDependencies,
+          Candidates = [],
+          CurrentCommandMatches = currentMatches,
+          IsResolved = true
+        });
+        continue;
       }
+
+      warnings.Add($"Device '{firstMetadata.DeviceType}' is unavailable; its command was preserved for repair.");
+      var candidates = await FindDeviceCandidatesAsync(firstMetadata, commandDependencies, cancellationToken);
+      devices.Add(new CampaignDeviceDependency
+      {
+        DeviceId = deviceGroup.Key,
+        DeviceType = firstMetadata.DeviceType,
+        DeviceCategory = firstMetadata.HasDeviceCategory ? firstMetadata.DeviceCategory : DeviceCategory.Unspecified,
+        DriverId = firstMetadata.DeviceDriverId,
+        Commands = commandDependencies,
+        Candidates = candidates,
+        CurrentCommandMatches = [],
+        IsResolved = false
+      });
+    }
+
+    var customCommands = await customCommandPersistenceService.GetCommandsAsync();
+    var customCommandsById = customCommands
+      .Where(command => !string.IsNullOrWhiteSpace(command.CustomCommandId))
+      .ToDictionary(command => command.CustomCommandId, StringComparer.OrdinalIgnoreCase);
+
+    var customDependencies = commands
+      .Where(item => item.command.CommandTypeCase == CommandTemplate.CommandTypeOneofCase.CustomCommandInvocation)
+      .GroupBy(item => item.command.CustomCommandInvocation.CustomCommandId, StringComparer.OrdinalIgnoreCase)
+      .Where(group => !string.IsNullOrWhiteSpace(group.Key))
+      .Select(group => (Group: group, Requirement: CampaignTemplateHelper.BuildCustomCommandRequirement(group.First().command)))
+      .ToArray();
+
+    var customResults = new List<CampaignCustomCommandDependency>();
+
+    foreach(var customDependency in customDependencies)
+    {
+      cancellationToken.ThrowIfCancellationRequested();
+      var isResolved = customCommandsById.TryGetValue(customDependency.Group.Key, out var currentCommand);
+      var currentSignatureMatches = !isResolved || CampaignTemplateHelper.IsCustomCommandSignatureCompatible(customDependency.Requirement, currentCommand!);
+      if(!isResolved)
+        warnings.Add($"Custom command '{customDependency.Group.Key}' is unavailable; its invocation was preserved for repair.");
+      else if(!currentSignatureMatches)
+        warnings.Add($"Custom command '{customDependency.Group.Key}' is available, but its current interface differs from the campaign requirement.");
+
+      var candidates = isResolved ? []
+        : customCommands
+          .Select(command => CampaignTemplateHelper.CreateCustomCommandCandidate(customDependency.Requirement, command))
+          .Where(candidate => candidate.Status is not CampaignCommandMatchStatus.Missing)
+          .OrderByDescending(candidate => candidate.Score)
+          .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase)
+          .Take(10)
+          .ToArray();
+
+      customResults.Add(new CampaignCustomCommandDependency
+      {
+        CustomCommandId = customDependency.Group.Key,
+        Requirement = customDependency.Requirement,
+        Locations = customDependency.Group.Select(item => $"{item.ExperimentName} / {item.StepId} / Custom Command").Distinct().ToArray(),
+        Candidates = candidates,
+        IsResolved = isResolved,
+        CurrentSignatureMatches = currentSignatureMatches
+      });
+    }
+
+    return (devices, customResults);
   }
+
+  private async Task<IReadOnlyList<CampaignDeviceCandidate>> FindDeviceCandidatesAsync(
+    CommandMetadata metadata, 
+    IReadOnlyList<CampaignDeviceCommandDependency> requirements, 
+    CancellationToken cancellationToken)
+  {
+    var candidates = new List<CampaignDeviceCandidate>();
+    foreach(var device in deviceProvider.GetAllDevices())
+    {
+      cancellationToken.ThrowIfCancellationRequested();
+      var category = CampaignTemplateHelper.GetDeviceCategory(device);
+      if(metadata.HasDeviceCategory && metadata.DeviceCategory != DeviceCategory.Unspecified && category != metadata.DeviceCategory)
+        continue;
+
+      IReadOnlyList<DeviceCommandDescriptor> descriptors;
+      try
+      {
+        descriptors = await device.GetCommandDescriptorsAsync();
+      }
+      catch
+      {
+        continue;
+      }
+
+      var matches = requirements.Select(requirement => CampaignTemplateHelper.MatchDeviceCommand(requirement, descriptors)).ToArray();
+      var score = matches.Sum(match => match.Status switch
+      {
+        CampaignCommandMatchStatus.Exact => 50,
+        CampaignCommandMatchStatus.Compatible => 35,
+        CampaignCommandMatchStatus.SchemaMismatch => 5,
+        CampaignCommandMatchStatus.Missing => 0,
+        _ => 0
+      });
+      if(metadata.HasDeviceDriverId && !string.IsNullOrWhiteSpace(metadata.DeviceDriverId)
+        && string.Equals(metadata.DeviceDriverId, GetDeviceDriverId(device), StringComparison.OrdinalIgnoreCase))
+        score += 100;
+      if(!string.IsNullOrWhiteSpace(metadata.DeviceType) && string.Equals(metadata.DeviceType, device.Type, StringComparison.OrdinalIgnoreCase))
+        score += 25;
+
+      if(matches.Any(match => match.Status is not CampaignCommandMatchStatus.Missing))
+        candidates.Add(new CampaignDeviceCandidate
+        {
+          DeviceId = device.UniqueId,
+          Name = device.Name,
+          Type = device.Type,
+          Category = category,
+          DriverId = GetDeviceDriverId(device),
+          Score = score,
+          CommandMatches = matches
+        });
+    }
+
+    return candidates.OrderByDescending(candidate => candidate.Score).ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase).Take(10).ToArray();
+  }
+
+  private string GetDeviceDriverId(IAresDevice device)
+    => deviceConfigProvider.GetConfigByDeviceId(device.UniqueId)?.DriverId ?? string.Empty;
 
   private async Task AssignImportIdentityAsync(CampaignTemplate template, CancellationToken cancellationToken)
   {
@@ -153,7 +313,7 @@ internal class CampaignTemplateTransferService(
     foreach(var allocation in template.PlannerAllocations)
       allocation.UniqueId = Guid.NewGuid().ToString();
 
-    foreach(var experiment in GetExperiments(template))
+    foreach(var experiment in CampaignTemplateHelper.GetExperiments(template))
     {
       experiment.UniqueId = Guid.NewGuid().ToString();
       foreach(var step in experiment.StepTemplates)
@@ -197,22 +357,5 @@ internal class CampaignTemplateTransferService(
         return candidate;
       index++;
     }
-  }
-
-  private static IEnumerable<ExperimentTemplate> GetExperiments(CampaignTemplate template)
-  {
-    if(template.StartupTemplate is not null)
-      yield return template.StartupTemplate;
-    if(template.ExperimentTemplate is not null)
-      yield return template.ExperimentTemplate;
-    if(template.CloseoutTemplate is not null)
-      yield return template.CloseoutTemplate;
-  }
-
-  private static string MakeFileName(string campaignName)
-  {
-    var invalidCharacters = Path.GetInvalidFileNameChars();
-    var sanitizedName = new string(campaignName.Select(character => invalidCharacters.Contains(character) ? '_' : character).ToArray()).Trim();
-    return $"{(string.IsNullOrWhiteSpace(sanitizedName) ? "campaign" : sanitizedName)}.json";
   }
 }

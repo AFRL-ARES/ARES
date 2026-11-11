@@ -92,7 +92,7 @@ public sealed class SilaDeviceAdapter : IAresDeviceAdapter, IAsyncDisposable
     _stateSubscription = device.StateStream
       .DistinctUntilChanged()
       .Subscribe(
-        state => _stateSubject.OnNext(state),
+        _stateSubject.OnNext,
         ex =>
         {
           Active = false;

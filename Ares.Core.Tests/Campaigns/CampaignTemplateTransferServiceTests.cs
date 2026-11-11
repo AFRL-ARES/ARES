@@ -1,6 +1,6 @@
 using Ares.Core.Campaigns;
 using Ares.Core.CustomCommands;
-using Ares.Core.Device.Repos;
+using Ares.Core.Device.Providers;
 using Ares.Core.EntityConfigurations.Helpers;
 using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
@@ -31,12 +31,15 @@ internal class CampaignTemplateTransferServiceTests
     _persistenceService = new CampaignTemplatePersistenceService(_contextFactory);
     var customCommands = new Mock<ICustomCommandPersistenceService>();
     customCommands.Setup(service => service.GetCommandsAsync()).ReturnsAsync([]);
-    var deviceRepo = new Mock<IAresDeviceRepo>();
-    deviceRepo.Setup(repo => repo.GetAll()).Returns([]);
+    var deviceProvider = new Mock<IAresDeviceProvider>();
+    deviceProvider.Setup(provider => provider.GetAllDevices()).Returns([]);
+    var deviceConfigProvider = new Mock<IDeviceConfigProvider>();
+    deviceConfigProvider.Setup(provider => provider.GetConfigByDeviceId(It.IsAny<string>())).Returns((Datamodel.Device.DeviceConfig)null);
     _transferService = new CampaignTemplateTransferService(
       _persistenceService,
       customCommands.Object,
-      deviceRepo.Object,
+      deviceProvider.Object,
+      deviceConfigProvider.Object,
       _contextFactory);
   }
 

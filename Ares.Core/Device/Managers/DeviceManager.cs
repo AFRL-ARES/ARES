@@ -138,6 +138,10 @@ public class DeviceManager : IDeviceManager
     var device = _deviceRepo.GetDevice(deviceId);
     if(device != null)
     {
+      var ownedResource = _resourceConnectionArbiter.GetOwnedResource(device);
+      if(ownedResource is not null)
+        _resourceConnectionArbiter.ReleaseResource(ownedResource, device);
+
       device.Dispose();
       _deviceRepo.Remove(deviceId);
     }

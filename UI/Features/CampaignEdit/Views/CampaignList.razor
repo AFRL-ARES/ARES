@@ -1,6 +1,9 @@
 ﻿@page "/automation"
 @page "/automation/campaignlist"
+@using Ares.Core.Campaigns
+@using Ares.Core.Campaigns.Models
 @using Ares.Services
+@using Microsoft.AspNetCore.Components.Forms
 @using UI.Application.Notifications
 @using UI.Features.CampaignEdit.ViewModels
 @inject DialogService DialogService
@@ -133,23 +136,43 @@
     _isImporting = true;
     try
     {
-      var result = await ViewModel!.ImportCampaignTemplate(args.File);
-      await ViewModel.RefreshCampaigns();
-      
+      if(args.File.Size > CampaignListViewModel.MaximumImportFileSize)
+        throw new CampaignTemplateImportException("Campaign template files must be 5 MiB or smaller.");
+         
+      await using var stream = args.File.OpenReadStream(CampaignListViewModel.MaximumImportFileSize);
+      using var reader = new StreamReader(stream);
+      var json = await reader.ReadToEndAsync();
+      var result = await DialogService.OpenAsync<CampaignImportWizard>("Import Campaign", new Dictionary<string, object?>
+      {
+        [nameof(CampaignImportWizard.Json)] = json
+      }, new DialogOptions
+      {
+        Width = "900px",
+        Height = "90vh",
+        Resizable = true,
+        Draggable = true,
+        ShowClose = false,
+        ShowTitle = false
+      });
+
+      if(result is not CampaignTemplateImportResult importedResult)
+        return;
+
+      await ViewModel!.RefreshCampaigns();
       NotificationService.PushNotification(new AresNotification()
       {
-        Title = "Imported Campaign Successufully",
-        Message = $"Imported campaign '{result.Template.Name}'.",
+        Title = "Imported Campaign Successfully",
+        Message = $"Imported campaign '{importedResult.Template.Name}'.",
         NotificationSeverity = Severity.Success
       });
 
-      if(result.Warnings.Count > 0)
+      if(importedResult.Warnings.Count > 0)
         NotificationService.PushNotification(new AresNotification()
-          {
-            Title = "Warnings While Importing Campaign",
-            Message = string.Join(System.Environment.NewLine, result.Warnings),
-            NotificationSeverity = Severity.Warning
-          });
+        {
+          Title = "Warnings While Importing Campaign",
+          Message = string.Join(System.Environment.NewLine, importedResult.Warnings),
+          NotificationSeverity = Severity.Warning
+        });
     }
     catch(Exception exception)
     {
