@@ -185,7 +185,7 @@ internal class CampaignTemplateTransferService(
         continue;
       }
 
-      warnings.Add($"Device '{firstMetadata.DeviceType}' is unavailable; its command was preserved for repair.");
+      warnings.Add($"Device '{firstMetadata.DeviceType}' ({deviceGroup.Key}) is unavailable; its command was preserved for repair.");
       var candidates = await FindDeviceCandidatesAsync(firstMetadata, commandDependencies, cancellationToken);
       devices.Add(new CampaignDeviceDependency
       {
@@ -267,7 +267,7 @@ internal class CampaignTemplateTransferService(
       }
       catch
       {
-        continue;
+        descriptors = [];
       }
 
       var matches = requirements.Select(requirement => CampaignTemplateHelper.MatchDeviceCommand(requirement, descriptors)).ToArray();
@@ -278,15 +278,14 @@ internal class CampaignTemplateTransferService(
         CampaignCommandMatchStatus.SchemaMismatch => 5,
         CampaignCommandMatchStatus.Missing => 0,
         _ => 0
-      });
+      }) + matches.Sum(match => (int)(CampaignTemplateHelper.NameSimilarity(match.RequiredName, match.CurrentName) * 30));
       if(metadata.HasDeviceDriverId && !string.IsNullOrWhiteSpace(metadata.DeviceDriverId)
         && string.Equals(metadata.DeviceDriverId, GetDeviceDriverId(device), StringComparison.OrdinalIgnoreCase))
         score += 100;
       if(!string.IsNullOrWhiteSpace(metadata.DeviceType) && string.Equals(metadata.DeviceType, device.Type, StringComparison.OrdinalIgnoreCase))
         score += 25;
 
-      if(matches.Any(match => match.Status is not CampaignCommandMatchStatus.Missing))
-        candidates.Add(new CampaignDeviceCandidate
+      candidates.Add(new CampaignDeviceCandidate
         {
           DeviceId = device.UniqueId,
           Name = device.Name,
@@ -298,7 +297,11 @@ internal class CampaignTemplateTransferService(
         });
     }
 
-    return candidates.OrderByDescending(candidate => candidate.Score).ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase).Take(10).ToArray();
+    var orderedCandidates = candidates.OrderByDescending(candidate => candidate.Score)
+      .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase);
+    return metadata.HasDeviceCategory && metadata.DeviceCategory == DeviceCategory.Remote
+      ? orderedCandidates.ToArray()
+      : orderedCandidates.Take(10).ToArray();
   }
 
   private string GetDeviceDriverId(IAresDevice device)

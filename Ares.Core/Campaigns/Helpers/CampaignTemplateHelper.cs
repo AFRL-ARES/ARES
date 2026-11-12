@@ -12,22 +12,71 @@ public static class CampaignTemplateHelper
 {
   public static CampaignCommandMatch MatchDeviceCommand(CampaignDeviceCommandDependency requirement, IReadOnlyList<DeviceCommandDescriptor> descriptors)
   {
-    var descriptor = descriptors.FirstOrDefault(candidate => string.Equals(candidate.Name, requirement.Name, StringComparison.OrdinalIgnoreCase));
-    if(descriptor is null)
-      return new CampaignCommandMatch { RequiredName = requirement.Name, Status = CampaignCommandMatchStatus.Missing, Description = "Command is unavailable." };
+    var exactDescriptor = descriptors.FirstOrDefault(candidate => string.Equals(candidate.Name, requirement.Name, StringComparison.OrdinalIgnoreCase));
+    if(exactDescriptor is not null)
+      return CreateDeviceCommandMatch(requirement, exactDescriptor, true);
 
-    var inputMatches = requirement.Parameters.Count == (descriptor.InputSchema?.Fields.Count ?? 0)
-      && requirement.Parameters.All(parameter => descriptor.InputSchema?.Fields.TryGetValue(parameter.Name, out var schema) == true && (parameter.Schema is null || parameter.Schema.Equals(schema)));
-    var outputMatches = (requirement.OutputSchema is null && descriptor.OutputSchema is null)
-      || (requirement.OutputSchema is not null && requirement.OutputSchema.Equals(descriptor.OutputSchema));
-    var status = inputMatches && outputMatches ? CampaignCommandMatchStatus.Exact : CampaignCommandMatchStatus.SchemaMismatch;
+    var descriptor = descriptors
+      .Select(candidate => new
+      {
+        Descriptor = candidate,
+        NameSimilarity = NameSimilarity(requirement.Name, candidate.Name),
+        InterfaceMatches = DeviceCommandInterfaceMatches(requirement, candidate)
+      })
+      .OrderByDescending(candidate => candidate.InterfaceMatches)
+      .ThenByDescending(candidate => candidate.NameSimilarity)
+      .FirstOrDefault();
+    if(descriptor is null || (!descriptor.InterfaceMatches && descriptor.NameSimilarity <= 0))
+      return new CampaignCommandMatch
+      {
+        RequiredName = requirement.Name,
+        Status = CampaignCommandMatchStatus.Missing,
+        Description = "No matching command interface found."
+      };
+
+    return CreateDeviceCommandMatch(requirement, descriptor.Descriptor, false);
+  }
+
+  private static CampaignCommandMatch CreateDeviceCommandMatch(
+    CampaignDeviceCommandDependency requirement,
+    DeviceCommandDescriptor descriptor,
+    bool isNameMatch)
+  {
+    var interfaceMatches = DeviceCommandInterfaceMatches(requirement, descriptor);
+    CampaignCommandMatchStatus status;
+    string description;
+    if(isNameMatch && interfaceMatches)
+    {
+      status = CampaignCommandMatchStatus.Exact;
+      description = "Command and interface match.";
+    }
+    else if(interfaceMatches)
+    {
+      status = CampaignCommandMatchStatus.Compatible;
+      description = $"Command name differs ({descriptor.Name}), but the interface matches.";
+    }
+    else
+    {
+      status = CampaignCommandMatchStatus.SchemaMismatch;
+      description = $"Command name is similar ({descriptor.Name}), but its interface differs.";
+    }
+
     return new CampaignCommandMatch
     {
       RequiredName = requirement.Name,
       CurrentName = descriptor.Name,
       Status = status,
-      Description = status == CampaignCommandMatchStatus.Exact ? "Command and interface match." : "Command name matches but its interface differs."
+      Description = description
     };
+  }
+
+  private static bool DeviceCommandInterfaceMatches(CampaignDeviceCommandDependency requirement, DeviceCommandDescriptor descriptor)
+  {
+    var inputMatches = requirement.Parameters.Count == (descriptor.InputSchema?.Fields.Count ?? 0)
+      && requirement.Parameters.All(parameter => descriptor.InputSchema?.Fields.TryGetValue(parameter.Name, out var schema) == true && (parameter.Schema is null || parameter.Schema.Equals(schema)));
+    var outputMatches = (requirement.OutputSchema is null && descriptor.OutputSchema is null)
+      || (requirement.OutputSchema is not null && requirement.OutputSchema.Equals(descriptor.OutputSchema));
+    return inputMatches && outputMatches;
   }
 
   public static DeviceCategory GetDeviceCategory(IAresDevice device)

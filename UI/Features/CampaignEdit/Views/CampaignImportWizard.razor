@@ -82,7 +82,6 @@
               <div class="import-card-heading">
                 <div>
                   <strong>@dependency.DeviceType</strong>
-                  <div class="import-metadata">@dependency.DeviceId</div>
                 </div>
                 <span class="import-badge @GetDeviceBadgeClass(dependency)">@GetDeviceStatus(dependency)</span>
               </div>
@@ -109,7 +108,10 @@
                     <option value="@candidate.DeviceId">@candidate.Name - Confidence: @candidate.Score</option>
                   }
                 </select>
-                <small class="text-muted d-block mt-2">@string.Join(" ", dependency.Candidates.Select(candidate => candidate.MatchDescription))</small>
+                @if(!string.IsNullOrWhiteSpace(dependency.SelectedReplacementDeviceId))
+                {
+                  <small class="text-muted d-block mt-2">@GetSelectedDeviceCandidateDescription(dependency)</small>
+                }
               }
             </div>
           }
@@ -216,7 +218,10 @@
                     <option value="@candidate.CustomCommandId">@candidate.Name - Score: @candidate.Score</option>
                   }
                 </select>
-                <small class="text-muted d-block mt-2">@string.Join(" ", dependency.Candidates.Select(candidate => candidate.MatchDescription))</small>
+                @if(!string.IsNullOrWhiteSpace(dependency.SelectedReplacementCustomCommandId))
+                {
+                  <small class="text-muted d-block mt-2">@GetSelectedCustomCommandCandidateDescription(dependency)</small>
+                }
               }
             </div>
           }
@@ -335,6 +340,14 @@
 
   private string GetEffectiveDeviceId(CampaignDeviceDependency dependency)
     => string.IsNullOrWhiteSpace(dependency.SelectedReplacementDeviceId) ? dependency.DeviceId : dependency.SelectedReplacementDeviceId;
+
+  private string GetSelectedDeviceCandidateDescription(CampaignDeviceDependency dependency)
+    => dependency.Candidates.FirstOrDefault(candidate => string.Equals(candidate.DeviceId, dependency.SelectedReplacementDeviceId, StringComparison.OrdinalIgnoreCase))?.MatchDescription
+      ?? "Selected replacement candidate details are unavailable.";
+
+  private string GetSelectedCustomCommandCandidateDescription(CampaignCustomCommandDependency dependency)
+    => dependency.Candidates.FirstOrDefault(candidate => string.Equals(candidate.CustomCommandId, dependency.SelectedReplacementCustomCommandId, StringComparison.OrdinalIgnoreCase))?.MatchDescription
+      ?? "Selected replacement candidate details are unavailable.";
 
   private string GetDeviceStatus(CampaignDeviceDependency dependency)
     => NeedsDeviceResolution(dependency) ? "Needs attention" : "Resolved";
