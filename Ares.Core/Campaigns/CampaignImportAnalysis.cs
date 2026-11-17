@@ -24,6 +24,7 @@ public sealed class CampaignDeviceDependency
   public required IReadOnlyList<CampaignDeviceCommandDependency> Commands { get; init; }
   public required IReadOnlyList<CampaignDeviceCandidate> Candidates { get; init; }
   public required IReadOnlyList<CampaignCommandMatch> CurrentCommandMatches { get; init; }
+  public IReadOnlyDictionary<string, IReadOnlyList<CampaignDeviceCommandCandidate>> CommandCandidates { get; set; } = new Dictionary<string, IReadOnlyList<CampaignDeviceCommandCandidate>>(StringComparer.OrdinalIgnoreCase);
   public string? SelectedReplacementDeviceId { get; set; }
   public bool IsResolved { get; init; }
   public bool HasCommandMismatches => CurrentCommandMatches.Any(match => match.Status != CampaignCommandMatchStatus.Exact);
@@ -37,6 +38,8 @@ public sealed class CampaignDeviceCommandDependency
   public required IReadOnlyList<ParameterMetadata> Parameters { get; init; }
   public AresValueSchema? OutputSchema { get; init; }
   public required IReadOnlyList<string> Locations { get; init; }
+  public IReadOnlyList<CampaignDeviceCommandCandidate> Candidates { get; set; } = [];
+  public string? SelectedReplacementCommandName { get; set; }
 }
 
 public sealed class CampaignDeviceCandidate
@@ -48,7 +51,20 @@ public sealed class CampaignDeviceCandidate
   public string DriverId { get; init; } = string.Empty;
   public int Score { get; init; }
   public required IReadOnlyList<CampaignCommandMatch> CommandMatches { get; init; }
-  public string MatchDescription => string.Join("; ", CommandMatches.Select(match => match.Description));
+  public IReadOnlyDictionary<string, IReadOnlyList<CampaignDeviceCommandCandidate>> CommandCandidates { get; init; } = new Dictionary<string, IReadOnlyList<CampaignDeviceCommandCandidate>>(StringComparer.OrdinalIgnoreCase);
+  public string MatchDescription => string.Join("; ", CommandMatches
+    .Select(match => match.Description)
+    .Where(description => !string.IsNullOrWhiteSpace(description))
+    .Distinct(StringComparer.OrdinalIgnoreCase));
+}
+
+public sealed class CampaignDeviceCommandCandidate
+{
+  public required string RequiredName { get; init; }
+  public required string Name { get; init; }
+  public required CampaignCommandMatchStatus Status { get; init; }
+  public int Score { get; init; }
+  public string MatchDescription { get; init; } = string.Empty;
 }
 
 public sealed class CampaignCommandMatch

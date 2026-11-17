@@ -45,7 +45,7 @@
         </button>
       </div>
       <div class="import-step-connector @GetConnectorClass(CommandStep)" style="flex: 0 0 5rem"></div>
-      <div class="import-step @GetStepClass(CustomCommandStep)">
+      <div class="import-step @GetStepClass(CustomCommandStep) @GetStepConnectorClass(CustomCommandStep)">
         <button type="button" class="import-step-button" @onclick="() => SelectStep(CustomCommandStep)" aria-current="@(CurrentStep == CustomCommandStep ? "step" : null)">
           <span class="import-step-icon">@GetStepIcon(CustomCommandStep)</span>
           <span class="import-step-copy">
@@ -146,13 +146,38 @@
                 </div>
                 <span class="import-badge import-badge-danger">Needs attention</span>
               </div>
-              <p class="import-card-description">One or more command interfaces differ from the campaign requirement.</p>
-              @foreach(var match in GetCommandMatches(dependency).Where(match => match.Status != CampaignCommandMatchStatus.Exact))
+              <p class="import-card-description">Choose the current command that should replace each mismatched campaign command.</p>
+              @foreach(var command in dependency.Commands)
               {
-                <div class="import-command-row">
-                  <span class="import-message import-message-danger"><span>×</span><strong>@match.RequiredName</strong></span>
-                  <span class="text-muted">@match.Description</span>
-                </div>
+                var match = GetCommandMatch(dependency, command);
+                if(match.Status == CampaignCommandMatchStatus.Exact || !string.IsNullOrWhiteSpace(command.SelectedReplacementCommandName))
+                {
+                  <div class="import-command-row">
+                    <span class="import-message import-message-success"><span>✓</span><strong>@command.Name</strong></span>
+                    <span class="text-muted">@GetSelectedCommandDescription(dependency, command, match)</span>
+                  </div>
+                }
+                else
+                {
+                  <div class="import-command-resolution">
+                    <div class="import-command-row">
+                      <span class="import-message import-message-danger"><span>×</span><strong>@command.Name</strong></span>
+                      <span class="text-muted">@match.Description</span>
+                    </div>
+                    <label class="form-label mt-2" for="command-@dependency.DeviceId-@command.CommandId">Replacement command</label>
+                    <select id="command-@dependency.DeviceId-@command.CommandId" class="form-select" @bind="command.SelectedReplacementCommandName">
+                      <option value="">Leave unresolved</option>
+                      @foreach(var candidate in GetCommandCandidates(dependency, command))
+                      {
+                        <option value="@candidate.Name">@candidate.Name - Score: @candidate.Score</option>
+                      }
+                    </select>
+                    @if(!string.IsNullOrWhiteSpace(command.SelectedReplacementCommandName))
+                    {
+                      <small class="text-muted d-block mt-2">@GetSelectedCommandDescription(dependency, command, match)</small>
+                    }
+                  </div>
+                }
               }
               @if(!string.IsNullOrWhiteSpace(dependency.SelectedReplacementDeviceId))
               {
@@ -199,9 +224,24 @@
               {
                 <div class="import-message import-message-success"><span>✓</span>Exact custom command ID found; current interface matches.</div>
               }
-              else if(dependency.IsResolved)
+              else if(dependency.IsResolved && !dependency.CurrentSignatureMatches)
               {
                 <div class="import-message import-message-danger"><span>×</span>Exact custom command ID found, but its current interface differs.</div>
+                @if(dependency.Candidates.Count > 0)
+                {
+                  <label class="form-label mt-3" for="custom-command-@dependency.CustomCommandId">Replacement candidate</label>
+                  <select id="custom-command-@dependency.CustomCommandId" class="form-select" @bind="dependency.SelectedReplacementCustomCommandId">
+                    <option value="">Leave unresolved</option>
+                    @foreach(var candidate in dependency.Candidates)
+                    {
+                      <option value="@candidate.CustomCommandId">@candidate.Name - Score: @candidate.Score</option>
+                    }
+                  </select>
+                  @if(!string.IsNullOrWhiteSpace(dependency.SelectedReplacementCustomCommandId))
+                  {
+                    <small class="text-muted d-block mt-2">@GetSelectedCustomCommandCandidateDescription(dependency)</small>
+                  }
+                }
               }
               else if(dependency.Candidates.Count == 0)
               {
@@ -324,7 +364,38 @@
     => !dependency.IsResolved && string.IsNullOrWhiteSpace(dependency.SelectedReplacementDeviceId);
 
   private bool HasCommandIssues(CampaignDeviceDependency dependency)
-    => GetCommandMatches(dependency).Any(match => match.Status != CampaignCommandMatchStatus.Exact);
+    => dependency.Commands.Any(command =>
+    {
+      var match = GetCommandMatch(dependency, command);
+      return match.Status != CampaignCommandMatchStatus.Exact && string.IsNullOrWhiteSpace(command.SelectedReplacementCommandName);
+    });
+
+  private CampaignCommandMatch GetCommandMatch(CampaignDeviceDependency dependency, CampaignDeviceCommandDependency command)
+  {
+    var match = GetCommandMatches(dependency).FirstOrDefault(candidate => string.Equals(candidate.RequiredName, command.Name, StringComparison.OrdinalIgnoreCase));
+    return match ?? new CampaignCommandMatch
+    {
+      RequiredName = command.Name,
+      Status = CampaignCommandMatchStatus.Missing,
+      Description = "Command is unavailable."
+    };
+  }
+
+  private IReadOnlyList<CampaignDeviceCommandCandidate> GetCommandCandidates(CampaignDeviceDependency dependency, CampaignDeviceCommandDependency command)
+  {
+    if(!string.IsNullOrWhiteSpace(dependency.SelectedReplacementDeviceId))
+    {
+      var selectedCandidate = dependency.Candidates.FirstOrDefault(candidate => string.Equals(candidate.DeviceId, dependency.SelectedReplacementDeviceId, StringComparison.OrdinalIgnoreCase));
+      if(selectedCandidate is not null && selectedCandidate.CommandCandidates.TryGetValue(command.CommandId, out var replacementCandidates))
+        return replacementCandidates;
+    }
+
+    return dependency.CommandCandidates.TryGetValue(command.CommandId, out var candidates) ? candidates : [];
+  }
+
+  private string GetSelectedCommandDescription(CampaignDeviceDependency dependency, CampaignDeviceCommandDependency command, CampaignCommandMatch match)
+    => GetCommandCandidates(dependency, command).FirstOrDefault(candidate => string.Equals(candidate.Name, command.SelectedReplacementCommandName, StringComparison.OrdinalIgnoreCase))?.MatchDescription
+      ?? match.Description;
 
   private IReadOnlyList<CampaignCommandMatch> GetCommandMatches(CampaignDeviceDependency dependency)
   {

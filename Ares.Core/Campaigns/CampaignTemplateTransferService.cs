@@ -180,6 +180,7 @@ internal class CampaignTemplateTransferService(
           Commands = commandDependencies,
           Candidates = [],
           CurrentCommandMatches = currentMatches,
+          CommandCandidates = await FindCommandCandidatesAsync(currentDevice, commandDependencies, cancellationToken),
           IsResolved = true
         });
         continue;
@@ -224,14 +225,12 @@ internal class CampaignTemplateTransferService(
       else if(!currentSignatureMatches)
         warnings.Add($"Custom command '{customDependency.Group.Key}' is available, but its current interface differs from the campaign requirement.");
 
-      var candidates = isResolved ? []
-        : customCommands
-          .Select(command => CampaignTemplateHelper.CreateCustomCommandCandidate(customDependency.Requirement, command))
-          .Where(candidate => candidate.Status is not CampaignCommandMatchStatus.Missing)
-          .OrderByDescending(candidate => candidate.Score)
-          .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase)
-          .Take(10)
-          .ToArray();
+      var candidates = customCommands
+        .Where(command => !string.Equals(command.CustomCommandId, customDependency.Group.Key, StringComparison.OrdinalIgnoreCase))
+        .Select(command => CampaignTemplateHelper.CreateCustomCommandCandidate(customDependency.Requirement, command))
+        .OrderByDescending(candidate => candidate.Score)
+        .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase)
+        .ToArray();
 
       customResults.Add(new CampaignCustomCommandDependency
       {
@@ -245,6 +244,28 @@ internal class CampaignTemplateTransferService(
     }
 
     return (devices, customResults);
+  }
+
+  private async Task<IReadOnlyDictionary<string, IReadOnlyList<CampaignDeviceCommandCandidate>>> FindCommandCandidatesAsync(
+    IAresDevice device,
+    IReadOnlyList<CampaignDeviceCommandDependency> requirements,
+    CancellationToken cancellationToken)
+  {
+    IReadOnlyList<DeviceCommandDescriptor> descriptors;
+    try
+    {
+      descriptors = await device.GetCommandDescriptorsAsync();
+      cancellationToken.ThrowIfCancellationRequested();
+    }
+    catch
+    {
+      descriptors = [];
+    }
+
+    return requirements.ToDictionary(
+      requirement => requirement.CommandId,
+      requirement => (IReadOnlyList<CampaignDeviceCommandCandidate>)CampaignTemplateHelper.GetDeviceCommandCandidates(requirement, descriptors),
+      StringComparer.OrdinalIgnoreCase);
   }
 
   private async Task<IReadOnlyList<CampaignDeviceCandidate>> FindDeviceCandidatesAsync(
@@ -271,6 +292,10 @@ internal class CampaignTemplateTransferService(
       }
 
       var matches = requirements.Select(requirement => CampaignTemplateHelper.MatchDeviceCommand(requirement, descriptors)).ToArray();
+      var commandCandidates = requirements.ToDictionary(
+        requirement => requirement.CommandId,
+        requirement => CampaignTemplateHelper.GetDeviceCommandCandidates(requirement, descriptors),
+        StringComparer.OrdinalIgnoreCase);
       var score = matches.Sum(match => match.Status switch
       {
         CampaignCommandMatchStatus.Exact => 50,
@@ -293,7 +318,8 @@ internal class CampaignTemplateTransferService(
           Category = category,
           DriverId = GetDeviceDriverId(device),
           Score = score,
-          CommandMatches = matches
+          CommandMatches = matches,
+          CommandCandidates = commandCandidates
         });
     }
 

@@ -176,6 +176,26 @@ public partial class CommandDesignerViewModel : ReactiveObject
         CommandTemplate.DeviceCommand.Metadata.DeviceType = MetadataDeviceName;
     }
 
+    if(CommandTypeCase == CommandTemplate.CommandTypeOneofCase.CustomCommandInvocation && _selectedCustomCommand is not null)
+    {
+      CommandTemplate.CustomCommandInvocation.Requirement = new CustomCommandRequirement()
+      {
+        Description = _selectedCustomCommand.Description,
+        Name = _selectedCustomCommand.Name,
+        OutputSchema = _selectedCustomCommand.OutputSchema
+      };
+
+      CommandTemplate.CustomCommandInvocation.Requirement.InputParameters.AddRange(_selectedCustomCommand.InputParameters
+        .Select(c =>
+        new CustomCommandParameterRequirement()
+        {
+          Name = c.Name,
+          Index = _selectedCustomCommand.InputParameters.IndexOf(c),
+          Schema = c.Schema
+        }));
+
+    }
+
     CommandTemplate.Index = Index;
     CommandTemplate.ClearOutputVarName();
     if(OutputProvider && HasOutputMetadata && !string.IsNullOrWhiteSpace(OutputVariableName))

@@ -165,14 +165,6 @@
         Message = $"Imported campaign '{importedResult.Template.Name}'.",
         NotificationSeverity = Severity.Success
       });
-
-      if(importedResult.Warnings.Count > 0)
-        NotificationService.PushNotification(new AresNotification()
-        {
-          Title = "Warnings While Importing Campaign",
-          Message = string.Join(System.Environment.NewLine, importedResult.Warnings),
-          NotificationSeverity = Severity.Warning
-        });
     }
     catch(Exception exception)
     {

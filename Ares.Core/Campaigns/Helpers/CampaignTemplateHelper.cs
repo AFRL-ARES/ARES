@@ -12,30 +12,82 @@ public static class CampaignTemplateHelper
 {
   public static CampaignCommandMatch MatchDeviceCommand(CampaignDeviceCommandDependency requirement, IReadOnlyList<DeviceCommandDescriptor> descriptors)
   {
-    var exactDescriptor = descriptors.FirstOrDefault(candidate => string.Equals(candidate.Name, requirement.Name, StringComparison.OrdinalIgnoreCase));
-    if(exactDescriptor is not null)
-      return CreateDeviceCommandMatch(requirement, exactDescriptor, true);
-
-    var descriptor = descriptors
-      .Select(candidate => new
-      {
-        Descriptor = candidate,
-        NameSimilarity = NameSimilarity(requirement.Name, candidate.Name),
-        InterfaceMatches = DeviceCommandInterfaceMatches(requirement, candidate)
-      })
-      .OrderByDescending(candidate => candidate.InterfaceMatches)
-      .ThenByDescending(candidate => candidate.NameSimilarity)
-      .FirstOrDefault();
-    if(descriptor is null || (!descriptor.InterfaceMatches && descriptor.NameSimilarity <= 0))
-      return new CampaignCommandMatch
+    var match = GetDeviceCommandMatchCandidates(requirement, descriptors).FirstOrDefault();
+    return match is null
+      ? new CampaignCommandMatch
       {
         RequiredName = requirement.Name,
         Status = CampaignCommandMatchStatus.Missing,
         Description = "No matching command interface found."
-      };
-
-    return CreateDeviceCommandMatch(requirement, descriptor.Descriptor, false);
+      }
+      : CreateDeviceCommandMatch(requirement, match.Descriptor, match.IsNameMatch);
   }
+
+  public static IReadOnlyList<CampaignDeviceCommandCandidate> GetDeviceCommandCandidates(
+    CampaignDeviceCommandDependency requirement,
+    IReadOnlyList<DeviceCommandDescriptor> descriptors)
+    => GetDeviceCommandMatchCandidates(requirement, descriptors)
+      .Select(candidate => new CampaignDeviceCommandCandidate
+      {
+        RequiredName = requirement.Name,
+        Name = candidate.Descriptor.Name,
+        Status = candidate.Status,
+        Score = candidate.Score,
+        MatchDescription = candidate.MatchDescription
+      })
+      .ToArray();
+
+  private static IEnumerable<DeviceCommandMatchCandidate> GetDeviceCommandMatchCandidates(
+    CampaignDeviceCommandDependency requirement,
+    IReadOnlyList<DeviceCommandDescriptor> descriptors)
+    => descriptors
+      .Select(descriptor =>
+      {
+        var isNameMatch = string.Equals(descriptor.Name, requirement.Name, StringComparison.OrdinalIgnoreCase);
+        var interfaceMatches = DeviceCommandInterfaceMatches(requirement, descriptor);
+        var nameSimilarity = NameSimilarity(requirement.Name, descriptor.Name);
+        var status = isNameMatch && interfaceMatches
+          ? CampaignCommandMatchStatus.Exact
+          : interfaceMatches
+            ? CampaignCommandMatchStatus.Compatible
+            : nameSimilarity > 0
+              ? CampaignCommandMatchStatus.SchemaMismatch
+              : CampaignCommandMatchStatus.Missing;
+        var score = status switch
+        {
+          CampaignCommandMatchStatus.Exact => 50,
+          CampaignCommandMatchStatus.Compatible => 35,
+          CampaignCommandMatchStatus.SchemaMismatch => 5,
+          CampaignCommandMatchStatus.Missing => 0,
+          _ => 0
+        } + (int)(nameSimilarity * 30);
+        return new DeviceCommandMatchCandidate(
+          descriptor,
+          isNameMatch,
+          status,
+          score,
+          GetDeviceCommandMatchDescription(requirement, descriptor, status));
+      })
+      .Where(candidate => candidate.Status is not CampaignCommandMatchStatus.Missing)
+      .OrderByDescending(candidate => candidate.Score)
+      .ThenBy(candidate => candidate.Descriptor.Name, StringComparer.OrdinalIgnoreCase);
+
+  private sealed record DeviceCommandMatchCandidate(
+    DeviceCommandDescriptor Descriptor,
+    bool IsNameMatch,
+    CampaignCommandMatchStatus Status,
+    int Score,
+    string MatchDescription);
+
+  private static string GetDeviceCommandMatchDescription(CampaignDeviceCommandDependency requirement, DeviceCommandDescriptor descriptor, CampaignCommandMatchStatus status)
+    => status switch
+    {
+      CampaignCommandMatchStatus.Exact => "Command and interface match.",
+      CampaignCommandMatchStatus.Compatible => $"Command name differs ({descriptor.Name}), but the interface matches.",
+      CampaignCommandMatchStatus.SchemaMismatch => $"Command name is similar ({descriptor.Name}), but its interface differs.",
+      CampaignCommandMatchStatus.Missing => $"No interface match; command is {descriptor.Name}.",
+      _ => "Command match status is unknown."
+    };
 
   private static CampaignCommandMatch CreateDeviceCommandMatch(
     CampaignDeviceCommandDependency requirement,
@@ -99,20 +151,24 @@ public static class CampaignTemplateHelper
 
   public static CampaignCustomCommandCandidate CreateCustomCommandCandidate(CustomCommandRequirement requirement, CustomCommandVersion command)
   {
-    var nameMatch = NormalizeName(requirement.Name) == NormalizeName(command.Name);
-    var inputMatch = requirement.InputParameters.Count == command.InputParameters.Count
-      && requirement.InputParameters.All(required => command.InputParameters.Any(input => string.Equals(input.Name, required.Name, StringComparison.OrdinalIgnoreCase)
-        && (required.Schema is null || required.Schema.Equals(input.Schema))));
-    var outputMatch = (requirement.OutputSchema is null && command.OutputSchema is null)
-      || (requirement.OutputSchema is not null && requirement.OutputSchema.Equals(command.OutputSchema));
-    var status = inputMatch && outputMatch
-      ? CampaignCommandMatchStatus.Compatible
-      : inputMatch || outputMatch
-        ? CampaignCommandMatchStatus.SchemaMismatch
-        : CampaignCommandMatchStatus.Missing;
-    var score = (int)(nameMatch ? 50 : NameSimilarity(requirement.Name, command.Name) * 30)
-      + (inputMatch ? 40 : 0)
-      + (outputMatch ? 30 : 0);
+    // Evaluate Name Match
+    bool hasName = !string.IsNullOrWhiteSpace(requirement.Name);
+    bool nameMatches = hasName && NormalizeName(requirement.Name) == NormalizeName(command.Name);
+
+    // Evaluate Input Parameters Match
+    int matchingInputNameCount = CountMatchingInputNames(requirement.InputParameters.ToList(), command.InputParameters.ToList());
+    int matchingInputCount = CountMatchingInputSchemas(requirement.InputParameters.ToList(), command.InputParameters.ToList());
+
+    bool inputMatch = requirement.InputParameters.Count == command.InputParameters.Count && matchingInputCount == requirement.InputParameters.Count;
+
+    // Evaluate Output Schema Match
+    bool outputMatch = AreOutputSchemasEqual(requirement.OutputSchema, command.OutputSchema);
+
+    // Determine Status & Score
+    var status = DetermineMatchStatus(inputMatch, outputMatch, matchingInputNameCount);
+    int score = CalculateScore(requirement, command, hasName, nameMatches, matchingInputNameCount, matchingInputCount, outputMatch);
+
+    // Construct and Return Result
     return new CampaignCustomCommandCandidate
     {
       CustomCommandId = command.CustomCommandId,
@@ -120,8 +176,86 @@ public static class CampaignTemplateHelper
       Description = command.Description,
       Status = status,
       Score = score,
-      MatchDescription = $"Name {(nameMatch ? "matches" : "is similar")}; input interface {(inputMatch ? "matches" : "differs")}; output interface {(outputMatch ? "matches" : "differs")}."
+      MatchDescription = BuildMatchDescription(requirement, command, nameMatches, inputMatch, matchingInputNameCount, matchingInputCount, outputMatch)
     };
+  }
+
+  private static int CountMatchingInputNames(List<CustomCommandParameterRequirement> requirements, List<CustomCommandParameter> inputs)
+    => requirements.Count(req => inputs.Any(inp => string.Equals(inp.Name, req.Name, StringComparison.OrdinalIgnoreCase)));
+
+  private static int CountMatchingInputSchemas(List<CustomCommandParameterRequirement> requirements, List<CustomCommandParameter> inputs)
+  {
+    return requirements.Count(req => inputs.Any(inp => string.Equals(inp.Name, req.Name, StringComparison.OrdinalIgnoreCase)
+                          && (req.Schema is null || req.Schema.Equals(inp.Schema))));
+  }
+
+  private static bool AreOutputSchemasEqual(AresValueSchema? reqSchema, AresValueSchema? comSchema)
+    => (reqSchema is null && comSchema is null) || (reqSchema is not null && reqSchema.Equals(comSchema));
+
+  private static CampaignCommandMatchStatus DetermineMatchStatus(bool inputMatch, bool outputMatch, int matchingInputNameCount)
+  {
+    if(inputMatch && outputMatch)
+      return CampaignCommandMatchStatus.Compatible;
+
+    if(inputMatch || outputMatch || matchingInputNameCount > 0)
+      return CampaignCommandMatchStatus.SchemaMismatch;
+
+    return CampaignCommandMatchStatus.Missing;
+  }
+
+  private static int CalculateScore(
+      CustomCommandRequirement requirement,
+      CustomCommandVersion command,
+      bool hasName,
+      bool nameMatches,
+      int matchingInputNameCount,
+      int matchingInputCount,
+      bool outputMatch)
+  {
+    int inputCount = Math.Max(requirement.InputParameters.Count, command.InputParameters.Count);
+    double inputNameSimilarity = inputCount == 0 ? 0 : (double)matchingInputNameCount / inputCount;
+    double inputSchemaSimilarity = inputCount == 0 ? 0 : (double)matchingInputCount / inputCount;
+
+    int nameScore = !hasName ? 0 : (nameMatches ? 50 : (int)(NameSimilarity(requirement.Name, command.Name) * 30));
+
+    // Assuming 25 and 15 weights from the original intent
+    int inputNameScore = (int)(inputNameSimilarity * 25);
+    int inputSchemaScore = (int)(inputSchemaSimilarity * 15);
+    int outputScore = outputMatch ? 30 : 0;
+
+    return nameScore + inputNameScore + inputSchemaScore + outputScore;
+  }
+
+  private static string BuildMatchDescription(
+      CustomCommandRequirement requirement,
+      CustomCommandVersion command,
+      bool nameMatches,
+      bool inputMatch,
+      int matchingInputNameCount,
+      int matchingInputCount,
+      bool outputMatch)
+  {
+    string nameDesc = string.IsNullOrWhiteSpace(requirement.Name)
+        ? "not captured"
+        : nameMatches ? "matches" : "is similar";
+
+    string inputDesc;
+    if(inputMatch && requirement.InputParameters.Count == 0 && command.InputParameters.Count == 0)
+      inputDesc = "neither command has input parameters";
+    else if(inputMatch)
+      inputDesc = $"matches all {requirement.InputParameters.Count} input parameters";
+    else if(requirement.InputParameters.Count == 0)
+      inputDesc = $"the imported command has no inputs; candidate has {command.InputParameters.Count} input parameter(s)";
+    else if(command.InputParameters.Count == 0)
+      inputDesc = $"matches {matchingInputNameCount} of {requirement.InputParameters.Count} input parameter names and {matchingInputCount} schemas; candidate has no inputs";
+    else
+      inputDesc = $"matches {matchingInputNameCount} of {requirement.InputParameters.Count} input parameter names and {matchingInputCount} schemas; candidate has {command.InputParameters.Count} input parameter(s)";
+
+    string outputDesc = requirement.OutputSchema is null && command.OutputSchema is null
+      ? "neither command has an output schema"
+      : outputMatch ? "matches" : "differs";
+
+    return $"Name {nameDesc}; input interface {inputDesc}; output interface {outputDesc}.";
   }
 
   public static double NameSimilarity(string? left, string? right)
@@ -138,10 +272,16 @@ public static class CampaignTemplateHelper
 
   public static void ApplySelections(CampaignImportAnalysis analysis)
   {
-    foreach(var dependency in analysis.DeviceDependencies.Where(dependency => !string.IsNullOrWhiteSpace(dependency.SelectedReplacementDeviceId)))
+    foreach(var dependency in analysis.DeviceDependencies)
       foreach(var command in GetExperiments(analysis.Template).SelectMany(experiment => experiment.StepTemplates).SelectMany(step => step.CommandTemplates))
         if(command.DeviceCommand?.Metadata is { } metadata && string.Equals(metadata.DeviceId, dependency.DeviceId, StringComparison.OrdinalIgnoreCase))
-          metadata.DeviceId = dependency.SelectedReplacementDeviceId!;
+        {
+          var commandDependency = dependency.Commands.FirstOrDefault(requirement => string.Equals(requirement.Name, metadata.Name, StringComparison.OrdinalIgnoreCase));
+          if(!string.IsNullOrWhiteSpace(commandDependency?.SelectedReplacementCommandName))
+            metadata.Name = commandDependency.SelectedReplacementCommandName!;
+          if(!string.IsNullOrWhiteSpace(dependency.SelectedReplacementDeviceId))
+            metadata.DeviceId = dependency.SelectedReplacementDeviceId!;
+        }
 
     foreach(var dependency in analysis.CustomCommandDependencies.Where(dependency => !string.IsNullOrWhiteSpace(dependency.SelectedReplacementCustomCommandId)))
       foreach(var command in GetExperiments(analysis.Template).SelectMany(experiment => experiment.StepTemplates).SelectMany(step => step.CommandTemplates))
