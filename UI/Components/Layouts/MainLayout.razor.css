@@ -18,34 +18,49 @@ main {
     padding-left: 0.9rem;
 }
 
+.sidebar-collapsed .hamburger-button {
+  padding-left: 0;
+  width: 57px;
+}
+
 .main-layout-grid {
   display: grid;
+  min-width: 0;
+  min-height: 100dvh;
   grid-template:
-               "sidebar content" 1fr
+               "sidebar content" minmax(0, 1fr)
                "sidebar footer" auto
-               /auto 1fr;
+               /auto minmax(0, 1fr);
 }
 
 .ares-sidebar {
   grid-area: sidebar;
+  min-width: 0;
+  min-height: 0;
+}
+
+@media (max-width: 1440px) {
+  .sidebar-expanded .hamburger-button {
+    padding-left: 0.9rem;
+  }
 }
 
 .ares-footer {
   grid-area: footer;
+  min-width: 0;
 }
 
 .ares-content {
   grid-area: content;
+  min-width: 0;
+  min-height: 0;
   overflow: auto;
   display: flex;
   flex-direction: column;
 }
 .ares-throbber-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  inset: 0;
   background-color: #212529;
   z-index: 9999;
   display: flex;
