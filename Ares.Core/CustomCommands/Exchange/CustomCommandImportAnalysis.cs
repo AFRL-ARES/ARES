@@ -9,5 +9,5 @@ public sealed class CustomCommandImportAnalysis
   public required IReadOnlyList<CustomCommandImportMatch> ExistingMatches { get; init; }
   public IReadOnlyList<CustomCommandDeviceReference> DeviceReferences { get; set; } = [];
   public CustomCommandVersion OriginalDefinition { get; init; } = new();
-  public required IReadOnlyList<string> Warnings { get; init; }
+  public List<string> Warnings { get; init; } = [];
 }

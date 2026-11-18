@@ -113,6 +113,7 @@ public sealed class CustomCommandTransferService(ICustomCommandPersistenceServic
       reference.ResolvedDeviceId = reference.SelectedReplacementDeviceId;
       reference.Status = CustomCommandDeviceReferenceStatus.Valid;
       reference.Description = $"Using replacement device '{reference.SelectedReplacementDeviceName}'.";
+      analysis.Warnings.RemoveAll(warning => warning.Contains(reference.DeviceIdentifier, StringComparison.OrdinalIgnoreCase));
     }
 
     analysis.Definition.ScriptBody = script;

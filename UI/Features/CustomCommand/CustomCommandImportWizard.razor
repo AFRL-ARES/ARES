@@ -78,10 +78,10 @@
               </div>
               <small class="text-muted d-block mt-2">Line @reference.Line, column @reference.Column</small>
               <div class="custom-import-message @GetReferenceMessageClass(reference.Status)"><span>@GetReferenceIcon(reference.Status)</span>@reference.Description</div>
-              @if(reference.Status != CustomCommandDeviceReferenceStatus.Valid && reference.ReplacementDevices.Count > 0)
+              @if(reference.ReplacementDevices.Count > 0 && (reference.Status != CustomCommandDeviceReferenceStatus.Valid || !string.IsNullOrWhiteSpace(reference.SelectedReplacementDeviceId)))
               {
                 <label class="form-label mt-3" for="replacement-device-@reference.Line-@reference.Column">Replacement device</label>
-                <select id="replacement-device-@reference.Line-@reference.Column" class="form-select" @bind="reference.SelectedReplacementDeviceId">
+                <select id="replacement-device-@reference.Line-@reference.Column" class="form-select" value="@reference.SelectedReplacementDeviceId" @onchange="eventArgs => OnReplacementDeviceChanged(reference, eventArgs.Value?.ToString())">
                   <option value="">Leave unresolved</option>
                   @foreach(var replacement in reference.ReplacementDevices)
                   {
@@ -90,7 +90,7 @@
                 </select>
                 @if(!string.IsNullOrWhiteSpace(reference.SelectedReplacementDeviceId))
                 {
-                  <small class="text-muted d-block mt-2">Select Next to re-check this reference before import.</small>
+                  <small class="text-muted d-block mt-2">Using the selected replacement device.</small>
                 }
               }
             </div>
@@ -192,6 +192,23 @@
   private bool HasSelectedDeviceReplacements()
     => ViewModel!.Analysis!.DeviceReferences.Any(reference => !string.IsNullOrWhiteSpace(reference.SelectedReplacementDeviceId));
 
+  private void OnReplacementDeviceChanged(CustomCommandDeviceReference reference, string? replacementDeviceId)
+  {
+    reference.SelectedReplacementDeviceId = replacementDeviceId;
+    var replacement = reference.ReplacementDevices.FirstOrDefault(candidate => string.Equals(candidate.DeviceId, replacementDeviceId, StringComparison.OrdinalIgnoreCase));
+    reference.SelectedReplacementDeviceName = replacement?.Name;
+    if(replacement is null)
+      return;
+
+    reference.ResolvedDeviceId = replacement.DeviceId;
+    reference.Status = CustomCommandDeviceReferenceStatus.Valid;
+    reference.Description = $"Using replacement device '{replacement.Name}'.";
+    var analysis = ViewModel.Analysis;
+    if(analysis is not null)
+      analysis.Warnings.RemoveAll(warning => warning.Contains(reference.DeviceIdentifier, StringComparison.OrdinalIgnoreCase));
+    StateHasChanged();
+  }
+
   private void ApplyDeviceReplacements()
   {
     foreach(var reference in ViewModel!.Analysis!.DeviceReferences.Where(reference => !string.IsNullOrWhiteSpace(reference.SelectedReplacementDeviceId)))
@@ -206,7 +223,8 @@
       reference.Description = $"Using replacement device '{replacement.Name}'.";
     }
 
-    CurrentStep = ReviewStep;
+    if(!ViewModel.HasInvalidDeviceReferences)
+      CurrentStep = ReviewStep;
   }
 
   private void PreviousStep()
@@ -235,7 +253,7 @@
   }
 
   private bool HasStepIssues(int step)
-    => step == ReferenceStep ? ViewModel!.HasInvalidDeviceReferences : ViewModel!.HasInvalidDeviceReferences;
+    => ViewModel!.HasInvalidDeviceReferences;
 
   private string GetCountClass(int step) => HasStepIssues(step) ? "custom-import-count-danger" : "custom-import-count-success";
 
