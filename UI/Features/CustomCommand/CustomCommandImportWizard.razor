@@ -1,0 +1,270 @@
+@using Ares.Core.CustomCommands.Import
+@using UI.Features.CustomCommand.ViewModels
+@inject DialogService DialogService
+@inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<CustomCommandImportWizardViewModel>
+
+<div class="custom-command-import-wizard d-flex flex-column">
+  @if(ViewModel!.IsBusy && ViewModel.Analysis is null)
+  {
+    <div class="custom-import-loading">
+      <p class="mb-0">Analyzing custom command dependencies...</p>
+    </div>
+  }
+  else if(!string.IsNullOrWhiteSpace(ViewModel.Error) && ViewModel.Analysis is null)
+  {
+    <RadzenAlert AlertStyle="AlertStyle.Danger">@ViewModel.Error</RadzenAlert>
+  }
+  else if(ViewModel.Analysis is not null)
+  {
+    var analysis = ViewModel.Analysis;
+    <header class="custom-import-header">
+      <span class="custom-import-eyebrow">Custom command import</span>
+      <h5 class="mb-1">@analysis.Definition.Name</h5>
+    </header>
+
+    <nav class="custom-import-stepper" aria-label="Custom command import steps">
+      <div class="custom-import-step @GetStepClass(ReferenceStep) @GetStepStatusClass(ReferenceStep)">
+        <button type="button" class="custom-import-step-button" @onclick="() => SelectStep(ReferenceStep)" aria-current="@(CurrentStep == ReferenceStep ? "step" : null)">
+          <span class="custom-import-step-icon">@GetStepIcon(ReferenceStep)</span>
+          <span class="custom-import-step-copy">
+            <span class="custom-import-step-label">Device references</span>
+            <span class="custom-import-step-status">@GetStepStatus(ReferenceStep)</span>
+          </span>
+        </button>
+      </div>
+      <div class="custom-import-step-connector @GetConnectorClass(ReferenceStep)" style="margin-right: 4rem"></div>
+      <div class="custom-import-step @GetStepClass(ReviewStep) @GetStepStatusClass(ReviewStep)">
+        <button type="button" class="custom-import-step-button" @onclick="() => SelectStep(ReviewStep)" aria-current="@(CurrentStep == ReviewStep ? "step" : null)">
+          <span class="custom-import-step-icon">@GetStepIcon(ReviewStep)</span>
+          <span class="custom-import-step-copy">
+            <span class="custom-import-step-label">Review command</span>
+            <span class="custom-import-step-status">@GetStepStatus(ReviewStep)</span>
+          </span>
+        </button>
+      </div>
+    </nav>
+
+    <div class="custom-import-content overflow-auto">
+      @if(!string.IsNullOrWhiteSpace(ViewModel.Error))
+      {
+        <RadzenAlert AlertStyle="AlertStyle.Danger">@ViewModel.Error</RadzenAlert>
+      }
+
+      @if(CurrentStep == ReferenceStep)
+      {
+        <div class="custom-import-panel-heading">
+          <div>
+            <h6 class="mb-1">Check device references</h6>
+            <p class="text-muted mb-0">Verify every static <code>devices.*</code> reference against the current system.</p>
+          </div>
+          <span class="custom-import-count @GetCountClass(ReferenceStep)">@GetStepStatus(ReferenceStep)</span>
+        </div>
+
+        @if(!analysis.DeviceReferences.Any())
+        {
+          <div class="custom-import-empty custom-import-empty-success">
+            <span class="custom-import-empty-icon">✓</span>
+            <strong>No device references found.</strong>
+            <span>This command does not use the <code>devices</code> namespace.</span>
+          </div>
+        }
+        else
+        {
+          @foreach(var reference in analysis.DeviceReferences)
+          {
+            <div class="custom-import-card">
+              <div class="custom-import-card-heading">
+                <code>devices.@reference.DeviceIdentifier@(string.IsNullOrWhiteSpace(reference.CommandIdentifier) ? string.Empty : $".{reference.CommandIdentifier}")</code>
+              </div>
+              <small class="text-muted d-block mt-2">Line @reference.Line, column @reference.Column</small>
+              <div class="custom-import-message @GetReferenceMessageClass(reference.Status)"><span>@GetReferenceIcon(reference.Status)</span>@reference.Description</div>
+              @if(reference.Status != CustomCommandDeviceReferenceStatus.Valid && reference.ReplacementDevices.Count > 0)
+              {
+                <label class="form-label mt-3" for="replacement-device-@reference.Line-@reference.Column">Replacement device</label>
+                <select id="replacement-device-@reference.Line-@reference.Column" class="form-select" @bind="reference.SelectedReplacementDeviceId">
+                  <option value="">Leave unresolved</option>
+                  @foreach(var replacement in reference.ReplacementDevices)
+                  {
+                    <option value="@replacement.DeviceId">@replacement.Name</option>
+                  }
+                </select>
+                @if(!string.IsNullOrWhiteSpace(reference.SelectedReplacementDeviceId))
+                {
+                  <small class="text-muted d-block mt-2">Select Next to re-check this reference before import.</small>
+                }
+              }
+            </div>
+          }
+        }
+      }
+      else
+      {
+        <div class="custom-import-panel-heading">
+          <div>
+            <h6 class="mb-1">Review custom command</h6>
+            <p class="text-muted mb-0">Confirm the definition before creating a new independent command.</p>
+          </div>
+          <span class="custom-import-count custom-import-count-success">Ready to import</span>
+        </div>
+
+        <div class="custom-import-card">
+          <div class="custom-import-card-heading">
+            <div>
+              <strong>@analysis.Definition.Name</strong>
+              @if(!string.IsNullOrWhiteSpace(analysis.Definition.Description))
+              {
+                <div class="custom-import-description">@analysis.Definition.Description</div>
+              }
+            </div>
+          </div>
+          <dl class="custom-import-details row mb-0 mt-3">
+            <dt class="col-sm-4">Input parameters</dt>
+            <dd class="col-sm-8">@(analysis.Definition.InputParameters.Count == 0 ? "None" : string.Join(", ", analysis.Definition.InputParameters.Select(parameter => parameter.Name)))</dd>
+            <dt class="col-sm-4">Output schema</dt>
+            <dd class="col-sm-8">@(analysis.Definition.OutputSchema is null ? "None" : analysis.Definition.OutputSchema.Type.ToString())</dd>
+            <dt class="col-sm-4">Script length</dt>
+            <dd class="col-sm-8">@analysis.Definition.ScriptBody.Length characters</dd>
+          </dl>
+        </div>
+
+        @if(analysis.Warnings.Count > 0)
+        {
+          <RadzenAlert AlertStyle="AlertStyle.Info" class="mt-3">
+            <ul class="mb-0">
+              @foreach(var warning in analysis.Warnings)
+              {
+                <li>@warning</li>
+              }
+            </ul>
+          </RadzenAlert>
+        }
+      }
+    </div>
+
+    <footer class="custom-import-footer">
+      <button class="btn btn-secondary" type="button" @onclick="Cancel" disabled="@ViewModel.IsBusy">Cancel</button>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary" type="button" @onclick="PreviousStep" disabled="@(ViewModel.IsBusy || CurrentStep == ReferenceStep)">Back</button>
+        @if(CurrentStep == ReferenceStep)
+        {
+          <button class="btn btn-primary" type="button" @onclick="NextStep" disabled="@ViewModel.IsBusy">Next</button>
+        }
+        else
+        {
+          <button class="btn btn-primary" type="button" @onclick="Commit" disabled="@(!ViewModel.CanCommit)">@(ViewModel.IsBusy ? "Importing..." : "Import as new command")</button>
+        }
+      </div>
+    </footer>
+  }
+</div>
+
+@code {
+  private const int ReferenceStep = 0;
+  private const int ReviewStep = 1;
+  private int CurrentStep;
+
+  [Parameter]
+  public string Json { get; set; } = string.Empty;
+
+  protected override async Task OnInitializedAsync()
+  {
+    await ViewModel!.InitializeAsync(Json);
+  }
+
+  private void SelectStep(int step)
+  {
+    if(step is >= ReferenceStep and <= ReviewStep)
+      CurrentStep = step;
+  }
+
+  private void NextStep()
+  {
+    if(CurrentStep == ReferenceStep && HasSelectedDeviceReplacements())
+    {
+      ApplyDeviceReplacements();
+      return;
+    }
+
+    if(CurrentStep < ReviewStep)
+      CurrentStep++;
+  }
+
+  private bool HasSelectedDeviceReplacements()
+    => ViewModel!.Analysis!.DeviceReferences.Any(reference => !string.IsNullOrWhiteSpace(reference.SelectedReplacementDeviceId));
+
+  private void ApplyDeviceReplacements()
+  {
+    foreach(var reference in ViewModel!.Analysis!.DeviceReferences.Where(reference => !string.IsNullOrWhiteSpace(reference.SelectedReplacementDeviceId)))
+    {
+      var replacement = reference.ReplacementDevices.FirstOrDefault(candidate => string.Equals(candidate.DeviceId, reference.SelectedReplacementDeviceId, StringComparison.OrdinalIgnoreCase));
+      if(replacement is null)
+        continue;
+
+      reference.SelectedReplacementDeviceName = replacement.Name;
+      reference.ResolvedDeviceId = replacement.DeviceId;
+      reference.Status = CustomCommandDeviceReferenceStatus.Valid;
+      reference.Description = $"Using replacement device '{replacement.Name}'.";
+    }
+
+    CurrentStep = ReviewStep;
+  }
+
+  private void PreviousStep()
+  {
+    if(CurrentStep > ReferenceStep)
+      CurrentStep--;
+  }
+
+  private string GetStepClass(int step) => CurrentStep == step ? "custom-import-step-active" : string.Empty;
+
+  private string GetStepStatusClass(int step) => HasStepIssues(step) ? "custom-import-step-blocked" : "custom-import-step-complete";
+
+  private string GetConnectorClass(int step) => HasStepIssues(step) ? "custom-import-connector-blocked" : "custom-import-connector-complete";
+
+  private string GetStepIcon(int step) => HasStepIssues(step) ? "×" : "✓";
+
+  private string GetStepStatus(int step)
+  {
+    if(step == ReferenceStep)
+    {
+      var count = ViewModel!.Analysis!.DeviceReferences.Count(reference => reference.Status != CustomCommandDeviceReferenceStatus.Valid);
+      return count == 0 ? "All valid" : $"{count} need attention";
+    }
+
+    return ViewModel!.HasInvalidDeviceReferences ? "Blocked" : "Ready";
+  }
+
+  private bool HasStepIssues(int step)
+    => step == ReferenceStep ? ViewModel!.HasInvalidDeviceReferences : ViewModel!.HasInvalidDeviceReferences;
+
+  private string GetCountClass(int step) => HasStepIssues(step) ? "custom-import-count-danger" : "custom-import-count-success";
+
+  private static string GetReferenceStatus(CustomCommandDeviceReferenceStatus status)
+    => status switch
+    {
+      CustomCommandDeviceReferenceStatus.Valid => "Valid",
+      CustomCommandDeviceReferenceStatus.DeviceMissing => "Device missing",
+      CustomCommandDeviceReferenceStatus.CommandMissing => "Command missing",
+      CustomCommandDeviceReferenceStatus.Unverifiable => "Could not verify",
+      CustomCommandDeviceReferenceStatus.Dynamic => "Dynamic reference",
+      _ => "Unknown"
+    };
+
+  private static string GetReferenceBadgeClass(CustomCommandDeviceReferenceStatus status)
+    => status == CustomCommandDeviceReferenceStatus.Valid ? "custom-import-badge-success" : "custom-import-badge-danger";
+
+  private static string GetReferenceMessageClass(CustomCommandDeviceReferenceStatus status)
+    => status == CustomCommandDeviceReferenceStatus.Valid ? "custom-import-message-success" : "custom-import-message-danger";
+
+  private static string GetReferenceIcon(CustomCommandDeviceReferenceStatus status)
+    => status == CustomCommandDeviceReferenceStatus.Valid ? "✓" : "×";
+
+  private async Task Commit()
+  {
+    var result = await ViewModel!.CommitAsync();
+    if(result is not null)
+      DialogService.Close(result);
+  }
+
+  private void Cancel() => DialogService.Close(null);
+}

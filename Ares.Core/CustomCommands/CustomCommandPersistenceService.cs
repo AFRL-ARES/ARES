@@ -75,6 +75,26 @@ internal sealed class CustomCommandPersistenceService(IDbContextFactory<CoreData
     return commandId;
   }
 
+  public async Task<Guid> ImportAsNewAsync(CustomCommandVersionModel command, CancellationToken cancellationToken = default)
+  {
+    await using var context = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+    var commandId = Guid.NewGuid();
+    var uniqueName = await GetUniqueNameAsync(context, command.Name, cancellationToken);
+    var definition = command.Clone();
+    definition.Name = uniqueName;
+    var version = CreateVersion(commandId, 1, definition);
+    context.CustomCommandVersions.Add(version);
+    var versionId = AssignEntityId(context, version);
+    AssignParameterIds(context, version);
+
+    var importedCommand = new CustomCommandModel();
+    context.CustomCommands.Add(importedCommand);
+    AssignEntityId(context, importedCommand, commandId);
+    importedCommand.CurrentVersionId = versionId.ToString();
+    await context.SaveChangesAsync(cancellationToken);
+    return commandId;
+  }
+
   public async Task DeleteAsync(Guid id)
   {
     await using var context = await dbContextFactory.CreateDbContextAsync();
@@ -139,6 +159,37 @@ internal sealed class CustomCommandPersistenceService(IDbContextFactory<CoreData
         entry.State = EntityState.Added;
 
       entry.Property<string?>(UniqueIdPropertyName).CurrentValue = Guid.NewGuid().ToString();
+    }
+  }
+
+  private static async Task<string> GetUniqueNameAsync(
+    CoreDatabaseContext context,
+    string requestedName,
+    CancellationToken cancellationToken)
+  {
+    var currentVersionIds = await context.CustomCommands
+      .AsNoTracking()
+      .Select(command => command.CurrentVersionId)
+      .Where(id => id != null && id != string.Empty)
+      .ToListAsync(cancellationToken);
+    var existingNames = await context.CustomCommandVersions
+      .AsNoTracking()
+      .Where(version => currentVersionIds.Contains(EF.Property<string>(version, UniqueIdPropertyName)))
+      .Select(version => version.Name)
+      .ToListAsync(cancellationToken);
+
+    var name = requestedName.Trim();
+    if(!existingNames.Any(existingName => string.Equals(existingName, name, StringComparison.OrdinalIgnoreCase)))
+      return name;
+
+    var index = 1;
+    while(true)
+    {
+      var suffix = index == 1 ? " (Imported)" : $" (Imported {index})";
+      var candidate = $"{name}{suffix}";
+      if(!existingNames.Any(existingName => string.Equals(existingName, candidate, StringComparison.OrdinalIgnoreCase)))
+        return candidate;
+      index++;
     }
   }
 

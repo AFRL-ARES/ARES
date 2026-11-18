@@ -18,6 +18,7 @@ using UI.Application.Notifications;
 using UI.Application.Scripting;
 using UI.Application.Settings;
 using UI.Components.Formatting;
+using UI.Features.CustomCommand.ViewModels;
 using UI.Features.Analyzing.Settings;
 using UI.Features.Auth;
 using UI.Features.CampaignEdit;
@@ -137,6 +138,7 @@ internal static class ServiceCollectionExtensions
     services.AddScoped<ManualPlannerViewModel>();
     services.AddScoped<ManualDeviceLoggerWidgetViewModel>();
     services.AddTransient<CustomCommandDashboardViewModel>();
+    services.AddTransient<CustomCommandImportWizardViewModel>();
     services.AddScoped<LoggingSettingsListViewModel>();
   }
   private static void BindViewModelFactories(this IServiceCollection services)

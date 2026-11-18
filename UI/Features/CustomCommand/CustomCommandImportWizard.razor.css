@@ -1,0 +1,304 @@
+.custom-command-import-wizard {
+  min-width: 700px;
+  max-height: 80vh;
+  color: var(--rz-text-color, #172235);
+}
+
+.custom-import-loading {
+  padding: 2rem;
+  text-align: center;
+}
+
+.custom-import-header {
+  padding: 1.25rem 1.5rem 1rem;
+  border-bottom: 1px solid var(--rz-border-color, #d9e0e8);
+}
+
+.custom-import-eyebrow {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--rz-text-secondary-color, #66758a);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.custom-import-stepper {
+  display: flex;
+  align-items: flex-start;
+  padding: 1.25rem 1.5rem 1rem;
+  background: var(--rz-base-background-color, #fbfcfe);
+  border-bottom: 1px solid var(--rz-border-color, #d9e0e8);
+}
+
+.custom-import-step {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  flex: 1;
+}
+
+.custom-import-step:last-child {
+  flex: 0 0 auto;
+}
+
+.custom-import-step-button {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0;
+  color: var(--rz-text-secondary-color, #66758a);
+  background: transparent;
+  border: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.custom-import-step-button:focus-visible {
+  outline: 3px solid rgba(36, 99, 235, 0.3);
+  outline-offset: 4px;
+  border-radius: 0.25rem;
+}
+
+.custom-import-step-icon {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 2rem;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: #16845b;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.custom-import-step-copy {
+  min-width: 0;
+}
+
+.custom-import-step-label,
+.custom-import-step-status {
+  display: block;
+  white-space: nowrap;
+}
+
+.custom-import-step-label {
+  color: var(--rz-text-color, #172235);
+  font-weight: 700;
+}
+
+.custom-import-step-status {
+  margin-top: 0.0625rem;
+  color: var(--rz-text-secondary-color, #66758a);
+  font-size: 0.75rem;
+}
+
+.custom-import-step-active .custom-import-step-label {
+  color: var(--rz-primary, #2463eb);
+}
+
+.custom-import-step-complete .custom-import-step-icon {
+  background: #16845b;
+}
+
+.custom-import-step-blocked .custom-import-step-icon {
+  background: #c63e4e;
+}
+
+.custom-import-step-blocked .custom-import-step-status {
+  color: #c63e4e;
+}
+
+.custom-import-step-connector {
+  position: relative;
+  display: block;
+  flex: 1;
+  min-width: 3rem;
+  height: 3px;
+  margin: 0.9375rem 0.75rem 0;
+  background: #ccd5e1;
+}
+
+.custom-import-step-connector::after {
+  position: absolute;
+  top: 50%;
+  right: -7px;
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 7px solid #ccd5e1;
+  content: "";
+  transform: translateY(-50%);
+}
+
+.custom-import-connector-complete {
+  background: #16845b;
+}
+
+.custom-import-connector-complete::after {
+  border-left-color: #16845b;
+}
+
+.custom-import-connector-blocked {
+  background: linear-gradient(90deg, #c63e4e, #ccd5e1);
+}
+
+.custom-import-content {
+  padding: 1.5rem;
+}
+
+.custom-import-panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.125rem;
+}
+
+.custom-import-count,
+.custom-import-badge {
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.custom-import-count {
+  padding: 0.3125rem 0.625rem;
+}
+
+.custom-import-count-success,
+.custom-import-badge-success {
+  color: #16845b;
+  background: #eaf8f1;
+}
+
+.custom-import-count-danger,
+.custom-import-badge-danger {
+  color: #c63e4e;
+  background: #fff0f1;
+}
+
+.custom-import-badge {
+  align-self: flex-start;
+  padding: 0.25rem 0.5rem;
+}
+
+.custom-import-card {
+  margin-bottom: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--rz-border-color, #d9e0e8);
+  border-radius: 0.5rem;
+  background: var(--rz-base-background-color, #fff);
+}
+
+.custom-import-card-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.875rem;
+}
+
+.custom-import-message {
+  display: flex;
+  gap: 0.4375rem;
+  align-items: center;
+  margin-top: 0.75rem;
+}
+
+.custom-import-message > span:first-child {
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.custom-import-message-success {
+  color: #16845b;
+}
+
+.custom-import-message-danger {
+  color: #c63e4e;
+}
+
+.custom-import-description {
+  margin-top: 0.1875rem;
+  color: var(--rz-text-secondary-color, #66758a);
+}
+
+.custom-import-details dt {
+  color: var(--rz-text-secondary-color, #66758a);
+  font-weight: 600;
+}
+
+.custom-import-details dd {
+  margin-bottom: 0.5rem;
+}
+
+.custom-import-match {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--rz-border-color, #d9e0e8);
+}
+
+.custom-import-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+  padding: 1.5rem;
+  border: 1px dashed #b7c4d4;
+  border-radius: 0.5rem;
+  text-align: center;
+}
+
+.custom-import-empty-success {
+  color: #16845b;
+  background: #eaf8f1;
+}
+
+.custom-import-empty-icon {
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.custom-import-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--rz-border-color, #d9e0e8);
+  background: var(--rz-base-background-color, #fbfcfe);
+}
+
+@media (max-width: 700px) {
+  .custom-command-import-wizard {
+    min-width: 0;
+  }
+
+  .custom-import-stepper {
+    overflow-x: auto;
+  }
+
+  .custom-import-step {
+    flex: 0 0 auto;
+  }
+
+  .custom-import-step-label,
+  .custom-import-step-status {
+    white-space: normal;
+  }
+
+  .custom-import-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .custom-import-footer > .d-flex {
+    justify-content: flex-end;
+  }
+}
