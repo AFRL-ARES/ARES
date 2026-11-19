@@ -1,5 +1,4 @@
-﻿using Ares.Core.CustomCommands.Import;
-using AresScript.Generated;
+﻿using AresScript.Generated;
 
 namespace Ares.Core.CustomCommands.Exchange;
 

@@ -1,6 +1,4 @@
-﻿using Ares.Core.CustomCommands.Exchange;
-
-namespace Ares.Core.CustomCommands.Import;
+﻿namespace Ares.Core.CustomCommands.Exchange;
 
 public sealed class CustomCommandDeviceReference
 {

@@ -1,5 +1,6 @@
 using Ares.Core.Campaigns;
 using Ares.Core.Campaigns.Helpers;
+using Ares.Core.Campaigns.Models;
 using Ares.Core.CustomCommands;
 using Ares.Core.Device.Providers;
 using Ares.Core.EntityConfigurations.Helpers;
@@ -162,9 +163,12 @@ internal class CampaignTemplateTransferServiceTests
 
     var result = await _transferService.ImportAsync(export!.Json);
 
-    Assert.That(result.Warnings, Has.Some.Contains("pump-1"));
-    Assert.That(result.Warnings, Has.Some.Contains("missing-custom"));
-    Assert.That(result.Template.ExperimentTemplate.StepTemplates.Single().CommandTemplates, Has.Count.EqualTo(4));
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(result.Warnings, Has.Some.Contains("pump-1"));
+      Assert.That(result.Warnings, Has.Some.Contains("missing-custom"));
+      Assert.That(result.Template.ExperimentTemplate.StepTemplates.Single().CommandTemplates, Has.Count.EqualTo(4));
+    }
   }
 
   [Test]

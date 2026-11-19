@@ -1,4 +1,5 @@
-﻿using Ares.Core.Device.Remote;
+﻿using Ares.Core.Campaigns.Models;
+using Ares.Core.Device.Remote;
 using Ares.Core.Device.Sila;
 using Ares.Datamodel;
 using Ares.Datamodel.Automation;
@@ -66,7 +67,7 @@ public static class CampaignTemplateHelper
           isNameMatch,
           status,
           score,
-          GetDeviceCommandMatchDescription(requirement, descriptor, status));
+          GetDeviceCommandMatchDescription(descriptor, status));
       })
       .Where(candidate => candidate.Status is not CampaignCommandMatchStatus.Missing)
       .OrderByDescending(candidate => candidate.Score)
@@ -79,7 +80,7 @@ public static class CampaignTemplateHelper
     int Score,
     string MatchDescription);
 
-  private static string GetDeviceCommandMatchDescription(CampaignDeviceCommandDependency requirement, DeviceCommandDescriptor descriptor, CampaignCommandMatchStatus status)
+  private static string GetDeviceCommandMatchDescription(DeviceCommandDescriptor descriptor, CampaignCommandMatchStatus status)
     => status switch
     {
       CampaignCommandMatchStatus.Exact => "Command and interface match.",
@@ -151,24 +152,19 @@ public static class CampaignTemplateHelper
 
   public static CampaignCustomCommandCandidate CreateCustomCommandCandidate(CustomCommandRequirement requirement, CustomCommandVersion command)
   {
-    // Evaluate Name Match
     bool hasName = !string.IsNullOrWhiteSpace(requirement.Name);
     bool nameMatches = hasName && NormalizeName(requirement.Name) == NormalizeName(command.Name);
 
-    // Evaluate Input Parameters Match
     int matchingInputNameCount = CountMatchingInputNames(requirement.InputParameters.ToList(), command.InputParameters.ToList());
     int matchingInputCount = CountMatchingInputSchemas(requirement.InputParameters.ToList(), command.InputParameters.ToList());
 
     bool inputMatch = requirement.InputParameters.Count == command.InputParameters.Count && matchingInputCount == requirement.InputParameters.Count;
 
-    // Evaluate Output Schema Match
     bool outputMatch = AreOutputSchemasEqual(requirement.OutputSchema, command.OutputSchema);
 
-    // Determine Status & Score
     var status = DetermineMatchStatus(inputMatch, outputMatch, matchingInputNameCount);
     int score = CalculateScore(requirement, command, hasName, nameMatches, matchingInputNameCount, matchingInputCount, outputMatch);
 
-    // Construct and Return Result
     return new CampaignCustomCommandCandidate
     {
       CustomCommandId = command.CustomCommandId,
@@ -264,6 +260,7 @@ public static class CampaignTemplateHelper
     var rightTokens = NormalizeName(right).Split(' ', StringSplitOptions.RemoveEmptyEntries).ToHashSet();
     if(leftTokens.Count == 0 || rightTokens.Count == 0)
       return 0;
+
     return leftTokens.Intersect(rightTokens).Count() / (double)leftTokens.Union(rightTokens).Count();
   }
 
@@ -273,7 +270,7 @@ public static class CampaignTemplateHelper
   public static void ApplySelections(CampaignImportAnalysis analysis)
   {
     foreach(var dependency in analysis.DeviceDependencies)
-      foreach(var command in GetExperiments(analysis.Template).SelectMany(experiment => experiment.StepTemplates).SelectMany(step => step.CommandTemplates))
+      foreach(var command in GetExperimentTemplates(analysis.Template).SelectMany(experiment => experiment.StepTemplates).SelectMany(step => step.CommandTemplates))
         if(command.DeviceCommand?.Metadata is { } metadata && string.Equals(metadata.DeviceId, dependency.DeviceId, StringComparison.OrdinalIgnoreCase))
         {
           var commandDependency = dependency.Commands.FirstOrDefault(requirement => string.Equals(requirement.Name, metadata.Name, StringComparison.OrdinalIgnoreCase));
@@ -284,7 +281,7 @@ public static class CampaignTemplateHelper
         }
 
     foreach(var dependency in analysis.CustomCommandDependencies.Where(dependency => !string.IsNullOrWhiteSpace(dependency.SelectedReplacementCustomCommandId)))
-      foreach(var command in GetExperiments(analysis.Template).SelectMany(experiment => experiment.StepTemplates).SelectMany(step => step.CommandTemplates))
+      foreach(var command in GetExperimentTemplates(analysis.Template).SelectMany(experiment => experiment.StepTemplates).SelectMany(step => step.CommandTemplates))
         if(command.CustomCommandInvocation is { } invocation && string.Equals(invocation.CustomCommandId, dependency.CustomCommandId, StringComparison.OrdinalIgnoreCase))
           invocation.CustomCommandId = dependency.SelectedReplacementCustomCommandId!;
   }
@@ -306,12 +303,14 @@ public static class CampaignTemplateHelper
     return requirement;
   }
 
-  public static IEnumerable<ExperimentTemplate> GetExperiments(CampaignTemplate template)
+  public static IEnumerable<ExperimentTemplate> GetExperimentTemplates(CampaignTemplate template)
   {
     if(template.StartupTemplate is not null)
       yield return template.StartupTemplate;
+
     if(template.ExperimentTemplate is not null)
       yield return template.ExperimentTemplate;
+
     if(template.CloseoutTemplate is not null)
       yield return template.CloseoutTemplate;
   }
@@ -330,7 +329,7 @@ public static class CampaignTemplateHelper
     if(template.ExperimentTemplate is null)
       throw new CampaignTemplateImportException("The campaign template does not contain a main experiment.");
 
-    var invalidCommand = CampaignTemplateHelper.GetExperiments(template)
+    var invalidCommand = CampaignTemplateHelper.GetExperimentTemplates(template)
       .SelectMany(experiment => experiment.StepTemplates)
       .SelectMany(step => step.CommandTemplates)
       .FirstOrDefault(command => command.CommandTypeCase == CommandTemplate.CommandTypeOneofCase.None);

@@ -96,6 +96,7 @@ internal class CampaignTemplateTransferService(
   {
     await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
     var localPlanners = await context.PlannerInfos.AsNoTracking().ToArrayAsync(cancellationToken);
+
     var parametersById = template.PlannableParameters
       .Where(parameter => !string.IsNullOrWhiteSpace(parameter.UniqueId))
       .ToDictionary(parameter => parameter.UniqueId, StringComparer.OrdinalIgnoreCase);
@@ -109,6 +110,7 @@ internal class CampaignTemplateTransferService(
         var matchingPlanners = localPlanners.Where(planner => planner.Name == importedPlanner.Name
           && planner.Type == importedPlanner.Type
           && planner.Version == importedPlanner.Version).ToArray();
+
         if(matchingPlanners.Length == 1)
           localPlanner = matchingPlanners[0];
       }
@@ -134,7 +136,7 @@ internal class CampaignTemplateTransferService(
     List<string> warnings,
     CancellationToken cancellationToken)
   {
-    var commands = CampaignTemplateHelper.GetExperiments(template)
+    var commands = CampaignTemplateHelper.GetExperimentTemplates(template)
       .SelectMany(experiment => experiment.StepTemplates
       .SelectMany(step => step.CommandTemplates
       .Select(command => (ExperimentName: experiment.Name, StepId: step.UniqueId, command))))
@@ -215,28 +217,30 @@ internal class CampaignTemplateTransferService(
 
     var customResults = new List<CampaignCustomCommandDependency>();
 
-    foreach(var customDependency in customDependencies)
+    foreach(var (Group, Requirement) in customDependencies)
     {
       cancellationToken.ThrowIfCancellationRequested();
-      var isResolved = customCommandsById.TryGetValue(customDependency.Group.Key, out var currentCommand);
-      var currentSignatureMatches = !isResolved || CampaignTemplateHelper.IsCustomCommandSignatureCompatible(customDependency.Requirement, currentCommand!);
+      var isResolved = customCommandsById.TryGetValue(Group.Key, out var currentCommand);
+      var currentSignatureMatches = !isResolved || CampaignTemplateHelper.IsCustomCommandSignatureCompatible(Requirement, currentCommand!);
+
       if(!isResolved)
-        warnings.Add($"Custom command '{customDependency.Group.Key}' is unavailable; its invocation was preserved for repair.");
+        warnings.Add($"Custom command '{Group.Key}' is unavailable; its invocation was preserved for repair.");
+      
       else if(!currentSignatureMatches)
-        warnings.Add($"Custom command '{customDependency.Group.Key}' is available, but its current interface differs from the campaign requirement.");
+        warnings.Add($"Custom command '{Group.Key}' is available, but its current interface differs from the campaign requirement.");
 
       var candidates = customCommands
-        .Where(command => !string.Equals(command.CustomCommandId, customDependency.Group.Key, StringComparison.OrdinalIgnoreCase))
-        .Select(command => CampaignTemplateHelper.CreateCustomCommandCandidate(customDependency.Requirement, command))
+        .Where(command => !string.Equals(command.CustomCommandId, Group.Key, StringComparison.OrdinalIgnoreCase))
+        .Select(command => CampaignTemplateHelper.CreateCustomCommandCandidate(Requirement, command))
         .OrderByDescending(candidate => candidate.Score)
         .ThenBy(candidate => candidate.Name, StringComparer.OrdinalIgnoreCase)
         .ToArray();
 
       customResults.Add(new CampaignCustomCommandDependency
       {
-        CustomCommandId = customDependency.Group.Key,
-        Requirement = customDependency.Requirement,
-        Locations = customDependency.Group.Select(item => $"{item.ExperimentName} / {item.StepId} / Custom Command").Distinct().ToArray(),
+        CustomCommandId = Group.Key,
+        Requirement = Requirement,
+        Locations = Group.Select(item => $"{item.ExperimentName} / {item.StepId} / Custom Command").Distinct().ToArray(),
         Candidates = candidates,
         IsResolved = isResolved,
         CurrentSignatureMatches = currentSignatureMatches
@@ -246,7 +250,7 @@ internal class CampaignTemplateTransferService(
     return (devices, customResults);
   }
 
-  private async Task<IReadOnlyDictionary<string, IReadOnlyList<CampaignDeviceCommandCandidate>>> FindCommandCandidatesAsync(
+  private static async Task<IReadOnlyDictionary<string, IReadOnlyList<CampaignDeviceCommandCandidate>>> FindCommandCandidatesAsync(
     IAresDevice device,
     IReadOnlyList<CampaignDeviceCommandDependency> requirements,
     CancellationToken cancellationToken)
@@ -337,12 +341,14 @@ internal class CampaignTemplateTransferService(
   {
     template.UniqueId = Guid.NewGuid().ToString();
     template.Name = await MakeUniqueNameAsync(template.Name.Trim(), cancellationToken);
+    
     foreach(var parameter in template.PlannableParameters)
       parameter.UniqueId = Guid.NewGuid().ToString();
+    
     foreach(var allocation in template.PlannerAllocations)
       allocation.UniqueId = Guid.NewGuid().ToString();
 
-    foreach(var experiment in CampaignTemplateHelper.GetExperiments(template))
+    foreach(var experiment in CampaignTemplateHelper.GetExperimentTemplates(template))
     {
       experiment.UniqueId = Guid.NewGuid().ToString();
       foreach(var step in experiment.StepTemplates)
@@ -354,8 +360,8 @@ internal class CampaignTemplateTransferService(
           if(command.DeviceCommand?.Metadata is not null)
           {
             command.DeviceCommand.Metadata.UniqueId = Guid.NewGuid().ToString();
-            if(command.DeviceCommand.Metadata.OutputMetadata is not null)
-              command.DeviceCommand.Metadata.OutputMetadata.UniqueId = Guid.NewGuid().ToString();
+            command.DeviceCommand.Metadata.OutputMetadata?.UniqueId = Guid.NewGuid().ToString();
+
             foreach(var metadata in command.DeviceCommand.Metadata.ParameterMetadatas)
               metadata.UniqueId = Guid.NewGuid().ToString();
           }
@@ -363,8 +369,8 @@ internal class CampaignTemplateTransferService(
           foreach(var argument in command.ArgumentBindings)
           {
             argument.UniqueId = Guid.NewGuid().ToString();
-            if(argument.Metadata is not null)
-              argument.Metadata.UniqueId = Guid.NewGuid().ToString();
+            argument.Metadata?.UniqueId = Guid.NewGuid().ToString();
+
             if(argument.PlannedSource?.PlanningMetadata is not null)
               argument.PlannedSource.PlanningMetadata.UniqueId = Guid.NewGuid().ToString();
           }

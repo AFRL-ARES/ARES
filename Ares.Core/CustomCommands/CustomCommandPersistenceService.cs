@@ -1,4 +1,3 @@
-using Ares.Datamodel.Automation;
 using Ares.Datamodel.Extensions;
 using Microsoft.EntityFrameworkCore;
 using CustomCommandModel = Ares.Datamodel.Automation.CustomCommand;
@@ -9,7 +8,7 @@ namespace Ares.Core.CustomCommands;
 internal sealed class CustomCommandPersistenceService(IDbContextFactory<CoreDatabaseContext> dbContextFactory)
   : ICustomCommandPersistenceService
 {
-  private const string UniqueIdPropertyName = "UniqueId";
+  private const string _uniqueIdPropertyName = "UniqueId";
 
   public async Task<IReadOnlyList<CustomCommandSummary>> GetSummariesAsync()
   {
@@ -30,7 +29,7 @@ internal sealed class CustomCommandPersistenceService(IDbContextFactory<CoreData
     await using var context = await dbContextFactory.CreateDbContextAsync();
     var currentVersionId = await context.CustomCommands
       .AsNoTracking()
-      .Where(command => EF.Property<string>(command, UniqueIdPropertyName) == id.ToString())
+      .Where(command => EF.Property<string>(command, _uniqueIdPropertyName) == id.ToString())
       .Select(command => command.CurrentVersionId)
       .FirstOrDefaultAsync();
 
@@ -46,7 +45,7 @@ internal sealed class CustomCommandPersistenceService(IDbContextFactory<CoreData
     var existingCommand = id is null
       ? null
       : await context.CustomCommands
-        .FirstOrDefaultAsync(command => EF.Property<string>(command, UniqueIdPropertyName) == id.Value.ToString());
+        .FirstOrDefaultAsync(command => EF.Property<string>(command, _uniqueIdPropertyName) == id.Value.ToString());
 
     var nextVersionNumber = existingCommand is null
       ? 1
@@ -99,7 +98,7 @@ internal sealed class CustomCommandPersistenceService(IDbContextFactory<CoreData
   {
     await using var context = await dbContextFactory.CreateDbContextAsync();
     var command = await context.CustomCommands
-      .FirstOrDefaultAsync(command => EF.Property<string>(command, UniqueIdPropertyName) == id.ToString());
+      .FirstOrDefaultAsync(command => EF.Property<string>(command, _uniqueIdPropertyName) == id.ToString());
 
     if(command is null)
       return;
@@ -122,7 +121,7 @@ internal sealed class CustomCommandPersistenceService(IDbContextFactory<CoreData
     return await context.CustomCommandVersions
       .AsNoTracking()
       .Include(version => version.InputParameters)
-      .Where(version => versionIds.Contains(EF.Property<string>(version, UniqueIdPropertyName)))
+      .Where(version => versionIds.Contains(EF.Property<string>(version, _uniqueIdPropertyName)))
       .ToListAsync();
   }
 
@@ -131,7 +130,7 @@ internal sealed class CustomCommandPersistenceService(IDbContextFactory<CoreData
     return context.CustomCommandVersions
       .AsNoTracking()
       .Include(version => version.InputParameters)
-      .FirstOrDefaultAsync(version => EF.Property<string>(version, UniqueIdPropertyName) == versionId);
+      .FirstOrDefaultAsync(version => EF.Property<string>(version, _uniqueIdPropertyName) == versionId);
   }
 
   private static Guid ParseEntityId(string? id) => Guid.TryParse(id, out var guid) ? guid : Guid.Empty;
@@ -139,14 +138,14 @@ internal sealed class CustomCommandPersistenceService(IDbContextFactory<CoreData
   private static void AssignEntityId(CoreDatabaseContext context, CustomCommandModel command, Guid id)
   {
     command.UniqueId = id.ToString();
-    context.Entry(command).Property<string?>(UniqueIdPropertyName).CurrentValue = command.UniqueId;
+    context.Entry(command).Property<string?>(_uniqueIdPropertyName).CurrentValue = command.UniqueId;
   }
 
   private static Guid AssignEntityId(CoreDatabaseContext context, CustomCommandVersionModel version)
   {
     var id = Guid.NewGuid();
     version.UniqueId = id.ToString();
-    context.Entry(version).Property<string?>(UniqueIdPropertyName).CurrentValue = version.UniqueId;
+    context.Entry(version).Property<string?>(_uniqueIdPropertyName).CurrentValue = version.UniqueId;
     return id;
   }
 
@@ -158,7 +157,7 @@ internal sealed class CustomCommandPersistenceService(IDbContextFactory<CoreData
       if(entry.State == EntityState.Detached)
         entry.State = EntityState.Added;
 
-      entry.Property<string?>(UniqueIdPropertyName).CurrentValue = Guid.NewGuid().ToString();
+      entry.Property<string?>(_uniqueIdPropertyName).CurrentValue = Guid.NewGuid().ToString();
     }
   }
 
@@ -174,7 +173,7 @@ internal sealed class CustomCommandPersistenceService(IDbContextFactory<CoreData
       .ToListAsync(cancellationToken);
     var existingNames = await context.CustomCommandVersions
       .AsNoTracking()
-      .Where(version => currentVersionIds.Contains(EF.Property<string>(version, UniqueIdPropertyName)))
+      .Where(version => currentVersionIds.Contains(EF.Property<string>(version, _uniqueIdPropertyName)))
       .Select(version => version.Name)
       .ToListAsync(cancellationToken);
 

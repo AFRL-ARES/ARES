@@ -1,4 +1,4 @@
-﻿namespace Ares.Core.CustomCommands.Import;
+﻿namespace Ares.Core.CustomCommands.Exchange;
 
 public enum CustomCommandDeviceReferenceStatus
 {

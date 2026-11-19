@@ -1,4 +1,4 @@
-@using Ares.Core.CustomCommands.Import
+@using Ares.Core.CustomCommands.Exchange
 @using UI.Features.CustomCommand.ViewModels
 @inject DialogService DialogService
 @inherits ReactiveUI.Blazor.ReactiveInjectableComponentBase<CustomCommandImportWizardViewModel>
@@ -203,7 +203,7 @@
     reference.ResolvedDeviceId = replacement.DeviceId;
     reference.Status = CustomCommandDeviceReferenceStatus.Valid;
     reference.Description = $"Using replacement device '{replacement.Name}'.";
-    var analysis = ViewModel.Analysis;
+    var analysis = ViewModel?.Analysis;
     if(analysis is not null)
       analysis.Warnings.RemoveAll(warning => warning.Contains(reference.DeviceIdentifier, StringComparison.OrdinalIgnoreCase));
     StateHasChanged();

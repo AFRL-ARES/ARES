@@ -9,9 +9,8 @@ using AresScript.ScriptBuilding;
 using AresScript.Symbols;
 using Antlr4.Runtime;
 using Microsoft.Extensions.Logging;
-using Ares.Core.CustomCommands.Exchange;
 
-namespace Ares.Core.CustomCommands.Import;
+namespace Ares.Core.CustomCommands.Exchange;
 
 public sealed class CustomCommandDeviceDependencyAnalyzer(IAresDeviceProvider _deviceProvider, ILogger<CustomCommandDeviceDependencyAnalyzer> _logger)
 {
