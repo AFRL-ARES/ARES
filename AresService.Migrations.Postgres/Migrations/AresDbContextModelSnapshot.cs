@@ -1575,8 +1575,17 @@ namespace AresService.Migrations.Postgres.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
+                    b.Property<int>("DeviceCategory")
+                        .HasColumnType("integer");
+
                     b.Property<Guid?>("DeviceCommandId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("DeviceDriverId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DeviceDriverVersion")
+                        .HasColumnType("text");
 
                     b.Property<string>("DeviceId")
                         .HasColumnType("text");
@@ -2360,6 +2369,7 @@ namespace AresService.Migrations.Postgres.Migrations
                                 .HasColumnType("uuid");
 
                             b1.Property<string>("CustomCommandId")
+                                .IsRequired()
                                 .HasColumnType("text");
 
                             b1.HasKey("CommandTemplateUniqueId");
@@ -2368,6 +2378,64 @@ namespace AresService.Migrations.Postgres.Migrations
 
                             b1.WithOwner()
                                 .HasForeignKey("CommandTemplateUniqueId");
+
+                            b1.OwnsOne("Ares.Datamodel.Templates.CustomCommandRequirement", "Requirement", b2 =>
+                                {
+                                    b2.Property<Guid>("CustomCommandInvocationCommandTemplateUniqueId")
+                                        .HasColumnType("uuid");
+
+                                    b2.Property<string>("Description")
+                                        .HasColumnType("text");
+
+                                    b2.Property<string>("Name")
+                                        .HasColumnType("text");
+
+                                    b2.Property<string>("OutputSchema")
+                                        .HasColumnType("text");
+
+                                    b2.HasKey("CustomCommandInvocationCommandTemplateUniqueId");
+
+                                    b2.ToTable("CommandTemplates");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("CustomCommandInvocationCommandTemplateUniqueId");
+
+                                    b2.OwnsMany("Ares.Datamodel.Templates.CustomCommandParameterRequirement", "InputParameters", b3 =>
+                                        {
+                                            b3.Property<Guid>("CustomCommandRequirementCustomCommandInvocationCommandTemplateUniqueId")
+                                                .HasColumnType("uuid")
+                                                .HasColumnName("CustomCommandRequirementCustomCommandInvocationCommandTemplate~");
+
+                                            b3.Property<int>("Id")
+                                                .ValueGeneratedOnAdd()
+                                                .HasColumnType("integer");
+
+                                            NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b3.Property<int>("Id"));
+
+                                            b3.Property<int>("Index")
+                                                .HasColumnType("integer");
+
+                                            b3.Property<string>("Name")
+                                                .HasColumnType("text");
+
+                                            b3.Property<string>("Schema")
+                                                .HasColumnType("text");
+
+                                            b3.Property<string>("UniqueId")
+                                                .HasColumnType("text");
+
+                                            b3.HasKey("CustomCommandRequirementCustomCommandInvocationCommandTemplateUniqueId", "Id");
+
+                                            b3.ToTable("CustomCommandParameterRequirement");
+
+                                            b3.WithOwner()
+                                                .HasForeignKey("CustomCommandRequirementCustomCommandInvocationCommandTemplateUniqueId");
+                                        });
+
+                                    b2.Navigation("InputParameters");
+                                });
+
+                            b1.Navigation("Requirement");
                         });
 
                     b.OwnsOne("Ares.Datamodel.Templates.SystemCommand", "SystemCommand", b1 =>
