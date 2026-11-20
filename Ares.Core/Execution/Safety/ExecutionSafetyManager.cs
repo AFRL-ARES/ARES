@@ -22,16 +22,20 @@ public class ExecutionSafetyManager : IExecutionSafetyManager
   {
     try
     {
+      List<Task> deviceSafeModeTasks = [];
+
       foreach(var device in _deviceRepo)
-        await device.EnterSafeMode();
+        deviceSafeModeTasks.Add(device.EnterSafeMode());
 
       _executionManager.Stop();
+      await Task.WhenAll(deviceSafeModeTasks);
+      _logger.LogCritical("Successfully Put All Devices Into Safe Mode!");
       return true;
     }
 
     catch(Exception ex)
     {
-      _logger.LogError($"FAILED TO ENTER SAFE MODE! REASON: {ex.Message}");
+      _logger.LogCritical("FAILED TO ENTER SAFE MODE! REASON: {message}", ex.Message);
       return false;
     }
   }

@@ -122,9 +122,8 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     }
     catch(RpcException e) when(e.StatusCode == StatusCode.Cancelled)
     {
-      var message = $"Exception In State Stream for Remote Device {Name}: {e.Message}";
-      Console.WriteLine(message);
-      _logger.LogError(message);
+      Console.WriteLine($"Exception In State Stream for Remote Device {Name}: {e.Message}");
+      _logger.LogError("Exception In State Stream for Remote Device {name}: {message}", Name, e.Message);
     }
     catch(RpcException e)
     {
@@ -134,9 +133,8 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
         Message = $"State stream disconnected: {e.Message}" 
       };
 
-      var rpcMessage = $"Exception In State Stream for Remote Device {Name}: {e.Message}";
-      Console.WriteLine(rpcMessage);
-      _logger.LogError(rpcMessage);
+      Console.WriteLine($"Exception In State Stream for Remote Device {Name}: {e.Message}");
+      _logger.LogError("Exception In State Stream for Remote Device {name}: {message}", Name, e.Message);
     }
     catch(Exception e)
     {
@@ -146,9 +144,8 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
         Message = $"Unspecified error occurred while fetching device state: {e.Message}" 
       };
 
-      var exception = $"Exception In State Stream for Remote Device {Name}: {e.Message}";
-      Console.WriteLine(exception);
-      _logger.LogError(exception);
+      Console.WriteLine($"Exception In State Stream for Remote Device {Name}: {e.Message}");
+      _logger.LogError("Exception In State Stream for Remote Device {name}: {message}", Name, e.Message);
     }
   }
 
@@ -190,7 +187,6 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
 
   internal async Task FetchCommands()
   {
-    var client = GetClient();
     try
     {
       await BuildCommandDescriptorsAsync();
@@ -250,11 +246,18 @@ public sealed class RemoteDevice : AresDevice, IAsyncDisposable
     }
   }
 
-  public override Task EnterSafeMode(CancellationToken ct)
+  public override async Task EnterSafeMode(CancellationToken ct)
   {
-    var client = GetClient();
-    _logger.LogCritical("Remote Device {device_name} is entering safe mode!", Name);
-    return client.EnterSafeModeAsync(new Empty()).ResponseAsync;
+    try
+    {
+      var client = GetClient();
+      _logger.LogCritical("Remote Device {device_name} is entering safe mode!", Name);
+      await client.EnterSafeModeAsync(new Empty(), cancellationToken: ct);
+    }
+    catch(RpcException ex)
+    {
+      _logger.LogCritical(ex, "DEVICE {device} FAILED TO ENTER SAFE MODE", Name);
+    }
   }
 
   public async override Task<CommandResult> ExecuteCommand(string command, List<DeviceCommandArgument> arguments, CancellationToken token)

@@ -137,11 +137,16 @@ public class DemoDeviceService : AresRemoteDeviceService.AresRemoteDeviceService
   public override Task<DeviceStateResponse> GetState(Empty request, ServerCallContext context)
   {
     _logger.LogInformation("State requested");
-    var state = AresStructHelper.CreateNumberStruct("Temperature", _device.Temperature);
-    var response = new DeviceStateResponse
+    var response = new DeviceStateResponse();
+
+    response.DeviceStateData.Add(new StateEntry
     {
-      State = state
-    };
+      DisplayInUi = true,
+      Index = 0,
+      Name = "Temperature",
+      Value = AresValueHelper.CreateNumber(_device.Temperature)
+    });
+
     return Task.FromResult(response);
   }
 
@@ -152,10 +157,16 @@ public class DemoDeviceService : AresRemoteDeviceService.AresRemoteDeviceService
     {
       var state = AresStructHelper.CreateNumberStruct("Temperature", _device.Temperature);
       _logger.LogInformation("Sending back a state from the state stream {}", state);
-      var response = new DeviceStateResponse
+      var response = new DeviceStateResponse();
+
+      response.DeviceStateData.Add(new StateEntry
       {
-        State = state
-      };
+        DisplayInUi = true,
+        Index = 0,
+        Name = "Temperature",
+        Value = AresValueHelper.CreateNumber(_device.Temperature)
+      });
+
       await responseStream.WriteAsync(response);
       try
       {

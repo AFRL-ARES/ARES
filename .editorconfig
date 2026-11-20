@@ -270,3 +270,6 @@ dotnet_diagnostic.CRR0029.severity = silent
 
 [*.g.cs]
 generated_code = true
+
+[*.cs]
+dotnet_diagnostic.CA1873.severity = none
