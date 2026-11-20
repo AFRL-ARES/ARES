@@ -86,4 +86,8 @@ public class ResourceConnectionArbiter : IResourceConnectionArbiter
     _resourceLocks.TryGetValue(resource, out var owner);
     return owner ?? [];
   }
+
+  /// <inheritdoc />
+  public ConnectionResource? GetOwnedResource(IAresDevice device)
+    => _resourceLocks.FirstOrDefault(resourceLock => resourceLock.Value.Contains(device)).Key; 
 }

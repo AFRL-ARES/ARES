@@ -1,0 +1,355 @@
+.campaign-import-wizard {
+  min-width: 700px;
+  color: var(--rz-text-color, #172235);
+}
+
+.import-loading {
+  padding: 2rem;
+  text-align: center;
+}
+
+.import-header {
+  padding: 1.25rem 1.5rem 1rem;
+  border-bottom: 1px solid var(--rz-border-color, #d9e0e8);
+}
+
+.import-eyebrow {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--rz-text-secondary-color, #66758a);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.import-stepper {
+  display: flex;
+  align-items: flex-start;
+  padding: 1.25rem 1.5rem 1rem;
+  background: var(--rz-base-background-color, #fbfcfe);
+  border-bottom: 1px solid var(--rz-border-color, #d9e0e8);
+}
+
+.import-step {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  flex: 1;
+}
+
+.import-step:last-child {
+  flex: 0 0 auto;
+}
+
+.import-step-button {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0;
+  color: var(--rz-text-secondary-color, #66758a);
+  background: transparent;
+  border: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.import-step-button:focus-visible {
+  outline: 3px solid rgba(36, 99, 235, 0.3);
+  outline-offset: 4px;
+  border-radius: 0.25rem;
+}
+
+.import-step-icon {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 2rem;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  background: #16845b;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.import-step-copy {
+  min-width: 0;
+}
+
+.import-step-label,
+.import-step-status {
+  display: block;
+  white-space: nowrap;
+}
+
+.import-step-label {
+  color: var(--rz-text-color, #172235);
+  font-weight: 700;
+}
+
+.import-step-status {
+  margin-top: 0.0625rem;
+  color: var(--rz-text-secondary-color, #66758a);
+  font-size: 0.75rem;
+}
+
+.import-step-active .import-step-label {
+  color: var(--rz-primary, #2463eb);
+}
+
+.import-step-complete .import-step-icon {
+  color: #fff;
+  background: #16845b;
+}
+
+.import-step-blocked .import-step-icon {
+  color: #fff;
+  background: #c63e4e;
+}
+
+.import-step-blocked .import-step-status {
+  color: #c63e4e;
+}
+
+.import-step-connector {
+  position: relative;
+  display: block;
+  flex: 0 0 6rem;
+  width: 8rem;
+  min-width: 4rem;
+  height: 3px;
+  margin: 0.9375rem 0.75rem 0;
+  background: #ccd5e1;
+  overflow: visible;
+}
+
+.import-step-connector::after {
+  position: absolute;
+  top: 50%;
+  right: -7px;
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 7px solid #ccd5e1;
+  content: "";
+  transform: translateY(-50%);
+}
+
+.import-connector-complete {
+  background: #16845b;
+}
+
+  .import-connector-complete::after {
+    border-left-color: #16845b;
+  }
+
+.import-connector-blocked {
+  background: linear-gradient(90deg, #c63e4e, #ccd5e1);
+}
+
+  .import-connector-blocked::after {
+    border-left-color: #ccd5e1;
+  }
+
+.import-content {
+  padding: 1.5rem;
+}
+
+.import-warning {
+  margin-bottom: 1.125rem;
+}
+
+.import-panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.125rem;
+}
+
+.import-count,
+.import-badge {
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.import-count {
+  padding: 0.3125rem 0.625rem;
+}
+
+.import-count-danger,
+.import-badge-danger {
+  color: #c63e4e;
+  background: #fff0f1;
+}
+
+.import-count-success,
+.import-badge-success {
+  color: #16845b;
+  background: #eaf8f1;
+}
+
+.import-card {
+  margin-bottom: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--rz-border-color, #d9e0e8);
+  border-radius: 0.5rem;
+  background: var(--rz-base-background-color, #fff);
+}
+
+.import-card-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.875rem;
+}
+
+.import-badge {
+  align-self: flex-start;
+  padding: 0.25rem 0.5rem;
+}
+
+.import-metadata {
+  margin-top: 0.1875rem;
+  color: var(--rz-text-secondary-color, #66758a);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.75rem;
+}
+
+.import-message {
+  display: flex;
+  gap: 0.4375rem;
+  align-items: center;
+  margin-top: 0.75rem;
+}
+
+.import-message > span:first-child {
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.import-message-success {
+  color: #16845b;
+}
+
+.import-message-warning {
+  color: #a96b00;
+}
+
+.import-message-danger {
+  color: #c63e4e;
+}
+
+.import-card-description {
+  margin: 0.75rem 0 0;
+  color: var(--rz-text-secondary-color, #66758a);
+}
+
+.import-command-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: baseline;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--rz-border-color, #d9e0e8);
+}
+
+.import-command-row .import-message {
+  margin-top: 0;
+}
+
+.import-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+  padding: 1.5rem;
+  border: 1px dashed #b7c4d4;
+  border-radius: 0.5rem;
+  text-align: center;
+}
+
+.import-empty-success {
+  color: #16845b;
+  background: #eaf8f1;
+}
+
+.import-empty-icon {
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.import-legend {
+  display: flex;
+  gap: 1rem;
+  padding: 0 1.5rem 1rem;
+  color: var(--rz-text-secondary-color, #66758a);
+  font-size: 0.75rem;
+}
+
+.import-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+}
+
+.import-legend-icon {
+  display: inline-grid;
+  width: 1.125rem;
+  height: 1.125rem;
+  place-items: center;
+  color: #16845b;
+  font-weight: 800;
+}
+
+.import-legend-success {
+  color: #16845b;
+}
+
+.import-legend-danger {
+  color: #c63e4e;
+}
+
+.import-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--rz-border-color, #d9e0e8);
+  background: var(--rz-base-background-color, #fbfcfe);
+}
+
+@media (max-width: 700px) {
+  .campaign-import-wizard {
+    min-width: 0;
+  }
+
+  .import-stepper {
+    overflow-x: auto;
+  }
+
+  .import-step {
+    flex: 0 0 auto;
+  }
+
+  .import-step-label,
+  .import-step-status {
+    white-space: normal;
+  }
+
+  .import-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .import-footer > .d-flex {
+    justify-content: flex-end;
+  }
+}

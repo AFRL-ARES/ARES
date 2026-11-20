@@ -1,7 +1,11 @@
 using Ares.Core.Campaigns;
+using Ares.Core.Campaigns.Helpers;
+using Ares.Core.Campaigns.Models;
 using Ares.Core.CustomCommands;
-using Ares.Core.Device.Repos;
+using Ares.Core.Device.Providers;
 using Ares.Core.EntityConfigurations.Helpers;
+using Ares.Datamodel;
+using Ares.Datamodel.Device;
 using Ares.Datamodel.Planning;
 using Ares.Datamodel.Templates;
 using Microsoft.Data.Sqlite;
@@ -31,12 +35,15 @@ internal class CampaignTemplateTransferServiceTests
     _persistenceService = new CampaignTemplatePersistenceService(_contextFactory);
     var customCommands = new Mock<ICustomCommandPersistenceService>();
     customCommands.Setup(service => service.GetCommandsAsync()).ReturnsAsync([]);
-    var deviceRepo = new Mock<IAresDeviceRepo>();
-    deviceRepo.Setup(repo => repo.GetAll()).Returns([]);
+    var deviceProvider = new Mock<IAresDeviceProvider>();
+    deviceProvider.Setup(provider => provider.GetAllDevices()).Returns([]);
+    var deviceConfigProvider = new Mock<IDeviceConfigProvider>();
+    deviceConfigProvider.Setup(provider => provider.GetConfigByDeviceId(It.IsAny<string>())).Returns((Datamodel.Device.DeviceConfig)null);
     _transferService = new CampaignTemplateTransferService(
       _persistenceService,
       customCommands.Object,
-      deviceRepo.Object,
+      deviceProvider.Object,
+      deviceConfigProvider.Object,
       _contextFactory);
   }
 
@@ -156,9 +163,41 @@ internal class CampaignTemplateTransferServiceTests
 
     var result = await _transferService.ImportAsync(export!.Json);
 
-    Assert.That(result.Warnings, Has.Some.Contains("pump-1"));
-    Assert.That(result.Warnings, Has.Some.Contains("missing-custom"));
-    Assert.That(result.Template.ExperimentTemplate.StepTemplates.Single().CommandTemplates, Has.Count.EqualTo(4));
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(result.Warnings, Has.Some.Contains("pump-1"));
+      Assert.That(result.Warnings, Has.Some.Contains("missing-custom"));
+      Assert.That(result.Template.ExperimentTemplate.StepTemplates.Single().CommandTemplates, Has.Count.EqualTo(4));
+    }
+  }
+
+  [Test]
+  public void MatchDeviceCommand_RecognizesRenamedCommandWithMatchingInterface()
+  {
+    var requirement = new CampaignDeviceCommandDependency
+    {
+      CommandId = "set-speed",
+      Name = "Set Speed",
+      Parameters = [new ParameterMetadata { Name = "Speed", Schema = new AresValueSchema { Type = AresDataType.Number } }],
+      OutputSchema = new AresValueSchema { Type = AresDataType.Boolean },
+      Locations = []
+    };
+    var descriptor = new DeviceCommandDescriptor
+    {
+      Name = "Set Mix Speed",
+      InputSchema = new AresStructSchema(),
+      OutputSchema = new AresValueSchema { Type = AresDataType.Boolean }
+    };
+    descriptor.InputSchema.Fields["Speed"] = new AresValueSchema { Type = AresDataType.Number };
+
+    var match = CampaignTemplateHelper.MatchDeviceCommand(requirement, [descriptor]);
+
+    using(Assert.EnterMultipleScope())
+    {
+      Assert.That(match.Status, Is.EqualTo(CampaignCommandMatchStatus.Compatible));
+      Assert.That(match.CurrentName, Is.EqualTo("Set Mix Speed"));
+      Assert.That(match.Description, Does.Contain("interface matches"));
+    }
   }
 
   [Test]

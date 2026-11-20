@@ -96,22 +96,6 @@ a, .btn-link {
     vertical-align: middle;
 }
 
-
-.login-title {
-    display: inline-block;
-}
-
-.welcome-message {
-    margin-bottom: 0.25rem;
-    padding-left: 1.1rem;
-}
-
-.login-button {
-    padding-top: 1rem;
-    padding-right: 70rem;
-    padding-left: 1rem;
-}
-
 .first-nav-item {
     padding-top: 1rem;
 }

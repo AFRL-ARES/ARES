@@ -1,9 +1,14 @@
 @page "/automation/custom-commands"
 @using Ares.Core.CustomCommands
+@using Ares.Core.CustomCommands.Exchange
 @using Ares.Services
+@inject DialogService DialogService
+@using Microsoft.AspNetCore.Components.Forms
 @using UI.Application.Notifications
 @inject ICustomCommandPersistenceService CustomCommandService
+@inject ICustomCommandTransferService CustomCommandTransferService
 @inject IAresUINotificationService NotificationService
+@inject IJSRuntime JS
 
 <PageTitle>Custom Commands</PageTitle>
 
@@ -18,6 +23,10 @@
       <a class="m-1 d-flex align-items-center btn btn-outline-light" href="automation/custom-command-builder" title="New custom command">
         <RadzenIcon Icon="add" />
       </a>
+      <InputFile id="custom-command-import" class="d-none" accept=".json,.arescommand.json,application/json" OnChange="ImportCommandAsync" />
+      <label class="m-1 d-flex align-items-center btn btn-outline-light" for="custom-command-import" title="Import custom command">
+        <RadzenIcon Icon="upload" />
+      </label>
       <button class="m-1 btn btn-outline-light" type="button" title="Refresh custom commands" disabled="@_isLoading" @onclick="LoadCommandsAsync">
         <RadzenIcon Icon="refresh" />
       </button>
@@ -66,6 +75,9 @@
                   <a class="mx-1 btn btn-outline-light" href="@($"automation/custom-command-builder/{command.Id}")" title="@($"Edit {command.Name}")">
                     <RadzenIcon Icon="edit" />
                   </a>
+                  <button class="mx-1 btn btn-outline-light" type="button" title="@($"Export {command.Name}")" @onclick="() => ExportCommandAsync(command)">
+                    <RadzenIcon Icon="download" />
+                  </button>
                   <button class="mx-1 btn btn-outline-light"
                           type="button"
                           title="@($"Delete {command.Name}")"
@@ -87,7 +99,9 @@
   private IReadOnlyList<CustomCommandSummary> _commands = [];
   private bool _isLoading;
   private bool _isDeleting;
+  private bool _isImporting;
   private string? _loadError;
+  private const long MaximumImportFileSize = 5 * 1024 * 1024;
 
   protected override async Task OnInitializedAsync()
   {
@@ -116,6 +130,78 @@
     finally
     {
       _isLoading = false;
+    }
+  }
+
+  private async Task ExportCommandAsync(CustomCommandSummary command)
+  {
+    try
+    {
+      var export = await CustomCommandTransferService.ExportAsync(command.Id);
+      if(export is null)
+        throw new InvalidOperationException($"Custom command '{command.Name}' could not be found.");
+
+      await JS.InvokeVoidAsync("downloadJsonFile", export.SuggestedFileName, export.Json);
+    }
+    catch(Exception ex)
+    {
+      NotificationService.PushNotification(new AresNotification
+      {
+        Title = "Failed to Export Custom Command",
+        Message = ex.Message,
+        NotificationSeverity = Severity.Error
+      });
+    }
+  }
+
+  private async Task ImportCommandAsync(InputFileChangeEventArgs args)
+  {
+    if(_isImporting || args.File is null)
+      return;
+
+    _isImporting = true;
+    try
+    {
+      if(args.File.Size > MaximumImportFileSize)
+        throw new CustomCommandImportException("Custom command files must be 5 MiB or smaller.");
+
+      await using var stream = args.File.OpenReadStream(MaximumImportFileSize);
+      using var reader = new StreamReader(stream);
+      var result = await DialogService.OpenAsync<CustomCommandImportWizard>("Import Custom Command", new Dictionary<string, object?>
+      {
+        [nameof(CustomCommandImportWizard.Json)] = await reader.ReadToEndAsync()
+      }, new DialogOptions
+      {
+        Width = "800px",
+        Height = "85vh",
+        Resizable = true,
+        Draggable = true,
+        ShowClose = false,
+        ShowTitle = false
+      });
+      if(result is not CustomCommandImportResult importedResult)
+        return;
+
+      NotificationService.PushNotification(new AresNotification
+      {
+        Title = "Custom Command Imported",
+        Message = $"Imported '{importedResult.CommandName}' as a new custom command.",
+        NotificationSeverity = Severity.Success
+      });
+      await LoadCommandsAsync();
+    }
+    catch(Exception ex)
+    {
+      NotificationService.PushNotification(new AresNotification
+      {
+        Title = "Failed to Import Custom Command",
+        Message = ex.Message,
+        NotificationSeverity = Severity.Error
+      });
+    }
+    finally
+    {
+      _isImporting = false;
     }
   }
 

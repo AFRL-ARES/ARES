@@ -34,6 +34,7 @@ using Ares.Core.Device.Sila;
 using Ares.Core.Settings;
 using Ares.Core.Execution.StopConditions.PlannerLead;
 using Ares.Core.Execution.VersionChecking;
+using Ares.Core.CustomCommands.Exchange;
 
 
 namespace Ares.Core;
@@ -97,6 +98,8 @@ public static class ServiceCollectionExtensions
     services.AddSingleton<ISystemSettingsManager, SystemSettingsManager>();
     services.AddSingleton<IResourceConnectionArbiter, ResourceConnectionArbiter>();
     services.AddSingleton<ICustomCommandPersistenceService, CustomCommandPersistenceService>();
+    services.AddSingleton<CustomCommandDeviceDependencyAnalyzer>();
+    services.AddSingleton<ICustomCommandTransferService, CustomCommandTransferService>();
     services.AddSingleton<ICampaignTemplateTransferService, CampaignTemplateTransferService>();
     services.AddSingleton<ICommandDisplayNameResolver, CommandDisplayNameResolver>();
     services.AddSingleton<CustomCommandExecutor>();

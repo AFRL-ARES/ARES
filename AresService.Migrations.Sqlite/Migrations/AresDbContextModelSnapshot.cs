@@ -1570,7 +1570,16 @@ namespace AresService.Migrations.Sqlite.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("DeviceCategory")
+                        .HasColumnType("INTEGER");
+
                     b.Property<Guid?>("DeviceCommandId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DeviceDriverId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DeviceDriverVersion")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("DeviceId")
@@ -2355,6 +2364,7 @@ namespace AresService.Migrations.Sqlite.Migrations
                                 .HasColumnType("TEXT");
 
                             b1.Property<string>("CustomCommandId")
+                                .IsRequired()
                                 .HasColumnType("TEXT");
 
                             b1.HasKey("CommandTemplateUniqueId");
@@ -2363,6 +2373,61 @@ namespace AresService.Migrations.Sqlite.Migrations
 
                             b1.WithOwner()
                                 .HasForeignKey("CommandTemplateUniqueId");
+
+                            b1.OwnsOne("Ares.Datamodel.Templates.CustomCommandRequirement", "Requirement", b2 =>
+                                {
+                                    b2.Property<Guid>("CustomCommandInvocationCommandTemplateUniqueId")
+                                        .HasColumnType("TEXT");
+
+                                    b2.Property<string>("Description")
+                                        .HasColumnType("TEXT");
+
+                                    b2.Property<string>("Name")
+                                        .HasColumnType("TEXT");
+
+                                    b2.Property<string>("OutputSchema")
+                                        .HasColumnType("TEXT");
+
+                                    b2.HasKey("CustomCommandInvocationCommandTemplateUniqueId");
+
+                                    b2.ToTable("CommandTemplates");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("CustomCommandInvocationCommandTemplateUniqueId");
+
+                                    b2.OwnsMany("Ares.Datamodel.Templates.CustomCommandParameterRequirement", "InputParameters", b3 =>
+                                        {
+                                            b3.Property<Guid>("CustomCommandRequirementCustomCommandInvocationCommandTemplateUniqueId")
+                                                .HasColumnType("TEXT");
+
+                                            b3.Property<int>("Id")
+                                                .ValueGeneratedOnAdd()
+                                                .HasColumnType("INTEGER");
+
+                                            b3.Property<int>("Index")
+                                                .HasColumnType("INTEGER");
+
+                                            b3.Property<string>("Name")
+                                                .HasColumnType("TEXT");
+
+                                            b3.Property<string>("Schema")
+                                                .HasColumnType("TEXT");
+
+                                            b3.Property<string>("UniqueId")
+                                                .HasColumnType("TEXT");
+
+                                            b3.HasKey("CustomCommandRequirementCustomCommandInvocationCommandTemplateUniqueId", "Id");
+
+                                            b3.ToTable("CustomCommandParameterRequirement");
+
+                                            b3.WithOwner()
+                                                .HasForeignKey("CustomCommandRequirementCustomCommandInvocationCommandTemplateUniqueId");
+                                        });
+
+                                    b2.Navigation("InputParameters");
+                                });
+
+                            b1.Navigation("Requirement");
                         });
 
                     b.OwnsOne("Ares.Datamodel.Templates.SystemCommand", "SystemCommand", b1 =>

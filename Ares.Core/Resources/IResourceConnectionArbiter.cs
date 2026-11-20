@@ -35,4 +35,11 @@ public interface IResourceConnectionArbiter
   /// <param name="resource">The resource to get the owner of.</param>
   /// <returns>The ResourceOwner, or null if the resource is not in use.</returns>
   List<IAresDevice> GetResourceOwners(ConnectionResource resource);
-  }
+
+  /// <summary>
+  /// A method that returns any resource assigned to the associated device or null if none were found
+  /// </summary>
+  /// <param name="device"></param>
+  /// <returns>A ConnectionResource associated with the given device</returns>
+  ConnectionResource? GetOwnedResource(IAresDevice device);
+}

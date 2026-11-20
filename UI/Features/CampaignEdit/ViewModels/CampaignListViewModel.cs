@@ -6,6 +6,7 @@ using DynamicData;
 using ReactiveUI;
 using System.Collections.ObjectModel;
 using Microsoft.AspNetCore.Components.Forms;
+using Ares.Core.Campaigns.Models;
 
 namespace UI.Features.CampaignEdit.ViewModels;
 

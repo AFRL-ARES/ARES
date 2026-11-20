@@ -1,4 +1,4 @@
-@implements IDisposable
+@implements IAsyncDisposable
 
 @using System.Reactive.Linq
 @using Ares.Core
@@ -43,9 +43,9 @@
   <main>
     @* <AuthorizeView>
           <Authorized> *@
-    <div class="main-layout-grid vh-100">
-      <div class="p-0 ares-sidebar">
-        <button @onclick="SidebarExpandClick" type="button" class="bg-dark btn hamburger-button">
+    <div class="main-layout-grid">
+      <div class="p-0 ares-sidebar @(SidebarExpanded ? "sidebar-expanded" : "sidebar-collapsed")">
+        <button @onclick="SidebarExpandClick" type="button" class="bg-dark btn hamburger-button" aria-label="Toggle navigation">
           <RadzenIcon Icon="menu"></RadzenIcon>
         </button>
         <AresNavMenu ExpandedMainNav="@SidebarExpanded">
@@ -126,7 +126,8 @@
 
 @code {
   public bool SidebarExpanded { get; set; } = true;
-  public bool BodyExpanded { get; set; }
+  private IJSObjectReference? _sidebarModule;
+  private DotNetObjectReference<MainLayout>? _sidebarObjectReference;
   private CancellationTokenSource _cts = new();
   private string _loadingMessage = "Initializing ARES OS...";
   private IDisposable? _driverSubscription;
@@ -135,6 +136,7 @@
   private List<string> _approvedCssPaths = new();
   public bool HasUnreadNotifications = false;
   private bool _demoIntroShown;
+  private const int SidebarCompactBreakpoint = 1440;
   private const string DemoIntroShownStorageKey = "ares.demoIntroShown";
 
   private readonly string[] _loadingMessageOptions = new[]
@@ -205,8 +207,15 @@
 
   protected override async Task OnAfterRenderAsync(bool firstRender)
   {
-    if(firstRender && !_demoIntroShown)
-      await ShowDemoIntroIfNeededAsync();
+    if(firstRender)
+    {
+      _sidebarObjectReference = DotNetObjectReference.Create(this);
+      _sidebarModule = await JS.InvokeAsync<IJSObjectReference>("import", "./Components/Layouts/MainLayout.razor.js");
+      await _sidebarModule.InvokeVoidAsync("observeSidebarBreakpoint", _sidebarObjectReference, SidebarCompactBreakpoint);
+
+      if(!_demoIntroShown)
+        await ShowDemoIntroIfNeededAsync();
+    }
 	}
 
   private async Task CycleLoadingMessagesAsync(CancellationToken token)
@@ -227,9 +236,17 @@
   }
 
   private void SidebarExpandClick()
+    => SidebarExpanded = !SidebarExpanded;
+
+  [JSInvokable]
+  public Task SetSidebarBreakpointState(bool useCompactSidebar)
   {
-    SidebarExpanded = !SidebarExpanded;
-    BodyExpanded = !BodyExpanded;
+    var shouldExpandSidebar = !useCompactSidebar;
+    if(SidebarExpanded == shouldExpandSidebar)
+      return Task.CompletedTask;
+
+    SidebarExpanded = shouldExpandSidebar;
+    return InvokeAsync(StateHasChanged);
   }
 
   async Task ShowEmergencyStopDialog()
@@ -341,7 +358,7 @@
     }
   }
 
-  public void Dispose()
+  public async ValueTask DisposeAsync()
   {
     _isDisposed = true;
 
@@ -353,5 +370,20 @@
 
     _cts.Cancel();
     _cts.Dispose();
+
+    if(_sidebarModule is not null)
+    {
+      try
+      {
+        await _sidebarModule.InvokeVoidAsync("disposeSidebarBreakpoint");
+        await _sidebarModule.DisposeAsync();
+      }
+      catch(JSDisconnectedException)
+      {
+        // The browser connection can be gone while a server-rendered component is disposing.
+      }
+    }
+
+    _sidebarObjectReference?.Dispose();
   }
 }

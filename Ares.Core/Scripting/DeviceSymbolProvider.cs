@@ -5,8 +5,6 @@ using Ares.Datamodel.Factories;
 using Ares.Datamodel.Scripting;
 using Ares.Datamodel.Templates;
 using AresScript.Symbols;
-using System.Text;
-
 namespace Ares.Core.Scripting;
 
 public class DeviceSymbolProvider(IAresDeviceProvider deviceProvider) : ISymbolProvider
@@ -21,13 +19,13 @@ public class DeviceSymbolProvider(IAresDeviceProvider deviceProvider) : ISymbolP
 
     foreach(var device in devices)
     {
-      var devicePrefix = SanitizeIdentifier(string.IsNullOrWhiteSpace(device.Name) ? device.UniqueId : device.Name);
+      var devicePrefix = ScriptIdentifierHelper.SanitizeIdentifier(string.IsNullOrWhiteSpace(device.Name) ? device.UniqueId : device.Name);
       var descriptors = await device.GetCommandDescriptorsAsync();
       var deviceFunctionFields = new Dictionary<string, AresSystemFunctionSymbol>(StringComparer.Ordinal);
 
       foreach(var descriptor in descriptors)
       {
-        var commandName = SanitizeIdentifier(descriptor.Name);
+        var commandName = ScriptIdentifierHelper.SanitizeIdentifier(descriptor.Name);
         var functionId = $"devices::{devicePrefix}::{commandName}";
 
         var outputSchema = descriptor.OutputSchema ?? AresSchemaBuilder.Entry(AresDataType.Unit).Build();
@@ -108,36 +106,4 @@ public class DeviceSymbolProvider(IAresDeviceProvider deviceProvider) : ISymbolP
     return schema;
   }
 
-  private static string SanitizeIdentifier(string value)
-  {
-    if(string.IsNullOrWhiteSpace(value))
-    {
-      return "_";
-    }
-
-    var builder = new StringBuilder(value.Length);
-    foreach(var ch in value)
-    {
-      builder.Append(IsAsciiIdentifierChar(ch) ? ch : '_');
-    }
-
-    if(builder.Length == 0 || !IsAsciiIdentifierStart(builder[0]))
-    {
-      builder.Insert(0, '_');
-    }
-
-    return builder.ToString();
-  }
-
-  private static bool IsAsciiIdentifierChar(char value)
-  {
-    return IsAsciiIdentifierStart(value) || value is >= '0' and <= '9';
-  }
-
-  private static bool IsAsciiIdentifierStart(char value)
-  {
-    return value is >= 'a' and <= 'z'
-      or (>= 'A' and <= 'Z')
-      or '_';
-  }
 }
