@@ -342,8 +342,15 @@ internal class CampaignTemplateTransferService(
     template.UniqueId = Guid.NewGuid().ToString();
     template.Name = await MakeUniqueNameAsync(template.Name.Trim(), cancellationToken);
     
+    var importedPlannableParameterIds = template.PlannableParameters
+      .Where(parameter => !string.IsNullOrWhiteSpace(parameter.UniqueId))
+      .ToDictionary(parameter => parameter.UniqueId, StringComparer.OrdinalIgnoreCase);
+    var plannableParameterIdMap = importedPlannableParameterIds.Keys
+      .ToDictionary(id => id, _ => Guid.NewGuid().ToString(), StringComparer.OrdinalIgnoreCase);
     foreach(var parameter in template.PlannableParameters)
-      parameter.UniqueId = Guid.NewGuid().ToString();
+      parameter.UniqueId = plannableParameterIdMap.TryGetValue(parameter.UniqueId, out var importedId)
+        ? importedId
+        : Guid.NewGuid().ToString();
     
     foreach(var allocation in template.PlannerAllocations)
       allocation.UniqueId = Guid.NewGuid().ToString();
@@ -371,8 +378,10 @@ internal class CampaignTemplateTransferService(
             argument.UniqueId = Guid.NewGuid().ToString();
             argument.Metadata?.UniqueId = Guid.NewGuid().ToString();
 
-            if(argument.PlannedSource?.PlanningMetadata is not null)
-              argument.PlannedSource.PlanningMetadata.UniqueId = Guid.NewGuid().ToString();
+            if(argument.PlannedSource?.PlanningMetadata is { } planningMetadata)
+              planningMetadata.UniqueId = plannableParameterIdMap.TryGetValue(planningMetadata.UniqueId, out var importedId)
+                ? importedId
+                : Guid.NewGuid().ToString();
           }
         }
       }

@@ -220,6 +220,14 @@ internal class CampaignTemplateTransferServiceTests
     var campaign = CreateCampaign("Planning");
     var parameter = new ParameterMetadata { UniqueId = Guid.NewGuid().ToString(), Name = "temperature" };
     campaign.PlannableParameters.Add(parameter);
+    var plannedCommand = campaign.ExperimentTemplate.StepTemplates.Single().CommandTemplates.First();
+    var plannedArgument = plannedCommand.ArgumentBindings.SingleOrDefault();
+    if(plannedArgument is null)
+    {
+      plannedArgument = new Parameter { UniqueId = Guid.NewGuid().ToString(), Metadata = new ParameterMetadata { UniqueId = Guid.NewGuid().ToString(), Name = "volume" } };
+      plannedCommand.ArgumentBindings.Add(plannedArgument);
+    }
+    plannedArgument.PlannedSource = new PlannedParameterSource { PlanningMetadata = parameter.Clone() };
     campaign.PlannerAllocations.Add(new PlannerAllocation
     {
       UniqueId = Guid.NewGuid().ToString(),
@@ -247,6 +255,7 @@ internal class CampaignTemplateTransferServiceTests
     {
       Assert.That(result.Template.PlannerAllocations, Has.Count.EqualTo(1));
       Assert.That(result.Template.PlannerAllocations.Single().Planner.UniqueId, Is.EqualTo(localPlanner.UniqueId));
+      Assert.That(result.Template.ExperimentTemplate.StepTemplates.Single().CommandTemplates.First().ArgumentBindings.Single().PlannedSource.PlanningMetadata.UniqueId, Is.EqualTo(result.Template.PlannerAllocations.Single().Parameter.UniqueId));
       Assert.That(result.Warnings, Has.Some.Contains("Missing"));
     }
     await using var verificationContext = await _contextFactory.CreateDbContextAsync();
