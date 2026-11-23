@@ -43,6 +43,9 @@ public class DeviceConfigManager : IDeviceConfigManager
 
   public async Task Add(DeviceConfig config)
   {
+    if(_configRepo.Any(existingConfig => existingConfig.DeviceName == config.DeviceName))
+      throw new InvalidOperationException($"A device with the name {config.DeviceName} already exists, ARES requires all device names to be unique!");
+
     if(config.SerialInfo is not null)
     {
       //Check for other devices using this serial port. If there are any, they should use a matching driver
