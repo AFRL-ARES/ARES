@@ -46,6 +46,7 @@ namespace UI.Application.Devices.Repos
       _deviceProvider.Connect()
         .Filter(IsPluginDevice)
         .Transform(_factory.CreateUnitControlViewModel)
+        .Filter(vm => vm is not null)
         .DisposeMany()
         .PopulateInto(_viewModelCache)
         .DisposeWith(_cleanup);

@@ -74,7 +74,14 @@ public class StepComposer : ICommandComposer<StepTemplate, StepExecutor>
 
             var device = _deviceRepo.FirstOrDefault(d => d.UniqueId == deviceId);
 
-            if(device is not null && metadata is not null)
+            if(device is null)
+              throw new InvalidOperationException("A device was null, indicating a device reference was likely improperly set. Check the template!");
+
+            else if(metadata is null)
+              throw new InvalidOperationException("A commands metadata was null, indicating a device reference was likely improperly set or is missing from your system. " +
+                "Check the template!");
+
+            else
             {
               Func<CancellationToken, Task<CommandResult>> internalAction = async (ct)
                 => await device.ExecuteCommand(
@@ -84,8 +91,6 @@ public class StepComposer : ICommandComposer<StepTemplate, StepExecutor>
 
               return new CommandExecutor(internalAction, commandTemplate, commandName, _notifier, _settingsManager);
             }
-
-            throw new InvalidOperationException("I'm not certain what to do here yet :(");
           }
         )
         .ToArray();

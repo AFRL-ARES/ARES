@@ -1,5 +1,6 @@
 using Ares.Core.Execution.Executors;
 using Ares.Datamodel;
+using Ares.Datamodel.Extensions;
 using Ares.Datamodel.Templates;
 
 namespace UI.Features.CampaignEdit.ViewModels;
@@ -53,11 +54,9 @@ public static class CommandOutputVariableReferenceBuilder
       ? outputSchema
       : null;
 
-  public static CommandOutputVariableReference[] MarkCompatibility(
-    IEnumerable<CommandOutputVariableReference> references,
-    AresValueSchema parameterSchema)
+  public static CommandOutputVariableReference[] MarkCompatibility(IEnumerable<CommandOutputVariableReference> references, AresValueSchema parameterSchema)
     => references
-      .Select(reference => reference with { Compatible = IsCompatible(parameterSchema.Type, reference.Type) })
+      .Select(reference => reference with { Compatible = AresValueHelper.AreCompatibleDataTypes(parameterSchema.Type, reference.Type) })
       .ToArray();
 
   private static IEnumerable<CommandOutputVariableReference> Build(string path, AresValueSchema schema)
@@ -73,7 +72,4 @@ public static class CommandOutputVariableReferenceBuilder
         yield return nestedReference;
     }
   }
-
-  private static bool IsCompatible(AresDataType parameterType, AresDataType variableType)
-    => parameterType == AresDataType.Any || variableType == AresDataType.Any || parameterType == variableType;
 }

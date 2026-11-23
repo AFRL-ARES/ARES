@@ -7,5 +7,5 @@ namespace UI.Features.Devices;
 public interface IAresDeviceViewModelFactory
 {
   Task<PluginDeviceSettingsListViewModel?> CreateListViewModelAsync(string driverName);
-  IDeviceUnitControlViewModel CreateUnitControlViewModel(IAresDevice device);
+  IDeviceUnitControlViewModel? CreateUnitControlViewModel(IAresDevice device);
 }

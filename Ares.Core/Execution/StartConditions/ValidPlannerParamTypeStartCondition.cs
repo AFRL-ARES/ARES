@@ -1,4 +1,5 @@
 ﻿using Ares.Core.Planning;
+using Ares.Datamodel.Extensions;
 
 namespace Ares.Core.Execution.StartConditions;
 
@@ -32,6 +33,10 @@ internal class ValidPlannerParamTypeStartCondition : IStartCondition
 
       if(!capabilities.AcceptedTypes.Contains(paramType))
       {
+        //Numeric types don't have to match directly
+        if(paramType.IsNumericType() && capabilities.AcceptedTypes.Any(type => type.IsNumericType()))
+          return new StartConditionResult(true);
+
         var message = $"{allocation.Planner.Name} was assigned to the parameter " +
           $"{allocation.Parameter.Name}, but {allocation.Planner.Name} " +
           $"does not support inputs of type {paramType}";

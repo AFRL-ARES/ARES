@@ -20,6 +20,7 @@ public partial class PluginDeviceUnitViewModel : ReactiveObject, IDeviceUnitCont
     DeviceId = device.UniqueId;
     StartStateUpdater();
     ViewType = typeof(PluginDeviceUnitView);
+    DefaultWidth = 0;
   }
 
   private void StartStateUpdater() =>

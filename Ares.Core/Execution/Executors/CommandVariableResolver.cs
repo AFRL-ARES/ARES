@@ -34,7 +34,7 @@ internal static class CommandVariableResolver
 
       var expectedType = parameter.Metadata.Schema?.Type ?? AresDataType.Any;
       var actualType = value.ToAresValueSchema().Type;
-      if(!IsCompatible(expectedType, actualType))
+      if(!AresValueHelper.AreCompatibleDataTypes(expectedType, actualType))
         return $"Parameter {parameter.Metadata.Name} expects {expectedType}, but variable {variableArgument} is {actualType}.";
 
       parameter.SetResolvedValue(value.Clone());
@@ -55,18 +55,5 @@ internal static class CommandVariableResolver
       foreach(var nestedValue in Flatten($"{path}.{field.Key}", field.Value))
         yield return nestedValue;
     }
-  }
-  // TODO: This one might need a bit of extra logic based on schema instead of plain datatype
-  // unless we just use non-struct variables.
-  private static bool IsCompatible(AresDataType expectedType, AresDataType actualType)
-  {
-    if(expectedType == AresDataType.Any || actualType == AresDataType.Any || expectedType == actualType)
-      return true;
-    
-    if(expectedType == AresDataType.Number && actualType == AresDataType.Float || actualType == AresDataType.Int)
-      return true;
-
-    return false;
-  }
-    
+  }    
 }

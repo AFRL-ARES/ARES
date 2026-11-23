@@ -11,19 +11,16 @@ public class AresDeviceViewModelFactory : IAresDeviceViewModelFactory
   private readonly IServiceProvider _serviceProvider;
   private readonly IDeviceDriverProvider _driverProvider;
   private readonly IDeviceConfigProvider _deviceConfigProvider;
-  private readonly IRemoteDeviceAdapterRepository _deviceAdapterRepo;
   private readonly ILogger<IAresDeviceViewModelFactory> _logger;
 
   public AresDeviceViewModelFactory(IServiceProvider serviceProvider,
     IDeviceDriverProvider driverProvider,
     IDeviceConfigProvider deviceConfigProvider,
-    IRemoteDeviceAdapterRepository deviceAdapterRepo,
     ILogger<IAresDeviceViewModelFactory> logger)
   {
     _serviceProvider = serviceProvider;
     _driverProvider = driverProvider;
     _deviceConfigProvider = deviceConfigProvider;
-    _deviceAdapterRepo = deviceAdapterRepo;
     _logger = logger;
   }
 
@@ -53,17 +50,17 @@ public class AresDeviceViewModelFactory : IAresDeviceViewModelFactory
     }
   }
 
-  public IDeviceUnitControlViewModel CreateUnitControlViewModel(IAresDevice device)
+  public IDeviceUnitControlViewModel? CreateUnitControlViewModel(IAresDevice device)
   {
     var config = _deviceConfigProvider.GetConfigByDeviceId(device.UniqueId);
 
     if(config is null)
-      return CreateDefaultViewModel(device);
+      return null;
 
     var driver = _driverProvider.GetDriverById(config.DriverId);
 
     if(driver is null || driver.ViewModelType is null)
-      return CreateDefaultViewModel(device);
+      return null;
 
     try
     {
@@ -78,7 +75,7 @@ public class AresDeviceViewModelFactory : IAresDeviceViewModelFactory
 
       _logger.LogError($"~~~~~~~~~ERROR MESSAGE~~~~~~~~~ {ex.Message}");
 
-      return CreateDefaultViewModel(device);
+      return null;
     }
   }
 

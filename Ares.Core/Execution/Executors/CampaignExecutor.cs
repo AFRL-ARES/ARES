@@ -143,6 +143,7 @@ public class CampaignExecutor : ICampaignExecutor
     {
       _logger.LogDebug("Exception Caught in Execution! {Exception}", ex.Message);
       _logger.LogDebug("{Trace}", ex.StackTrace);
+      await _notifier.Notify("Exception Executing Campaign!", ex.Message, NotificationSeverityEnum.Error);
       await ReportFinalStatus(false);
     }
     finally
@@ -446,9 +447,7 @@ public class CampaignExecutor : ICampaignExecutor
     return ExperimentPhase.Visualize;
   }
 
-  private async Task<ExperimentPhase> VisualizeCurrentExperiment(
-    List<ExperimentExecutionSummary> experimentSummaries,
-    ExecutionControlToken token)
+  private async Task<ExperimentPhase> VisualizeCurrentExperiment(List<ExperimentExecutionSummary> experimentSummaries, ExecutionControlToken token)
   {
     if(token.IsCancelled)
       return ExperimentPhase.Canceled;
@@ -456,11 +455,7 @@ public class CampaignExecutor : ICampaignExecutor
     if(_currentExperimentTemplate is null || _currentSummary is null)
       return ExperimentPhase.Failed;
 
-    await _experimentVisualizationService.GenerateVisualizations(
-      _currentExperimentTemplate,
-      experimentSummaries,
-      _currentSummary,
-      token.CancellationToken);
+    await _experimentVisualizationService.GenerateVisualizations(_currentExperimentTemplate, experimentSummaries, _currentSummary, token.CancellationToken);
 
     _executionReporter.Report(_currentSummary);
     await PostExperimentExecution(_currentSummary);
@@ -929,9 +924,7 @@ public class CampaignExecutor : ICampaignExecutor
   {
     _logger.LogDebug("About to run post experiment execution routine for {TemplateName}", summary.ExperimentOverview.Template.Name);
     foreach(var handler in _summaryHandlers)
-    {
       await handler.Handle(summary);
-    }
   }
 
   public CampaignTemplate Template { get; }
